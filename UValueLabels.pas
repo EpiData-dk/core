@@ -11,12 +11,14 @@ type
 
   TValueLabelSets = class(TObject)
   private
-    FList: TList;
+    FList: TStringList;
   public
     constructor Create();
     destructor Destroy(); override;
-    function ValueLabelSetByName(aName: string): TValueLabelSet;
+    procedure Clear();
     procedure Clone(var dest: TValueLabelSets);
+    function ValueLabelSetByName(aName: string): TValueLabelSet;
+    procedure AddValueLabelSet(aValueLabelSet: TValueLabelSet);
   end;
 
   TValueLabelSetType = (vltRef, vltGlobal, vltLocal);
@@ -36,6 +38,7 @@ type
     procedure AddValueLabelPair(const aValue, aLabel: string);
     procedure Clone(var Dest: TValueLabelSet);
 
+    property Name: string read FName write FName;
     property Value[const aLabel: string]: string read GetLabel write SetLabel;
     property vLabel[const aValue: string]: string read GetValue write SetValue;
   end;
@@ -43,38 +46,60 @@ type
 implementation
 
 uses
-  UEpiUtils;
+  UEpiUtils, SysUtils;
 
 { TValueLabelSets }
+
+procedure TValueLabelSets.AddValueLabelSet(aValueLabelSet: TValueLabelSet);
+begin
+  FList.AddObject(aValueLabelSet.Name, aValueLabelSet);
+end;
+
+procedure TValueLabelSets.Clear;
+var
+  i: integer;
+begin
+  for i := 0 to FList.Count - 1 do
+    TValueLabelSet(FList.Objects[i]).Destroy;
+  FList.Capacity := 0;
+end;
 
 procedure TValueLabelSets.Clone(var dest: TValueLabelSets);
 var
   i: integer;
+  tmp: TValueLabelSet;
 begin
   if not Assigned(Dest) then
     Dest := TValueLabelSets.Create();
 
+  Dest.Clear;
   for i := 0 to FList.Count - 1 do
   begin
-//    TValueLabelSet(FList[i]).Clone();
+    TValueLabelSet(FList[i]).Clone(tmp);
+    Dest.AddValueLabelSet(tmp);
   end;
 end;
 
 constructor TValueLabelSets.Create;
 begin
-
+  Flist := TStringList.Create;
 end;
 
 destructor TValueLabelSets.Destroy;
 begin
-
+  Clear;
+  FreeAndNil(FList);
   inherited;
 end;
 
 function TValueLabelSets.ValueLabelSetByName(
   aName: string): TValueLabelSet;
+var
+  idx: integer;
 begin
-
+  result := nil;
+  if FList.Find(aName, idx) then
+    result := TValueLabelSet(FList.Objects[idx]);
 end;
 
 { TValueLabelSet }
