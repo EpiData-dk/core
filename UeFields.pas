@@ -1,25 +1,24 @@
 unit UeFields;
 
 interface
-  TScopes=(scLocal,scGlobal,scCumulative);
 
-  TeFields = class(TObject)
-    private
-      FList: TList;
-    public
-      constructor create;
-      destructor destory; override;
-  end;
+uses
+  SysUtils,Graphics,classes, UEpiTypes;
+
+
+TYPE
+  TScopes=(scLocal,scGlobal,scCumulative);
 
   TeField=Class(TObject)
   private
     FEpiDataFile:     TObject;      //TEpiDataFile that owns the field
     FName:            String;       //Fieldname
     FFieldText:       String;       //Entry made in the field (= text property)
+    FData:            Array of string;
     FScope:           TScopes;      //Scope (Local, global, comulative), used only in DEFINEd variables
     FMissingValues:   TMissingValues;    //legal missing values
     FVariableLabel:   String[80];   //Variable label
-    Felttype:         TFelttyper;   //Field type
+    FFieldtype:       TFieldtypes;   //Field type
     FLength:          Byte;         //Length of data in field
     FCryptEntryLength:Byte;         //Entrylength of encrypt fields (Flength is coded length)   //&&
     FLengthInFile:    Byte;         //Length of field in file
@@ -68,7 +67,7 @@ interface
     FTypeString:      Boolean;      //Indicates that field has a TYPE "lkjlkj" command
     FTypeCommentField: Integer;     //Used with TYPE COMMENT fieldname - holds number of field to receive the comment
     FTypeCommentFieldStr: string;   //Used with TYPE COMMENT fieldname - holds name of field to receive the comment
-    FTypeField:       TLabel;       //Label on dataform with TYPE-text
+    FTypeField:       TObject;       //Label on dataform with TYPE-text - var tidligere TLabel
     FTypeColor:       TColor;       //Color of TYPE-label
     FConfirm:         Boolean;      //If true then confirm with ENTER before field is left (overrides df^.Confirm)
     AfterCmds:        TList;        //Commands run After Entry
@@ -86,8 +85,8 @@ interface
     Procedure SetAsString(Value:String);
     Function  GetAsLabel:String;
     Function  GetHasValueLabels:Boolean;
-    Function  GetMissingValues(Index: Integer):Str15;
-    Procedure SetMissingValues(Index: Integer; Value:str15);
+    Function  GetMissingValues(Index: Integer):string;
+    Procedure SetMissingValues(Index: Integer; Value:string);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -103,16 +102,53 @@ interface
     Property    FieldName:String read GetFieldName write FName;
     Property    Scope:TScopes read FScope write FScope;
     Property    HasValueLabels:Boolean read GetHasValueLabels;
-    Property    MissingValues[Index: integer]:str15 read GetMissingValues write SetMissingValues;
+    Property    MissingValues[Index: integer]:string read GetMissingValues write SetMissingValues;
+    Property    Fieldtype: TFieldTypes read FFieldtype write FFieldtype;
   END;
+
+  TeFields = class(TObject)
+    private
+      FEpiDataFile:     TObject;      //TEpiDataFile that owns the fieldlist
+      FList: TList;
+      function GetCount:integer;
+    public
+      constructor create;
+      destructor destroy; override;
+      procedure  Add(field: TeField);
+      property   count:integer read GetCount;
+  end;
+
+
 
 implementation
 
 // TeFields ****************************************
 
 constructor TeFields.create;
+begin
+  FList:=TList.create;
+end;
 
+destructor TeFields.destroy;
+var
+  n:integer;
+begin
+  if FList.Count>0 then
+    for n:=0 to FList.Count-1 do
+      TeField(FList[n]).Free;
+  FList.Free;
+end;
 
+function TeFields.GetCount:integer;
+begin
+  result:=FList.count;
+end;
+
+procedure TeFields.Add(field: TeField);
+begin
+  field.FEpiDataFile:=FEpiDataFile;
+  FList.Add(field);
+end;
 
 // TeField **************************************************************
 
@@ -160,7 +196,7 @@ BEGIN
   ResetCheckProperties;
   FName:='';
   FVariableLabel:='';
-  Felttype:=ftInteger;
+  FFieldtype:=ftInteger;
   FLength:=0;
   FCryptEntryLength:=0;
   FNumDecimals:=0;
@@ -216,21 +252,23 @@ END;
 
 Procedure TeField.SetAsString(Value:String);
 BEGIN
-  if Felttype=ftCrypt then FFieldText:=copy(Value,1,FCryptEntryLength) else FFieldText:=Copy(Value,1,FLength);
+  if FFieldtype=ftCrypt then FFieldText:=copy(Value,1,FCryptEntryLength) else FFieldText:=Copy(Value,1,FLength);
 END;
 
 Function TeField.GetAsLabel:String;
 BEGIN
-  IF FCommentLegalRec<>NIL
-  THEN result:=trim(GetCommentLegalText(FFieldText,FCommentLegalRec))
-  ELSE result:=trim(FFieldText);
+  //TODO: afventer valuelabelstruktur fra Torsten
+  //IF FCommentLegalRec<>NIL
+  //THEN result:=trim(GetCommentLegalText(FFieldText,FCommentLegalRec))
+  //ELSE result:=trim(FFieldText);
 END;
 
 Function TeField.Value2Label(Value: string):string;
 BEGIN
-  IF FCommentLegalRec<>NIL
-  THEN result:=trim(GetCommentLegalText(Value,FCommentLegalRec))
-  ELSE result:='';
+  //TODO: afventer valuelabelstruktur fra Torsten
+  //IF FCommentLegalRec<>NIL
+  //THEN result:=trim(GetCommentLegalText(Value,FCommentLegalRec))
+  //ELSE result:='';
 END;
 
 Function TeField.GetHasValueLabels:Boolean;
@@ -244,12 +282,12 @@ BEGIN
   Result:=trim(FName);
 END;
 
-Function TeField.GetMissingValues(Index: Integer):Str15;
+Function TeField.GetMissingValues(Index: Integer):string;
 BEGIN
   Result:=FMissingValues[Index];
 END;
 
-Procedure TeField.SetMissingValues(Index: Integer; Value:str15);
+Procedure TeField.SetMissingValues(Index: Integer; Value:string);
 BEGIN
   FMissingValues[Index]:=Value;
 END;
@@ -259,7 +297,7 @@ begin
   if (not assigned(dest)) then raise Exception.Create('Destination field is not assigned');
   dest.FName:=FName;
   dest.FVariableLabel:=FVariableLabel;
-  dest.Felttype:=Felttype;
+  dest.Fieldtype:=FFieldtype;
   dest.FLength:=FLength;
   dest.FCryptEntryLength:=FCryptEntryLength;
   dest.FLengthInFile:=FLengthInFile;

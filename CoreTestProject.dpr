@@ -9,8 +9,7 @@ uses
   UEpiDataConstants in 'UEpiDataConstants.pas',
   UeFields in 'UeFields.pas',
   UEpiTypes in 'UEpiTypes.pas',
-  UValueLabels in 'UValueLabels.pas';
-  UEpiDataConstants in 'UEpiDataConstants.pas',
+  UValueLabels in 'UValueLabels.pas',
   UStataFileHandler in 'UStataFileHandler.pas',
   UTxtFileHandler in 'UTxtFileHandler.pas',
   USASFileHandler in 'USASFileHandler.pas',
