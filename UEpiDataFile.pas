@@ -2,6 +2,9 @@ unit UEpiDataFile;
 
 interface
 
+uses
+  UCustomFileHandler;
+
 TYPE
   TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoReadRelates, oeIgnoreIndex);
   TEpiDataFileOptions = set of TEpiDataFileOption;
@@ -17,7 +20,7 @@ TYPE
       FNumRecords: Integer;   //Number of records in file
       FFileHandler: TcustomFileHandler;
       procedure Error(errorcode:integer);
-      procedure Translate(langcode: Integer; Text: WideString): widestring;
+      function Translate(langcode: Integer; Text: WideString): widestring;
     public
       constructor create;
       function   load(filename:string=''; aOptions:TEpiDataFileOptions):boolean;  //Loads file in internal structure

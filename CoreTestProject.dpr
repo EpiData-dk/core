@@ -5,7 +5,8 @@ uses
   UTestMain in 'UTestMain.pas' {Form1},
   URecFileHandler in 'URecFileHandler.pas',
   UCustomFileHandler in 'UCustomFileHandler.pas',
-  UEpiDataFile in 'UEpiDataFile.pas';
+  UEpiDataFile in 'UEpiDataFile.pas',
+  UEpiDataConstants in 'UEpiDataConstants.pas';
 
 {$R *.res}
 

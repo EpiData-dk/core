@@ -1,4 +1,4 @@
-unit UCustomDataFileInfo;
+unit UCustomFileHandler;
 
 interface
 
@@ -11,15 +11,15 @@ type
     //
   protected
     //
-    function GetFileHandlerType(): TFileHandlerType; abstract;
+    function GetFileHandlerType(): TFileHandlerType; virtual; abstract;
   public
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
-    function Read(RecordNum: integer): boolean; abstract;
-    function Write(RecordNum: integer): boolean; abstract;
-    function Commit: boolean; abstract;
+    function Read(RecordNum: integer): boolean; virtual; abstract;
+    function Write(RecordNum: integer): boolean; virtual; abstract;
+    function Commit: boolean; virtual; abstract;
 
-    property FileHandlerType: TFileHandlerType read GetFileHandlerType();
+    property FileHandlerType: TFileHandlerType read GetFileHandlerType;
   end;
 
 implementation

@@ -21,5 +21,17 @@ type
 
 implementation
 
+{*************** TRecFileHandler ***********************}
+
+constructor TRecFileHandler.Create();
+begin
+  inherited Create();
+end;
+
+destructor TRecFileHandler.Destroy();
+begin
+  inherited Destroy();
+end;
+
 end.
  
