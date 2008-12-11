@@ -3,9 +3,12 @@ unit UeFields;
 interface
   TScopes=(scLocal,scGlobal,scCumulative);
 
-  TeFields = class(TList)
+  TeFields = class(TObject)
     private
+      FList: TList;
     public
+      constructor create;
+      destructor destory; override;
   end;
 
   TeField=Class(TObject)
@@ -104,6 +107,12 @@ interface
   END;
 
 implementation
+
+// TeFields ****************************************
+
+constructor TeFields.create;
+
+
 
 // TeField **************************************************************
 
