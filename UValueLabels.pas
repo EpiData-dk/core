@@ -175,6 +175,7 @@ begin
     end;
 end;
 
+// TODO -O Torsten : Mangler Error håndtering
 procedure TValueLabelSet.SetLabel(const aValue, aLabel: string);
 var
   idx: integer;
