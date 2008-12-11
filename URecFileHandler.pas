@@ -14,14 +14,17 @@ type
     function GetFileHandlerType(): TFileHandlerType; override;
   public
     constructor Create; override;
-    destructor Destroy; override;
-    function   load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean; override;
-    function   Read(RecordNum:integer):boolean; override;
-    function   Write(RecordNum:Integer):boolean; override;
-    function   Commit:boolean; override;
+    destructor  Destroy; override;
+    function    load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean; override;
+    function    Read(RecordNum:integer):boolean; override;
+    function    Write(RecordNum:Integer):boolean; override;
+    function    Commit:boolean; override;
   end;
 
 implementation
+
+Uses
+  UEpiDataFile;
 
 {*************** TRecFileHandler ***********************}
 

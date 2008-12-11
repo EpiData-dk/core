@@ -13,9 +13,8 @@ type
 
   TCustomFileHandler = class(TObject)
   private
-    //
+    FEpiDataFile: TObject;
   protected
-    //
     function GetFileHandlerType(): TFileHandlerType; virtual; abstract;
   public
     constructor Create; virtual;
@@ -25,7 +24,8 @@ type
     function   Write(RecordNum: integer): boolean; virtual; abstract;
     function   Commit: boolean; virtual; abstract;
 
-    property FileHandlerType: TFileHandlerType read GetFileHandlerType;
+    property   FileHandlerType: TFileHandlerType read GetFileHandlerType;
+    property   EpiDataFile:TObject read FEpiDataFile write FEpiDataFile;
   end;
 
 implementation
@@ -34,12 +34,12 @@ implementation
 
 constructor TCustomFileHandler.Create();
 begin
-  //
+  inherited create;
 end;
 
 destructor TCustomFileHandler.Destroy();
 begin
-  inherited Create();
+  inherited destroy;
 end;
 
 end.
