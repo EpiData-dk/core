@@ -46,7 +46,7 @@ TYPE
     FMax:             String;       //Maximum value (set by RANGE)
     FLegal:           String;       //Legal values (incl. RANGE values)
     FRangeDefined:    Boolean;      //True if FLegal includes a Range definition
-    FCommentLegalRec: PLabelRec;    //Pointer to comment legal record (value label)
+//    FCommentLegalRec: PLabelRec;    //Pointer to comment legal record (value label)
     FShowLegalPickList: Boolean;    //True if Comment Legal Show (forces picklist to be shown)
     FPickListNoSelect: Boolean;     //If True then no item is automatically selected in LegalPickList
     FValueLabel:      String[40];   //Name of value label = Comment legal label
@@ -160,7 +160,7 @@ BEGIN
   FMax:='';
   FLegal:='';
   FRangeDefined:=False;
-  FCommentLegalRec:=NIL;
+//  FCommentLegalRec:=NIL;
   FShowLegalPickList:=False;
   FPickListNoSelect:=False;
   FFieldComments:='';
@@ -273,7 +273,7 @@ END;
 
 Function TeField.GetHasValueLabels:Boolean;
 BEGIN
-  Result:=(FCommentLegalRec<>NIL);
+//  Result:=(FCommentLegalRec<>NIL);
 END;
 
 
@@ -320,7 +320,7 @@ begin
   dest.FLegal:=FLegal;
   dest.FRangeDefined:=FRangeDefined;
 
-  dest.FCommentLegalRec:=NIL;      //Mangler implementering
+//  dest.FCommentLegalRec:=NIL;      //Mangler implementering
 
   dest.FShowLegalPickList:=FShowLegalPickList;
   dest.FPickListNoSelect:=FPickListNoSelect;
