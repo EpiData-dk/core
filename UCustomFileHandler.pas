@@ -9,7 +9,7 @@ type
   TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoReadRelates, oeIgnoreIndex);
   TEpiDataFileOptions = set of TEpiDataFileOption;
 
-  TFileHandlerType = (fhREC, fhDBF, fhSTAT, fhTXT, fhXLS, fhSAS, fhSPSS);
+  TFileHandlerType = (fhREC, fhDBF, fhSTATA, fhTXT, fhXLS, fhSAS, fhSPSS);
 
   TCustomFileHandler = class(TObject)
   private
@@ -20,10 +20,10 @@ type
   public
     constructor Create; virtual;
     destructor Destroy; override;
-    function  load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  virtual; abstract;
-    function Read(RecordNum: integer): boolean; virtual; abstract;
-    function Write(RecordNum: integer): boolean; virtual; abstract;
-    function Commit: boolean; virtual; abstract;
+    function   Load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  virtual; abstract;
+    function   Read(RecordNum: integer): boolean; virtual; abstract;
+    function   Write(RecordNum: integer): boolean; virtual; abstract;
+    function   Commit: boolean; virtual; abstract;
 
     property FileHandlerType: TFileHandlerType read GetFileHandlerType;
   end;

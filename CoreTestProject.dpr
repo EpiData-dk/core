@@ -6,7 +6,12 @@ uses
   URecFileHandler in 'URecFileHandler.pas',
   UCustomFileHandler in 'UCustomFileHandler.pas',
   UEpiDataFile in 'UEpiDataFile.pas',
-  UEpiDataConstants in 'UEpiDataConstants.pas';
+  UEpiDataConstants in 'UEpiDataConstants.pas',
+  UStataFileHandler in 'UStataFileHandler.pas',
+  UTxtFileHandler in 'UTxtFileHandler.pas',
+  USASFileHandler in 'USASFileHandler.pas',
+  USPSSFileHandler in 'USPSSFileHandler.pas',
+  UXLSFileHandler in 'UXLSFileHandler.pas';
 
 {$R *.res}
 
