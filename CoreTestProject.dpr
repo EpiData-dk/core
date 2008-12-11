@@ -7,6 +7,10 @@ uses
   UCustomFileHandler in 'UCustomFileHandler.pas',
   UEpiDataFile in 'UEpiDataFile.pas',
   UEpiDataConstants in 'UEpiDataConstants.pas',
+  UeFields in 'UeFields.pas',
+  UEpiTypes in 'UEpiTypes.pas',
+  UValueLabels in 'UValueLabels.pas';
+  UEpiDataConstants in 'UEpiDataConstants.pas',
   UStataFileHandler in 'UStataFileHandler.pas',
   UTxtFileHandler in 'UTxtFileHandler.pas',
   USASFileHandler in 'USASFileHandler.pas',
