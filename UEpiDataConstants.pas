@@ -20,6 +20,9 @@ CONST
   MaxRecLineLength=78;
   FieldNameLen:Byte=10;
 
+
+
+
 implementation
 
 end.

@@ -3,11 +3,9 @@ unit UEpiDataFile;
 interface
 
 uses
-  UCustomFileHandler;
+  UEpiDataConstants,UCustomFileHandler,URecFileHandler,SysUtils;
 
 TYPE
-  TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoReadRelates, oeIgnoreIndex);
-  TEpiDataFileOptions = set of TEpiDataFileOption;
 
   TErrorEvent = procedure(errorcode: Integer) of object;
   TTranslateEvent = function(langcode:Integer; text:widestring): widestring of object;
@@ -23,7 +21,7 @@ TYPE
       function Translate(langcode: Integer; Text: WideString): widestring;
     public
       constructor create;
-      function   load(filename:string=''; aOptions:TEpiDataFileOptions):boolean;  //Loads file in internal structure
+      function   load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  //Loads file in internal structure
       function   Read(RecordNum:integer):boolean;
       function   Write(RecordNum:Integer):boolean;   //Saves one record on disk, updates indices
       function   Commit:boolean;                     //Saves whole file on disk
@@ -52,7 +50,7 @@ begin
   if assigned(FonError) then FonError(errorcode);
 end;
 
-procedure TEpiDataFile.Translate(langcode: Integer; Text: WideString);
+function TEpiDataFile.Translate(langcode: Integer; Text: WideString):widestring;
 begin
   if Assigned(FonTranslate) then
     result := FonTranslate(langcode, text)
@@ -60,39 +58,54 @@ begin
     result := text;
 end;
 
-function TEpiDataFile.load(filename:string=''; aOptions:TEpiDataFileOptions):boolean;
+function TEpiDataFile.load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;
 var
   ext: string;
 begin
+  result:=false;
   if filename<>'' then ext:=AnsiLowerCase(ExtractFileExt(filename));
   if (ext='.rec') or (ext='') then FFileHandler:=TrecFileHandler.create
-  else if ext='dta' then FFileHandler:=TStataFileHandler.create
+{  else if ext='dta' then FFileHandler:=TStataFileHandler.create
   else if ext='txt' then FFileHandler:=TTxtFileHandler.create
   else if ext='sas' then FFileHandler:=TSASFileHandler.create
   else if ext='sps' then FFileHandler:=TSPSSFileHandler.create
-  else if ext='xls' then FFileHandler:=TXLSFileHandler.create
+  else if ext='xls' then FFileHandler:=TXLSFileHandler.create}
   else
     begin
-      error('Filetype `'+ext+'` not supported');
-      result:=false;
+      //error('Filetype `'+ext+'` not supported');
+      exit;
     end;
   if assigned(FFileHandler) then
     begin
       FFileHandler.load(filename,aOptions);
       result:=true;
-    ende
+    end
   else result:=false;
 end;
 
 function TepiDataFile.Read(RecordNum:integer):boolean;
 begin
-  if RecordNum>
-  FcurrentRec:=RecordNum;
-
+  if RecordNum>FNumRecords then
+    begin
+      //Error('Recordnumber exceeds total number of records');
+      result:=false;
+    end
+  else FcurrentRec:=RecordNum;
 end;
 
 function TEpiDataFile.Write(RecordNum:Integer):boolean;
 begin
+  if (Not assigned(FFileHandler)) then
+    begin
+      //Error('No Filehandler');
+      result:=false;
+    end
+  else
+    begin
+      FFileHandler.Write(RecordNum);
+      result:=true;
+    end;
+
 end;
 
 function TEpiDataFile.Commit:boolean;

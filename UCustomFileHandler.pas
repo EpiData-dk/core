@@ -2,7 +2,12 @@ unit UCustomFileHandler;
 
 interface
 
+uses
+  UEpiDataConstants;
+
 type
+  TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoReadRelates, oeIgnoreIndex);
+  TEpiDataFileOptions = set of TEpiDataFileOption;
 
   TFileHandlerType = (fhREC, fhDBF, fhSTAT, fhTXT, fhXLS, fhSAS, fhSPSS);
 
@@ -15,6 +20,7 @@ type
   public
     constructor Create; virtual;
     destructor Destroy; override;
+    function  load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  virtual; abstract;
     function Read(RecordNum: integer): boolean; virtual; abstract;
     function Write(RecordNum: integer): boolean; virtual; abstract;
     function Commit: boolean; virtual; abstract;

@@ -15,7 +15,8 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-  published 
+    function   load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  override; //Loads file in internal structure
+  published
 
   end;
 
@@ -33,5 +34,7 @@ begin
   inherited Destroy();
 end;
 
+function TRecFileHandler.load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  //Loads file in internal structure
+begin
+end;
 end.
- 
