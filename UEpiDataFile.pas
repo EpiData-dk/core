@@ -12,13 +12,14 @@ TYPE
 
   TEpiDataFile = class(TObject)
     private
-      FonError: TErrorEvent;
+      FonError:     TErrorEvent;
       FonTranslate: TTranslateEvent;
-      FcurrentRec: Integer;   //Current record
-      FNumRecords: Integer;   //Number of records in file
+      FcurrentRec:  Integer;   //Current record
+      FNumRecords:  Integer;   //Number of records in file
       FFileHandler: TcustomFileHandler;
       procedure Error(errorcode:integer);
       function Translate(langcode: Integer; Text: WideString): widestring;
+      procedure SetCurrentRec(value:integer);
     public
       constructor create;
       function   load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  //Loads file in internal structure
@@ -28,6 +29,8 @@ TYPE
 
       property onError:TErrorEvent read FonError write FonError;
       property onTranslate:TTranslateEvent read FonTranslate write FonTranslate;
+
+      property CurrentRec:integer read FCurrentRec write SetCurrentRec;
 
   end;
 
@@ -110,6 +113,15 @@ end;
 
 function TEpiDataFile.Commit:boolean;
 begin
+end;
+
+procedure TEpiDataFile.SetCurrentRec(value:integer);
+begin
+  if value>FNumRecords then
+    begin
+      //Error('Recordnumber exceeds total number of records');
+    end
+  else FcurrentRec:=value;
 end;
 
 end.

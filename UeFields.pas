@@ -11,21 +11,21 @@ TYPE
 
   TeField=Class(TObject)
   private
-    FEpiDataFile:     TObject;      //TEpiDataFile that owns the field
-    FName:            String;       //Fieldname
-    FFieldText:       String;       //Entry made in the field (= text property)
+    FEpiDataFile:     TObject;        //TEpiDataFile that owns the field
+    FName:            String;         //Fieldname
+    FFieldText:       String;         //Entry made in the field (= text property)
     FData:            Array of string;
-    FScope:           TScopes;      //Scope (Local, global, comulative), used only in DEFINEd variables
-    FMissingValues:   TMissingValues;    //legal missing values
-    FVariableLabel:   String[80];   //Variable label
-    FFieldtype:       TFieldtypes;   //Field type
-    FLength:          Byte;         //Length of data in field
-    FCryptEntryLength:Byte;         //Entrylength of encrypt fields (Flength is coded length)   //&&
-    FLengthInFile:    Byte;         //Length of field in file
-    FNumDecimals:     Byte;         //Number of decimals in numeric fields
-    FQuestion:        String[80];   //The field's question (to the left of field)
-    FOriginalQuest:   String[80];   //Question as it is saved in REC-file
-    LastField:        Boolean;      //True if field is last field in dataform
+    FScope:           TScopes;        //Scope (Local, global, comulative), used only in DEFINEd variables
+    FMissingValues:   TMissingValues; //legal missing values
+    FVariableLabel:   String;         //Variable label
+    FFieldtype:       TFieldtypes;    //Field type
+    FLength:          Byte;           //Length of data in field
+    FCryptEntryLength:Byte;           //Entrylength of encrypt fields (Flength is coded length)   //&&
+    FLengthInFile:    Byte;           //Length of field in file
+    FNumDecimals:     Byte;           //Number of decimals in numeric fields
+    FQuestion:        String;     //The field's question (to the left of field)
+    FOriginalQuest:   String;     //Question as it is saved in REC-file
+    FLastField:        Boolean;      //True if field is last field in dataform
     FStartPos:        Integer;       //Start position in datafile record of field
     FFieldChar:       Char;
     FFieldColor:      Integer;
@@ -49,7 +49,6 @@ TYPE
 //    FCommentLegalRec: PLabelRec;    //Pointer to comment legal record (value label)
     FShowLegalPickList: Boolean;    //True if Comment Legal Show (forces picklist to be shown)
     FPickListNoSelect: Boolean;     //If True then no item is automatically selected in LegalPickList
-    FValueLabel:      String[40];   //Name of value label = Comment legal label
     FJumps:           String;       //Jumps definitions
     FJumpResetChar:   Char;         //Fill char when JUMPS RESET "-" is used
     {autosearch properties}
@@ -58,9 +57,9 @@ TYPE
     FAutoList:        Boolean;      //True if Autosearch has LIST parameter set
     {other properties}
     FNoEnter:         Boolean;
-    EntryField:       Pointer;      //Pointer to TEntryField on Dataform
+    FEntryField:       TObject;      //Pointer to TEntryField on Dataform
     FFieldComments:   String;       //Comments in checkfile in fieldblock - used only in checkfilemode
-    FieldN:           Integer;      //'Free' property for different uses
+    FFieldN:           Integer;      //'Free' property for different uses
     FIndex:           Byte;         //Key number = index number
     FIsTypeStatusBar: Boolean;      //Indicates if field has TYPE STATUSBAR
     FTypeComments:    Boolean;      //Fields has TYPE COMMENT
@@ -70,9 +69,9 @@ TYPE
     FTypeField:       TObject;       //Label on dataform with TYPE-text - var tidligere TLabel
     FTypeColor:       TColor;       //Color of TYPE-label
     FConfirm:         Boolean;      //If true then confirm with ENTER before field is left (overrides df^.Confirm)
-    AfterCmds:        TList;        //Commands run After Entry
-    BeforeCmds:       TList;        //Commands run Before Entry
-    OldReadOnly:      Boolean;      //Used to save the ReadOnly status before setting ReadOnly=True during Relate-operations
+    FAfterCmds:        TList;        //Commands run After Entry
+    FBeforeCmds:       TList;        //Commands run Before Entry
+    FOldReadOnly:      Boolean;      //Used to save the ReadOnly status before setting ReadOnly=True during Relate-operations
     FTopOfScreen:     Boolean;      //True=Move field to top of screen when entered ("New Page")
     FTopOfScreenLines: Byte;        //Number of lines to move topofscreen field down
     FHasGlobalMissing: Boolean;   //Set if MISSINGVALUE var1-var2 9 8 7 type command is run previously
@@ -104,18 +103,85 @@ TYPE
     Property    HasValueLabels:Boolean read GetHasValueLabels;
     Property    MissingValues[Index: integer]:string read GetMissingValues write SetMissingValues;
     Property    Fieldtype: TFieldTypes read FFieldtype write FFieldtype;
+    Property    VariableLabel:string read FVariableLabel write FVariableLabel;
+    Property    Length:byte read FLength write FLength;
+    Property    CryptEntryLength:Byte read FCryptEntryLength write FCryptEntryLength;
+    Property    LengthInFile:Byte read FLengthInFile write FLengthInFile;
+    Property    NumDecimals:Byte read FNumDecimals write FNumDecimals;
+    Property    Question:String read FQuestion write FQuestion;
+    Property    OriginalQuest:String read FOriginalQuest write FOriginalQuest;
+    Property    LastField:Boolean read FLastField write FLastField;
+    Property    StartPos:Integer read FStartPos write FStartPos;
+    Property    FieldChar:Char read FFieldChar write FFieldChar;
+    Property    FieldColor:Integer read FFieldColor write FFieldColor;
+    Property    QuestColor:Integer read FQuestColor write FQuestColor;
+    Property    FieldNo:Integer read FFieldNo write FFieldNo;
+    {Entryfield coordinates}
+    Property    QuestTop:Integer read FQuestTop write FQuestTop;
+    Property    QuestLeft:Integer read FQuestLeft write FQuestLeft;
+    Property    FieldTop:Integer read FFieldTop write FFieldTop;
+    Property    FieldLeft:Integer read FFieldLeft write FFieldLeft;
+    Property    FieldWidth:Integer read FFieldWidth write FFieldWidth;
+    Property    FieldX:Integer read FFieldX write FFieldX;
+    Property    FieldY:Integer read FFieldY write FFieldY;
+    Property    QuestX:Integer read FQuestX write FQuestX;
+    Property    QuestY:Integer read FQuestY write FQuestY;
+    {Check related properties}
+    Property    MustEnter:Boolean read FMustEnter write FMustEnter;
+    Property    doRepeat:Boolean read FRepeat write FRepeat;      //True if REPEAT is set
+    Property    Min:String read FMin write FMin;
+    Property    Max:String read FMax write FMin;
+    Property    Legal:String read FLegal write FLegal;
+    Property    RangeDefined:Boolean read FRangeDefined write FRangeDefined;
+    //Property    CommentLegalRec: PLabelRec;   //TODO: skal ændres til typer i UValueLabel
+    Property    ShowLegalPickList:Boolean read FShowLegalPickList write FShowLegalPickList;
+    Property    PickListNoSelect:Boolean read FPickListNoSelect write FPickListNoSelect;
+    Property    Jumps:String read FJumps write FJumps;
+    Property    JumpResetChar:Char read FJumpResetChar write FJumpResetChar;
+    {autosearch properties}
+    Property    Autosearch:Boolean read FAutosearch write FAutosearch;
+    Property    AutoFields:String read FAutoFields write FAutoFields;
+    Property    AutoList:Boolean read FAutoList write FAutoList;
+    {other properties}
+    Property    NoEnter:Boolean read FNoEnter write FNoEnter;
+    Property    EntryField:TObject read FEntryField write FEntryField;
+    Property    FieldComments:String read FFieldComments write FFieldComments;
+    Property    FieldN:Integer read FFieldN write FFieldN;
+    Property    Index:Byte read FIndex write FIndex;
+    Property    IsTypeStatusBar:Boolean read FIsTypeStatusBar write FIsTypeStatusBar;
+    Property    TypeComments:Boolean read FTypeComments write FTypeComments;
+    Property    TypeString:Boolean read FTypeString write FTypeString;
+    Property    TypeCommentField:Integer read FTypeCommentField write FTypeCommentField;
+    Property    TypeCommentFieldStr:string read FTypeCommentFieldStr write FTypeCommentFieldStr;
+    Property    TypeField:TObject read FTypeField write FTypeField;
+    Property    TypeColor:TColor read FTypeColor write FTypeColor;
+    Property    Confirm:Boolean read FConfirm write FConfirm;
+    Property    AfterCmds:TList read FAfterCmds write FAfterCmds;
+    Property    BeforeCmds:TList read FBeforeCmds write FBeforeCmds;
+    Property    OldReadOnly:Boolean read FOldReadOnly write FOldReadOnly;
+    Property    TopOfScreen:Boolean read FTopOfScreen write FTopOfScreen;
+    Property    TopOfScreenLines:Byte read FTopOfScreenLines write FTopOfScreenLines;
+    Property    HasGlobalMissing:Boolean read FHasGlobalMissing write FHasGlobalMissing;
+    Property    DefaultValue:string read FDefaultValue write FDefaultValue;
+    Property    HasGlobalDefaultValue:Boolean read FHasGlobalDefaultValue write FHasGlobalDefaultValue;
+    Property    FieldFormat:string read FFieldFormat write FFieldFormat;
+
   END;
 
   TeFields = class(TObject)
     private
       FEpiDataFile:     TObject;      //TEpiDataFile that owns the fieldlist
       FList: TList;
-      function GetCount:integer;
+      function  GetCount:integer;
+      function  GetField(index:integer):TeField;
     public
       constructor create;
       destructor destroy; override;
       procedure  Add(field: TeField);
+      function   FieldByIndex(index:integer):TeField;
+      function   FieldByName(name:string):TeField;
       property   count:integer read GetCount;
+      property   items[index:integer]:TeField read getField; default;
   end;
 
 
@@ -150,6 +216,33 @@ begin
   FList.Add(field);
 end;
 
+function  TeFields.GetField(index:integer):TeField;
+begin
+  if index>=FList.Count then result:=NIL
+  else result:=TeField(FList[index]);
+end;
+
+function TeFields.FieldByIndex(index:integer):TeField;
+begin
+  if index>=FList.Count then result:=NIL
+  else result:=TeField(FList[index]);
+end;
+
+function TeFields.FieldByName(name:string):TeField;
+var
+  n:integer;
+begin
+  result:=NIL;
+  if FList.Count=0 then exit;
+  n:=0;
+  name:=AnsiLowerCase(name);
+  while (n<FList.count) and (result=NIL) do
+    begin
+      if AnsiLowerCase(TeField(FList[n]).FieldName)=name then result:=TeField(FList[n]);
+      inc(n);
+    end;
+end;
+
 // TeField **************************************************************
 
 Procedure TeField.ResetCheckProperties;
@@ -164,7 +257,7 @@ BEGIN
   FShowLegalPickList:=False;
   FPickListNoSelect:=False;
   FFieldComments:='';
-  FValueLabel:='';
+  //FValueLabel:='';  //TODO ordnes når Torsten har valuelabels på plads
   FJumps:='';
   FJumpResetChar:=#0;
   FNoEnter:=False;
@@ -229,7 +322,7 @@ END;
 Function TeField.HasCheckProperties:Boolean;
 BEGIN
   IF (FMin<>'') OR (FMax<>'') OR (FLegal<>'') OR (FJumps<>'')
-  OR (trim(FValueLabel)<>'') OR (FMustEnter=True) OR (FRepeat=True)
+  //OR (trim(FValueLabel)<>'') OR (FMustEnter=True) OR (FRepeat=True)   //TODO når valuelabels er på plads
   OR (FFieldComments<>'') OR (AfterCmds<>NIL) OR (BeforeCmds<>NIL)
   OR (FNoEnter=True) OR (FIsTypeStatusBar=True) OR (FTypeComments)
   OR (FIndex>0) OR (FConfirm) OR (FTopOfScreen) OR (FAutosearch)
@@ -295,6 +388,7 @@ END;
 Procedure TeField.Clone(dest: TeField; clonevalue:boolean=false);
 begin
   if (not assigned(dest)) then raise Exception.Create('Destination field is not assigned');
+  //TODO: mangler håndtering af FData
   dest.FName:=FName;
   dest.FVariableLabel:=FVariableLabel;
   dest.Fieldtype:=FFieldtype;
@@ -325,7 +419,7 @@ begin
   dest.FShowLegalPickList:=FShowLegalPickList;
   dest.FPickListNoSelect:=FPickListNoSelect;
   dest.FFieldComments:=FFieldComments;
-  dest.FValueLabel:='';   //Mangler implementering;
+  //dest.FValueLabel:='';   //Mangler implementering;   //TODO når valuelabels er på plads
   dest.FJumps:=FJumps;
   dest.FJumpResetChar:=FJumpResetChar;
   dest.FNoEnter:=FNoEnter;
