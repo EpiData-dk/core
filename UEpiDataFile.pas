@@ -77,7 +77,7 @@ begin
     begin
       FFileHandler.load(filename,aOptions);
       result:=true;
-    end
+    ende
   else result:=false;
 end;
 
