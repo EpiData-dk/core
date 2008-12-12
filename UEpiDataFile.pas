@@ -3,7 +3,7 @@ unit UEpiDataFile;
 interface
 
 uses
-  UEpiDataConstants,UCustomFileHandler,URecFileHandler,SysUtils, UeFields;
+  UEpiDataConstants,UCustomFileHandler,SysUtils, UeFields;
 
 TYPE
 
@@ -28,8 +28,8 @@ TYPE
       function    load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  //Loads file in internal structure
       function    Read(RecordNum:integer):boolean;
       function    Write(RecordNum:Integer):boolean;   //Saves one record on disk, updates indices
-      function    Commit:boolean;                     //Saves whole file on disk
-      function    Commit(filename:string):boolean;
+      function    Commit:boolean; overload;                    //Saves whole file on disk
+      function    Commit(filename:string):boolean; overload;
 
       property onError:TErrorEvent read FonError write FonError;
       property onTranslate:TTranslateEvent read FonTranslate write FonTranslate;
@@ -43,6 +43,10 @@ TYPE
 
 
 implementation
+
+uses
+  URecFileHandler, UStataFileHandler, USPSSFileHandler, UTXTFileHandler,
+  USASFileHandler, UXLSFileHandler;
 
 {************ TEpiDataFile *******************}
 constructor TEpiDataFile.create;
@@ -81,11 +85,11 @@ begin
   result:=false;
   if filename<>'' then ext:=AnsiLowerCase(ExtractFileExt(filename));
   if (ext='.rec') or (ext='') then FFileHandler:=TrecFileHandler.create
-{  else if ext='dta' then FFileHandler:=TStataFileHandler.create
+  else if ext='dta' then FFileHandler:=TStataFileHandler.create
   else if ext='txt' then FFileHandler:=TTxtFileHandler.create
   else if ext='sas' then FFileHandler:=TSASFileHandler.create
   else if ext='sps' then FFileHandler:=TSPSSFileHandler.create
-  else if ext='xls' then FFileHandler:=TXLSFileHandler.create}
+  else if ext='xls' then FFileHandler:=TXLSFileHandler.create
   else
     begin
       //error('Filetype `'+ext+'` not supported');

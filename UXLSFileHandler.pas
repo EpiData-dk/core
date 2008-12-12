@@ -6,7 +6,7 @@ uses
   UCustomFileHandler;
 
 type
-  TSPSSFileHandler = class(TCustomFileHandler)
+  TXLSFileHandler = class(TCustomFileHandler)
   private
 
   protected
@@ -26,42 +26,42 @@ implementation
 uses
   SysUtils;
 
-{ TSPSSFileHandler }
+{ TXLSFileHandler }
 
-function TSPSSFileHandler.Commit: boolean;
+function TXLSFileHandler.Commit: boolean;
 begin
   result := false;
 end;
 
-constructor TSPSSFileHandler.Create;
+constructor TXLSFileHandler.Create;
 begin
   inherited;
 
 end;
 
-destructor TSPSSFileHandler.Destroy;
+destructor TXLSFileHandler.Destroy;
 begin
 
   inherited;
 end;
 
-function TSPSSFileHandler.GetFileHandlerType: TFileHandlerType;
+function TXLSFileHandler.GetFileHandlerType: TFileHandlerType;
 begin
   result := fhXLS;
 end;
 
-function TSPSSFileHandler.Load(filename: string;
+function TXLSFileHandler.Load(filename: string;
   aOptions: TEpiDataFileOptions): boolean;
 begin
   raise Exception.Create('Import for SPSS files not implemented');
 end;
 
-function TSPSSFileHandler.Read(RecordNum: integer): boolean;
+function TXLSFileHandler.Read(RecordNum: integer): boolean;
 begin
   raise Exception.Create('Import for SPSS files not implemented');
 end;
 
-function TSPSSFileHandler.Write(RecordNum: integer): boolean;
+function TXLSFileHandler.Write(RecordNum: integer): boolean;
 begin
   result := false;
 end;
