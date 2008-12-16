@@ -2,15 +2,7 @@ program CoreTestProject;
 
 uses
   Forms,
-  UTestMain in 'UTestMain.pas' {Form1},
-  UEpiDataFile in 'UEpiDataFile.pas',
-  UeFields in 'UeFields.pas',
-  UEpiTypes in 'UEpiTypes.pas',
-  UValueLabels in 'UValueLabels.pas',
-  UEpiUtils in 'UEpiUtils.pas',
-  UEpiDataConstants in 'UEpiDataConstants.pas',
-  UImport in 'UImport.pas',
-  UExport in 'UExport.pas';
+  UTestMain in 'UTestMain.pas' {Form1};
 
 {$R *.res}
 
