@@ -3,9 +3,12 @@ unit UEpiDataFile;
 interface
 
 uses
-  UEpiDataConstants,UCustomFileHandler,SysUtils, UeFields;
+  UEpiDataConstants, SysUtils, UeFields;
 
 TYPE
+
+  TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoReadRelates, oeIgnoreIndex);
+  TEpiDataFileOptions = set of TEpiDataFileOption;
 
   TErrorEvent = procedure(errorcode: Integer) of object;
   TTranslateEvent = function(langcode:Integer; text:widestring): widestring of object;
@@ -16,20 +19,20 @@ TYPE
       FonTranslate: TTranslateEvent;
       FcurrentRec:  Integer;   //Current record
       FNumRecords:  Integer;   //Number of records in file
-      FFileHandler: TcustomFileHandler;
       FFields:      TeFields;
       FFilename:    string;
+      FOptions:     TEpiDataFileOptions;
       procedure   Error(errorcode:integer);
       function    Translate(langcode: Integer; Text: WideString): widestring;
       procedure   SetCurrentRec(value:integer);
     public
-      constructor create;
-      destructor  destroy; override;
-      function    load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  //Loads file in internal structure
+      constructor Create;
+      destructor  Destroy; override;
+//      function    load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;  //Loads file in internal structure
       function    Read(RecordNum:integer):boolean;
       function    Write(RecordNum:Integer):boolean;   //Saves one record on disk, updates indices
-      function    Commit:boolean; overload;                    //Saves whole file on disk
-      function    Commit(filename:string):boolean; overload;
+//      function    Commit:boolean; overload;                    //Saves whole file on disk
+//      function    Commit(filename:string):boolean; overload;
 
       property onError:TErrorEvent read FonError write FonError;
       property onTranslate:TTranslateEvent read FonTranslate write FonTranslate;
@@ -37,29 +40,25 @@ TYPE
       property CurrentRec:integer read FCurrentRec write SetCurrentRec;
       property Fields: TeFields read FFields write FFields;
       property Filename:string read FFilename write FFilename;
-
+      property Options: TEpiDataFileOptions read FOptions write FOptions;
   end;
 
 
 
 implementation
 
-uses
-  URecFileHandler, UStataFileHandler, USPSSFileHandler, UTXTFileHandler,
-  USASFileHandler, UXLSFileHandler;
-
 {************ TEpiDataFile *******************}
-constructor TEpiDataFile.create;
+constructor TEpiDataFile.Create;
 begin
   inherited create;
   FonError:=NIL;
   FonTranslate:=NIL;
   FcurrentRec:=-1;
-  FFileHandler:=NIL;
+//  FFileHandler:=NIL;
   FFields:=NIL;
 end;
 
-destructor TEpiDataFile.destroy;
+destructor TEpiDataFile.Destroy;
 begin
   if assigned(FFields) then FFields.Free;
   inherited destroy;
@@ -78,7 +77,7 @@ begin
     result := text;
 end;
 
-function TEpiDataFile.load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;
+{function TEpiDataFile.load(filename:string=''; aOptions:TEpiDataFileOptions=[]):boolean;
 var
   ext: string;
 begin
@@ -102,7 +101,7 @@ begin
     end
   else result:=false;
 end;
-
+        }
 function TepiDataFile.Read(RecordNum:integer):boolean;
 begin
   if RecordNum>FNumRecords then
@@ -119,14 +118,14 @@ end;
 
 function TEpiDataFile.Write(RecordNum:Integer):boolean;
 begin
-  if (Not assigned(FFileHandler)) then
+{  if (Not assigned(FFileHandler)) then
     begin
       //Error('No Filehandler');
       result:=false;
     end
-  else result:=FFileHandler.Write(RecordNum);
+  else result:=FFileHandler.Write(RecordNum);  }
 end;
-
+       {
 function TEpiDataFile.Commit:boolean;
 begin
   if (Not assigned(FFileHandler)) then
@@ -142,7 +141,7 @@ begin
   FFilename:=filename;
   result:=Commit;
 end;
-
+                 }
 procedure TEpiDataFile.SetCurrentRec(value:integer);
 begin
   if value>FNumRecords then

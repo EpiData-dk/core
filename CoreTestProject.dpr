@@ -3,19 +3,14 @@ program CoreTestProject;
 uses
   Forms,
   UTestMain in 'UTestMain.pas' {Form1},
-  URecFileHandler in 'URecFileHandler.pas',
-  UCustomFileHandler in 'UCustomFileHandler.pas',
   UEpiDataFile in 'UEpiDataFile.pas',
   UeFields in 'UeFields.pas',
   UEpiTypes in 'UEpiTypes.pas',
   UValueLabels in 'UValueLabels.pas',
   UEpiUtils in 'UEpiUtils.pas',
   UEpiDataConstants in 'UEpiDataConstants.pas',
-  UStataFileHandler in 'UStataFileHandler.pas',
-  UTxtFileHandler in 'UTxtFileHandler.pas',
-  USASFileHandler in 'USASFileHandler.pas',
-  USPSSFileHandler in 'USPSSFileHandler.pas',
-  UXLSFileHandler in 'UXLSFileHandler.pas';
+  UImport in 'UImport.pas',
+  UExport in 'UExport.pas';
 
 {$R *.res}
 
