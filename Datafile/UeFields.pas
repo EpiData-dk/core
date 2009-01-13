@@ -3,12 +3,10 @@ unit UeFields;
 interface
 
 uses
-  SysUtils,Graphics,classes, UEpiTypes;
+  SysUtils,Graphics,classes, UEpiTypes, UValueLabels;
 
 
 TYPE
-  TScopes=(scLocal,scGlobal,scCumulative);
-
   TeField=Class(TObject)
   private
     FEpiDataFile:     TObject;        //TEpiDataFile that owns the field
@@ -78,6 +76,7 @@ TYPE
     FDefaultValue:     string;      //A default value of the field defined by DEFAULTVALUE x
     FHasGlobalDefaultValue: Boolean;   //A default value define by DEFAULTVALUE ALL X or DEFAULTVALUE field-field, field X
     FFieldFormat:     string;       //Used by analysis: defines the formatting of the data, e.g. %d for integers
+    FValuelabel:      TValueLabelSet;
 
     Function  GetFieldName:String;
     Function  GetAsString:String;
@@ -165,7 +164,7 @@ TYPE
     Property    DefaultValue:string read FDefaultValue write FDefaultValue;
     Property    HasGlobalDefaultValue:Boolean read FHasGlobalDefaultValue write FHasGlobalDefaultValue;
     Property    FieldFormat:string read FFieldFormat write FFieldFormat;
-
+    Property    Valuelabel:TValueLabelSet read FValueLabel write FValueLabel;
   END;
 
   TeFields = class(TObject)

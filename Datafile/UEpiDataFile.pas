@@ -34,7 +34,6 @@ TYPE
     END;
 
     //TODO: Det nedenstående flyttes til CheckObjUnit
-    TMissingActions=(maIgnoreMissing,maRejectMissing);
     TDirections=(dirForward,dirBackward,dirFirst,dirLast,dirAbsolute);
 
 
@@ -313,6 +312,8 @@ TYPE
 
 implementation
 
+uses
+  CheckObjUnit;
 
 
 {************************************* TEpiDataFile *************************************}
@@ -334,8 +335,73 @@ begin
 end;
 
 constructor TEpiDataFile.Create;
+var
+  n:integer;
 begin
-
+  inherited create;
+  FRecFilename:='';
+  FQesFilename:='';
+  FChkFilename:='';
+  FIndexFilename:='';
+  FDatFile:=NIL;
+  FMemFile:=NIL;
+  FStoredInMemory:=False;
+  FFieldList:=NIL;
+  FHasEOFMarker:=False;
+  FNumRecords:=0;
+  FHasCheckFile:=False;
+  FHasIncludeCmd:=False;
+  FFileModified:=False;
+  FFieldNames:=NIL;
+  FFieldNamesList:=NIL;
+  FNumFields:=0;
+  FCurField:=0;
+  FCurRecord:=0;
+  FCurRecModified:=False;
+  FDatafileModified:=False;
+  FEpiInfoFieldNaming:=False;
+  FUpdateFieldnameInQuestion:=False;
+  FValueLabels:=TValueLabelSets.Create;
+  FHasLongFieldNames:=False;
+  FGlobalDefList:=TStringList.Create;
+  FGlobalDefaultValue:='';
+  FIndex:=NIL;
+  FSortIndex:=NIL;
+  FOR n:=1 TO MaxIndices DO
+    BEGIN
+      FIndexFields[n]:=-1;
+      FIndexIsUnique[n]:=False;
+    END;
+  FRecBuf:=NIL;
+  FDefList:=NIL;
+  FHasDefined:=False;
+  FHasCrypt:=False;
+  FKey:='';
+  FFilelabel:='';
+  FChkTopComments:=NIL;
+  FHasRepeatField:=False;
+  FBeforeFileCmds:=NIL;
+  FAfterFileCmds:=NIL;
+  FBeforeRecordCmds:=NIL;
+  FAfterRecordCmds:=NIL;
+  FRecodeCmds:=NIL;
+  FAssertList:=NIL;
+  FConfirm:=False;
+  FAutoSave:=False;
+  FGlobalMissingValues[0]:='';
+  FGlobalMissingValues[1]:='';
+  FGlobalMissingValues[2]:='';
+  FGlobalTypeCom:=False;
+  FGlobalTypeComColor:=clBlue;
+  FIsRelateTop:=True;
+  FIsRelateFile:=False;
+  FOnRequestPassword:=NIL;
+  FChkTopComments:=NIL;
+  FTopEpiDataFile:=TObject(self);
+  FGlobalTypeCom:=False;
+  CheckFileMode:=False;
+  FHasKeyUnique:=False;
+  FCheckWriter:=NIL;
 end;
 
 procedure TEpiDataFile.DecryptIndex;
@@ -496,8 +562,63 @@ begin
 end;
 
 procedure TEpiDataFile.ResetEpiDataFile;
+var
+  n:Integer;
 begin
-
+  IF Assigned(FFieldList) THEN FreeAndNil(FFieldList);
+  IF Assigned(FValueLabels) THEN FreeAndNil(FValueLabels);
+  IF FRecBuf<>NIL THEN
+    BEGIN
+      FreeMem(FRecBuf);
+      FRecBuf:=NIL;
+    END;
+  FMemFile.Free;
+  FMemFile:=NIL;
+  FDatfile.Free;
+  FDatfile:=NIL;
+  {$I-}
+  CloseFile(FIndexFile);
+  n:=IOResult;
+  {$I+}
+  IF Assigned(FIndex) THEN FreeAndNil(FIndex);
+  IF Assigned(FSortIndex) THEN FreeAndNil(FSortIndex);
+  IF Assigned(FFieldNames) THEN FreeAndNil(FFieldNames);
+  IF Assigned(FFieldNamesList) THEN FreeAndNil(FFieldNamesList);
+  IF Assigned(FDefList) THEN
+    BEGIN
+      FOR n:=0 TO FDefList.Count-1 DO
+        TeField(FDefList.Objects[n]).Free;
+      FreeAndNil(FDefList);
+    END;
+  IF (FIsRelateTop) AND (FGlobalDefList<>NIL) THEN
+    BEGIN
+      FOR n:=0 TO FGlobalDefList.Count-1 DO
+        TeField(FGlobalDefList.Objects[n]).Free;
+      FreeAndNil(FGlobalDefList);
+    END;
+  IF Assigned(FBeforeFileCmds)   THEN DisposeCommandList(FBeforeFileCmds);
+  IF Assigned(FAfterFileCmds)    THEN DisposeCommandList(FAfterFileCmds);
+  IF Assigned(FBeforeRecordCmds) THEN DisposeCommandList(FBeforeRecordCmds);
+  IF Assigned(FAfterRecordCmds)  THEN DisposeCommandList(FAfterRecordCmds);
+  IF Assigned(FRecodeCmds)       THEN DisposeCommandList(FRecodeCmds);
+//  IF Assigned(FLastCommands)     THEN DisposeCommandList(FLastCommands);
+  IF Assigned(FAssertList)       THEN FAssertList.Free;
+  IF Assigned(FBackupList)       THEN FBackupList.Free;
+  IF Assigned(FChkTopComments) THEN FChkTopComments.Free;
+  FChkTopComments:=NIL;
+  FRecFilename:='';
+  FQESFilename:='';
+  FCHKFilename:='';
+  FIndexFilename:='';
+  FErrorCode:=0;
+  FErrorText:='';
+  FHasCrypt:=False;
+  FHasIncludeCmd:=False;
+  FFileModified:=False;
+  FGlobalTypeCom:=False;
+  FIsRelateFile:=False;
+  FIsRelateTop:=True;
+  FHasKeyUnique:=False;
 end;
 
 procedure TEpiDataFile.SaveCheckFile;

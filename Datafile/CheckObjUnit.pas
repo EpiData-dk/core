@@ -3,9 +3,20 @@ unit CheckObjUnit;
 {$DEFINE epidat}
 {$DEFINE analysis}
 
+//TODO: RetrieveCommentLegalRec, Label2Text - og i brugen af den undervejs, retrivelabel
+//cmdComLegal i cmd-structure
+//DestroyFieldlist
+//RetrieveCommentLegal procedure
+//Translate
+//Write Comment Legal
+//Translate
+
 interface
 
-USES Controls,Windows, Messages, Forms,Dialogs,Graphics,SysUtils,Classes,EpiDataFile,EpiDataUtils, UCmdTypes;
+USES Controls,Windows, Messages, Forms,Dialogs,Graphics,SysUtils,Classes,
+     UEFields, UEpiDataFile, UEpiDataConstants, UEpiTypes;
+
+
 
 type
   nwTypess=(nwAny,nwSameLine,nwSameKeepQuotes,nwKeepSpaces);
@@ -30,7 +41,147 @@ type
     property      GetCurLinIndex: Integer read FGetCurLinIndex write FCurLinIndex;
   end;
 
+  TExportTypes=(etTxt,etDBase,etXLS,etStata,etRecToQes,etListData,etSPSS,etSAS,etEpiData,etCodebook,etASP);
+  TBeepTypes=(btWarning,btConfirmation,btStandard);
+  TIndexFields=Array[1..MaxIndices] OF Integer;
+  TIndexIsUnique=Array[1..MaxIndices] OF Boolean;
+  TIndexFile=File of string[30];
+  TDirections=(dirForward,dirBackward,dirFirst,dirLast,dirAbsolute);
+  TLastSelectFilestype=(sfNone,sfMakeDatafile,sfRevise,sfAssert,sfRecode,sfRec2Qes,sfValDup,
+                        sfImportStata,sfMerge);
+
+  //Types related to searching datafiles
+  TSearchStyle=(ssEquals,ssBeginsWith,ssContains);
+  TScopeStyle=(ssForward,ssBackWard,ssAll);
+
+  TFindOperators = (opNone,opEq,opNEq,opGT,opLT,opBW,opEW,opCON);
+
+  TCrites=Record
+    Fieldno: Integer;
+    Opr: TFindOperators;
+    SearchText: String;
+    SearchValue: Double;
+  END;
+
+
+
+  Commands=(cmdIF,cmdHelp,cmdHide,cmdUnhide,cmdClear,cmdGoTo,cmdComLegal,
+            cmdExit,cmdDefine,cmdAutosave,cmdConfirm,cmdTypeString,
+            cmdRelate,cmdIgnoreMissing,cmdWriteNote,cmdBackup,cmdBeep,cmdLoad,cmdExecute,
+            cmdColor,cmdMissingAll,cmdQuit,cmdCopyToClipboard,cmdShowLastRecord,cmdDefaultAll,cmdLet,cmdComment,cmdLeaveField);       //¤¤
+            //NB! Insert new codes BEFORE cmdLet
+
+
+                                                                                                             //cmdLeaveField is only used internally (in conn. with relate)
+CONST
+  CommandNames:Array[Commands] of String[16]=
+    ('IF','HELP','HIDE','UNHIDE','CLEAR','GOTO','COMMENT','EXIT','DEFINE',
+    'AUTOSAVE','CONFIRM','TYPE','RELATE','IGNOREMISSING','WRITENOTE','BACKUP',
+    'BEEP','LOAD','EXECUTE','COLOR','MISSINGVALUE','QUIT','COPYTOCLIPBOARD',
+    'SHOWLASTRECORD','DEFAULTVALUE',
+    'LET','dummy','leavefield');
+
+TYPE
+  TChangeFieldActions=(cfNext,cfPrev,cfFirst,cfLast,cfValidate);
+  TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
+  PCmds=^TCmds;
+  TCmds=RECORD
+          Next: PCmds;
+          CASE Command: Commands OF
+            cmdIF:
+               (IfExpr:          String[200];
+                IfShowExpr:      String[200];
+                IfCmds:          TList;
+                ElseCmds:        TList);
+            cmdHelp:
+               (HelpString:      String[250];
+                HelpType:        TMsgDlgType;
+                HelpKeys:        String[10]);
+            cmdHide,cmdUnHide,cmdClear,cmdGoto:
+               (HideVarNumber:   Integer;
+                HideVarName:     String[10]);
+            cmdComLegal:
+               (clVarNumber:     Integer;
+                ValueLabel:      String[40];
+                //CommentLegalRec: PLabelRec;
+                ShowList:        Boolean);
+            cmdTypeString:
+               (tsVarNumber:     Integer;
+                TypeText:        String[40];
+                Typecolor:       TColor);
+            cmdRelate:
+               (RelField:        String[10];
+                RelFileNo:       Integer;
+                RelFileStr:      String[200];
+                One2One:         Boolean);
+            cmdLet:
+               (VarName:         String[20];
+                VarNumber:       Integer;
+                VarIsField:      Boolean;
+                CodedWithLET:    Boolean;
+                LetExpr:         String[200]);
+            cmdComment:
+               (Comment:         String[200]);
+            cmdDefine:
+               (FName:           String[20];
+                FeltType:        TFieldtypes;
+                FLength:         Integer;
+                FNumDecimals:    Byte;
+                FScope:          TScopes);
+            cmdWriteNote:
+               (FNote:           String[200];
+                ShowNotes:       Boolean);
+            cmdCopyToClipboard:
+               (CopyStr:         String[200]);
+            cmdBackup:
+               (DestLib:         String[200];
+                zipit:           Boolean;
+                encryptit:       Boolean;
+                filename:        String[200];
+                pw:              string[30];
+                dateit:          Boolean);
+            cmdBeep:
+               (BeepType:        TBeepTypes);
+            cmdLoad:
+               (DLLName:         String[200]);
+            cmdExecute:
+               (ExecCmdLine:     String[255];
+                ExecParams:      String[255];
+                ExecHide:        Boolean;
+                ExecWait:        Boolean);
+            cmdLeaveField:
+               (cLeaveStyle:     TLeaveStyles;
+                IsLastField:     Boolean);
+            cmdColor:
+               (ColorCmd:        Byte;      //1=color question, 2=color data,  3=color background, 4=color fieldname
+                TxtColor:        Byte;
+                BgColor:         Byte;
+                IsEpiInfoNo:     Boolean;
+                CFieldno:        Byte);
+          END;
+
+  PAssert=^TAssert;
+  TAssert=RECORD
+      AssName: String[40];
+      AssExpr: String[200];
+      OrigExpr: String[200];
+      ViolCount: Integer;
+      Violaters: String;
+    END;
+
+  PDefVar=^TDefVar;
+  TDefVar=RECORD
+    FName:             String[16];
+    Felttype:          TFieldtypes;
+    FLength:           Integer;
+    FNumDecimals:      Byte;
+    FFieldText:        String;
+    FScope:            TScopes;
+    END;
+
+
 //  TTranslateEvent = procedure(stringnumber:Integer; VAR transstring:string) of object;
+
 
   TCheckObj = class(TObject)
   private
@@ -55,7 +206,7 @@ type
     Procedure ReportError(CONST ErrStr:String);
     Procedure RetrieveFieldBlock;
     Procedure RetrieveLabelBlock;
-    Procedure RetrieveLabel;
+    //Procedure RetrieveLabel;
     Procedure RetrieveAssertBlock;
     Procedure GetCommandList(CmdList:TList);
     Procedure GetCommand(CmdList:TList);
@@ -68,7 +219,7 @@ type
     Procedure RetrieveMissingValues;
     Procedure RetrieveDefaultValue;
     Procedure RetrieveAutosearch;
-    Procedure RetrieveCommentLegal(VAR AValueLabel:ShortString; VAR ACommentLegalRec: PLabelRec; VAR ShowList:Boolean; AsCommand:Boolean);
+    //Procedure RetrieveCommentLegal(VAR AValueLabel:ShortString; VAR ACommentLegalRec: PLabelRec; VAR ShowList:Boolean; AsCommand:Boolean);
     Procedure RetrieveType;
     Procedure RetrieveKeys;
     Procedure AddFieldFlawComment;
@@ -92,7 +243,7 @@ type
     FInitBlocks: TStringList;
     FLastFieldBlock: TStringList;
     FieldComments: TStringList;
-    Function Label2Text(CONST ALabelName:String; ALabelRec:PLabelRec; NumSpc:Byte):String;
+    //Function Label2Text(CONST ALabelName:String; ALabelRec:PLabelRec; NumSpc:Byte):String;
     Procedure AddCommandList(sList:TStringList; CmdList:TList; Indent:Byte);
     procedure ChecksToStrings;
   public
@@ -105,6 +256,8 @@ type
     property    CheckLines:TStringList read FInitBlocks;            //Holds intire checkfile's lines after rewrite og create
   end;
 
+Procedure DisposeCommandList(AList:TList);
+
 
 implementation
 
@@ -115,7 +268,9 @@ implementation
 //  FileUnit,UExtUDF,epiUDFTypes;
 //  {$ENDIF}
 USES
-  UExtUDF,epiUDFTypes;
+  UEpiUtils,UExtUDF,epiUDFTypes;
+
+
 
 
 // ==============================  TParser =======================================
@@ -254,6 +409,10 @@ begin
   IF Assigned(FFieldNameList) THEN FFieldNameList.Free;
   Inherited Destroy;
 end;   //destroy
+
+Function TCheckObj.Translate(stringnumber:Integer; origstring:string):string;
+begin
+end;
 
 Function TCheckObj.GetErrorList: String;
 begin
@@ -403,7 +562,7 @@ begin
                 FOR n2:=n+1 TO MaxIndices DO
                   BEGIN
                     IF df.Indexfields[n2]<>-1
-                    THEN DEC(df[df.indexFields[n2]].FIndex);
+                    THEN df[df.indexFields[n2]].Index:=df[df.indexFields[n2]].Index-1;
                     df.IndexFields[n2-1]:=df.IndexFields[n2];
                     df.IndexIsUnique[n2-1]:=df.IndexIsUnique[n2];
                     df.IndexFields[n2]:=-1;
@@ -460,11 +619,11 @@ BEGIN
     DEFAULTVALUE x
     AUTOSEARCH [LIST] [SOUNDEX] FIELD1 [FIELD2 [FIELD3...]]
   }
-  IF df[df.FocusedField].Felttype<>ftQuestion THEN
+  IF df[df.FocusedField].Fieldtype<>ftQuestion THEN
     BEGIN
       tmpField:=TeField.Create;
-      tmpField.Felttype:=df[df.FocusedField].Felttype;
-      tmpField.FLength:=df[df.FocusedField].FLength;
+      tmpField.Fieldtype:=df[df.FocusedField].Fieldtype;
+      tmpField.Length:=df[df.FocusedField].Length;
       REPEAT
         CurCommand:=FParser.GetUpperToken(nwAny);  //  AnsiUpperCase(NextWord(nwAny));
         //n:=FFieldNameList.IndexOf(CurCommand);   HVORFOR ER DET TILFØJET??
@@ -473,18 +632,18 @@ BEGIN
         ELSE IF CurCommand='MISSINGVALUE' THEN RetrieveMissingValues
         ELSE IF CurCommand='DEFAULTVALUE' THEN RetrieveDefaultValue
         ELSE IF CurCommand='AUTOSEARCH'   THEN RetrieveAutosearch
-        ELSE IF CurCommand='MUSTENTER'   THEN tmpField.FMustEnter:=True
-        ELSE IF CurCommand='NOENTER'     THEN tmpField.FNoEnter:=True
+        ELSE IF CurCommand='MUSTENTER'   THEN tmpField.MustEnter:=True
+        ELSE IF CurCommand='NOENTER'     THEN tmpField.NoEnter:=True
         ELSE IF CurCommand='TOPOFSCREEN' THEN
           BEGIN
-            tmpField.FTopOfScreen:=True;
-            tmpField.FTopOfScreenLines:=0;
+            tmpField.TopOfScreen:=True;
+            tmpField.TopOfScreenLines:=0;
             CurCommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
-            IF (CurCommand<>'') AND (IsInteger(CurCommand)) THEN tmpField.FTopOfScreenLines:=StrToInt(CurCommand);
+            IF (CurCommand<>'') AND (IsInteger(CurCommand)) THEN tmpField.TopOfScreenLines:=StrToInt(CurCommand);
           END
         ELSE IF CurCommand='REPEAT'      THEN
           BEGIN
-            tmpField.FRepeat:=True;
+            tmpField.doRepeat:=True;
             df.HasRepeatField:=True;
           END
         ELSE IF (CurCommand='CODEFIELD') OR (CurCommand='CODES') THEN
@@ -494,10 +653,10 @@ BEGIN
           END
         ELSE IF CurCommand='AUTOJUMP'     THEN RetrieveAutoJump
         ELSE IF CurCommand='JUMPS'        THEN RetrieveJumps
-        ELSE IF CurCommand='COMMENT'      THEN RetrieveCommentLegal(tmpField.FValueLabel,tmpField.FCommentLegalRec,tmpField.FShowLegalPickList,False)
+        //ELSE IF CurCommand='COMMENT'      THEN RetrieveCommentLegal(tmpField.FValueLabel,tmpField.FCommentLegalRec,tmpField.FShowLegalPickList,False)
         ELSE IF CurCommand='TYPE'         THEN RetrieveType
         ELSE IF CurCommand='KEY'          THEN RetrieveKeys
-        ELSE IF CurCommand='CONFIRMFIELD' THEN tmpField.FConfirm:=True
+        ELSE IF CurCommand='CONFIRMFIELD' THEN tmpField.Confirm:=True
         ELSE IF CurCommand='ENTER'        THEN FTempResult:=True
 //          BEGIN
 //            ReportError(translate(22784));  //'ENTER command not supported. Please use BEFORE/AFTER ENTRY instead.'
@@ -536,42 +695,42 @@ BEGIN
             BEGIN
               IF AfterCmds<>NIL THEN DisposeCommandList(AfterCmds);
               IF BeforeCmds<>NIL THEN DisposeCommandList(BeforeCmds);
-              FMin:=tmpField.FMin;
-              FMax:=tmpField.FMax;
-              FLegal:=tmpField.FLegal;
-              FValueLabel:=tmpField.FValueLabel;
-              FMustEnter:=tmpField.FMustEnter;
-              FRepeat:=tmpField.FRepeat;
-              FDefaultValue:=tmpField.FDefaultValue;
-              FJumps:=tmpField.FJumps;
-              FJumpResetChar:=tmpField.FJumpResetChar;
-              FRangeDefined:=tmpField.FRangeDefined;
-              FFieldComments:=tmpField.FFieldComments;
-              FNoEnter:=tmpField.FNoEnter;
-              FIndex:=tmpField.FIndex;
-              FIsTypeStatusBar:=tmpField.FIsTypeStatusBar;
-              FTypeComments:=tmpField.FTypeComments;
-              FTypeString:=tmpField.FTypeString;
-              FTypeCommentField:=tmpField.FTypeCommentField;
-              FTypeCommentFieldStr:=tmpField.FTypeCommentFieldStr;
-              FTypeColor:=tmpField.FTypeColor;
-              FConfirm:=tmpField.FConfirm;
-              FCommentLegalRec:=tmpField.FCommentLegalRec;
-              FTopOfScreen:=tmpField.FTopOfScreen;
-              FTopOfScreenLines:=tmpField.FTopOfScreenLines;
-              FShowLegalPickList:=tmpField.FShowLegalPickList;
-              FPickListNoSelect:=tmpField.FPickListNoSelect;
+              Min:=tmpField.Min;
+              Max:=tmpField.Max;
+              Legal:=tmpField.Legal;
+              ValueLabel:=tmpField.ValueLabel;
+              MustEnter:=tmpField.MustEnter;
+              doRepeat:=tmpField.doRepeat;
+              DefaultValue:=tmpField.DefaultValue;
+              Jumps:=tmpField.Jumps;
+              JumpResetChar:=tmpField.JumpResetChar;
+              RangeDefined:=tmpField.RangeDefined;
+              FieldComments:=tmpField.FieldComments;
+              NoEnter:=tmpField.NoEnter;
+              Index:=tmpField.Index;
+              IsTypeStatusBar:=tmpField.IsTypeStatusBar;
+              TypeComments:=tmpField.TypeComments;
+              TypeString:=tmpField.TypeString;
+              TypeCommentField:=tmpField.TypeCommentField;
+              TypeCommentFieldStr:=tmpField.TypeCommentFieldStr;
+              TypeColor:=tmpField.TypeColor;
+              Confirm:=tmpField.Confirm;
+              //CommentLegalRec:=tmpField.CommentLegalRec;
+              TopOfScreen:=tmpField.TopOfScreen;
+              TopOfScreenLines:=tmpField.TopOfScreenLines;
+              ShowLegalPickList:=tmpField.ShowLegalPickList;
+              PickListNoSelect:=tmpField.PickListNoSelect;
               AfterCmds:=tmpField.AfterCmds;
               BeforeCmds:=tmpField.BeforeCmds;
-              IF NOT FHasGlobalMissing THEN
+              IF NOT HasGlobalMissing THEN
                 BEGIN
                   MissingValues[0]:=tmpField.MissingValues[0];
                   MissingValues[1]:=tmpField.MissingValues[1];
                   MissingValues[2]:=tmpField.MissingValues[2];
                 END;
-              FAutosearch:=tmpField.FAutosearch;
-              FAutoFields:=tmpField.FAutoFields;
-              FAutoList:=tmpField.FAutoList;
+              Autosearch:=tmpField.Autosearch;
+              AutoFields:=tmpField.AutoFields;
+              AutoList:=tmpField.AutoList;
             END;  //with
         END  //if TempResult
       ELSE
@@ -589,13 +748,14 @@ Procedure TCheckObj.RetrieveLabelBlock;
 BEGIN
   REPEAT
     CurCommand:=FParser.GetUpperToken(nwAny);  //  AnsiUpperCase(NextWord(nwAny));
-    IF CurCommand='LABEL' THEN RetrieveLabel;
+    //IF CurCommand='LABEL' THEN RetrieveLabel;  //TODO
   UNTIL (CurCommand='END') OR (FParser.EndOfLines);
   CurCommand:='';
 END;  //RetrieveLabelBlock
 
+{
 Procedure TCheckObj.RetrieveLabel;
-{Reads a LABEL..END block}
+  //Reads a LABEL..END block
 VAR
   FirstLabelRec,tmpLabelRec,NextLabelRec:PLabelRec;
   tmpLabelName:String[80];
@@ -620,7 +780,7 @@ BEGIN
               ELSE tmpLabelName:=tmpLabelName+'¤';
             END;
           REPEAT
-            {Read value}
+            //Read value
             CurCommand:=FParser.GetToken(nwAny);  //  NextWord(nwAny);
             IF Trim(CurCommand)='' THEN
               BEGIN
@@ -660,7 +820,7 @@ BEGIN
                   BEGIN
                     IF Length(CurCommand)>30 THEN CurCommand:=Copy(CurCommand,1,30);
                     tmpLabelRec^.Value:=CurCommand;
-                    {Read text}
+                    //Read text
                     CurCommand:=FParser.GetToken(nwSameLine);   //NextWord(nwSameLine);
                     IF trim(CurCommand)='' THEN
                       BEGIN
@@ -689,7 +849,7 @@ BEGIN
     END;
   CurCommand:='';
 END;  //TCheckObj.RetrieveLabel
-
+}
 
 Procedure TCheckObj.RetrieveAssertBlock;
 {Reads the CONSISTENCYBLOCK..END block - and ignores it...}
@@ -731,11 +891,11 @@ VAR
   AInfo,BInfo: PRelateInfo;
   bb,bb2,bb3:byte;
   tmpTxtColor,tmpBgColor: TColor;
-  tmpStr10: str10;
+  tmpStr10: string;
   tmpList1,tmpList2: TStringList;
   NumValues: Integer;
   //MisValues: Array[0..2] of String[10];
-  mv1, mv2, mv3: str15;
+  mv1, mv2, mv3: string;
   AField: TeField;
   TopDf: TEpiDataFile;
 BEGIN
@@ -999,8 +1159,8 @@ BEGIN
       END;  //case cmdHide or cmdUnhide
     cmdComLegal:
       BEGIN
-        tmpCmdRec.CommentLegalRec:=NIL;
-        RetrieveCommentLegal(tmpCmdRec.ValueLabel,tmpCmdRec.CommentLegalRec,tmpCmdRec.ShowList,True);
+        //tmpCmdRec.CommentLegalRec:=NIL;
+        //RetrieveCommentLegal(tmpCmdRec.ValueLabel,tmpCmdRec.CommentLegalRec,tmpCmdRec.ShowList,True);
         tmpCmdRec.clVarNumber:=df.FocusedField;
 //          IF tmpCmdRec.CommentLegalRec=NIL THEN ok:=False;
       END;  //case cmdComLegal
@@ -1037,7 +1197,7 @@ BEGIN
           BEGIN
             tmpCmdRec.FName:=CurCommand;
             tmpCmdRec.FNumDecimals:=0;
-            //Variable name passed all tests - now get the fieldtype
+            //Variable name passed all tests - now get the Fieldtype
             CurCommand:=FParser.GetUpperToken(nwSameLine);  // AnsiUpperCase(NextWord(nwSameLine));
             IF CurCommand='' THEN
               BEGIN
@@ -1058,7 +1218,7 @@ BEGIN
                     IF (NOT ok) OR (n2>1) THEN
                       BEGIN
                         ok:=False;
-                        ReportError(Translate(22776,'Error in fieldtype. Use # and maximum one . to define numeric'));
+                        ReportError(Translate(22776,'Error in Fieldtype. Use # and maximum one . to define numeric'));
                       END
                     ELSE
                       BEGIN
@@ -1085,9 +1245,9 @@ BEGIN
                 ELSE IF CurCommand='<YYYY/MM/DD>' THEN tmpCmdRec.Felttype:=ftYMDDate    //&&
                 ELSE
                   BEGIN
-                    //No legal fieldtype found
+                    //No legal Fieldtype found
                     ok:=False;
-                    ReportError(Translate(22778,'Illegal fieldtype in DEFINE command'));
+                    ReportError(Translate(22778,'Illegal Fieldtype in DEFINE command'));
                   END;
                 IF ok THEN
                   BEGIN
@@ -1105,7 +1265,7 @@ BEGIN
                         //All data concerning the DEFINE is read
                         //Now check is DEF-name is allready used
                         //Ignore the DEF if DEF is global and a global def-field with the
-                        //same fieldtype exists
+                        //same Fieldtype exists
                         glob_dub:=False;
                         tmpDefVar:=df.DefFieldsByName[tmpCmdRec.FName];
                         IF tmpDefVar<>NIL THEN
@@ -1118,12 +1278,12 @@ BEGIN
                               END;
                             IF (tmpCmdRec.FScope=scGlobal) AND (tmpDefVar.Scope=scGlobal) THEN
                               BEGIN
-                                IF NOT ( (tmpCmdRec.Felttype=tmpDefVar.Felttype)       AND
-                                     (tmpCmdRec.FLength=tmpDefVar.FLength)             AND
-                                     (tmpCmdRec.FNumDecimals=tmpDefVar.FNumDecimals) ) THEN
+                                IF NOT ( (tmpCmdRec.Felttype=tmpDefVar.Fieldtype)       AND
+                                     (tmpCmdRec.FLength=tmpDefVar.Length)             AND
+                                     (tmpCmdRec.FNumDecimals=tmpDefVar.NumDecimals) ) THEN
                                   BEGIN
                                     ok:=False;
-                                    ReportError(Translate(22773,'A global DEFINE with same fieldname but different fieldtype or length is allready defined'));
+                                    ReportError(Translate(22773,'A global DEFINE with same fieldname but different Fieldtype or length is allready defined'));
                                   END;
                               END;
                           END;
@@ -1134,9 +1294,9 @@ BEGIN
                         n:=-1;
                         IF tmpDefVar=NIL THEN tmpDefVar:=TeField.Create ELSE n:=0;
                         tmpDefVar.FieldName:=        tmpCmdRec.FName;
-                        tmpDefVar.Felttype:=     tmpCmdRec.Felttype;
-                        tmpDefVar.FLength:=      tmpCmdRec.FLength;
-                        tmpDefVar.FNumDecimals:= tmpCmdRec.FNumDecimals;
+                        tmpDefVar.Fieldtype:=     tmpCmdRec.Felttype;
+                        tmpDefVar.Length:=      tmpCmdRec.FLength;
+                        tmpDefVar.NumDecimals:= tmpCmdRec.FNumDecimals;
                         tmpDefVar.Scope:=       tmpCmdRec.FScope;
                         tmpDefVar.AsString:='';
                         IF n=-1 THEN
@@ -1147,7 +1307,7 @@ BEGIN
                           END;
                       END;
                   END;  //if ok - look for scope
-              END;  //if fieldtype was present
+              END;  //if Fieldtype was present
           END;  //if (variablename is) ok
       END;  //case cmdDefine.
     cmdAutosave: df.AutoSave:=True;
@@ -1171,12 +1331,12 @@ BEGIN
                 df.GlobalDefaultValue:=CurCommand;
                 for n:=0 TO df.NumFields-1 DO
                   BEGIN
-                    IF (df[n].Felttype in [ftInteger,ftAlfa,ftUpperAlfa,ftFloat,ftCrypt]) THEN
+                    IF (df[n].Fieldtype in [ftInteger,ftAlfa,ftUpperAlfa,ftFloat,ftCrypt]) THEN
                       BEGIN
-                        IF (tmpS='ALL') THEN df[n].FHasGlobalDefaultValue:=true
-                        ELSE IF (df[n].Felttype in [ftAlfa,ftUpperAlfa,ftCrypt]) AND ((tmpS='ALLSTRINGS') OR (tmpS='ALLSTRING')) THEN df[n].FHasGlobalDefaultValue:=true
-                        ELSE IF (df[n].Felttype in [ftInteger,ftFloat]) AND (tmpS='ALLNUMERIC') THEN df[n].FHasGlobalDefaultValue:=true;
-                      END;   //if relevant fieldtype
+                        IF (tmpS='ALL') THEN df[n].HasGlobalDefaultValue:=true
+                        ELSE IF (df[n].Fieldtype in [ftAlfa,ftUpperAlfa,ftCrypt]) AND ((tmpS='ALLSTRINGS') OR (tmpS='ALLSTRING')) THEN df[n].HasGlobalDefaultValue:=true
+                        ELSE IF (df[n].Fieldtype in [ftInteger,ftFloat]) AND (tmpS='ALLNUMERIC') THEN df[n].HasGlobalDefaultValue:=true;
+                      END;   //if relevant Fieldtype
                   END;  //for
               END
           END
@@ -1221,10 +1381,10 @@ BEGIN
                               FOR n2:=fieldFrom TO fieldTo DO
                                 BEGIN
                                   AField:=df[n2];
-                                  IF (AField.Felttype<>ftQuestion) THEN
+                                  IF (AField.Fieldtype<>ftQuestion) THEN
                                     BEGIN
-                                      AField.FDefaultValue:=tmpS;
-                                      AField.FHasGlobalDefaultValue:=true;
+                                      AField.DefaultValue:=tmpS;
+                                      AField.HasGlobalDefaultValue:=true;
                                     END;  //if not question field
                                 END;  //for
                             END;  //if all fields are known
@@ -1240,10 +1400,10 @@ BEGIN
                           ELSE
                             BEGIN
                               AField:=df[fieldFrom];
-                              IF (AField.Felttype<>ftQuestion) THEN
+                              IF (AField.Fieldtype<>ftQuestion) THEN
                                 BEGIN
-                                  Afield.FHasGlobalDefaultValue:=True;
-                                  AField.FDefaultValue:=tmpS;
+                                  Afield.HasGlobalDefaultValue:=True;
+                                  AField.DefaultValue:=tmpS;
                                 END;  //if not question field
                             END;  //if field is found
                         END;  //if single fieldname
@@ -1347,9 +1507,9 @@ BEGIN
                               FOR n2:=fieldFrom TO fieldTo DO
                                 BEGIN
                                   AField:=df[n2];
-                                  IF (AField.Felttype in [ftInteger,ftFloat]) THEN
+                                  IF (AField.Fieldtype in [ftInteger,ftFloat]) THEN
                                     BEGIN
-                                      Afield.FHasGlobalMissing:=True;
+                                      Afield.HasGlobalMissing:=True;
                                       CASE NumValues OF
                                         1: AField.MissingValues[0]:=mv1;
                                         2: BEGIN
@@ -1379,11 +1539,11 @@ BEGIN
                           ELSE
                             BEGIN
                               AField:=df[fieldFrom];
-                              IF (AField.Felttype in [ftInteger,ftFloat]) THEN
+                              IF (AField.Fieldtype in [ftInteger,ftFloat]) THEN
                                 BEGIN
                                   //FOR n3:=0 TO NumValues DO
                                   //  AField^.FMissingValues[n3]:=MisValues[n3];
-                                  Afield.FHasGlobalMissing:=True;
+                                  Afield.HasGlobalMissing:=True;
                                   CASE NumValues OF
                                     1: AField.MissingValues[0]:=mv1;
                                     2: BEGIN
@@ -1469,7 +1629,7 @@ BEGIN
                       tmpS:=tmpS+CurCommand;
                     UNTIL CurCommand='';
                   END;  //if CurCommand<>''
-                IF ok THEN tmpField.FTypeString:=True;
+                IF ok THEN tmpField.TypeString:=True;
               END;
           END;
       END;  //case cmdTypeString
@@ -1778,13 +1938,13 @@ BEGIN
                 //Check if field is KEY UNIQUE
                 IF n=df.FocusedField THEN
                   BEGIN
-                    n2:=tmpField.FIndex;
+                    n2:=tmpField.Index;
                     IF n2=0 THEN ok:=FALSE
                     ELSE IF df.IndexIsUnique[n2]=False THEN ok:=False;
                   END
                 ELSE
                   BEGIN
-                    n2:=df[n].FIndex;
+                    n2:=df[n].Index;
                     IF n2=0 THEN ok:=False
                     ELSE IF df.IndexIsUnique[n2]=False THEN ok:=False;
                   END;
@@ -1898,8 +2058,8 @@ BEGIN
       FTempResult:=False;
       IF cmd=cmdIF THEN
         BEGIN
-          IF tmpCmdRec.IfCmds<>NIL THEN DestroyFieldList(tmpCmdRec.IfCmds);
-          IF tmpCmdRec.ElseCmds<>NIL THEN DestroyFieldList(tmpCmdRec.ElseCmds);
+          //IF tmpCmdRec.IfCmds<>NIL THEN DestroyFieldList(tmpCmdRec.IfCmds);
+          //IF tmpCmdRec.ElseCmds<>NIL THEN DestroyFieldList(tmpCmdRec.ElseCmds);
         END;
     END;
 END;  //GetCommand
@@ -1966,8 +2126,8 @@ BEGIN
       {$ENDIF}
       RangeResult:=False;
     END
-  ELSE tmpField.FMin:=CurCommand;
-  IF tmpField.FMin='-INFINITY' THEN tmpField.FMin:='';
+  ELSE tmpField.Min:=CurCommand;
+  IF tmpField.Min='-INFINITY' THEN tmpField.Min:='';
   {Get maxinum value}
   CurCommand:=FParser.GetUpperToken(nwSameLine);  // AnsiUpperCase(NextWord(nwSameLine));
   IF CurCommand='' THEN
@@ -1977,18 +2137,18 @@ BEGIN
       {$ENDIF}
       RangeResult:=False;
     END
-  ELSE tmpField.FMax:=CurCommand;
-  IF tmpField.FMax='INFINITY' THEN tmpField.FMax:='';
+  ELSE tmpField.Max:=CurCommand;
+  IF tmpField.Max='INFINITY' THEN tmpField.Max:='';
 
-  {Check if range values are compliant with fieldtype}
-  IF (tmpField.FMin<>'') AND (NOT IsCompliant(tmpField.FMin,tmpField.Felttype)) THEN
+  {Check if range values are compliant with Fieldtype}
+  IF (tmpField.Min<>'') AND (NOT IsCompliant(tmpField.Min,tmpField.Fieldtype)) THEN
     BEGIN
       {$IFNDEF epidat}
       ReportError(translate(22716,'Minimum value is not compatible with this type of field'));  //'Minimum value is not compatible with this type of field'
       {$ENDIF}
       RangeResult:=False;
     END;
-  IF (RangeResult) AND (tmpField.FMax<>'') AND (NOT IsCompliant(tmpField.FMax,tmpField.Felttype)) THEN
+  IF (RangeResult) AND (tmpField.Max<>'') AND (NOT IsCompliant(tmpField.Max,tmpField.Fieldtype)) THEN
     BEGIN
       {$IFNDEF epidat}
       ReportError(translate(22718,'Maximum value is not compatible with this type of field'));  //'Maximum value is not compatible with this type of field'
@@ -2000,12 +2160,12 @@ BEGIN
     BEGIN
       WITH tmpField DO
         BEGIN
-          IF FMin='' THEN tmpS:='-INF-' ELSE tmpS:=FMin+'-';
-          IF FMax='' THEN tmpS:=tmpS+'INF' ELSE tmpS:=tmpS+FMax;
-          FRangeDefined:=True;
-          IF FLegal='' THEN FLegal:=tmpS
-          ELSE FLegal:=tmpS+','+FLegal;
-          FLegal:=RemoveQuotes(FLegal);
+          IF Min='' THEN tmpS:='-INF-' ELSE tmpS:=Min+'-';
+          IF Max='' THEN tmpS:=tmpS+'INF' ELSE tmpS:=tmpS+Max;
+          RangeDefined:=True;
+          IF Legal='' THEN Legal:=tmpS
+          ELSE Legal:=tmpS+','+Legal;
+          Legal:=RemoveQuotes(Legal);
         END;
     END
   ELSE FTempResult:=False;
@@ -2056,25 +2216,25 @@ BEGIN
           END
         ELSE
           BEGIN    //Fieldname came after the USE command
-            IF df[n].FRangeDefined THEN
+            IF df[n].RangeDefined THEN
               BEGIN
-                LegList.CommaText:=df[n].FLegal;
+                LegList.CommaText:=df[n].Legal;
                 LegList.Delete(0);
-                tmpField.FLegal:=RemoveQuotes(LegList.Commatext);
+                tmpField.Legal:=RemoveQuotes(LegList.Commatext);
               END
-            ELSE tmpField.FLegal:=df[n].FLegal;
+            ELSE tmpField.Legal:=df[n].Legal;
             UsedUse:=True;
             StopGet:=True;
           END;
       END  //the word USE was found
     ELSE IF CurCommand<>'' THEN
       BEGIN
-        IF IsCompliant(CurCommand,df[df.FocusedField].Felttype)
+        IF IsCompliant(CurCommand,df[df.FocusedField].Fieldtype)
         THEN LegList.Add(CurCommand)
         ELSE
           BEGIN
             {$IFNDEF epidat}
-            ReportError(translate(22710,'Legal value is not compatible with this fieldtype'));  //'Legal value is not compatible with this fieldtype'
+            ReportError(translate(22710,'Legal value is not compatible with this Fieldtype'));  //'Legal value is not compatible with this Fieldtype'
             {$ENDIF}
             LegalResult:=False;
           END;
@@ -2087,9 +2247,9 @@ BEGIN
         BEGIN
           IF NOT UsedUse THEN
             BEGIN
-              IF FLegal='' THEN FLegal:=LegList.CommaText
-              ELSE FLegal:=FLegal+','+LegList.CommaText;
-              FLegal:=RemoveQuotes(FLegal);
+              IF Legal='' THEN Legal:=LegList.CommaText
+              ELSE Legal:=Legal+','+LegList.CommaText;
+              Legal:=RemoveQuotes(Legal);
             END;
         END;  //with
     END
@@ -2113,7 +2273,7 @@ BEGIN
       ReportError(translate(22730,'Unknown fieldname in AUTOJUMP command'));  //'Unknown fieldname in AUTOJUMP command'
       FTempResult:=False;
     END
-  ELSE tmpField.FJumps:='AUTOJUMP '+CurCommand;
+  ELSE tmpField.jumps:='AUTOJUMP '+CurCommand;
   CurCommand:='';
 END;  //procedure RetrieveAutojump
 
@@ -2142,9 +2302,9 @@ BEGIN
           END
         ELSE
           BEGIN
-            tmpField.FJumpResetChar:=#32;
+            tmpField.JumpResetChar:=#32;
             CurCommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
-            IF Length(CurCommand)=1 THEN tmpField.FJumpResetChar:=CurCommand[1];
+            IF Length(CurCommand)=1 THEN tmpField.JumpResetChar:=CurCommand[1];
           END;
       END;
     {Read value}
@@ -2160,7 +2320,7 @@ BEGIN
     IF CurCommand='END' THEN StopGet:=True
     ELSE IF CurCommand<>'' THEN
       BEGIN
-        CASE tmpField.FeltType OF
+        CASE tmpField.Fieldtype OF
           ftInteger,ftIDNUM: IF IsInteger(CurCommand)
                              THEN tmpS:=trim(CurCommand)+'>'
                              ELSE JumpsResult:=False;
@@ -2172,7 +2332,7 @@ BEGIN
           ftYMDDate,                  //&&
           ftDate,ftEuroDate: BEGIN
                                tmpS:=CurCommand;
-                               IF mibIsDate(tmpS,tmpField.Felttype)
+                               IF mibIsDate(tmpS,tmpField.Fieldtype)
                                THEN tmpS:=tmpS+'>'
                                ELSE JumpsResult:=False;
                              END;
@@ -2225,34 +2385,34 @@ BEGIN
       END;  //else
   UNTIL StopGet;
 
-  IF JumpsResult THEN tmpField.FJumps:=RemoveQuotes(LegList.CommaText)
+  IF JumpsResult THEN tmpField.jumps:=RemoveQuotes(LegList.CommaText)
   ELSE FTempResult:=False;
   CurCommand:='';
 END;  //Procedure RetrieveJumps
 
 procedure TCheckObj.RetrieveMissingValues;
 VAR
-  s1,s2,s3: str15;
+  s1,s2,s3: string;
 BEGIN
   //Syntax:  MISSINGVALUE x [x [x]]  where x is str10
   s1:=FParser.GetToken(nwSameLine);
   s2:=FParser.GetToken(nwSameLine);
   s3:=FParser.GetToken(nwSameLine);
-  IF (Length(s1)>tmpField.FLength)
-  OR (Length(s2)>tmpField.FLength)
-  OR (Length(s3)>tmpField.FLength) THEN
+  IF (Length(s1)>tmpField.Length)
+  OR (Length(s2)>tmpField.Length)
+  OR (Length(s3)>tmpField.Length) THEN
     BEGIN
       FTempResult:=False;
       ReportError(translate(22852,'Value is too wide for field'));   //22852=Value is too wide for field
     END;
   IF FTempResult THEN
     BEGIN
-      IF ((s1<>'') AND (NOT IsCompliant(s1,tmpField.Felttype)))
-      OR ((s2<>'') AND (NOT IsCompliant(s2,tmpField.Felttype)))
-      OR ((s3<>'') AND (NOT IsCompliant(s3,tmpField.Felttype))) THEN
+      IF ((s1<>'') AND (NOT IsCompliant(s1,tmpField.Fieldtype)))
+      OR ((s2<>'') AND (NOT IsCompliant(s2,tmpField.Fieldtype)))
+      OR ((s3<>'') AND (NOT IsCompliant(s3,tmpField.Fieldtype))) THEN
         BEGIN
           FTempResult:=False;
-          ReportError(translate(22710,'Value is not compatible with this fieldtype'));  //'Value is not compatible with this fieldtype');
+          ReportError(translate(22710,'Value is not compatible with this Fieldtype'));  //'Value is not compatible with this Fieldtype');
         END;
     END;
   IF FTempResult THEN
@@ -2266,24 +2426,24 @@ END;  //procedure TCheckObj.RetrieveMissingValues
 
 procedure TCheckObj.RetrieveDefaultValue;
 VAR
-  s1,s2,s3: str15;
+  s1,s2,s3: string;
 BEGIN
   //Syntax:  DEFAULTVALUE x where x is string
   s1:=FParser.GetToken(nwSameLine);
-  IF (length(s1)>tmpField.FLength) THEN
+  IF (length(s1)>tmpField.Length) THEN
     BEGIN
       FTempResult:=False;
       ReportError(translate(22852,'Value is too wide for field'));   //22852=Value is too wide for field
     END
   ELSE
     BEGIN
-      IF ((s1<>'') AND (NOT IsCompliant(s1,tmpField.Felttype))) THEN
+      IF ((s1<>'') AND (NOT IsCompliant(s1,tmpField.Fieldtype))) THEN
         BEGIN
           FTempResult:=False;
-          ReportError(translate(22710,'Value is not compatible with this fieldtype'));  //'Value is not compatible with this fieldtype');
+          ReportError(translate(22710,'Value is not compatible with this Fieldtype'));  //'Value is not compatible with this Fieldtype');
         END;
     END;
-  IF FTempResult THEN tmpField.FDefaultValue:=s1;
+  IF FTempResult THEN tmpField.DefaultValue:=s1;
 END;  //procedure TCheckObj.RetrieveDefaultValues
 
 
@@ -2291,15 +2451,15 @@ Procedure TCheckObj.RetrieveAutosearch;
 VAR
   n:Integer;
 BEGIN
-  tmpField.FAutoFields:='';
+  tmpField.AutoFields:='';
   CurCommand:=FParser.GetUpperToken(nwSameLine);
   IF (CurCommand='LIST') OR (CurCommand='SOUNDEX') THEN
     BEGIN
-      IF CurCommand='LIST' THEN tmpField.FAutoList:=True;
+      IF CurCommand='LIST' THEN tmpField.AutoList:=True;
       CurCommand:=FParser.GetUpperToken(nwSameLine);
       IF (CurCommand='LIST') OR (CurCommand='SOUNDEX') THEN
         BEGIN
-          IF CurCommand='LIST' THEN tmpField.FAutoList:=True;
+          IF CurCommand='LIST' THEN tmpField.AutoList:=True;
           CurCommand:=FParser.GetUpperToken(nwSameLine);
         END;  //if
     END;  //if
@@ -2311,15 +2471,15 @@ BEGIN
         ReportError(Translate(22708,'Unknown fieldname'));
         Exit;
       END
-    ELSE tmpField.FAutoFields:=tmpField.FAutoFields+IntToStr(n)+',';
+    ELSE tmpField.AutoFields:=tmpField.AutoFields+IntToStr(n)+',';
     CurCommand:=FParser.GetToken(nwSameLine);
   UNTIL (CurCommand='') or (FTempResult=False);
-  IF tmpField.FAutoFields[Length(tmpField.FAutoFields)]=','
-  THEN tmpField.FAutoFields:=Copy(tmpField.FAutoFields,1,Length(tmpField.FAutoFields)-1);
-  tmpField.FAutosearch:=True;
+  IF tmpField.AutoFields[Length(tmpField.AutoFields)]=','
+  THEN tmpField.AutoFields:=Copy(tmpField.AutoFields,1,Length(tmpField.AutoFields)-1);
+  tmpField.Autosearch:=True;
 END;  //procedure TCheckObj.RetrieveAutosearch
 
-
+{
 Procedure TCheckObj.RetrieveCommentLegal(VAR AValueLabel:ShortString; VAR ACommentLegalRec: PLabelRec; VAR ShowList:Boolean; AsCommand:Boolean);
 VAR
   s,s2,LabelName,tmpS2,peekErrors: String;       //&&
@@ -2347,7 +2507,7 @@ BEGIN
   3. COMMENT LEGAL USE fieldname
 
   4. COMMENT LEGAL datafilename    }
-
+  {
   ShowList:=False;
   CurCommand:=FParser.GetUpperToken(nwSameLine);  // AnsiUpperCase(NextWord(nwSameLine));
   IF CurCommand<>'LEGAL' THEN
@@ -2360,7 +2520,7 @@ BEGIN
       CurCommand:=FParser.GetUpperToken(nwSameLine);  // AnsiUpperCase(NextWord(nwSameLine));
       IF (CurCommand='') OR (CurCommand='SHOW') THEN
         BEGIN
-          {1. scenario: COMMENT LEGAL...END Structure}
+          //1. scenario: COMMENT LEGAL...END Structure
           IF CurCommand='SHOW' THEN ShowList:=True;
           StopRead:=False;
           ok:=True;
@@ -2368,7 +2528,7 @@ BEGIN
           tmpLabelRec:=NIL;
           FirstLabelRec:=NIL;
           REPEAT
-            {Read value}
+            //Read value
             CurCommand:=FParser.GetToken(nwAny);  // NextWord(nwAny);
             IF AnsiUpperCase(CurCommand)='END' THEN StopRead:=True
             ELSE IF trim(CurCommand)<>'' THEN
@@ -2399,13 +2559,13 @@ BEGIN
                         IF Length(s)>30 THEN tmpLabelRec^.Text:=Copy(s,31,length(s));
                       END
                   END
-                ELSE IF Length(trim(CurCommand))>tmpField.FLength THEN
+                ELSE IF Length(trim(CurCommand))>tmpField.Length THEN
                   BEGIN
                     StopRead:=True;
                     FTempResult:=False;
                     ReportError(translate(22852,'Value is too wide for field'));   //22852=Value is too wide for field
                   END
-                ELSE IF IsCompliant(trim(CurCommand),tmpField.Felttype) THEN
+                ELSE IF IsCompliant(trim(CurCommand),tmpField.Fieldtype) THEN
                   BEGIN
                     NextLabelRec:=tmpLabelRec;
                     New(tmpLabelRec);
@@ -2418,7 +2578,7 @@ BEGIN
                     ELSE NextLabelRec^.Next:=tmpLabelRec;
                     IF Length(CurCommand)>30 THEN CurCommand:=Copy(CurCommand,1,30);
                     tmpLabelRec^.Value:=trim(CurCommand);
-                    {Read text}
+                    //Read text
                     CurCommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
                     IF trim(CurCommand)='' THEN
                       BEGIN
@@ -2431,12 +2591,12 @@ BEGIN
                         WHILE pos('"',CurCommand)>0 DO Delete(CurCommand,Pos('"',CurCommand),1);
                         tmpLabelRec^.Text:=CurCommand;
                       END;
-                  END  //if value is compliant with fieldtype
+                  END  //if value is compliant with Fieldtype
                 ELSE
                   BEGIN
                     StopRead:=True;
                     FTempResult:=False;
-                    ReportError(translate(22710,'Value is not compatible with this fieldtype'));  //'Value is not compatible with this fieldtype');
+                    ReportError(translate(22710,'Value is not compatible with this Fieldtype'));  //'Value is not compatible with this Fieldtype');
                   END;
               END  //if curCommand<>END and CurCommand<>''
             ELSE
@@ -2518,8 +2678,8 @@ BEGIN
                 BEGIN
                   IF ALabelRec^.Value[1]<>'*' THEN   //###
                     BEGIN
-                      IF Length(trim(ALabelRec^.Value))>tmpField.FLength THEN TooLong:=True;
-                      IF (NOT IsCompliant(trim(ALabelRec^.Value),tmpField.Felttype)) THEN NotCompatible:=True;
+                      IF Length(trim(ALabelRec^.Value))>tmpField.Length THEN TooLong:=True;
+                      IF (NOT IsCompliant(trim(ALabelRec^.Value),tmpField.Fieldtype)) THEN NotCompatible:=True;
                     END;
                   ALabelRec:=ALabelRec^.Next
                 END;
@@ -2527,7 +2687,7 @@ BEGIN
                 BEGIN
                   StopRead:=True;
                   FTempResult:=False;
-                  ReportError(translate(22710,'Value is not compatible with this fieldtype'));  //'Value is not compatible with this fieldtype');
+                  ReportError(translate(22710,'Value is not compatible with this Fieldtype'));  //'Value is not compatible with this Fieldtype');
                 END  //if NotCompatible
               ELSE IF TooLong THEN
                 BEGIN
@@ -2568,7 +2728,7 @@ BEGIN
                 END
               ELSE
                 BEGIN
-                  {Comment Legal datafilename structure found}
+                  //Comment Legal datafilename structure found
                   CurCommand:=FParser.GetUpperToken(nwSameLine);  //AnsiUpperCase(NextWord(nwSameLine));
                   IF CurCommand='SHOW' THEN ShowList:=True;
                   TRY
@@ -2605,18 +2765,18 @@ BEGIN
                         n:=df.ValueLabels.IndexOf(Labelname);
                         IF n>-1 THEN
                           BEGIN
-                            {Labels are already loaded}
+                            //Labels are already loaded
                             AValueLabel:=df.ValueLabels[n];
                             ACommentLegalRec:=PLabelRec(df.ValueLabels.Objects[n]);
                           END
                         ELSE
                           BEGIN
-                            {Applyindex, sort index and read records into PLabelRec}
+                            //Applyindex, sort index and read records into PLabelRec
                             AssignFile(F,ComLegdf.IndexFilename);
                             Reset(F);
                             Read(F,s30);
                             CloseFile(F);
-                            {Get number of index fields}
+                            //Get number of index fields
                             s30:=s30+'@';
                             s2:=Copy(s30,1,Pos('@',s30)-1);
                             IF (Length(s2)>0) AND (IsInteger(s2))
@@ -2682,15 +2842,15 @@ BEGIN
                                     //CloseFile(F2);
                                   END;
                               END;
-                          END;  {if apply index}
+                          END;  //if apply index
                       END;  //if indexfile could be opened
                     ComLegDf.Free;
                   EXCEPT
                     ReportError(Format(Translate(22836,'Datafile %s could not be applied as a comment legal.~This could be caused by low memory'),[s]));
-                    {$I-}
+                    {$I-
                     CloseFile(F);
                     n:=IOResult;
-                    {$I+}
+                    {$I+
                     FTempResult:=False;
                     CurCommand:='';
                     ComLegDf.Free;
@@ -2702,7 +2862,7 @@ BEGIN
     END;  //the word LEGAL was found
   CurCommand:='';
 END;   //RetrieveCommentLegal
-
+}
 
 Procedure TCheckObj.RetrieveType;
 VAR
@@ -2720,7 +2880,7 @@ BEGIN
     BEGIN
       IF AnsiUpperCase(CurCommand)='STATUSBAR' THEN
         BEGIN
-          tmpField.FIsTypeStatusBar:=True;
+          tmpField.IsTypeStatusBar:=True;
           CurCommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
           df.TypeStatusBarText:=CurCommand;
           df.TypeStatusBarColor:=2;   //clBlue;
@@ -2739,17 +2899,17 @@ BEGIN
                      TYPE COMMENT colour
                      TYPE COMMENT fieldname
                      TYPE COMMENT ALLFIELDS}
-          tmpField.FTypeComments:=True;
-          tmpField.FTypeColor:=2;   //clBlue
+          tmpField.TypeComments:=True;
+          tmpField.TypeColor:=2;   //clBlue
           {Next word can be either a fieldname or a colour}
           {if not a fieldname then next word is interpreted as a colour}
           CurCommand:=FParser.GetToken(nwSameLine);  //NextWord(nwSameLine);
           IF AnsiUpperCase(CurCommand)='ALLFIELDS' THEN
             BEGIN
               df.GlobalTypeCom:=True;
-              tmpField.FTypeCommentField:=-2;
-              tmpField.FTypeCommentFieldStr:='';
-              tmpField.FTypeComments:=False;
+              tmpField.TypeCommentField:=-2;
+              tmpField.TypeCommentFieldStr:='';
+              tmpField.TypeComments:=False;
               CurCommand:=FParser.GetUpperToken(nwSameLine);   //Get the color
               IF CurCommand<>'' THEN
                 BEGIN
@@ -2763,22 +2923,22 @@ BEGIN
               rN:=df.FieldNumbers[CurCommand];
               IF rN<>-1 THEN
                 BEGIN
-                  {IF (PeField(df^.FieldList.Items[rN])^.Felttype<>ftAlfa)
-                  AND (PeField(df^.FieldList.Items[rN])^.Felttype<>ftUpperAlfa) THEN
+                  {IF (PeField(df^.FieldList.Items[rN])^.Fieldtype<>ftAlfa)
+                  AND (PeField(df^.FieldList.Items[rN])^.Fieldtype<>ftUpperAlfa) THEN
                     BEGIN
                       ReportError(translate(22838));   //'Can only TYPE COMMENTs to textfields'
                       TempResult:=False;
                     END;}
-                  tmpField.FTypeCommentField:=rN;
-                  tmpField.FTypeCommentFieldStr:=CurCommand;
-                  tmpField.FTypeComments:=False;
+                  tmpField.TypeCommentField:=rN;
+                  tmpField.TypeCommentFieldStr:=CurCommand;
+                  tmpField.TypeComments:=False;
                   CurCommand:='';
                 END;
               IF CurCommand<>'' THEN
                 BEGIN
-                  tmpField.FTypecolor:=-1;
+                  tmpField.Typecolor:=-1;
                   FOR rn:=0 TO 17 DO
-                    IF AnsiUppercase(CurCommand)=ColorNames[rn] THEN tmpField.FTypeColor:=rn;
+                    IF AnsiUppercase(CurCommand)=ColorNames[rn] THEN tmpField.TypeColor:=rn;
     {                IF tmpField^.FTypeColor=-1 THEN
                     BEGIN
                       ReportError(translate(22745));    //'Unknown fieldname or colour'
@@ -2840,7 +3000,7 @@ BEGIN
       IF (Number>0) AND (Number<=MaxIndices)
         THEN IF df.IndexFields[Number]=df.FocusedField THEN
           BEGIN
-            tmpField.FIndex:=Number;
+            tmpField.Index:=Number;
             Exit;
           END;
       {Test if FocusedField occupies a Index-slot}
@@ -2891,7 +3051,7 @@ BEGIN
             END;
         END;
       df.IndexCount:=df.IndexCount+1;
-      tmpField.FIndex:=Number;
+      tmpField.Index:=Number;
       df.IndexFields[Number]:=df.FocusedField;
       df.IndexIsUnique[Number]:=IsUnique;
     END;  //if TempResult
@@ -2933,7 +3093,7 @@ Procedure TCheckObj.HandleBooleanConditions(VAR s:String);
 VAR
   ts,FieldS: String;
   Hn,Hn2: Integer;
-  tmpFieldType: TFeltTyper;
+  tmpFieldtype: TFieldtypes;
   HtmpDefVar: TeField;
   HFound: Boolean;
 
@@ -2967,15 +3127,15 @@ BEGIN
         IF FieldS<>'' THEN
           BEGIN
             //is FieldS a boolean field?
-            tmpFieldType:=ftInteger;
+            tmpFieldtype:=ftInteger;
             Hn2:=df.FieldNumbers[FieldS];
-            IF Hn2<>-1 THEN tmpFieldtype:=df[Hn2].Felttype
+            IF Hn2<>-1 THEN tmpFieldtype:=df[Hn2].Fieldtype
             ELSE
               BEGIN
                 HtmpDefVar:=df.DefFieldsByName[FieldS];
-                IF HtmpDefVar<>NIL THEN tmpFieldtype:=HtmpDefVar.Felttype;
+                IF HtmpDefVar<>NIL THEN tmpFieldtype:=HtmpDefVar.Fieldtype;
               END;
-            IF tmpFieldType=ftBoolean THEN
+            IF tmpFieldtype=ftBoolean THEN
               BEGIN
                 //Found a boolean field that is testet against "Y" or "N"
                 Delete(s,Hn,Length(ts));
@@ -2984,7 +3144,7 @@ BEGIN
                 IF ts='="N"'  THEN insert('=False',s,Hn);
                 IF ts='= "N"' THEN insert('= False',s,Hn);
                 HFound:=True;
-              END;  //if tmpFieldType=ftBoolean
+              END;  //if tmpFieldtype=ftBoolean
           END;  //if FieldS<>'
         IF NOT HFound THEN s[Hn]:=#254;
       END;  //if ts<>''
@@ -3002,13 +3162,14 @@ BEGIN
   IF FCheckFileMode THEN
     BEGIN
       FieldComments:=TStringList.Create;
-      FieldComments.Text:=tmpField.FFieldComments;
+      FieldComments.Text:=tmpField.FieldComments;
       FieldComments.Append(FParser.GetWholeLine);
-      tmpField.FFieldComments:=FieldComments.Text;
+      tmpField.FieldComments:=FieldComments.Text;
       Fieldcomments.Free;
     END;
 END;  //Procedure AddFieldComment
 
+{
 Function TCheckObj.Translate(stringnumber: Integer; origstring:string):string;
 VAR
   s:String;
@@ -3022,6 +3183,7 @@ BEGIN
   ELSE Result:=origstring;
   if result='' then result:=origstring;
 END;
+}
 
 //******************************* Misc. functions *************************
 
@@ -3102,10 +3264,10 @@ VAR
           cmdComLegal:
             BEGIN
               tmpS:=AnsiLowerCase(cmd^.ValueLabel);
-              w:=df.ValueLabels.IndexOf(tmpS);
-              IF (w<>-1) AND (LegalList.IndexOf(tmpS)=-1)
-              AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
-              THEN LegalList.AddObject(tmpS,df.ValueLabels.Objects[w]);
+              //w:=df.ValueLabels.IndexOf(tmpS);   //TODO incl. næste 3 linier
+              //IF (w<>-1) AND (LegalList.IndexOf(tmpS)=-1)
+              //AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
+              //THEN LegalList.AddObject(tmpS,df.ValueLabels.Objects[w]);
             END;
         END;  //case
       END;  //for
@@ -3126,11 +3288,14 @@ BEGIN  //ChecksToStrings
     FOR sN:=0 TO df.NumFields-1 do
       BEGIN
         AField:=df.Fields[sN];
-        tmpS:=AnsiLowerCase(trim(AField.FValueLabel));
+        tmpS:=AnsiLowerCase(AField.ValueLabel.Name);
+        //TODO!!!
+        {
         sN2:=df.ValueLabels.IndexOf(tmpS);
         IF (sN2<>-1) AND (LegalList.IndexOf(tmpS)=-1)
         AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
         THEN LegalList.AddObject(tmpS,df.ValueLabels.Objects[sN2]);
+        }
         {Check if fields has commands that contains comment legals}
         IF AField.AfterCmds<>NIL THEN LabelsInCommands(AField.AfterCmds);
         IF AField.BeforeCmds<>NIL THEN LabelsInCommands(AField.BeforeCmds);
@@ -3140,7 +3305,7 @@ BEGIN  //ChecksToStrings
       BEGIN
         sList.Append('LABELBLOCK');
         FOR sN:=0 TO LegalList.Count-1 DO
-          sList.Append(Label2Text(LegalList[sN],PLabelRec(LegalList.Objects[sN]),2));
+          //sList.Append(Label2Text(LegalList[sN],PLabelRec(LegalList.Objects[sN]),2));
         sList.Append('END');  //of labelblock
         sList.Append('');
       END;  //if LegalList.Count>0
@@ -3210,7 +3375,7 @@ end;
 Procedure TCheckWriter.FieldBlockToStrings(FieldNo:Integer; Indent:Byte);
 VAR
   LegalList: TStrings;
-  Autolist: TStringList;
+  tmpAutoList: TStringList;
   tmpS,IndStr: String;
   sN2,sN3:Integer;
   AField,AField2: TeField;
@@ -3224,71 +3389,71 @@ BEGIN
     AField:=df.Fields[FieldNo];
     WITH AField DO
     BEGIN
-      FMin:=Trim(FMin);
-      FMax:=Trim(FMax);
+      Min:=Trim(Min);
+      Max:=Trim(Max);
       IF HasCheckProperties THEN
         BEGIN
           sList.Add(IndStr+trim(FieldName));
           {Write fieldblock comments}
-          IF FFieldComments<>'' THEN
+          IF FieldComments<>'' THEN
           BEGIN
-            FieldComments.Text:=FFieldComments;
-            sList.AddStrings(FieldComments);
+            //FieldComments.Text:=FFieldComments;  //TODO
+            //sList.AddStrings(FieldComments);
           END;
 
           {Write index key}
-          IF FIndex>0 THEN
+          IF Index>0 THEN
             BEGIN
               tmpS:=IndStr+'  KEY ';
-              IF df.IndexIsUnique[FIndex] THEN tmpS:=tmpS+'UNIQUE ';
-              tmpS:=tmpS+IntToStr(FIndex);
+              IF df.IndexIsUnique[Index] THEN tmpS:=tmpS+'UNIQUE ';
+              tmpS:=tmpS+IntToStr(Index);
               sList.Add(tmpS);
             END;
           {Write autosearch}
-          IF FAutosearch THEN
+          IF Autosearch THEN
             BEGIN
               tmpS:=IndStr+'  Autosearch ';
-              IF FAutoList THEN tmpS:=tmpS+' LIST ';
+              IF AutoList THEN tmpS:=tmpS+' LIST ';
               TRY
-                autolist:=TStringList.Create;
-                autolist.CommaText:=FAutoFields;
-                FOR sN2:=0 TO autolist.count-1 DO
+                tmpAutoList:=TStringList.Create;
+                tmpAutoList.CommaText:=AutoFields;
+                FOR sN2:=0 TO tmpAutoList.count-1 DO
                   BEGIN
-                    AField2:=df.Fields[StrToInt(autoList[sN2])];
+                    AField2:=df.Fields[StrToInt(tmpAutoList[sN2])];
                     tmpS:=tmpS+trim(AField2.FieldName)+' ';
                   END;
               FINALLY
-                autolist.Free;
+                tmpAutoList.Free;
               END;
               sList.Add(tmpS);
             END;
 
           {Write NoEnter}
-          IF FNoEnter THEN sList.Add(IndStr+'  NOENTER');
+          IF NoEnter THEN sList.Add(IndStr+'  NOENTER');
           {Write TopOfScreen}
-          IF FTopOfScreen THEN
+          IF TopOfScreen THEN
             BEGIN
               tmpS:=IndStr+'  TOPOFSCREEN';
-              IF FTopOfScreenLines>0 THEN tmpS:=tmpS+' '+IntToStr(FTopOfScreenLines);
+              IF TopOfScreenLines>0 THEN tmpS:=tmpS+' '+IntToStr(TopOfScreenLines);
               sList.Add(IndStr+tmpS);
             END;
           {Write RANGE}
           tmpS:='';
-          IF FMin<>'' THEN tmpS:=FMin+' '
+          IF Min<>'' THEN tmpS:=Min+' '
           ELSE tmpS:='-INFINITY ';
-          IF FMax<>'' THEN tmpS:=tmpS+FMax
+          IF Max<>'' THEN tmpS:=tmpS+Max
           ELSE tmpS:=tmpS+'INFINITY';
-          IF (FMin<>'') OR (FMax<>'')
+          IF (Min<>'') OR (Max<>'')
           THEN sList.Add(IndStr+'  RANGE '+tmpS);
           {Write LEGAL block}
-          IF FLegal<>'' THEN
+          IF Legal<>'' THEN
             BEGIN
-              IF FRangeDefined THEN sN3:=1 ELSE sN3:=0;
-              LegalList.CommaText:=FLegal;
+              IF RangeDefined THEN sN3:=1 ELSE sN3:=0;
+              LegalList.CommaText:=Legal;
               IF LegalList.Count>sN3 THEN
                 BEGIN
                   sList.Add(IndStr+'  LEGAL');
-                  LegalList.CommaText:=FLegal;
+                  LegalList.CommaText:=Legal;
                   FOR sN2:=sN3 TO LegalList.Count-1 DO
                     IF Pos(' ',LegalList[sN2])>0
                     THEN sList.Add(IndStr+'    "'+LegalList[sN2]+'"')
@@ -3297,7 +3462,8 @@ BEGIN
                 END;
             END;
           {Write Comment Legal}
-          IF FValueLabel<>'' THEN
+          {
+          IF ValueLabel<>'' THEN
             BEGIN
               tmpS:=AnsiLowerCase(trim(FValueLabel));
               IF tmpS[Length(tmpS)]='$' THEN
@@ -3332,18 +3498,19 @@ BEGIN
                     END;
                 END;
             END;
+            }
           {Write JUMPS block}
-          IF FJumps<>'' THEN
+          IF jumps<>'' THEN
             BEGIN
-              LegalList.CommaText:=FJumps;
+              LegalList.CommaText:=jumps;
               IF LegalList[0]='AUTOJUMP'
               THEN sList.Add(IndStr+'  AUTOJUMP '+trim(LegalList[1]))
               ELSE
                 BEGIN
                   tmpS:=IndStr+'  JUMPS';
-                  IF FJumpResetChar<>#0 THEN tmpS:=IndStr+'  JUMPS RESET';
-                  IF (FJumpResetChar<>#0) AND (FJumpResetChar<>#32)
-                  THEN tmpS:=tmpS+' "'+FJumpResetchar+'"';
+                  IF JumpResetChar<>#0 THEN tmpS:=IndStr+'  JUMPS RESET';
+                  IF (JumpResetChar<>#0) AND (JumpResetChar<>#32)
+                  THEN tmpS:=tmpS+' "'+JumpResetChar+'"';
                   sList.Add(tmpS);
                   FOR sN2:=0 TO LegalList.Count-1 DO
                     BEGIN
@@ -3355,9 +3522,9 @@ BEGIN
                 END;
             END;
           {Write MUSTENTER, REPEAT}
-          IF FMustEnter THEN sList.Add(IndStr+'  MUSTENTER');
-          IF FRepeat THEN sList.Add(IndStr+'  REPEAT');
-          IF FConfirm THEN sList.Add(IndStr+'  CONFIRMFIELD');
+          IF MustEnter THEN sList.Add(IndStr+'  MUSTENTER');
+          IF doRepeat THEN sList.Add(IndStr+'  REPEAT');
+          IF Confirm THEN sList.Add(IndStr+'  CONFIRMFIELD');
 
           {Write Missingvalues}
           tmpS:='';
@@ -3367,7 +3534,7 @@ BEGIN
           IF tmpS<>'' THEN sList.Add(IndStr+'  MISSINGVALUE '+tmpS);
 
           {Write TYPE STATUSBAR}
-          IF FIsTypeStatusBar THEN
+          IF IsTypeStatusBar THEN
             BEGIN
               tmpS:=IndStr+'  TYPE STATUSBAR';
               IF df.TypeStatusBarText<>'' THEN tmpS:=tmpS+' "'+df.TypeStatusBarText+'"';
@@ -3377,21 +3544,21 @@ BEGIN
 
           {Write TYPE COMMENT}
           tmpS:=IndStr+'  TYPE COMMENT ';
-          IF FTypeComments THEN
+          IF TypeComments THEN
             BEGIN
-              IF FTypeColor<>2 THEN tmpS:=tmpS+ColorNames[FTypeColor];
+              IF TypeColor<>2 THEN tmpS:=tmpS+ColorNames[TypeColor];
               sList.Add(tmpS);
             END
-          ELSE IF (df.GlobalTypeCom) AND (FTypeCommentField=-2) THEN
+          ELSE IF (df.GlobalTypeCom) AND (TypeCommentField=-2) THEN
             BEGIN
               tmpS:=tmpS + 'ALLFIELDS';
               IF df.GlobalTypeComColor<>0 THEN tmpS:=tmpS+' '+ColorNames[df.globalTypeComColor];
               sList.Add(tmpS);
             END
-          ELSE IF (FTypeCommentField<>-1) or (FTypeCommentFieldStr<>'') THEN
+          ELSE IF (TypeCommentField<>-1) or (TypeCommentFieldStr<>'') THEN
             BEGIN
-              if (FTypeCommentField=-1) and (FTypeCommentFieldStr<>'') then FTypeCommentField:=df.FieldNumbers[FTypeCommentFieldStr];
-              tmpS:=tmpS+trim(df.Fields[FTypeCommentField].FieldName);
+              if (TypeCommentField=-1) and (TypeCommentFieldStr<>'') then TypeCommentField:=df.FieldNumbers[TypeCommentFieldStr];
+              tmpS:=tmpS+trim(df.Fields[TypeCommentField].FieldName);
               sList.Add(tmpS);
             END;
 
@@ -3421,6 +3588,7 @@ BEGIN
   end
 END;  //procedure FieldBlockToStrings
 
+{
 Function TCheckWriter.Label2Text(CONST ALabelName:String; ALabelRec:PLabelRec; NumSpc:Byte):String;
 VAR
   s:String;
@@ -3449,6 +3617,7 @@ BEGIN
   s:=s+#13#10+spc+'END';
   Result:=s;
 END;  //Label2Text
+}
 
 Procedure TCheckWriter.AddCommandList(sList:TStringList; CmdList:TList; Indent:Byte);
 VAR
@@ -3614,6 +3783,8 @@ BEGIN
                 tmpStr:=AnsiLowerCase(trim(Cmd^.ValueLabel));
                 IF tmpStr[Length(tmpStr)]='$' THEN
                   BEGIN  //write comment legal..end block
+                    //TODO
+                    {
                     n:=df.ValueLabels.IndexOf(tmpStr);
                     IF n<>-1 THEN
                       BEGIN
@@ -3624,6 +3795,7 @@ BEGIN
                         IF Cmd^.ShowList THEN LabelList[0]:=LabelList[0]+' SHOW';
                         sList.Addstrings(LabelList);
                       END;
+                      }
                   END
                 ELSE
                   BEGIN  //write Comment Legal Use ...
@@ -3636,11 +3808,14 @@ BEGIN
                     ELSE
                       BEGIN
                         IF tmpStr[Length(tmpStr)]='¤' THEN tmpStr:=Copy(tmpStr,1,Length(tmpStr)-1);
+                        //TODO
+                        {
                         IF df.ValueLabels.IndexOf(Cmd^.ValueLabel)<>-1 THEN
                           BEGIN
                             IF Cmd^.ShowList THEN tmpStr:=tmpStr+' SHOW';
                             sList.Add(IndStr+'COMMENT LEGAL USE '+trim(tmpStr));
                           END;
+                        }
                       END;
                   END;
               END;
@@ -3675,9 +3850,9 @@ BEGIN
                   tmpFieldStr:=cFill('#',cmd^.FLength-1-cmd^.FNumDecimals);
                   IF cmd^.FNumDecimals=0 THEN tmpFieldStr:=tmpFieldStr+'#'
                   ELSE tmpFieldStr:=tmpFieldStr+'.'+cFill('#',cmd^.FNumDecimals);
-                END;   //Case FeltType of ftFloat
+                END;   //Case Fieldtype of ftFloat
               ftEuroDate: tmpFieldStr:='<DD/MM/YYYY>';
-            END;  //Case FeltType
+            END;  //Case Fieldtype
             tmpStr:='DEFINE '+cmd^.FName+' '+tmpFieldStr;
             IF cmd^.FScope=scGlobal THEN tmpStr:=tmpStr+' GLOBAL';
             IF cmd^.FScope=scCumulative THEN tmpStr:=tmpStr+' CUMULATIVE';
@@ -3727,6 +3902,25 @@ BEGIN
     END;  //for
 END;  //Procedure AddCommandList
 
+Procedure DisposeCommandList(AList:TList);
+VAR
+  n:Integer;
+  tmpCmdRec:TCmds;  
+BEGIN
+  FOR n:=0 TO AList.Count-1 DO
+    BEGIN
+      tmpCmdRec:=PCmds(AList.Items[n])^;
+      CASE tmpCmdRec.Command OF
+        cmdIF:
+          BEGIN
+            IF tmpCmdRec.IfCmds<>NIL THEN DisposeCommandList(tmpCmdRec.IfCmds);
+            IF tmpCmdRec.ElseCmds<>NIL THEN DisposeCommandList(tmpCmdRec.ElseCmds);
+          END;
+      END;  //case
+      Dispose(Alist.Items[n]);
+    END;  //for
+  FreeAndNil(Alist);
+END;  //procedure DisposeCommandList
 
 
 end.
