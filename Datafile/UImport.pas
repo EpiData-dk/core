@@ -9,12 +9,12 @@ type
 
   TEpiImport = class(TObject)
   private
-
+    function LoadRec(const FileName: string;
+      aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
   protected
 
   public
     function Load(const FileName: string; aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
-    function LoadRec(const FileName: string; aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
     function LoadStata(const FileName: string; aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
     function LoadTXT(const FileName: string; aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
     function LoadSAS(const FileName: string; aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
@@ -28,7 +28,7 @@ type
 implementation
 
 uses
-  SysUtils;
+  SysUtils, UStataIO;
 { TEpiImport }
 
 constructor TEpiImport.Create;
@@ -85,6 +85,8 @@ begin
 end;
 
 function TEpiImport.LoadStata(const FileName: string; aOptions: TEpiDataFileOptions=[]): TEpiDataFile;
+var
+  StataIO: TStataIO;
 begin
   result := nil;
   try

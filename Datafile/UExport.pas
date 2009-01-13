@@ -9,12 +9,12 @@ type
 
   TEpiExport = class(TObject)
   private
-
+    procedure SaveRec(const FileName: string;
+      const DataFile: TEpiDataFile);
   protected
 
   public
     procedure Save(const FileName: string; const DataFile: TEpiDataFile);
-    procedure SaveRec(const FileName: string; const DataFile: TEpiDataFile);
     procedure SaveStata(const FileName: string; const DataFile: TEpiDataFile);
     procedure SaveTXT(const FileName: string; const DataFile: TEpiDataFile);
     procedure SaveSAS(const FileName: string; const DataFile: TEpiDataFile);
@@ -60,6 +60,7 @@ begin
     exit;
   end;
 end;
+
 
 procedure TEpiExport.SaveRec(const FileName: string;
   const DataFile: TEpiDataFile);
