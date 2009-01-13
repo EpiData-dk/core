@@ -40,8 +40,8 @@ type
     procedure Clear();
     property Name: string read FName write FName;
     property ValueLabelSetType: TValueLabelSetType read FValueLabelSetType write FValueLabelSetType;
-    property Value[const aLabel: string]: string read GetLabel write SetLabel;
-    property vLabel[const aValue: string]: string read GetValue write SetValue;
+    property Value[const aLabel: string]: string read GetValue write SetValue;
+    property ValueLabel[const aValue: string]: string read GetLabel write SetLabel;
   end;
 
 implementation

@@ -5,7 +5,8 @@ unit UEpiUtils;
 interface
 
 USES
-  SysUtils, Rijndael, Base64, CheckObjUnit, UEpiTypes, UEpiDataConstants;
+  SysUtils, Rijndael, Base64, CheckObjUnit, UEpiTypes, UEpiDataConstants,
+  UEpiDatafile;
 
 type
   TString = class(TObject)
@@ -39,6 +40,7 @@ Function  FitLength(s:String;L: Integer):String;
 Function  eStrToFloat(s: String):Double;
 Function  GetEncodedLength(decodedlength: byte):byte;
 Function  GetDecodedLength(encodedlength: byte):byte;
+FUNCTION  NameIsUnique(VAR TempName: String; df: TEpiDataFile; WantedLength: Byte):Boolean;
 
 
 implementation
@@ -65,6 +67,58 @@ BEGIN
   Result:=s;
 END;   //function Fill
 
+{ UTils }
+
+FUNCTION NameIsUnique(VAR TempName:String; df: TEpiDataFile; WantedLength:Byte):Boolean;
+VAR
+  StillLooking:BOOLEAN;
+  NumStr:STRING[3];
+  i, n, Number: Integer;
+  AlfaStr,tName:STRING[10];
+
+BEGIN
+  Result:=True;
+  IF df=NIL THEN Exit;
+  // TODO -o torsten : Fjern når der er en field liste
+//  IF df.FieldList=NIL THEN Exit;
+  IF df.NumFields=0 THEN Exit;
+  tName:=trim(AnsiUpperCase(TempName));
+  n:=0;
+  REPEAT
+    IF ANSIUpperCase(trim(df.Fields[n].FieldName))=tName THEN Result:=False;
+    INC(n);
+  UNTIL (NOT Result) OR (n>df.NumFields-1);
+  IF NOT Result THEN
+    BEGIN  //a dublicate name is found
+      IF (Length(TempName)>WantedLength)
+        THEN TempName:=COPY(TempName,1,WantedLength);
+      WHILE (Length(TempName)<WantedLength) DO TempName:=TempName+' ';
+      NumStr:='';
+      StillLooking:=TRUE;
+      i:=WantedLength;
+      WHILE (i>0) AND (Length(NumStr)<3) AND StillLooking DO
+        IF (TempName[i] in NumChars) THEN
+          BEGIN
+            NumStr:=TempName[i]+NumStr;
+            TempName[i]:=' ';
+          END
+        ELSE IF (TempName[i] in AlfaChars) THEN StillLooking:=FALSE
+             ELSE DEC(i);
+      IF (i=0) OR (NumStr='') THEN Number:=0
+      ELSE Number:=StrToInt(NumStr);
+      INC(Number);
+      IF (Number>999) THEN TempName:='DUMMY1'
+      ELSE
+        BEGIN
+          NumStr:=IntToStr(Number);
+          AlfaStr:=trim(COPY(TempName,1,i));    //  <====   AlfaStr:=COPY(TempName,1,i-1)
+          WHILE (Length(AlfaStr)+Length(NumStr)>WantedLength) DO
+            AlfaStr:=COPY(AlfaStr,1,Length(AlfaStr)-1);
+          TempName:=AlfaStr+NumStr;
+        END;   //if new number<1000
+      WHILE (Length(TempName)<WantedLength) DO TempName:=TempName+' ';
+    END;   //a dublicate name is found
+END;   //NameIsUnique
 
 Function IsInteger(s:String):Boolean;
 VAR

@@ -8,23 +8,22 @@ uses
 type
   TStataIO = class(TObject)
   private
+    F: TextFile;
     StataFile: TFileStream;
     StataFilename,RECFilename: TFilename;
     buff: Array[0..50000] OF Char;
     NumBuff: Array[0..7] OF Byte;
     typList: Array[0..800] OF Char;
     StataVersion: Byte;
-    tmpSmallInt: SmallInt;
-//    SmallIntBuff: Array[0..1] OF Byte absolute tmpSmallInt;
     pByte: ^BYTE;
     pSmallInt: ^SmallInt;
     pShortInt: ^ShortInt;
     pWord: ^Word;
     pLongInt: ^LongInt;
     pDouble: ^Double;
-    n2,n3, NameLength:Integer;
+    n3, NameLength:Integer;
     LOHI,HasValueLabels:Boolean;
-    HeaderSize,nVar,nObs,MaxVarLabel,MaxFNameWidth,CurRec,CurField: Integer;
+    HeaderSize,nVar,nObs,MaxVarLabel,MaxFNameWidth: Integer;
     tmpByte:   Byte;
     tmpWord:   Word;
     tmpInt:    SmallInt;
@@ -61,7 +60,7 @@ type
 implementation
 
 uses
-  UeFields, UEpiTypes, UEpiDataConstants, UEpiUtils;
+  UeFields, UEpiTypes, UEpiDataConstants, UEpiUtils, Math, UValueLabels;
 { TStataIO }
 
 constructor TStataIO.Create;
@@ -89,7 +88,12 @@ function TStataIO.LoadStata(const FileName: string;
   aOptions: TEpiDataFileOptions): TEpiDataFile;
 var
   eField: TEField;
-  n,t: integer;
+  n,n2,t,CurField,CurRec: integer;
+  s, s2: string;
+  tmpDate: TDateTime;
+  UserAborts:Boolean;          //Flag to indicate that user presses ESC to Abort
+  tmpSmallInt: SmallInt;
+  SmallIntBuff: Array[0..1] OF Byte absolute tmpSmallInt;
 begin
   Result := nil;
   StataFile:=NIL;
@@ -237,7 +241,7 @@ begin
     StataFile.Position:=HeaderSize+nVar;
     IF StataVersion>=7 THEN NameLength:=33 ELSE NameLength:=9;   //&&
     StataFile.Read(buff,NameLength*nVar);
-(*    FOR n:=0 TO nVar-1 DO
+    FOR n:=0 TO nVar-1 DO
       BEGIN
         EField := Result.Fields[n];
         tmpS:=cFill(' ',NameLength);
@@ -252,11 +256,12 @@ begin
         FOR t:=1 TO Length(tmpS2) DO
           IF (tmpS2[t] in AlfaNumChars) THEN tmpS:=tmpS+tmpS2[t];
         IF Length(tmpS)>FieldNameLen THEN tmpS:=Copy(tmpS,1,FieldnameLen);
-        IF NOT NameIsUnique(tmpS,df,FieldnameLen) THEN REPEAT UNTIL NameIsUnique(tmpS,df,FieldnameLen);
-        CASE FieldNameCase OF
+        IF NOT NameIsUnique(tmpS, result, FieldnameLen) THEN REPEAT UNTIL NameIsUnique(tmpS, result, FieldnameLen);
+        // TODO -o Torsten : Hvad er dette???
+{        CASE FieldNameCase OF
           fcUpper: tmpS:=AnsiUpperCase(tmpS);
           fcLower: tmpS:=AnsiLowerCase(tmpS);
-        END;  //case
+        END;  //case     }
         EField.FieldName:=trim(tmpS);
         IF Length(trim(EField.FieldName))>MaxFNameWidth THEN MaxFNameWidth:=Length(trim(EField.FieldName));
         IF EField.Length>80 THEN
@@ -326,7 +331,7 @@ begin
               EField.Length:=StrToInt(s);
               EField.NumDecimals:=StrToInt(s2);
             EXCEPT
-              ErrorMsg(Format(Lang(23986),[EField.FName]));   //'Unknown format specified for variable %s'
+              ErrorMsg(Format(Lang(23986),[EField.FieldName]));   //'Unknown format specified for variable %s'
               Exit;
             END;  //try..except
             IF typList[n]=ByteChar THEN   //&&
@@ -362,7 +367,7 @@ begin
     FOR n:=0 TO nVar-1 DO
       BEGIN
         EField := Result.Fields[n];
-        EField.FValueLabel:='';
+//        EField.Valuelabel:=nil;
         tmpS:=cFill(' ',NameLength);
         t:=0;
         WHILE buff[(n*NameLength)+t]<>#0 DO
@@ -373,7 +378,9 @@ begin
         tmpS:=trim(tmpS);
         IF tmpS<>'' THEN
           BEGIN
-            EField.FValueLabel:=tmpS;
+            EField.Valuelabel := TValueLabelSet.Create;
+            EField.Valuelabel.Name := tmpS;
+            Result.ValueLabels.AddValueLabelSet(eField.Valuelabel);
             HasValueLabels:=True;
           END;
       END;  //for n
@@ -418,41 +425,32 @@ begin
     Dispose(pByte);
 
     {Datafile description is read - now make the datafile}
-    IF NOT PeekCreateDatafile(df) THEN
+    // TODO : Do we want to do this???
+    {IF NOT PeekCreateDatafile(df) THEN
       BEGIN
         ErrorMsg(Format(Lang(20416)+#13+  //20416=The datafile with the name %s cannot be created.
         Lang(23910),[Result.RECFilename]));   //'Import terminates'
         Exit;
-      END;
+      END;}
 
     {Read data}
     TRY
       TRY
-      UserAborts:=False;
-      ProgressForm:=TProgressForm.Create(MainForm);
-      ProgressForm.Caption:=Lang(23904);   //'Import from Stata'
-      ProgressForm.Top:=(MainForm.ClientHeight DIV 2)-(ProgressForm.Height DIV 2);
-      ProgressForm.Left:=(MainForm.ClientWidth DIV 2)-(ProgressForm.Width DIV 2);
-      ProgressForm.pBar.Max:=nObs;
-      ProgressForm.pBar.Position:=0;
-      WindowList:=DisableTaskWindows(ProgressForm.Handle);
-      ProgressForm.Show;
-
       CutsDecimals:=False;
       OKToCutDecimals:=False;
       AssignFile(F,Result.RECFilename);
       Append(F);
       FOR CurRec:=1 TO nObs DO
         BEGIN
-          IF ProgressStep(nObs,CurRec) THEN
+{          IF ProgressStep(nObs,CurRec) THEN
             BEGIN
               ProgressForm.pBar.Position:=CurRec;
               ProgressForm.pLabel.Caption:=Format(' '+Lang(23920),[CurRec,nObs]);  //'Importing record no. %d of %d'
               Application.ProcessMessages;
-            END;
-          FOR CurField:=0 TO Result.FieldList.Count-1 DO
+            END;}
+          FOR CurField:=0 TO Result.NumFields-1 DO
             BEGIN
-              AField:=PeField(Result.FieldList.Items[Curfield]);
+              EField:=Result.Fields[Curfield];
               IF typList[CurField]=ByteChar THEN   //&&
                 BEGIN    //&&
                   tmpshortInt:=ReadByte(StataFile.Position);
@@ -463,15 +461,15 @@ begin
                   ELSE
                     BEGIN
                       IF tmpShortInt<=100 THEN s:=IntToStr(tmpShortInt)
-                      ELSE IF tmpShortInt=102 THEN s:=cFill('9',EField.FLength)   // missing value .a
-                      ELSE IF tmpShortInt=103 THEN s:=cFill('8',EField.FLength)   // missing value .b
-                      ELSE IF tmpShortInt=104 THEN s:=cFill('7',EField.FLength)   // missing value .c
+                      ELSE IF tmpShortInt=102 THEN s:=cFill('9',EField.Length)   // missing value .a
+                      ELSE IF tmpShortInt=103 THEN s:=cFill('8',EField.Length)   // missing value .b
+                      ELSE IF tmpShortInt=104 THEN s:=cFill('7',EField.Length)   // missing value .c
                       ELSE s:='';   // missing value . and missing values .d - .z
                       IF (tmpShortInt>=102) AND (tmpShortInt<=104) THEN
                         BEGIN
-                          EField.FMissingValues[0]:=cFill('9',EField.FLength);
-                          EField.FMissingValues[1]:=cFill('8',EField.FLength);
-                          EField.FMissingValues[2]:=cFill('7',EField.FLength);
+                          EField.MissingValues[0]:=cFill('9',EField.Length);
+                          EField.MissingValues[1]:=cFill('8',EField.Length);
+                          EField.MissingValues[2]:=cFill('7',EField.Length);
                         END;
                     END
                 END
@@ -485,15 +483,15 @@ begin
                   ELSE
                     BEGIN
                       IF tmpInt<=$7FE4 THEN s:=IntToStr(tmpInt)
-                      ELSE IF tmpInt=$7FE6 THEN s:=cFill('9',EField.FLength)   // missing value .a
-                      ELSE IF tmpInt=$7FE7 THEN s:=cFill('8',EField.FLength)   // missing value .b
-                      ELSE IF tmpInt=$7FE8 THEN s:=cFill('7',EField.FLength)   // missing value .c
+                      ELSE IF tmpInt=$7FE6 THEN s:=cFill('9',EField.Length)   // missing value .a
+                      ELSE IF tmpInt=$7FE7 THEN s:=cFill('8',EField.Length)   // missing value .b
+                      ELSE IF tmpInt=$7FE8 THEN s:=cFill('7',EField.Length)   // missing value .c
                       ELSE s:='';   // missing value . and missing values .d - .z
                       IF (tmpInt>=$7FE6) AND (tmpInt<=$7FE8) THEN
                         BEGIN
-                          EField.FMissingValues[0]:=cFill('9',EField.FLength);
-                          EField.FMissingValues[1]:=cFill('8',EField.FLength);
-                          EField.FMissingValues[2]:=cFill('7',EField.FLength);
+                          EField.MissingValues[0]:=cFill('9',EField.Length);
+                          EField.MissingValues[1]:=cFill('8',EField.Length);
+                          EField.MissingValues[2]:=cFill('7',EField.Length);
                         END;
                     END
                 END
@@ -507,15 +505,15 @@ begin
                   ELSE
                     BEGIN
                       IF tmpLong<=$7fffffe4 THEN s:=IntToStr(tmpLong)
-                      ELSE IF tmpLong=$7fffffe6 THEN s:=cFill('9',EField.FLength)   // missing value .a
-                      ELSE IF tmpLong=$7fffffe7 THEN s:=cFill('8',EField.FLength)   // missing value .b
-                      ELSE IF tmpLong=$7fffffe8 THEN s:=cFill('7',EField.FLength)   // missing value .c
+                      ELSE IF tmpLong=$7fffffe6 THEN s:=cFill('9',EField.Length)   // missing value .a
+                      ELSE IF tmpLong=$7fffffe7 THEN s:=cFill('8',EField.Length)   // missing value .b
+                      ELSE IF tmpLong=$7fffffe8 THEN s:=cFill('7',EField.Length)   // missing value .c
                       ELSE s:='';   // missing value . and missing values .d - .z
                       IF (tmpShortInt>=$7fffffe6) AND (tmpShortInt<=$7fffffe8) THEN
                         BEGIN
-                          EField.FMissingValues[0]:=cFill('9',EField.FLength);
-                          EField.FMissingValues[1]:=cFill('8',EField.FLength);
-                          EField.FMissingValues[2]:=cFill('7',EField.FLength);
+                          EField.MissingValues[0]:=cFill('9',EField.Length);
+                          EField.MissingValues[1]:=cFill('8',EField.Length);
+                          EField.MissingValues[2]:=cFill('7',EField.Length);
                         END;
                     END
                 END
@@ -525,34 +523,34 @@ begin
                   IF StataVersion<8 THEN
                     BEGIN
                       IF tmpSingle=Power(2,127) THEN s:=''
-                      ELSE Str(tmpSingle:EField.FLength:EField.FNumDecimals,s);
-                      IF (EField.FNumDecimals>4) AND (INT(tmpSingle*10000)/10000 <> tmpSingle) THEN CutsDecimals:=True;
+                      ELSE Str(tmpSingle:EField.Length:EField.NumDecimals,s);
+                      IF (EField.NumDecimals>4) AND (INT(tmpSingle*10000)/10000 <> tmpSingle) THEN CutsDecimals:=True;
                     END
                   ELSE
                     BEGIN
                       IF tmpSingle<Power(2,127) THEN
                         BEGIN
-                          Str(tmpSingle:EField.FLength:EField.FNumDecimals,s);
-                          IF (EField.FNumDecimals>4) AND (INT(tmpSingle*10000)/10000 <> tmpSingle) THEN CutsDecimals:=True;
+                          Str(tmpSingle:EField.Length:EField.NumDecimals,s);
+                          IF (EField.NumDecimals>4) AND (INT(tmpSingle*10000)/10000 <> tmpSingle) THEN CutsDecimals:=True;
                         END
                       ELSE IF MisVal='.' THEN s:=''
-                      ELSE IF MisVal='.a' THEN s:=cFill('9',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('9',EField.FNumDecimals)
-                      ELSE IF MisVal='.b' THEN s:=cFill('8',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('8',EField.FNumDecimals)
-                      ELSE IF MisVal='.c' THEN s:=cFill('7',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('7',EField.FNumDecimals)
+                      ELSE IF MisVal='.a' THEN s:=cFill('9',EField.Length-1-EField.NumDecimals)+'.'+cFill('9',EField.NumDecimals)
+                      ELSE IF MisVal='.b' THEN s:=cFill('8',EField.Length-1-EField.NumDecimals)+'.'+cFill('8',EField.NumDecimals)
+                      ELSE IF MisVal='.c' THEN s:=cFill('7',EField.Length-1-EField.NumDecimals)+'.'+cFill('7',EField.NumDecimals)
                       ELSE s:='';
                       IF (MisVal='.a') OR (MisVal='.b') OR (MisVal='.c') THEN
                         BEGIN
-                          IF EField.FNumDecimals>0 THEN
+                          IF EField.NumDecimals>0 THEN
                             BEGIN
-                              EField.FMissingValues[0]:=cFill('9',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('9',EField.FNumDecimals);
-                              EField.FMissingValues[1]:=cFill('8',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('8',EField.FNumDecimals);
-                              EField.FMissingValues[2]:=cFill('7',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('7',EField.FNumDecimals);
+                              EField.MissingValues[0]:=cFill('9',EField.Length-1-EField.NumDecimals)+'.'+cFill('9',EField.NumDecimals);
+                              EField.MissingValues[1]:=cFill('8',EField.Length-1-EField.NumDecimals)+'.'+cFill('8',EField.NumDecimals);
+                              EField.MissingValues[2]:=cFill('7',EField.Length-1-EField.NumDecimals)+'.'+cFill('7',EField.NumDecimals);
                             END
                           ELSE
                             BEGIN
-                              EField.FMissingValues[0]:=cFill('9',EField.FLength-1-EField.FNumDecimals);
-                              EField.FMissingValues[1]:=cFill('8',EField.FLength-1-EField.FNumDecimals);
-                              EField.FMissingValues[2]:=cFill('7',EField.FLength-1-EField.FNumDecimals);
+                              EField.MissingValues[0]:=cFill('9',EField.Length-1-EField.NumDecimals);
+                              EField.MissingValues[1]:=cFill('8',EField.Length-1-EField.NumDecimals);
+                              EField.MissingValues[2]:=cFill('7',EField.Length-1-EField.NumDecimals);
                             END;
                         END;
                     END;  //if stata8
@@ -565,34 +563,34 @@ begin
                       IF tmpDouble=Power(2,1023) THEN s:=''
                       ELSE
                         BEGIN
-                          Str(tmpDouble:EField.FLength:EField.FNumDecimals,s);
-                          IF (EField.FNumDecimals>4) AND ((INT(tmpDouble*10000))/10000 <> tmpDouble) THEN CutsDecimals:=True;
+                          Str(tmpDouble:EField.Length:EField.NumDecimals,s);
+                          IF (EField.NumDecimals>4) AND ((INT(tmpDouble*10000))/10000 <> tmpDouble) THEN CutsDecimals:=True;
                         END
                     END  //if ver<8
                   ELSE
                     BEGIN
                       IF tmpDouble<Power(2,1023) THEN
                         BEGIN
-                          Str(tmpDouble:EField.FLength:EField.FNumDecimals,s);
-                          IF (EField.FNumDecimals>4) AND ((INT(tmpDouble*10000))/10000 <> tmpDouble) THEN CutsDecimals:=True;
+                          Str(tmpDouble:EField.Length:EField.NumDecimals,s);
+                          IF (EField.NumDecimals>4) AND ((INT(tmpDouble*10000))/10000 <> tmpDouble) THEN CutsDecimals:=True;
                         END
-                      ELSE IF MisVal='.a' THEN s:=cFill('9',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('9',EField.FNumDecimals)
-                      ELSE IF MisVal='.b' THEN s:=cFill('8',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('8',EField.FNumDecimals)
-                      ELSE IF MisVal='.c' THEN s:=cFill('7',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('7',EField.FNumDecimals)
+                      ELSE IF MisVal='.a' THEN s:=cFill('9',EField.Length-1-EField.NumDecimals)+'.'+cFill('9',EField.NumDecimals)
+                      ELSE IF MisVal='.b' THEN s:=cFill('8',EField.Length-1-EField.NumDecimals)+'.'+cFill('8',EField.NumDecimals)
+                      ELSE IF MisVal='.c' THEN s:=cFill('7',EField.Length-1-EField.NumDecimals)+'.'+cFill('7',EField.NumDecimals)
                       ELSE s:='';
                       IF (MisVal='.a') OR (MisVal='.b') OR (MisVal='.c') THEN
                         BEGIN
-                          IF EField.FNumDecimals>0 THEN
+                          IF EField.NumDecimals>0 THEN
                             BEGIN
-                              EField.FMissingValues[0]:=cFill('9',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('9',EField.FNumDecimals);
-                              EField.FMissingValues[1]:=cFill('8',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('8',EField.FNumDecimals);
-                              EField.FMissingValues[2]:=cFill('7',EField.FLength-1-EField.FNumDecimals)+'.'+cFill('7',EField.FNumDecimals);
+                              EField.MissingValues[0]:=cFill('9',EField.Length-1-EField.NumDecimals)+'.'+cFill('9',EField.NumDecimals);
+                              EField.MissingValues[1]:=cFill('8',EField.Length-1-EField.NumDecimals)+'.'+cFill('8',EField.NumDecimals);
+                              EField.MissingValues[2]:=cFill('7',EField.Length-1-EField.NumDecimals)+'.'+cFill('7',EField.NumDecimals);
                             END
                           ELSE
                             BEGIN
-                              EField.FMissingValues[0]:=cFill('9',EField.FLength-1-EField.FNumDecimals);
-                              EField.FMissingValues[1]:=cFill('8',EField.FLength-1-EField.FNumDecimals);
-                              EField.FMissingValues[2]:=cFill('7',EField.FLength-1-EField.FNumDecimals);
+                              EField.MissingValues[0]:=cFill('9',EField.Length-1-EField.NumDecimals);
+                              EField.MissingValues[1]:=cFill('8',EField.Length-1-EField.NumDecimals);
+                              EField.MissingValues[2]:=cFill('7',EField.Length-1-EField.NumDecimals);
                             END;
                         END;
                     END;  //if stata8
@@ -609,18 +607,18 @@ begin
               OR ( (StataVersion<8) AND (ORD(typList[CurField])>$7F) ) THEN  //&&
                 BEGIN
                   FillChar(buff,sizeOf(buff),0);
-                  StataFile.Read(buff,EField.FLength);
+                  StataFile.Read(buff,EField.Length);
                   s:=StrPas(buff);
                 END;  //if string variable
-              IF (s<>'') AND ( EField.Felttype in [ftDate,ftEuroDate,ftYMDDate]) THEN
+              IF (s<>'') AND ( EField.Fieldtype in [ftDate,ftEuroDate,ftYMDDate]) THEN
                 BEGIN
                   tmpDate:=StrToFloat(s)+21916;  {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
-                  s:=mibDateToStr(tmpDate,EField.Felttype);
+                  s:=mibDateToStr(tmpDate,EField.Fieldtype);
                 END;  //if date variable
 
-              IF Length(s)>EField.FLength THEN
+              IF Length(s)>EField.Length THEN
                 BEGIN
-                  tmpS:=Format(Lang(23924),[CurRec,EField.FName]);   //'Error in record %d, field %s: data is too long to fit the field in EpiData'
+                  tmpS:=Format(Lang(23924),[CurRec,EField.FieldName]);   //'Error in record %d, field %s: data is too long to fit the field in EpiData'
                   IF (TypList[CurField]=FloatChar) OR (TypList[CurField]=DoubleChar)
                   THEN tmpS:=tmpS+#13#13+Lang(23926);   //'Try to use a fixed format (e.g. %9.2f) in Stata to optimize the fieldsize'
                   ErrorMsg(tmpS);
@@ -629,16 +627,17 @@ begin
               ELSE IF (NOT OKToCutDecimals) AND (CutsDecimals) THEN
                 BEGIN
                   tmpS:=Format(Lang(23928),    //'Data in record %d, field %s will be rounded to 4 decimals after the decimalpoint'
-                  [CurRec,EField.FName])+#13#13+Lang(23930);   //'Continue import?'
-                  IF WarningDlg(tmpS)=mrCancel THEN Exit ELSE OKToCutDecimals:=True;
+                  [CurRec,EField.FieldName])+#13#13+Lang(23930);   //'Continue import?'
+                  // TODO : Change with new field convension (Integer can be longer then 4 digits)
+                  //IF WarningDlg(tmpS)=mrCancel THEN Exit ELSE OKToCutDecimals:=True;
                 END;
-
-              EField.FFieldText:=s;
+              EField.AsString:=s;
 
             END;  //for CurField
-          WriteNextRecord(df,F);
+          Result.Write(CurRec);
+//          WriteNextRecord(df,F);
 
-          IF UserAborts THEN
+{          IF UserAborts THEN
             BEGIN
               IF eDlg(Lang(23932),mtConfirmation,[mbYes,mbNo],0)=mrYes   //'Abort import?'
               THEN
@@ -648,7 +647,7 @@ begin
                   Exit;
                 END
               ELSE UserAborts:=False;
-            END;  //if UserAborts
+            END;  //if UserAborts    }
 
         END;  //for CurRec
       EXCEPT
@@ -659,8 +658,8 @@ begin
       {$I-}
       CloseFile(F);
       {$I+}
-      EnableTaskWindows(WindowList);
-      ProgressForm.Free;
+//      EnableTaskWindows(WindowList);
+//      ProgressForm.Free;
     END;  //try.Except
 
     IF (HasValueLabels) AND (StataFile.Position<StataFile.Size-4) THEN
@@ -674,9 +673,6 @@ begin
                 t:=ReadWord(StataFile.Position);  //get number of entries in label
                 StataFile.Read(buff,10);   //11+(10*t));   //Load label definition
                 s:=StrPas(buff);
-                FirstLabel:=true;
-                tmpLabelRec:=NIL;
-                FirstLabelRec:=NIL;
                 Fillchar(buff,10,0);
                 StataFile.Read(buff,10*t);
                 FOR n:=1 TO t DO
@@ -691,54 +687,32 @@ begin
                         SmallIntBuff[1]:=ORD(buff[(n-1)*2]);
                         SmallIntBuff[0]:=ORD(buff[((n-1)*2)+1]);
                       END;
-                    NextLabelRec:=tmpLabelRec;
-                    New(tmpLabelRec);
-                    tmpLabelRec^.Next:=NIL;
-                    IF FirstLabel THEN
-                      BEGIN
-                        FirstLabelRec:=tmpLabelRec;
-                        FirstLabel:=False;
-                      END
-                    ELSE NextLabelRec^.Next:=tmpLabelRec;
-                    tmpLabelRec^.Value:=IntToStr(tmpSmallInt);
-                    tmpLabelRec^.Text:='        ';
                     n2:=0;
                     WHILE (n2<8) AND (buff[(t*2)+((n-1)*8)+n2]<>#0) DO
                       BEGIN
-                        tmpLabelRec^.text[n2+1]:=buff[(t*2)+((n-1)*8)+n2];
+                        tmpS2[n2+1]:=buff[(t*2)+((n-1)*8)+n2];
                         INC(n2);
                       END;
-                    tmpLabelRec^.Text:=trim(tmpLabelRec^.Text);
+                    if Trim(Result.ValueLabels.ValueLabelSetByName(s).ValueLabel[IntToStr(tmpSmallInt)]) <> '' then
+                      BEGIN
+                        ErrorMsg(Lang(23936));  //'Duplicate value label name found'
+                        Exit;
+                      END;
+                    Result.ValueLabels.ValueLabelSetByName(s).AddValueLabelPair(IntToStr(tmpSmallInt), tmpS2);
                   END;  //for n
-                n:=Result.ValueLabels.IndexOf(s);
-                IF n<>-1 THEN
-                  BEGIN
-                    ErrorMsg(Lang(23936));  //'Duplicate value label name found'
-                    Exit;
-                  END;
-                Result.ValueLabels.AddObject(s,TObject(FirstLabelRec));
               END;  //if not end of StataFile
           END  //if stataversion 4
         ELSE
           BEGIN
             {Value labels for stata version 6, 7 and 8}
-            WHILE StataFile.Position<StataFile.Size-4 DO
+(*            WHILE StataFile.Position<StataFile.Size-4 DO
               BEGIN
                 FillChar(buff,sizeOf(buff),0);
                 n:=ReadDbWord(StataFile.Position);     //Length of value_label_table (vlt)
                 StataFile.Read(buff,NameLength+3);     //Read label-name+3 byte padding
                 s:=StrPas(buff);                       //s now contains labelname
-                t:=Result.ValueLabels.IndexOf(s);
-                IF t<>-1 THEN
-                  BEGIN
-                    ErrorMsg(Lang(23936));  //'Duplicate value label name found'
-                    Exit;
-                  END;
                 FillChar(buff,NameLength+3,0);
                 StataFile.Read(buff,n);           //Load value_label_table into buffer
-                FirstLabel:=true;
-                tmpLabelRec:=NIL;
-                FirstLabelRec:=NIL;
                 n:=vltInteger(0);                 //Number of entries in label
                 MisWidth:=0;
                 FOR t:=0 TO n-1 DO
@@ -783,9 +757,10 @@ begin
                       END;  //if not . or >.c
                   END;  //for t
                 Result.ValueLabels.AddObject(s,TObject(FirstLabelRec));
-              END;  //while
+              END;  //while                 *)
           END;  //if stataversion 6, 7 or 8
 
+(*
         {Assign the FCommentLegalRec property for the fields based on FValueLabel}
         FOR n:=0 TO Result.FieldList.Count-1 DO
           BEGIN
@@ -820,10 +795,10 @@ begin
           END  //if Chkfile fileExists
         ELSE ChkLin.SaveToFile(Result.CHKFilename);
         ChkLin.Free;
-
+                                    *)
       END  //if hasValueLabels
     ELSE HasValueLabels:=False;
-
+                                    (*
     Screen.Cursor:=crDefault;
     s:=Format(Lang(23944),[StataFilename]);   //'Datafile created by importing stata file %s'
     AddToNotesFile(df,s);
@@ -833,8 +808,8 @@ begin
     ELSE eDlg(Format(Lang(23948),  //'Stata-file %s has been imported~to %s~~Valuelabels are imported to the checkfile %s~~%d records were imported'
       [StataFilename,Result.RECFilename,Result.CHKFilename,Result.NumRecords]),mtInformation,[mbOK],0); 
 
-    AddToRecentFiles(Result.RECFilename);    *)
-
+    AddToRecentFiles(Result.RECFilename);    
+                                                 *)
   FINALLY
 //    Screen.Cursor:=crDefault;
 //    DisposeDatafilePointer(df);
