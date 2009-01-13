@@ -19,6 +19,7 @@ CONST
   LineFeed:Byte=10;
   MaxRecLineLength=78;
   FieldNameLen:Byte=10;
+  MaxIndices=3;
 
 
 

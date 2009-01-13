@@ -3,7 +3,7 @@ unit UEpiDataFile;
 interface
 
 uses
-  UEpiDataConstants, SysUtils, UeFields;
+  UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
 
 TYPE
 
@@ -15,6 +15,27 @@ TYPE
 
   TErrorEvent = procedure(errorcode: Integer) of object;
   TTranslateEvent = function(langcode:Integer; text:widestring): widestring of object;
+
+  TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
+  RecBuf=Array[0..20000] OF Char;
+  PRecBuf=^RecBuf;
+
+  TIndexFields=Array[1..MaxIndices] OF Integer;
+  TIndexIsUnique=Array[1..MaxIndices] OF Boolean;
+  TIndexFile=File of string[30];
+
+  PRelateInfo=^TRelateInfo;
+  TRelateInfo=Record
+      RelFileNo:    Integer;
+      RelFieldNo:   Integer;
+      CmdInFieldNo: Integer;
+      One2One:      Boolean;
+      Next:         Pointer;
+    END;
+
+    //TODO: Det nedenstående flyttes til CheckObjUnit
+    TMissingActions=(maIgnoreMissing,maRejectMissing);
+    TDirections=(dirForward,dirBackward,dirFirst,dirLast,dirAbsolute);
 
 
 //****************** TEpiDataFile ********************************
@@ -60,7 +81,7 @@ TYPE
     {Create fields properties}
     FEpiInfoFieldNaming:Boolean;        //Flag to indicate how fieldnames are created
     FUpdateFieldnameInQuestion: Boolean;
-    FValueLabels:       TStringList;       //List of valueLabels (pLabelRecs) used
+    FValueLabels:       TValueLabelSets;       //List of valueLabels (pLabelRecs) used
     FHasLongFieldNames: Boolean;        //Flag to indicate if 10-chars fieldnames occur
 
     {Index related vars}
@@ -122,7 +143,7 @@ TYPE
     {Error properties}
     FErrorCode:         Integer;
     FErrorText:         String;
-    FonError:           TErrorEvent
+    FonError:           TErrorEvent;
 
     {Events}
     FOnRequestPassword: TRequestPasswordEvent;
@@ -136,12 +157,12 @@ TYPE
     FBackGround:        TColor;
 
     {misc}
-    FMissingAction: TMissingActions;    //What to do with missing values
+    FMissingAction:     TMissingActions;    //What to do with missing values
     FFieldHighlightAct: Boolean;        //highlight active field
     FFieldHighlightCol: TColor;         //color af highlight of active field
     FBackupList:        TStringList;    //List of files to backup
-    FOpenOptions: TOpenFileOptions;     //Used to store options given in Open-method
-    FComLegalCounter: Integer;          //Counter used to name value labels
+    FOpenOptions:       TEpiDataFileOptions;     //Used to store options given in Open-method
+    FComLegalCounter:   Integer;          //Counter used to name value labels
     FShowLastRecord:    Boolean;        //if set, then last record is shown when datafile is opened; if false (default) then
 
     Function  TextPos(var F:Textfile):Longint;
@@ -159,8 +180,8 @@ TYPE
     Procedure SetIndexFields(Index: Integer; Value:Integer);
     Function  GetIndexIsUnique(Index: Integer):Boolean;
     Procedure SetIndexIsUnique(Index: Integer; Value:Boolean);
-    Function  GetGlobalMissingValues(Index: Integer):Str15;
-    Procedure SetGlobalMissingValues(Index: Integer; Value:str15);
+    Function  GetGlobalMissingValues(Index: Integer):string;
+    Procedure SetGlobalMissingValues(Index: Integer; Value:string);
     Function  GetFileSize:LongInt;
     function  GetCheckLines:TStringList;
     function  GetQesLines: string;
@@ -169,7 +190,7 @@ TYPE
     constructor Create;
     destructor  Destroy;  override;
     Function    Lang(langkode:Integer; CONST langtext:string):String;    //TODO: Private
-    Function    Open(Const filename:String; OpenOptions:TOpenFileOptions):Boolean;
+    Function    Open(Const filename:String; OpenOptions:TEpiDataFileOptions):Boolean;
     //Methods related to creating new datafile and adding fields, record
     Function    SaveStructureToFile(filename: string; OverwriteExisting:boolean=false):boolean;
     procedure   SaveCheckFile;
@@ -188,16 +209,16 @@ TYPE
     Function    LoadChecks:Boolean;      //TODO: Private
     Function    MakeIndexFile:Boolean;     //TODO: Private
     Function    ApplyIndex:Boolean;   //TODO: Private
-    Function    ReadFromIndex(IndexNo,RecNo: Integer):str30;   //TODO: Private
+    Function    ReadFromIndex(IndexNo,RecNo: Integer):string;   //TODO: Private
     Function    ReadCommonIndex(RecNo: Integer):String;   //TODO: Private
     Procedure   InitSortIndex;   //TODO: Private
     Procedure   DoSort(L,R:Integer);   //TODO: Private
     Function    ReadIndexNoFromSortIndex(SortPos: Integer):Integer;   //TODO: Private
     Procedure   WriteIndexNoToSortIndex(SortPos,num:Integer);   //TODO: Private
     Function    ReadCommonViaSortIndex(SortPos: Integer):String;   //TODO: Private
-    Procedure   WriteToIndex(IndexNo,RecNo: Integer; s:Str30);   //TODO: Private
-    Function    SearchIndex(IndexNo: Integer; SearchStr: Str30):LongInt;   //TODO: Private
-    Function    SearchIndexFrom(IndexNo: Integer; SearchStr: str30; RecNo:Integer; direction:TDirections):LongInt;   //TODO: Private
+    Procedure   WriteToIndex(IndexNo,RecNo: Integer; s:string);   //TODO: Private
+    Function    SearchIndex(IndexNo: Integer; SearchStr: string):LongInt;   //TODO: Private
+    Function    SearchIndexFrom(IndexNo: Integer; SearchStr: string; RecNo:Integer; direction:TDirections):LongInt;   //TODO: Private
     Function    IndexHasDuplicates(IndexNo:Integer):Boolean;   //TODO: Private
     Procedure   DecryptIndex;   //TODO: Private
     Function    DoRebuildIndex: Boolean;   //TODO: Private måske? Kaldes fra Entry tools?
@@ -247,14 +268,14 @@ TYPE
     Property IndexIsUnique[Index:Integer]:Boolean read GetIndexIsUnique write SetIndexIsUnique;
     Property IndexFile:TIndexFile read FIndexFile write FIndexFile;
     Property HasRepeatField:Boolean read FHasRepeatField write FHasRepeatField;
-    Property ValueLabels:TStringList read FValueLabels write FValueLabels;
+    Property ValueLabels:TValueLabelSets read FValueLabels write FValueLabels;
     Property AssertList:TStringList read FAssertList write FAssertList;
     Property TopEpiDataFile:TObject read FTopEpiDataFile write FTopEpiDataFile;
     Property DefList:TStringList read FDefList write FDefList;
     Property GlobalDefList:TStringList read FGlobalDefList write FGlobalDefList;
     Property Confirm:Boolean read FConfirm write FConfirm;
     Property Autosave:Boolean read FAutosave write FAutosave;
-    Property GlobalMissingValues[Index: integer]:str15 read GetGlobalMissingValues write SetGlobalMissingValues;
+    Property GlobalMissingValues[Index: integer]:string read GetGlobalMissingValues write SetGlobalMissingValues;
     Property GlobalDefaultValue:string read FGlobalDefaultValue write FGlobalDefaultValue;
     Property MissingAction:TMissingActions read FMissingAction write FMissingAction;
     Property GlobalTypeCom:Boolean read FGlobalTypeCom write FGlobalTypeCom;
@@ -293,83 +314,6 @@ TYPE
 implementation
 
 
-{************************************* TeField *************************************}
-
-procedure TeField.Clone(dest: TeField; clonevalue: boolean);
-begin
-
-end;
-
-constructor TeField.Create;
-begin
-
-end;
-
-destructor TeField.Destroy;
-begin
-
-  inherited;
-end;
-
-function TeField.GetAsLabel: String;
-begin
-
-end;
-
-function TeField.GetAsString: String;
-begin
-
-end;
-
-function TeField.GetFieldName: String;
-begin
-
-end;
-
-function TeField.GetHasValueLabels: Boolean;
-begin
-
-end;
-
-function TeField.GetMissingValues(Index: Integer): Str15;
-begin
-
-end;
-
-function TeField.HasCheckProperties: Boolean;
-begin
-
-end;
-
-function TeField.HasSpecialChecks: Boolean;
-begin
-
-end;
-
-procedure TeField.ResetCheckProperties;
-begin
-
-end;
-
-procedure TeField.ResetField;
-begin
-
-end;
-
-procedure TeField.SetAsString(Value: String);
-begin
-
-end;
-
-procedure TeField.SetMissingValues(Index: Integer; Value: str15);
-begin
-
-end;
-
-function TeField.Value2Label(Value: string): string;
-begin
-
-end;
 
 {************************************* TEpiDataFile *************************************}
 
@@ -378,10 +322,6 @@ begin
 
 end;
 
-procedure TEpiDataFile.Append;
-begin
-
-end;
 
 function TEpiDataFile.ApplyIndex: Boolean;
 begin
@@ -429,10 +369,6 @@ begin
 
 end;
 
-procedure TEpiDataFile.First;
-begin
-
-end;
 
 function TEpiDataFile.GetCheckLines: TStringList;
 begin
@@ -474,7 +410,7 @@ begin
 
 end;
 
-function TEpiDataFile.GetGlobalMissingValues(Index: Integer): Str15;
+function TEpiDataFile.GetGlobalMissingValues(Index: Integer): string;
 begin
 
 end;
@@ -510,11 +446,6 @@ begin
 
 end;
 
-procedure TEpiDataFile.Last;
-begin
-
-end;
-
 function TEpiDataFile.LoadChecks: Boolean;
 begin
 
@@ -525,26 +456,13 @@ begin
 
 end;
 
-procedure TEpiDataFile.Next;
-begin
-
-end;
 
 function TEpiDataFile.Open(const filename: String;
-  OpenOptions: TOpenFileOptions): Boolean;
+  OpenOptions: TEpiDataFileOptions): Boolean;
 begin
 
 end;
 
-procedure TEpiDataFile.Post;
-begin
-
-end;
-
-procedure TEpiDataFile.Prev;
-begin
-
-end;
 
 procedure TEpiDataFile.Read(RecNum: Integer);
 begin
@@ -561,7 +479,7 @@ begin
 
 end;
 
-function TEpiDataFile.ReadFromIndex(IndexNo, RecNo: Integer): str30;
+function TEpiDataFile.ReadFromIndex(IndexNo, RecNo: Integer): string;
 begin
 
 end;
@@ -594,19 +512,19 @@ begin
 end;
 
 function TEpiDataFile.SearchIndex(IndexNo: Integer;
-  SearchStr: Str30): LongInt;
+  SearchStr: string): LongInt;
 begin
 
 end;
 
-function TEpiDataFile.SearchIndexFrom(IndexNo: Integer; SearchStr: str30;
+function TEpiDataFile.SearchIndexFrom(IndexNo: Integer; SearchStr: string;
   RecNo: Integer; direction: TDirections): LongInt;
 begin
 
 end;
 
 procedure TEpiDataFile.SetGlobalMissingValues(Index: Integer;
-  Value: str15);
+  Value: string);
 begin
 
 end;
@@ -636,7 +554,7 @@ begin
 
 end;
 
-procedure TEpiDataFile.WriteToIndex(IndexNo, RecNo: Integer; s: Str30);
+procedure TEpiDataFile.WriteToIndex(IndexNo, RecNo: Integer; s: string);
 begin
 
 end;

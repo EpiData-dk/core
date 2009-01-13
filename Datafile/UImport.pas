@@ -66,7 +66,7 @@ begin
   result := nil;
   try
     result := TEpiDataFile.Create();
-    result.Options := aOptions;
+    //result.Options := aOptions;
   finally
     //
   end;
@@ -89,7 +89,7 @@ begin
   result := nil;
   try
     result := TEpiDataFile.Create();
-    result.Options := aOptions;
+    //result.Options := aOptions;
   finally
     //
   end;
@@ -100,7 +100,7 @@ begin
   result := nil;
   try
     result := TEpiDataFile.Create();
-    result.Options := aOptions;
+    //result.Options := aOptions;
   finally
     //
   end;
