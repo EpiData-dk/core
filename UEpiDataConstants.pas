@@ -3,7 +3,7 @@ unit UEpiDataConstants;
 interface
 
 uses
-  graphics;
+  graphics, UEpiTypes;
 
 CONST
   NEWRECORD=-1;
@@ -32,7 +32,12 @@ CONST
                         clMaroon,clPurple,clOlive,clSilver,clGray,
                         clBlue,clLime,clAqua,clRed,clFuchsia,clYellow,clWhite);
   BgColors:array[0..7] of TColor = (clBlack,clNavy,clGreen,clTeal,clMaroon,clPurple,clOlive,clSilver);
+  SupportedFieldTypes: SET OF TFieldtypes = [ftInteger,ftAlfa,ftDate,ftUpperAlfa,
+                          ftBoolean,ftFloat,ftToday,ftEuroDate,ftIDNUM,ftQuestion,
+                          ftEuroToday,ftSoundex,ftCrypt,ftYMDDate,ftYMDToday];
+  DateFieldTypes: SET OF TFieldtypes = [ftDate,ftToday,ftEuroDate,ftEuroToday,ftYMDDate,ftYMDToday];
 
+  {$I Datafile\errorcodes.inc}
 
 
 
