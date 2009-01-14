@@ -6,7 +6,7 @@ unit UEpiDataFile;
 interface
 
 uses
-  UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
+  Windows,UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
 
 TYPE
 
@@ -1803,12 +1803,13 @@ procedure TEpiDataFile.Write(RecNum: Integer);
 VAR
   wrN,n,repcounter,ecode:Integer;
   TempS:String[80];
-  s:Str30;
+  s:string[30];
   eRecString,s2:String;
   ABuf: PRecBuf;
   BufCount,LineCharCount: Integer;
   ok:Boolean;
 begin
+{
   ABuf:=FRecBuf;
   IF RecNum=NewRecord THEN
     BEGIN
@@ -1986,6 +1987,7 @@ begin
   FCurRecModified:=False;
   FFileModified:=True;
   IF (FIDNUMField<>-1) AND (RecNum=NewRecord) THEN INC(FCurIDNumber);
+  }
 end;
 
 procedure TEpiDataFile.WriteIndexNoToSortIndex(SortPos, num: Integer);
@@ -1998,7 +2000,7 @@ end;
 
 procedure TEpiDataFile.WriteToIndex(IndexNo, RecNo: Integer; s: string);
 VAR
-  tmpS:str30;
+  tmpS:string[30];
   ptmpS:Array[0..30] of byte absolute tmpS;
 begin
   FIndex.Position:=31+( (RecNo-1)*(31*FIndexCount) ) + ( 31*(IndexNo-1) );
