@@ -1,6 +1,5 @@
 unit UEpiDataFile;
 
-//Errorhåndtering
 //onProgress
 
 interface
@@ -36,8 +35,7 @@ TYPE
       Next:         Pointer;
     END;
 
-    //TODO: Det nedenstående flyttes til CheckObjUnit
-    TDirections=(dirForward,dirBackward,dirFirst,dirLast,dirAbsolute);
+  TDirections=(dirForward,dirBackward,dirFirst,dirLast,dirAbsolute);
 
 
 //****************** TEpiDataFile ********************************
@@ -185,6 +183,23 @@ TYPE
     Procedure SetGlobalMissingValues(Index: Integer; Value:string);
     Function  GetFileSize:LongInt;
     function  GetQesLines: string;
+    Function    LoadChecks:Boolean;
+    Function    MakeIndexFile:Boolean;
+    Function    ApplyIndex:Boolean;
+    Function    ReadFromIndex(IndexNo,RecNo: Integer):string;
+    Function    ReadCommonIndex(RecNo: Integer):String;
+    Procedure   InitSortIndex;
+    Procedure   DoSort(L,R:Integer);
+    Function    ReadIndexNoFromSortIndex(SortPos: Integer):Integer;
+    Procedure   peWrite(VAR f:ByteFile; Const s:String);
+    Procedure   WriteIndexNoToSortIndex(SortPos,num:Integer);
+    Function    ReadCommonViaSortIndex(SortPos: Integer):String;
+    Procedure   WriteToIndex(IndexNo,RecNo: Integer; s:string);
+    Function    SearchIndex(IndexNo: Integer; SearchStr: string):LongInt;
+    Function    SearchIndexFrom(IndexNo: Integer; SearchStr: string; RecNo:Integer; direction:TDirections):LongInt;
+    Function    IndexHasDuplicates(IndexNo:Integer):Boolean;
+    Procedure   DecryptIndex;  
+
   public
     CheckFileMode:Boolean;
     constructor Create;
@@ -198,7 +213,7 @@ TYPE
     //Read and write methods
     Procedure   Read(RecNum:LongInt);
     Procedure   Write(RecNum:LongInt);
-    Function    ReadFromMem(AField:TeField; RecNo:LongInt; VAR RecIsDeleted:Boolean):String;   //TODO: Funktionalitet flyttet til Read
+    //Function    ReadFromMem(AField:TeField; RecNo:LongInt; VAR RecIsDeleted:Boolean):String;   // Funktionalitet flyttet til Read
     //procedure   Next;
     //procedure   Prev;
     //procedure   First;
@@ -206,25 +221,11 @@ TYPE
     //procedure   Append;
     //procedure   Post;
     //Checkfile related methods
-    Function    LoadChecks:Boolean;      //TODO: Private
-    Function    MakeIndexFile:Boolean;     //TODO: Private
-    Function    ApplyIndex:Boolean;   //TODO: Private
-    Function    ReadFromIndex(IndexNo,RecNo: Integer):string;   //TODO: Private
-    Function    ReadCommonIndex(RecNo: Integer):String;   //TODO: Private
-    Procedure   InitSortIndex;   //TODO: Private
-    Procedure   DoSort(L,R:Integer);   //TODO: Private
-    Function    ReadIndexNoFromSortIndex(SortPos: Integer):Integer;   //TODO: Private
-    Procedure   WriteIndexNoToSortIndex(SortPos,num:Integer);   //TODO: Private
-    Function    ReadCommonViaSortIndex(SortPos: Integer):String;   //TODO: Private
-    Procedure   WriteToIndex(IndexNo,RecNo: Integer; s:string);   //TODO: Private
-    Function    SearchIndex(IndexNo: Integer; SearchStr: string):LongInt;   //TODO: Private
-    Function    SearchIndexFrom(IndexNo: Integer; SearchStr: string; RecNo:Integer; direction:TDirections):LongInt;   //TODO: Private
-    Function    IndexHasDuplicates(IndexNo:Integer):Boolean;   //TODO: Private
-    Procedure   DecryptIndex;   //TODO: Private
-    Function    DoRebuildIndex: Boolean;   //TODO: Private måske? Kaldes fra Entry tools?
-    procedure   DestroyValueLabels(aValueLabelSet: TValueLabelSet);   //TODO: slettes
+    Function    DoRebuildIndex: Boolean;  
+    //procedure   DestroyValueLabels(aValueLabelSet: TValueLabelSet);   //slettes
     function    GetCheckLines:TStringList;
     procedure   Error(errorcode:integer; errortext:string);
+    procedure   CommitMem;
 
     //Properties
     Property Fields[Index: Integer]: TeField read GetField; default;
@@ -455,10 +456,10 @@ begin
   inherited destroy;
 end;
 
-procedure TEpiDataFile.DestroyValueLabels(aValueLabelSet: TValueLabelSet);
-begin
-  if assigned(aValueLabelSet) then FreeAndNil(aValueLabelSet);
-end;
+//procedure TEpiDataFile.DestroyValueLabels(aValueLabelSet: TValueLabelSet);
+//begin
+//  if assigned(aValueLabelSet) then FreeAndNil(aValueLabelSet);
+//end;
 
 procedure TEpiDataFile.DisposeFieldList(AList: TeFields);
 begin
@@ -1469,6 +1470,7 @@ begin
   Result:=tmpS;
 end;
 
+{
 function TEpiDataFile.ReadFromMem(AField: TeField; RecNo: Integer; var RecIsDeleted: Boolean): String;
 VAR
   RecordPos:LongInt;
@@ -1498,7 +1500,7 @@ begin
     IF CharPointer^='?' THEN RecIsDeleted:=True ELSE RecIsDeleted:=False;
     IF AField.Fieldtype<>ftQuestion THEN
       BEGIN
-        {Read value of field}
+        //Read value of field
         FieldT:=PChar(cFill(#0,AField.Length+3));
         IF FStoredInMemory THEN
           BEGIN
@@ -1532,6 +1534,7 @@ begin
     Dispose(CharPointer);
   END;
 end;
+}
 
 function TEpiDataFile.ReadIndexNoFromSortIndex(SortPos: Integer): Integer;
 VAR
@@ -1628,7 +1631,6 @@ VAR
   s:string;
   aField: TeField;
 begin
-{
   IF (NOT Assigned(FFieldList)) OR (FFieldList.Count=0) THEN
     BEGIN
       raise Exception.Create('No fields defined');
@@ -1651,10 +1653,10 @@ begin
     end;
   TempResult:=True;
   AssignFile(ff,FRECFilename);
-  {$I-
+  {$I-}
   Rewrite(ff);
   TempInt:=IOResult;
-  {$I+
+  {$I+ }
   IF TempInt=0 THEN
     BEGIN
       //Check if datafile contains encrypt-field    //&&
@@ -1691,37 +1693,37 @@ begin
               //write fieldchar
               IF (fieldtype=ftInteger) OR (fieldtype=ftFloat) OR (fieldtype=ftIDNUM)
               THEN peWrite(ff,'#') ELSE peWrite(ff,'_');
-              peWrite(ff,FormatStr(Name,10));   //Name of field
+              peWrite(ff,FormatStr(Fieldname,10));   //Name of field
               peWrite(ff,' ');                   //Space required for some unknown reason
               peWrite(ff,FormatInt(QuestX,4));  //Question X-position
               peWrite(ff,FormatInt(QuestY,4));  //Question Y-position
               peWrite(ff,FormatInt(30,4));       //Question colorcode
-              peWrite(ff,FormatInt(FFieldX,4));  //Entry X-position
-              peWrite(ff,FormatInt(FFieldY,4));  //Entry Y-position
+              peWrite(ff,FormatInt(FieldX,4));  //Entry X-position
+              peWrite(ff,FormatInt(FieldY,4));  //Entry Y-position
               //Write FieldType
               // 0=Question without entryfield, i.e. text only
               // 100+Number of decimals = Floating point number
               // For all other: use the fieldtype-code (fieldtype)
               IF fieldtype=ftQuestion THEN peWrite(ff,FormatInt(0,4))
-                ELSE IF (fieldtype=ftFloat) AND (FNumDecimals>0) THEN peWrite(ff,FormatInt(100+fNumDecimals,4))
+                ELSE IF (fieldtype=ftFloat) AND (NumDecimals>0) THEN peWrite(ff,FormatInt(100+NumDecimals,4))
                   ELSE peWrite(ff,FormatInt(ORD(fieldtype),4));
               //Write length of field - use 0 for text only
               IF fieldtype=ftQuestion THEN peWrite(ff,FormatInt(0,4))
               ELSE
                 BEGIN
-                  peWrite(ff,FormatInt(FLength,4));
-                  FRecLength:=FRecLength+FLength;
+                  peWrite(ff,FormatInt(Length,4));
+                  FRecLength:=FRecLength+Length;
                 END;
               //write entry colorcode - special use in encrypted fields (holds entrylength of field)
               IF fieldtype<>ftCrypt THEN colorN:=112   //&&
               ELSE
                 BEGIN
-                  IF FCryptEntryLength<15 THEN colorN:=111+FCryptEntryLength ELSE colorN:=FCryptEntryLength;
+                  IF CryptEntryLength<15 THEN colorN:=111+CryptEntryLength ELSE colorN:=CryptEntryLength;
                 END;  //else
               peWrite(ff,FormatInt(colorN,4));         //Entry colorcode
               peWrite(ff,' ');                      //Another unnescessary blank
-              if FOriginalQuest='' then FOriginalQuest:=Question;
-              peWrite(ff,FOriginalQuest);
+              if OriginalQuest='' then OriginalQuest:=Question;
+              peWrite(ff,OriginalQuest);
               peWrite(ff,chr(NewLine));
               peWrite(ff,chr(LineFeed));
             END;  //with
@@ -1737,7 +1739,6 @@ begin
     END  //if TempInt=0
   ELSE TempResult:=False;
   Result:=TempResult;
-  }
 end;
 
 function TEpiDataFile.SearchIndex(IndexNo: Integer; SearchStr: string): LongInt;
@@ -1800,6 +1801,18 @@ begin
     END;
 end;
 
+Procedure TEpiDataFile.peWrite(VAR f:ByteFile; Const s:String);
+VAR
+  t,n:Byte;
+BEGIN
+  FOR n:=1 TO Length(s) DO
+    BEGIN
+      t:=ORD(s[n]);
+      system.Write(f,t);
+    END;  //for
+END;  //procedure peWrite
+
+
 procedure TEpiDataFile.Write(RecNum: Integer);
 VAR
   wrN,n,repcounter,ecode:Integer;
@@ -1810,7 +1823,6 @@ VAR
   BufCount,LineCharCount: Integer;
   ok:Boolean;
 begin
-{
   ABuf:=FRecBuf;
   IF RecNum=NewRecord THEN
     BEGIN
@@ -1878,14 +1890,14 @@ begin
     BEGIN
       WITH TeField(FFieldList.Items[wrN]) DO
         BEGIN
-          IF (fieldtype in [ftToday,ftEuroToday,ftYMDToday]) THEN FFieldText:=mibDateToStr(now,fieldtype);
+          IF (fieldtype in DateFieldTypes) THEN AsString:=mibDateToStr(now,fieldtype);
           //Add indices
           //TODO: Add handling of Index files
-          IF (false) and (TeField(FFieldList.Items[wrN]).FIndex>0) THEN
+          IF (false) and (TeField(FFieldList.Items[wrN]).Index>0) THEN
             BEGIN
               IF RecNum=NewRecord THEN n:=FNumRecords ELSE n:=RecNum;
-              IF fieldtype=ftCrypt THEN s:=Copy(FFieldText,1,21)
-              ELSE s:=Copy(FFieldText,1,30);
+              IF fieldtype=ftCrypt THEN s:=Copy(AsString,1,21)
+              ELSE s:=Copy(AsString,1,30);
               CASE fieldtype OF
                 ftInteger,ftFloat: s:=FormatNumberToIndex(s);
                 ftDate,ftEuroDate,ftToday,ftEuroToday,ftYMDDate,ftYMDToday:  //&&
@@ -1893,7 +1905,7 @@ begin
                ELSE
                  s:=Format('%-30s',[s]);
               END;  //case
-              WriteToIndex(FIndex,n,s);
+              WriteToIndex(Index,n,s);
               //WriteToSortIndex ???
               //Write to indexfile
               repcounter:=0;
@@ -1901,7 +1913,7 @@ begin
               REPEAT
                 INC(repcounter);
                 TRY
-                  Seek(FIndexFile,((n-1)*FIndexCount)+TeField(FFieldList.Items[wrN]).FIndex);
+                  Seek(FIndexFile,((n-1)*FIndexCount)+TeField(FFieldList.Items[wrN]).Index);
                   IF fieldtype=ftCrypt THEN    //&&
                     BEGIN
                       s2:=s;
@@ -1924,7 +1936,7 @@ begin
               //IF repcounter=-1 THEN raise EWriteError.Create(Lang(20462));  //20462=Current record not saved!
             END;
           //Make RecString
-          TempS:=FFieldText;
+          TempS:=AsString;
           IF (fieldtype=ftCrypt) AND (FKey<>'') THEN TempS:=EncryptString(trim(TempS),FKey);
           IF ((fieldtype=ftInteger) or (fieldtype=ftFloat))
             AND (Trim(TempS)<>'') THEN
@@ -1932,20 +1944,20 @@ begin
               IF fieldtype=ftFloat THEN
                 BEGIN
                   WHILE pos(',',TempS)<>0 DO TempS[Pos(',',TempS)]:='.';
-                  TempS:=FormatFloating(TempS,FLength);
+                  TempS:=FormatFloating(TempS,Length);
                 END  //if ftFloat
               ELSE
-                TempS:=FormatInt(strToInt(TempS),FLength);
+                TempS:=FormatInt(strToInt(TempS),Length);
             END   //if ftInteger or ftFloat
-          ELSE IF fieldtype<>ftQuestion THEN TempS:=FormatStr(TempS,Flength);
-          FOR n:=1 TO FLength DO
+          ELSE IF fieldtype<>ftQuestion THEN TempS:=FormatStr(TempS,length);
+          FOR n:=1 TO Length DO
             BEGIN
               ABuf^[BufCount]:=TempS[n];
               DEC(LineCharCount);
               INC(BufCount);
               IF LinecharCount=0 THEN
                 BEGIN
-                  Move(EOLchars, ABuf^[BufCount], length(EOLChars));
+                  Move(EOLchars, ABuf^[BufCount], system.length(EOLChars));
                   INC(BufCount, sizeof(EOLchars));
                   LinecharCount:=MaxRecLineLength;
                 END;
@@ -1988,7 +2000,6 @@ begin
   FCurRecModified:=False;
   FFileModified:=True;
   IF (FIDNUMField<>-1) AND (RecNum=NewRecord) THEN INC(FCurIDNumber);
-  }
 end;
 
 procedure TEpiDataFile.WriteIndexNoToSortIndex(SortPos, num: Integer);
@@ -2007,6 +2018,11 @@ begin
   FIndex.Position:=31+( (RecNo-1)*(31*FIndexCount) ) + ( 31*(IndexNo-1) );
   tmpS:=s;
   FIndex.Write(ptmpS,31);
+end;
+
+procedure TEpiDataFile.commitMem;
+begin
+  if FStoredInMemory then FMemFile.SaveToFile(FRecFilename);
 end;
 
 end.

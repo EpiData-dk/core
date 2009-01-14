@@ -18,6 +18,7 @@ CONST
   BooleanNoChars:  Set of CHAR=['n','N','0'];
   DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
   TerminatorChars: Set of CHAR=['!','?','^'];
+  EOLchars: array[0..2] of char = '!'#13#10;
   NewLine:Byte=13;
   LineFeed:Byte=10;
   MaxRecLineLength=78;
