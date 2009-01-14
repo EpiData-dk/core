@@ -9,7 +9,7 @@ uses
 
 TYPE
 
-  TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoReadRelates, oeIgnoreIndex);
+  TEpiDataFileOption = (eoInMemory, eoIgnoreChecks, eoIgnoreRelates, oeIgnoreIndex);
   TEpiDataFileOptions = set of TEpiDataFileOption;
 
   TRequestPasswordTypes=(rpOpen,rpCreate);
