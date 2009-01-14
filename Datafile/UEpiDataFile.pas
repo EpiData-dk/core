@@ -16,7 +16,8 @@ TYPE
   TRequestPasswordEvent = procedure(Sender: TObject; requesttype:TRequestPasswordTypes; var password:String) of object;
 
   TTranslateEvent = function(langcode:Integer; text:widestring): widestring of object;
-  TProgressEvent = function(Sender: TObject; Progress: Integer; Msg: String): Integer of object;
+  TProgressResult = (prNormal, prCancel);
+  TProgressEvent = function(Sender: TObject; Percent: Integer; Msg: String): TProgressResult of object;
 
   TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
   RecBuf=Array[0..20000] OF Char;
@@ -147,6 +148,7 @@ TYPE
     {Events}
     FOnRequestPassword: TRequestPasswordEvent;
     FOnTranslate:       TTranslateEvent;
+    FOnProgress:        TProgressEvent;
 
     {Colors}
     FQuestionText:      TColor;
@@ -205,6 +207,7 @@ TYPE
     constructor Create;
     destructor  Destroy;  override;
     Function    Lang(langcode:Integer; CONST langtext:string):String;    //TODO: Private
+    Function    UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
     Function    Open(Const filename:String; OpenOptions:TEpiDataFileOptions):Boolean;
     //Methods related to creating new datafile and adding fields, record
     Function    SaveStructureToFile(filename: string; OverwriteExisting:boolean=false):boolean;
@@ -256,6 +259,7 @@ TYPE
     Property ErrorText:String read FErrorText write FErrorText;
     Property OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
     Property OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
+    Property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
     Property HasIncludeCmd:Boolean read FHasIncludeCmd write FHasIncludeCmd;
     Property ChkTopComments:TStringList read FChkTopComments write FChkTopComments;
     Property BeforeFileCmds:TList read FBeforeFileCmds write FBeforeFileCmds;
@@ -957,6 +961,15 @@ begin
     END
   ELSE Result:=langtext;
   if result='' then result:=langtext;
+end;
+
+function TEpiDataFile.UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
+begin
+  Result := prNormal;
+  if Assigned(FOnProgress) then
+  Begin
+    result := FOnProgress(Self, Percent, Msg);
+  end;
 end;
 
 function TEpiDataFile.LoadChecks: Boolean;

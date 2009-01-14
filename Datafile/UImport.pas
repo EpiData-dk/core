@@ -10,6 +10,7 @@ type
   TEpiImport = class(TObject)
   private
     procedure LoadRec(const FileName: string; DataFile: TEpiDataFile);
+    Function ProgressStep(CONST MaxVal,CurVal: Integer):Boolean;
   protected
 
   public
@@ -274,6 +275,7 @@ begin
     DataFile.EpiInfoFieldNaming:=False;
     DataFile.RECFilename:=RECFilename;
 
+    DataFile.UpdateProgress(0, DataFile.Lang(0, 'Reading header information'));
     StataFile.Position:=0;
     StataFile.Read(NumBuff,3);
     IF NumBuff[0]=$69 THEN
@@ -611,12 +613,8 @@ begin
       Append(F);
       FOR CurRec:=1 TO nObs DO
         BEGIN
-{          IF ProgressStep(nObs,CurRec) THEN
-            BEGIN
-              ProgressForm.pBar.Position:=CurRec;
-              ProgressForm.pLabel.Caption:=Format(' '+DataFile.Lang((23920),[CurRec,nObs]);  //'Importing record no. %d of %d'
-              Application.ProcessMessages;
-            END;}
+          IF ProgressStep(nObs,CurRec) THEN
+            DataFile.UpdateProgress(Trunc(100*CurRec/nObs), DataFile.Lang(0, 'Reading header information'));
           FOR CurField:=0 TO DataFile.NumDataFields-1 DO
             BEGIN
               EField:=DataFile.Fields[Curfield];
@@ -969,5 +967,17 @@ procedure TEpiImport.LoadXLS(const FileName: string;
 begin
 
 end;
+
+function TEpiImport.ProgressStep(const MaxVal, CurVal: Integer): Boolean;
+VAR
+  m,c:Double;
+BEGIN
+  m:=MaxVal;
+  c:=CurVal;
+  IF MaxVal<20 THEN Result:=True
+  ELSE IF (c/m < 0.05) AND (CurVal<1000) AND ((CurVal-1) MOD 4 = 0) THEN Result:=True
+  ELSE IF ((CurVal-1) MOD (MaxVal DIV 20) = 0) THEN Result:=True
+  ELSE Result:=False;
+END;  //function progressStep
 
 end.
