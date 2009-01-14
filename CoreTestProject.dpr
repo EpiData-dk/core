@@ -17,8 +17,7 @@ uses
   DCPcrypt in 'encryption\DCPcrypt.pas',
   SHA1 in 'encryption\SHA1.pas',
   epiUDFTypes in 'Datafile\epiUDFTypes.pas',
-  UExtUDF in 'Datafile\UExtUDF.pas',
-  UStataIO in 'Datafile\UStataIO.pas';
+  UExtUDF in 'Datafile\UExtUDF.pas';
 
 {$R *.res}
 

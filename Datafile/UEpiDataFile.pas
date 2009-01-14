@@ -17,6 +17,7 @@ TYPE
   TRequestPasswordEvent = procedure(Sender: TObject; requesttype:TRequestPasswordTypes; var password:String) of object;
 
   TTranslateEvent = function(langcode:Integer; text:widestring): widestring of object;
+  TProgressEvent = function(Sender: TObject; Progress: Integer; Msg: String): Integer of object;
 
   TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
   RecBuf=Array[0..20000] OF Char;
@@ -188,7 +189,7 @@ TYPE
     CheckFileMode:Boolean;
     constructor Create;
     destructor  Destroy;  override;
-    Function    Lang(langkode:Integer; CONST langtext:string):String;    //TODO: Private
+    Function    Lang(langcode:Integer; CONST langtext:string):String;    //TODO: Private
     Function    Open(Const filename:String; OpenOptions:TEpiDataFileOptions):Boolean;
     //Methods related to creating new datafile and adding fields, record
     Function    SaveStructureToFile(filename: string; OverwriteExisting:boolean=false):boolean;
@@ -943,14 +944,14 @@ begin
   DoSort(1,FNumRecords);
 end;
 
-function TEpiDataFile.Lang(langkode: Integer;  const langtext: string): String;
+function TEpiDataFile.Lang(langcode: Integer;  const langtext: string): String;
 var
   s:string;
 begin
   s:='';
   IF Assigned(FOnTranslate) THEN
     BEGIN
-      FOnTranslate(langkode, s);
+      FOnTranslate(langcode, s);
       Result:=s;
     END
   ELSE Result:=langtext;
