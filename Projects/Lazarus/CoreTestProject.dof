@@ -123,3 +123,12 @@ Private=0
 DLL=0
 Locale=1030
 CodePage=1252
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=..\..\
+[HistoryLists\hlUnitAliases]
+Count=1
+Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+[HistoryLists\hlSearchPath]
+Count=1
+Item0=..\..\
