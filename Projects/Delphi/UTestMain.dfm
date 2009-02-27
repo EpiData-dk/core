@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 464
-  Top = 289
+  Left = 240
+  Top = 118
   Width = 827
   Height = 565
   Caption = 'Form1'
@@ -117,7 +117,7 @@ object Form1: TForm1
     Top = 97
     Width = 819
     Height = 441
-    ActivePage = TabSheet2
+    ActivePage = TabSheet4
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -128,6 +128,42 @@ object Form1: TForm1
         Width = 811
         Height = 413
         Align = alClient
+        TabOrder = 0
+      end
+    end
+    object TabSheet3: TTabSheet
+      Caption = 'File structure'
+      ImageIndex = 2
+      object Memo2: TMemo
+        Left = 0
+        Top = 0
+        Width = 811
+        Height = 413
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Courier New'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 0
+      end
+    end
+    object TabSheet4: TTabSheet
+      Caption = 'CheckFile'
+      ImageIndex = 3
+      object Memo3: TMemo
+        Left = 0
+        Top = 0
+        Width = 811
+        Height = 413
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Courier New'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 0
       end
     end

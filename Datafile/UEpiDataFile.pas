@@ -226,7 +226,7 @@ TYPE
     //Checkfile related methods
     Function    DoRebuildIndex: Boolean;  
     //procedure   DestroyValueLabels(aValueLabelSet: TValueLabelSet);   //slettes
-    function    GetCheckLines:TStringList;
+    function    GetCheckLines:string;
     procedure   Error(errorcode:integer; errortext:string);
     procedure   CommitMem;
 
@@ -310,7 +310,7 @@ TYPE
     Property ShowLastRecord:boolean read FShowLastRecord write FShowLastRecord;
     Property password:string read FKey write FKey;
     Property RecordLength:word read FRecLength;
-    Property CheckLines:TStringList read GetCheckLines;
+    Property CheckLines:string read GetCheckLines;
     property QesLines: string read GetQesLines;
   published
     { Published declarations }
@@ -357,8 +357,50 @@ begin
 end;
 
 function TEpiDataFile.CountRecords: LongInt;
-begin
+TYPE
+  smallBuf=Array[0..20] OF Char;
+  PsmallBuf=^smallBuf;
 
+VAR
+  b: PsmallBuf;
+BEGIN
+  GetMem(b,3);
+  IF FStoredInMemory THEN
+    BEGIN
+      IF FMemFile.Size=FOffset THEN Result:=0
+      ELSE
+        BEGIN
+          Result:=FMemFile.Size-FOffset;
+          FMemFile.Position:=FMemFile.Size-3;
+          FMemFile.ReadBuffer(b^,3);
+        END;
+    END
+  ELSE
+    BEGIN
+      IF FDatfile.size=FOffset THEN Result:=0
+      ELSE
+        BEGIN
+          Result:=FDatfile.Size-FOffset;
+          FDatfile.Position:=FDatfile.size-3;
+          FDatfile.ReadBuffer(b^,3);
+        END;
+    END;
+  IF Result<>0 THEN
+    BEGIN
+      IF b^[2]<>#26 THEN   //is b3=EOF mark?
+        BEGIN
+          IF (b^[1]<>#13) or (b^[2]<>#10) THEN INC(Result,2);
+        END
+      ELSE
+        BEGIN
+          Dec(Result);
+          FHasEOFMarker:=True;
+          IF (b^[0]<>#13) or (b^[1]<>#10) THEN INC(Result,2);
+        END;
+      IF Result MOD FRecLength <> 0 THEN Result:=-1
+      ELSE Result:=Result DIV FRecLength;
+    END;
+  FreeMem(b);
 end;
 
 constructor TEpiDataFile.Create;
@@ -538,11 +580,11 @@ begin
 end;
 
 
-function TEpiDataFile.GetCheckLines: TStringList;
+function TEpiDataFile.GetCheckLines: string;
 begin
   FCheckWriter:=TCheckWriter.create(self);
   try
-    result:=TCheckWriter(FCheckWriter).CheckLines;
+    result:=TCheckWriter(FCheckWriter).CheckLines.text;
   finally
     FCheckWriter.Free;
   end;
@@ -954,11 +996,7 @@ var
   s:string;
 begin
   s:='';
-  IF Assigned(FOnTranslate) THEN
-    BEGIN
-      FOnTranslate(langcode, s);
-      Result:=s;
-    END
+  IF Assigned(FOnTranslate) THEN Result:=FOnTranslate(langcode, s)
   ELSE Result:=langtext;
   if result='' then result:=langtext;
 end;
@@ -1623,16 +1661,21 @@ procedure TEpiDataFile.SaveCheckFile;
 var
   CheckLines: TStringList;
 begin
-  if (FRECFilename='') then raise Exception.Create('Cannot save check file: No data file name found');
-  if (FCHKFilename='') then FCHKFilename:=ChangeFileExt(FRECFilename,'.chk');
-  TRY
-    CheckLines:=GetCheckLines;
-    if CheckLines.Count>0 then
-      CheckLines.SaveToFile(FCHKFilename)
-    else if FileExists(FCHKFilename) and ((FileGetAttr(FCHKFilename) and SysUtils.faReadOnly) = 0) then
-      DeleteFile(FCHKFilename);
-  EXCEPT
-    raise Exception.Create('Error saving check file');
+  checklines:=TStringList.create;
+  try
+    if (FRECFilename='') then raise Exception.Create('Cannot save check file: No data file name found');
+    if (FCHKFilename='') then FCHKFilename:=ChangeFileExt(FRECFilename,'.chk');
+    TRY
+      CheckLines.text:=GetCheckLines;
+      if CheckLines.Count>0 then
+        CheckLines.SaveToFile(FCHKFilename)
+      else if FileExists(FCHKFilename) and ((FileGetAttr(FCHKFilename) and SysUtils.faReadOnly) = 0) then
+        DeleteFile(FCHKFilename);
+    EXCEPT
+      raise Exception.Create('Error saving check file');
+    end;
+  finally
+    checklines.free;
   end;
 end;
 

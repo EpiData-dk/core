@@ -85,6 +85,8 @@ TYPE
     Function  GetHasValueLabels:Boolean;
     Function  GetMissingValues(Index: Integer):string;
     Procedure SetMissingValues(Index: Integer; Value:string);
+    Function  GetFieldtypeName:string;
+    function  Lang(langcode: Integer;  const langtext: string): String;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -102,6 +104,7 @@ TYPE
     Property    HasValueLabels:Boolean read GetHasValueLabels;
     Property    MissingValues[Index: integer]:string read GetMissingValues write SetMissingValues;
     Property    Fieldtype: TFieldTypes read FFieldtype write FFieldtype;
+    Property    FieldtypeName:string read getFieldtypeName;
     Property    VariableLabel:string read FVariableLabel write FVariableLabel;
     Property    Length:byte read FLength write FLength;
     Property    CryptEntryLength:Byte read FCryptEntryLength write FCryptEntryLength;
@@ -186,6 +189,9 @@ TYPE
 
 
 implementation
+
+uses
+  UEpiDataFile;
 
 // TeFields ****************************************
 
@@ -461,6 +467,44 @@ begin
   dest.FQuestY:=FQuestY;
   dest.FDefaultValue:=FDefaultValue;
   dest.FHasGlobalDefaultValue:=FHasGlobalDefaultValue;
+end;
+
+function TeField.Lang(langcode: Integer;  const langtext: string): String;
+begin
+  result:=langtext;
+  if (not assigned(FEpiDataFile)) then exit;
+  if (not assigned(TEpiDataFile(FEpiDataFile).onTranslate)) then exit;
+  result:=TEpiDataFile(FEpiDataFile).OnTranslate(langcode,langtext);
+end;
+
+function TeField.GetFieldtypeName:string;
+var
+  n:integer;
+begin
+  n:=ORD(FFieldtype);
+  case n of
+    0: result:=lang(50100,'Numeric');
+    1: result:=lang(50101,'Text');
+    2: result:=lang(50102,'Date (mdy)');
+    3: result:=lang(50103,'Uppercase text');
+    4: result:='Checkbox';
+    5: result:=lang(50105,'Boolean');
+    6: result:=lang(50100,'Numeric');
+    7: result:='Phonenumber';
+    8: result:='Time';
+    9: result:='Local phonenumber';
+    10: result:=lang(50110,'Today (mdy)');
+    11: result:=lang(50111,'Date (dmy)');
+    12: result:=lang(50112,'ID-number');
+    15: result:=lang(50115,'Question');
+    16: result:=lang(50116,'Today (dmy)');
+    17: result:=lang(50117,'Soundex');
+    18: result:=lang(50118,'Encryptfield');
+    19: result:=lang(50119,'Date (ymd)');
+    20: result:=lang(50120,'Today (ymd)');
+  else
+    result:='Unknown type';
+  end;
 end;
 
 // ********************** TeField END***************************
