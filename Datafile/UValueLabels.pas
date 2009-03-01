@@ -12,36 +12,45 @@ type
   TValueLabelSets = class(TObject)
   private
     FList: TStringList;
+    function GetCount:integer;
   public
     constructor Create();
-    destructor Destroy(); override;
-    procedure Clear();
-    procedure Clone(var dest: TValueLabelSets);
-    function ValueLabelSetByName(aName: string): TValueLabelSet;
-    procedure AddValueLabelSet(aValueLabelSet: TValueLabelSet);
+    destructor  Destroy(); override;
+    procedure   Clear();
+    procedure   Clone(var dest: TValueLabelSets);
+    function    ValueLabelSetByName(aName: string): TValueLabelSet;
+    procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
+    procedure   DeleteValueLabelSet(name: string);
+    property    count:integer read GetCount;
   end;
 
-  TValueLabelSetType = (vltRef, vltGlobal, vltLocal);
+  TValueLabelSetType = (vltFieldRef, vltLabelRef, vltLocal, vltFile);
 
   TValueLabelSet = class(TObject)
   private
     FData: TStringList;
     FName: String;
-    FValueLabelSetType: TValueLabelSetType;
-    function GetValue(const aLabel: string): string;
+    function  GetValue(const aLabel: string): string;
     procedure SetValue(const aLabel: string; const aValue: string);
-    function GetLabel(const aValue: string): string;
+    function  GetLabel(const aValue: string): string;
     procedure SetLabel(const aValue: string; const aLabel: string);
+    function  GetCount:integer;
+    function  GetValues(index:integer):string;
+    procedure SetValues(index:integer;value:string);
+    function  GetLabels(index:integer):string;
+    procedure SetLabels(index:integer; alabel:string);
   public
     constructor Create;
-    destructor Destroy; override;
-    procedure AddValueLabelPair(const aValue, aLabel: string);
-    procedure Clone(var Dest: TValueLabelSet);
-    procedure Clear();
-    property Name: string read FName write FName;
-    property ValueLabelSetType: TValueLabelSetType read FValueLabelSetType write FValueLabelSetType;
-    property Value[const aLabel: string]: string read GetValue write SetValue;
-    property ValueLabel[const aValue: string]: string read GetLabel write SetLabel;
+    destructor  Destroy; override;
+    procedure   AddValueLabelPair(const aValue, aLabel: string);
+    procedure   Clone(var Dest: TValueLabelSet);
+    procedure   Clear();
+    property    Name: string read FName write FName;
+    property    Value[const aLabel: string]: string read GetValue write SetValue;
+    property    ValueLabel[const aValue: string]: string read GetLabel write SetLabel;
+    property    count:integer read GetCount;
+    property    Values[index:integer]:string read GetValues write SetValues;
+    property    Labels[index:integer]:string read GetLabels write SetLabels;
   end;
 
 implementation
@@ -56,13 +65,20 @@ begin
   FList.AddObject(aValueLabelSet.Name, aValueLabelSet);
 end;
 
+procedure TValueLabelSets.DeleteValueLabelSet(name:string);
+var
+  idx: integer;
+begin
+  idx:=FList.IndexOf(name);
+  if idx>-1 then FList.Delete(idx);
+end;
+
 procedure TValueLabelSets.Clear;
 var
   i: integer;
 begin
   for i := 0 to FList.Count - 1 do
     TValueLabelSet(FList.Objects[i]).Destroy;
-  FList.Capacity := 0;
 end;
 
 procedure TValueLabelSets.Clone(var dest: TValueLabelSets);
@@ -87,8 +103,10 @@ begin
 end;
 
 destructor TValueLabelSets.Destroy;
+var
+  n:integer;
 begin
-  Clear;
+  clear;
   FreeAndNil(FList);
   inherited;
 end;
@@ -101,6 +119,11 @@ begin
   result := nil;
   if FList.Find(aName, idx) then
     result := TValueLabelSet(FList.Objects[idx]);
+end;
+
+function TValueLabelSets.GetCount:integer;
+begin
+  result:=FList.count;
 end;
 
 { TValueLabelSet }
@@ -121,7 +144,6 @@ var
 begin
   for i := 0 to FData.Count - 1 do
     TString(FData.Objects[i]).Destroy;
-  FData.Capacity := 0;
 end;
 
 procedure TValueLabelSet.Clone(var Dest: TValueLabelSet);
@@ -140,8 +162,7 @@ end;
 constructor TValueLabelSet.Create;
 begin
   FName := '';
-  FValueLabelSetType := vltLocal;
-  FData.Create;
+  FData:=TStringList.create;
   FData.Sorted := true;
   FData.CaseSensitive := false;
 end;
@@ -149,7 +170,8 @@ end;
 destructor TValueLabelSet.Destroy;
 begin
   Clear;
-  FreeAndNil(FData);
+  //FreeAndNil(FData);
+  FData.Free;
   inherited;
 end;
 
@@ -195,6 +217,31 @@ begin
       FData[i] := aValue;
       break;
     end;
+end;
+
+function TValueLabelSet.GetCount:integer;
+begin
+  result:=FData.Count;
+end;
+
+function TValueLabelSet.GetValues(index:integer):string;
+begin
+  if index<FData.Count then result:=FData[index] else result:='';
+end;
+
+procedure TValueLabelSet.SetValues(index:integer; value:string);
+begin
+  if index<FData.Count then FData[index]:=value;
+end;
+
+function TValueLabelSet.GetLabels(index:integer):string;
+begin
+  if index<FData.Count then result:=TString(FData.Objects[index]).Str else result:='';
+end;
+
+procedure TValueLabelSet.SetLabels(index:integer; alabel:string);
+begin
+  if index<FData.Count then TString(FData.Objects[index]).Str := aLabel;
 end;
 
 end.

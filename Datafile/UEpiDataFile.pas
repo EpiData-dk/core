@@ -187,12 +187,9 @@ TYPE
     function  GetQesLines: string;
     Function    LoadChecks:Boolean;
     Function    MakeIndexFile:Boolean;
-    Function    ApplyIndex:Boolean;
     Function    ReadFromIndex(IndexNo,RecNo: Integer):string;
     Function    ReadCommonIndex(RecNo: Integer):String;
-    Procedure   InitSortIndex;
     Procedure   DoSort(L,R:Integer);
-    Function    ReadIndexNoFromSortIndex(SortPos: Integer):Integer;
     Procedure   peWrite(VAR f:ByteFile; Const s:String);
     Procedure   WriteIndexNoToSortIndex(SortPos,num:Integer);
     Function    ReadCommonViaSortIndex(SortPos: Integer):String;
@@ -224,11 +221,14 @@ TYPE
     //procedure   Append;
     //procedure   Post;
     //Checkfile related methods
-    Function    DoRebuildIndex: Boolean;  
+    Function    DoRebuildIndex: Boolean;
     //procedure   DestroyValueLabels(aValueLabelSet: TValueLabelSet);   //slettes
     function    GetCheckLines:string;
     procedure   Error(errorcode:integer; errortext:string);
     procedure   CommitMem;
+    Function    ApplyIndex:Boolean;
+    Procedure   InitSortIndex;
+    Function    ReadIndexNoFromSortIndex(SortPos: Integer):Integer;
 
     //Properties
     Property Fields[Index: Integer]: TeField read GetField; default;

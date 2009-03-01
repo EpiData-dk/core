@@ -6,19 +6,17 @@ unit CheckObjUnit;
 //TODO: RetrieveCommentLegalRec, Label2Text - og i brugen af den undervejs, retrivelabel
 //cmdComLegal i cmd-structure
 //DestroyFieldlist
-//RetrieveCommentLegal procedure
-//Translate
 //Write Comment Legal
-//Translate
 
 interface
 
 USES Controls,Windows, Messages, Forms,Dialogs,Graphics,SysUtils,Classes,
-     UEFields, UEpiDataFile, UEpiDataConstants, UEpiTypes;
+     UEFields, UEpiDataFile, UEpiDataConstants, UEpiTypes, UValueLabels;
 
 
 
 type
+  str30=string[30];
   nwTypess=(nwAny,nwSameLine,nwSameKeepQuotes,nwKeepSpaces);
 
   TParser = class(TObject)
@@ -45,7 +43,7 @@ type
   TBeepTypes=(btWarning,btConfirmation,btStandard);
   TIndexFields=Array[1..MaxIndices] OF Integer;
   TIndexIsUnique=Array[1..MaxIndices] OF Boolean;
-  TIndexFile=File of string[30];
+  TIndexFile=File of str30;
   TDirections=(dirForward,dirBackward,dirFirst,dirLast,dirAbsolute);
   TLastSelectFilestype=(sfNone,sfMakeDatafile,sfRevise,sfAssert,sfRecode,sfRec2Qes,sfValDup,
                         sfImportStata,sfMerge);
@@ -102,8 +100,8 @@ TYPE
                 HideVarName:     String[10]);
             cmdComLegal:
                (clVarNumber:     Integer;
-                ValueLabel:      String[40];
-                //CommentLegalRec: PLabelRec;
+                ValueLabelName:  String[40];
+                ValueLabel:      TValueLabelSet;
                 ShowList:        Boolean);
             cmdTypeString:
                (tsVarNumber:     Integer;
@@ -206,7 +204,7 @@ TYPE
     Procedure ReportError(CONST ErrStr:String);
     Procedure RetrieveFieldBlock;
     Procedure RetrieveLabelBlock;
-    //Procedure RetrieveLabel;
+    Procedure RetrieveLabel;
     Procedure RetrieveAssertBlock;
     Procedure GetCommandList(CmdList:TList);
     Procedure GetCommand(CmdList:TList);
@@ -219,7 +217,7 @@ TYPE
     Procedure RetrieveMissingValues;
     Procedure RetrieveDefaultValue;
     Procedure RetrieveAutosearch;
-    //Procedure RetrieveCommentLegal(VAR AValueLabel:ShortString; VAR ACommentLegalRec: PLabelRec; VAR ShowList:Boolean; AsCommand:Boolean);
+    function  RetrieveCommentLegal(AsCommand:Boolean; var ValueLabelType:TValueLabelSetType; var Show:boolean; var ValueLabelUse:string):TValueLabelSet;
     Procedure RetrieveType;
     Procedure RetrieveKeys;
     Procedure AddFieldFlawComment;
@@ -243,7 +241,7 @@ TYPE
     FInitBlocks: TStringList;
     FLastFieldBlock: TStringList;
     FieldComments: TStringList;
-    //Function Label2Text(CONST ALabelName:String; ALabelRec:PLabelRec; NumSpc:Byte):String;
+    Function Label2Text(aValueLabelSet:TValueLabelSet; NumSpc:Byte):String;
     Procedure AddCommandList(sList:TStringList; CmdList:TList; Indent:Byte);
     procedure ChecksToStrings;
   public
@@ -412,6 +410,8 @@ end;   //destroy
 
 Function TCheckObj.Translate(stringnumber:Integer; origstring:string):string;
 begin
+  IF Assigned(FOnTranslate) THEN Result:=FOnTranslate(stringnumber, origstring)
+  ELSE Result:=origstring;
 end;
 
 Function TCheckObj.GetErrorList: String;
@@ -596,6 +596,10 @@ END;  //procedure ReportError
 Procedure TCheckObj.RetrieveFieldBlock;
 VAR
   n:Integer;
+  tmpBool: boolean;
+  ValueLabelType: TValueLabelSetType;
+  ValueLabelUse:  String;
+  ValueLabelShow: Boolean;
 BEGIN
   {Legal commands in fieldblocks are
     RANGE
@@ -653,7 +657,16 @@ BEGIN
           END
         ELSE IF CurCommand='AUTOJUMP'     THEN RetrieveAutoJump
         ELSE IF CurCommand='JUMPS'        THEN RetrieveJumps
-        //ELSE IF CurCommand='COMMENT'      THEN RetrieveCommentLegal(tmpField.FValueLabel,tmpField.FCommentLegalRec,tmpField.FShowLegalPickList,False)
+        ELSE IF CurCommand='COMMENT'      THEN
+          begin
+            tmpField.Valuelabel:=RetrieveCommentLegal(false,ValueLabelType,ValueLabelShow,ValueLabelUse);
+            if tmpField.Valuelabel<>NIL then
+              begin
+                tmpField.ShowLegalPickList:=ValuelabelShow;
+                tmpField.ValueLabelType:=ValueLabelType;
+                tmpField.ValueLabelUse:=ValueLabelUse;
+              end
+          end
         ELSE IF CurCommand='TYPE'         THEN RetrieveType
         ELSE IF CurCommand='KEY'          THEN RetrieveKeys
         ELSE IF CurCommand='CONFIRMFIELD' THEN tmpField.Confirm:=True
@@ -747,30 +760,28 @@ Procedure TCheckObj.RetrieveLabelBlock;
 {Reads the LABELBLOCK..END block in the checkfile}
 BEGIN
   REPEAT
-    CurCommand:=FParser.GetUpperToken(nwAny);  //  AnsiUpperCase(NextWord(nwAny));
-    //IF CurCommand='LABEL' THEN RetrieveLabel;  //TODO
+    CurCommand:=FParser.GetUpperToken(nwAny);
+    IF CurCommand='LABEL' THEN RetrieveLabel;
   UNTIL (CurCommand='END') OR (FParser.EndOfLines);
   CurCommand:='';
 END;  //RetrieveLabelBlock
 
-{
+
 Procedure TCheckObj.RetrieveLabel;
   //Reads a LABEL..END block
 VAR
-  FirstLabelRec,tmpLabelRec,NextLabelRec:PLabelRec;
+  aValueLabelSet: TValueLabelSet;
   tmpLabelName:String[80];
   ok,StopRead,FirstLabel:Boolean;
-  s: String;
+  s,tmpValue,tmpLabel: String;
 BEGIN
+  aValueLabelSet:=TValueLabelSet.create;
   ok:=True;
-  FirstLabel:=True;
-  tmpLabelRec:=NIL;
-  FirstLabelRec:=NIL;
   CurCommand:=AnsiLowerCase(FParser.GetToken(nwSameLine));  //AnsiLowerCase(NextWord(nwSameLine));   //Get Labelname
   IF trim(CurCommand)<>'' THEN
     BEGIN
-      IF (df.ValueLabels.IndexOf(CurCommand)=-1)
-      AND (df.ValueLabels.IndexOf(CurCommand+'¤')=-1) THEN
+      IF (df.ValueLabels.ValueLabelSetByName(CurCommand)=NIL)
+      AND (df.ValueLabels.ValueLabelSetByName(CurCommand+'¤')=NIL) THEN
         BEGIN
           StopRead:=False;
           tmpLabelName:=trim(CurCommand);
@@ -779,6 +790,7 @@ BEGIN
               IF Length(tmpLabelName)=40 THEN tmpLabelName[40]:='¤'
               ELSE tmpLabelName:=tmpLabelName+'¤';
             END;
+          aValueLabelSet.Name:=tmpLabelName;
           REPEAT
             //Read value
             CurCommand:=FParser.GetToken(nwAny);  //  NextWord(nwAny);
@@ -797,29 +809,22 @@ BEGIN
                     IF NOT FCheckFileMode THEN Continue;
                     IF Length(s)>(30+80) THEN
                       BEGIN
-                        ReportError(translate(22874,'Commented line is too long'));   //22874=Commented line is too long
+                        ReportError(translate(22874,'Commented line is too long'));
                         StopRead:=True;
                         ok:=False;
                       END
                   END;
-                NextLabelRec:=tmpLabelRec;
-                New(tmpLabelRec);
-                tmpLabelRec^.Next:=NIL;
-                IF FirstLabel THEN
-                  BEGIN
-                    FirstLabelRec:=tmpLabelRec;
-                    FirstLabel:=False;
-                  END
-                ELSE NextLabelRec^.Next:=tmpLabelRec;
                 IF s[1]='*' THEN
                   BEGIN
-                    tmpLabelRec^.Value:=Copy(s,1,30);
-                    IF Length(s)>30 THEN tmpLabelRec^.Text:=Copy(s,31,Length(s));
+                    tmpValue:=Copy(s,1,30);
+                    tmpLabel:='';
+                    IF Length(s)>30 THEN tmpLabel:=Copy(s,31,Length(s));
+                    aValueLabelSet.AddValueLabelPair(tmpValue,tmpLabel);
                   END  //if reading a commented-out label
                 ELSE
                   BEGIN
                     IF Length(CurCommand)>30 THEN CurCommand:=Copy(CurCommand,1,30);
-                    tmpLabelRec^.Value:=CurCommand;
+                    tmpValue:=CurCommand;
                     //Read text
                     CurCommand:=FParser.GetToken(nwSameLine);   //NextWord(nwSameLine);
                     IF trim(CurCommand)='' THEN
@@ -831,8 +836,9 @@ BEGIN
                       BEGIN
                         IF Length(CurCommand)>80 THEN CurCommand:=Copy(CurCommand,1,80);
                         WHILE pos('"',CurCommand)>0 DO Delete(CurCommand,Pos('"',CurCommand),1);
-                        tmpLabelRec^.Text:=CurCommand;
+                        tmpLabel:=CurCommand;
                       END;
+                    aValueLabelSet.AddValueLabelPair(tmpValue,tmpLabel);
                   END  //if reading a proper label
               END  //if line is not empty
             ELSE stopRead:=True;
@@ -841,15 +847,11 @@ BEGIN
       ELSE ok:=False;
     END  //if label name was found
   ELSE ok:=False;
-  IF ok THEN df.ValueLabels.AddObject(tmpLabelname,TObject(FirstLabelRec))
-  ELSE
-    BEGIN
-      tmpLabelRec:=FirstLabelRec;
-      DisposeLabelRec(tmpLabelRec);
-    END;
+  IF ok THEN df.ValueLabels.AddValueLabelSet(aValueLabelSet)
+  ELSE aValueLabelSet.Free;
   CurCommand:='';
 END;  //TCheckObj.RetrieveLabel
-}
+
 
 Procedure TCheckObj.RetrieveAssertBlock;
 {Reads the CONSISTENCYBLOCK..END block - and ignores it...}
@@ -2479,20 +2481,22 @@ BEGIN
   tmpField.Autosearch:=True;
 END;  //procedure TCheckObj.RetrieveAutosearch
 
-{
-Procedure TCheckObj.RetrieveCommentLegal(VAR AValueLabel:ShortString; VAR ACommentLegalRec: PLabelRec; VAR ShowList:Boolean; AsCommand:Boolean);
+
+function TCheckObj.RetrieveCommentLegal(AsCommand:Boolean; var ValueLabelType:TValueLabelSetType; var Show:boolean; var ValueLabelUse:string):TValueLabelSet;
+
 VAR
-  s,s2,LabelName,tmpS2,peekErrors: String;       //&&
+  s,s2,LabelName,tmpS2,peekErrors,tmpValue,tmpText: String;
   n,CurRec: Integer;
   ValueField,TextField: TeField;
-  ALabelRec, FirstLabelRec,NextLabelRec,tmpLabelRec: PLabelRec;
-  ok,StopRead,FirstLabel:Boolean;
+  tmpValueLabelSet: TValueLabelSet;
+  ok,StopRead:Boolean;
   ComLegDf: TEpiDatafile;
   F: TIndexFile;
   F2:TextFile;
-  s30: Str30;
+  s30: str30;
   TooLong,NotCompatible:Boolean;
   tmpStrings: TStrings;
+  ShowList: Boolean;
 BEGIN
   {Four kinds of COMMENT LEGAL possible:
   1. COMMENT LEGAL
@@ -2500,41 +2504,48 @@ BEGIN
        2  ...
      END
      Name in ValueLabels has a $ in the end
+     ValueLabelType=vltLocal
 
   2. COMMENT LEGAL USE labelname
      FValueLabel has has ¤ in the end
+     ValueLabelType=vltLabelRef
 
   3. COMMENT LEGAL USE fieldname
+     ValueLabelType=vltFieldRef
 
-  4. COMMENT LEGAL datafilename    }
-  {
-  ShowList:=False;
-  CurCommand:=FParser.GetUpperToken(nwSameLine);  // AnsiUpperCase(NextWord(nwSameLine));
+  4. COMMENT LEGAL datafilename
+     ValueLabelType=vltFile
+
+  }
+
+  result:=TValueLabelSet.Create;
+
+  Show:=False;
+  ValueLabelUse:='';
+  ValueLabelType:=vltLocal;
+  CurCommand:=FParser.GetUpperToken(nwSameLine);
   IF CurCommand<>'LEGAL' THEN
     BEGIN
-      ReportError(translate(22732,'Unknown command in line'));  //'Unknown command in line');
+      ReportError(translate(22732,'Unknown command in line'));
       FTempResult:=False;
     END
   ELSE
     BEGIN
-      CurCommand:=FParser.GetUpperToken(nwSameLine);  // AnsiUpperCase(NextWord(nwSameLine));
+      CurCommand:=FParser.GetUpperToken(nwSameLine);
       IF (CurCommand='') OR (CurCommand='SHOW') THEN
         BEGIN
           //1. scenario: COMMENT LEGAL...END Structure
-          IF CurCommand='SHOW' THEN ShowList:=True;
+          IF CurCommand='SHOW' THEN Show:=True;
           StopRead:=False;
           ok:=True;
-          FirstLabel:=true;
-          tmpLabelRec:=NIL;
-          FirstLabelRec:=NIL;
           REPEAT
             //Read value
-            CurCommand:=FParser.GetToken(nwAny);  // NextWord(nwAny);
+            CurCommand:=FParser.GetToken(nwAny);
             IF AnsiUpperCase(CurCommand)='END' THEN StopRead:=True
             ELSE IF trim(CurCommand)<>'' THEN
               BEGIN
                 s:=trim(CurCommand);
-                IF s[1]='*' THEN              //###
+                IF s[1]='*' THEN
                   BEGIN
                     s:=trim(FParser.GetWholeLine);
                     IF NOT FCheckFileMode THEN Continue;
@@ -2544,20 +2555,7 @@ BEGIN
                         StopRead:=True;
                         FTempResult:=False;
                       END
-                    ELSE
-                      BEGIN
-                        NextLabelRec:=tmpLabelRec;
-                        New(tmpLabelRec);
-                        tmpLabelRec^.Next:=NIL;
-                        IF FirstLabel THEN
-                          BEGIN
-                            FirstLabelRec:=tmpLabelRec;
-                            FirstLabel:=False;
-                          END
-                        ELSE NextLabelRec^.Next:=tmpLabelRec;
-                        tmpLabelRec^.Value:=Copy(s,1,30);
-                        IF Length(s)>30 THEN tmpLabelRec^.Text:=Copy(s,31,length(s));
-                      END
+                    ELSE result.AddValueLabelPair(Copy(s,1,30),Copy(s,31,length(s)));
                   END
                 ELSE IF Length(trim(CurCommand))>tmpField.Length THEN
                   BEGIN
@@ -2567,17 +2565,8 @@ BEGIN
                   END
                 ELSE IF IsCompliant(trim(CurCommand),tmpField.Fieldtype) THEN
                   BEGIN
-                    NextLabelRec:=tmpLabelRec;
-                    New(tmpLabelRec);
-                    tmpLabelRec^.Next:=NIL;
-                    IF FirstLabel THEN
-                      BEGIN
-                        FirstLabelRec:=tmpLabelRec;
-                        FirstLabel:=False;
-                      END
-                    ELSE NextLabelRec^.Next:=tmpLabelRec;
                     IF Length(CurCommand)>30 THEN CurCommand:=Copy(CurCommand,1,30);
-                    tmpLabelRec^.Value:=trim(CurCommand);
+                    tmpValue:=trim(CurCommand);
                     //Read text
                     CurCommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
                     IF trim(CurCommand)='' THEN
@@ -2589,8 +2578,9 @@ BEGIN
                       BEGIN
                         IF Length(CurCommand)>80 THEN CurCommand:=Copy(CurCommand,1,80);
                         WHILE pos('"',CurCommand)>0 DO Delete(CurCommand,Pos('"',CurCommand),1);
-                        tmpLabelRec^.Text:=CurCommand;
+                        tmpText:=CurCommand;
                       END;
+                    result.AddValueLabelPair(tmpValue,tmpText);
                   END  //if value is compliant with Fieldtype
                 ELSE
                   BEGIN
@@ -2608,134 +2598,121 @@ BEGIN
           UNTIL StopRead;
           IF FTempResult THEN
             BEGIN
-              IF AsCommand THEN
-                BEGIN
-                BEGIN
-                  df.ComLegalCounter:=df.ComLegalCounter+1;
-                  s:='ComLegal'+IntToStr(df.ComLegalCounter)+'$';
-                END                END
-              ELSE s:=Translate(22736,'labels in field')+' '+df[df.FocusedField].FieldName+'$';
+              IF AsCommand
+              THEN s:='ComLegal'+IntToStr(df.ValueLabels.count)
+              ELSE s:=Translate(22736,'labels in field')+' '+df[df.FocusedField].FieldName;
               s:=AnsiLowerCase(s);
-              n:=df.ValueLabels.IndexOf(s);
-              IF n>-1 THEN
-                BEGIN
-                  tmpLabelRec:=PLabelRec(df.ValueLabels.Objects[n]);
-                  DisposeLabelRec(tmpLabelRec);
-                  df.ValueLabels.Delete(n);
-                END;
-              df.ValueLabels.AddObject(s,TObject(FirstLabelRec));
-              AValueLabel:=s;
-              ACommentLegalRec:=FirstLabelRec;
+              if df.ValueLabels.ValueLabelSetByName(s)<>NIL then df.ValueLabels.DeleteValueLabelSet(s);
+              ValueLabelType:=vltLocal;
+              df.ValueLabels.AddValueLabelSet(result);
             END  //if ok
           ELSE
-            BEGIN
-              tmpLabelRec:=FirstLabelRec;
-              DisposeLabelRec(tmpLabelRec);
-            END;
+            begin
+              result.Free;
+              result:=NIL;
+            end
         END  //if COMMENT LEGAL...END Structure
       ELSE IF CurCommand='USE' THEN
         BEGIN
           //COMMENT LEGAL USE structure
-          CurCommand:=AnsiLowerCase(FParser.GetToken(nwSameLine));  //  AnsiLowerCase(NextWord(nwSameLine));
+          CurCommand:=AnsiLowerCase(FParser.GetToken(nwSameLine));
           s:='';
-          IF CurCommand='' THEN s:=' '+translate(22738,'COMMENT LEGAL USE command without labelname or fieldname');  //'COMMENT LEGAL USE command without labelname or fieldname'
-          n:=df.ValueLabels.IndexOf(CurCommand);
-          IF n=-1 THEN
+          IF CurCommand='' THEN s:=' '+translate(22738,'COMMENT LEGAL USE command without labelname or fieldname');
+          tmpValueLabelSet:=df.ValueLabels.ValueLabelSetByName(CurCommand);
+          IF assigned(tmpValueLabelSet) THEN
             BEGIN
-              n:=FFieldNameList.IndexOf(AnsiUpperCase(CurCommand));
-              IF n=-1 THEN s:=' '+translate(22740,'Unknown labelname or fieldname') ELSE n:=n+10000;   //'Unknown labelname or fieldname'
-            END;
-          IF s<>'' THEN
-            BEGIN
-              ReportError(s);
-              FTempResult:=False;
+              //comment legal use references a labelname
+              ValueLabelType:=vltLabelRef;
+              ValueLabelUse:=CurCommand;
+              Result:=tmpValueLabelSet;
             END
           ELSE
             BEGIN
+              n:=FFieldNameList.IndexOf(AnsiUpperCase(CurCommand));
+              if (n>-1) then
+                begin
+                  //comment legal use references a fieldname
+                  ValueLabelType:=vltFieldRef;
+                  ValueLabelUse:=CurCommand;
+                  Result:=df.Fields[n].Valuelabel;
+                end
+              else
+                begin
+                  ReportError(' '+translate(22740,'Unknown labelname or fieldname'));
+                  FTempResult:=false;
+                end
+            END;
+          IF FTempResult THEN
+            BEGIN
               s2:=CurCommand;
-              CurCommand:=FParser.GetUpperToken(nwSameLine);  //AnsiUpperCase(NextWord(nwSameLine));
-              IF CurCommand='SHOW' THEN ShowList:=True;
+              CurCommand:=FParser.GetUpperToken(nwSameLine);
+              IF CurCommand='SHOW' THEN Show:=True;
               CurCommand:=s2;
-              //if n<10000 then value label else use fieldname
-              //FocusedField.Fvaluelabel:=n-10000.FValueLabel
-              //FocusedField.FLabelRec:=n-10000.FLabelRec
-              IF n<10000 THEN
-                BEGIN    //Valuelabel came after the USE command
-                  AValueLabel:=CurCommand;
-                  ALabelRec:=PLabelRec(df.ValueLabels.Objects[n]);
-                  ACommentLegalRec:=ALabelRec;
-                END
-              ELSE
-                BEGIN    //Fieldname came after the USE command
-                  AValueLabel:=df[n-10000].FValueLabel;
-                  ACommentLegalRec:=df[n-10000].FCommentLegalRec;
-                END;
+
               //check is labels are compatible with current field
-              ALabelRec:=ACommentLegalRec;
               TooLong:=False;
               NotCompatible:=False;
-              WHILE (ALabelRec<>NIL) AND (NOT TooLong) AND (NOT NotCompatible) DO
+              n:=0;
+              WHILE (n<result.count) AND (NOT TooLong) AND (NOT NotCompatible) DO
                 BEGIN
-                  IF ALabelRec^.Value[1]<>'*' THEN   //###
+                  tmpValue:=result.Values[n];
+                  tmpText:=result.Labels[n];
+                  IF tmpValue[1]<>'*' THEN
                     BEGIN
-                      IF Length(trim(ALabelRec^.Value))>tmpField.Length THEN TooLong:=True;
-                      IF (NOT IsCompliant(trim(ALabelRec^.Value),tmpField.Fieldtype)) THEN NotCompatible:=True;
+                      IF Length(trim(tmpValue))>tmpField.Length THEN TooLong:=True;
+                      IF (NOT IsCompliant(trim(tmpValue),tmpField.Fieldtype)) THEN NotCompatible:=True;
                     END;
-                  ALabelRec:=ALabelRec^.Next
+                  inc(n);
                 END;
               IF NotCompatible THEN
                 BEGIN
                   StopRead:=True;
                   FTempResult:=False;
-                  ReportError(translate(22710,'Value is not compatible with this Fieldtype'));  //'Value is not compatible with this Fieldtype');
-                END  //if NotCompatible
+                  result:=NIL;
+                  ReportError(translate(22710,'Value is not compatible with this Fieldtype'));
+                END
               ELSE IF TooLong THEN
                 BEGIN
                   StopRead:=True;
                   FTempResult:=False;
-                  ReportError(translate(22852,'Value is too wide for field'));   //22852=Value is too wide for field
+                  Result:=NIL;
+                  ReportError(translate(22852,'Value is too wide for field'));
                 END  //if TooLong
             END;
         END  //the word USE was found
       ELSE
         BEGIN  //Not Comment legal..end and not comment legal use
           IF ExtractFileExt(Curcommand)='' THEN s:=CurCommand+'.rec' ELSE s:=CurCommand;
-          tmpS2:=GetCurrentDir;   //&&
+          ValueLabelUse:=s;
+          ValueLabelType:=vltFile;
+          tmpS2:=GetCurrentDir;
           SetCurrentDir(ExtractFileDir(df.RECFilename));
-          s:=ExpandFilename(s);              //&&
+          s:=ExpandFilename(s);
           SetCurrentDir(tmpS2);
-          //s:=ExpandFilename(s);
-          //IF ExtractFilePath(s)='' THEN s:=ExtractFilePath(df^.RECFilename)+s;
-          //tmpS:=AnsiLowerCase(tmpS);
 
           IF FCheckFileMode THEN
             BEGIN
               //Don't test if file exists and don't apply index
               CurCommand:=FParser.GetUpperToken(nwSameLine);
-              IF CurCommand='SHOW' THEN ShowList:=True;
-              AValueLabel:=AnsiLowerCase('Labels from '+ExtractFileName(s));
-              New(tmpLabelRec);
-              tmpLabelRec^.Next:=NIL;
-              ACommentLegalRec:=tmpLabelRec;
+              IF CurCommand='SHOW' THEN Show:=True;
+              result.Name:=AnsiLowerCase('Labels from '+ExtractFileName(s));
             END
           ELSE
             BEGIN
               IF NOT FileExists(s) THEN
                 BEGIN
-                  ReportError(Format(translate(20110,'Datafile %s does not exist.'),[s]));   //20110=Datafile %s does not exist.
+                  ReportError(Format(translate(20110,'Datafile %s does not exist.'),[s]));
                   FTempResult:=False;
-                  //ReportError(translate(22742,'USE expected after COMMENT LEGAL'));  //'USE expected after COMMENT LEGAL'   //*** Obsolete
                 END
               ELSE
                 BEGIN
                   //Comment Legal datafilename structure found
-                  CurCommand:=FParser.GetUpperToken(nwSameLine);  //AnsiUpperCase(NextWord(nwSameLine));
-                  IF CurCommand='SHOW' THEN ShowList:=True;
+                  CurCommand:=FParser.GetUpperToken(nwSameLine);
+                  IF CurCommand='SHOW' THEN Show:=True;
                   TRY
-                    ComLegDf:=NIL;
                     ComLegDf:=TEpiDataFile.Create;
                     ComLegDf.OnRequestPassword:=df.OnRequestPassword;
-                    FTempResult:=ComLegDf.Open(s,[StoreInMemory]);
+                    FTempResult:=ComLegDf.Open(s,[eoInMemory,eoIgnoreRelates]);
                     ComLegDf.IndexFilename:=ChangeFileExt(s,'.eix');
                     ComLegDf.CHKFilename:=ChangefileExt(s,'.chk');
                     IF NOT FTempResult THEN ReportError(Format(Translate(20108,'Datafile %s could not be opened'),[s]));
@@ -2743,31 +2720,29 @@ BEGIN
                       BEGIN
                         FTempResult:=False;
                         ReportError(Format(Translate(22334,'Datafile %s does not contain any records'),[s]));
+                        Result:=NIL;
                       END;
                     IF (FTempResult) AND (NOT FileExists(ComLegDf.IndexFilename)) THEN
                       BEGIN
-                        //ComLegDf.Free;   //DisposeDatafilePointer(ComLegDf);
-                        //ComLegDf:=TEpiDataFile.Create;  //  GetDatafilePointer(ComLegDf);
-                        //ComLegDf.RECFilename:=s;
-                        FTempResult:=ComLegDf.LoadChecks;
+                        FTempResult:=(ComLegDf.HasCheckFile) AND (NOT ComLegDf.ErrorInCheckFile);
                         IF FTempResult THEN
                           BEGIN
                             IF NOT ComLegDf.DoRebuildIndex THEN
                               BEGIN
                                 FTempResult:=False;
                                 ReportError(Format(Translate(20122,'Indexfile not found for the datafile %s'),[s]));
+                                Result:=NIL;
                               END;
                           END;
                       END;
                     IF FTempResult THEN
                       BEGIN
                         Labelname:=AnsiLowerCase('Labels from '+ExtractFileName(ComLegDf.RECFilename));
-                        n:=df.ValueLabels.IndexOf(Labelname);
-                        IF n>-1 THEN
+                        tmpValueLabelSet:=df.ValueLabels.ValueLabelSetByName(Labelname);
+                        IF (assigned(tmpValueLabelSet)) THEN
                           BEGIN
                             //Labels are already loaded
-                            AValueLabel:=df.ValueLabels[n];
-                            ACommentLegalRec:=PLabelRec(df.ValueLabels.Objects[n]);
+                            result:=tmpValueLabelSet;
                           END
                         ELSE
                           BEGIN
@@ -2785,6 +2760,7 @@ BEGIN
                               BEGIN
                                 FTempResult:=False;
                                 ReportError(Format(Translate(22832,'Datafile %s must contain two KEY-fields'),[s]));
+                                Result:=NIL;
                               END
                             ELSE
                               BEGIN
@@ -2798,8 +2774,8 @@ BEGIN
                                 UNTIL (n=ComLegDf.IndexCount) or (NOT FTempResult);
                                 IF FTempResult THEN
                                   BEGIN
-                                    ValueField:=ComLegDf[ComLegDf.IndexFields[1]];  //PeField(ComLegDf^.FieldList.Items[ComLegDf^.IndexFields[1]]);
-                                    TextField:= ComLegDf[ComLegDf.Indexfields[2]];  //PeField(ComLegDf^.FieldList.Items[ComLegDf^.IndexFields[2]]);
+                                    ValueField:=ComLegDf[ComLegDf.IndexFields[1]];
+                                    TextField:= ComLegDf[ComLegDf.Indexfields[2]];
                                   END
                                 ELSE ReportError(Format(Translate(20128,'Error reading index file %s')+#13+Translate(22834,'Rebuild index'),[ComLegDf.RECFilename]));
                               END;
@@ -2810,50 +2786,28 @@ BEGIN
                                 ELSE
                                   BEGIN
                                     ComLegDf.InitSortIndex;
-                                    //CloseFile(ComLegDf^.DatFile);
-                                    //ComLegDf^.Datfile.Free;   //§§§
-                                    //ComLegDf^.Datfile:=NIL;  //§§§
-                                    //AssignFile(F2,ComLegDf^.RECFilename);
-                                    //Reset(F2);
-                                    //FOR n:=0 TO ComLegDf^.FieldList.Count DO ReadLn(F2,s);
-                                    FirstLabel:=true;
-                                    tmpLabelRec:=NIL;
-                                    FirstLabelRec:=NIL;
                                     FOR CurRec:=1 TO ComLegDf.NumRecords DO
                                       BEGIN
-                                        //eReadOnlyNextRecord(ComLegDf,F2);
-                                        //eReadOnlyRecord(ComLegDf,F2,ReadIndexNoFromSortIndex(ComLegDf,CurRec));
                                         ComLegDf.Read(ComLegDf.ReadIndexNoFromSortIndex(CurRec));
-                                        NextLabelRec:=tmpLabelRec;
-                                        New(tmpLabelRec);
-                                        tmpLabelRec^.Next:=NIL;
-                                        IF FirstLabel THEN
-                                          BEGIN
-                                            FirstLabelRec:=tmpLabelRec;
-                                            FirstLabel:=False;
-                                          END
-                                        ELSE NextLabelRec^.Next:=tmpLabelRec;
-                                        tmpLabelRec^.Value:=Copy(ValueField.AsString,1,30);
-                                        tmpLabelRec^.Text:= Copy(TextField.AsString,1,80);
+                                        result.AddValueLabelPair(Copy(ValueField.AsString,1,30),Copy(TextField.AsString,1,80));
                                       END;  //for CurRec
-                                    df.ValueLabels.AddObject(Labelname,TObject(FirstLabelRec));
-                                    AValueLabel:=Labelname;
-                                    ACommentLegalRec:=FirstLabelRec;
-                                    //CloseFile(F2);
+                                    df.ValueLabels.AddValueLabelSet(result);
                                   END;
-                              END;
+                              END
+                            ELSE result:=NIL;
                           END;  //if apply index
                       END;  //if indexfile could be opened
                     ComLegDf.Free;
                   EXCEPT
                     ReportError(Format(Translate(22836,'Datafile %s could not be applied as a comment legal.~This could be caused by low memory'),[s]));
-                    {$I-
+                    {$I-}
                     CloseFile(F);
                     n:=IOResult;
-                    {$I+
+                    {$I+}
                     FTempResult:=False;
                     CurCommand:='';
                     ComLegDf.Free;
+                    Result:=NIL;
                     Exit;
                   END;  //try..except
                 END;  //if Comment Legal Datafilename
@@ -2862,7 +2816,7 @@ BEGIN
     END;  //the word LEGAL was found
   CurCommand:='';
 END;   //RetrieveCommentLegal
-}
+
 
 Procedure TCheckObj.RetrieveType;
 VAR
@@ -3244,6 +3198,7 @@ VAR
   LegalList: TStringList;
   AField:    TeField;
   sList:     TStringList;
+  aValueLabelSet: TValueLabelSet;
 
   procedure LabelsInCommands(cmdList: TList);
   VAR
@@ -3263,11 +3218,12 @@ VAR
             END;
           cmdComLegal:
             BEGIN
-              tmpS:=AnsiLowerCase(cmd^.ValueLabel);
+              tmpS:=AnsiLowerCase(cmd^.ValueLabelName);
+              aValueLabelSet:=cmd^.ValueLabel;
               //w:=df.ValueLabels.IndexOf(tmpS);   //TODO incl. næste 3 linier
-              //IF (w<>-1) AND (LegalList.IndexOf(tmpS)=-1)
-              //AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
-              //THEN LegalList.AddObject(tmpS,df.ValueLabels.Objects[w]);
+              IF (df.ValueLabels.ValueLabelSetByName(tmpS)<>NIL) AND (LegalList.IndexOf(tmpS)=-1)
+              AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
+              THEN LegalList.AddObject(tmpS,aValueLabelSet);
             END;
         END;  //case
       END;  //for
@@ -3288,14 +3244,14 @@ BEGIN  //ChecksToStrings
     FOR sN:=0 TO df.NumFields-1 do
       BEGIN
         AField:=df.Fields[sN];
-        tmpS:=AnsiLowerCase(AField.ValueLabel.Name);
-        //TODO!!!
-        {
-        sN2:=df.ValueLabels.IndexOf(tmpS);
-        IF (sN2<>-1) AND (LegalList.IndexOf(tmpS)=-1)
-        AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
-        THEN LegalList.AddObject(tmpS,df.ValueLabels.Objects[sN2]);
-        }
+        if aField.Valuelabel<>NIL then
+          begin
+            tmpS:=AnsiLowerCase(AField.ValueLabel.Name);
+            aValueLabelSet:=df.ValueLabels.ValueLabelSetByName(tmpS);
+            IF (aValueLabelSet<>NIL) AND (LegalList.IndexOf(tmpS)=-1)
+            AND (AField.ValueLabelType=vltLabelRef)
+            THEN LegalList.AddObject(tmpS,aValueLabelSet);
+          end;
         {Check if fields has commands that contains comment legals}
         IF AField.AfterCmds<>NIL THEN LabelsInCommands(AField.AfterCmds);
         IF AField.BeforeCmds<>NIL THEN LabelsInCommands(AField.BeforeCmds);
@@ -3304,8 +3260,7 @@ BEGIN  //ChecksToStrings
     IF LegalList.Count>0 THEN
       BEGIN
         sList.Append('LABELBLOCK');
-        FOR sN:=0 TO LegalList.Count-1 DO
-          //sList.Append(Label2Text(LegalList[sN],PLabelRec(LegalList.Objects[sN]),2));
+        FOR sN:=0 TO LegalList.Count-1 DO sList.Append(Label2Text(TValueLabelSet(LegalList.Objects[sN]),2));
         sList.Append('END');  //of labelblock
         sList.Append('');
       END;  //if LegalList.Count>0
@@ -3462,43 +3417,38 @@ BEGIN
                 END;
             END;
           {Write Comment Legal}
-          {
-          IF ValueLabel<>'' THEN
+          IF ValueLabel<>NIL THEN
             BEGIN
-              tmpS:=AnsiLowerCase(trim(FValueLabel));
-              IF tmpS[Length(tmpS)]='$' THEN
-                BEGIN  //write comment legal..end block
-                  sN2:=df.ValueLabels.IndexOf(tmpS);
-                  IF sN2<>-1 THEN
-                    BEGIN
-                      LegalList.Clear;
-                      LegalList.Text:=Label2Text(tmpS,
-                        PLabelRec(df.ValueLabels.Objects[sN2]),Indent+2);
-                      LegalList[0]:=IndStr+'  COMMENT LEGAL';
-                      IF FShowLegalPickList THEN LegalList[0]:=LegalList[0]+' SHOW';
-                      sList.Addstrings(LegalList);
-                    END;
-                END
-              ELSE
-                BEGIN  //write Comment Legal Use ...
-                  IF Copy(tmpS,1,12)='labels from ' THEN
-                    BEGIN
-                      Delete(tmpS,1,12);
-                      IF FShowLegalPickList THEN tmpS:=tmpS+' SHOW';
-                      sList.Add(IndStr+'  COMMENT LEGAL '+tmpS);
-                    END
-                  ELSE
-                    BEGIN
-                      IF tmpS[Length(tmpS)]='¤' THEN tmpS:=Copy(tmpS,1,Length(tmpS)-1);
-                      IF df.ValueLabels.IndexOf(FValueLabel)<>-1 THEN
-                        BEGIN
-                          IF FShowLegalPickList THEN tmpS:=tmpS+' SHOW';
-                          sList.Add(IndStr+'  COMMENT LEGAL USE '+trim(tmpS));
-                        END;
-                    END;
-                END;
-            END;
-            }
+              case ValueLabelType of
+                vltLocal:
+                  begin
+                    LegalList.Clear;
+                    LegalList.Text:=Label2Text(ValueLabel,Indent+2);
+                    LegalList[0]:=IndStr+'  COMMENT LEGAL';
+                    if ShowLegalPickList then LegalList[0]:=LegalList[0]+' SHOW';
+                    sList.AddStrings(LegalList);
+                  end;
+                vltFieldRef:
+                  begin
+                    tmpS:=ValueLabelUse;
+                    if ShowLegalPickList then tmpS:=tmpS+' SHOW';
+                    sList.Add(Indstr+'  COMMENT LEGAL USE '+tmpS);
+                  end;
+                vltLabelRef:
+                  begin
+                    tmpS:=ValueLabelUse;
+                    if ShowLegalPickList then tmpS:=tmpS+' SHOW';
+                    sList.Add(Indstr+'  COMMENT LEGAL USE '+tmpS);
+                  end;
+                vltFile:
+                  begin
+                    tmpS:=ValueLabelUse;
+                    if ShowLegalPickList then tmpS:=tmpS+' SHOW';
+                    sList.Add(Indstr+'  COMMENT LEGAL '+tmpS);
+                  end;
+              end;  //case
+            END;  //if valuelabel<>NIL
+            
           {Write JUMPS block}
           IF jumps<>'' THEN
             BEGIN
@@ -3588,36 +3538,40 @@ BEGIN
   end
 END;  //procedure FieldBlockToStrings
 
-{
-Function TCheckWriter.Label2Text(CONST ALabelName:String; ALabelRec:PLabelRec; NumSpc:Byte):String;
+
+Function TCheckWriter.Label2Text(aValueLabelSet:TValueLabelSet; NumSpc:Byte):String;
 VAR
-  s:String;
+  s,aValue,aLabel:String;
   spc:String[100];
+  n:integer;
 BEGIN
+  result:='';
+  if (not assigned(aValueLabelSet)) then exit;
   spc:=cFill(' ',NumSpc);
-  s:=spc+'LABEL '+ALabelName;
+  s:=spc+'LABEL '+aValueLabelSet.Name;
   IF s[Length(s)]='¤' THEN s:=Copy(s,1,Length(s)-1);
-  WHILE ALabelRec<>NIL DO
+  for n:=0 to aValueLabelSet.count-1 do
     BEGIN
-      IF ALabelRec^.Value[1]='*' THEN    //###
+      aValue:=aValueLabelSet.Values[n];
+      aLabel:=aValueLabelSet.Labels[n];
+      IF aValue[1]='*' THEN
         BEGIN
-          s:=s+#13#10+spc+'  '+ALabelRec^.Value+ALabelRec^.Text;
+          s:=s+#13#10+spc+'  '+aValue+aLabel;
         END
       ELSE
         BEGIN
-          IF Pos(' ',ALabelRec^.Value)>0
-            THEN s:=s+#13#10+spc+'  "'+ALabelRec^.Value+'"'
-            ELSE s:=s+#13#10+spc+'  '+ALabelRec^.Value;
-          IF Pos(' ',ALabelRec^.Text)>0
-            THEN s:=s+'  "'+ALabelRec^.Text+'"'
-            ELSE s:=s+'  '+ALabelRec^.Text;
+          IF Pos(' ',aValue)>0
+            THEN s:=s+#13#10+spc+'  "'+aValue+'"'
+            ELSE s:=s+#13#10+spc+'  '+aValue;
+          IF Pos(' ',aLabel)>0
+            THEN s:=s+'  "'+aLabel+'"'
+            ELSE s:=s+'  '+aLabel;
         END;
-      ALabelRec:=ALabelRec^.Next;
-    END;  //while
+    END;  //for
   s:=s+#13#10+spc+'END';
   Result:=s;
 END;  //Label2Text
-}
+
 
 Procedure TCheckWriter.AddCommandList(sList:TStringList; CmdList:TList; Indent:Byte);
 VAR
@@ -3627,6 +3581,7 @@ VAR
   IndStr:String[50];
   LabelList: TStrings;
   s,tmpFieldStr:String;
+  aValueLabelSet: TValueLabelSet;
 BEGIN
   IF CmdList=NIL THEN Exit;
   IF CmdList.Count=0 THEN Exit;
@@ -3778,24 +3733,20 @@ BEGIN
           END;
         cmdComLegal:
           BEGIN
-            IF Cmd^.ValueLabel<>'' THEN
+            IF Cmd^.ValueLabelName<>'' THEN
               BEGIN
-                tmpStr:=AnsiLowerCase(trim(Cmd^.ValueLabel));
+                tmpStr:=AnsiLowerCase(trim(Cmd^.ValueLabelName));
                 IF tmpStr[Length(tmpStr)]='$' THEN
                   BEGIN  //write comment legal..end block
-                    //TODO
-                    {
-                    n:=df.ValueLabels.IndexOf(tmpStr);
-                    IF n<>-1 THEN
+                    aValueLabelSet:=df.ValueLabels.ValueLabelSetByName(tmpStr);
+                    IF aValueLabelSet<>NIL THEN
                       BEGIN
                         LabelList:=TStringList.Create;
-                        LabelList.Text:=Label2Text(tmpStr,
-                          PLabelRec(df.ValueLabels.Objects[n]),Indent);
+                        LabelList.Text:=Label2Text(aValueLabelSet,Indent);
                         LabelList[0]:=IndStr+'COMMENT LEGAL';
                         IF Cmd^.ShowList THEN LabelList[0]:=LabelList[0]+' SHOW';
                         sList.Addstrings(LabelList);
                       END;
-                      }
                   END
                 ELSE
                   BEGIN  //write Comment Legal Use ...
@@ -3808,14 +3759,11 @@ BEGIN
                     ELSE
                       BEGIN
                         IF tmpStr[Length(tmpStr)]='¤' THEN tmpStr:=Copy(tmpStr,1,Length(tmpStr)-1);
-                        //TODO
-                        {
-                        IF df.ValueLabels.IndexOf(Cmd^.ValueLabel)<>-1 THEN
+                        IF df.ValueLabels.ValueLabelSetByName(cmd^.ValueLabelName)<>NIL THEN
                           BEGIN
                             IF Cmd^.ShowList THEN tmpStr:=tmpStr+' SHOW';
                             sList.Add(IndStr+'COMMENT LEGAL USE '+trim(tmpStr));
                           END;
-                        }
                       END;
                   END;
               END;

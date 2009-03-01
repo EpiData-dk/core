@@ -83,6 +83,7 @@ object Form1: TForm1
       EditLabel.Height = 13
       EditLabel.Caption = '&Input file'
       TabOrder = 0
+      Text = 'C:\pas\EpiDataProjekt\test\test.rec'
     end
     object Button1: TButton
       Left = 24
@@ -117,7 +118,7 @@ object Form1: TForm1
     Top = 97
     Width = 819
     Height = 441
-    ActivePage = TabSheet4
+    ActivePage = TabSheet1
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -128,6 +129,7 @@ object Form1: TForm1
         Width = 811
         Height = 413
         Align = alClient
+        ScrollBars = ssBoth
         TabOrder = 0
       end
     end
@@ -146,13 +148,14 @@ object Form1: TForm1
         Font.Name = 'Courier New'
         Font.Style = []
         ParentFont = False
+        ScrollBars = ssBoth
         TabOrder = 0
       end
     end
     object TabSheet4: TTabSheet
-      Caption = 'CheckFile'
+      Caption = 'Orig CheckFile'
       ImageIndex = 3
-      object Memo3: TMemo
+      object memoOrigCheckFile: TMemo
         Left = 0
         Top = 0
         Width = 811
@@ -164,6 +167,26 @@ object Form1: TForm1
         Font.Name = 'Courier New'
         Font.Style = []
         ParentFont = False
+        ScrollBars = ssBoth
+        TabOrder = 0
+      end
+    end
+    object TabSheet5: TTabSheet
+      Caption = 'Intepreted CheckFile'
+      ImageIndex = 4
+      object memoIntepredCheck: TMemo
+        Left = 0
+        Top = 0
+        Width = 811
+        Height = 413
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Courier New'
+        Font.Style = []
+        ParentFont = False
+        ScrollBars = ssBoth
         TabOrder = 0
       end
     end

@@ -25,7 +25,9 @@ type
     TabSheet3: TTabSheet;
     Memo2: TMemo;
     TabSheet4: TTabSheet;
-    Memo3: TMemo;
+    memoOrigCheckFile: TMemo;
+    TabSheet5: TTabSheet;
+    memoIntepredCheck: TMemo;
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -47,7 +49,7 @@ implementation
 {$R *.dfm}
 
 Uses
-  UEpiDataFile,UEpiUtils,UEpiTypes;
+  UEpiDataFile,UEpiUtils,UEpiTypes, UValueLabels, UeFields;
 
 var
   epd: TEpiDataFile;
@@ -75,7 +77,10 @@ begin
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
+var
+  s:string;
 begin
+  memo1.Clear;
   if assigned(epd) then FreeAndNil(epd);
   if trim(edInputFilename.Text)='' then
     begin
@@ -89,14 +94,19 @@ begin
     end;
   epd:=TEpiDataFile.Create;
   out('Datafile: '+edInputFilename.text);
-  if epd.Open(edInputFilename.Text,[eoInMemory, eoIgnoreChecks,oeIgnoreIndex]) then
+  if epd.Open(edInputFilename.Text,[eoInMemory, oeIgnoreIndex]) then
     begin
       out('Data file opened with succes');
       out('Num fields = '+inttostr(epd.NumFields));
       out('Num data fields = '+inttostr(epd.NumDataFields));
       out('Num records = '+inttostr(epd.NumRecords));
-      memo2.Lines.Text:=DocumentDataFile;
-      //memo3.Lines.Text:=epd.GetCheckLines;
+      s:=DocumentDataFile;
+      memo2.Lines.Text:=s;
+      if(epd.HasCheckFile) then
+        begin
+          memoOrigCheckFile.Lines.LoadFromFile(epd.ChkFilename);
+          memoIntepredCheck.Lines.Text:=epd.GetCheckLines;
+        end;
     end
   else
     begin
@@ -123,6 +133,8 @@ var
   nN,nN2,nN3,FieldNumber:integer;
   QuestStr,CheckStr,ValLabelStr:ARRAY [1..25] OF String[20];
   AutoList:Tstringlist;
+  aValueLabelSet: TValueLabelSet;
+  aValue,aLabel,valuelabelname: string;
 
   Function CutString(VAR s:String; ch:TCharSet; wid:Integer):String;
   VAR
@@ -181,17 +193,12 @@ begin
       [FormatDateTime('d. mmm yyyy t',FileDateToDateTime(FileAge(epd.ChkFilename)))])
     ELSE tmpStr:=tmpStr+'No';
     res.Append(tmpStr);
-    IF epd.ErrorInCheckFile THEN res.Add(cFill(' ',23)+'Warning: A checkfile exists but it contains errors.');
+    IF epd.ErrorInCheckFile THEN res.Append(cFill(' ',23)+'Warning: A checkfile exists but it contains errors.');
     res.Append('');
 
     {Check if value labels are used}
-    UsesValueLabels:=False;
-    {
-    FOR nN:=0 TO df^.FieldList.Count-1 DO
-      IF PeField(df^.FieldList.Items[nN])^.FCommentLegalRec<>NIL
-      THEN UsesValueLabels:=True;
-    IF ErrorInCheckfile THEN UsesValueLabels:=False;
-    }
+    UsesValueLabels:=((epd.ValueLabels.count>0) AND (not epd.ErrorInCheckFile) AND (epd.HasCheckFile));
+
     {Write variable information}
     res.Append('');
     res.Append('Fields in datafile:');
@@ -348,34 +355,25 @@ NUM Name       Variable label        Type            Width  Checks              
               END;  //if not errorInCheckfile
 
             {Put value labels in array}
-            {
-            IF (UsesValueLabels) AND (FCommentLegalRec<>NIL) THEN
+            IF (UsesValueLabels) AND (epd[nN].Valuelabel<>NIL) THEN
               BEGIN
-                ALabelRec:=FCommentLegalRec;
+                aValueLabelSet:=epd.Fields[nN].Valuelabel;
                 nN2:=1;
-                IF FValueLabel[Length(FValueLabel)]<>'$' THEN
+                WHILE (nN2<aValueLabelSet.count) AND (nN2<25) DO
                   BEGIN
-                    tmpStr:=FValueLabel;
-                    IF tmpStr[Length(tmpStr)]='¤'
-                    THEN Delete(tmpStr,Length(tmpStr),1);
-                    ValLabelStr[nN2]:=tmpStr;
-                    INC(nN2);
-                  END;
-                WHILE (ALabelRec<>NIL) AND (nN2<25) DO
-                  BEGIN
-                    IF ALabelRec^.Value[1]<>'*' THEN   //##
+                    aValue:=aValueLabelSet.Values[nN2];
+                    aLabel:=aValueLabelSet.Labels[nN2];
+                    IF aValue[1]<>'*' THEN
                       BEGIN
-                        tmpStr:=ALabelRec^.Value+': '+ALabelRec^.Text;
+                        tmpStr:=aValue+': '+aLabel;
                         IF Length(tmpStr)>20 THEN ValLabelStr[nN2]:=Copy(tmpStr,1,20)
                         ELSE ValLabelStr[nN2]:=tmpStr;
-                        INC(nN2);
                       END;
-                    ALabelRec:=ALabelRec^.Next;
+                    inc(nN2);
                   END;  //While
-                IF (ALabelRec<>NIL) AND (nN2=25)
+                IF (nN2<aValueLabelSet.count) AND (nN2=25)
                 THEN ValLabelStr[25]:='...';
               END;
-            }
 
             tmpType:=epd[nN].FieldtypeName;
             tmpWidth:=IntToStr(epd[nN].Length);

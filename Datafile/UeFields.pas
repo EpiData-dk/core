@@ -44,15 +44,19 @@ TYPE
     FMax:             String;       //Maximum value (set by RANGE)
     FLegal:           String;       //Legal values (incl. RANGE values)
     FRangeDefined:    Boolean;      //True if FLegal includes a Range definition
-//    FCommentLegalRec: PLabelRec;    //Pointer to comment legal record (value label)
-    FShowLegalPickList: Boolean;    //True if Comment Legal Show (forces picklist to be shown)
-    FPickListNoSelect: Boolean;     //If True then no item is automatically selected in LegalPickList
     FJumps:           String;       //Jumps definitions
     FJumpResetChar:   Char;         //Fill char when JUMPS RESET "-" is used
     {autosearch properties}
     FAutosearch:      Boolean;      //True if field has autosearch
     FAutoFields:      String;       //CSV-string of fields to autosearch
     FAutoList:        Boolean;      //True if Autosearch has LIST parameter set
+    {Value labels}
+    FValuelabel:      TValueLabelSet;  //Valuelabel set
+    FValueLabelType:  TValueLabelSetType;  //vltFieldRef, vltLabelRef, vltLocal, vltFile
+    FValueLabelUse:   string;       //Fieldname or filename from Comment Legal Use ...
+    FShowLegalPickList: Boolean;    //True if Comment Legal Show (forces picklist to be shown)
+    FPickListNoSelect: Boolean;     //If True then no item is automatically selected in LegalPickList
+
     {other properties}
     FNoEnter:         Boolean;
     FEntryField:       TObject;      //Pointer to TEntryField on Dataform
@@ -76,7 +80,7 @@ TYPE
     FDefaultValue:     string;      //A default value of the field defined by DEFAULTVALUE x
     FHasGlobalDefaultValue: Boolean;   //A default value define by DEFAULTVALUE ALL X or DEFAULTVALUE field-field, field X
     FFieldFormat:     string;       //Used by analysis: defines the formatting of the data, e.g. %d for integers
-    FValuelabel:      TValueLabelSet;
+
 
     Function  GetFieldName:String;
     Function  GetAsString:String;
@@ -135,15 +139,18 @@ TYPE
     Property    Max:String read FMax write FMin;
     Property    Legal:String read FLegal write FLegal;
     Property    RangeDefined:Boolean read FRangeDefined write FRangeDefined;
-    //Property    CommentLegalRec: PLabelRec;   //TODO: skal ændres til typer i UValueLabel
-    Property    ShowLegalPickList:Boolean read FShowLegalPickList write FShowLegalPickList;
-    Property    PickListNoSelect:Boolean read FPickListNoSelect write FPickListNoSelect;
     Property    Jumps:String read FJumps write FJumps;
     Property    JumpResetChar:Char read FJumpResetChar write FJumpResetChar;
     {autosearch properties}
     Property    Autosearch:Boolean read FAutosearch write FAutosearch;
     Property    AutoFields:String read FAutoFields write FAutoFields;
     Property    AutoList:Boolean read FAutoList write FAutoList;
+    {Value labels}
+    Property    Valuelabel:TValueLabelSet read FValueLabel write FValueLabel;
+    Property    ValueLabelType:TValueLabelSetType read FValueLabelType write FValueLabelType;
+    Property    ValueLabelUse:string read FValueLabelUse write FValueLabelUse;
+    Property    ShowLegalPickList:Boolean read FShowLegalPickList write FShowLegalPickList;
+    Property    PickListNoSelect:Boolean read FPickListNoSelect write FPickListNoSelect;
     {other properties}
     Property    NoEnter:Boolean read FNoEnter write FNoEnter;
     Property    EntryField:TObject read FEntryField write FEntryField;
@@ -167,7 +174,6 @@ TYPE
     Property    DefaultValue:string read FDefaultValue write FDefaultValue;
     Property    HasGlobalDefaultValue:Boolean read FHasGlobalDefaultValue write FHasGlobalDefaultValue;
     Property    FieldFormat:string read FFieldFormat write FFieldFormat;
-    Property    Valuelabel:TValueLabelSet read FValueLabel write FValueLabel;
   END;
 
   TeFields = class(TObject)
@@ -258,11 +264,12 @@ BEGIN
   FMax:='';
   FLegal:='';
   FRangeDefined:=False;
-//  FCommentLegalRec:=NIL;
-  FShowLegalPickList:=False;
-  FPickListNoSelect:=False;
   FFieldComments:='';
-  //FValueLabel:='';  //TODO ordnes når Torsten har valuelabels på plads
+  FValueLabel:=NIL;
+  FValueLabelType:=vltLocal;
+  FValueLabelUse:='';
+  FShowLegalPickList:=False;
+  FPickListNoSelect:=False;  
   FJumps:='';
   FJumpResetChar:=#0;
   FNoEnter:=False;
@@ -325,9 +332,12 @@ BEGIN
 END;
 
 Function TeField.HasCheckProperties:Boolean;
+var
+  HasValueLabel:boolean;
 BEGIN
+  if (FValueLabel<>NIL) then HasValueLabel:=(FValueLabel.count>0);
   IF (FMin<>'') OR (FMax<>'') OR (FLegal<>'') OR (FJumps<>'')
-  //OR (trim(FValueLabel)<>'') OR (FMustEnter=True) OR (FRepeat=True)   //TODO når valuelabels er på plads
+  OR (HasValueLabel) OR (FMustEnter=True) OR (FRepeat=True)
   OR (FFieldComments<>'') OR (AfterCmds<>NIL) OR (BeforeCmds<>NIL)
   OR (FNoEnter=True) OR (FIsTypeStatusBar=True) OR (FTypeComments)
   OR (FIndex>0) OR (FConfirm) OR (FTopOfScreen) OR (FAutosearch)
@@ -355,23 +365,20 @@ END;
 
 Function TeField.GetAsLabel:String;
 BEGIN
-  //TODO: afventer valuelabelstruktur fra Torsten
-  //IF FCommentLegalRec<>NIL
-  //THEN result:=trim(GetCommentLegalText(FFieldText,FCommentLegalRec))
-  //ELSE result:=trim(FFieldText);
+  if (not GetHasValueLabels) then result:=GetAsString
+  else result:=FValueLabel.ValueLabel[trim(FFieldText)];
 END;
 
 Function TeField.Value2Label(Value: string):string;
 BEGIN
-  //TODO: afventer valuelabelstruktur fra Torsten
-  //IF FCommentLegalRec<>NIL
-  //THEN result:=trim(GetCommentLegalText(Value,FCommentLegalRec))
-  //ELSE result:='';
+  if (not GetHasValueLabels) then result:=Value
+  else result:=FValueLabel.ValueLabel[Value];
 END;
 
 Function TeField.GetHasValueLabels:Boolean;
 BEGIN
-//  Result:=(FCommentLegalRec<>NIL);
+  result:=false;
+  if (FValueLabel<>NIL) then result:=(FValueLabel.count>0);
 END;
 
 
@@ -418,13 +425,10 @@ begin
   dest.FMax:=FMax;
   dest.FLegal:=FLegal;
   dest.FRangeDefined:=FRangeDefined;
-
-//  dest.FCommentLegalRec:=NIL;      //Mangler implementering
-
   dest.FShowLegalPickList:=FShowLegalPickList;
   dest.FPickListNoSelect:=FPickListNoSelect;
   dest.FFieldComments:=FFieldComments;
-  //dest.FValueLabel:='';   //Mangler implementering;   //TODO når valuelabels er på plads
+  if GetHasValueLabels then FValueLabel.Clone(dest.FValueLabel) else dest.FValuelabel:=NIL;
   dest.FJumps:=FJumps;
   dest.FJumpResetChar:=FJumpResetChar;
   dest.FNoEnter:=FNoEnter;
