@@ -12,7 +12,6 @@ TYPE
     FEpiDataFile:     TObject;        //TEpiDataFile that owns the field
     FName:            String;         //Fieldname
     FFieldText:       String;         //Entry made in the field (= text property)
-    FData:            Array of string;
     FScope:           TScopes;        //Scope (Local, global, comulative), used only in DEFINEd variables
     FMissingValues:   TMissingValues; //legal missing values
     FVariableLabel:   String;         //Variable label
@@ -71,8 +70,8 @@ TYPE
     FTypeField:       TObject;       //Label on dataform with TYPE-text - var tidligere TLabel
     FTypeColor:       TColor;       //Color of TYPE-label
     FConfirm:         Boolean;      //If true then confirm with ENTER before field is left (overrides df^.Confirm)
-    FAfterCmds:        TList;        //Commands run After Entry
-    FBeforeCmds:       TList;        //Commands run Before Entry
+    FAfterCmds:        TObject;        //Commands run After Entry
+    FBeforeCmds:       TObject;        //Commands run Before Entry
     FOldReadOnly:      Boolean;      //Used to save the ReadOnly status before setting ReadOnly=True during Relate-operations
     FTopOfScreen:     Boolean;      //True=Move field to top of screen when entered ("New Page")
     FTopOfScreenLines: Byte;        //Number of lines to move topofscreen field down
@@ -165,8 +164,8 @@ TYPE
     Property    TypeField:TObject read FTypeField write FTypeField;
     Property    TypeColor:TColor read FTypeColor write FTypeColor;
     Property    Confirm:Boolean read FConfirm write FConfirm;
-    Property    AfterCmds:TList read FAfterCmds write FAfterCmds;
-    Property    BeforeCmds:TList read FBeforeCmds write FBeforeCmds;
+    Property    AfterCmds:TObject read FAfterCmds write FAfterCmds;
+    Property    BeforeCmds:TObject read FBeforeCmds write FBeforeCmds;
     Property    OldReadOnly:Boolean read FOldReadOnly write FOldReadOnly;
     Property    TopOfScreen:Boolean read FTopOfScreen write FTopOfScreen;
     Property    TopOfScreenLines:Byte read FTopOfScreenLines write FTopOfScreenLines;
@@ -197,7 +196,7 @@ TYPE
 implementation
 
 uses
-  UEpiDataFile;
+  UEpiDataFile,CheckObjUnit;
 
 // TeFields ****************************************
 
@@ -284,10 +283,10 @@ BEGIN
   FTopOfScreen:=False;
   FTopOfScreenLines:=0;
   FTypeField:=NIL;
-  //HUSK HER: Kald aftercmds.free - commandlist skal kunne frigive sine egne kommandoer
+  if assigned(AfterCmds) then TCommands(AfterCmds).free;
+  if assigned(BeforeCmds) then TCommands(BeforeCmds).Free;
   AfterCmds:=NIL;
   BeforeCmds:=NIL;
-  //*************************************************'
   FMissingValues[0]:='';
   FMissingValues[1]:='';
   FMissingValues[2]:='';
@@ -401,7 +400,6 @@ END;
 Procedure TeField.Clone(dest: TeField; clonevalue:boolean=false);
 begin
   if (not assigned(dest)) then raise Exception.Create('Destination field is not assigned');
-  //TODO: mangler håndtering af FData
   dest.FName:=FName;
   dest.FVariableLabel:=FVariableLabel;
   dest.Fieldtype:=FFieldtype;
@@ -430,6 +428,8 @@ begin
   dest.FPickListNoSelect:=FPickListNoSelect;
   dest.FFieldComments:=FFieldComments;
   if GetHasValueLabels then FValueLabel.Clone(dest.FValueLabel) else dest.FValuelabel:=NIL;
+  dest.FValueLabelType:=FValueLabelType;
+  dest.FValueLabelUse:=FValueLabelUse;
   dest.FJumps:=FJumps;
   dest.FJumpResetChar:=FJumpResetChar;
   dest.FNoEnter:=FNoEnter;
@@ -445,8 +445,10 @@ begin
   dest.FTopOfScreenLines:=FTopOfScreenLines;
   dest.FTypeField:=FTypeField;
 
-  dest.AfterCmds:=NIL;  //Mangler implementering
-  dest.BeforeCmds:=NIL; //Mangler implementering
+  if assigned(AfterCmds) then TCommands(AfterCmds).Clone(TCommands(dest.AfterCmds))
+  else dest.AfterCmds:=NIL;
+  if assigned(BeforeCmds) then TCommands(BeforeCmds).Clone(TCommands(dest.BeforeCmds))
+  else dest.BeforeCmds:=NIL;
 
   dest.FMissingValues[0]:=FMissingValues[0];
   dest.FMissingValues[1]:=FMissingValues[1];

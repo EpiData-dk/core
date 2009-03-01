@@ -110,11 +110,11 @@ TYPE
     {Checkfile related properties}
     FChkTopComments:    TStringList;    //Commentlines in the top of the checkfile - used only in checkfilemode
     FHasRepeatField:    Boolean;        //If one or more fields have a Repeat check
-    FBeforeFileCmds:    TList;          //Commands to be run when file is opened
-    FAfterFileCmds:     TList;          //Commands to be run when file is closed
-    FBeforeRecordCmds:  TList;          //Commands to be run before current record changes
-    FAfterRecordCmds:   TList;          //Commands to be run when changing current record
-    FRecodeCmds:        TList;          //Commands to be run during Recode Datafile
+    FBeforeFileCmds:    TObject;          //Commands to be run when file is opened
+    FAfterFileCmds:     TObject;          //Commands to be run when file is closed
+    FBeforeRecordCmds:  TObject;          //Commands to be run before current record changes
+    FAfterRecordCmds:   TObject;          //Commands to be run when changing current record
+    FRecodeCmds:        TObject;          //Commands to be run during Recode Datafile
     FAssertList:        TStringList;    //used only to store Asserts for checkfilemode
     FConfirm:           Boolean;        //If true then a field is not let automatically when filled out
     FAutoSave:          Boolean;        //IF true then user is not asked "Save record to disk?"
@@ -169,7 +169,6 @@ TYPE
     Function  TextPos(var F:Textfile):Longint;
     Procedure ResetEpiDataFile;
     Procedure DisposeFieldList(AList: TeFields);
-    //Procedure DisposeCommandList(VAR AList:TList);
     Function  GetFieldTypeNames(OrdOfFieldtype:Integer):String;
     Function  CountRecords:LongInt;
     Function  GetField(Index: Integer): TeField;
@@ -262,11 +261,11 @@ TYPE
     Property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
     Property HasIncludeCmd:Boolean read FHasIncludeCmd write FHasIncludeCmd;
     Property ChkTopComments:TStringList read FChkTopComments write FChkTopComments;
-    Property BeforeFileCmds:TList read FBeforeFileCmds write FBeforeFileCmds;
-    Property AfterFileCmds:TList read FAfterFileCmds write FAfterFileCmds;
-    Property BeforeRecordCmds:TList read FBeforeRecordCmds write FBeforeRecordCmds;
-    Property AfterRecordCmds:TList read FAfterRecordCmds write FAfterRecordCmds;
-    Property RecodeCmds:TList read FRecodeCmds write FRecodeCmds;
+    Property BeforeFileCmds:TObject read FBeforeFileCmds write FBeforeFileCmds;
+    Property AfterFileCmds:TObject read FAfterFileCmds write FAfterFileCmds;
+    Property BeforeRecordCmds:TObject read FBeforeRecordCmds write FBeforeRecordCmds;
+    Property AfterRecordCmds:TObject read FAfterRecordCmds write FAfterRecordCmds;
+    Property RecodeCmds:TObject read FRecodeCmds write FRecodeCmds;
     Property IndexCount:Byte read FIndexCount write FIndexCount;
     Property EIndex:TMemoryStream read FIndex write FIndex;
     Property SortIndex:TMemoryStream read FSortIndex write FSortIndex;
@@ -1632,15 +1631,15 @@ begin
         TeField(FGlobalDefList.Objects[n]).Free;
       FreeAndNil(FGlobalDefList);
     END;
-  IF Assigned(FBeforeFileCmds)   THEN DisposeCommandList(FBeforeFileCmds);
-  IF Assigned(FAfterFileCmds)    THEN DisposeCommandList(FAfterFileCmds);
-  IF Assigned(FBeforeRecordCmds) THEN DisposeCommandList(FBeforeRecordCmds);
-  IF Assigned(FAfterRecordCmds)  THEN DisposeCommandList(FAfterRecordCmds);
-  IF Assigned(FRecodeCmds)       THEN DisposeCommandList(FRecodeCmds);
+  IF Assigned(FBeforeFileCmds)   THEN TCommands(FBeforeFileCmds).Free;
+  IF Assigned(FAfterFileCmds)    THEN TCommands(FAfterFileCmds).Free;
+  IF Assigned(FBeforeRecordCmds) THEN TCommands(FBeforeRecordCmds).Free;
+  IF Assigned(FAfterRecordCmds)  THEN TCommands(FAfterRecordCmds).Free;
+  IF Assigned(FRecodeCmds)       THEN TCommands(FRecodeCmds).Free;
 //  IF Assigned(FLastCommands)     THEN DisposeCommandList(FLastCommands);
   IF Assigned(FAssertList)       THEN FAssertList.Free;
   IF Assigned(FBackupList)       THEN FBackupList.Free;
-  IF Assigned(FChkTopComments) THEN FChkTopComments.Free;
+  IF Assigned(FChkTopComments)   THEN FChkTopComments.Free;
   FChkTopComments:=NIL;
   FRecFilename:='';
   FQESFilename:='';

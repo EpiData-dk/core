@@ -4,8 +4,7 @@ unit CheckObjUnit;
 {$DEFINE analysis}
 
 //TODO:
-//cmdComLegal i cmd-structure
-//DestroyFieldlist
+//UDF
 
 interface
 
@@ -65,7 +64,7 @@ type
   Commands=(cmdIF,cmdHelp,cmdHide,cmdUnhide,cmdClear,cmdGoTo,cmdComLegal,
             cmdExit,cmdDefine,cmdAutosave,cmdConfirm,cmdTypeString,
             cmdRelate,cmdIgnoreMissing,cmdWriteNote,cmdBackup,cmdBeep,cmdLoad,cmdExecute,
-            cmdColor,cmdMissingAll,cmdQuit,cmdCopyToClipboard,cmdShowLastRecord,cmdDefaultAll,cmdLet,cmdComment,cmdLeaveField);       //¤¤
+            cmdColor,cmdMissingAll,cmdQuit,cmdCopyToClipboard,cmdShowLastRecord,cmdDefaultAll,cmdLet,cmdComment,cmdLeaveField);      
             //NB! Insert new codes BEFORE cmdLet
 
 
@@ -79,6 +78,7 @@ CONST
     'LET','dummy','leavefield');
 
 TYPE
+  TCommands = class;
   TChangeFieldActions=(cfNext,cfPrev,cfFirst,cfLast,cfValidate);
   TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
   PCmds=^TCmds;
@@ -88,8 +88,8 @@ TYPE
             cmdIF:
                (IfExpr:          String[200];
                 IfShowExpr:      String[200];
-                IfCmds:          TList;
-                ElseCmds:        TList);
+                IfCmds:          TCommands;
+                ElseCmds:        TCommands);
             cmdHelp:
                (HelpString:      String[250];
                 HelpType:        TMsgDlgType;
@@ -101,6 +101,8 @@ TYPE
                (clVarNumber:     Integer;
                 ValueLabelName:  String[40];
                 ValueLabel:      TValueLabelSet;
+                ValueLabelType:  TValueLabelSetType;
+                ValueLabelUse:   string[50];
                 ShowList:        Boolean);
             cmdTypeString:
                (tsVarNumber:     Integer;
@@ -176,9 +178,22 @@ TYPE
     FScope:            TScopes;
     END;
 
-
-//  TTranslateEvent = procedure(stringnumber:Integer; VAR transstring:string) of object;
-
+  TCommands = class(TObject)
+  private
+    FList: TList;
+    function GetCount:integer;
+    function GetItem(index:integer):PCmds;
+    Procedure DisposeCommandList(aList: TList);
+  public
+    constructor create;
+    destructor  destroy; override;
+    procedure   AddCommand(cmd: PCmds);
+    procedure   Clone(dest: TCommands);
+    function    NewCmd:PCmds;
+    property    count:integer read GetCount;
+    property    items[index:integer]:PCmds read GetItem; default;
+    property    List:TList read FList;
+  end;
 
   TCheckObj = class(TObject)
   private
@@ -205,8 +220,8 @@ TYPE
     Procedure RetrieveLabelBlock;
     Procedure RetrieveLabel;
     Procedure RetrieveAssertBlock;
-    Procedure GetCommandList(CmdList:TList);
-    Procedure GetCommand(CmdList:TList);
+    Procedure GetCommandList(var CmdList:TCommands);
+    Procedure GetCommand(var CmdList:TCommands);
     Procedure AddTopComment;
     Procedure RetrieveFlawBlock;
     Procedure RetrieveRange;
@@ -241,7 +256,7 @@ TYPE
     FLastFieldBlock: TStringList;
     FieldComments: TStringList;
     Function Label2Text(aValueLabelSet:TValueLabelSet; NumSpc:Byte):String;
-    Procedure AddCommandList(sList:TStringList; CmdList:TList; Indent:Byte);
+    Procedure AddCommandList(sList:TStringList; CmdList:TCommands; Indent:Byte);
     procedure ChecksToStrings;
   public
     constructor create(EpiDataFile: TEpiDataFile);
@@ -252,8 +267,6 @@ TYPE
     property    FieldBlock:TStringList read FLastFieldBlock;        //Holds the checklines of the last fieldblock created by FieldBlockToStrings
     property    CheckLines:TStringList read FInitBlocks;            //Holds intire checkfile's lines after rewrite og create
   end;
-
-Procedure DisposeCommandList(AList:TList);
 
 
 implementation
@@ -424,6 +437,7 @@ VAR
   aFound: Boolean;
   tmpString,NewChkLines,IncludeStrings: TStringList;
   s: string;
+  tmpCommands: TCommands;
 begin
   Result:=False;
   df:=ADatafile;
@@ -431,7 +445,7 @@ begin
   IF FMultiLineError THEN
     BEGIN
       FErrorList.Add('');
-      FErrorList.Add(Format(translate(22794,'The check-file %s contains the following errors:'),[df.CHKFilename]));  //'The check-file %s contains the following errors:'
+      FErrorList.Add(Format(translate(22794,'The check-file %s contains the following errors:'),[df.CHKFilename])); 
       FErrorList.Add('');
       FErrorList.Add('');
     END;
@@ -452,7 +466,7 @@ begin
                 df.HasIncludeCmd:=True;
                 IF FCheckFileMode THEN
                   BEGIN
-                    ReportError(translate(22868,'Checkfiles with INCLUDE commands cannot be revised with the Add/Revise function'));  //22868=Checkfiles with INCLUDE commands cannot be revised with the Add/Revise function
+                    ReportError(translate(22868,'Checkfiles with INCLUDE commands cannot be revised with the Add/Revise function')); 
                     Result:=False;
                     Exit;
                   END;
@@ -461,7 +475,7 @@ begin
                 IF (s[1]='"') AND (s[Length(s)]='"') THEN s:=Copy(s,2,Length(s)-2);
                 IF NOT FileExists(s) THEN
                   BEGIN
-                    ReportError(Format(translate(22870,'Includefile %s not found'),[s]));  //22870=Includefile %s not found
+                    ReportError(Format(translate(22870,'Includefile %s not found'),[s])); 
                     Result:=False;
                     Exit;
                   END
@@ -473,7 +487,7 @@ begin
                       FOR n2:=0 TO IncludeStrings.Count-1 DO
                         NewChkLines.Append(IncludeStrings[n2])
                     EXCEPT
-                      ReportError(Format(translate(22872,'Error reading includefile %s'),[s]));  //22872=Error reading includefile %s
+                      ReportError(Format(translate(22872,'Error reading includefile %s'),[s]));  
                       Result:=False;
                       Exit;
                     END;  //try..except
@@ -501,11 +515,11 @@ begin
   FOR aN:=0 TO df.NumFields-1 DO
     FFieldnameList.Add(AnsiUpperCase(df[aN].FieldName));
   FTempResult:=True;
-  IF (FCheckFileMode) AND (Assigned(df.ChkTopComments)) THEN df.ChkTopComments.Append('* '+translate(22796,'Revised')+' '+  //'Revised'
+  IF (FCheckFileMode) AND (Assigned(df.ChkTopComments)) THEN df.ChkTopComments.Append('* '+translate(22796,'Revised')+' '+  
     FormatDateTime('dd mmm yyyy hh":"nn',now));
   REPEAT    //Read top-level check commands
     aFound:=False;
-    CurCommand:=FParser.GetUpperToken(nwAny);   //  AnsiUpperCase(NextWord(nwAny));
+    CurCommand:=FParser.GetUpperToken(nwAny);  
 
     {Legal commands outside fieldblock are
       Fieldname..End
@@ -524,27 +538,52 @@ begin
     ELSE IF CurCommand='CONSISTENCYBLOCK' THEN RetrieveAssertBlock
     ELSE IF CurCommand='BEFORE' THEN
       BEGIN
-        CurCommand:=FParser.GetUpperToken(nwSameLine);  //AnsiUpperCase(NextWord(nwSameLine));
-        IF CurCommand='FILE' THEN GetCommandList(df.BeforeFileCmds)
-        ELSE IF CurCommand='RECORD' THEN GetCommandList(df.BeforeRecordCmds)
+        CurCommand:=FParser.GetUpperToken(nwSameLine);  
+        IF CurCommand='FILE' THEN
+          begin
+            tmpCommands:=TCommands(df.BeforeFileCmds);
+            GetCommandList(tmpCommands);
+            df.BeforeFileCmds:=tmpCommands;
+          end
+        ELSE IF CurCommand='RECORD' THEN
+          begin
+            tmpCommands:=TCommands(df.BeforeRecordCmds);
+            GetCommandList(tmpCommands);
+            df.BeforeRecordCmds:=tmpCommands;
+          end
         ELSE
           BEGIN
-            ReportError(translate(22798,'Unknown command after BEFORE'));  //'Unknown command after BEFORE'
+            ReportError(translate(22798,'Unknown command after BEFORE'));
             FTempResult:=False;
           END;
       END
     ELSE IF CurCommand='AFTER' THEN
       BEGIN
-        CurCommand:=FParser.GetUpperToken(nwSameLine);  //  AnsiUpperCase(NextWord(nwSameLine));
-        IF CurCommand='FILE' THEN GetCommandList(df.AfterFileCmds)
-        ELSE IF CurCommand='RECORD' THEN GetCommandList(df.AfterRecordCmds)
+        CurCommand:=FParser.GetUpperToken(nwSameLine);  
+        IF CurCommand='FILE' THEN
+          begin
+            tmpCommands:=TCommands(df.AfterFileCmds);
+            GetCommandList(tmpCommands);
+            df.AfterFileCmds:=tmpCommands;
+          end
+        ELSE IF CurCommand='RECORD' THEN
+          begin
+            tmpCommands:=TCommands(df.AfterRecordCmds);
+            GetCommandList(tmpCommands);
+            df.AfterRecordCmds:=tmpCommands;
+          end
         ELSE
           BEGIN
-            ReportError(translate(22800,'Unknown command after AFTER'));  //'Unknown command after AFTER'
+            ReportError(translate(22800,'Unknown command after AFTER'));
             FTempResult:=False;
           END;
       END
-    ELSE IF CurCommand='RECODEBLOCK' THEN GetCommandList(df.RecodeCmds)
+    ELSE IF CurCommand='RECODEBLOCK' THEN
+      begin
+        tmpCommands:=TCommands(df.RecodeCmds);
+        GetCommandList(tmpCommands);
+        df.RecodeCmds:=tmpCommands;
+      end
     ELSE IF CurCommand<>'' THEN
       BEGIN
         IF CurCommand[1]='*' THEN AddTopComment ELSE RetrieveFlawBlock;
@@ -582,13 +621,13 @@ BEGIN
   {$IFNDEF epidat}
   IF FMultiLineError THEN
     BEGIN
-      FErrorList.Append(Format(translate(22700,'%s in line %d:'),[ErrStr,n]));  //'%s in line %d:'
+      FErrorList.Append(Format(translate(22700,'%s in line %d:'),[ErrStr,n])); 
       IF Assigned(FParser) THEN FErrorList.Append(FParser.GetWholeLine);
       FErrorList.Append('');
     END
-  ELSE FErrorList.Append(Format(translate(22702,'Line %d: %s'),[n,ErrStr]));  //'Line %d: %s'
+  ELSE FErrorList.Append(Format(translate(22702,'Line %d: %s'),[n,ErrStr]));
   {$ELSE}
-  FErrorList.Append(Format(translate(22702,'Line %d: %s'),[n,ErrStr]));  //'Line %d: %s'
+  FErrorList.Append(Format(translate(22702,'Line %d: %s'),[n,ErrStr]));
   {$ENDIF}
 END;  //procedure ReportError
 
@@ -599,6 +638,7 @@ VAR
   ValueLabelType: TValueLabelSetType;
   ValueLabelUse:  String;
   ValueLabelShow: Boolean;
+  tmpCommands: TCommands;
 BEGIN
   {Legal commands in fieldblocks are
     RANGE
@@ -629,7 +669,7 @@ BEGIN
       tmpField.Fieldtype:=df[df.FocusedField].Fieldtype;
       tmpField.Length:=df[df.FocusedField].Length;
       REPEAT
-        CurCommand:=FParser.GetUpperToken(nwAny);  //  AnsiUpperCase(NextWord(nwAny));
+        CurCommand:=FParser.GetUpperToken(nwAny);  
         //n:=FFieldNameList.IndexOf(CurCommand);   HVORFOR ER DET TILFØJET??
         IF      CurCommand='RANGE'       THEN RetrieveRange
         ELSE IF CurCommand='LEGAL'       THEN RetrieveLegals
@@ -642,7 +682,7 @@ BEGIN
           BEGIN
             tmpField.TopOfScreen:=True;
             tmpField.TopOfScreenLines:=0;
-            CurCommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
+            CurCommand:=FParser.GetToken(nwSameLine);  
             IF (CurCommand<>'') AND (IsInteger(CurCommand)) THEN tmpField.TopOfScreenLines:=StrToInt(CurCommand);
           END
         ELSE IF CurCommand='REPEAT'      THEN
@@ -652,7 +692,7 @@ BEGIN
           END
         ELSE IF (CurCommand='CODEFIELD') OR (CurCommand='CODES') THEN
           BEGIN
-            ReportError(translate(22782,'CODEFIELD/CODES not supported. Please use TYPE COMMENT fieldname instead.'));  //'CODEFIELD/CODES not supported. Please use TYPE COMMENT fieldname instead.'
+            ReportError(translate(22782,'CODEFIELD/CODES not supported. Please use TYPE COMMENT fieldname instead.')); 
             FTempResult:=False;
           END
         ELSE IF CurCommand='AUTOJUMP'     THEN RetrieveAutoJump
@@ -677,26 +717,40 @@ BEGIN
 //          END
         ELSE IF CurCommand='BEFORE'       THEN
           BEGIN
-            CurCommand:=FParser.GetUpperToken(nwSameLine);  //  AnsiUpperCase(NextWord(nwSameLine));
+            CurCommand:=FParser.GetUpperToken(nwSameLine);
             IF CurCommand='ENTRY' THEN
-            GetCommandList(tmpField.BeforeCmds)
+              begin
+                tmpCommands:=TCommands(tmpField.BeforeCmds);
+                GetCommandList(tmpCommands);
+                tmpField.BeforeCmds:=tmpCommands;
+              end
             ELSE
               BEGIN
-                ReportError(translate(22786,'ENTRY expected'));  //'ENTRY expected'
+                ReportError(translate(22786,'ENTRY expected'));
                 FTempResult:=False;
               END;
           END
         ELSE IF CurCommand='AFTER' THEN
           BEGIN
-            CurCommand:=Fparser.GetUpperToken(nwSameLine);  //  AnsiUpperCase(NextWord(nwSameLine));
-            IF CurCommand='ENTRY' THEN GetCommandList(tmpField.AfterCmds)
+            CurCommand:=Fparser.GetUpperToken(nwSameLine);
+            IF CurCommand='ENTRY' THEN
+              begin
+                tmpCommands:=TCommands(tmpField.AfterCmds);
+                GetCommandList(tmpCommands);
+                tmpField.AfterCmds:=tmpCommands;
+              end
             ELSE
               BEGIN
-                ReportError(translate(22786,'ENTRY expected'));  //'ENTRY expected'
+                ReportError(translate(22786,'ENTRY expected'));
                 FTempResult:=False;
               END;
           END
-        ELSE IF CurCommand<>'' THEN GetCommand(tmpField.AfterCmds);
+        ELSE IF CurCommand<>'' THEN
+          begin
+            tmpCommands:=TCommands(tmpField.AfterCmds);
+            GetCommand(tmpCommands);
+            tmpField.AfterCmds:=tmpCommands;
+          end;
 {            BEGIN
             IF CurCommand[1]='*' THEN AddFieldComment
             ELSE IF CurCommand<>'END' THEN AddFieldFlawComment;
@@ -706,8 +760,8 @@ BEGIN
         BEGIN
           WITH df[df.FocusedField] DO
             BEGIN
-              IF AfterCmds<>NIL THEN DisposeCommandList(AfterCmds);
-              IF BeforeCmds<>NIL THEN DisposeCommandList(BeforeCmds);
+              IF AfterCmds<>NIL THEN TCommands(AfterCmds).Free;
+              IF BeforeCmds<>NIL THEN TCommands(BeforeCmds).Free;
               Min:=tmpField.Min;
               Max:=tmpField.Max;
               Legal:=tmpField.Legal;
@@ -730,7 +784,6 @@ BEGIN
               TypeCommentFieldStr:=tmpField.TypeCommentFieldStr;
               TypeColor:=tmpField.TypeColor;
               Confirm:=tmpField.Confirm;
-              //CommentLegalRec:=tmpField.CommentLegalRec;
               TopOfScreen:=tmpField.TopOfScreen;
               TopOfScreenLines:=tmpField.TopOfScreenLines;
               ShowLegalPickList:=tmpField.ShowLegalPickList;
@@ -750,8 +803,8 @@ BEGIN
         END  //if TempResult
       ELSE
         BEGIN
-          IF tmpField.AfterCmds<>NIL THEN DisposeCommandList(tmpField.AfterCmds);
-          IF tmpField.BeforeCmds<>NIL THEN DisposeCommandList(tmpField.BeforeCmds);
+          IF tmpField.AfterCmds<>NIL THEN TCommands(tmpField.AfterCmds).Free;
+          IF tmpField.BeforeCmds<>NIL THEN TCommands(tmpField.BeforeCmds).Free;
         END;  //if NOT TempResult
     END;
   df.FocusedField:=-1;
@@ -779,7 +832,7 @@ VAR
 BEGIN
   aValueLabelSet:=TValueLabelSet.create;
   ok:=True;
-  CurCommand:=AnsiLowerCase(FParser.GetToken(nwSameLine));  //AnsiLowerCase(NextWord(nwSameLine));   //Get Labelname
+  CurCommand:=AnsiLowerCase(FParser.GetToken(nwSameLine)); 
   IF trim(CurCommand)<>'' THEN
     BEGIN
       IF (df.ValueLabels.ValueLabelSetByName(CurCommand)=NIL)
@@ -795,7 +848,7 @@ BEGIN
           aValueLabelSet.Name:=tmpLabelName;
           REPEAT
             //Read value
-            CurCommand:=FParser.GetToken(nwAny);  //  NextWord(nwAny);
+            CurCommand:=FParser.GetToken(nwAny); 
             IF Trim(CurCommand)='' THEN
               BEGIN
                 StopRead:=True;
@@ -805,7 +858,7 @@ BEGIN
             ELSE IF trim(CurCommand)<>'' THEN
               BEGIN
                 s:=trim(CurCommand);
-                IF s[1]='*' THEN     //###
+                IF s[1]='*' THEN    
                   BEGIN
                     s:=trim(FParser.GetWholeLine);
                     IF NOT FCheckFileMode THEN Continue;
@@ -828,7 +881,7 @@ BEGIN
                     IF Length(CurCommand)>30 THEN CurCommand:=Copy(CurCommand,1,30);
                     tmpValue:=CurCommand;
                     //Read text
-                    CurCommand:=FParser.GetToken(nwSameLine);   //NextWord(nwSameLine);
+                    CurCommand:=FParser.GetToken(nwSameLine);   
                     IF trim(CurCommand)='' THEN
                       BEGIN
                         StopRead:=True;
@@ -860,7 +913,7 @@ Procedure TCheckObj.RetrieveAssertBlock;
 BEGIN
   IF NOT Assigned(df.AssertList) THEN df.AssertList:=TStringList.Create;
   REPEAT
-    CurCommand:=FParser.GetUpperToken(nwAny);  //AnsiUpperCase(nextWord(nwAny));
+    CurCommand:=FParser.GetUpperToken(nwAny); 
     IF (CurCommand='CHECK') OR (CurCommand='REPORT') THEN
       BEGIN
         df.AssertList.Append(FParser.GetWholeLine);
@@ -870,10 +923,10 @@ BEGIN
 END;  //TCheckObj.RetrieveAssertBlock
 
 
-Procedure TCheckObj.GetCommandList(CmdList:TList);
+Procedure TCheckObj.GetCommandList(var CmdList:TCommands);
 BEGIN
   REPEAT
-    CurCommand:=FParser.GetToken(nwAny);  //   NextWord(nwAny);
+    CurCommand:=FParser.GetToken(nwAny);
     IF AnsiUpperCase(CurCommand)<>'END' THEN GetCommand(CmdList);
   UNTIL (AnsiUpperCase(CurCommand)='END') OR (FParser.EndOfLines);
   CurCommand:='';
@@ -881,7 +934,7 @@ END;  //GetCommandList
 
 
 
-Procedure TCheckObj.GetCommand(CmdList:TList);
+Procedure TCheckObj.GetCommand(var CmdList:TCommands);
 VAR
   cmd:Commands;
   tmpCmdRec:TCmds;
@@ -890,7 +943,7 @@ VAR
   n,n2,n3,fieldFrom,fieldTo:Integer;
   tmpStr:String[20];
   s1,s2:String[200];
-  tmpS,tmpS2:String;   //&&
+  tmpS,tmpS2:String;   
   tmpDefVar: TeField;
   AInfo,BInfo: PRelateInfo;
   bb,bb2,bb3:byte;
@@ -902,6 +955,9 @@ VAR
   mv1, mv2, mv3: string;
   AField: TeField;
   TopDf: TEpiDataFile;
+  ValueLabelType: TValueLabelSetType;
+  ValueLabelUse:  String;
+  ValueLabelShow: Boolean;
 BEGIN
   {Legal commands are
     IF <boolean expr.> THEN  <cmds> [ELSE <cmds>] ENDIF
@@ -931,6 +987,10 @@ BEGIN
   or (AnsiUpperCase(CurCommand)='ENDIF')
   or (AnsiUpperCase(CurCommand)='ELSE') or (CurCommand='') THEN Exit;
   ok:=True;
+  tmpCmdRec.IfCmds:=NIL;
+  tmpCmdRec.ElseCmds:=NIL;
+  tmpCmdRec.ValueLabel:=NIL;
+  
   IF CurCommand[1]='*' THEN
     BEGIN
       cmd:=cmdComment;
@@ -944,11 +1004,10 @@ BEGIN
       or (AnsiUpperCase(CurCommand)='LET') THEN
         BEGIN
           {check if unknown CurCommand is implicit LET}
-          //s1:=AnsiUppercase(trim(CurCommand+' '+CurLin));
           s1:=trim(CurCommand+' '+FParser.GetLineAndFlush);
           IF AnsiUpperCase(Copy(s1,1,3))='LET' THEN
             BEGIN
-              Delete(s1,1,3);  //remove LET
+              Delete(s1,1,3);
               ImplicitLET:=FALSE;
             END
           ELSE ImplicitLET:=True;
@@ -962,7 +1021,7 @@ BEGIN
           IF n=0 THEN ok:=False
           ELSE IF n=1 THEN
             BEGIN
-              ReportError(translate(22756,'Missing field- or variablename to the left of the equal-sign'));  //'Missing field- or variablename to the left of the equal-sign'
+              ReportError(translate(22756,'Missing field- or variablename to the left of the equal-sign'));  
               ok:=False
             END
           ELSE
@@ -1019,7 +1078,7 @@ BEGIN
         tmpCmdRec.IfCmds:=NIL;
         tmpCmdRec.ElseCmds:=NIL;
         REPEAT
-          CurCommand:=FParser.GetToken(nwSameKeepQuotes);  //  NextWord(nwSameKeepQuotes);
+          CurCommand:=FParser.GetToken(nwSameKeepQuotes); 
           tmpCmdRec.IfExpr:=tmpCmdRec.IfExpr+' '+CurCommand;
         UNTIL (AnsiUpperCase(CurCommand)='THEN') or (CurCommand='');
         IF AnsiUpperCase(CurCommand)='THEN' THEN
@@ -1030,10 +1089,10 @@ BEGIN
           END
         ELSE
           BEGIN  //no THEN was found in same line as expression
-            CurCommand:=FParser.GetToken(nwAny);  //  NextWord(nwAny);
+            CurCommand:=FParser.GetToken(nwAny); 
             IF AnsiUpperCase(CurCommand)<>'THEN' THEN
               BEGIN
-                ReportError(translate(22760,'No THEN found after IF'));  //'No THEN found after IF'
+                ReportError(translate(22760,'No THEN found after IF'));  
                 ok:=False;
               END;
           END;
@@ -1047,24 +1106,24 @@ BEGIN
           BEGIN
             SeenElse:=False;
             REPEAT
-              CurCommand:=FParser.GetToken(nwAny);  //NextWord(nwAny);
+              CurCommand:=FParser.GetToken(nwAny);  
               IF AnsiUpperCase(CurCommand)='ELSE' THEN
                 BEGIN
                   SeenElse:=True;
                   CurCommand:='ELSE'
                 END;
-              IF SeenElse THEN GetCommand(tmpCmdRec.ElseCmds)
-              ELSE GetCommand(tmpCmdRec.IfCmds);
+              IF SeenElse THEN GetCommand(TCommands(tmpCmdRec.ElseCmds))
+              ELSE GetCommand(TCommands(tmpCmdRec.IfCmds));
             UNTIL (AnsiUpperCase(CurCommand)='ENDIF') OR (FParser.EndOfLines)
             OR (AnsiUpperCase(CurCommand)='END');
             IF (FParser.EndOfLines) AND (AnsiUpperCase(CurCommand)<>'ENDIF') THEN
               BEGIN
-                ReportError(translate(22762,'IF..THEN command without ENDIF'));   //'IF..THEN command without ENDIF'
+                ReportError(translate(22762,'IF..THEN command without ENDIF')); 
                 ok:=False;
               END;
             IF AnsiUpperCase(CurCommand)='END' THEN
               BEGIN
-                ReportError(translate(22764,'ENDIF expected but END found'));  //'ENDIF expected but END found'
+                ReportError(translate(22764,'ENDIF expected but END found')); 
                 ok:=False;
               END;
             CurCommand:='';
@@ -1072,7 +1131,7 @@ BEGIN
       END;
     cmdHelp:
       BEGIN
-        CurCommand:=FParser.GetToken(nwSameLine);  // NextWord(nwSameLine);
+        CurCommand:=FParser.GetToken(nwSameLine); 
         REPEAT
           n:=pos('\n',CurCommand);
           IF n=0 THEN n:=pos('\N',CurCommand);
@@ -1085,7 +1144,7 @@ BEGIN
         tmpCmdRec.HelpString:=CurCommand;
         tmpCmdRec.HelpType:=mtInformation;
         tmpCmdRec.HelpKeys:='';
-        CurCommand:=FParser.GetUpperToken(nwSameLine); //   AnsiUpperCase(NextWord(nwSameLine));
+        CurCommand:=FParser.GetUpperToken(nwSameLine); 
         IF CurCommand<>'' THEN
           BEGIN
             IF (Copy(CurCommand,1,6)='KEYS="')
@@ -1097,12 +1156,12 @@ BEGIN
               END;
           END;
         IF AnsiUpperCase(Copy(CurCommand,1,4))<>'TYPE'
-        THEN CurCommand:=FParser.GetUpperToken(nwSameLine);  //  AnsiUpperCase(NextWord(nwSameLine));
+        THEN CurCommand:=FParser.GetUpperToken(nwSameLine);  
         tmpS:='';
         WHILE CurCommand<>'' DO
           BEGIN
             tmpS:=tmpS+CurCommand;
-            CurCommand:=FParser.GetUpperToken(nwSameLine);  //  AnsiUpperCase(NextWord(nwSameLine));
+            CurCommand:=FParser.GetUpperToken(nwSameLine);  
           END;
         IF (tmpS='TYPE=ERROR') OR (tmpS='TYPE=E') THEN tmpCmdRec.HelpType:=mtError
         ELSE IF (tmpS='TYPE=WARNING') OR (tmpS='TYPE=W') THEN tmpCmdRec.HelpType:=mtWarning
@@ -1113,7 +1172,7 @@ BEGIN
       BEGIN
         {Check if a fieldname exists after command}
         ok:=True;
-        CurCommand:=FParser.GetUpperToken(nwSameLine); // AnsiUpperCase(NextWord(nwSameLine));
+        CurCommand:=FParser.GetUpperToken(nwSameLine); 
         IF CurCommand<>'' THEN
           BEGIN
             n:=-1;
@@ -1163,10 +1222,17 @@ BEGIN
       END;  //case cmdHide or cmdUnhide
     cmdComLegal:
       BEGIN
-        //tmpCmdRec.CommentLegalRec:=NIL;
+        tmpCmdRec.ValueLabel:=NIL;
         //RetrieveCommentLegal(tmpCmdRec.ValueLabel,tmpCmdRec.CommentLegalRec,tmpCmdRec.ShowList,True);
-        tmpCmdRec.clVarNumber:=df.FocusedField;
-//          IF tmpCmdRec.CommentLegalRec=NIL THEN ok:=False;
+        tmpCmdRec.Valuelabel:=RetrieveCommentLegal(true,ValueLabelType,ValueLabelShow,ValueLabelUse);
+        if tmpCmdRec.Valuelabel<>NIL then
+          begin
+            tmpCmdRec.ShowList:=ValuelabelShow;
+            tmpCmdRec.ValueLabelType:=ValueLabelType;
+            tmpCmdRec.ValueLabelUse:=ValueLabelUse;
+            tmpCmdRec.clVarNumber:=df.FocusedField;
+          end
+        else ok:=false;
       END;  //case cmdComLegal
     cmdComment:
       BEGIN
@@ -2028,10 +2094,10 @@ BEGIN
   END;  //Case
   IF ok THEN
     BEGIN
-      IF CmdList=NIL THEN CmdList:=TList.Create;
-      New(tmpCmdPtr);
+      IF CmdList=NIL THEN CmdList:=TCommands.Create;
+      tmpCmdPtr:=CmdList.NewCmd;
       tmpCmdPtr^:=tmpCmdRec;
-      CmdList.Add(tmpCmdPtr);
+      CmdList.AddCommand(tmpCmdPtr);
       IF (CmdList=df.BeforeFileCmds) AND (tmpCmdRec.Command=cmdColor) THEN
         BEGIN
           IF tmpCmdRec.IsEpiInfoNo THEN
@@ -2060,10 +2126,11 @@ BEGIN
   ELSE
     BEGIN
       FTempResult:=False;
+      if tmpCmdRec.ValueLabel<>NIL then tmpCmdRec.ValueLabel.Free;
       IF cmd=cmdIF THEN
         BEGIN
-          //IF tmpCmdRec.IfCmds<>NIL THEN DestroyFieldList(tmpCmdRec.IfCmds);
-          //IF tmpCmdRec.ElseCmds<>NIL THEN DestroyFieldList(tmpCmdRec.ElseCmds);
+          IF tmpCmdRec.IfCmds<>NIL THEN TCommands(tmpCmdRec.IfCmds).Free;
+          IF tmpCmdRec.ElseCmds<>NIL THEN TCommands(tmpCmdRec.ElseCmds).Free;
         END;
     END;
 END;  //GetCommand
@@ -3202,7 +3269,7 @@ VAR
   sList:     TStringList;
   aValueLabelSet: TValueLabelSet;
 
-  procedure LabelsInCommands(cmdList: TList);
+  procedure LabelsInCommands(cmdList: TCommands);
   VAR
     n,w:Integer;
     Cmd:PCmds;
@@ -3211,20 +3278,19 @@ VAR
     IF CmdList.Count=0 THEN Exit;
     FOR n:=0 TO cmdList.Count-1 DO
       BEGIN
-        Cmd:=PCmds(CmdList.Items[n]);
+        Cmd:=CmdList.Items[n];
         Case cmd^.Command OF
           cmdIF:
             BEGIN
-              IF cmd^.IfCmds<>NIL THEN LabelsInCommands(cmd^.IfCmds);
-              IF cmd^.ElseCmds<>NIL THEN LabelsInCommands(cmd^.ElseCmds);
+              IF cmd^.IfCmds<>NIL THEN LabelsInCommands(TCommands(cmd^.IfCmds));
+              IF cmd^.ElseCmds<>NIL THEN LabelsInCommands(TCommands(cmd^.ElseCmds));
             END;
           cmdComLegal:
             BEGIN
-              tmpS:=AnsiLowerCase(cmd^.ValueLabelName);
-              aValueLabelSet:=cmd^.ValueLabel;
-              //w:=df.ValueLabels.IndexOf(tmpS);   //TODO incl. næste 3 linier
-              IF (df.ValueLabels.ValueLabelSetByName(tmpS)<>NIL) AND (LegalList.IndexOf(tmpS)=-1)
-              AND (tmpS[Length(tmpS)]<>'$') AND (Copy(tmpS,1,12)<>'labels from ')
+              tmpS:=AnsiLowerCase(cmd^.ValueLabel.Name);
+              aValueLabelSet:=df.ValueLabels.ValueLabelSetByName(tmpS);
+              IF (aValueLabelSet<>NIL) AND (LegalList.IndexOf(tmpS)=-1)
+              AND (cmd^.ValueLabelType=vltLabelRef)
               THEN LegalList.AddObject(tmpS,aValueLabelSet);
             END;
         END;  //case
@@ -3243,6 +3309,24 @@ BEGIN  //ChecksToStrings
         sList.Append('');
       END;
     {Write LabelBlock}
+
+    {
+     sList.append('Liste over elementer i labelblock:');
+    for sN:=0 to df.ValueLabels.count-1 do
+      begin
+        sList.append('--'+df.ValueLabels.items[sN].Name+'--');
+      end;
+    sList.append('');
+
+    sList.append('Liste over felter med valuelabels:');
+    for sN:=0 TO df.NumFields-1 do
+      begin
+        aField:=df.Fields[sN];
+        if (aField.Valuelabel<>NIL) then sList.append(aField.FieldName+' --'+aField.Valuelabel.Name+'--');
+      end;
+    sList.append('');
+    }
+
     FOR sN:=0 TO df.NumFields-1 do
       BEGIN
         AField:=df.Fields[sN];
@@ -3255,8 +3339,8 @@ BEGIN  //ChecksToStrings
             THEN LegalList.AddObject(tmpS,aValueLabelSet);
           end;
         {Check if fields has commands that contains comment legals}
-        IF AField.AfterCmds<>NIL THEN LabelsInCommands(AField.AfterCmds);
-        IF AField.BeforeCmds<>NIL THEN LabelsInCommands(AField.BeforeCmds);
+        IF AField.AfterCmds<>NIL THEN LabelsInCommands(TCommands(AField.AfterCmds));
+        IF AField.BeforeCmds<>NIL THEN LabelsInCommands(TCommands(AField.BeforeCmds));
       END;  //for sN
     {Legallist now contains all used value labels}
     IF LegalList.Count>0 THEN
@@ -3279,7 +3363,7 @@ BEGIN  //ChecksToStrings
     IF df.RecodeCmds<>NIL THEN
       BEGIN
         sList.Append('RECODEBLOCK');
-        AddCommandList(sList,df.RecodeCmds,2);
+        AddCommandList(sList,TCommands(df.RecodeCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
@@ -3292,28 +3376,28 @@ BEGIN  //ChecksToStrings
         IF df.GlobalMissingValues[1]<>'' THEN tmpS:=tmpS+' '+df.GlobalMissingValues[1];
         IF df.GlobalMissingValues[2]<>'' THEN tmpS:=tmpS+' '+df.GlobalMissingValues[2];
         IF tmpS<>'' THEN sList.Append('  MISSINGVALUE ALL '+tmpS);
-        AddCommandList(sList,df.BeforeFileCmds,2);
+        AddCommandList(sList,TCommands(df.BeforeFileCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
     IF df.AfterFileCmds<>NIL THEN
       BEGIN
         sList.Append('AFTER FILE');
-        AddCommandList(sList,df.AfterFileCmds,2);
+        AddCommandList(sList,TCommands(df.AfterFileCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
     IF df.BeforeRecordCmds<>NIL THEN
       BEGIN
         sList.Append('BEFORE RECORD');
-        AddCommandList(sList,df.BeforeRecordCmds,2);
+        AddCommandList(sList,TCommands(df.BeforeRecordCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
     IF df.AfterRecordCmds<>NIL THEN
       BEGIN
         sList.Append('AFTER RECORD');
-        AddCommandList(sList,df.AfterRecordCmds,2);
+        AddCommandList(sList,TCommands(df.AfterRecordCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
@@ -3450,7 +3534,7 @@ BEGIN
                   end;
               end;  //case
             END;  //if valuelabel<>NIL
-            
+
           {Write JUMPS block}
           IF jumps<>'' THEN
             BEGIN
@@ -3518,7 +3602,7 @@ BEGIN
           IF BeforeCmds<>NIL THEN
             BEGIN
               sList.Add(IndStr+'  BEFORE ENTRY');
-              AddCommandList(sList,BeforeCmds,Indent+4);
+              AddCommandList(sList,TCommands(BeforeCmds),Indent+4);
               sList.Add(IndStr+'  END');
             END;  //if Before commands
 
@@ -3526,7 +3610,7 @@ BEGIN
           IF AfterCmds<>NIL THEN
             BEGIN
               sList.Add(IndStr+'  AFTER ENTRY');
-              AddCommandList(sList,AfterCmds,Indent+4);
+              AddCommandList(sList,TCommands(AfterCmds),Indent+4);
               sList.Add(IndStr+'  END');
             END;  //if After commands
 
@@ -3575,7 +3659,7 @@ BEGIN
 END;  //Label2Text
 
 
-Procedure TCheckWriter.AddCommandList(sList:TStringList; CmdList:TList; Indent:Byte);
+Procedure TCheckWriter.AddCommandList(sList:TStringList; CmdList:TCommands; Indent:Byte);
 VAR
   CmdCounter,n:Integer;
   Cmd:PCmds;
@@ -3735,7 +3819,43 @@ BEGIN
           END;
         cmdComLegal:
           BEGIN
-            IF Cmd^.ValueLabelName<>'' THEN
+            IF cmd^.ValueLabel<>NIL THEN
+              BEGIN
+                case cmd^.ValueLabelType of
+                  vltLocal:
+                    begin
+                      LabelList:=TStringList.Create;
+                      try
+                        LabelList.Text:=Label2Text(cmd^.ValueLabel,Indent+2);
+                        LabelList[0]:=IndStr+'  COMMENT LEGAL';
+                        if cmd^.ShowList then LabelList[0]:=LabelList[0]+' SHOW';
+                        sList.AddStrings(LabelList);
+                      finally
+                        LabelList.Free;
+                      end;
+                    end;
+                  vltFieldRef:
+                    begin
+                      tmpStr:=cmd^.ValueLabelUse;
+                      if cmd^.ShowList then tmpStr:=tmpStr+' SHOW';
+                      sList.Add(Indstr+'  COMMENT LEGAL USE '+tmpStr);
+                    end;
+                  vltLabelRef:
+                    begin
+                      tmpStr:=cmd^.ValueLabelUse;
+                      if cmd^.ShowList then tmpStr:=tmpStr+' SHOW';
+                      sList.Add(Indstr+'  COMMENT LEGAL USE '+tmpStr);
+                    end;
+                  vltFile:
+                    begin
+                      tmpStr:=cmd^.ValueLabelUse;
+                      if cmd^.ShowList then tmpStr:=tmpStr+' SHOW';
+                      sList.Add(Indstr+'  COMMENT LEGAL '+tmpStr);
+                    end;
+                end;  //case
+              END;  //if valuelabel<>NIL
+
+{            IF Cmd^.ValueLabelName<>'' THEN
               BEGIN
                 tmpStr:=AnsiLowerCase(trim(Cmd^.ValueLabelName));
                 IF tmpStr[Length(tmpStr)]='$' THEN
@@ -3769,6 +3889,7 @@ BEGIN
                       END;
                   END;
               END;
+              }
           END;  //case cmdComLegal
         cmdLet:
           BEGIN
@@ -3852,25 +3973,93 @@ BEGIN
     END;  //for
 END;  //Procedure AddCommandList
 
-Procedure DisposeCommandList(AList:TList);
+
+{TCommands}
+constructor TCommands.create;
+begin
+  inherited;
+  FList:=TList.Create;
+end;
+
+destructor TCommands.destroy;
+var
+  n: integer;
+  tmpCmdRec: TCmds;
+begin
+  DisposeCommandList(FList);
+  inherited;
+end;
+
+Procedure TCommands.DisposeCommandList(aList: TList);
 VAR
   n:Integer;
-  tmpCmdRec:TCmds;  
+  tmpCmdRec:PCmds;
 BEGIN
   FOR n:=0 TO AList.Count-1 DO
     BEGIN
-      tmpCmdRec:=PCmds(AList.Items[n])^;
-      CASE tmpCmdRec.Command OF
+      tmpCmdRec:=PCmds(AList.Items[n]);
+      CASE tmpCmdRec^.Command OF
         cmdIF:
           BEGIN
-            IF tmpCmdRec.IfCmds<>NIL THEN DisposeCommandList(tmpCmdRec.IfCmds);
-            IF tmpCmdRec.ElseCmds<>NIL THEN DisposeCommandList(tmpCmdRec.ElseCmds);
+            IF tmpCmdRec^.IfCmds<>NIL THEN DisposeCommandList(tmpCmdRec^.IfCmds.List);
+            IF tmpCmdRec^.ElseCmds<>NIL THEN DisposeCommandList(tmpCmdRec^.ElseCmds.List);
           END;
       END;  //case
       Dispose(Alist.Items[n]);
     END;  //for
   FreeAndNil(Alist);
 END;  //procedure DisposeCommandList
+
+procedure TCommands.AddCommand(cmd: PCmds);
+begin
+  FList.Add(cmd);
+end;
+
+function TCommands.GetCount:integer;
+begin
+  result:=FList.count;
+end;
+
+function TCommands.GetItem(index:integer):PCmds;
+begin
+  if (index>=0) and (index<FList.Count)
+  then result:=PCmds(FList.Items[index])
+  else result:=NIL;
+end;
+
+procedure TCommands.Clone(dest: TCommands);
+var
+  n: integer;
+  aCmd,new: PCmds;
+begin
+  if (not assigned(dest)) then dest:=TCommands.create;
+  for n:=0 TO FList.Count-1 do
+    begin
+      aCmd:=PCmds(FList.Items[n]);
+      new:=NewCmd;
+      new^:=aCmd^;
+      new^.IfCmds:=NIL;
+      new^.ElseCmds:=NIL;
+      if aCmd^.IfCmds<>NIL then
+        begin
+          new^.IfCmds:=TCommands.create;
+          aCmd^.IfCmds.Clone(new^.IfCmds);
+        end;
+      if aCmd^.ElseCmds<>NIL then
+        begin
+          new^.ElseCmds:=TCommands.create;
+          aCmd^.ElseCmds.Clone(new^.ElseCmds);
+        end;
+      dest.AddCommand(new);
+    end;
+end;
+
+function TCommands.NewCmd:PCmds;
+begin
+  new(result);
+  result^.IfCmds:=NIL;
+  result^.ElseCmds:=NIL;
+end;
 
 
 end.

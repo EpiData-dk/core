@@ -13,6 +13,7 @@ type
   private
     FList: TStringList;
     function GetCount:integer;
+    function GetItem(index:integer):TValueLabelSet;
   public
     constructor Create();
     destructor  Destroy(); override;
@@ -22,6 +23,7 @@ type
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
     procedure   DeleteValueLabelSet(name: string);
     property    count:integer read GetCount;
+    property    items[index: integer]:TValueLabelSet read GetItem;
   end;
 
   TValueLabelSetType = (vltFieldRef, vltLabelRef, vltLocal, vltFile);
@@ -62,7 +64,7 @@ uses
 
 procedure TValueLabelSets.AddValueLabelSet(aValueLabelSet: TValueLabelSet);
 begin
-  FList.AddObject(aValueLabelSet.Name, aValueLabelSet);
+  FList.AddObject(trim(aValueLabelSet.Name), aValueLabelSet);
 end;
 
 procedure TValueLabelSets.DeleteValueLabelSet(name:string);
@@ -115,15 +117,35 @@ function TValueLabelSets.ValueLabelSetByName(
   aName: string): TValueLabelSet;
 var
   idx: integer;
+  found: boolean;
 begin
   result := nil;
-  if FList.Find(aName, idx) then
-    result := TValueLabelSet(FList.Objects[idx]);
+  idx:=0;
+  found:=false;
+  while (idx<FList.Count) and (found=false) do
+    begin
+      if TValueLabelSet(FList.Objects[idx]).Name=aName then
+        begin
+          result:=TValueLabelSet(FList.Objects[idx]);
+          found:=true;
+        end;
+      inc(idx);
+    end;
+
+//  if FList.Find(trim(aName), idx) then
+//    result := TValueLabelSet(FList.Objects[idx]);
 end;
 
 function TValueLabelSets.GetCount:integer;
 begin
   result:=FList.count;
+end;
+
+function TValueLabelSets.GetItem(index:integer):TValueLabelSet;
+begin
+  if (index>=0) and (index<FList.count)
+  then result:=TValueLabelSet(FList.objects[index])
+  else result:=NIL;
 end;
 
 { TValueLabelSet }
