@@ -3,10 +3,9 @@ unit CheckObjUnit;
 {$DEFINE epidat}
 {$DEFINE analysis}
 
-//TODO: RetrieveCommentLegalRec, Label2Text - og i brugen af den undervejs, retrivelabel
+//TODO:
 //cmdComLegal i cmd-structure
 //DestroyFieldlist
-//Write Comment Legal
 
 interface
 
@@ -626,6 +625,7 @@ BEGIN
   IF df[df.FocusedField].Fieldtype<>ftQuestion THEN
     BEGIN
       tmpField:=TeField.Create;
+      tmpField.FieldName:=df[df.FocusedField].FieldName;
       tmpField.Fieldtype:=df[df.FocusedField].Fieldtype;
       tmpField.Length:=df[df.FocusedField].Length;
       REPEAT
@@ -712,6 +712,8 @@ BEGIN
               Max:=tmpField.Max;
               Legal:=tmpField.Legal;
               ValueLabel:=tmpField.ValueLabel;
+              ValueLabelType:=tmpField.ValueLabelType;
+              ValueLabelUse:=tmpField.ValueLabelUse;
               MustEnter:=tmpField.MustEnter;
               doRepeat:=tmpField.doRepeat;
               DefaultValue:=tmpField.DefaultValue;
@@ -2603,7 +2605,7 @@ BEGIN
               ELSE s:=Translate(22736,'labels in field')+' '+df[df.FocusedField].FieldName;
               s:=AnsiLowerCase(s);
               if df.ValueLabels.ValueLabelSetByName(s)<>NIL then df.ValueLabels.DeleteValueLabelSet(s);
-              ValueLabelType:=vltLocal;
+              result.Name:=s;
               df.ValueLabels.AddValueLabelSet(result);
             END  //if ok
           ELSE

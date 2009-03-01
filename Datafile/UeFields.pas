@@ -136,7 +136,7 @@ TYPE
     Property    MustEnter:Boolean read FMustEnter write FMustEnter;
     Property    doRepeat:Boolean read FRepeat write FRepeat;      //True if REPEAT is set
     Property    Min:String read FMin write FMin;
-    Property    Max:String read FMax write FMin;
+    Property    Max:String read FMax write FMax;
     Property    Legal:String read FLegal write FLegal;
     Property    RangeDefined:Boolean read FRangeDefined write FRangeDefined;
     Property    Jumps:String read FJumps write FJumps;
@@ -335,6 +335,7 @@ Function TeField.HasCheckProperties:Boolean;
 var
   HasValueLabel:boolean;
 BEGIN
+  HasValueLabel:=false;
   if (FValueLabel<>NIL) then HasValueLabel:=(FValueLabel.count>0);
   IF (FMin<>'') OR (FMax<>'') OR (FLegal<>'') OR (FJumps<>'')
   OR (HasValueLabel) OR (FMustEnter=True) OR (FRepeat=True)

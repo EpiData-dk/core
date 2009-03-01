@@ -17,7 +17,8 @@ uses
   epiUDFTypes in '..\..\Datafile\epiUDFTypes.pas',
   UExport in '..\..\Datafile\UExport.pas',
   UExtUDF in '..\..\Datafile\UExtUDF.pas',
-  UImport in '..\..\Datafile\UImport.pas';
+  UImport in '..\..\Datafile\UImport.pas',
+  UPWform in 'UPWform.pas' {formPW};
 
 {$R *.res}
 

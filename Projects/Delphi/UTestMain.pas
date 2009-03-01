@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, Buttons, ComCtrls, Grids;
+  Dialogs, StdCtrls, ExtCtrls, Buttons, ComCtrls, Grids, UEpiDataFile, UPWform;
 
 type
   TForm1 = class(TForm)
@@ -28,13 +28,18 @@ type
     memoOrigCheckFile: TMemo;
     TabSheet5: TTabSheet;
     memoIntepredCheck: TMemo;
+    Panel2: TPanel;
+    checkShowLabels: TCheckBox;
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     function  DocumentDataFile:string;
+    procedure LoadData(ShowAsLabels:boolean);
+    procedure checkShowLabelsClick(Sender: TObject);
   private
     { Private declarations }
+    procedure GetPassword(Sender: TObject; requesttype:TRequestPasswordTypes; var password:String);
   public
     { Public declarations }
     procedure ErrorMsg(s:string);
@@ -49,7 +54,7 @@ implementation
 {$R *.dfm}
 
 Uses
-  UEpiDataFile,UEpiUtils,UEpiTypes, UValueLabels, UeFields;
+  UEpiUtils,UEpiTypes, UValueLabels, UeFields;
 
 var
   epd: TEpiDataFile;
@@ -93,6 +98,7 @@ begin
       exit;
     end;
   epd:=TEpiDataFile.Create;
+  epd.OnRequestPassword:=GetPassword;
   out('Datafile: '+edInputFilename.text);
   if epd.Open(edInputFilename.Text,[eoInMemory, oeIgnoreIndex]) then
     begin
@@ -102,6 +108,8 @@ begin
       out('Num records = '+inttostr(epd.NumRecords));
       s:=DocumentDataFile;
       memo2.Lines.Text:=s;
+      checkShowLabels.Checked:=(epd.ValueLabels.Count>0);
+      //LoadData(epd.ValueLabels.count>0);
       if(epd.HasCheckFile) then
         begin
           memoOrigCheckFile.Lines.LoadFromFile(epd.ChkFilename);
@@ -359,10 +367,10 @@ NUM Name       Variable label        Type            Width  Checks              
               BEGIN
                 aValueLabelSet:=epd.Fields[nN].Valuelabel;
                 nN2:=1;
-                WHILE (nN2<aValueLabelSet.count) AND (nN2<25) DO
+                WHILE (nN2<=aValueLabelSet.count) AND (nN2<25) DO
                   BEGIN
-                    aValue:=aValueLabelSet.Values[nN2];
-                    aLabel:=aValueLabelSet.Labels[nN2];
+                    aValue:=aValueLabelSet.Values[nN2-1];
+                    aLabel:=aValueLabelSet.Labels[nN2-1];
                     IF aValue[1]<>'*' THEN
                       BEGIN
                         tmpStr:=aValue+': '+aLabel;
@@ -407,6 +415,55 @@ NUM Name       Variable label        Type            Width  Checks              
     result:=res.Text;
   finally
     res.free;
+  end;
+end;
+
+procedure TForm1.LoadData(ShowAsLabels:boolean);
+var
+  row,col:integer;
+begin
+  sg.ColCount:=epd.NumDataFields+1;
+  sg.RowCount:=epd.NumRecords+1;
+  
+  for row:=0 to sg.RowCount-1 do
+    for col:=0 to sg.ColCount-1 do
+      sg.Cells[col,row]:='';
+  if (not assigned(epd)) then exit;
+
+  //Make col-headings
+  for col:=0 to epd.NumFields-1 do
+    if epd[col].Fieldtype<>ftQuestion then sg.Cells[col+1,0]:=epd[col].FieldName;
+
+  for row:=1 to epd.NumRecords do
+    begin
+      epd.Read(row);
+      sg.Cells[0,row]:=inttostr(row);
+      for col:=0 to epd.NumFields-1 do
+        begin
+          if epd[col].Fieldtype<>ftQuestion then
+            begin
+              if ShowAsLabels
+              then sg.Cells[col+1,row]:=epd[col].AsLabel
+              else sg.Cells[col+1,row]:=epd[col].AsString;
+            end;
+        end;
+    end;
+end;
+
+procedure TForm1.checkShowLabelsClick(Sender: TObject);
+begin
+  LoadData(checkShowLabels.checked);
+end;
+
+procedure TForm1.GetPassword(Sender: TObject; requesttype:TRequestPasswordTypes; var password:String);
+begin
+  formPW:=TformPW.Create(self);
+  try
+    formPW.Filename:=epd.RecFilename;
+    if requesttype=rpOpen then formPW.DoublePW:=false else formPW.DoublePW:=true;
+    if formPW.ShowModal=mrOK then password:=formPW.editPW1.Text;
+  finally
+    formPW.free;
   end;
 end;
 

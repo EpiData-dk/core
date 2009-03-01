@@ -1443,7 +1443,7 @@ begin
                   AsString:=cFill(' ',Length);
                   FOR n:=1 TO Length DO
                     BEGIN
-                      AsString:=ABuf^[BufCount];
+                      AsString:=AsString+ABuf^[BufCount];
                       INC(BufCount);
                       DEC(LineCharCount);
                       IF LineCharCount<=0 THEN

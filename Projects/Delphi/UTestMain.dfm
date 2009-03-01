@@ -83,7 +83,7 @@ object Form1: TForm1
       EditLabel.Height = 13
       EditLabel.Caption = '&Input file'
       TabOrder = 0
-      Text = 'C:\pas\EpiDataProjekt\test\test.rec'
+      Text = 'C:\pas\EpiDataProjekt\test\test2.rec'
     end
     object Button1: TButton
       Left = 24
@@ -118,7 +118,7 @@ object Form1: TForm1
     Top = 97
     Width = 819
     Height = 441
-    ActivePage = TabSheet1
+    ActivePage = TabSheet3
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -195,13 +195,30 @@ object Form1: TForm1
       ImageIndex = 1
       object sg: TStringGrid
         Left = 0
-        Top = 0
+        Top = 33
         Width = 811
-        Height = 413
+        Height = 380
         Align = alClient
         ColCount = 30
         RowCount = 30
         TabOrder = 0
+      end
+      object Panel2: TPanel
+        Left = 0
+        Top = 0
+        Width = 811
+        Height = 33
+        Align = alTop
+        TabOrder = 1
+        object checkShowLabels: TCheckBox
+          Left = 8
+          Top = 8
+          Width = 249
+          Height = 17
+          Caption = 'Show labels insted of values'
+          TabOrder = 0
+          OnClick = checkShowLabelsClick
+        end
       end
     end
   end
