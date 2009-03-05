@@ -3,7 +3,7 @@ program CoreTestProject;
 uses
   Forms,
   {$IFDEF FPC}
-  Interfaces,
+  Interfaces, // This includes the WidgetSet for Lazarus
   {$ENDIF}
   UTestMain in 'UTestMain.pas' {Form1},
   UEpiDataFile in '../../Datafile/UEpiDataFile.pas',

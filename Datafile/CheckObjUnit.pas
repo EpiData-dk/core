@@ -2,8 +2,10 @@ unit CheckObjUnit;
 
 interface
 
-USES Controls,{Windows,} Messages, Forms,Dialogs,Graphics,SysUtils,Classes,
-     UeFields, UEpiDataFile, UEpiDataConstants, UEpiTypes, UValueLabels;
+USES
+  {$IFNDEF FPC}windows,{$ENDIF}
+  Controls, Messages, Forms,Dialogs,Graphics,SysUtils,Classes,
+  UeFields, UEpiDataFile, UEpiDataConstants, UEpiTypes, UValueLabels;
 
 
 

@@ -3,7 +3,8 @@ unit UEpiDataFile;
 interface
 
 uses
-  {Windows,} UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
+ {$IFNDEF FPC}windows,{$ENDIF}
+ UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
 
 TYPE
 
