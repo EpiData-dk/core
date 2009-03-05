@@ -48,7 +48,7 @@ procedure SHA1Burn(var Data: TSHA1Data);
 implementation
 
 {$IFDEF CFORM}
-constructor TDCP_sha1.Create;
+constructor TDCP_sha1.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   fAlgorithm:= 'SHA1';
@@ -106,7 +106,7 @@ begin
 end;
 
 {$IFDEF CFORM}
-procedure TDCP_sha1.UpdateLen;
+procedure TDCP_sha1.UpdateLen(Len: DWord);
 {$ELSE}
 procedure SHA1UpdateLen(var Data: TSHA1Data; Len: DWord);
 {$ENDIF}

@@ -2,7 +2,7 @@ unit UExtUDF;
 
 interface
 
-uses sysutils,classes,windows,epiUDFTypes;
+uses sysutils,classes,{windows,}epiUDFTypes;
 
 Type
 TEpiExternalUDFList=class

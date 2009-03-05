@@ -21,7 +21,7 @@ implementation
 const
   B64Table= 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
-function B64Encode;
+function B64Encode(const S: string): string;
 var
   i: integer;
   InBuf: array[0..2] of byte;
@@ -49,7 +49,7 @@ begin
     Result[Length(Result)]:= '=';
 end;
 
-function B64Decode;
+function B64Decode(const S: string): string;
 var
   i: integer;
   InBuf: array[0..3] of byte;
