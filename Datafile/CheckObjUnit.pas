@@ -1,15 +1,11 @@
 unit CheckObjUnit;
 
-{$DEFINE epidat}
-{$DEFINE analysis}
-
-//TODO:
-//UDF
-
 interface
 
-USES Controls,Windows, Messages, Forms,Dialogs,Graphics,SysUtils,Classes,
-     UEFields, UEpiDataFile, UEpiDataConstants, UEpiTypes, UValueLabels;
+USES
+  {$IFNDEF FPC}windows,{$ENDIF}
+  Controls, Messages, Forms,Dialogs,Graphics,SysUtils,Classes,
+  UeFields, UEpiDataFile, UEpiDataConstants, UEpiTypes, UValueLabels;
 
 
 
@@ -271,16 +267,17 @@ TYPE
 
 implementation
 
-//USES
-//  {$IFNDEF epidat}
-//  FileUnit,UExtUDF, epiUDFTypes;
-//  {$ELSE}
-//  FileUnit,UExtUDF,epiUDFTypes;
-//  {$ENDIF}
 USES
-  UEpiUtils,UExtUDF,epiUDFTypes;
+  UEpiUtils,
+  {$IFNDEF FPC}
+  UExtUDF,
+  {$ENDIF}
+  epiUDFTypes;
 
-
+{$IFDEF FPC}
+const
+  COLOR_ENDCOLORS = 30;
+{$ENDIF}
 
 
 // ==============================  TParser =======================================
@@ -2156,14 +2153,14 @@ BEGIN
   IF (FirstTopFlaw) AND (FCheckFileMode) AND (FMultiLineError) THEN
     BEGIN
       FirstTopFlaw:=False;
-      {$IFNDEF epidat}
+(*      {$IFNDEF epidat}
       IF eDlg(Format(translate(22788,'Unknown fieldname found in checkfile %s'),   //'Unknown fieldname found in checkfile %s'
          [ExtractFilename(df^.CHKFilename)])+#13#13+
          translate(22790,'Do you want to save the checks of the unknown fieldname~as commentlines in the checkfile?')+#13#13+  //'Do you want to save the checks of the unknown fieldname~as commentlines in the checkfile?'
          translate(22792,'If you choose No the checks of the unknown fieldname will~be deleted when the revised checks are saved.'),   //'If you choose No the checks of the unknown fieldname will~be deleted when the revised checks are saved.'
          mtWarning,[mbYes,mbNo],0)=mrYes THEN SaveTopFlawsAsComments:=True;
       Screen.Cursor:=crHourGlass;
-      {$ENDIF}
+      {$ENDIF}*)
     END;  //FirstTopFlaw
   REPEAT
     IF SaveTopFlawsAsComments THEN
@@ -3090,7 +3087,7 @@ BEGIN
   CommentsAddedToCheckFile:=True;
   s:=FParser.GetLineAndFlush;
   ReportError(translate(22733,'Unknown command'));   //'Unknown command'
-  {$IFNDEF epidat}
+(*  {$IFNDEF epidat}
   IF (FirstFieldFlaw) AND (FCheckFileMode) AND (FMultiLineError) THEN
     BEGIN
       FirstFieldFlaw:=False;
@@ -3103,7 +3100,7 @@ BEGIN
          mtWarning,[mbYes,mbNo],0)=mrYes THEN SaveFieldFlawsAsComments:=True;
       Screen.Cursor:=crHourGlass;
     END;  //FirstTopFlaw
-  {$ENDIF}
+  {$ENDIF}    *)
   IF SaveFieldFlawsAsComments THEN
     BEGIN
       FParser.CommentCurLine;
@@ -4005,7 +4002,7 @@ BEGIN
             IF tmpCmdRec^.ElseCmds<>NIL THEN DisposeCommandList(tmpCmdRec^.ElseCmds.List);
           END;
       END;  //case
-      Dispose(Alist.Items[n]);
+      Dispose(PCmds(Alist.Items[n]));
     END;  //for
   FreeAndNil(Alist);
 END;  //procedure DisposeCommandList

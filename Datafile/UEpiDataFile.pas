@@ -1,11 +1,10 @@
 unit UEpiDataFile;
 
-//onProgress
-
 interface
 
 uses
-  Windows, UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
+ {$IFNDEF FPC}windows,{$ENDIF}
+ UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
 
 TYPE
 
@@ -750,7 +749,7 @@ end;
 
 function TEpiDataFile.GetQesLines: string;
 VAR
-  CurField,rN,Lx,Indent,PrevIndent,nc,qc:Integer;
+  CCurField,rN,Lx,Indent,PrevIndent,nc,qc:Integer;
   TempStr,tmpFieldStr,s,q,tmpName:String;
   QES: TStringList;
   InBracket: Boolean;
@@ -763,9 +762,9 @@ begin
       if (not assigned(FFieldList)) or (FFieldList.Count=0) then exit;
       Indent:=0;
       PrevIndent:=0;
-      FOR CurField:=0 TO FFieldList.Count-1 do
+      FOR CCurField:=0 TO FFieldList.Count-1 do
         BEGIN
-          WITH TeField(FFieldList.Items[CurField]) DO
+          WITH TeField(FFieldList.Items[CCurField]) DO
             BEGIN
               Indent:=0;
               IF QuestY<>QES.Count THEN PrevIndent:=0;
@@ -1161,7 +1160,7 @@ VAR
   F: TextFile;
   eLine,OrigFieldname,TempStr,TempKey,PreEnteredKey: String;
   tmpName:string[10];
-  TempInt,TempInt2,Curfield: Integer;
+  TempInt,TempInt2,CCurfield: Integer;
   eField: TeField;
   tmpFieldChar,Dummy: Char;
   QuestColor,FieldColor,ft,n,t,FieldNumberCounter: Integer;
@@ -1215,9 +1214,9 @@ begin
           FRecLength:=0;
           FIDNumField:=-1;
 
-          FOR CurField:=1 to NumFields DO
+          FOR CCurField:=1 to NumFields DO
             BEGIN
-              //Eventuelt lægge et progress-event ind her: ProgressBar.Position:=CurField  /  pct = CurField/NumFields
+              //Eventuelt lægge et progress-event ind her: ProgressBar.Position:=CCurField  /  pct = CCurField/NumFields
               eField:=TeField.Create;
               TRY
                 WITH eField DO
@@ -1320,7 +1319,7 @@ begin
                     FRecLength:=FRecLength+Length;
                     VariableLabel:=trim(Question);
                     tmpVarLabel:=VariableLabel;
-                    FieldNo:=Curfield-1;
+                    FieldNo:=CCurfield-1;
                     IF NOT (EpiInfoFieldNaming) AND (trim(VariableLabel)<>'') THEN
                       BEGIN
                         TempStr:=FirstWord(tmpVarLabel);
@@ -1334,13 +1333,13 @@ begin
                   END;  //with eField
                 FFieldList.Add(eField);
               EXCEPT
-                FErrorText:=Format(Lang(20116,'Error in the datafile %s.~~The field definition in line %d could not be read or interpreted.'),[FRECfilename,CurField+1]);
+                FErrorText:=Format(Lang(20116,'Error in the datafile %s.~~The field definition in line %d could not be read or interpreted.'),[FRECfilename,CCurField+1]);
                 FErrorCode:=epi_DATAFILE_FORMAT_ERROR;
                 CloseFile(F);
                 Result:=False;
                 Exit;
               END;  //try..except
-            END;  //for CurField
+            END;  //for CCurField
           FShortRecLength:=FRecLength;
           FRecLength:=FRecLength+(((FRecLength-1) DIV MaxRecLineLength)+1)*3;  //Add NewLine+LineFeed+Terminatorchar.
           FOffSet:=TextPos(F);
@@ -1361,10 +1360,10 @@ begin
               FDatfile:=TFileStream.Create(FRECFilename,fmOpenReadWrite OR fmShareExclusive);
             END;
           FNumDataFields:=0;
-          FOR CurField:=0 TO FFieldList.Count-1 DO
+          FOR CCurField:=0 TO FFieldList.Count-1 DO
             BEGIN
-              IF TeField(FFieldList.Items[CurField]).Fieldtype=ftIDNUM THEN FIDNUMField:=CurField;
-              IF TeField(FFieldList.Items[CurField]).Fieldtype<>ftQuestion THEN INC(FNumDataFields);
+              IF TeField(FFieldList.Items[CCurField]).Fieldtype=ftIDNUM THEN FIDNUMField:=CCurField;
+              IF TeField(FFieldList.Items[CCurField]).Fieldtype<>ftQuestion THEN INC(FNumDataFields);
             END;
           FNumRecords:=CountRecords;
           IF FNumRecords=-1 THEN
@@ -1658,23 +1657,23 @@ end;
 
 procedure TEpiDataFile.SaveCheckFile;
 var
-  CheckLines: TStringList;
+  cCheckLines: TStringList;
 begin
-  checklines:=TStringList.create;
+  cchecklines:=TStringList.create;
   try
     if (FRECFilename='') then raise Exception.Create('Cannot save check file: No data file name found');
     if (FCHKFilename='') then FCHKFilename:=ChangeFileExt(FRECFilename,'.chk');
     TRY
-      CheckLines.text:=GetCheckLines;
-      if CheckLines.Count>0 then
-        CheckLines.SaveToFile(FCHKFilename)
+      cCheckLines.text:=GetCheckLines;
+      if cCheckLines.Count>0 then
+        cCheckLines.SaveToFile(FCHKFilename)
       else if FileExists(FCHKFilename) and ((FileGetAttr(FCHKFilename) and SysUtils.faReadOnly) = 0) then
         DeleteFile(FCHKFilename);
     EXCEPT
       raise Exception.Create('Error saving check file');
     end;
   finally
-    checklines.free;
+    cchecklines.free;
   end;
 end;
 
@@ -1850,7 +1849,7 @@ function TEpiDataFile.TextPos(var F: Textfile): Longint;
 begin
   With TTextRec(F) DO
     BEGIN
-      Result:=SetFilePointer(Handle,0,nil,FILE_CURRENT);
+      Result:=FileSeek(Handle, 0, 1);
       IF Mode=FMOutput THEN INC(Result, BufPos)
       ELSE IF BufEnd<>0 THEN Dec(Result, BufEnd-BufPos);
     END;

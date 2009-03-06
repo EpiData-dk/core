@@ -28,7 +28,7 @@ type
 implementation
 
 uses
-  SysUtils, UEFields, Classes, UEpiDataConstants, UEpiTypes, UEpiUtils,
+  SysUtils, UeFields, Classes, UEpiDataConstants, UEpiTypes, UEpiUtils,
   UValueLabels, Math;
 { TEpiImport }
 

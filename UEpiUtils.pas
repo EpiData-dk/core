@@ -6,7 +6,7 @@ interface
 
 USES
   SysUtils, Rijndael, Base64, CheckObjUnit, UEpiTypes, UEpiDataConstants,
-  UEpiDatafile;
+  UEpiDataFile;
 
 type
   TString = class(TObject)

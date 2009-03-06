@@ -7,7 +7,7 @@
 unit DCPcrypt;
 
 interface
-{$I DCPcrypt.inc}
+{$I DCPcrypt.Inc}
 {$IFDEF CFORM}
 uses
   Classes;
@@ -144,7 +144,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TDCP_blockcipher.InitStr;
+procedure TDCP_blockcipher.InitStr(const Key: string);
 var
   Hash: TDCP_defaulthash;
   KeyHash: pointer;
