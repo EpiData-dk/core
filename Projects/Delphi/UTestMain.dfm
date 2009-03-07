@@ -83,7 +83,7 @@ object Form1: TForm1
       EditLabel.Height = 13
       EditLabel.Caption = '&Input file'
       TabOrder = 0
-      Text = 'C:\pas\EpiDataProjekt\test\test2.rec'
+      Text = 'C:\pas\EpiDataProjekt\test\test.rec'
     end
     object Button1: TButton
       Left = 24
@@ -103,6 +103,7 @@ object Form1: TForm1
       EditLabel.Height = 13
       EditLabel.Caption = '&Output file'
       TabOrder = 1
+      Text = 'C:\pas\EpiDataProjekt\test\outtest.rec'
     end
     object Button2: TButton
       Left = 448
@@ -111,6 +112,7 @@ object Form1: TForm1
       Height = 25
       Caption = '&Export'
       TabOrder = 3
+      OnClick = Button2Click
     end
   end
   object PageControl1: TPageControl

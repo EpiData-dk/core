@@ -185,6 +185,7 @@ TYPE
       constructor create;
       destructor destroy; override;
       procedure  Add(field: TeField);
+      procedure  clear;
       function   FieldByIndex(index:integer):TeField;
       function   FieldByName(name:string):TeField;
       property   count:integer read GetCount;
@@ -224,6 +225,17 @@ procedure TeFields.Add(field: TeField);
 begin
   field.FEpiDataFile:=FEpiDataFile;
   FList.Add(field);
+end;
+
+procedure TeFields.clear;
+var
+  n:integer;
+begin
+  if FList.Count>0 then
+    begin
+      for n:=0 TO FList.Count-1 do
+        TeField(FList[n]).FFieldText:='';
+    end;
 end;
 
 function  TeFields.GetField(index:integer):TeField;
@@ -410,7 +422,7 @@ begin
   dest.FQuestion:=FQuestion;
   dest.FOriginalQuest:=FOriginalQuest;
   dest.LastField:=LastField;
-  if (clonevalue) then dest.FFieldText:=FFieldText;
+  if (clonevalue) then dest.FFieldText:=FFieldText else FFieldText:='';
   dest.FStartPos:=FStartPos;
   dest.EntryField:=EntryField;
   dest.FFieldComments:=FFieldComments;

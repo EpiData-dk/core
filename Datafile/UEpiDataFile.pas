@@ -1,5 +1,10 @@
 unit UEpiDataFile;
 
+//onProgress
+//newrecord
+//savemem: check if file allready exists
+//write: if no header then error
+
 interface
 
 uses
@@ -195,7 +200,7 @@ TYPE
     Function    SearchIndex(IndexNo: Integer; SearchStr: string):LongInt;
     Function    SearchIndexFrom(IndexNo: Integer; SearchStr: string; RecNo:Integer; direction:TDirections):LongInt;
     Function    IndexHasDuplicates(IndexNo:Integer):Boolean;
-    Procedure   DecryptIndex;  
+    Procedure   DecryptIndex;
 
   public
     CheckFileMode:Boolean;
@@ -205,12 +210,13 @@ TYPE
     Function    UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
     Function    Open(Const filename:String; OpenOptions:TEpiDataFileOptions):Boolean;
     //Methods related to creating new datafile and adding fields, record
-    Function    SaveStructureToFile(filename: string; OverwriteExisting:boolean=false):boolean;
+    Function    SaveHeader(filename: string; Options:TEpiDataFileOptions; OverwriteExisting:boolean=false):boolean;
     procedure   SaveCheckFile;
     procedure   AddField(aField: TeField);
     //Read and write methods
     Procedure   Read(RecNum:LongInt);
     Procedure   Write(RecNum:LongInt);
+    procedure   ClearRecord;
     //Function    ReadFromMem(AField:TeField; RecNo:LongInt; VAR RecIsDeleted:Boolean):String;   // Funktionalitet flyttet til Read
     //procedure   Next;
     //procedure   Prev;
@@ -223,7 +229,7 @@ TYPE
     //procedure   DestroyValueLabels(aValueLabelSet: TValueLabelSet);   //slettes
     function    GetCheckLines:string;
     procedure   Error(errorcode:integer; errortext:string);
-    procedure   CommitMem;
+    procedure   SaveMemToFile(OverWriteExisting:boolean=false);
     Function    ApplyIndex:Boolean;
     Procedure   InitSortIndex;
     Function    ReadIndexNoFromSortIndex(SortPos: Integer):Integer;
@@ -1677,13 +1683,15 @@ begin
   end;
 end;
 
-function TEpiDataFile.SaveStructureToFile(filename: string; OverwriteExisting: boolean): boolean;
+function TEpiDataFile.SaveHeader(filename: string; Options:TEpiDataFileOptions; OverwriteExisting: boolean): boolean;
 VAR
   TempResult:Boolean;
-  N,TempInt,colorN:Integer;
-  ff:ByteFile;
+  N,TempInt,colorN,len,t:Integer;
+  //ff:ByteFile;
   s:string;
   aField: TeField;
+  headerlines: TStringList;
+  ABuf: PRecBuf;
 begin
   IF (NOT Assigned(FFieldList)) OR (FFieldList.Count=0) THEN
     BEGIN
@@ -1699,100 +1707,132 @@ begin
     end;
   FRECFilename:=filename;
   FRECFilename:=changeFileExt(FRECFilename,'.rec');
-  if (fileexists(FRECFilename)) and (OverwriteExisting=false) then
+  if (eoInMemory in Options) then
     begin
-      raise Exception.Create('Data file '+FRECFilename+' already exists');
-      result:=false;
-      exit;
+      FStoredInMemory:=true;
+      if assigned(FMemFile) then FMemFile.Free;
+      FMemFile:=TMemoryStream.Create;
+    end
+  else
+    begin
+      FStoredInMemory:=false;
+      if assigned(FDatFile) then FDatFile.Free;
+      if (fileexists(FRECFilename)) and (OverwriteExisting=false) then
+        begin
+          raise Exception.Create('Data file '+FRECFilename+' already exists');
+          result:=false;
+          exit;
+        end;
+      FDatfile:=TFileStream.Create(FRECFilename,fmCreate OR fmShareExclusive);
     end;
-  TempResult:=True;
-  AssignFile(ff,FRECFilename);
-  {$I-}
-  Rewrite(ff);
-  TempInt:=IOResult;
-  {$I+ }
-  IF TempInt=0 THEN
-    BEGIN
-      //Check if datafile contains encrypt-field    //&&
-      n:=0;
-      FHasCrypt:=false;
-      REPEAT
-        IF  GetField(n).Fieldtype=ftCrypt then FHasCrypt:=true;
-        INC(n);
-      UNTIL (n=FFieldList.Count) or (FHasCrypt);
-      IF FHasCrypt THEN
-        BEGIN
-          IF FKey='' THEN
-            BEGIN
-              s:='';
-              if Assigned(FOnRequestPassword) then FOnRequestPassword(self,rpCreate,s);
-              FKey:=s;
-            END;  //if key already assigned
-          if (FKey='') then raise Exception.Create('A password is needed for data files with encrypted fields');
-        END  //if HasCrypt
-      ELSE FKey:='';
-      //Write No of fields + background colour + FileLabel
-      peWrite(ff,IntToStr(FFieldList.Count)+' 1');
-      IF NOT FEpiInfoFieldNaming THEN peWrite(ff,' VLAB');
-      IF FKey<>'' THEN peWrite(ff,' ~kq:'+EncryptString(FKey,FKey)+':kq~');
-      IF trim(FFileLabel)<>'' THEN peWrite(ff,' Filelabel: '+FFilelabel);
-      peWrite(ff,chr(NewLine));
-      peWrite(ff,chr(LineFeed));
-      FRecLength:=0;
-      FOR n:=0 TO FFieldList.Count-1 DO
-        BEGIN
-          aField:=GetField(n);
-          WITH aField DO
-            BEGIN
-              //write fieldchar
-              IF (fieldtype=ftInteger) OR (fieldtype=ftFloat) OR (fieldtype=ftIDNUM)
-              THEN peWrite(ff,'#') ELSE peWrite(ff,'_');
-              peWrite(ff,FormatStr(Fieldname,10));   //Name of field
-              peWrite(ff,' ');                   //Space required for some unknown reason
-              peWrite(ff,FormatInt(QuestX,4));  //Question X-position
-              peWrite(ff,FormatInt(QuestY,4));  //Question Y-position
-              peWrite(ff,FormatInt(30,4));       //Question colorcode
-              peWrite(ff,FormatInt(FieldX,4));  //Entry X-position
-              peWrite(ff,FormatInt(FieldY,4));  //Entry Y-position
-              //Write FieldType
-              // 0=Question without entryfield, i.e. text only
-              // 100+Number of decimals = Floating point number
-              // For all other: use the fieldtype-code (fieldtype)
-              IF fieldtype=ftQuestion THEN peWrite(ff,FormatInt(0,4))
-                ELSE IF (fieldtype=ftFloat) AND (NumDecimals>0) THEN peWrite(ff,FormatInt(100+NumDecimals,4))
-                  ELSE peWrite(ff,FormatInt(ORD(fieldtype),4));
-              //Write length of field - use 0 for text only
-              IF fieldtype=ftQuestion THEN peWrite(ff,FormatInt(0,4))
-              ELSE
-                BEGIN
-                  peWrite(ff,FormatInt(Length,4));
-                  FRecLength:=FRecLength+Length;
-                END;
-              //write entry colorcode - special use in encrypted fields (holds entrylength of field)
-              IF fieldtype<>ftCrypt THEN colorN:=112   //&&
-              ELSE
-                BEGIN
-                  IF CryptEntryLength<15 THEN colorN:=111+CryptEntryLength ELSE colorN:=CryptEntryLength;
-                END;  //else
-              peWrite(ff,FormatInt(colorN,4));         //Entry colorcode
-              peWrite(ff,' ');                      //Another unnescessary blank
-              if OriginalQuest='' then OriginalQuest:=Question;
-              peWrite(ff,OriginalQuest);
-              peWrite(ff,chr(NewLine));
-              peWrite(ff,chr(LineFeed));
-            END;  //with
-        END;  //for n
-      FOffset:=Filesize(ff);
-      FCurRecModified:=False;
-      FShortRecLength:=FRecLength;
-      FRecLength:=FRecLength+((FRecLength DIV MaxRecLineLength)+1)*3;  //Add NewLine+LineFeed+Terminatorchar.
-      FNumRecords:=0;
-      FCurRecord:=NewRecord;
-      FHasEOFMarker:=False;
-      CloseFile(ff);
-    END  //if TempInt=0
-  ELSE TempResult:=False;
-  Result:=TempResult;
+  headerlines:=TStringList.Create;
+  try
+    TempResult:=True;
+    //Check if datafile contains encrypt-field
+    n:=0;
+    FHasCrypt:=false;
+    REPEAT
+      IF  GetField(n).Fieldtype=ftCrypt then FHasCrypt:=true;
+      INC(n);
+    UNTIL (n=FFieldList.Count) or (FHasCrypt);
+    IF FHasCrypt THEN
+      BEGIN
+        IF FKey='' THEN
+          BEGIN
+            s:='';
+            if Assigned(FOnRequestPassword) then FOnRequestPassword(self,rpCreate,s);
+            FKey:=s;
+          END;  //if key already assigned
+        if (FKey='') then raise Exception.Create('A password is needed for data files with encrypted fields');
+      END  //if HasCrypt
+    ELSE FKey:='';
+    //Write No of fields + background colour + FileLabel
+    s:=IntToStr(FFieldList.Count)+' 1';
+    IF NOT FEpiInfoFieldNaming THEN s:=s+' VLAB';
+    IF FKey<>'' THEN s:=s+' ~kq:'+EncryptString(FKey,FKey)+':kq~';
+    IF trim(FFileLabel)<>'' THEN s:=s+' Filelabel: '+FFilelabel;
+    headerLines.Append(s);
+    //TODO: Validate QuestX, QuestY, FieldX, fieldY
+    FRecLength:=0;
+    FOR n:=0 TO FFieldList.Count-1 DO
+      BEGIN
+        aField:=GetField(n);
+        WITH aField DO
+          BEGIN
+            //write fieldchar
+            IF (fieldtype=ftInteger) OR (fieldtype=ftFloat) OR (fieldtype=ftIDNUM) THEN s:='#' ELSE s:='_';
+            s:=s+FormatStr(Fieldname,10);   //Name of field
+            s:=s+' ';                       //Space required for some unknown reason
+            s:=s+FormatInt(QuestX,4);       //Question X-position
+            s:=s+FormatInt(QuestY,4);       //Question Y-position
+            s:=s+FormatInt(30,4);           //Question colorcode
+            s:=s+FormatInt(FieldX,4);       //Entry X-position
+            s:=s+FormatInt(FieldY,4);       //Entry Y-position
+            //Write FieldType
+            // 0=Question without entryfield, i.e. text only
+            // 100+Number of decimals = Floating point number
+            // For all other: use the fieldtype-code (fieldtype)
+            IF fieldtype=ftQuestion THEN s:=s+FormatInt(0,4)
+              ELSE IF (fieldtype=ftFloat) AND (NumDecimals>0) THEN s:=s+FormatInt(100+NumDecimals,4)
+                ELSE s:=s+FormatInt(ORD(fieldtype),4);
+            //Write length of field - use 0 for text only
+            IF fieldtype=ftQuestion THEN s:=s+FormatInt(0,4)
+            ELSE
+              BEGIN
+                s:=s+FormatInt(Length,4);
+                FRecLength:=FRecLength+Length;
+              END;
+            //write entry colorcode - special use in encrypted fields (holds entrylength of field)
+            IF fieldtype<>ftCrypt THEN colorN:=112   //&&
+            ELSE
+              BEGIN
+                IF CryptEntryLength<15 THEN colorN:=111+CryptEntryLength ELSE colorN:=CryptEntryLength;
+              END;  //else
+            s:=s+FormatInt(colorN,4);      //Entry colorcode
+            s:=s+' ';                      //Another unnescessary blank
+            if OriginalQuest='' then OriginalQuest:=Question;
+            s:=s+OriginalQuest;
+          END;  //with
+        HeaderLines.Append(s);
+      END;  //for n
+    //Count offset
+    FOffset:=0;
+    for n:=0 TO HeaderLines.Count-1 do FOffset:=FOffset+length(HeaderLines[n])+2;  //include CRLF in count
+    if FStoredInMemory then
+      begin
+        FMemFile.SetSize(FOffset);
+        FmemFile.Position:=0;
+      end
+    else FDatFile.Position:=0;
+
+    //Move headerlines to memfile or datfile
+    GetMem(FRecBuf,10000);
+    for n:=0 to HeaderLines.count-1 do
+      begin
+        s:=HeaderLines[n]+CRLF;
+        len:=length(s);
+        for t:=1 to len do
+          FRecBuf^[t-1]:=s[t];
+        if FStoredInMemory then FMemFile.WriteBuffer(FRecBuf^,len) else FDatFile.WriteBuffer(FRecBuf^,len);
+      end;
+    FreeMem(FRecBuf);
+
+    GetMem(FRecBuf,FRecLength);
+    FCurRecModified:=False;
+    FShortRecLength:=FRecLength;
+    FRecLength:=FRecLength+((FRecLength DIV MaxRecLineLength)+1)*3;  //Add NewLine+LineFeed+Terminatorchar.
+    FNumRecords:=0;
+    FCurRecord:=NewRecord;
+    FHasEOFMarker:=False;
+    Result:=TempResult;
+    if (not FStoredInMemory) then
+      begin
+        FDatFile.Free;
+        FDatfile:=TFileStream.Create(FRECFilename,fmOpenReadWrite OR fmShareExclusive);
+      end;
+  finally
+    headerlines.Free;
+  end;
 end;
 
 function TEpiDataFile.SearchIndex(IndexNo: Integer; SearchStr: string): LongInt;
@@ -2056,6 +2096,39 @@ begin
   IF (FIDNUMField<>-1) AND (RecNum=NewRecord) THEN INC(FCurIDNumber);
 end;
 
+procedure TEpiDataFile.ClearRecord;
+var
+  aField: TeField;
+begin
+  //TDataForm(df^.DatForm).ClearFields;  //TODO
+  FCurRecord:=NewRecord;
+  FCurRecModified:=False;
+  FCurRecDeleted:=False;
+  FCurRecVerified:=False;
+  FFieldList.clear;
+  {
+  TODO
+  IF df^.DoubleEntry THEN
+    BEGIN
+      df^.dbKeyfieldvalue:='';
+      IF Assigned(df^.dbdf) THEN df^.dbDf^.CurRecord:=-1;
+      ResetVarifiedFlag(df);
+    END;
+  }
+  IF FIDNUMField<>-1 THEN
+    BEGIN
+      AField:=TeField(FFieldList.Items[FIDNUMField]);
+      AField.AsString:=IntToStr(FCurIDNumber);
+      {
+      TODO
+      ChangeGoingOn:=True;
+      TEntryField(AField^.EntryField).Text:=AField^.FFieldText;
+      ChangeGoingOn:=False;
+      }
+    END;
+  //TODO TDataForm(df^.DatForm).UpdateCurRecEdit(CurRecord,NumRecords);
+end;
+
 procedure TEpiDataFile.WriteIndexNoToSortIndex(SortPos, num: Integer);
 VAR
   pNum:ARRAY[0..3] of byte absolute num;
@@ -2074,9 +2147,25 @@ begin
   FIndex.Write(ptmpS,31);
 end;
 
-procedure TEpiDataFile.commitMem;
+procedure TEpiDataFile.SaveMemToFile(OverWriteExisting:boolean=false);
 begin
-  if FStoredInMemory then FMemFile.SaveToFile(FRecFilename);
+  if trim(FRECFilename)='' then
+    begin
+      raise Exception.Create('Data file has no file name');
+      exit;
+    end;
+
+  if (OverwriteExisting=false) and (fileexists(FRECFilename)) then
+    begin
+      raise Exception.Create('Data file '+FRECFilename+' already exists');
+      exit;
+    end;
+
+  try
+    if FStoredInMemory then FMemFile.SaveToFile(FRecFilename);
+  except
+    raise Exception.Create('Data file '+FRECFilename+' cannot be saved');
+  end;
 end;
 
 end.

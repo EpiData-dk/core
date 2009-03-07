@@ -21,6 +21,7 @@ CONST
   EOLchars: array[0..2] of char = '!'#13#10;
   NewLine:Byte=13;
   LineFeed:Byte=10;
+  CRLF=#13#10;
   MaxRecLineLength=78;
   FieldNameLen:Byte=10;
   MaxIndices=3;

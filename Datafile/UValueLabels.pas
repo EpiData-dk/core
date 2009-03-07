@@ -79,6 +79,7 @@ procedure TValueLabelSets.Clear;
 var
   i: integer;
 begin
+  if FList.Count=0 then exit;
   for i := 0 to FList.Count - 1 do
     TValueLabelSet(FList.Objects[i]).Destroy;
 end;
@@ -164,6 +165,7 @@ procedure TValueLabelSet.Clear;
 var
   i: integer;
 begin
+  if FData.count=0 then exit;
   for i := 0 to FData.Count - 1 do
     TString(FData.Objects[i]).Destroy;
 end;

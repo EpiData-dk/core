@@ -37,6 +37,7 @@ type
     function  DocumentDataFile:string;
     procedure LoadData(ShowAsLabels:boolean);
     procedure checkShowLabelsClick(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     { Private declarations }
     procedure GetPassword(Sender: TObject; requesttype:TRequestPasswordTypes; var password:String);
@@ -100,7 +101,7 @@ begin
   epd:=TEpiDataFile.Create;
   epd.OnRequestPassword:=GetPassword;
   out('Datafile: '+edInputFilename.text);
-  if epd.Open(edInputFilename.Text,[eoInMemory, oeIgnoreIndex]) then
+  if epd.Open(edInputFilename.Text,[eoInMemory, eoIgnoreChecks, oeIgnoreIndex]) then
     begin
       out('Data file opened with succes');
       out('Num fields = '+inttostr(epd.NumFields));
@@ -465,6 +466,68 @@ begin
   finally
     formPW.free;
   end;
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  filename: string;
+  n,t:integer;
+  outepd:TEpiDataFile;
+  aField: TeField;
+  tmpValueLabelSets:TValueLabelSets;
+begin
+  filename:=edOutputFilename.Text;
+  if trim(filename)='' then
+    begin
+      MessageDlg('No output file name entered',mtError,[mbOK],0);
+      exit;
+    end;
+  if LowerCase(ExtractFileExt(filename))<>'.rec' then
+    begin
+      Messagedlg('Output file must be rec-type',mtError,[mbOK],0);
+      exit;
+    end;
+
+  if (not assigned(epd)) then
+    begin
+      Messagedlg('Open an EpiData file before export',mtError,[mbOK],0);
+      exit;
+    end;
+
+  if (FileExists(filename)) and (MessageDlg('Data file '+filename+' allready exists.'#13#13'Overwrite?',mtWarning,[mbOK,mbCancel],0)=mrCancel) then exit;
+
+  try
+    outepd:=TEpiDataFile.Create;
+    outepd.OnRequestPassword:=GetPassword;
+    outepd.RecFilename:=filename;
+    tmpValueLabelSets:=NIL;
+    //epd.ValueLabels.Clone(tmpValueLabelSets);
+    //outepd.ValueLabels:=tmpValueLabelSets;
+    for n:=0 to epd.NumFields-1 do
+      begin
+        aField:=TeField.Create;
+        epd[n].Clone(afield);
+        outepd.AddField(aField);
+      end;
+    outepd.SaveHeader(filename,[eoInMemory],true);  //eoInmemory
+
+    //Copy records
+    for n:=1 to epd.NumRecords do
+      begin
+        epd.Read(n);
+        outepd.ClearRecord;
+        for t:=0 to epd.NumFields-1 do
+          outepd[t].AsString:=epd[t].AsString;
+        outepd.Write(-1);
+      end;
+
+    if outepd.StoredInMemory then outepd.SaveMemToFile(true);
+
+    MessageDlg('Data file has been exported to '+filename,mtInformation,[mbOK],0);
+  finally
+    outepd.free;
+  end;
+
 end;
 
 end.
