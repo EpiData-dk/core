@@ -89,6 +89,7 @@ TYPE
     Function  GetMissingValues(Index: Integer):string;
     Procedure SetMissingValues(Index: Integer; Value:string);
     Function  GetFieldtypeName:string;
+    procedure SetValueLabel(aValueLabel: TValueLabelSet);
     function  Lang(langcode: Integer;  const langtext: string): String;
   public
     constructor Create;
@@ -173,6 +174,7 @@ TYPE
     Property    DefaultValue:string read FDefaultValue write FDefaultValue;
     Property    HasGlobalDefaultValue:Boolean read FHasGlobalDefaultValue write FHasGlobalDefaultValue;
     Property    FieldFormat:string read FFieldFormat write FFieldFormat;
+    Property    owner:TObject read FEpiDataFile write FEpiDataFile;
   END;
 
   TeFields = class(TObject)
@@ -295,8 +297,8 @@ BEGIN
   FTopOfScreen:=False;
   FTopOfScreenLines:=0;
   FTypeField:=NIL;
-  if assigned(AfterCmds) then TCommands(AfterCmds).free;
-  if assigned(BeforeCmds) then TCommands(BeforeCmds).Free;
+  if assigned(AfterCmds) then TChkCommands(AfterCmds).free;
+  if assigned(BeforeCmds) then TChkCommands(BeforeCmds).Free;
   AfterCmds:=NIL;
   BeforeCmds:=NIL;
   FMissingValues[0]:='';
@@ -328,6 +330,7 @@ BEGIN
   OldReadOnly:=False;
   FHasGlobalMissing:=False;
   FFieldFormat:='';
+  FEpiDataFile:=NIL;
 END;
 
 Constructor TeField.Create;
@@ -372,6 +375,11 @@ END;
 
 Procedure TeField.SetAsString(Value:String);
 BEGIN
+  if trim(value)='' then
+    begin
+      FFieldText:='';
+      exit;
+    end;
   if FFieldtype=ftCrypt then FFieldText:=copy(Value,1,FCryptEntryLength) else FFieldText:=Copy(Value,1,FLength);
 END;
 
@@ -410,6 +418,8 @@ BEGIN
 END;
 
 Procedure TeField.Clone(dest: TeField; clonevalue:boolean=false);
+var
+  tmpValueLabelSet: TValueLabelSet;
 begin
   if (not assigned(dest)) then raise Exception.Create('Destination field is not assigned');
   dest.FName:=FName;
@@ -439,9 +449,17 @@ begin
   dest.FShowLegalPickList:=FShowLegalPickList;
   dest.FPickListNoSelect:=FPickListNoSelect;
   dest.FFieldComments:=FFieldComments;
-  if GetHasValueLabels then FValueLabel.Clone(dest.FValueLabel) else dest.FValuelabel:=NIL;
-  dest.FValueLabelType:=FValueLabelType;
-  dest.FValueLabelUse:=FValueLabelUse;
+  if (GetHasValueLabels) and (assigned(dest.owner)) then
+    begin
+      //find dest.owner's valuelabelset with same name as source's valuelabelset
+      tmpValueLabelSet:=TEpiDataFile(dest.owner).ValueLabels.ValueLabelSetByName(FValueLabel.Name);
+      if assigned(tmpValueLabelSet) then
+        begin
+          dest.Valuelabel:=tmpValueLabelSet;
+          dest.FValueLabelType:=FValueLabelType;
+          dest.FValueLabelUse:=FValueLabelUse;
+        end;
+    end;
   dest.FJumps:=FJumps;
   dest.FJumpResetChar:=FJumpResetChar;
   dest.FNoEnter:=FNoEnter;
@@ -457,9 +475,9 @@ begin
   dest.FTopOfScreenLines:=FTopOfScreenLines;
   dest.FTypeField:=FTypeField;
 
-  if assigned(AfterCmds) then TCommands(AfterCmds).Clone(TCommands(dest.AfterCmds))
+  if assigned(AfterCmds) then TChkCommands(AfterCmds).Clone(TChkCommands(dest.AfterCmds))
   else dest.AfterCmds:=NIL;
-  if assigned(BeforeCmds) then TCommands(BeforeCmds).Clone(TCommands(dest.BeforeCmds))
+  if assigned(BeforeCmds) then TChkCommands(BeforeCmds).Clone(TChkCommands(dest.BeforeCmds))
   else dest.BeforeCmds:=NIL;
 
   dest.FMissingValues[0]:=FMissingValues[0];
@@ -524,6 +542,24 @@ begin
   else
     result:='Unknown type';
   end;
+end;
+
+procedure TeField.SetValueLabel(aValueLabel: TValueLabelSet);
+var
+  tmp: TValueLabelSet;
+  epd: TEpiDataFile;
+begin
+  if aValueLabel=NIL then exit;
+  if (not assigned(FEpiDataFile)) then raise Exception.Create('Error adding ValueLabelSet: owner of field not defined');
+  if aValueLabel.Name='' then aValueLabel.Name:='label'+FormatDateTime('hnsz',now);
+  epd:=TEpiDataFile(FEpiDataFile);
+  tmp:=epd.ValueLabels.ValueLabelSetByName(aValueLabel.Name);
+  if assigned(tmp) then FValueLabel:=tmp
+  else
+    begin
+      epd.ValueLabels.AddValueLabelSet(aValueLabel);
+      FValueLabel:=aValueLabel;
+    end;
 end;
 
 // ********************** TeField END***************************

@@ -30,6 +30,9 @@ type
     memoIntepredCheck: TMemo;
     Panel2: TPanel;
     checkShowLabels: TCheckBox;
+    pgBar: TProgressBar;
+    TabSheet6: TTabSheet;
+    memoQes: TMemo;
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
@@ -41,6 +44,7 @@ type
   private
     { Private declarations }
     procedure GetPassword(Sender: TObject; requesttype:TRequestPasswordTypes; var password:String);
+    function  ShowProgress(Sender: TObject; Percent: Integer; Msg: String): TProgressResult;
   public
     { Public declarations }
     procedure ErrorMsg(s:string);
@@ -87,6 +91,10 @@ var
   s:string;
 begin
   memo1.Clear;
+  memo2.Clear;
+  memoOrigCheckFile.Clear;
+  memoIntepredCheck.Clear;
+  memoQes.Clear;
   if assigned(epd) then FreeAndNil(epd);
   if trim(edInputFilename.Text)='' then
     begin
@@ -100,8 +108,9 @@ begin
     end;
   epd:=TEpiDataFile.Create;
   epd.OnRequestPassword:=GetPassword;
+  epd.OnProgress:=ShowProgress;
   out('Datafile: '+edInputFilename.text);
-  if epd.Open(edInputFilename.Text,[eoInMemory, eoIgnoreChecks, oeIgnoreIndex]) then
+  if epd.Open(edInputFilename.Text,[eoInMemory, oeIgnoreIndex]) then
     begin
       out('Data file opened with succes');
       out('Num fields = '+inttostr(epd.NumFields));
@@ -110,7 +119,8 @@ begin
       s:=DocumentDataFile;
       memo2.Lines.Text:=s;
       checkShowLabels.Checked:=(epd.ValueLabels.Count>0);
-      //LoadData(epd.ValueLabels.count>0);
+      memoQes.Lines.Text:=epd.QesLines;
+      LoadData(epd.ValueLabels.count>0);
       if(epd.HasCheckFile) then
         begin
           memoOrigCheckFile.Lines.LoadFromFile(epd.ChkFilename);
@@ -123,6 +133,7 @@ begin
       out('Errorcode: '+inttostr(epd.ErrorCode));
       out('Errortext: '+epd.ErrorText);
     end;
+  pgBar.Visible:=false;
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -468,6 +479,13 @@ begin
   end;
 end;
 
+function TForm1.ShowProgress(Sender: TObject; Percent: Integer; Msg: String): TProgressResult;
+begin
+  if (not pgBar.Visible) then pgBar.Visible:=true;
+  pgBar.Position:=Percent;
+  result:=prNormal;
+end;
+
 procedure TForm1.Button2Click(Sender: TObject);
 var
   filename: string;
@@ -475,6 +493,7 @@ var
   outepd:TEpiDataFile;
   aField: TeField;
   tmpValueLabelSets:TValueLabelSets;
+  aLabelSet: TValueLabelSet;
 begin
   filename:=edOutputFilename.Text;
   if trim(filename)='' then
@@ -500,28 +519,61 @@ begin
     outepd:=TEpiDataFile.Create;
     outepd.OnRequestPassword:=GetPassword;
     outepd.RecFilename:=filename;
+    outepd.Filelabel:=epd.Filelabel;
     tmpValueLabelSets:=NIL;
-    //epd.ValueLabels.Clone(tmpValueLabelSets);
-    //outepd.ValueLabels:=tmpValueLabelSets;
+    epd.ValueLabels.Clone(tmpValueLabelSets);
+    outepd.ValueLabels:=tmpValueLabelSets;
     for n:=0 to epd.NumFields-1 do
       begin
         aField:=TeField.Create;
+        aField.owner:=outepd;   //Must be assigned in order to clone valuelabels in fields
         epd[n].Clone(afield);
         outepd.AddField(aField);
       end;
+
+    //Add an extra field with own valuelabelset to outepd
+    aField:=TeField.Create;
+    aField.Fieldtype:=ftInteger;
+    aField.Length:=1;
+    aField.FieldName:='extra';
+    aField.VariableLabel:='extra';
+    //Set some check commands
+    aField.MustEnter:=true;
+    aField.TypeComments:=true;
+
+    //Create a new ValueLabelSet
+    aLabelSet:=TValueLabelSet.Create;
+    aLabelSet.Name:='animals';
+    aLabelSet.AddValueLabelPair('1','Dog');
+    aLabelSet.AddValueLabelPair('2','Cat');
+    aLabelSet.AddValueLabelPair('3','Whale');
+    aLabelSet.AddValueLabelPair('4','Monkey');
+    aLabelSet.AddValueLabelPair('5','Tiger');
+    outepd.ValueLabels.AddValueLabelSet(aLabelSet);
+
+    //Add referal to ValueLabel to the new field
+    aField.Valuelabel:=aLabelSet;
+    aField.ValueLabelType:=vltLabelRef;     //show valuelabels in fieldblock as COMMENT LEGAL USE ...
+    aField.ValueLabelUse:=aLabelSet.Name;   //show valuelabels in fieldblock as COMMENT LEGAL USE ...
+
+    outepd.AddField(aField);  //Add the field to outepd
+
     outepd.SaveHeader(filename,[eoInMemory],true);  //eoInmemory
 
     //Copy records
     for n:=1 to epd.NumRecords do
       begin
+        ShowProgress(self,(n*100) DIV epd.NumRecords,'');
         epd.Read(n);
         outepd.ClearRecord;
         for t:=0 to epd.NumFields-1 do
           outepd[t].AsString:=epd[t].AsString;
         outepd.Write(-1);
       end;
+    pgBar.Visible:=false;
 
     if outepd.StoredInMemory then outepd.SaveMemToFile(true);
+    outepd.SaveCheckFile;
 
     MessageDlg('Data file has been exported to '+filename,mtInformation,[mbOK],0);
   finally

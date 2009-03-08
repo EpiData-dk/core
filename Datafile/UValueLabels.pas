@@ -89,13 +89,16 @@ var
   i: integer;
   tmp: TValueLabelSet;
 begin
+  dest:=NIL;
+  if (not assigned(FList)) then exit;
   if not Assigned(Dest) then
     Dest := TValueLabelSets.Create();
 
   Dest.Clear;
   for i := 0 to FList.Count - 1 do
   begin
-    TValueLabelSet(FList[i]).Clone(tmp);
+    tmp:=TValueLabelSet.Create;
+    TValueLabelSet(FList.Objects[i]).Clone(tmp);
     Dest.AddValueLabelSet(tmp);
   end;
 end;
@@ -165,6 +168,7 @@ procedure TValueLabelSet.Clear;
 var
   i: integer;
 begin
+  FName:='';
   if FData.count=0 then exit;
   for i := 0 to FData.Count - 1 do
     TString(FData.Objects[i]).Destroy;
@@ -178,7 +182,7 @@ begin
     Dest := TValueLabelSet.Create();
 
   Dest.Clear;
-  Dest.Name := Name;
+  Dest.Name := self.Name;
   for i := 0 to FData.Count -1 do
     Dest.AddValueLabelPair(FData[i], TString(FData.Objects[i]).Str);
 end;

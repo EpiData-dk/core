@@ -1,15 +1,10 @@
 unit UEpiDataFile;
 
-//onProgress
-//newrecord
-//savemem: check if file allready exists
-//write: if no header then error
-
 interface
 
 uses
  {$IFNDEF FPC}windows,{$ENDIF}
- UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics;
+ UEpiDataConstants, SysUtils, Classes, UeFields, UValueLabels, UEpiTypes, Graphics,Math;
 
 TYPE
 
@@ -24,7 +19,7 @@ TYPE
   TProgressEvent = function(Sender: TObject; Percent: Integer; Msg: String): TProgressResult of object;
 
   TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
-  RecBuf=Array[0..20000] OF Char;
+  RecBuf=Array[0..300000] OF Char;
   PRecBuf=^RecBuf;
 
   TIndexFields=Array[1..MaxIndices] OF Integer;
@@ -66,7 +61,7 @@ TYPE
     FFilesize:          LongInt;        //Size of datafile in bytes;
 
     {Field properties}
-    FFieldList:         TeFields;          //List of eFields Records
+    FFieldList:         TeFields;        //List of eFields Records
     FFieldNames:        TStringList;    //List of fieldnames (excl. questions) - created only when needed
     FFieldNamesList:    TStringList;    //List of fieldnames+fieldlabel - created only when needed by dataformunit.FindField1Click
     FNumFields:         Integer;        //Number of fields in datafile incl. question-fields
@@ -75,6 +70,7 @@ TYPE
     FLeaveStyle:        TLeaveStyles;   //Indicates how a field is exited
     FCanExit:           Boolean;        //Flag to indicate if field can be exited
     FFocusedField:      Integer;        //Used in PeekApplyCheckFile to indicate current field
+    FFieldNameCase:     TFieldNameCase; //How to handle case of fieldnames when creating rec-files
 
     {Record properties}
     FCurRecord:         Integer;        //Record number of current record
@@ -188,19 +184,20 @@ TYPE
     Procedure SetGlobalMissingValues(Index: Integer; Value:string);
     Function  GetFileSize:LongInt;
     function  GetQesLines: string;
-    Function    LoadChecks:Boolean;
-    Function    MakeIndexFile:Boolean;
-    Function    ReadFromIndex(IndexNo,RecNo: Integer):string;
-    Function    ReadCommonIndex(RecNo: Integer):String;
-    Procedure   DoSort(L,R:Integer);
-    Procedure   peWrite(VAR f:ByteFile; Const s:String);
-    Procedure   WriteIndexNoToSortIndex(SortPos,num:Integer);
-    Function    ReadCommonViaSortIndex(SortPos: Integer):String;
-    Procedure   WriteToIndex(IndexNo,RecNo: Integer; s:string);
-    Function    SearchIndex(IndexNo: Integer; SearchStr: string):LongInt;
-    Function    SearchIndexFrom(IndexNo: Integer; SearchStr: string; RecNo:Integer; direction:TDirections):LongInt;
-    Function    IndexHasDuplicates(IndexNo:Integer):Boolean;
-    Procedure   DecryptIndex;
+    Function  LoadChecks:Boolean;
+    Function  MakeIndexFile:Boolean;
+    Function  ReadFromIndex(IndexNo,RecNo: Integer):string;
+    Function  ReadCommonIndex(RecNo: Integer):String;
+    Procedure DoSort(L,R:Integer);
+    Procedure peWrite(VAR f:ByteFile; Const s:String);
+    Procedure WriteIndexNoToSortIndex(SortPos,num:Integer);
+    Function  ReadCommonViaSortIndex(SortPos: Integer):String;
+    Procedure WriteToIndex(IndexNo,RecNo: Integer; s:string);
+    Function  SearchIndex(IndexNo: Integer; SearchStr: string):LongInt;
+    Function  SearchIndexFrom(IndexNo: Integer; SearchStr: string; RecNo:Integer; direction:TDirections):LongInt;
+    Function  IndexHasDuplicates(IndexNo:Integer):Boolean;
+    Procedure DecryptIndex;
+    Procedure AssertFieldXY(ReOrderFields:Boolean);
 
   public
     CheckFileMode:Boolean;
@@ -210,7 +207,7 @@ TYPE
     Function    UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
     Function    Open(Const filename:String; OpenOptions:TEpiDataFileOptions):Boolean;
     //Methods related to creating new datafile and adding fields, record
-    Function    SaveHeader(filename: string; Options:TEpiDataFileOptions; OverwriteExisting:boolean=false):boolean;
+    Function    SaveHeader(filename: string; Options:TEpiDataFileOptions; OverwriteExisting:boolean=false; ReOrderFields:boolean=false):boolean;
     procedure   SaveCheckFile;
     procedure   AddField(aField: TeField);
     //Read and write methods
@@ -316,6 +313,7 @@ TYPE
     Property RecordLength:word read FRecLength;
     Property CheckLines:string read GetCheckLines;
     property QesLines: string read GetQesLines;
+    property FieldNameCase:TFieldNameCase read FFieldNameCase write FFieldNameCase;
   published
     { Published declarations }
   end;
@@ -343,12 +341,17 @@ begin
   if (aField.Fieldtype=ftInteger) and (aField.Length>9) then aField.Fieldtype:=ftFloat;
   if (aField.Fieldtype=ftQuestion) then aField.Length:=0;
   if (aField.Fieldtype=ftBoolean) then aField.Length:=1;
-  if (aField.Fieldtype=ftCrypt) then
+  if (aField.Fieldtype=ftCrypt) and (aField.CryptEntryLength=0) then
     begin
       aField.CryptEntryLength:=aField.Length;
       aField.Length:=GetEncodedLength(AField.CryptEntryLength);
     end;
   if (aField.Fieldtype=ftIDNUM) then FIDNUMField:=FFieldList.Count;
+  aField.FieldNo:=FFieldList.count;
+  case FFieldNameCase of
+    fcUpper: aField.Fieldname:=AnsiUpperCase(aField.Fieldname);
+    fcLower: aField.Fieldname:=AnsiLowerCase(aField.Fieldname);
+  end;
   FFieldList.Add(aField);
   IF aField.Fieldtype<>ftQuestion then INC(FNumDataFields);
   INC(FNumFields);
@@ -468,13 +471,15 @@ begin
   FGlobalTypeComColor:=clBlue;
   FIsRelateTop:=True;
   FIsRelateFile:=False;
-  FOnRequestPassword:=NIL;
   FChkTopComments:=NIL;
   FTopEpiDataFile:=TObject(self);
   FGlobalTypeCom:=False;
   CheckFileMode:=False;
   FHasKeyUnique:=False;
   FCheckWriter:=NIL;
+  FOnRequestPassword:=NIL;
+  FOnProgress:=NIL;
+  FOnTranslate:=NIL;  
 end;
 
 procedure TEpiDataFile.DecryptIndex;
@@ -1222,8 +1227,17 @@ begin
 
           FOR CCurField:=1 to NumFields DO
             BEGIN
-              //Eventuelt lægge et progress-event ind her: ProgressBar.Position:=CCurField  /  pct = CCurField/NumFields
+              if UpdateProgress((CCurField*100) DIV NumFields,lang(0,'Opening data file'))=prCancel then
+                begin
+                  FErrorText:=Lang(0,'Cancelled by user');
+                  FErrorcode:=epi_USERCANCELLED;
+                  Result:=False;
+                  CloseFile(F);
+                  Exit;
+                end;
+
               eField:=TeField.Create;
+              eField.owner:=self;
               TRY
                 WITH eField DO
                   BEGIN
@@ -1350,7 +1364,8 @@ begin
           FRecLength:=FRecLength+(((FRecLength-1) DIV MaxRecLineLength)+1)*3;  //Add NewLine+LineFeed+Terminatorchar.
           FOffSet:=TextPos(F);
 
-          GetMem(FRecBuf,FRecLength);
+          //GetMem(FRecBuf,FRecLength);
+          new(FRecBuf);
           CloseFile(F);
 
           IF (eoInMemory in OpenOptions) THEN
@@ -1464,7 +1479,7 @@ begin
                       AsString:=ss;
                     END;
 
-                  //**************** Eventuel opdatering af Dataform ****************
+                  //****************TODO Eventuel opdatering af Dataform ****************
                   {
                   IF Assigned(df^.DatForm) THEN
                     BEGIN
@@ -1525,71 +1540,6 @@ begin
   Result:=tmpS;
 end;
 
-{
-function TEpiDataFile.ReadFromMem(AField: TeField; RecNo: Integer; var RecIsDeleted: Boolean): String;
-VAR
-  RecordPos:LongInt;
-  CharPointer: ^CHAR;
-  FieldT:PChar;
-  FieldText:String;
-begin
-  New(CharPointer);
-  TRY
-    Result:='';
-    IF (RecNo<1) OR (RecNo>FNumRecords) THEN Exit;
-    IF AField=NIL THEN Exit;
-    IF (FStoredInMemory) AND (NOT Assigned(FMemFile)) THEN Exit;
-    IF (NOT FStoredInMemory) AND (NOT Assigned(FDatFile)) THEN Exit;
-
-    RecordPos:=FOffset+((RecNo-1)*FRecLength);
-    IF FStoredInMemory THEN
-      BEGIN
-        FMemFile.Position:=RecordPos+FRecLength-3;
-        FMemFile.Read(CharPointer^,1);
-      END
-    ELSE
-      BEGIN
-        FDatFile.Position:=RecordPos+FRecLength-3;
-        FDatFile.Read(CharPointer^,1);
-      END;
-    IF CharPointer^='?' THEN RecIsDeleted:=True ELSE RecIsDeleted:=False;
-    IF AField.Fieldtype<>ftQuestion THEN
-      BEGIN
-        //Read value of field
-        FieldT:=PChar(cFill(#0,AField.Length+3));
-        IF FStoredInMemory THEN
-          BEGIN
-            FMemFile.Position:=RecordPos+AField.StartPos;
-            FMemFile.ReadBuffer(FieldT^,AField.Length);
-          END
-        ELSE
-          BEGIN
-            FDatFile.Position:=RecordPos+AField.StartPos;
-            FDatFile.ReadBuffer(FieldT^,AField.Length);
-          END;
-        FieldText:=FieldT;
-        IF Pos('!',FieldText)>0 THEN
-          BEGIN
-            IF FStoredInMemory THEN
-              BEGIN
-                FMemFile.Position:=RecordPos+AField.StartPos;
-                FMemFile.ReadBuffer(FieldT^, AField.Length+3);
-              END
-            ELSE
-              BEGIN
-                FDatFile.Position:=RecordPos+AField.StartPos;
-                FDatFile.ReadBuffer(FieldT^, AField.Length+3);
-              END;
-            FieldText:=FieldT;
-            Delete(FieldText,Pos('!',FieldText),3);
-          END;
-        Result:=trim(FieldText);
-      END;
-  FINALLY
-    Dispose(CharPointer);
-  END;
-end;
-}
 
 function TEpiDataFile.ReadIndexNoFromSortIndex(SortPos: Integer): Integer;
 VAR
@@ -1609,7 +1559,7 @@ begin
   IF Assigned(FValueLabels) THEN FreeAndNil(FValueLabels);
   IF FRecBuf<>NIL THEN
     BEGIN
-      FreeMem(FRecBuf);
+      Dispose(FRecBuf);
       FRecBuf:=NIL;
     END;
   FMemFile.Free;
@@ -1636,12 +1586,12 @@ begin
         TeField(FGlobalDefList.Objects[n]).Free;
       FreeAndNil(FGlobalDefList);
     END;
-  IF Assigned(FBeforeFileCmds)   THEN TCommands(FBeforeFileCmds).Free;
-  IF Assigned(FAfterFileCmds)    THEN TCommands(FAfterFileCmds).Free;
-  IF Assigned(FBeforeRecordCmds) THEN TCommands(FBeforeRecordCmds).Free;
-  IF Assigned(FAfterRecordCmds)  THEN TCommands(FAfterRecordCmds).Free;
-  IF Assigned(FRecodeCmds)       THEN TCommands(FRecodeCmds).Free;
-//  IF Assigned(FLastCommands)     THEN DisposeCommandList(FLastCommands);
+  IF Assigned(FBeforeFileCmds)   THEN TChkCommands(FBeforeFileCmds).Free;
+  IF Assigned(FAfterFileCmds)    THEN TChkCommands(FAfterFileCmds).Free;
+  IF Assigned(FBeforeRecordCmds) THEN TChkCommands(FBeforeRecordCmds).Free;
+  IF Assigned(FAfterRecordCmds)  THEN TChkCommands(FAfterRecordCmds).Free;
+  IF Assigned(FRecodeCmds)       THEN TChkCommands(FRecodeCmds).Free;
+//  IF Assigned(FLasTChkCommands)     THEN DisposeCommandList(FLasTChkCommands);
   IF Assigned(FAssertList)       THEN FAssertList.Free;
   IF Assigned(FBackupList)       THEN FBackupList.Free;
   IF Assigned(FChkTopComments)   THEN FChkTopComments.Free;
@@ -1659,6 +1609,7 @@ begin
   FIsRelateFile:=False;
   FIsRelateTop:=True;
   FHasKeyUnique:=False;
+  FFieldNameCase:=fcDontChange;
 end;
 
 procedure TEpiDataFile.SaveCheckFile;
@@ -1683,7 +1634,73 @@ begin
   end;
 end;
 
-function TEpiDataFile.SaveHeader(filename: string; Options:TEpiDataFileOptions; OverwriteExisting: boolean): boolean;
+procedure TEpiDataFile.AssertFieldXY(ReOrderFields:Boolean);
+var
+  MaxVarLabelLength,n,LastLine,t:integer;
+  YError:boolean;
+  aField: TeField;
+begin
+  {
+    Asserts that fields' X, Y positions are ok according to rules
+
+    Rules:
+      If FieldY=0 then FieldY = next unused line
+      if FieldY < last used line then fieldY=last used line +1
+      if FieldX=0 then FieldX=MaxVarLabelLength, QuestX=1
+  }
+
+  if FFieldList.count=0 then exit;
+  MaxVarLabelLength:=0;
+  for n:=0 to FFieldList.count-1 do
+    begin
+      aField:=TeField(FFieldList.items[n]);
+      if aField.Fieldtype<>ftQuestion then
+        begin
+          MaxVarLabelLength:=max(length(aField.Question),MaxVarLabelLength);
+          if aField.FieldY<>aField.QuestY then aField.FieldY:=aField.QuestY;
+        end;
+    end;
+  if MaxVarLabelLength>0 then inc(MaxVarLabelLength);
+  if MaxVarLabelLength=0 then MaxVarLabelLength:=1;
+
+  if ReOrderfields then
+    begin
+      for n:=0 to FFieldList.count-1 do
+        begin
+          aField:=TeField(FFieldList.items[n]);
+          aField.QuestX:=1;
+          aField.QuestY:=n+1;
+          if aField.Fieldtype<>ftQuestion then
+            begin
+              aField.FieldX:=MaxVarLabelLength;
+              aField.FieldY:=n+1;
+            end;
+        end;  //for
+    end
+  else
+    begin
+      LastLine:=0;
+      for n:=0 to FFieldList.Count-1 do
+        begin
+          aField:=TeField(FFieldList.items[n]);
+          if (aField.QuestY=0) or (aField.QuestY<LastLine) then
+            begin
+              inc(LastLine);
+              aField.QuestY:=LastLine;
+              if aField.Fieldtype<>ftQuestion then aField.FieldY:=LastLine;
+            end;
+          if aField.Fieldtype<>ftQuestion then
+            begin
+              if aField.Question='' then aField.Question:=aField.VariableLabel;
+              if (aField.FieldX=0) or (aField.fieldX<(aField.QuestY+length(trim(aField.Question)))) then aField.FieldX:=MaxVarLabelLength;
+            end;
+          if aField.QuestX=0 then aField.questX:=1;
+          LastLine:=aField.QuestY;
+        end;  //for n
+    end;  //if not reorderfields
+end;
+
+function TEpiDataFile.SaveHeader(filename: string; Options:TEpiDataFileOptions; OverwriteExisting:boolean=false; ReOrderFields:boolean=false):boolean;
 VAR
   TempResult:Boolean;
   N,TempInt,colorN,len,t:Integer;
@@ -1754,12 +1771,14 @@ begin
     headerLines.Append(s);
     //TODO: Validate QuestX, QuestY, FieldX, fieldY
     FRecLength:=0;
+    AssertFieldXY(ReOrderFields);
     FOR n:=0 TO FFieldList.Count-1 DO
       BEGIN
         aField:=GetField(n);
         WITH aField DO
           BEGIN
             //write fieldchar
+            if Question='' then Question:=VariableLabel;
             IF (fieldtype=ftInteger) OR (fieldtype=ftFloat) OR (fieldtype=ftIDNUM) THEN s:='#' ELSE s:='_';
             s:=s+FormatStr(Fieldname,10);   //Name of field
             s:=s+' ';                       //Space required for some unknown reason
@@ -1806,7 +1825,7 @@ begin
     else FDatFile.Position:=0;
 
     //Move headerlines to memfile or datfile
-    GetMem(FRecBuf,10000);
+    if (not assigned(FRecBuf)) then new(FRecBuf);
     for n:=0 to HeaderLines.count-1 do
       begin
         s:=HeaderLines[n]+CRLF;
@@ -1815,9 +1834,7 @@ begin
           FRecBuf^[t-1]:=s[t];
         if FStoredInMemory then FMemFile.WriteBuffer(FRecBuf^,len) else FDatFile.WriteBuffer(FRecBuf^,len);
       end;
-    FreeMem(FRecBuf);
 
-    GetMem(FRecBuf,FRecLength);
     FCurRecModified:=False;
     FShortRecLength:=FRecLength;
     FRecLength:=FRecLength+((FRecLength DIV MaxRecLineLength)+1)*3;  //Add NewLine+LineFeed+Terminatorchar.
@@ -1917,7 +1934,9 @@ VAR
   BufCount,LineCharCount: Integer;
   ok:Boolean;
 begin
+  if ((FStoredInMemory) and (not assigned(FMemFile))) or ((NOT FStoredInMemory) AND (not assigned(FDatFile))) then raise Exception.Create('Write record error: Data file or Memory stream not created');
   ABuf:=FRecBuf;
+  if RecNum>FNumRecords then RecNum:=NewRecord;
   IF RecNum=NewRecord THEN
     BEGIN
       IF FHasEOFMarker THEN

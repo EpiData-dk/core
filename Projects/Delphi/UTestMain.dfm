@@ -19,7 +19,7 @@ object Form1: TForm1
     Left = 0
     Top = 0
     Width = 819
-    Height = 97
+    Height = 113
     Align = alTop
     TabOrder = 0
     object SpeedButton1: TSpeedButton
@@ -114,13 +114,22 @@ object Form1: TForm1
       TabOrder = 3
       OnClick = Button2Click
     end
+    object pgBar: TProgressBar
+      Left = 24
+      Top = 96
+      Width = 769
+      Height = 10
+      Smooth = True
+      TabOrder = 4
+      Visible = False
+    end
   end
   object PageControl1: TPageControl
     Left = 0
-    Top = 97
+    Top = 113
     Width = 819
-    Height = 441
-    ActivePage = TabSheet3
+    Height = 425
+    ActivePage = TabSheet1
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -129,7 +138,7 @@ object Form1: TForm1
         Left = 0
         Top = 0
         Width = 811
-        Height = 413
+        Height = 397
         Align = alClient
         ScrollBars = ssBoth
         TabOrder = 0
@@ -142,7 +151,7 @@ object Form1: TForm1
         Left = 0
         Top = 0
         Width = 811
-        Height = 413
+        Height = 397
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -161,7 +170,7 @@ object Form1: TForm1
         Left = 0
         Top = 0
         Width = 811
-        Height = 413
+        Height = 397
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -180,7 +189,7 @@ object Form1: TForm1
         Left = 0
         Top = 0
         Width = 811
-        Height = 413
+        Height = 397
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -192,6 +201,24 @@ object Form1: TForm1
         TabOrder = 0
       end
     end
+    object TabSheet6: TTabSheet
+      Caption = 'Interpreted qes-file'
+      ImageIndex = 5
+      object memoQes: TMemo
+        Left = 0
+        Top = 0
+        Width = 811
+        Height = 397
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Courier New'
+        Font.Style = []
+        ParentFont = False
+        TabOrder = 0
+      end
+    end
     object TabSheet2: TTabSheet
       Caption = 'Data'
       ImageIndex = 1
@@ -199,7 +226,7 @@ object Form1: TForm1
         Left = 0
         Top = 33
         Width = 811
-        Height = 380
+        Height = 364
         Align = alClient
         ColCount = 30
         RowCount = 30

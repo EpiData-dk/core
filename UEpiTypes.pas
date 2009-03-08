@@ -10,6 +10,7 @@ type
   TMissingValues = Array[0..2] of string;   //Holds missing values for fields
   TScopes=(scLocal,scGlobal,scCumulative);  //used with DEFINEd variables in checkfiles
   TMissingActions=(maIgnoreMissing,maRejectMissing);
+  TFieldNameCase=(fcUpper,fcLower,fcDontChange);
   ByteFile=File of Byte;
 
 implementation

@@ -74,7 +74,7 @@ CONST
     'LET','dummy','leavefield');
 
 TYPE
-  TCommands = class;
+  TChkCommands = class;
   TChangeFieldActions=(cfNext,cfPrev,cfFirst,cfLast,cfValidate);
   TLeaveStyles=(lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
   PCmds=^TCmds;
@@ -84,8 +84,8 @@ TYPE
             cmdIF:
                (IfExpr:          String[200];
                 IfShowExpr:      String[200];
-                IfCmds:          TCommands;
-                ElseCmds:        TCommands);
+                IfCmds:          TChkCommands;
+                ElseCmds:        TChkCommands);
             cmdHelp:
                (HelpString:      String[250];
                 HelpType:        TMsgDlgType;
@@ -174,7 +174,7 @@ TYPE
     FScope:            TScopes;
     END;
 
-  TCommands = class(TObject)
+  TChkCommands = class(TObject)
   private
     FList: TList;
     function GetCount:integer;
@@ -184,7 +184,7 @@ TYPE
     constructor create;
     destructor  destroy; override;
     procedure   AddCommand(cmd: PCmds);
-    procedure   Clone(dest: TCommands);
+    procedure   Clone(dest: TChkCommands);
     function    NewCmd:PCmds;
     property    count:integer read GetCount;
     property    items[index:integer]:PCmds read GetItem; default;
@@ -216,8 +216,8 @@ TYPE
     Procedure RetrieveLabelBlock;
     Procedure RetrieveLabel;
     Procedure RetrieveAssertBlock;
-    Procedure GetCommandList(var CmdList:TCommands);
-    Procedure GetCommand(var CmdList:TCommands);
+    Procedure GetCommandList(var CmdList:TChkCommands);
+    Procedure GetCommand(var CmdList:TChkCommands);
     Procedure AddTopComment;
     Procedure RetrieveFlawBlock;
     Procedure RetrieveRange;
@@ -252,7 +252,7 @@ TYPE
     FLastFieldBlock: TStringList;
     FieldComments: TStringList;
     Function Label2Text(aValueLabelSet:TValueLabelSet; NumSpc:Byte):String;
-    Procedure AddCommandList(sList:TStringList; CmdList:TCommands; Indent:Byte);
+    Procedure AddCommandList(sList:TStringList; CmdList:TChkCommands; Indent:Byte);
     procedure ChecksToStrings;
   public
     constructor create(EpiDataFile: TEpiDataFile);
@@ -434,7 +434,7 @@ VAR
   aFound: Boolean;
   tmpString,NewChkLines,IncludeStrings: TStringList;
   s: string;
-  tmpCommands: TCommands;
+  tmpCommands: TChkCommands;
 begin
   Result:=False;
   df:=ADatafile;
@@ -538,13 +538,13 @@ begin
         CurCommand:=FParser.GetUpperToken(nwSameLine);  
         IF CurCommand='FILE' THEN
           begin
-            tmpCommands:=TCommands(df.BeforeFileCmds);
+            tmpCommands:=TChkCommands(df.BeforeFileCmds);
             GetCommandList(tmpCommands);
             df.BeforeFileCmds:=tmpCommands;
           end
         ELSE IF CurCommand='RECORD' THEN
           begin
-            tmpCommands:=TCommands(df.BeforeRecordCmds);
+            tmpCommands:=TChkCommands(df.BeforeRecordCmds);
             GetCommandList(tmpCommands);
             df.BeforeRecordCmds:=tmpCommands;
           end
@@ -559,13 +559,13 @@ begin
         CurCommand:=FParser.GetUpperToken(nwSameLine);  
         IF CurCommand='FILE' THEN
           begin
-            tmpCommands:=TCommands(df.AfterFileCmds);
+            tmpCommands:=TChkCommands(df.AfterFileCmds);
             GetCommandList(tmpCommands);
             df.AfterFileCmds:=tmpCommands;
           end
         ELSE IF CurCommand='RECORD' THEN
           begin
-            tmpCommands:=TCommands(df.AfterRecordCmds);
+            tmpCommands:=TChkCommands(df.AfterRecordCmds);
             GetCommandList(tmpCommands);
             df.AfterRecordCmds:=tmpCommands;
           end
@@ -577,7 +577,7 @@ begin
       END
     ELSE IF CurCommand='RECODEBLOCK' THEN
       begin
-        tmpCommands:=TCommands(df.RecodeCmds);
+        tmpCommands:=TChkCommands(df.RecodeCmds);
         GetCommandList(tmpCommands);
         df.RecodeCmds:=tmpCommands;
       end
@@ -635,7 +635,7 @@ VAR
   ValueLabelType: TValueLabelSetType;
   ValueLabelUse:  String;
   ValueLabelShow: Boolean;
-  tmpCommands: TCommands;
+  tmpCommands: TChkCommands;
 BEGIN
   {Legal commands in fieldblocks are
     RANGE
@@ -662,6 +662,7 @@ BEGIN
   IF df[df.FocusedField].Fieldtype<>ftQuestion THEN
     BEGIN
       tmpField:=TeField.Create;
+      tmpField.owner:=df;
       tmpField.FieldName:=df[df.FocusedField].FieldName;
       tmpField.Fieldtype:=df[df.FocusedField].Fieldtype;
       tmpField.Length:=df[df.FocusedField].Length;
@@ -717,7 +718,7 @@ BEGIN
             CurCommand:=FParser.GetUpperToken(nwSameLine);
             IF CurCommand='ENTRY' THEN
               begin
-                tmpCommands:=TCommands(tmpField.BeforeCmds);
+                tmpCommands:=TChkCommands(tmpField.BeforeCmds);
                 GetCommandList(tmpCommands);
                 tmpField.BeforeCmds:=tmpCommands;
               end
@@ -732,7 +733,7 @@ BEGIN
             CurCommand:=Fparser.GetUpperToken(nwSameLine);
             IF CurCommand='ENTRY' THEN
               begin
-                tmpCommands:=TCommands(tmpField.AfterCmds);
+                tmpCommands:=TChkCommands(tmpField.AfterCmds);
                 GetCommandList(tmpCommands);
                 tmpField.AfterCmds:=tmpCommands;
               end
@@ -744,7 +745,7 @@ BEGIN
           END
         ELSE IF CurCommand<>'' THEN
           begin
-            tmpCommands:=TCommands(tmpField.AfterCmds);
+            tmpCommands:=TChkCommands(tmpField.AfterCmds);
             GetCommand(tmpCommands);
             tmpField.AfterCmds:=tmpCommands;
           end;
@@ -757,8 +758,8 @@ BEGIN
         BEGIN
           WITH df[df.FocusedField] DO
             BEGIN
-              IF AfterCmds<>NIL THEN TCommands(AfterCmds).Free;
-              IF BeforeCmds<>NIL THEN TCommands(BeforeCmds).Free;
+              IF AfterCmds<>NIL THEN TChkCommands(AfterCmds).Free;
+              IF BeforeCmds<>NIL THEN TChkCommands(BeforeCmds).Free;
               Min:=tmpField.Min;
               Max:=tmpField.Max;
               Legal:=tmpField.Legal;
@@ -800,8 +801,8 @@ BEGIN
         END  //if TempResult
       ELSE
         BEGIN
-          IF tmpField.AfterCmds<>NIL THEN TCommands(tmpField.AfterCmds).Free;
-          IF tmpField.BeforeCmds<>NIL THEN TCommands(tmpField.BeforeCmds).Free;
+          IF tmpField.AfterCmds<>NIL THEN TChkCommands(tmpField.AfterCmds).Free;
+          IF tmpField.BeforeCmds<>NIL THEN TChkCommands(tmpField.BeforeCmds).Free;
         END;  //if NOT TempResult
     END;
   df.FocusedField:=-1;
@@ -920,7 +921,7 @@ BEGIN
 END;  //TCheckObj.RetrieveAssertBlock
 
 
-Procedure TCheckObj.GetCommandList(var CmdList:TCommands);
+Procedure TCheckObj.GetCommandList(var CmdList:TChkCommands);
 BEGIN
   REPEAT
     CurCommand:=FParser.GetToken(nwAny);
@@ -931,7 +932,7 @@ END;  //GetCommandList
 
 
 
-Procedure TCheckObj.GetCommand(var CmdList:TCommands);
+Procedure TCheckObj.GetCommand(var CmdList:TChkCommands);
 VAR
   cmd:Commands;
   tmpCmdRec:TCmds;
@@ -1109,8 +1110,8 @@ BEGIN
                   SeenElse:=True;
                   CurCommand:='ELSE'
                 END;
-              IF SeenElse THEN GetCommand(TCommands(tmpCmdRec.ElseCmds))
-              ELSE GetCommand(TCommands(tmpCmdRec.IfCmds));
+              IF SeenElse THEN GetCommand(TChkCommands(tmpCmdRec.ElseCmds))
+              ELSE GetCommand(TChkCommands(tmpCmdRec.IfCmds));
             UNTIL (AnsiUpperCase(CurCommand)='ENDIF') OR (FParser.EndOfLines)
             OR (AnsiUpperCase(CurCommand)='END');
             IF (FParser.EndOfLines) AND (AnsiUpperCase(CurCommand)<>'ENDIF') THEN
@@ -2091,7 +2092,7 @@ BEGIN
   END;  //Case
   IF ok THEN
     BEGIN
-      IF CmdList=NIL THEN CmdList:=TCommands.Create;
+      IF CmdList=NIL THEN CmdList:=TChkCommands.Create;
       tmpCmdPtr:=CmdList.NewCmd;
       tmpCmdPtr^:=tmpCmdRec;
       CmdList.AddCommand(tmpCmdPtr);
@@ -2126,8 +2127,8 @@ BEGIN
       if tmpCmdRec.ValueLabel<>NIL then tmpCmdRec.ValueLabel.Free;
       IF cmd=cmdIF THEN
         BEGIN
-          IF tmpCmdRec.IfCmds<>NIL THEN TCommands(tmpCmdRec.IfCmds).Free;
-          IF tmpCmdRec.ElseCmds<>NIL THEN TCommands(tmpCmdRec.ElseCmds).Free;
+          IF tmpCmdRec.IfCmds<>NIL THEN TChkCommands(tmpCmdRec.IfCmds).Free;
+          IF tmpCmdRec.ElseCmds<>NIL THEN TChkCommands(tmpCmdRec.ElseCmds).Free;
         END;
     END;
 END;  //GetCommand
@@ -3266,7 +3267,7 @@ VAR
   sList:     TStringList;
   aValueLabelSet: TValueLabelSet;
 
-  procedure LabelsInCommands(cmdList: TCommands);
+  procedure LabelsInCommands(cmdList: TChkCommands);
   VAR
     n,w:Integer;
     Cmd:PCmds;
@@ -3279,8 +3280,8 @@ VAR
         Case cmd^.Command OF
           cmdIF:
             BEGIN
-              IF cmd^.IfCmds<>NIL THEN LabelsInCommands(TCommands(cmd^.IfCmds));
-              IF cmd^.ElseCmds<>NIL THEN LabelsInCommands(TCommands(cmd^.ElseCmds));
+              IF cmd^.IfCmds<>NIL THEN LabelsInCommands(TChkCommands(cmd^.IfCmds));
+              IF cmd^.ElseCmds<>NIL THEN LabelsInCommands(TChkCommands(cmd^.ElseCmds));
             END;
           cmdComLegal:
             BEGIN
@@ -3336,8 +3337,8 @@ BEGIN  //ChecksToStrings
             THEN LegalList.AddObject(tmpS,aValueLabelSet);
           end;
         {Check if fields has commands that contains comment legals}
-        IF AField.AfterCmds<>NIL THEN LabelsInCommands(TCommands(AField.AfterCmds));
-        IF AField.BeforeCmds<>NIL THEN LabelsInCommands(TCommands(AField.BeforeCmds));
+        IF AField.AfterCmds<>NIL THEN LabelsInCommands(TChkCommands(AField.AfterCmds));
+        IF AField.BeforeCmds<>NIL THEN LabelsInCommands(TChkCommands(AField.BeforeCmds));
       END;  //for sN
     {Legallist now contains all used value labels}
     IF LegalList.Count>0 THEN
@@ -3360,7 +3361,7 @@ BEGIN  //ChecksToStrings
     IF df.RecodeCmds<>NIL THEN
       BEGIN
         sList.Append('RECODEBLOCK');
-        AddCommandList(sList,TCommands(df.RecodeCmds),2);
+        AddCommandList(sList,TChkCommands(df.RecodeCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
@@ -3373,28 +3374,28 @@ BEGIN  //ChecksToStrings
         IF df.GlobalMissingValues[1]<>'' THEN tmpS:=tmpS+' '+df.GlobalMissingValues[1];
         IF df.GlobalMissingValues[2]<>'' THEN tmpS:=tmpS+' '+df.GlobalMissingValues[2];
         IF tmpS<>'' THEN sList.Append('  MISSINGVALUE ALL '+tmpS);
-        AddCommandList(sList,TCommands(df.BeforeFileCmds),2);
+        AddCommandList(sList,TChkCommands(df.BeforeFileCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
     IF df.AfterFileCmds<>NIL THEN
       BEGIN
         sList.Append('AFTER FILE');
-        AddCommandList(sList,TCommands(df.AfterFileCmds),2);
+        AddCommandList(sList,TChkCommands(df.AfterFileCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
     IF df.BeforeRecordCmds<>NIL THEN
       BEGIN
         sList.Append('BEFORE RECORD');
-        AddCommandList(sList,TCommands(df.BeforeRecordCmds),2);
+        AddCommandList(sList,TChkCommands(df.BeforeRecordCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
     IF df.AfterRecordCmds<>NIL THEN
       BEGIN
         sList.Append('AFTER RECORD');
-        AddCommandList(sList,TCommands(df.AfterRecordCmds),2);
+        AddCommandList(sList,TChkCommands(df.AfterRecordCmds),2);
         sList.Append('END');
         sList.Append('');
       END;
@@ -3599,7 +3600,7 @@ BEGIN
           IF BeforeCmds<>NIL THEN
             BEGIN
               sList.Add(IndStr+'  BEFORE ENTRY');
-              AddCommandList(sList,TCommands(BeforeCmds),Indent+4);
+              AddCommandList(sList,TChkCommands(BeforeCmds),Indent+4);
               sList.Add(IndStr+'  END');
             END;  //if Before commands
 
@@ -3607,7 +3608,7 @@ BEGIN
           IF AfterCmds<>NIL THEN
             BEGIN
               sList.Add(IndStr+'  AFTER ENTRY');
-              AddCommandList(sList,TCommands(AfterCmds),Indent+4);
+              AddCommandList(sList,TChkCommands(AfterCmds),Indent+4);
               sList.Add(IndStr+'  END');
             END;  //if After commands
 
@@ -3656,7 +3657,7 @@ BEGIN
 END;  //Label2Text
 
 
-Procedure TCheckWriter.AddCommandList(sList:TStringList; CmdList:TCommands; Indent:Byte);
+Procedure TCheckWriter.AddCommandList(sList:TStringList; CmdList:TChkCommands; Indent:Byte);
 VAR
   CmdCounter,n:Integer;
   Cmd:PCmds;
@@ -3971,14 +3972,14 @@ BEGIN
 END;  //Procedure AddCommandList
 
 
-{TCommands}
-constructor TCommands.create;
+{TChkCommands}
+constructor TChkCommands.create;
 begin
   inherited;
   FList:=TList.Create;
 end;
 
-destructor TCommands.destroy;
+destructor TChkCommands.destroy;
 var
   n: integer;
   tmpCmdRec: TCmds;
@@ -3987,7 +3988,7 @@ begin
   inherited;
 end;
 
-Procedure TCommands.DisposeCommandList(aList: TList);
+Procedure TChkCommands.DisposeCommandList(aList: TList);
 VAR
   n:Integer;
   tmpCmdRec:PCmds;
@@ -4007,29 +4008,29 @@ BEGIN
   FreeAndNil(Alist);
 END;  //procedure DisposeCommandList
 
-procedure TCommands.AddCommand(cmd: PCmds);
+procedure TChkCommands.AddCommand(cmd: PCmds);
 begin
   FList.Add(cmd);
 end;
 
-function TCommands.GetCount:integer;
+function TChkCommands.GetCount:integer;
 begin
   result:=FList.count;
 end;
 
-function TCommands.GetItem(index:integer):PCmds;
+function TChkCommands.GetItem(index:integer):PCmds;
 begin
   if (index>=0) and (index<FList.Count)
   then result:=PCmds(FList.Items[index])
   else result:=NIL;
 end;
 
-procedure TCommands.Clone(dest: TCommands);
+procedure TChkCommands.Clone(dest: TChkCommands);
 var
   n: integer;
   aCmd,new: PCmds;
 begin
-  if (not assigned(dest)) then dest:=TCommands.create;
+  if (not assigned(dest)) then dest:=TChkCommands.create;
   for n:=0 TO FList.Count-1 do
     begin
       aCmd:=PCmds(FList.Items[n]);
@@ -4039,19 +4040,19 @@ begin
       new^.ElseCmds:=NIL;
       if aCmd^.IfCmds<>NIL then
         begin
-          new^.IfCmds:=TCommands.create;
+          new^.IfCmds:=TChkCommands.create;
           aCmd^.IfCmds.Clone(new^.IfCmds);
         end;
       if aCmd^.ElseCmds<>NIL then
         begin
-          new^.ElseCmds:=TCommands.create;
+          new^.ElseCmds:=TChkCommands.create;
           aCmd^.ElseCmds.Clone(new^.ElseCmds);
         end;
       dest.AddCommand(new);
     end;
 end;
 
-function TCommands.NewCmd:PCmds;
+function TChkCommands.NewCmd:PCmds;
 begin
   new(result);
   result^.IfCmds:=NIL;

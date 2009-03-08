@@ -39,6 +39,7 @@ CONST
                           ftEuroToday,ftSoundex,ftCrypt,ftYMDDate,ftYMDToday];
   DateFieldTypes: SET OF TFieldtypes = [ftDate,ftToday,ftEuroDate,ftEuroToday,ftYMDDate,ftYMDToday];
 
+
   {$I Datafile\errorcodes.inc}
 
 
