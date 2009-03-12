@@ -1,6 +1,6 @@
 unit UEpiUtils;
 
-//TODO: GetCommetLegalText
+//TODO: GetCommentLegalText
 
 interface
 

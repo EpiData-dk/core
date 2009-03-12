@@ -1829,10 +1829,13 @@ begin
     for n:=0 to HeaderLines.count-1 do
       begin
         s:=HeaderLines[n]+CRLF;
-        len:=length(s);
+{        len:=length(s);
         for t:=1 to len do
-          FRecBuf^[t-1]:=s[t];
-        if FStoredInMemory then FMemFile.WriteBuffer(FRecBuf^,len) else FDatFile.WriteBuffer(FRecBuf^,len);
+          FRecBuf^[t-1]:=s[t];}
+        if FStoredInMemory then
+          FMemFile.WriteBuffer(S[1], Length(S))
+        else
+          FDatFile.WriteBuffer(S[1], Length(S));
       end;
 
     FCurRecModified:=False;

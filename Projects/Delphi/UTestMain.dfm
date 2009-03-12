@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 240
-  Top = 118
+  Left = 372
+  Top = 194
   Width = 827
   Height = 565
   Caption = 'Form1'
@@ -83,7 +83,6 @@ object Form1: TForm1
       EditLabel.Height = 13
       EditLabel.Caption = '&Input file'
       TabOrder = 0
-      Text = 'C:\pas\EpiDataProjekt\test\test.rec'
     end
     object Button1: TButton
       Left = 24
@@ -103,7 +102,6 @@ object Form1: TForm1
       EditLabel.Height = 13
       EditLabel.Caption = '&Output file'
       TabOrder = 1
-      Text = 'C:\pas\EpiDataProjekt\test\outtest.rec'
     end
     object Button2: TButton
       Left = 448
