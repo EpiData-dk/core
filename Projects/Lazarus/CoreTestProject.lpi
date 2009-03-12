@@ -7,7 +7,7 @@
       <TargetFileExt Value=""/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="6"/>
+      <ActiveEditorIndexAtStart Value="1"/>
     </General>
     <VersionInfo>
       <ProjectVersion Value=""/>
@@ -34,8 +34,8 @@
         <Filename Value="CoreTestProject.lpr"/>
         <IsPartOfProject Value="True"/>
         <CursorPos X="1" Y="33"/>
-        <TopLine Value="5"/>
-        <EditorIndex Value="5"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="0"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -46,9 +46,9 @@
         <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UTestMain"/>
-        <CursorPos X="29" Y="110"/>
-        <TopLine Value="94"/>
-        <EditorIndex Value="4"/>
+        <CursorPos X="1" Y="93"/>
+        <TopLine Value="89"/>
+        <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit1>
@@ -58,9 +58,7 @@
         <UnitName Value="UEpiDataFile"/>
         <CursorPos X="38" Y="1851"/>
         <TopLine Value="1835"/>
-        <EditorIndex Value="3"/>
         <UsageCount Value="20"/>
-        <Loaded Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="../../Datafile/UeFields.pas"/>
@@ -108,9 +106,7 @@
         <UnitName Value="SHA1"/>
         <CursorPos X="32" Y="109"/>
         <TopLine Value="92"/>
-        <EditorIndex Value="0"/>
         <UsageCount Value="20"/>
-        <Loaded Value="True"/>
       </Unit8>
       <Unit9>
         <Filename Value="../../encryption/Base64.pas"/>
@@ -126,9 +122,7 @@
         <UnitName Value="DCPcrypt"/>
         <CursorPos X="54" Y="147"/>
         <TopLine Value="147"/>
-        <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
-        <Loaded Value="True"/>
       </Unit10>
       <Unit11>
         <Filename Value="../../encryption/Rijndael.pas"/>
@@ -144,9 +138,7 @@
         <UnitName Value="CheckObjUnit"/>
         <CursorPos X="36" Y="4003"/>
         <TopLine Value="3987"/>
-        <EditorIndex Value="2"/>
         <UsageCount Value="20"/>
-        <Loaded Value="True"/>
       </Unit12>
       <Unit13>
         <Filename Value="../../Datafile/epiUDFTypes.pas"/>
@@ -245,9 +237,7 @@
         <Filename Value="../../../../../../../usr/local/share/lazarus/lcl/include/application.inc"/>
         <CursorPos X="1" Y="362"/>
         <TopLine Value="347"/>
-        <EditorIndex Value="6"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit26>
       <Unit27>
         <Filename Value="../../../../../../../usr/share/fpcsrc/2.3.1/packages/fcl-base/src/custapp.pp"/>
@@ -302,67 +292,35 @@
         <UsageCount Value="10"/>
       </Unit34>
     </Units>
-    <JumpHistory Count="15" HistoryIndex="14">
+    <JumpHistory Count="7" HistoryIndex="6">
       <Position1>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="27" Column="1" TopLine="1"/>
+        <Filename Value="UTestMain.pas"/>
+        <Caret Line="17" Column="30" TopLine="11"/>
       </Position1>
       <Position2>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="28" Column="32" TopLine="1"/>
+        <Filename Value="UTestMain.pas"/>
+        <Caret Line="2" Column="1" TopLine="1"/>
       </Position2>
       <Position3>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="28" Column="1" TopLine="1"/>
+        <Filename Value="UTestMain.pas"/>
+        <Caret Line="61" Column="38" TopLine="43"/>
       </Position3>
       <Position4>
         <Filename Value="UTestMain.pas"/>
-        <Caret Line="110" Column="29" TopLine="94"/>
+        <Caret Line="40" Column="48" TopLine="21"/>
       </Position4>
       <Position5>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="30" Column="1" TopLine="2"/>
+        <Filename Value="UTestMain.pas"/>
+        <Caret Line="139" Column="54" TopLine="139"/>
       </Position5>
       <Position6>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="30" Column="1" TopLine="2"/>
+        <Filename Value="UTestMain.pas"/>
+        <Caret Line="111" Column="20" TopLine="91"/>
       </Position6>
       <Position7>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="30" Column="18" TopLine="2"/>
+        <Filename Value="UTestMain.pas"/>
+        <Caret Line="520" Column="32" TopLine="513"/>
       </Position7>
-      <Position8>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="6" Column="10" TopLine="1"/>
-      </Position8>
-      <Position9>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="15" Column="51" TopLine="1"/>
-      </Position9>
-      <Position10>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="6" Column="3" TopLine="1"/>
-      </Position10>
-      <Position11>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="13" Column="60" TopLine="1"/>
-      </Position11>
-      <Position12>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="6" Column="10" TopLine="1"/>
-      </Position12>
-      <Position13>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="19" Column="59" TopLine="1"/>
-      </Position13>
-      <Position14>
-        <Filename Value="CoreTestProject.lpr"/>
-        <Caret Line="33" Column="1" TopLine="5"/>
-      </Position14>
-      <Position15>
-        <Filename Value="../../../../../../../usr/local/share/lazarus/lcl/include/application.inc"/>
-        <Caret Line="361" Column="1" TopLine="345"/>
-      </Position15>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -403,8 +361,8 @@
   <Debugging>
     <BreakPoints Count="1">
       <Item1>
-        <Source Value="CoreTestProject.lpr"/>
-        <Line Value="33"/>
+        <Source Value="UTestMain.pas"/>
+        <Line Value="93"/>
       </Item1>
     </BreakPoints>
     <Exceptions Count="3">

@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 319
+  Left = 338
   Height = 565
-  Top = 212
+  Top = 218
   Width = 827
   ActiveControl = Panel1
   Caption = 'Form1'
@@ -14,11 +14,11 @@ object Form1: TForm1
   LCLVersion = '0.9.27'
   object Panel1: TPanel
     Left = 0
-    Height = 97
+    Height = 113
     Top = 0
     Width = 827
     Align = alTop
-    ClientHeight = 97
+    ClientHeight = 113
     ClientWidth = 827
     TabOrder = 0
     object SpeedButton1: TSpeedButton
@@ -85,13 +85,12 @@ object Form1: TForm1
       EditLabel.AnchorSideLeft.Control = edInputFilename
       EditLabel.AnchorSideBottom.Control = edInputFilename
       EditLabel.Left = 24
-      EditLabel.Height = 14
-      EditLabel.Top = 15
-      EditLabel.Width = 57
+      EditLabel.Height = 15
+      EditLabel.Top = 14
+      EditLabel.Width = 59
       EditLabel.Caption = '&Input file'
       EditLabel.ParentColor = False
       TabOrder = 0
-      Text = 'C:\pas\EpiDataProjekt\test\test2.rec'
     end
     object Button1: TButton
       Left = 24
@@ -110,9 +109,9 @@ object Form1: TForm1
       EditLabel.AnchorSideLeft.Control = edOutputFilename
       EditLabel.AnchorSideBottom.Control = edOutputFilename
       EditLabel.Left = 448
-      EditLabel.Height = 14
-      EditLabel.Top = 15
-      EditLabel.Width = 66
+      EditLabel.Height = 15
+      EditLabel.Top = 14
+      EditLabel.Width = 69
       EditLabel.Caption = '&Output file'
       EditLabel.ParentColor = False
       TabOrder = 1
@@ -123,25 +122,35 @@ object Form1: TForm1
       Top = 64
       Width = 75
       Caption = '&Export'
+      OnClick = Button2Click
       TabOrder = 3
+    end
+    object pgBar: TProgressBar
+      Left = 24
+      Height = 10
+      Top = 96
+      Width = 769
+      Smooth = True
+      TabOrder = 4
+      Visible = False
     end
   end
   object PageControl1: TPageControl
     Left = 0
-    Height = 468
-    Top = 97
+    Height = 452
+    Top = 113
     Width = 827
-    ActivePage = TabSheet4
+    ActivePage = TabSheet1
     Align = alClient
-    TabIndex = 2
+    TabIndex = 0
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File info'
-      ClientHeight = 433
+      ClientHeight = 421
       ClientWidth = 821
       object Memo1: TMemo
         Left = 0
-        Height = 433
+        Height = 421
         Top = 0
         Width = 821
         Align = alClient
@@ -151,12 +160,12 @@ object Form1: TForm1
     end
     object TabSheet3: TTabSheet
       Caption = 'File structure'
-      ClientHeight = 433
+      ClientHeight = 421
       ClientWidth = 821
       ImageIndex = 2
       object Memo2: TMemo
         Left = 0
-        Height = 433
+        Height = 421
         Top = 0
         Width = 821
         Align = alClient
@@ -169,12 +178,12 @@ object Form1: TForm1
     end
     object TabSheet4: TTabSheet
       Caption = 'Orig CheckFile'
-      ClientHeight = 433
+      ClientHeight = 421
       ClientWidth = 821
       ImageIndex = 3
       object memoOrigCheckFile: TMemo
         Left = 0
-        Height = 433
+        Height = 421
         Top = 0
         Width = 821
         Align = alClient
@@ -187,12 +196,12 @@ object Form1: TForm1
     end
     object TabSheet5: TTabSheet
       Caption = 'Intepreted CheckFile'
-      ClientHeight = 433
+      ClientHeight = 421
       ClientWidth = 821
       ImageIndex = 4
       object memoIntepredCheck: TMemo
         Left = 0
-        Height = 433
+        Height = 421
         Top = 0
         Width = 821
         Align = alClient
@@ -203,14 +212,31 @@ object Form1: TForm1
         TabOrder = 0
       end
     end
+    object TabSheet6: TTabSheet
+      Caption = 'Interpreted qes-file'
+      ClientHeight = 421
+      ClientWidth = 821
+      ImageIndex = 5
+      object memoQes: TMemo
+        Left = 0
+        Height = 421
+        Top = 0
+        Width = 821
+        Align = alClient
+        Font.Height = -11
+        Font.Name = 'Courier New'
+        ParentFont = False
+        TabOrder = 0
+      end
+    end
     object TabSheet2: TTabSheet
       Caption = 'Data'
-      ClientHeight = 433
+      ClientHeight = 421
       ClientWidth = 821
       ImageIndex = 1
       object sg: TStringGrid
         Left = 0
-        Height = 400
+        Height = 388
         Top = 33
         Width = 821
         Align = alClient

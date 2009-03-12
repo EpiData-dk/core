@@ -1,12 +1,12 @@
 { This is an automatically generated lazarus resource file }
 
 LazarusResources.Add('TForm1','FORMDATA',[
-  'TPF0'#6'TForm1'#5'Form1'#4'Left'#3'?'#1#6'Height'#3'5'#2#3'Top'#3#212#0#5'Wi'
+  'TPF0'#6'TForm1'#5'Form1'#4'Left'#3'R'#1#6'Height'#3'5'#2#3'Top'#3#218#0#5'Wi'
   +'dth'#3';'#3#13'ActiveControl'#7#6'Panel1'#7'Caption'#6#5'Form1'#12'ClientHe'
   +'ight'#3'5'#2#11'ClientWidth'#3';'#3#11'Font.Height'#2#245#9'Font.Name'#6#13
   +'MS Sans Serif'#7'OnClose'#7#9'FormClose'#8'OnCreate'#7#10'FormCreate'#10'LC'
-  +'LVersion'#6#6'0.9.27'#0#6'TPanel'#6'Panel1'#4'Left'#2#0#6'Height'#2'a'#3'To'
-  +'p'#2#0#5'Width'#3';'#3#5'Align'#7#5'alTop'#12'ClientHeight'#2'a'#11'ClientW'
+  +'LVersion'#6#6'0.9.27'#0#6'TPanel'#6'Panel1'#4'Left'#2#0#6'Height'#2'q'#3'To'
+  +'p'#2#0#5'Width'#3';'#3#5'Align'#7#5'alTop'#12'ClientHeight'#2'q'#11'ClientW'
   +'idth'#3';'#3#8'TabOrder'#2#0#0#12'TSpeedButton'#12'SpeedButton1'#4'Left'#3
   +'`'#1#6'Height'#2#22#3'Top'#2' '#5'Width'#2#23#5'Color'#7#9'clBtnFace'#10'Gl'
   +'yph.Data'#10#10#2#0#0#6#2#0#0'BM'#6#2#0#0#0#0#0#0'v'#0#0#0'('#0#0#0'('#0#0#0
@@ -45,53 +45,59 @@ LazarusResources.Add('TForm1','FORMDATA',[
   +'ledEdit'#15'edInputFilename'#4'Left'#2#24#6'Height'#2#21#3'Top'#2' '#5'Widt'
   +'h'#3'A'#1' EditLabel.AnchorSideLeft.Control'#7#15'edInputFilename"EditLabel'
   +'.AnchorSideBottom.Control'#7#15'edInputFilename'#14'EditLabel.Left'#2#24#16
-  +'EditLabel.Height'#2#14#13'EditLabel.Top'#2#15#15'EditLabel.Width'#2'9'#17'E'
+  +'EditLabel.Height'#2#15#13'EditLabel.Top'#2#14#15'EditLabel.Width'#2';'#17'E'
   +'ditLabel.Caption'#6#11'&Input file'#21'EditLabel.ParentColor'#8#8'TabOrder'
-  +#2#0#4'Text'#6'$C:\pas\EpiDataProjekt\test\test2.rec'#0#0#7'TButton'#7'Butto'
-  +'n1'#4'Left'#2#24#6'Height'#2#25#3'Top'#2'@'#5'Width'#2'K'#7'Caption'#6#10'&'
-  +'Read File'#7'OnClick'#7#12'Button1Click'#8'TabOrder'#2#2#0#0#12'TLabeledEdi'
-  +'t'#16'edOutputFilename'#4'Left'#3#192#1#6'Height'#2#21#3'Top'#2' '#5'Width'
-  +#3'9'#1' EditLabel.AnchorSideLeft.Control'#7#16'edOutputFilename"EditLabel.A'
-  +'nchorSideBottom.Control'#7#16'edOutputFilename'#14'EditLabel.Left'#3#192#1
-  +#16'EditLabel.Height'#2#14#13'EditLabel.Top'#2#15#15'EditLabel.Width'#2'B'#17
-  +'EditLabel.Caption'#6#12'&Output file'#21'EditLabel.ParentColor'#8#8'TabOrde'
-  +'r'#2#1#0#0#7'TButton'#7'Button2'#4'Left'#3#192#1#6'Height'#2#25#3'Top'#2'@'
-  +#5'Width'#2'K'#7'Caption'#6#7'&Export'#8'TabOrder'#2#3#0#0#0#12'TPageControl'
-  +#12'PageControl1'#4'Left'#2#0#6'Height'#3#212#1#3'Top'#2'a'#5'Width'#3';'#3
-  +#10'ActivePage'#7#9'TabSheet4'#5'Align'#7#8'alClient'#8'TabIndex'#2#2#8'TabO'
-  +'rder'#2#1#0#9'TTabSheet'#9'TabSheet1'#7'Caption'#6#9'File info'#12'ClientHe'
-  +'ight'#3#177#1#11'ClientWidth'#3'5'#3#0#5'TMemo'#5'Memo1'#4'Left'#2#0#6'Heig'
-  +'ht'#3#177#1#3'Top'#2#0#5'Width'#3'5'#3#5'Align'#7#8'alClient'#10'ScrollBars'
-  +#7#6'ssBoth'#8'TabOrder'#2#0#0#0#0#9'TTabSheet'#9'TabSheet3'#7'Caption'#6#14
-  +'File structure'#12'ClientHeight'#3#177#1#11'ClientWidth'#3'5'#3#10'ImageInd'
-  +'ex'#2#2#0#5'TMemo'#5'Memo2'#4'Left'#2#0#6'Height'#3#177#1#3'Top'#2#0#5'Widt'
-  ,'h'#3'5'#3#5'Align'#7#8'alClient'#11'Font.Height'#2#245#9'Font.Name'#6#11'Co'
-  +'urier New'#10'ParentFont'#8#10'ScrollBars'#7#6'ssBoth'#8'TabOrder'#2#0#0#0#0
-  +#9'TTabSheet'#9'TabSheet4'#7'Caption'#6#14'Orig CheckFile'#12'ClientHeight'#3
-  +#177#1#11'ClientWidth'#3'5'#3#10'ImageIndex'#2#3#0#5'TMemo'#17'memoOrigCheck'
-  +'File'#4'Left'#2#0#6'Height'#3#177#1#3'Top'#2#0#5'Width'#3'5'#3#5'Align'#7#8
-  +'alClient'#11'Font.Height'#2#245#9'Font.Name'#6#11'Courier New'#10'ParentFon'
-  +'t'#8#10'ScrollBars'#7#6'ssBoth'#8'TabOrder'#2#0#0#0#0#9'TTabSheet'#9'TabShe'
-  +'et5'#7'Caption'#6#20'Intepreted CheckFile'#12'ClientHeight'#3#177#1#11'Clie'
-  +'ntWidth'#3'5'#3#10'ImageIndex'#2#4#0#5'TMemo'#17'memoIntepredCheck'#4'Left'
-  +#2#0#6'Height'#3#177#1#3'Top'#2#0#5'Width'#3'5'#3#5'Align'#7#8'alClient'#11
-  +'Font.Height'#2#245#9'Font.Name'#6#11'Courier New'#10'ParentFont'#8#10'Scrol'
-  +'lBars'#7#6'ssBoth'#8'TabOrder'#2#0#0#0#0#9'TTabSheet'#9'TabSheet2'#7'Captio'
-  +'n'#6#4'Data'#12'ClientHeight'#3#177#1#11'ClientWidth'#3'5'#3#10'ImageIndex'
-  +#2#1#0#11'TStringGrid'#2'sg'#4'Left'#2#0#6'Height'#3#144#1#3'Top'#2'!'#5'Wid'
-  +'th'#3'5'#3#5'Align'#7#8'alClient'#8'ColCount'#2#30#8'RowCount'#2#30#8'TabOr'
-  +'der'#2#0#16'TitleFont.Height'#2#245#14'TitleFont.Name'#6#13'MS Sans Serif'#0
-  +#0#6'TPanel'#6'Panel2'#4'Left'#2#0#6'Height'#2'!'#3'Top'#2#0#5'Width'#3'5'#3
-  +#5'Align'#7#5'alTop'#12'ClientHeight'#2'!'#11'ClientWidth'#3'5'#3#8'TabOrder'
-  +#2#1#0#9'TCheckBox'#15'checkShowLabels'#4'Left'#2#8#6'Height'#2#17#3'Top'#2#8
-  +#5'Width'#3#249#0#7'Caption'#6#28'Show labels insted of values'#7'OnClick'#7
-  +#20'checkShowLabelsClick'#8'TabOrder'#2#0#0#0#0#0#0#11'TOpenDialog'#11'OpenD'
-  +'ialog1'#6'Filter'#6'}EpiData data file (*.rec)|*.rec|Stata file (*.dta)|*.d'
-  +'ta|Text file (*.txt)|*.txt|dBase file (*.dbf)|*.dbf|All files (*.*)|*.*'#7
-  +'Options'#11#17'ofOverwritePrompt'#14'ofHideReadOnly'#15'ofPathMustExist'#15
-  +'ofFileMustExist'#14'ofEnableSizing'#0#4'left'#3#176#0#3'top'#2'@'#0#0#11'TS'
-  +'aveDialog'#11'SaveDialog1'#6'Filter'#6'}EpiData data file (*.rec)|*.rec|Sta'
-  +'ta file (*.dta)|*.dta|Text file (*.txt)|*.txt|dBase file (*.dbf)|*.dbf|All '
-  +'files (*.*)|*.*'#7'Options'#11#14'ofHideReadOnly'#15'ofPathMustExist'#14'of'
-  +'EnableSizing'#0#4'left'#3#208#0#3'top'#2'@'#0#0#0
+  +#2#0#0#0#7'TButton'#7'Button1'#4'Left'#2#24#6'Height'#2#25#3'Top'#2'@'#5'Wid'
+  +'th'#2'K'#7'Caption'#6#10'&Read File'#7'OnClick'#7#12'Button1Click'#8'TabOrd'
+  +'er'#2#2#0#0#12'TLabeledEdit'#16'edOutputFilename'#4'Left'#3#192#1#6'Height'
+  +#2#21#3'Top'#2' '#5'Width'#3'9'#1' EditLabel.AnchorSideLeft.Control'#7#16'ed'
+  +'OutputFilename"EditLabel.AnchorSideBottom.Control'#7#16'edOutputFilename'#14
+  +'EditLabel.Left'#3#192#1#16'EditLabel.Height'#2#15#13'EditLabel.Top'#2#14#15
+  +'EditLabel.Width'#2'E'#17'EditLabel.Caption'#6#12'&Output file'#21'EditLabel'
+  +'.ParentColor'#8#8'TabOrder'#2#1#0#0#7'TButton'#7'Button2'#4'Left'#3#192#1#6
+  +'Height'#2#25#3'Top'#2'@'#5'Width'#2'K'#7'Caption'#6#7'&Export'#7'OnClick'#7
+  +#12'Button2Click'#8'TabOrder'#2#3#0#0#12'TProgressBar'#5'pgBar'#4'Left'#2#24
+  +#6'Height'#2#10#3'Top'#2'`'#5'Width'#3#1#3#6'Smooth'#9#8'TabOrder'#2#4#7'Vis'
+  +'ible'#8#0#0#0#12'TPageControl'#12'PageControl1'#4'Left'#2#0#6'Height'#3#196
+  +#1#3'Top'#2'q'#5'Width'#3';'#3#10'ActivePage'#7#9'TabSheet1'#5'Align'#7#8'al'
+  +'Client'#8'TabIndex'#2#0#8'TabOrder'#2#1#0#9'TTabSheet'#9'TabSheet1'#7'Capti'
+  +'on'#6#9'File info'#12'ClientHeight'#3#165#1#11'ClientWidth'#3'5'#3#0#5'TMem'
+  +'o'#5'Memo1'#4'Left'#2#0#6'Height'#3#165#1#3'Top'#2#0#5'Width'#3'5'#3#5'Alig'
+  +'n'#7#8'alClient'#10'ScrollBars'#7#6'ssBoth'#8'TabOrder'#2#0#0#0#0#9'TTabShe'
+  +'et'#9'TabSheet3'#7'Caption'#6#14'File structure'#12'ClientHeight'#3#165#1#11
+  ,'ClientWidth'#3'5'#3#10'ImageIndex'#2#2#0#5'TMemo'#5'Memo2'#4'Left'#2#0#6'He'
+  +'ight'#3#165#1#3'Top'#2#0#5'Width'#3'5'#3#5'Align'#7#8'alClient'#11'Font.Hei'
+  +'ght'#2#245#9'Font.Name'#6#11'Courier New'#10'ParentFont'#8#10'ScrollBars'#7
+  +#6'ssBoth'#8'TabOrder'#2#0#0#0#0#9'TTabSheet'#9'TabSheet4'#7'Caption'#6#14'O'
+  +'rig CheckFile'#12'ClientHeight'#3#165#1#11'ClientWidth'#3'5'#3#10'ImageInde'
+  +'x'#2#3#0#5'TMemo'#17'memoOrigCheckFile'#4'Left'#2#0#6'Height'#3#165#1#3'Top'
+  +#2#0#5'Width'#3'5'#3#5'Align'#7#8'alClient'#11'Font.Height'#2#245#9'Font.Nam'
+  +'e'#6#11'Courier New'#10'ParentFont'#8#10'ScrollBars'#7#6'ssBoth'#8'TabOrder'
+  +#2#0#0#0#0#9'TTabSheet'#9'TabSheet5'#7'Caption'#6#20'Intepreted CheckFile'#12
+  +'ClientHeight'#3#165#1#11'ClientWidth'#3'5'#3#10'ImageIndex'#2#4#0#5'TMemo'
+  +#17'memoIntepredCheck'#4'Left'#2#0#6'Height'#3#165#1#3'Top'#2#0#5'Width'#3'5'
+  +#3#5'Align'#7#8'alClient'#11'Font.Height'#2#245#9'Font.Name'#6#11'Courier Ne'
+  +'w'#10'ParentFont'#8#10'ScrollBars'#7#6'ssBoth'#8'TabOrder'#2#0#0#0#0#9'TTab'
+  +'Sheet'#9'TabSheet6'#7'Caption'#6#20'Interpreted qes-file'#12'ClientHeight'#3
+  +#165#1#11'ClientWidth'#3'5'#3#10'ImageIndex'#2#5#0#5'TMemo'#7'memoQes'#4'Lef'
+  +'t'#2#0#6'Height'#3#165#1#3'Top'#2#0#5'Width'#3'5'#3#5'Align'#7#8'alClient'
+  +#11'Font.Height'#2#245#9'Font.Name'#6#11'Courier New'#10'ParentFont'#8#8'Tab'
+  +'Order'#2#0#0#0#0#9'TTabSheet'#9'TabSheet2'#7'Caption'#6#4'Data'#12'ClientHe'
+  +'ight'#3#165#1#11'ClientWidth'#3'5'#3#10'ImageIndex'#2#1#0#11'TStringGrid'#2
+  +'sg'#4'Left'#2#0#6'Height'#3#132#1#3'Top'#2'!'#5'Width'#3'5'#3#5'Align'#7#8
+  +'alClient'#8'ColCount'#2#30#8'RowCount'#2#30#8'TabOrder'#2#0#16'TitleFont.He'
+  +'ight'#2#245#14'TitleFont.Name'#6#13'MS Sans Serif'#0#0#6'TPanel'#6'Panel2'#4
+  +'Left'#2#0#6'Height'#2'!'#3'Top'#2#0#5'Width'#3'5'#3#5'Align'#7#5'alTop'#12
+  +'ClientHeight'#2'!'#11'ClientWidth'#3'5'#3#8'TabOrder'#2#1#0#9'TCheckBox'#15
+  +'checkShowLabels'#4'Left'#2#8#6'Height'#2#17#3'Top'#2#8#5'Width'#3#249#0#7'C'
+  +'aption'#6#28'Show labels insted of values'#7'OnClick'#7#20'checkShowLabelsC'
+  +'lick'#8'TabOrder'#2#0#0#0#0#0#0#11'TOpenDialog'#11'OpenDialog1'#6'Filter'#6
+  +'}EpiData data file (*.rec)|*.rec|Stata file (*.dta)|*.dta|Text file (*.txt)'
+  +'|*.txt|dBase file (*.dbf)|*.dbf|All files (*.*)|*.*'#7'Options'#11#17'ofOve'
+  +'rwritePrompt'#14'ofHideReadOnly'#15'ofPathMustExist'#15'ofFileMustExist'#14
+  +'ofEnableSizing'#0#4'left'#3#176#0#3'top'#2'@'#0#0#11'TSaveDialog'#11'SaveDi'
+  +'alog1'#6'Filter'#6'}EpiData data file (*.rec)|*.rec|Stata file (*.dta)|*.dt'
+  +'a|Text file (*.txt)|*.txt|dBase file (*.dbf)|*.dbf|All files (*.*)|*.*'#7'O'
+  +'ptions'#11#14'ofHideReadOnly'#15'ofPathMustExist'#14'ofEnableSizing'#0#4'le'
+  +'ft'#3#208#0#3'top'#2'@'#0#0#0
 ]);
