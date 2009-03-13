@@ -80,7 +80,7 @@ BEGIN
   Result:=True;
   IF df=NIL THEN Exit;
   // TODO -o torsten : Fjern når der er en field liste
-//  IF df.FieldList=NIL THEN Exit;
+  //  IF df.FieldList=NIL THEN Exit;
   IF df.NumFields=0 THEN Exit;
   tName:=trim(AnsiUpperCase(TempName));
   n:=0;

@@ -9,17 +9,16 @@ type
 
   TEpiImport = class(TObject)
   private
-    procedure LoadRec(const FileName: string; DataFile: TEpiDataFile);
-    Function ProgressStep(CONST MaxVal,CurVal: Integer):Boolean;
+    function LoadRec(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
   protected
 
   public
-    procedure Load(const FileName: string; DataFile: TEpiDataFile);
-    procedure LoadStata(const FileName: string; DataFile: TEpiDataFile);
-    procedure LoadTXT(const FileName: string; DataFile: TEpiDataFile);
-    procedure LoadSAS(const FileName: string; DataFile: TEpiDataFile);
-    procedure LoadSPSS(const FileName: string; DataFile: TEpiDataFile);
-    procedure LoadXLS(const FileName: string; DataFile: TEpiDataFile);
+    function Load(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): Boolean;
+    function LoadStata(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): Boolean;
+    function LoadTXT(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): Boolean;
+    function LoadSAS(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): Boolean;
+    function LoadSPSS(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): Boolean;
+    function LoadXLS(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): Boolean;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -43,43 +42,44 @@ begin
   inherited;
 end;
 
-procedure TEpiImport.Load(const FileName: string; DataFile: TEpiDataFile);
+function TEpiImport.Load(const FileName: string; DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
 var
   ext: string;
 begin
   if FileName<>'' then
     ext:=AnsiLowerCase(ExtractFileExt(FileName));
-  if (ext='.rec') or (ext='') then LoadRec(FileName, DataFile)
-  else if ext='dta' then LoadStata(FileName, DataFile)
-  else if ext='txt' then LoadTXT(FileName, DataFile)
-  else if ext='sas' then LoadSAS(FileName, DataFile)
-  else if ext='sps' then LoadSPSS(FileName, DataFile)
-  else if ext='xls' then LoadXLS(FileName, DataFile)
+  if (ext='.rec') or (ext='') then result := LoadRec(FileName, DataFile, Options)
+  else if ext='.dta' then result := LoadStata(FileName, DataFile, Options)
+  else if ext='.txt' then result := LoadTXT(FileName, DataFile, Options)
+  else if ext='.sas' then result := LoadSAS(FileName, DataFile, Options)
+  else if ext='.sps' then result := LoadSPSS(FileName, DataFile, Options)
+  else if ext='.xls' then result := LoadXLS(FileName, DataFile, Options)
   else begin
       //error('Filetype `'+ext+'` not supported');
     exit;
   end;
 end;
 
-procedure TEpiImport.LoadRec(const FileName: string;
-  DataFile: TEpiDataFile);
+function TEpiImport.LoadRec(const FileName: string;
+  DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
+begin
+  result := Datafile.Open(FileName, Options);
+end;
+
+function TEpiImport.LoadSAS(const FileName: string;
+  DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
 begin
 
 end;
 
-procedure TEpiImport.LoadSAS(const FileName: string;
-  DataFile: TEpiDataFile);
+function TEpiImport.LoadSPSS(const FileName: string;
+  DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
 begin
 
 end;
 
-procedure TEpiImport.LoadSPSS(const FileName: string;
-  DataFile: TEpiDataFile);
-begin
-
-end;
-
-procedure TEpiImport.LoadStata(const FileName: string; DataFile: TEpiDataFile);
+function TEpiImport.LoadStata(const FileName: string;
+  DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
 var
   eField: TEField;
   n,n2,t,CurField,CurRec: integer;
@@ -90,7 +90,7 @@ var
   SmallIntBuff: Array[0..1] OF Byte absolute tmpSmallInt;
   F: TextFile;
   StataFile: TFileStream;
-  StataFilename,RECFilename: TFilename;
+  RECFilename: TFilename;
   buff: Array[0..50000] OF Char;
   NumBuff: Array[0..7] OF Byte;
   typList: Array[0..800] OF Char;
@@ -265,15 +265,18 @@ var
   end;
 
 begin
+  Result := false;
   StataFile:=NIL;
   if DataFile = nil then
     exit;
 
   TRY
-    Statafile:=TFileStream.Create(StataFilename,fmOpenRead);
+    Statafile:=TFileStream.Create(Filename, fmOpenRead);
 
-    DataFile.EpiInfoFieldNaming:=False;
-    DataFile.RECFilename:=RECFilename;
+    DataFile.EpiInfoFieldNaming := False;
+
+    // TODO -o Torsten: Handle correct filename (get temp if needed).
+//    DataFile.RECFilename := RECFilename;
 
     DataFile.UpdateProgress(0, DataFile.Lang(0, 'Reading header information'));
     StataFile.Position:=0;
@@ -410,43 +413,45 @@ begin
     Fillchar(buff,sizeOf(buff),0);
     MaxFNameWidth:=0;
     StataFile.Position:=HeaderSize+nVar;
-    IF StataVersion>=7 THEN NameLength:=33 ELSE NameLength:=9;   //&&
+    IF StataVersion>=7 THEN
+      NameLength := 33
+    ELSE
+      NameLength := 9;   //&&
     StataFile.Read(buff,NameLength*nVar);
     FOR n:=0 TO nVar-1 DO
-      BEGIN
-        EField := DataFile.Fields[n];
-        tmpS:=cFill(' ',NameLength);
-        t:=0;
-        WHILE buff[(n*NameLength)+t]<>#0 DO
-          BEGIN
-            tmpS[t+1]:=buff[(n*NameLength)+t];
-            INC(t);
-          END;  //while
-        tmpS2:=tmpS;
-        tmpS:='';
-        FOR t:=1 TO Length(tmpS2) DO
-          IF (tmpS2[t] in AlfaNumChars) THEN tmpS:=tmpS+tmpS2[t];
-        IF Length(tmpS)>FieldNameLen THEN tmpS:=Copy(tmpS,1,FieldnameLen);
-        IF NOT NameIsUnique(tmpS, DataFile, FieldnameLen) THEN REPEAT UNTIL NameIsUnique(tmpS, DataFile, FieldnameLen);
-        // TODO -o Torsten : Hvad er dette???
-{        CASE FieldNameCase OF
-          fcUpper: tmpS:=AnsiUpperCase(tmpS);
-          fcLower: tmpS:=AnsiLowerCase(tmpS);
-        END;  //case     }
-        EField.FieldName:=trim(tmpS);
-        IF Length(trim(EField.FieldName))>MaxFNameWidth THEN MaxFNameWidth:=Length(trim(EField.FieldName));
-        IF EField.Length>80 THEN
-          BEGIN
-            DataFile.Error(EPI_FIELDS_TOO_LONG, Format(DataFile.Lang(23914, 'The variable %s is a text variable with more than 80 characters.')+#13+  //'The variable %s is a text variable with more than 80 characters.'
-            DataFile.Lang(23916, 'This variable cannot be imported to EpiData.'),[EField.FieldName]));   //'This variable cannot be imported to EpiData.'
-            Exit;
-          END;
+    BEGIN
+      EField := DataFile.Fields[n];
+      tmpS:=cFill(' ',NameLength);
+      t:=0;
+      WHILE buff[(n*NameLength)+t]<>#0 DO
+        BEGIN
+          tmpS[t+1]:=buff[(n*NameLength)+t];
+          INC(t);
+        END;  //while
+      tmpS2:=tmpS;
+      tmpS:='';
+      FOR t:=1 TO Length(tmpS2) DO
+        IF (tmpS2[t] in AlfaNumChars) THEN tmpS:=tmpS+tmpS2[t];
+      IF Length(tmpS)>FieldNameLen THEN tmpS:=Copy(tmpS,1,FieldnameLen);
+      IF NOT NameIsUnique(tmpS, DataFile, FieldnameLen) THEN
+        REPEAT
+        UNTIL NameIsUnique(tmpS, DataFile, FieldnameLen);
+      EField.FieldName:=trim(tmpS);
+      IF Length(trim(EField.FieldName))>MaxFNameWidth THEN MaxFNameWidth:=Length(trim(EField.FieldName));
+      IF EField.Length>80 THEN
+        BEGIN
+          DataFile.Error(EPI_FIELDS_TOO_LONG, Format(DataFile.Lang(23914, 'The variable %s is a text variable with more than 80 characters.')+#13+  //'The variable %s is a text variable with more than 80 characters.'
+          DataFile.Lang(23916, 'This variable cannot be imported to EpiData.'),[EField.FieldName]));   //'This variable cannot be imported to EpiData.'
+          Exit;
+        END;
+    END;  //for n
 
-      END;  //for n
+
+    Fillchar(buff,sizeOf(buff),0);
+    {Skip reading sorting list}
+    StataFile.Position:=HeaderSize + nVar + (NameLength*nVar) + (2*(nVar+1));
 
     {Read fmtlist - list of formats of the variables}
-    Fillchar(buff,sizeOf(buff),0);
-    StataFile.Position:=HeaderSize+nVar+(NameLength*nVar)+(2*(nVar+1));
     StataFile.Read(buff,12*nVar);
     FOR n:=0 TO nVar-1 DO
       BEGIN
@@ -613,7 +618,7 @@ begin
       Append(F);
       FOR CurRec:=1 TO nObs DO
         BEGIN
-          IF ProgressStep(nObs,CurRec) THEN
+//          IF ProgressStep(nObs, CurRec) THEN
             DataFile.UpdateProgress(Trunc(100*CurRec/nObs), DataFile.Lang(0, 'Reading header information'));
           FOR CurField:=0 TO DataFile.NumDataFields-1 DO
             BEGIN
@@ -803,19 +808,6 @@ begin
 
             END;  //for CurField
           DataFile.Write(CurRec);
-//          WriteNextRecord(df,F);
-
-{          IF UserAborts THEN
-            BEGIN
-              IF eDlg(DataFile.Lang((23932),mtConfirmation,[mbYes,mbNo],0)=mrYes   //'Abort import?'
-              THEN
-                BEGIN
-                  CloseFile(F);
-                  tmpBool:=DeleteFile(DataFile.RECFilename);
-                  Exit;
-                END
-              ELSE UserAborts:=False;
-            END;  //if UserAborts    }
 
         END;  //for CurRec
       EXCEPT
@@ -826,8 +818,6 @@ begin
       {$I-}
       CloseFile(F);
       {$I+}
-//      EnableTaskWindows(WindowList);
-//      ProgressForm.Free;
     END;  //try.Except
 
     IF (HasValueLabels) AND (StataFile.Position<StataFile.Size-4) THEN
@@ -917,11 +907,11 @@ begin
           END;  //if stataversion 6, 7 or 8
 
         IF DataFile.ChkTopComments=NIL THEN DataFile.ChkTopComments:=TSTringList.Create;
-        DataFile.ChkTopComments.Append(Format('* '+DataFile.Lang(23938, 'Checkfile created from import of the stata-file %s'),[StataFilename]));   //'Checkfile created from import of the stata-file %s'
+        DataFile.ChkTopComments.Append(Format('* '+DataFile.Lang(23938, 'Checkfile created from import of the stata-file %s'),[Filename]));   //'Checkfile created from import of the stata-file %s'
         ChkLin:=TStringList.Create;
         // TODO : Ret når michael har lavet public.
 //        DataFile.ChecksToStrings(df,ChkLin);
-        DataFile.CHKFilename:=ChangeFileExt(DataFile.RECFilename,'.chk');
+        DataFile.CHKFilename := ChangeFileExt(DataFile.RECFilename,'.chk');
         // TODO -o Torsten : Lave et OnFileExistsEvent...
 {        IF FileExists(DataFile.CHKFilename) THEN
           BEGIN
@@ -936,48 +926,28 @@ begin
           END  //if Chkfile fileExists
         ELSE ChkLin.SaveToFile(DataFile.CHKFilename);       }
         ChkLin.Free;
-                                    
+
       END  //if hasValueLabels
     ELSE HasValueLabels:=False;
-{
-    Screen.Cursor:=crDefault;
-    s:=Format(DataFile.Lang((23944),[StataFilename]);   //'Datafile created by importing stata file %s'
-    AddToNotesFile(df,s);
-    IF NOT HasValueLabels
-    THEN eDlg(Format(DataFile.Lang((23946),  //'Stata-file %s is imported ~to %s~~%d records were imported'
-    [StataFilename,DataFile.RECFilename,DataFile.NumRecords]),mtInformation,[mbOK],0)
-    ELSE eDlg(Format(DataFile.Lang((23948),  //'Stata-file %s has been imported~to %s~~Valuelabels are imported to the checkfile %s~~%d records were imported'
-      [StataFilename,DataFile.RECFilename,DataFile.CHKFilename,DataFile.NumRecords]),mtInformation,[mbOK],0); 
 
-    AddToRecentFiles(DataFile.RECFilename);    
-                                               }
+    // successfully loaded the file.
+    result := true;
   finally
     //
   end;
+
 end;
 
-procedure TEpiImport.LoadTXT(const FileName: string;
-  DataFile: TEpiDataFile);
+function TEpiImport.LoadTXT(const FileName: string;
+  DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
 begin
 
 end;
 
-procedure TEpiImport.LoadXLS(const FileName: string;
-  DataFile: TEpiDataFile);
+function TEpiImport.LoadXLS(const FileName: string;
+  DataFile: TEpiDataFile; Options: TEpiDataFileOptions): boolean;
 begin
 
 end;
-
-function TEpiImport.ProgressStep(const MaxVal, CurVal: Integer): Boolean;
-VAR
-  m,c:Double;
-BEGIN
-  m:=MaxVal;
-  c:=CurVal;
-  IF MaxVal<20 THEN Result:=True
-  ELSE IF (c/m < 0.05) AND (CurVal<1000) AND ((CurVal-1) MOD 4 = 0) THEN Result:=True
-  ELSE IF ((CurVal-1) MOD (MaxVal DIV 20) = 0) THEN Result:=True
-  ELSE Result:=False;
-END;  //function progressStep
 
 end.

@@ -59,7 +59,7 @@ implementation
 {$R *.dfm}
 
 Uses
-  UEpiUtils,UEpiTypes, UValueLabels, UeFields;
+  UEpiUtils,UEpiTypes, UValueLabels, UeFields, UImport;
 
 var
   epd: TEpiDataFile;
@@ -89,6 +89,7 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 var
   s:string;
+  Importer: TEpiImport;
 begin
   memo1.Clear;
   memo2.Clear;
@@ -110,7 +111,9 @@ begin
   epd.OnRequestPassword:=GetPassword;
   epd.OnProgress:=ShowProgress;
   out('Datafile: '+edInputFilename.text);
-  if epd.Open(edInputFilename.Text,[eoInMemory, oeIgnoreIndex]) then
+  Importer := TEpiImport.Create;
+  if Importer.Load(edInputFilename.Text, Epd, [eoInMemory, oeIgnoreIndex]) then
+//   epd.Open(edInputFilename.Text,[eoInMemory, oeIgnoreIndex]) then
     begin
       out('Data file opened with succes');
       out('Num fields = '+inttostr(epd.NumFields));
