@@ -614,8 +614,8 @@ begin
       TRY
       CutsDecimals:=False;
       OKToCutDecimals:=False;
-      AssignFile(F,DataFile.RECFilename);
-      Append(F);
+//      AssignFile(F,DataFile.RECFilename);
+//      Append(F);
       FOR CurRec:=1 TO nObs DO
         BEGIN
 //          IF ProgressStep(nObs, CurRec) THEN
@@ -816,7 +816,7 @@ begin
       END;  //try..except
     FINALLY
       {$I-}
-      CloseFile(F);
+//      CloseFile(F);
       {$I+}
     END;  //try.Except
 
