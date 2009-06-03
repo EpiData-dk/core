@@ -1,0 +1,87 @@
+object WarningForm: TWarningForm
+  Left = 601
+  Height = 300
+  Top = 298
+  Width = 512
+  ActiveControl = Button2
+  Caption = 'WARNING - EpiData Core module test application - WARNING'
+  ClientHeight = 300
+  ClientWidth = 512
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  LCLVersion = '0.9.27'
+  object Label1: TLabel
+    Left = 154
+    Height = 39
+    Top = 40
+    Width = 177
+    Caption = 'WARNING'
+    Font.Color = clRed
+    Font.Height = -32
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label2: TLabel
+    Left = 53
+    Height = 18
+    Top = 88
+    Width = 420
+    Caption = 'Application for testing of EpiData Software Core module'
+    Font.Color = clBlue
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label3: TLabel
+    Left = 78
+    Height = 18
+    Top = 160
+    Width = 345
+    Caption = 'Press OK to accept that this is only for testing'
+    Font.Color = clRed
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label4: TLabel
+    Left = 48
+    Height = 18
+    Top = 120
+    Width = 422
+    Caption = 'Data quality problems can Occur. Use only for test of core module'
+    Font.Color = clRed
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    ParentColor = False
+    ParentFont = False
+  end
+  object Button1: TButton
+    Left = 256
+    Height = 25
+    Top = 208
+    Width = 128
+    Caption = 'OK - start test'
+    Font.Color = clGreen
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ModalResult = 1
+    ParentFont = False
+    TabOrder = 0
+  end
+  object Button2: TButton
+    Left = 71
+    Height = 25
+    Top = 200
+    Width = 75
+    Caption = 'E&xit'
+    ModalResult = 2
+    TabOrder = 1
+  end
+end

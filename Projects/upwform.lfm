@@ -1,0 +1,75 @@
+object formPW: TformPW
+  Left = 310
+  Height = 188
+  Top = 225
+  Width = 356
+  ActiveControl = editPW1
+  BorderStyle = bsDialog
+  Caption = 'Password'
+  ClientHeight = 188
+  ClientWidth = 356
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  Position = poMainFormCenter
+  LCLVersion = '0.9.27'
+  object Label1: TLabel
+    Left = 32
+    Height = 14
+    Top = 56
+    Width = 91
+    Caption = 'Enter password'
+    ParentColor = False
+  end
+  object labelRepeatPW: TLabel
+    Left = 32
+    Height = 14
+    Top = 88
+    Width = 100
+    Caption = 'Repeat password'
+    ParentColor = False
+  end
+  object labelFilename: TLabel
+    Left = 32
+    Height = 14
+    Top = 16
+    Width = 51
+    Caption = 'Filename'
+    ParentColor = False
+  end
+  object editPW1: TEdit
+    Left = 136
+    Height = 23
+    Top = 56
+    Width = 177
+    EchoMode = emPassword
+    PasswordChar = '*'
+    TabOrder = 0
+  end
+  object editPW2: TEdit
+    Left = 136
+    Height = 23
+    Top = 88
+    Width = 177
+    EchoMode = emPassword
+    PasswordChar = '*'
+    TabOrder = 1
+  end
+  object btnOK: TBitBtn
+    Left = 64
+    Height = 25
+    Top = 136
+    Width = 75
+    Kind = bkOK
+    TabOrder = 2
+  end
+  object btnCancel: TBitBtn
+    Left = 208
+    Height = 25
+    Top = 136
+    Width = 75
+    Kind = bkCancel
+    TabOrder = 3
+  end
+end
