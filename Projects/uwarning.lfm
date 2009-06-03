@@ -9,6 +9,7 @@ object WarningForm: TWarningForm
   ClientWidth = 512
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
+  Position = poScreenCenter
   LCLVersion = '0.9.27'
   object Label1: TLabel
     Left = 154
@@ -62,9 +63,9 @@ object WarningForm: TWarningForm
     ParentFont = False
   end
   object Button1: TButton
-    Left = 256
+    Left = 272
     Height = 25
-    Top = 208
+    Top = 200
     Width = 128
     Caption = 'OK - start test'
     Font.Color = clGreen

@@ -92,12 +92,10 @@ begin
   FData.Clear;
   Add('Log Started: ' + DateTimeToStr(Now), 1);
   GetCoreSystemInformation(Csi);
-  {$IFNDEF FPC}
   S := Format('OS: %s; Application: %s; Core version: %d; Revision: %d', [Csi.OSName, '', Csi.CoreVersion, Csi.CoreRevision]);
   Add(S, 1);
   S := Format('Memory Size: %d MB; Memory in Use: %d%%', [Csi.MemSize div (1024*1024), Csi.MemUsage]);
   Add(S, 1);
-  {$ENDIF}
   Add('======================================================', 1);
 end;
 

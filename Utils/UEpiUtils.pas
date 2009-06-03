@@ -64,7 +64,8 @@ type
 implementation
 
 uses
-  UDateUtils;
+  {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
+  UDateUtils, Math;
 
 {$IFNDEF LINUX}
 procedure GlobalMemoryStatusEx; external kernel32 name 'GlobalMemoryStatusEx';
@@ -165,15 +166,24 @@ var
   Ms: TMemoryStatus;
   MsEx: TMemoryStatusEx;
   Ovi: TOSVersionInfo;
-  {$ENDIF}
+  {$ELSE LINUX}
+  PInfo: PSysInfo;
+  Info: TSysInfo;
+  UName: UtsName;
+  {$ENDIF LINUX}
   Dummy: integer;
 begin
   {$IFDEF LINUX}
-  CSI.OSName := '';
+  FpUname(UName);
+  CSI.OSName := String(UName.Sysname);
   CSI.OSMajorVersion := 0;
   CSI.OSMinorVersion := 0;
-  CSI.MemSize := 0;
-  CSI.MemUsage := 0;
+
+  PInfo := new(PSysInfo);
+  Sysinfo(PInfo);
+  Info := PInfo^;
+  CSI.MemSize := (Info.totalram * Info.mem_unit);
+  CSI.MemUsage := Floor(100 * (Info.totalram - (Info.freeram)) / Info.totalram);
   {$ELSE}
   Ovi.dwOSVersionInfoSize := SizeOf(TOSVersionInfo);
   GetVersionEx(Ovi);
@@ -194,10 +204,10 @@ begin
     CSI.MemSize := MsEx.ullTotalPhys;
     CSI.MemUsage := MsEx.dwMemoryLoad;
   end;
+  {$ENDIF}
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!
   CSI.CoreRevision := 0;
-  {$ENDIF}
 end;
 
 end.

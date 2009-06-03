@@ -1,7 +1,7 @@
-object Form1: TForm1
-  Left = 519
+object MainForm: TMainForm
+  Left = 541
   Height = 745
-  Top = 226
+  Top = 224
   Width = 881
   ActiveControl = Panel1
   Caption = 'Core Test Project'
@@ -12,6 +12,7 @@ object Form1: TForm1
   OnClose = FormClose
   OnResize = FormResize
   OnShow = FormShow
+  Position = poScreenCenter
   LCLVersion = '0.9.27'
   object Panel1: TPanel
     Left = 0
@@ -224,6 +225,7 @@ object Form1: TForm1
       Height = 27
       Top = 104
       Width = 145
+      Enabled = False
       ItemHeight = 0
       ItemIndex = 0
       Items.Strings = (
@@ -243,19 +245,19 @@ object Form1: TForm1
     Height = 568
     Top = 177
     Width = 881
-    ActivePage = TabSheet5
+    ActivePage = TabSheet1
     Align = alClient
-    TabIndex = 4
+    TabIndex = 0
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'
-      ClientHeight = 499
-      ClientWidth = 867
+      ClientHeight = 533
+      ClientWidth = 875
       object Memo1: TMemo
         Left = 0
-        Height = 499
+        Height = 533
         Top = 0
-        Width = 867
+        Width = 875
         Align = alClient
         Lines.Strings = (
           ''
@@ -265,14 +267,14 @@ object Form1: TForm1
     end
     object TabSheet2: TTabSheet
       Caption = 'Documentation:'
-      ClientHeight = 499
-      ClientWidth = 867
+      ClientHeight = 533
+      ClientWidth = 875
       ImageIndex = 1
       object Memo2: TMemo
         Left = 0
-        Height = 499
+        Height = 533
         Top = 0
-        Width = 867
+        Width = 875
         Align = alClient
         Font.CharSet = ANSI_CHARSET
         Font.Height = -13
@@ -284,24 +286,24 @@ object Form1: TForm1
     end
     object TabSheet4: TTabSheet
       Caption = 'ChkFiles'
-      ClientHeight = 499
-      ClientWidth = 867
+      ClientHeight = 533
+      ClientWidth = 875
       ImageIndex = 2
       object Splitter1: TSplitter
         Left = 433
-        Height = 499
+        Height = 533
         Top = 0
         Width = 5
         Beveled = True
       end
       object Panel3: TPanel
         Left = 0
-        Height = 499
+        Height = 533
         Top = 0
         Width = 433
         Align = alLeft
         BevelOuter = bvNone
-        ClientHeight = 499
+        ClientHeight = 533
         ClientWidth = 433
         TabOrder = 0
         object Panel5: TPanel
@@ -331,7 +333,7 @@ object Form1: TForm1
         end
         object orgChkMemo: TMemo
           Left = 0
-          Height = 458
+          Height = 492
           Top = 41
           Width = 433
           Align = alClient
@@ -345,23 +347,23 @@ object Form1: TForm1
       end
       object Panel4: TPanel
         Left = 438
-        Height = 499
+        Height = 533
         Top = 0
-        Width = 429
+        Width = 437
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 499
-        ClientWidth = 429
+        ClientHeight = 533
+        ClientWidth = 437
         TabOrder = 1
         object Panel6: TPanel
           Left = 0
           Height = 41
           Top = 0
-          Width = 429
+          Width = 437
           Align = alTop
           BevelOuter = bvLowered
           ClientHeight = 41
-          ClientWidth = 429
+          ClientWidth = 437
           TabOrder = 0
           object Label2: TLabel
             Left = 16
@@ -378,9 +380,9 @@ object Form1: TForm1
         end
         object parsedChkMemo: TMemo
           Left = 0
-          Height = 458
+          Height = 492
           Top = 41
-          Width = 429
+          Width = 437
           Align = alClient
           Font.CharSet = ANSI_CHARSET
           Font.Height = -13
@@ -393,14 +395,14 @@ object Form1: TForm1
     end
     object TabSheet3: TTabSheet
       Caption = 'Data'
-      ClientHeight = 499
-      ClientWidth = 867
+      ClientHeight = 533
+      ClientWidth = 875
       ImageIndex = 2
       object sg: TStringGrid
         Left = 0
-        Height = 458
+        Height = 492
         Top = 41
-        Width = 867
+        Width = 875
         Align = alClient
         TabOrder = 0
         TitleFont.Height = -11
@@ -410,10 +412,10 @@ object Form1: TForm1
         Left = 0
         Height = 41
         Top = 0
-        Width = 867
+        Width = 875
         Align = alTop
         ClientHeight = 41
-        ClientWidth = 867
+        ClientWidth = 875
         TabOrder = 1
         object Button2: TButton
           Left = 16

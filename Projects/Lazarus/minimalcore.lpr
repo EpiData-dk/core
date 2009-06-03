@@ -12,12 +12,12 @@ uses
   Forms
   { you can add units after this }, LResources, UValueLabels, UEpiDataFile,
   UDataFileTypes, SHA1, DCPcrypt, Base64, UUtilTypes, UStringUtils, UEpiUtils,
-  UEpiDataConstants, ucommon, upwform, UImportExport,
+  UEpiDataConstants, UDebug, UCommon, UPWform, UImportExport,
   {$IFDEF EPIWARNING}
-  Uwarning,
+  UWarning,
   Controls,
   {$ENDIF EPIWARNING}
-  umain;
+  UMain;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 
@@ -26,6 +26,7 @@ var
   mr: integer;
 {$ENDIF}
 begin
+  {$I minimalcore.lrs}
   Application.Initialize;
 {$IFDEF EPIWARNING}
   Application.CreateForm(TWarningForm, WarningForm);
@@ -34,7 +35,7 @@ begin
     exit;
   WarningForm.Free;
 {$ENDIF EPIWARNING}
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TMainForm, MainForm);
   Application.Run;
 end.
 
