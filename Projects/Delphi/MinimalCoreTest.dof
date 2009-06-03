@@ -112,12 +112,12 @@ RootDir=C:\Programmer\Borland\Delphi7\Bin\
 [Version Info]
 IncludeVerInfo=1
 AutoIncBuild=0
-MajorVer=1
-MinorVer=0
+MajorVer=0
+MinorVer=1
 Release=0
-Build=91
+Build=92
 Debug=0
-PreRelease=0
+PreRelease=1
 Special=0
 Private=0
 DLL=0
@@ -126,13 +126,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=
 FileDescription=
-FileVersion=1.0.0.91
+FileVersion=0.1.0.92
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=
-ProductVersion=1.0.0.0
+ProductVersion=0.1.0.92
 [HistoryLists\hlDebugSourcePath]
 Count=16
 Item0=..\..\Datafile;..\..\Encryption;..\..\Utils;..\

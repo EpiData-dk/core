@@ -20,11 +20,13 @@ uses
   ucommon in '..\ucommon.pas',
   UDebug in '..\..\Utils\UDebug.pas',
   UPWform in '..\upwform.pas' {formPW},
-  {$IFDEF EPIWARNING}
+{$IFDEF EPIWARNING}
   Controls,
   uwarning in '..\uwarning.pas' {WarningForm},
-  {$ENDIF EPIWARNING}
-  UMain in '..\umain.pas' {Form1};
+{$ENDIF}
+  UMain in '..\umain.pas' {MainForm},
+  UImportExport in '..\..\Datafile\uimportexport.pas';
+
 {$R *.res}
 
 {$IFDEF EPIWARNING}
@@ -41,6 +43,6 @@ begin
     exit;
   WarningForm.Free;
 {$ENDIF EPIWARNING}
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TMainForm, MainForm);
   Application.Run;
 end.

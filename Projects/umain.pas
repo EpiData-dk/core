@@ -13,7 +13,7 @@ uses
   UDataFileTypes, Graphics;
 
 type
-  TForm1 = class(TForm)
+  TMainForm = class(TForm)
     Panel1: TPanel;
     edInputFile: TLabeledEdit;
     SpeedButton1: TSpeedButton;
@@ -84,7 +84,7 @@ type
   end;
 
 var
-  Form1: TForm1;
+  MainForm: TMainForm;
 
 implementation
 
@@ -103,13 +103,12 @@ var
 const
   FrmCaption = 'EpiData Software Core Test Project';
 
-procedure TForm1.readBtnClick(Sender: TObject);
+procedure TMainForm.readBtnClick(Sender: TObject);
 var
   Stream: TStream;
   ChkIO:  TCheckFileIO;
   Lst: TStrings;
 begin
-  Debugger.Add('Read button clicked.', 3);
   if Trim(edInputFile.Text) = '' then exit;
 
   Sg.ColCount := 2;
@@ -146,14 +145,14 @@ begin
   FreeAndNil(Stream);
 end;
 
-procedure TForm1.SpeedButton1Click(Sender: TObject);
+procedure TMainForm.SpeedButton1Click(Sender: TObject);
 begin
   SetFilter(OpenDialog1);
   if OpenDialog1.Execute then
    edInputFile.Text := OpenDialog1.FileName;
 end;
 
-procedure TForm1.LoadData(ShowAsLabels: boolean);
+procedure TMainForm.LoadData(ShowAsLabels: boolean);
 var
   row, col, i: integer;
   numrecs: integer;
@@ -194,7 +193,7 @@ begin
   end;
 end;
 
-function TForm1.ShowProgress(Sender: TObject; Percent: Cardinal; Msg: String): TProgressResult;
+function TMainForm.ShowProgress(Sender: TObject; Percent: Cardinal; Msg: String): TProgressResult;
 begin
   if (not pgBar.Visible) then pgBar.Visible := true;
   pgBar.Position := Percent;
@@ -205,11 +204,11 @@ begin
   {$IFDEF FPC}
   pgBar.Refresh;
   {$ELSE}
-  Form1.Refresh;
+  Self.Refresh;
   {$ENDIF}
 end;
 
-procedure TForm1.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: String);
+procedure TMainForm.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: String);
 var
   FormPW: TFormPW;
 begin
@@ -227,23 +226,24 @@ begin
   end;
 end;
 
-procedure TForm1.ShowDebug(Sender: TObject; Msg: String);
+procedure TMainForm.ShowDebug(Sender: TObject; Msg: String);
 begin
   Memo3.Lines.Add(Msg);
 end;
 
-procedure TForm1.SetButtons(DatafileIsOpen: Boolean);
+procedure TMainForm.SetButtons(DatafileIsOpen: Boolean);
 begin
   closeBtn.Enabled := DatafileIsOpen;
   saveBtn.Enabled := DatafileIsOpen;
   SpeedButton2.Enabled := DatafileIsOpen;
+  filetypeCombo.Enabled := DatafileIsOpen;
 
   Caption := FrmCaption;
   if DatafileIsOpen then
-    Caption := Caption + Df.FileName;
+    Caption := Caption + ': ' + Df.FileName;
 end;
 
-procedure TForm1.FormShow(Sender: TObject);
+procedure TMainForm.FormShow(Sender: TObject);
 begin
   Debugger.DebugLevel := cbDebug.ItemIndex;
   Debugger.OnDebugEvent := ShowDebug;
@@ -266,28 +266,28 @@ begin
   Memo1.Lines.Add('The log contains calls to the core module depending on log level specified');
 end;
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TMainForm.Button2Click(Sender: TObject);
 begin
   LoadData(False);
 end;
 
-procedure TForm1.Button3Click(Sender: TObject);
+procedure TMainForm.Button3Click(Sender: TObject);
 begin
   LoadData(True);
 end;
 
-procedure TForm1.FormResize(Sender: TObject);
+procedure TMainForm.FormResize(Sender: TObject);
 begin
   pgBar.Width := Panel1.Width - (pgBar.Left * 2);
 end;
 
-procedure TForm1.SpeedButton2Click(Sender: TObject);
+procedure TMainForm.SpeedButton2Click(Sender: TObject);
 begin
   if SaveDialog1.Execute then
     edOutputFile.Text := SaveDialog1.FileName;
 end;
 
-procedure TForm1.saveBtnClick(Sender: TObject);
+procedure TMainForm.saveBtnClick(Sender: TObject);
 var
   PExpSettings: PEpiExportSettings;
   Ext: String;
@@ -329,13 +329,13 @@ begin
     Debugger.Add('File type not yet implemented', 2);
 end;
 
-procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   if Assigned(Df) then FreeAndNil(Df);
   TDebug.DestroyInstance;
 end;
 
-procedure TForm1.closeBtnClick(Sender: TObject);
+procedure TMainForm.closeBtnClick(Sender: TObject);
 begin
   if Assigned(Df) then FreeAndNil(Df);
   SetButtons(False);
@@ -350,19 +350,19 @@ begin
   PageControl1.ActivePage := TabSheet5;  // stay on logfile to see what happened
 end;
 
-procedure TForm1.cbDebugChange(Sender: TObject);
+procedure TMainForm.cbDebugChange(Sender: TObject);
 begin
   Debugger.DebugLevel := cbDebug.ItemIndex;
   Debugger.Add(Format('Debug level: %d',[cbDebug.ItemIndex]), 1);
 end;
 
-procedure TForm1.Button6Click(Sender: TObject);
+procedure TMainForm.Button6Click(Sender: TObject);
 begin
   Memo3.Clear;
   Debugger.Reset;
 end;
 
-procedure TForm1.Button7Click(Sender: TObject);
+procedure TMainForm.Button7Click(Sender: TObject);
 begin
   SaveDialog1.Filter := '';
 
@@ -371,7 +371,7 @@ begin
 
 end;
 
-procedure TForm1.filetypeComboChange(Sender: TObject);
+procedure TMainForm.filetypeComboChange(Sender: TObject);
 var ext : string;
 begin
   stataCombo.Hide;

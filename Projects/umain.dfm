@@ -1,6 +1,6 @@
-object Form1: TForm1
-  Left = 150
-  Top = 51
+object MainForm: TMainForm
+  Left = 474
+  Top = 205
   Width = 881
   Height = 745
   Caption = 'Core Test Project'
@@ -209,6 +209,7 @@ object Form1: TForm1
       Top = 104
       Width = 145
       Height = 21
+      Enabled = False
       ItemHeight = 13
       ItemIndex = 0
       TabOrder = 10
@@ -226,8 +227,8 @@ object Form1: TForm1
     Left = 0
     Top = 177
     Width = 873
-    Height = 534
-    ActivePage = TabSheet5
+    Height = 541
+    ActivePage = TabSheet1
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -236,7 +237,7 @@ object Form1: TForm1
         Left = 0
         Top = 0
         Width = 865
-        Height = 506
+        Height = 513
         Align = alClient
         Lines.Strings = (
           '')
@@ -250,7 +251,7 @@ object Form1: TForm1
         Left = 0
         Top = 0
         Width = 865
-        Height = 578
+        Height = 513
         Align = alClient
         Font.Charset = ANSI_CHARSET
         Font.Color = clWindowText
@@ -268,14 +269,14 @@ object Form1: TForm1
       object Splitter1: TSplitter
         Left = 433
         Top = 0
-        Height = 506
+        Height = 513
         Beveled = True
       end
       object Panel3: TPanel
         Left = 0
         Top = 0
         Width = 433
-        Height = 506
+        Height = 513
         Align = alLeft
         BevelOuter = bvNone
         TabOrder = 0
@@ -306,7 +307,7 @@ object Form1: TForm1
           Left = 0
           Top = 41
           Width = 433
-          Height = 465
+          Height = 472
           Align = alClient
           Font.Charset = ANSI_CHARSET
           Font.Color = clWindowText
@@ -322,7 +323,7 @@ object Form1: TForm1
         Left = 436
         Top = 0
         Width = 429
-        Height = 506
+        Height = 513
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 1
@@ -352,7 +353,7 @@ object Form1: TForm1
           Left = 0
           Top = 41
           Width = 429
-          Height = 465
+          Height = 472
           Align = alClient
           Font.Charset = ANSI_CHARSET
           Font.Color = clWindowText
@@ -372,7 +373,7 @@ object Form1: TForm1
         Left = 0
         Top = 41
         Width = 865
-        Height = 465
+        Height = 472
         Align = alClient
         TabOrder = 0
       end
@@ -410,7 +411,7 @@ object Form1: TForm1
         Left = 0
         Top = 41
         Width = 865
-        Height = 465
+        Height = 472
         Align = alClient
         Font.Charset = ANSI_CHARSET
         Font.Color = clWindowText

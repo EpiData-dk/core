@@ -856,6 +856,7 @@ begin
       begin
         FErrorText := Format(Lang(0, 'File version information invalid %s'), [Filename]);
         FErrorCode := EPI_FILE_VERSION_ERROR;
+        Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
         CloseFile(TxtFile);
         Exit;
       end;
@@ -869,6 +870,7 @@ begin
       begin
         FErrorText := Lang(9020, 'Incorrect password entered');
         FErrorcode := EPI_INVALID_PASSWORD;
+        Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
         CloseFile(TxtFile);
         Exit;
       end;
@@ -890,6 +892,7 @@ begin
     begin
       FErrorText := Format(Lang(20112, 'Incorrect format of datafile %s'), [Filename]);
       FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+      Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 20112);
       CloseFile(TxtFile);
       Exit;
     end;
@@ -903,6 +906,7 @@ begin
       begin
         FErrorText := Lang(0, 'Cancelled by user');
         FErrorcode := EPI_USERCANCELLED;
+        Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
         CloseFile(TxtFile);
         Exit;
       end;
@@ -988,6 +992,7 @@ begin
     begin
       FErrorText := Format(Lang(20118, 'Error in datafile %s.~~One or more records are corrupted.'), [Filename]);
       FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+      Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 20118);
       Exit;
     end;
 
@@ -1005,6 +1010,7 @@ begin
             ErrorCode := EPI_CHECKFILE_ERROR;
             for i := 0 to ChkIO.ErrorLines.Count -1 do
               ErrorText := ErrorText + #13#10 + ChkIO.ErrorLines[i];
+            Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
           end;
         except
           ErrorCode := EPI_CHECKFILE_ERROR;
@@ -1187,6 +1193,7 @@ begin
   except
     FErrorText := Lang(0, 'Fatal Error in decrypting password.');
     FErrorCode := EPI_INVALID_PASSWORD;
+    Debugger.AddError(ClassName, 'RequestPassword', ErrorText, 0);
     Abort;
   end;
 end;
@@ -1317,7 +1324,7 @@ begin
       FErrorText := Format(Lang(0, 'Unsupported file type for direct reading: %s'), [Ext]);
       FErrorCode := EPI_OPEN_FILE_ERROR;
       result := False;
-      Debugger.AddError(Classname, 'Open', FErrorText, 0);
+      Debugger.AddError(Classname, 'Open', ErrorText, 0);
     end;
   finally
     Debugger.DecIndent;
@@ -1363,7 +1370,8 @@ begin
   begin
     FErrorText := Lang(0, 'Index error in reading.');
     FErrorCode := EPI_READ_FILE_ERROR;
-    raise Exception.Create(Lang(0, 'Index error in reading.'));
+    Debugger.AddError(Classname, 'Read', ErrorText, 0);
+    raise Exception.Create('Index error in reading.');
   end;
 
   if FDataStream.Position <> (FOffset + ((RecNumber - 1) * FFullRecLength)) then
@@ -1375,7 +1383,8 @@ begin
   begin
     FErrorText := Lang(20464, 'Error reading record');
     FErrorCode := EPI_READ_FILE_ERROR;
-    raise Exception.Create(Lang(20464, 'Error reading record'));
+    Debugger.AddError(Classname, 'Open', ErrorText, 20464);
+    raise Exception.Create('Error reading record');
   end;
 
   RecordState := rsNormal;

@@ -243,6 +243,7 @@ begin
     BEGIN
       ErrorText := Lang(23978, 'Unknown version of Stata-file');
       ErrorCode := EPI_NOT_VALID_STATA_FILE;
+      Debugger.AddError(Classname, 'ImportStata', ErrorText, 23978);
       Exit;
     END;
 
@@ -284,6 +285,7 @@ begin
     BEGIN
       ErrorText := Lang(23980, 'Incorrect format of stata-file');
       ErrorCode := EPI_NOT_VALID_STATA_FILE;
+      Debugger.AddError(Classname, 'ImportStata', ErrorText, 23980);
       Exit;
     END;
     FByteOrder := boLittleEndian;
@@ -295,6 +297,7 @@ begin
     BEGIN
       ErrorText := Lang(23980, 'Incorrect format of stata-file');
       ErrorCode := EPI_NOT_VALID_STATA_FILE;
+      Debugger.AddError(Classname, 'ImportStata', ErrorText, 23980);
       Exit;
     END;
 
@@ -304,6 +307,7 @@ begin
     BEGIN
       ErrorText := Format(Lang(23982, 'The stata-file contains %d variables.~A maximum of 800 variables can be imported.'), [nVar]);
       ErrorCode := EPI_TOO_MANY_VARIABLES;
+      Debugger.AddError(Classname, 'ImportStata', ErrorText, 23982);
       Exit;
     END;
 
@@ -376,6 +380,7 @@ begin
         BEGIN
           ErrorText := Lang(23984, 'Unknown variable type found in Stata-file');
           ErrorCode := EPI_NOT_VALID_STATA_FILE;
+          Debugger.AddError(Classname, 'ImportStata', ErrorText, 23984);
           Exit;
         END;
         TmpField.FieldType := ftAlfa;
@@ -412,6 +417,7 @@ begin
       BEGIN
         ErrorText := Format(Lang(23986, 'Unknown format specified for variable %s'), [TmpField.FieldName]);
         ErrorCode := EPI_NOT_VALID_STATA_FILE;
+        Debugger.AddError(Classname, 'ImportStata', ErrorText, 23986);
         Exit;
       END;
 
@@ -444,6 +450,7 @@ begin
         else
           ErrorText := Format(Lang(23986, 'Unknown format specified for variable %s'), [TmpField.FieldName]);
           ErrorCode := EPI_NOT_VALID_STATA_FILE;
+          Debugger.AddError(Classname, 'ImportStata', ErrorText, 23986);
           Exit;
         end;
       end;
@@ -598,6 +605,7 @@ begin
     EXCEPT
       ErrorText := Lang(23934, 'Error reading data from Stata-file');
       ErrorCode := EPI_FAILED;
+      Debugger.AddError(Classname, 'ImportStata', ErrorText, 23934);
       Exit;
     END;  //try..except
 
@@ -621,6 +629,7 @@ begin
             BEGIN
               ErrorText := Lang(23936, 'Duplicate value label name found');
               ErrorCode := EPI_FAILED;
+              Debugger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
             TmpValSet.AddValueLabelPair(IntToStr(TmpInt), String(CharBuf));
@@ -658,6 +667,7 @@ begin
             BEGIN
               ErrorText := Lang(23936, 'Duplicate value label name found');
               ErrorCode := EPI_FAILED;
+              Debugger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
             TmpValSet.AddValueLabelPair(IntToStr(TmpInt),
@@ -669,6 +679,7 @@ begin
     // successfully loaded the file.
     Result := true;
   finally
+    Debugger.DecIndent;
     if Assigned(DataStream) then FreeAndNil(DataStream);
   end;
 end;
@@ -689,6 +700,8 @@ var
   CurField: Integer;
   C: Char;
 BEGIN
+  Debugger.IncIndent;
+  Debugger.Add(ClassName, 'ImportDBase', 2, 'Filename = ' + aFilename);
   Result := false;
 
   if Assigned(DataFile) then
@@ -775,6 +788,8 @@ BEGIN
       else
         ErrorCode := EPI_IMPORT_FAILED;
         ErrorText := Format(Lang(0, 'Unknown Field Code: %c'), [CharBuf[11]]);
+        Debugger.AddError(Classname, 'ImportDBase', ErrorText, 0);
+        Exit;
       end;
 
       WITH TmpField DO
@@ -834,6 +849,7 @@ BEGIN
     END;  //for CurRec
     Result := true;
   FINALLY
+    Debugger.DecIndent;
     If Assigned(DataStream) then FreeAndNil(DataStream);
   END;  //try..finally
 END;   //ImportDBaseFile
@@ -933,6 +949,8 @@ Const
   end;
 
 begin
+  Debugger.IncIndent;
+  Debugger.Add(ClassName, 'ExportStata', 2, 'Filename = ' + aFilename);
   Result := false;
   // Sanity checks:
   if Trim(aFilename) = '' then Exit;
@@ -1067,6 +1085,7 @@ begin
         ELSE
           ErrorText := Lang(22312, 'Unknown fieldtype used in datafile.~~Export terminated.');
           ErrorCode := EPI_EXPORT_FAILED;
+          Debugger.AddError(Classname, 'ExportStata', ErrorText, 22312);
           Exit;
         END;  //Case
         ByteBuf[i] := Ord(TmpChar);
@@ -1124,6 +1143,7 @@ begin
       ELSE
         ErrorCode := EPI_EXPORT_FAILED;
         ErrorText := Lang(22312, 'Unknown fieldtype used in datafile.~~Export terminated.');
+        Debugger.AddError(Classname, 'ExportStata', ErrorText, 22312);
         Exit;
       END;   //case FeltType
       WriteString(TmpStr, FmtLength);
@@ -1271,9 +1291,9 @@ begin
             begin
               ErrorCode := EPI_EXPORT_FAILED;
               ErrorText := Format(Lang(22306, 'Illegal date found in record # %d, field %s~Export terminates.'), [CurRec, FieldName]);
+              Debugger.AddError(Classname, 'ExportStata', ErrorText, 22306);
               Exit;
             end;
-
             WriteString(TmpStr, FieldLength);
           end;
         END;  //for CurVar
@@ -1281,6 +1301,7 @@ begin
     EXCEPT
       ErrorCode := EPI_EXPORT_FAILED;
       ErrorText := Format(Lang(22304, 'Error occured during export of record #%d'), [CurRec]);
+      Debugger.AddError(Classname, 'ExportStata', ErrorText, 223042);
       Exit;
     END;  //try..Except
 
@@ -1345,6 +1366,7 @@ begin
 
     Result := true;
   finally
+    Debugger.DecIndent;
     if Assigned(StataFile) then FreeAndNil(StataFile);
     if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
     if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
