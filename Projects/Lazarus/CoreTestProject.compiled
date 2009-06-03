@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<CONFIG>
-  <Compiler Value="/usr/bin/ppc386" Date="1236269044"/>
-  <Params Value=" -MObjFPC -Sg -CirotR -g -gl -vewnhi -l -Fi/home/torsten/EpiData/Core/source/Projects/ -Fi/home/torsten/EpiData/Core/lazarus/ -Fi/home/torsten/EpiData/Core/lazarus/Datafile/ -Fi/home/torsten/EpiData/Core/lazarus/encryption/ -Fi/home/torsten/EpiData/Core/source/Projects/Lazarus/ -Fl/home/torsten/EpiData/Core/source/Projects/ -Fo/home/torsten/EpiData/Core/source/Projects/ -Fu/home/torsten/EpiData/Core/source/Projects/ -Fu/home/torsten/EpiData/Core/lazarus/ -Fu/home/torsten/EpiData/Core/lazarus/Datafile/ -Fu/home/torsten/EpiData/Core/lazarus/encryption/ -Fu/usr/local/share/lazarus/lcl/units/i386-linux/ -Fu/usr/local/share/lazarus/lcl/units/i386-linux/gtk2/ -Fu/usr/local/share/lazarus/packager/units/i386-linux/ -Fu/home/torsten/EpiData/Core/source/Projects/Lazarus/ -Fu. -o/home/torsten/EpiData/Core/source/Projects/Lazarus/CoreTestProject -dLCL -dLCLgtk2 CoreTestProject.lpr"/>
-</CONFIG>
