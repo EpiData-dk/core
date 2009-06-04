@@ -11,6 +11,13 @@ USES
   SysUtils, UEpiDataConstants, UDataFileTypes;
 
 type
+  TPrgVersionInfo = record
+    Major:    Word;
+    Minor:    Word;
+    Release:  Word;
+    Build:    Word;
+  end;
+
   PCoreSystemInformation = ^TCoreSystemInformation;
   TCoreSystemInformation = record
     OSName:         String;     // Windows, Linux (or Mac?).
@@ -18,6 +25,7 @@ type
     OSMinorVersion: Word;       //
     MemSize:        Int64;      // Physical memory in Bytes.
     MemUsage:       Integer;    // Usage level of memory in percent.
+    PrgVersion:     TPrgVersionInfo;
     CoreVersion:    Cardinal;   // Version of Core and utils.
     CoreRevision:   Cardinal;   // Subversion revision.
   end;
@@ -34,6 +42,7 @@ type
   function PostInc(Var I: Integer; Const N: Integer = 1): Integer;
 
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
+
 
 {$IFNDEF LINUX}
 type
@@ -160,6 +169,30 @@ begin
   Inc(I, N);
 end;
 
+{$IFNDEF FPC}
+procedure GetBuildInfo(var PrgInfo: TPrgVersionInfo);
+var
+  VerInfoSize:  DWORD;
+  VerInfo:      Pointer;
+  VerValueSize: DWORD;
+  VerValue:     PVSFixedFileInfo;
+  Dummy:        DWORD;
+begin
+  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
+  GetMem(VerInfo, VerInfoSize);
+  GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
+  VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize);
+  with VerValue^ do
+  begin
+    PrgInfo.Major   := dwFileVersionMS shr 16;
+    PrgInfo.Minor   := dwFileVersionMS and $FFFF;
+    PrgInfo.Release := dwFileVersionLS shr 16;
+    PrgInfo.Build   := dwFileVersionLS and $FFFF;
+  end;
+  FreeMem(VerInfo, VerInfoSize);
+end;
+{$ENDIF FPC}
+
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var
   {$IFNDEF LINUX}
@@ -185,6 +218,7 @@ begin
   CSI.MemSize := (Info.totalram * Info.mem_unit);
   CSI.MemUsage := Floor(100 * (Info.totalram - (Info.freeram)) / Info.totalram);
   {$ELSE}
+  GetBuildInfo(CSI.PrgVersion);
   Ovi.dwOSVersionInfoSize := SizeOf(TOSVersionInfo);
   GetVersionEx(Ovi);
 

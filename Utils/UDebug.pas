@@ -22,7 +22,6 @@ type
     procedure SetDebugLevel(Level: word);
     function AddIndent(): string;
   protected
-    //
     constructor Create(DebugLevel: word);
     destructor Destroy(); override;
   public
@@ -92,7 +91,10 @@ begin
   FData.Clear;
   Add('Log Started: ' + DateTimeToStr(Now), 1);
   GetCoreSystemInformation(Csi);
-  S := Format('OS: %s; Application: %s; Core version: %d; Revision: %d', [Csi.OSName, '', Csi.CoreVersion, Csi.CoreRevision]);
+  S := Format('OS: %s; Application: %s;', [Csi.OSName, '']);
+  Add(S, 1);
+  S := Format('Program Version: %d.%d.%d.%d; Core version: %d; Revision: %d',
+         [Csi.PrgVersion.Major, Csi.PrgVersion.Minor, Csi.PrgVersion.Release, Csi.PrgVersion.Build, Csi.CoreVersion, Csi.CoreRevision]);
   Add(S, 1);
   S := Format('Memory Size: %d MB; Memory in Use: %d%%', [Csi.MemSize div (1024*1024), Csi.MemUsage]);
   Add(S, 1);
