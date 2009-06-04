@@ -2,7 +2,7 @@ program minimalcore;
 
 {$mode objfpc}{$H+}
 
-{.$DEFINE EPIWARNING}
+{$DEFINE EPIWARNING}
 
 uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
@@ -26,6 +26,7 @@ var
   mr: integer;
 {$ENDIF}
 begin
+  Application.Title := 'EpiData Software Core Test Project';
   {$I minimalcore.lrs}
   Application.Initialize;
 {$IFDEF EPIWARNING}

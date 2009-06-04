@@ -91,7 +91,7 @@ begin
   FData.Clear;
   Add('Log Started: ' + DateTimeToStr(Now), 1);
   GetCoreSystemInformation(Csi);
-  S := Format('OS: %s; Application: %s;', [Csi.OSName, '']);
+  S := Format('Application: %s; OS: %s', ['', Csi.OSName]);
   Add(S, 1);
   S := Format('Program Version: %d.%d.%d.%d; Core version: %d; Revision: %d',
          [Csi.PrgVersion.Major, Csi.PrgVersion.Minor, Csi.PrgVersion.Release, Csi.PrgVersion.Build, Csi.CoreVersion, Csi.CoreRevision]);

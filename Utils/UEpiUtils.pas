@@ -203,14 +203,23 @@ var
   PInfo: PSysInfo;
   Info: TSysInfo;
   UName: UtsName;
+//  ResHandle: TFPResourceHandle;
+//  ResMan: TResourceManager;
   {$ENDIF LINUX}
   Dummy: integer;
 begin
   {$IFDEF LINUX}
+//  GetResourceManager(ResMan);
+//  FindResource(ResMan.HINSTANCEFunc(), RT_VERSION, RT_VERSION);
   FpUname(UName);
   CSI.OSName := String(UName.Sysname);
   CSI.OSMajorVersion := 0;
   CSI.OSMinorVersion := 0;
+
+  CSI.PrgVersion.Major   := 0;
+  CSI.PrgVersion.Minor   := 1;
+  CSI.PrgVersion.Release := 0;
+  CSI.PrgVersion.Build   := 92;
 
   PInfo := new(PSysInfo);
   Sysinfo(PInfo);

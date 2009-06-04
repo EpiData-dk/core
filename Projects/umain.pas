@@ -10,9 +10,12 @@ uses
   {$IFDEF FPC} LResources, {$ELSE} Windows, {$ENDIF}
   Messages, SysUtils, Variants, Classes, Controls, Forms,
   Dialogs, StdCtrls, Buttons, ExtCtrls, ComCtrls, UEpiDataFile, Grids,
-  UDataFileTypes, Graphics;
+  UDataFileTypes, Graphics, FileCtrl;
 
 type
+
+  { TMainForm }
+
   TMainForm = class(TForm)
     Panel1: TPanel;
     edInputFile: TLabeledEdit;
@@ -58,6 +61,7 @@ type
     Button6: TButton;
     Button7: TButton;
     filetypeCombo: TComboBox;
+    procedure FilterComboBox1Change(Sender: TObject);
     procedure readBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -143,6 +147,11 @@ begin
 
   FreeAndNil(ChkIO);
   FreeAndNil(Stream);
+end;
+
+procedure TMainForm.FilterComboBox1Change(Sender: TObject);
+begin
+
 end;
 
 procedure TMainForm.SpeedButton1Click(Sender: TObject);
