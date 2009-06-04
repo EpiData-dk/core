@@ -61,7 +61,6 @@ type
     Button6: TButton;
     Button7: TButton;
     filetypeCombo: TComboBox;
-    procedure FilterComboBox1Change(Sender: TObject);
     procedure readBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -147,11 +146,6 @@ begin
 
   FreeAndNil(ChkIO);
   FreeAndNil(Stream);
-end;
-
-procedure TMainForm.FilterComboBox1Change(Sender: TObject);
-begin
-
 end;
 
 procedure TMainForm.SpeedButton1Click(Sender: TObject);

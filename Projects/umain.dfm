@@ -11,6 +11,7 @@ object MainForm: TMainForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poScreenCenter
   OnClose = FormClose
   OnResize = FormResize
   OnShow = FormShow
