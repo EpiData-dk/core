@@ -25,6 +25,7 @@ CONST
   BooleanChars:    TCharSet = ['y','Y','n','N','1','0'];
   BooleanYesChars: TCharSet = ['y','Y','1','t','T'];
   BooleanNoChars:  TCharSet = ['n','N','0','f','F'];
+  DateSeparators:  TCharSet = ['-', '/', ':', '.'];
 
   EOLchars:        array[0..2] of char = '!'#13#10;
   {  DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
