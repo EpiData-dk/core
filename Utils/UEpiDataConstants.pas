@@ -28,8 +28,8 @@ CONST
   DateSeparators:  TCharSet = ['-', '/', ':', '.'];
 
   EOLchars:        array[0..2] of char = '!'#13#10;
-  {  DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
-  TerminatorChars: Set of CHAR=['!','?','^'];
+  DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
+{  TerminatorChars: Set of CHAR=['!','?','^'];
 
   NewLine:Byte=13;
   LineFeed:Byte=10;

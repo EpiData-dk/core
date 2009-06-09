@@ -1,6 +1,6 @@
 program MinimalCoreTest;
 
-{$DEFINE EPIWARNING}
+{.$DEFINE EPIWARNING}
 
 uses
   FastMM4,

@@ -135,7 +135,7 @@ begin
     ftToday, ftEuroDate,
     ftDate, ftEuroToday,
     ftYMDDate,
-    ftYMDToday:         Result := IsDate(Value, Ft);
+    ftYMDToday:         Result := EpiIsDate(Value, Ft);
     ftUpperAlfa:        Result := AnsiUpperCase(Value) = Value;
   end;
 end;

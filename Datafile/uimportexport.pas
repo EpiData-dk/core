@@ -1287,7 +1287,7 @@ begin
               End;
           else
             if (FieldType in DateFieldTypes) and not
-               IsDate(TmpStr, FieldType) then
+               EpiIsDate(TmpStr, FieldType) then
             begin
               ErrorCode := EPI_EXPORT_FAILED;
               ErrorText := Format(Lang(22306, 'Illegal date found in record # %d, field %s~Export terminates.'), [CurRec, FieldName]);
