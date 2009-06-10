@@ -32,11 +32,11 @@ end;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
-  aDialog.Filter := 'Supported data files (*.rec,*.dta)|*.rec;*.dta|'
+  aDialog.Filter := 'Supported data files (*.rec,*.dta,*.dbf)|*.rec;*.dta;*.dbf|'
                   + 'EpiData data file (*.rec)|*.rec|'
                   + 'Stata file (*.dta)|*.dta|'
 //                  + 'Text file (*.txt)|*.txt|'
-//                  + 'dBase file (*.dbf)|*.dbf|'
+                  + 'dBase file (*.dbf)|*.dbf|'
                   + 'All files (*.*)|*.*';
   aDialog.FilterIndex := 0;
 end;
@@ -107,9 +107,9 @@ begin
     Exporter.OnProgress := ShowProgress;
     S := AnsiUpperCase(ExtractFileExt(FileName));
     if S = '.DTA' then
-      Exporter.ExportStata(FileName, Df, ExportSettings);
-//    else if S = '.DBF' then
-//      Exporter.ExportDBase();
+      Exporter.ExportStata(FileName, Df, ExportSettings)
+    else if S = '.DBF' then
+      Exporter.ExportDBase(FileName, Df);
     FreeAndNil(Exporter);
     Exit;
   end;

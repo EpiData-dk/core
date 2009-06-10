@@ -3,7 +3,7 @@ program MinimalCoreTest;
 {.$DEFINE EPIWARNING}
 
 uses
-  FastMM4,
+//  FastMM4,
   Forms,
   UEpiDataFile in '..\..\Datafile\UEpiDataFile.pas',
   UDataFileTypes in '..\..\Datafile\UDataFileTypes.pas',

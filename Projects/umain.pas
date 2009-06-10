@@ -311,7 +311,7 @@ begin
   if fileexists(ext) then
   begin
     Debugger.Add('Cannot overwrite existing file: ' + ext, 2);
-    Exit;
+//    Exit;
   end;
 
   if stataCombo.Visible then
@@ -326,7 +326,7 @@ begin
     end;
   end;
 
-  if filetypeCombo.ItemIndex < 2 then
+  if filetypeCombo.ItemIndex < 3 then
     SaveDataFile(Df, Ext, not CheckBox2.Checked, ShowProgress, GetPassword, PExpSettings)
   else
     Debugger.Add('File type not yet implemented', 2);

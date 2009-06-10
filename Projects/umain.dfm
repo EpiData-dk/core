@@ -229,7 +229,7 @@ object MainForm: TMainForm
     Top = 177
     Width = 873
     Height = 541
-    ActivePage = TabSheet1
+    ActivePage = TabSheet3
     Align = alClient
     TabOrder = 1
     object TabSheet1: TTabSheet
@@ -376,6 +376,7 @@ object MainForm: TMainForm
         Width = 865
         Height = 472
         Align = alClient
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing]
         TabOrder = 0
       end
       object Panel2: TPanel

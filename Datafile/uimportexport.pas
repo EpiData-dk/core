@@ -30,11 +30,26 @@ const
   //  Stata Version 7    = $6E;
   //  Stata Version 8+9  = $71;
   //  Stata Version 10   = $72;
-  ExportStata4_5: TEpiExportSettings = (FileVersion:$69; StartRecord:1; EndRecord:-1);
-  ExportStata6:   TEpiExportSettings = (FileVersion:$6C; StartRecord:1; EndRecord:-1);
-  ExportStata7:   TEpiExportSettings = (FileVersion:$6E; StartRecord:1; EndRecord:-1);
-  ExportStata8_9: TEpiExportSettings = (FileVersion:$71; StartRecord:1; EndRecord:-1);
-  ExportStata10:  TEpiExportSettings = (FileVersion:$72; StartRecord:1; EndRecord:-1);
+  ExportStata4_5: TEpiExportSettings =
+                    (FileVersion:  $69;
+                     StartRecord:  1;
+                     EndRecord:    -1);
+  ExportStata6:   TEpiExportSettings =
+                    (FileVersion:  $6C;
+                     StartRecord:  1;
+                     EndRecord:    -1);
+  ExportStata7:   TEpiExportSettings =
+                    (FileVersion:  $6E;
+                     StartRecord:  1;
+                     EndRecord:    -1);
+  ExportStata8_9: TEpiExportSettings =
+                    (FileVersion:  $71;
+                     StartRecord:  1;
+                     EndRecord:    -1);
+  ExportStata10:  TEpiExportSettings =
+                    (FileVersion:  $72;
+                     StartRecord:  1;
+                     EndRecord:    -1);
 
 type
 
@@ -50,9 +65,14 @@ type
     Function      UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
     procedure     ReadBuf(var Buf: Array of Byte; Count: Integer);
     function      ReadInts(Count: Integer): Integer;
-    function      ReadSingle(Count: Integer; var MisVal: String): Double;
-    function      ReadDouble(Count: Integer; var MisVal: String): Double;
+    function      ReadSingle(): Single;
+    function      ReadDouble(): Double;
     function      StringFromBuffer(AChar: PChar; MaxLength: Integer): String;
+    procedure     WriteBuf(Buf: Array of Byte; Count: Integer);
+    procedure     WriteInts(Const Val, Count: Integer);
+    procedure     WriteSingle(Val: Single);
+    procedure     WriteDouble(Val: Double);
+    procedure     WriteString(Const Str: String; Const Count: Integer; Terminate: Boolean = True);
   public
     constructor   Create;
     destructor    Destroy; override;
@@ -62,6 +82,7 @@ type
     function      ImportXLS(Const aFilename: String; var DataFile: TEpiDataFile): Boolean;
     function      ExportStata(Const aFilename: String; Const DataFile: TEpiDataFile;
                               ExpSetting: PEpiExportSettings): Boolean;
+    function      ExportDBase(Const aFilename: String; Const DataFile: TEpiDataFile): Boolean;
     function      ExportTXT(Const aFilename: String; Const DataFile: TEpiDataFile): Boolean;
     function      ExportXLS(Const aFilename: String; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
@@ -83,8 +104,7 @@ begin
     Result := FOnTranslate(langcode, Result)
 end;
 
-function TEpiImportExport.UpdateProgress(Percent: Integer; Msg: String
-  ): TProgressResult;
+function TEpiImportExport.UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
 begin
   Result := prNormal;
   if Assigned(FOnProgress) then
@@ -119,42 +139,24 @@ begin
 end;
 
 
-function TEpiImportExport.ReadSingle(Count: Integer;
-  var MisVal: String): Double;
+function TEpiImportExport.ReadSingle(): Single;
 var
   Buf: Array[0..3] of Byte;
 begin
-  MisVal := '';
-  FillChar(Buf, 4, 0);
-  ReadBuf(Buf, Count);
+  ReadBuf(Buf, 4);
   Result := Single(Buf);
 end;
 
 
-function TEpiImportExport.ReadDouble(Count: Integer;
-  var MisVal: String): Double;
+function TEpiImportExport.ReadDouble(): Double;
 var
   Buf: Array[0..7] of Byte;
 begin
-  MisVal := '';
-  FillChar(Buf, 8, 0);
-  ReadBuf(Buf, Count);
-  if (Buf[6]=$E0) AND (Buf[7]=$7F) then
-  begin
-    if (Buf[0] AND Buf[1] AND Buf[2] AND Buf[3] AND Buf[4]) = 0 then
-    case Buf[5] of
-      $01: MisVal := '9';
-      $02: MisVal := '8';
-      $03: MisVal := '7';
-    else
-      MisVal := '-';
-    end;
-  end;
+  ReadBuf(Buf, 8);
   Result := Double(Buf);
 end;
 
-function TEpiImportExport.StringFromBuffer(AChar: PChar; MaxLength: Integer
-  ): String;
+function TEpiImportExport.StringFromBuffer(AChar: PChar; MaxLength: Integer): String;
 var
   I: integer;
   Src: PChar;
@@ -167,6 +169,68 @@ begin
     Result := Result + Src[i];
     Inc(i);
   end
+end;
+
+procedure TEpiImportExport.WriteBuf(Buf: Array of Byte; Count: Integer);
+var
+  TmpByte: Byte;
+  i: integer;
+begin
+  if ByteOrder = boBigEndian then
+    for i := 0 to (Count div 2)-1 do
+    begin
+      TmpByte := Buf[i];
+      Buf[i]  := Buf[(Count - 1) - i];
+      Buf[(Count - 1) - i] := TmpByte;
+    end;
+  DataStream.Write(Buf[0], Count);
+end;
+
+procedure TEpiImportExport.WriteInts(Const Val, Count: Integer);
+var
+  TmpBuf: Array[0..3] of Byte;
+  I: Integer;
+begin
+  FillChar(TmpBuf, 4, 0);
+  for i := 0 to Count - 1 do
+    TmpBuf[i] := Byte(Val shr (i * 8));
+  WriteBuf(TmpBuf, Count);
+end;
+
+
+procedure TEpiImportExport.WriteSingle(Val: Single);
+var
+  FltByte: Array[0..4] of Byte absolute Val;
+begin
+  WriteBuf(FltByte, 4);
+end;
+
+procedure TEpiImportExport.WriteDouble(Val: Double);
+var
+  FltByte: Array[0..7] of Byte absolute Val;
+begin
+{  if MisVal[1] = '.' then
+    case MisVal[2] of
+      'a': FltByte[5] := 1;
+      'b': FltByte[5] := 2;
+      'c': FltByte[5] := 3;
+    else
+      FltByte[5] := 0;
+    end;      }
+  WriteBuf(FltByte, 8);
+end;
+
+procedure TEpiImportExport.WriteString(Const Str: String; Const Count: Integer; Terminate: Boolean = True);
+var
+  StrBuf: PChar;
+  z: integer;
+begin
+  z := 0;
+  if Terminate then z := 0 else z := 1;
+  StrBuf := StrAlloc(Count + z);
+  StrPLCopy(PChar(@StrBuf[0]), Str, Count - 1 + z);
+  DataStream.Write(StrBuf[0], Count);
+  StrDispose(StrBuf);
 end;
 
 constructor TEpiImportExport.Create;
@@ -199,6 +263,46 @@ var
   ByteChar, IntChar, LongChar,
   FloatChar, DoubleChar: Char;
   MissingBaseNum: Cardinal;
+
+  function ReadSingleMissing(var MisVal: String): Single;
+  var
+    Buf: Array[0..3] of Byte absolute Result;
+  begin
+    MisVal := '';
+    Result := ReadSingle();
+
+    if (Buf[3]=$7F) then
+    begin
+      if (Buf[0] AND Buf[2]) = 0 then
+      case Buf[1] of
+        $08: MisVal := '9';
+        $10: MisVal := '8';
+        $18: MisVal := '7';
+      else
+        MisVal := '-';
+      end;
+    end;
+  end;
+
+  function ReadDoubleMissing(var MisVal: String): Double;
+  var
+    Buf: Array[0..7] of Byte absolute Result;
+  begin
+    MisVal := '';
+    Result := ReadDouble();
+
+    if (Buf[6]=$E0) AND (Buf[7]=$7F) then
+    begin
+      if (Buf[0] AND Buf[1] AND Buf[2] AND Buf[3] AND Buf[4]) = 0 then
+      case Buf[5] of
+        $01: MisVal := '9';
+        $02: MisVal := '8';
+        $03: MisVal := '7';
+      else
+        MisVal := '-';
+      end;
+    end;
+  end;
 
 Const
   ByteConst   = #251;
@@ -570,9 +674,9 @@ begin
             DoubleConst:
               Begin
                 if TypeList[CurField] = FloatConst then
-                  TmpFlt := ReadSingle(4, StrBuf)
+                  TmpFlt := ReadSingleMissing(StrBuf)
                 else
-                  TmpFlt := ReadDouble(8, StrBuf);
+                  TmpFlt := ReadDoubleMissing(StrBuf);
                 if StrBuf <> '' then
                 begin
                   if StrBuf = '-' then
@@ -686,8 +790,8 @@ end;
 
 Function TEpiImportExport.ImportDBase(Const aFilename: String; var DataFile: TEpiDataFile): Boolean;
 var
-  DBaseFile: TFileStream;
-  ByteBuf: Array of Byte;
+  ByteBuf,
+  FieldLengths: Array of Byte;
   CharBuf: Array of Char;
   NObs, NVars: Integer;
   RSize: LongInt;
@@ -725,7 +829,7 @@ BEGIN
 
     SetLength(ByteBuf, 4);
     DataStream.Read(ByteBuf[0], 4);
-    IF not ((ByteBuf[0] and $7) in [3, 4]) THEN
+    IF not ((ByteBuf[0]{ and $7}) in [3, 4]) THEN
     BEGIN
       // TODO -o Torsten: Error Message.
       ErrorCode := EPI_NOT_VALID_DBASE_FILE;
@@ -740,8 +844,10 @@ BEGIN
 
     {Read field descriptors}
     SetLength(CharBuf, 12);
+    SetLength(ByteBuf, 20);
     While True do
     begin
+      SetLength(FieldLengths, DataFields.Count + 1);
       DataStream.Read(CharBuf[0], 12);
       IF Ord(CharBuf[0]) = $0D THEN
         Break;
@@ -758,36 +864,37 @@ BEGIN
       TmpField.FieldName := TmpStr;
       DataStream.Read(ByteBuf[0], 20);
 
+      FieldLengths[High(FieldLengths)] := ByteBuf[4];
       Case CharBuf[11] of
         'C':
           Begin
             TmpField.FieldType   := ftAlfa;
-            TmpField.FieldLength := ByteBuf[5];
+            TmpField.FieldLength := ByteBuf[4];
           End;
         'D':
           Begin
-            TmpField.FieldType   :=ftDate;
-            TmpField.FieldLength :=10;
+            TmpField.FieldType   := ftDate;
+            TmpField.FieldLength := 10;
           End;
         'F', 'N':
           Begin
-            IF (ByteBuf[6] = 0) AND (ByteBuf[5] < 5) THEN
+            IF (ByteBuf[5] = 0) AND (ByteBuf[4] < 5) THEN
               TmpField.FieldType := ftInteger
             ELSE
               TmpField.FieldType := ftFloat;
-            IF ByteBuf[5] > 16 THEN
-              ByteBuf[5] := 16;
-            TmpField.FieldLength := ByteBuf[5];
-            TmpField.NumDecimals := ByteBuf[6];
+            IF ByteBuf[4] > 16 THEN
+              ByteBuf[4] := 16;
+            TmpField.FieldLength := ByteBuf[4];
+            TmpField.NumDecimals := ByteBuf[5];
           End;
         'L':
           Begin
             TmpField.FieldType   := ftBoolean;
-            TmpField.FieldLength := 1;
+            TmpField.FieldLength := ByteBuf[4];
           End;
       else
         ErrorCode := EPI_IMPORT_FAILED;
-        ErrorText := Format(Lang(0, 'Unknown Field Code: %c'), [CharBuf[11]]);
+        ErrorText := Format(Lang(0, 'Unknown Field Code: %s'), [CharBuf[11]]);
         Debugger.AddError(Classname, 'ImportDBase', ErrorText, 0);
         Exit;
       end;
@@ -803,6 +910,8 @@ BEGIN
       AddField(TmpField);
     end;
 
+    Save(FileName);
+
     {Read data}
     DataStream.Position := HSize;
     FOR CurRec := 1 TO NObs DO
@@ -817,17 +926,20 @@ BEGIN
       FOR CurField := 0 TO DataFields.Count - 1 DO
       with DataFields[CurField] do
       BEGIN
-        SetLength(CharBuf, FieldLength);
-        DataStream.Read(CharBuf[0], FieldLength);
+        SetLength(CharBuf, FieldLengths[CurField]);
+        DataStream.Read(CharBuf[0], FieldLengths[CurField]);
 
-        TmpStr := StringFromBuffer(PChar(@CharBuf[0]), FieldLength);
+        TmpStr := StringFromBuffer(PChar(@CharBuf[0]), FieldLengths[CurField]);
         IF (FieldType in [ftInteger, ftFloat, ftIDNUM, ftBoolean]) AND
-           (TmpStr[1]='*') THEN TmpStr := '';
+           (Length(TmpStr) >= 1) and (TmpStr[1]='*') THEN TmpStr := '';
         IF Trim(TmpStr)<>'' THEN
         BEGIN
           CASE FieldType OF
             ftDate:
-              TmpStr := Copy(TmpStr, 5, 2) + '/' + Copy(TmpStr, 7, 2) + '/' + Copy(TmpStr, 1, 4);
+              begin
+                TmpStr := Copy(TmpStr, 5, 2) + '/' + Copy(TmpStr, 7, 2) + '/' + Copy(TmpStr, 1, 4);
+                EpiIsDate(TmpStr, ftDate);
+              end;
             ftInteger:
               IsInteger(TmpStr);
             ftFloat:
@@ -873,7 +985,6 @@ var
   ByteBuf: Array of Byte;
   TypeList,
   CharBuf: Array of Char;
-  StataFile: TFileStream;
   NVar, NObs,
   I, J, TmpInt: Integer;
   TmpFlt: Double;
@@ -899,28 +1010,7 @@ Const
   FloatConst  = #254;
   DoubleConst = #255;
 
-  procedure WriteInts(Const Val, Count: Integer);
-  var
-    TmpBuf: Array[0..3] of Byte;
-    I: Integer;
-  begin
-    FillChar(TmpBuf, 4, 0);
-    for i := 0 to Count - 1 do
-      TmpBuf[i] := Byte(Val shr (i * 8));
-    StataFile.Write(TmpBuf, Count);
-  end;
-
-  procedure WriteString(Const Str: String; Const Count: Integer);
-  var
-    StrBuf: PChar;
-  begin
-    StrBuf := StrAlloc(Count);
-    StrPLCopy(PChar(@StrBuf[0]), Str, Count - 1);
-    StataFile.Write(StrBuf[0], Count);
-    StrDispose(StrBuf);
-  end;
-
-  procedure WriteFloat(Val: Double; Const MisVal: String);
+  procedure WriteFloat(Val: Double; Const MisVal: string);
   var
     FltByte: Array[0..7] of Byte absolute Val;
   begin
@@ -932,8 +1022,9 @@ Const
       else
         FltByte[5] := 0;
       end;
-    StataFile.Write(FltByte[0], 8);
+    WriteDouble(Val);
   end;
+
 
   function UniqueValueLabelName(Str: String; Const Count: Integer): string;
   var
@@ -957,13 +1048,11 @@ begin
 
   if not Assigned(DataFile) then Exit;
 
-  StataFile := nil;
-
   with DataFile do
   try
     UpdateProgress(0, Lang(0, 'Writing header information'));
 
-    StataFile := TFileStream.Create(aFileName, fmCreate);
+    DataStream := TFileStream.Create(aFileName, fmCreate);
     FileVersion := ExpSetting^.FileVersion;
 
     if not (FileVersion in [$69, $6C, $6E, $71, $72]) then
@@ -1013,7 +1102,7 @@ begin
     ByteBuf[1] := 2;                                          // Use LOHI order of data
     ByteBuf[2] := 1;                                          // Filetype - only 1 is legal value
     ByteBuf[3] := 0;                                          // Unused
-    StataFile.Write(ByteBuf[0], 4);
+    DataStream.Write(ByteBuf[0], 4);
     WriteInts(NVar, 2);                                       // Number of Variables
     WriteInts(NObs, 4);                                       // Number of records
 
@@ -1099,7 +1188,7 @@ begin
       END;  //with
     END;  //for
 
-    StataFile.Write(ByteBuf[0], NVar);
+    DataStream.Write(ByteBuf[0], NVar);
 
     // - varlist: variable names
     FOR i :=0 TO NVar - 1 DO
@@ -1115,7 +1204,7 @@ begin
     //   No sortorder is written, only zeros to indicated end of list}
     SetLength(ByteBuf, 2 * (NVar + 1));
     FillChar(ByteBuf[0], 2 * (NVar + 1), 0);
-    StataFile.Write(ByteBuf[0], 2 * (NVar + 1));
+    DataStream.Write(ByteBuf[0], 2 * (NVar + 1));
 
     // - Fmtlist: list of formats of the variables
     FOR i := 0 TO NVar - 1 DO
@@ -1358,20 +1447,145 @@ begin
         {Fill out value_label_table}
         WriteInts(NObs, 4);                                     // n
         WriteInts(CurRec, 4);                                   // txtlen
-        StataFile.Write(ByteBuf[0], 4 * NObs);                  // off[]
-        StataFile.Write(ValBuf[0], 4 * NObs);                   // val[]
-        StataFile.Write(CharBuf[0], CurRec);                    // txt[]
+        DataStream.Write(ByteBuf[0], 4 * NObs);                  // off[]
+        DataStream.Write(ValBuf[0], 4 * NObs);                   // val[]
+        DataStream.Write(CharBuf[0], CurRec);                    // txt[]
       END;  //write value labels in stata 6 version
     END;  //for i
 
     Result := true;
   finally
     Debugger.DecIndent;
-    if Assigned(StataFile) then FreeAndNil(StataFile);
+    if Assigned(DataStream) then FreeAndNil(DataStream);
     if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
     if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
   end;
 end;
+
+function TEpiImportExport.ExportDBase(Const aFilename: String; Const DataFile: TEpiDataFile): Boolean;
+var
+  i, dbRecLength, NObs,
+  CurRec, CurField: integer;
+  eYear, eMonth, eDay: Word;
+  ByteBuf: Array of byte;
+  TmpStr: String;
+begin
+  Debugger.IncIndent;
+  Debugger.Add(ClassName, 'ExportDBase', 2, 'Filename = ' + aFilename);
+  Result := false;
+
+  // Sanity checks:
+  if Trim(aFilename) = '' then Exit;
+
+  if not Assigned(DataFile) then Exit;
+  FByteOrder := boLittleEndian;
+
+  with DataFile do
+  try
+    UpdateProgress(0, Lang(0, 'Writing header information'));
+
+    DataStream := TFileStream.Create(aFileName, fmCreate);
+
+    {Calculate recordlength as it is in dBase format}
+    dbRecLength := 0;
+    FOR i := 0 TO DataFields.Count - 1 DO
+    BEGIN
+      WITH DataFields[i] DO
+      BEGIN
+        if FieldType in DateFieldTypes then
+          INC(dbRecLength, 8)
+        ELSE
+          INC(dbRecLength, FieldLength);
+      END;  //with
+    END;  //for eN
+
+    DecodeDate(Date, eYear, eMonth, eDay);
+    IF eYear>100 THEN eYear:=eYear MOD 100;
+
+    // ********************************
+    //           DBASE HEADER
+    // ********************************
+    WriteInts(3, 1);                                 //header offset 0 - dBase III identifier
+    WriteInts(eYear, 1);                             //header offset 1 - year of last update
+    WriteInts(eMonth, 1);                            //header offset 2 - month of last update
+    WriteInts(eDay, 1);                              //header offset 3 - date of last update
+    WriteInts(NumRecords, 4);                        //header offset 4 - Number of records
+    WriteInts(32 + (DataFields.Count * 32) + 1, 2);  //header offset 8 - Header size in bytes
+    WriteInts(dbRecLength + 1, 2);                   //header offset 10 - Record size in bytes
+
+    SetLength(ByteBuf, 20);
+    FillChar(ByteBuf[0], 20, 0);
+    DataStream.Write(ByteBuf[0], 20);                //header offset 12 - 20 x unused bytes
+
+    {Write field descriptions}
+    SetLength(ByteBuf, 14);
+    FillChar(ByteBuf[0], 14, 0);
+    ByteBuf[5] := 1;
+    FOR i := 0 TO DataFields.Count - 1 DO
+    WITH DataFields[i] DO
+    BEGIN
+      // TODO -o Torsten : Check for too long field names.
+      WriteString(FieldName, 11);                                  // Field name   (Bytes 0  - 10)
+      CASE FieldType of                                             // Field type   (Byte  11)
+        ftInteger, ftIDNUM, ftFloat:         WriteString('N', 1, False);
+        ftSoundex,
+        ftAlfa,ftUpperAlfa,ftCrypt:          WriteString('C', 1, False);
+        ftDate,ftToday,ftYMDDate,ftYMDToday,
+        ftEuroDate,ftEuroToday:              WriteString('D', 1, False);
+        ftBoolean:                           WriteString('L', 1, False);
+      ELSE
+        WriteString('X', 1, False);
+      END;
+      WriteInts(0, 4);                                             // Data address (Bytes 12 - 15)  - not used.
+      IF (FieldType in DateFieldTypes) THEN                        // Field type   (Byte  16)
+        WriteInts(8, 1)                                            // -- all dates are length 8 in dBase
+      ELSE
+        WriteInts(FieldLength, 1);
+      WriteInts(NumDecimals, 1);                                   // Decimal cnt. (Byte 17)
+      DataStream.Write(ByteBuf[0], 14);                            // Reserveds... (Bytes 17 - 31, Byte 23 must be == 1)   
+    END;  //for
+    WriteInts($0D, 1);   //write Header Terminator
+
+    {write records}
+    NObs := NumRecords;
+    TRY
+      FOR CurRec := 1 TO NObs DO
+      BEGIN
+        UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
+        Read(CurRec);
+
+        IF RecordState = rsDeleted THEN
+          WriteInts($2A, 1)
+        ELSE
+          WriteInts($20, 1);
+
+        FOR CurField := 0 TO DataFields.Count - 1 DO
+        WITH DataFields[CurField] DO
+        BEGIN
+          TmpStr := AsData;
+          CASE FieldType of
+            ftAlfa, ftUpperAlfa, ftCrypt,
+            ftBoolean, ftSoundex,
+            ftInteger, ftIDNUM, ftFloat:
+              WriteString(Trim(TmpStr), FieldLength, False);
+            ftDate, ftToday, ftEuroDate,
+            ftEuroToday,ftYMDDate,ftYMDToday:
+              WriteString(FormatDateTime('yyyymmdd', EpiDateToDateTime(TmpStr, FieldType, FieldLength)), 8, False);
+          END;   //Case
+        END;  //with CurField
+      END;  //for CurRec
+    EXCEPT
+      // TODO -o Torsten : Errormessage;
+      ErrorText := Lang(0, '');
+      ErrorCode := EPI_EXPORT_FAILED;
+      Exit;
+    END;  //try..except
+    Result := True;
+  finally
+    Debugger.DecIndent;
+    if Assigned(DataStream) then FreeAndNil(DataStream);
+  end;
+END;   //procedure ExportToDBASEIII
 
 function TEpiImportExport.ExportTXT(const aFilename: String;
   const DataFile: TEpiDataFile): Boolean;
