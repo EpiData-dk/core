@@ -44,7 +44,7 @@ type
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
 
-{$IFNDEF LINUX}
+{$IFNDEF FPC}
 type
   DWORDLONG = Int64;
 
@@ -76,7 +76,7 @@ uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
   UDateUtils, Math;
 
-{$IFNDEF LINUX}
+{$IFNDEF FPC}
 procedure GlobalMemoryStatusEx; external kernel32 name 'GlobalMemoryStatusEx';
 {$ENDIf}
   
@@ -196,9 +196,11 @@ end;
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var
   {$IFNDEF LINUX}
+  {$IFNDEF FPC}
   Ms: TMemoryStatus;
   MsEx: TMemoryStatusEx;
   Ovi: TOSVersionInfo;
+  {$ENDIF FPC}
   {$ELSE LINUX}
   PInfo: PSysInfo;
   Info: TSysInfo;
@@ -227,6 +229,7 @@ begin
   CSI.MemSize := (Info.totalram * Info.mem_unit);
   CSI.MemUsage := Floor(100 * (Info.totalram - (Info.freeram)) / Info.totalram);
   {$ELSE}
+  {$IFNDEF FPC}
   GetBuildInfo(CSI.PrgVersion);
   Ovi.dwOSVersionInfoSize := SizeOf(TOSVersionInfo);
   GetVersionEx(Ovi);
@@ -247,6 +250,7 @@ begin
     CSI.MemSize := MsEx.ullTotalPhys;
     CSI.MemUsage := MsEx.dwMemoryLoad;
   end;
+  {$ENDIF}
   {$ENDIF}
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!
