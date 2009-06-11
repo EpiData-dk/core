@@ -13,7 +13,7 @@ type
 
   // Export record:
   // - FileVersion:     Used in Stata and DBase file to name specific version of file.
-  // - Start/EndRecord: Interger to name starting and ending record to export. Use
+  // - Start/EndRecord: Interger to name starting and ending record to export.
   //                    To include all use 1 as starting record and -1 as ending record.
   //                    Out of bounds is checked. Negative interval is ignored (=> no data exported)
   TEpiExportSettings = record
@@ -209,14 +209,6 @@ procedure TEpiImportExport.WriteDouble(Val: Double);
 var
   FltByte: Array[0..7] of Byte absolute Val;
 begin
-{  if MisVal[1] = '.' then
-    case MisVal[2] of
-      'a': FltByte[5] := 1;
-      'b': FltByte[5] := 2;
-      'c': FltByte[5] := 3;
-    else
-      FltByte[5] := 0;
-    end;      }
   WriteBuf(FltByte, 8);
 end;
 
@@ -240,7 +232,7 @@ end;
 
 destructor TEpiImportExport.Destroy;
 begin
-
+  if Assigned(DataStream) then FreeAndNil(DataStream);
 end;
 
 function TEpiImportExport.ImportStata(const aFilename: String;
@@ -1349,7 +1341,7 @@ begin
                 end;
                 if TmpStr[1] = '.' then
                 begin
-                  TmpInt := J - MissingBaseNum + 1;
+                  TmpInt := I - MissingBaseNum + 1;
                   case TmpStr[2] of
                     'a': Inc(TmpInt);
                     'b': Inc(TmpInt, 2);
@@ -1486,7 +1478,7 @@ begin
 
     DataStream := TFileStream.Create(aFileName, fmCreate);
 
-    {Calculate recordlength as it is in dBase format}
+    {Calculate recordlength as it is in dBase format}
     dbRecLength := 0;
     FOR i := 0 TO DataFields.Count - 1 DO
     BEGIN

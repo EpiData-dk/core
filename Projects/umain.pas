@@ -201,9 +201,14 @@ begin
   if (not pgBar.Visible) then pgBar.Visible := true;
   pgBar.Position := Percent;
   result := prNormal;
-  pgLabel.Caption := Msg;
+
   // Refreshing the whole form in Lazarus causes a significant slowdown.
   // In D7 refreshing the Progressbar cause graphical fuck-ups in the progressbar.
+  if Msg <> pgLabel.Caption then
+  begin
+    pgLabel.Caption := Msg;
+    pgLabel.Refresh;
+  end;
   {$IFDEF FPC}
   pgBar.Refresh;
   {$ELSE}
