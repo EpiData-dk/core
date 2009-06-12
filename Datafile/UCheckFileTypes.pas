@@ -1,5 +1,7 @@
 unit UCheckFileTypes;
 
+{$mode objfpc}{$H+}
+
 interface
 
 type

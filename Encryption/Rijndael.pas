@@ -6,6 +6,8 @@
 {******************************************************************************}
 unit Rijndael;
 
+{$mode DELPHI}{$H+}
+
 interface
 {$I DCPcrypt.Inc}
 uses

@@ -1,5 +1,7 @@
 unit UUtilTypes;
 
+{$mode objfpc}{$H+}
+
 interface
 
 type

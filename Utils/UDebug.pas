@@ -1,8 +1,6 @@
 unit UDebug;
 
-{$IFDEF FPC}
-  {$mode objfpc}{$H+}
-{$ENDIF}
+{$mode objfpc}{$H+}
 
 interface
 

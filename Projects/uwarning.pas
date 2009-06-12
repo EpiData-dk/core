@@ -1,14 +1,11 @@
 unit UWarning;
 
-{$IFDEF FPC}
-  {$mode DELPHI}{$H+}
-{$ENDIF}
+{$mode objfpc}{$H+}
 
 interface
 
 uses
-  {$IFDEF FPC} LResources, {$ELSE} Windows, {$ENDIF}
-  Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  LResources, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls;
 
 type
@@ -30,14 +27,7 @@ var
 
 implementation
 
-{$IFNDEF FPC}
-  {$R *.dfm}
-{$ENDIF}
-
-{$IFDEF FPC}
 initialization
   {$i uwarning.lrs}
-{$ENDIF}
-
 
 end.

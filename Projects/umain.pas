@@ -1,13 +1,11 @@
 unit UMain;
 
-{$IFDEF FPC}
-  {$mode DELPHI}{$H+}
-{$ENDIF}
+{$mode objfpc}{$H+}
 
 interface
 
 uses
-  {$IFDEF FPC} LResources, {$ELSE} Windows, {$ENDIF}
+  LResources,
   Messages, SysUtils, Variants, Classes, Controls, Forms,
   Dialogs, StdCtrls, Buttons, ExtCtrls, ComCtrls, UEpiDataFile, Grids,
   UDataFileTypes, Graphics, FileCtrl;
@@ -61,6 +59,7 @@ type
     Button6: TButton;
     Button7: TButton;
     filetypeCombo: TComboBox;
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure readBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -69,7 +68,6 @@ type
     procedure FormResize(Sender: TObject);
     procedure SpeedButton2Click(Sender: TObject);
     procedure saveBtnClick(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure closeBtnClick(Sender: TObject);
     procedure cbDebugChange(Sender: TObject);
     procedure Button6Click(Sender: TObject);
@@ -95,11 +93,6 @@ uses
   Math, UValueLabels, UStringUtils, StrUtils, UPWform, UEpiUtils, UCheckFileIO,
   UEpiDataConstants, UImportExport, ucommon, UDebug;
 
-
-{$IFNDEF FPC}
-  {$R *.dfm}
-{$ENDIF}
-
 var
   Df: TEpiDataFile = nil;
 
@@ -123,7 +116,7 @@ begin
 
   pgLabel.Caption := '';
 
-  LoadDataFile(Df, edInputFile.Text, not CheckBox1.Checked, ShowProgress, GetPassword);
+  LoadDataFile(Df, edInputFile.Text, not CheckBox1.Checked, @ShowProgress, @GetPassword);
 
   Lst := TinyDocumentation(Df);
   Memo1.Lines.AddStrings(Lst);
@@ -146,6 +139,12 @@ begin
 
   FreeAndNil(ChkIO);
   FreeAndNil(Stream);
+end;
+
+procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+begin
+  if Assigned(Df) then FreeAndNil(Df);
+  TDebug.DestroyInstance;
 end;
 
 procedure TMainForm.SpeedButton1Click(Sender: TObject);
@@ -209,11 +208,7 @@ begin
     pgLabel.Caption := Msg;
     pgLabel.Refresh;
   end;
-  {$IFDEF FPC}
   pgBar.Refresh;
-  {$ELSE}
-  Self.Refresh;
-  {$ENDIF}
 end;
 
 procedure TMainForm.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: String);
@@ -254,7 +249,7 @@ end;
 procedure TMainForm.FormShow(Sender: TObject);
 begin
   Debugger.DebugLevel := cbDebug.ItemIndex;
-  Debugger.OnDebugEvent := ShowDebug;
+  Debugger.OnDebugEvent := @ShowDebug;
   Debugger.Reset;
   closeBtnClick(nil);
 
@@ -332,15 +327,9 @@ begin
   end;
 
   if filetypeCombo.ItemIndex < 3 then
-    SaveDataFile(Df, Ext, not CheckBox2.Checked, ShowProgress, GetPassword, PExpSettings)
+    SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings)
   else
     Debugger.Add('File type not yet implemented', 2);
-end;
-
-procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
-begin
-  if Assigned(Df) then FreeAndNil(Df);
-  TDebug.DestroyInstance;
 end;
 
 procedure TMainForm.closeBtnClick(Sender: TObject);
@@ -399,9 +388,7 @@ begin
   edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
 end;
 
-{$IFDEF FPC}
 initialization
   {$i umain.lrs}
-{$ENDIF}
 
 end.

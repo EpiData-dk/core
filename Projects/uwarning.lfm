@@ -13,9 +13,9 @@ object WarningForm: TWarningForm
   LCLVersion = '0.9.27'
   object Label1: TLabel
     Left = 154
-    Height = 39
+    Height = 38
     Top = 40
-    Width = 177
+    Width = 165
     Caption = 'WARNING'
     Font.Color = clRed
     Font.Height = -32
@@ -26,9 +26,9 @@ object WarningForm: TWarningForm
   end
   object Label2: TLabel
     Left = 53
-    Height = 18
+    Height = 17
     Top = 88
-    Width = 420
+    Width = 385
     Caption = 'Application for testing of EpiData Software Core module'
     Font.Color = clBlue
     Font.Height = -13
@@ -39,9 +39,9 @@ object WarningForm: TWarningForm
   end
   object Label3: TLabel
     Left = 78
-    Height = 18
+    Height = 17
     Top = 160
-    Width = 345
+    Width = 312
     Caption = 'Press OK to accept that this is only for testing'
     Font.Color = clRed
     Font.Height = -13
@@ -52,9 +52,9 @@ object WarningForm: TWarningForm
   end
   object Label4: TLabel
     Left = 48
-    Height = 18
+    Height = 17
     Top = 120
-    Width = 422
+    Width = 388
     Caption = 'Data quality problems can Occur. Use only for test of core module'
     Font.Color = clRed
     Font.Height = -13

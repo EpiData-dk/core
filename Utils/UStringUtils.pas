@@ -1,13 +1,10 @@
 unit UStringUtils;
 
-{$IFDEF FPC}
 {$mode objfpc}{$H+}
-{$ENDIF}
 
 interface
 
 uses
-  {$IFNDEF FPC} Windows, {$ENDIF}
   Classes,  SysUtils, UEpiDataConstants;
 
 type

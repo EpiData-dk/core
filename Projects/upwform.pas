@@ -1,14 +1,11 @@
 unit UPWform;
 
-{$IFDEF FPC}
-  {$mode DELPHI}{$H+}
-{$ENDIF}
+{$mode objfpc}{$H+}
 
 interface
 
 uses
-  {$IFDEF FPC} LResources, {$ELSE} Windows, {$ENDIF}
-  Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  LResources, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Buttons;
 
 type
@@ -34,10 +31,6 @@ type
   end;
 
 implementation
-
-{$IFNDEF FPC}
-  {$R *.dfm}
-{$ENDIF}
 
 procedure TformPW.FormCreate(Sender: TObject);
 begin
@@ -78,9 +71,7 @@ begin
   labelFilename.caption:=value;
 end;
 
-{$IFDEF FPC}
 initialization
   {$i upwform.lrs}
-{$ENDIF}
 
 end.

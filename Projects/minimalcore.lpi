@@ -9,7 +9,7 @@
       <Title Value="EpiData Software Core Test Project"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="0"/>
+      <ActiveEditorIndexAtStart Value="4"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -35,12 +35,12 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="132">
+    <Units Count="133">
       <Unit0>
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="minimalcore"/>
-        <CursorPos X="28" Y="18"/>
+        <CursorPos X="63" Y="32"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="172"/>
@@ -48,11 +48,11 @@
       </Unit0>
       <Unit1>
         <Filename Value="umain.pas"/>
-        <ComponentName Value="Form1"/>
+        <ComponentName Value="MainForm"/>
         <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UMain"/>
-        <CursorPos X="9" Y="5"/>
+        <CursorPos X="18" Y="9"/>
         <TopLine Value="1"/>
         <UsageCount Value="38"/>
       </Unit1>
@@ -167,13 +167,13 @@
         <UsageCount Value="8"/>
       </Unit17>
       <Unit18>
-        <Filename Value="UPWform.pas"/>
+        <Filename Value="upwform.pas"/>
         <ComponentName Value="formPW"/>
         <HasResources Value="True"/>
         <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UPWform"/>
-        <CursorPos X="29" Y="7"/>
+        <CursorPos X="67" Y="7"/>
         <TopLine Value="1"/>
         <UsageCount Value="136"/>
       </Unit18>
@@ -524,8 +524,8 @@
         <ComponentName Value="WarningForm"/>
         <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="uwarning"/>
-        <CursorPos X="2" Y="34"/>
+        <UnitName Value="UWarning"/>
+        <CursorPos X="1" Y="30"/>
         <TopLine Value="1"/>
         <UsageCount Value="41"/>
       </Unit73>
@@ -800,135 +800,204 @@
       <Unit114>
         <Filename Value="ucommon.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ucommon"/>
+        <UnitName Value="UCommon"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit114>
       <Unit115>
         <Filename Value="..\Datafile\UCheckFileCmds.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileCmds"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit115>
       <Unit116>
         <Filename Value="..\Datafile\UCheckFileIO.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileIO"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit116>
       <Unit117>
         <Filename Value="..\Datafile\UCheckFileTypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileTypes"/>
+        <CursorPos X="30" Y="6"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit117>
       <Unit118>
         <Filename Value="..\Datafile\UDataFileTypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDataFileTypes"/>
+        <CursorPos X="20" Y="3"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit118>
       <Unit119>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataFile"/>
+        <CursorPos X="20" Y="3"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit119>
       <Unit120>
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uimportexport"/>
+        <UnitName Value="UImportExport"/>
+        <CursorPos X="1" Y="4"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit120>
       <Unit121>
         <Filename Value="..\Datafile\UValueLabels.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UValueLabels"/>
+        <CursorPos X="1" Y="4"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit121>
       <Unit122>
         <Filename Value="..\Encryption\Base64.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Base64"/>
+        <CursorPos X="1" Y="9"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit122>
       <Unit123>
         <Filename Value="..\Encryption\DCPcrypt.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="DCPcrypt"/>
+        <CursorPos X="20" Y="9"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit123>
       <Unit124>
         <Filename Value="..\Encryption\Rijndael.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Rijndael"/>
+        <CursorPos X="1" Y="10"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit124>
       <Unit125>
         <Filename Value="..\Encryption\SHA1.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="SHA1"/>
+        <CursorPos X="1" Y="10"/>
+        <TopLine Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
       </Unit125>
       <Unit126>
         <Filename Value="..\Utils\UDateUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDateUtils"/>
+        <CursorPos X="20" Y="3"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="6"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
+        <Loaded Value="True"/>
       </Unit126>
       <Unit127>
         <Filename Value="..\Utils\UDebug.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDebug"/>
+        <CursorPos X="1" Y="4"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="5"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
+        <Loaded Value="True"/>
       </Unit127>
       <Unit128>
         <Filename Value="..\Utils\UEpiDataConstants.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataConstants"/>
+        <CursorPos X="46" Y="34"/>
+        <TopLine Value="24"/>
+        <EditorIndex Value="4"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
+        <Loaded Value="True"/>
       </Unit128>
       <Unit129>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiUtils"/>
+        <CursorPos X="7" Y="8"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="3"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
+        <Loaded Value="True"/>
       </Unit129>
       <Unit130>
         <Filename Value="..\Utils\UStringUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UStringUtils"/>
+        <CursorPos X="1" Y="8"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
+        <Loaded Value="True"/>
       </Unit130>
       <Unit131>
         <Filename Value="..\Utils\UUtilTypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UUtilTypes"/>
+        <CursorPos X="1" Y="4"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="1"/>
         <UsageCount Value="20"/>
-        <SyntaxHighlighter Value="Text"/>
+        <Loaded Value="True"/>
       </Unit131>
+      <Unit132>
+        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\sysutils.pp"/>
+        <UnitName Value="sysutils"/>
+        <CursorPos X="103" Y="55"/>
+        <TopLine Value="35"/>
+        <UsageCount Value="10"/>
+      </Unit132>
     </Units>
-    <JumpHistory Count="1" HistoryIndex="0">
+    <JumpHistory Count="9" HistoryIndex="8">
       <Position1>
         <Filename Value="minimalcore.lpr"/>
         <Caret Line="13" Column="56" TopLine="1"/>
       </Position1>
+      <Position2>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="18" Column="14" TopLine="1"/>
+      </Position2>
+      <Position3>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="18" Column="34" TopLine="1"/>
+      </Position3>
+      <Position4>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="18" Column="53" TopLine="1"/>
+      </Position4>
+      <Position5>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="19" Column="69" TopLine="1"/>
+      </Position5>
+      <Position6>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="20" Column="60" TopLine="1"/>
+      </Position6>
+      <Position7>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="21" Column="30" TopLine="1"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="44" Column="16" TopLine="34"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="8" Column="7" TopLine="1"/>
+      </Position9>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

@@ -1,5 +1,7 @@
 unit UValueLabels;
 
+{$mode objfpc}{$H+}
+
 interface
 
 uses

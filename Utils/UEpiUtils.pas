@@ -1,13 +1,10 @@
 unit UEpiUtils;
 
-{$IFDEF FPC}
-  {$mode objfpc}{$H+}
-{$ENDIF}
+{$mode objfpc}{$H+}
 
 interface
 
 USES
-  {$IFNDEF FPC} Windows,{$ENDIF}
   SysUtils, UEpiDataConstants, UDataFileTypes;
 
 type
