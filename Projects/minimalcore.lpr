@@ -10,14 +10,15 @@ uses
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms
-  { you can add units after this }, LResources, UValueLabels, UEpiDataFile,
-  UDataFileTypes, SHA1, DCPcrypt, Base64, UUtilTypes, UStringUtils, UEpiUtils,
-  UEpiDataConstants, UDebug, UCommon, UPWform, UImportExport,
+  { you can add units after this }, LResources,
   {$IFDEF EPIWARNING}
   UWarning,
   Controls,
   {$ENDIF EPIWARNING}
-  UMain;
+  UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO,
+  UCheckFileTypes, UDataFileTypes, UEpiDataFile, uimportexport, UValueLabels,
+  Base64, DCPcrypt, Rijndael, SHA1, UDateUtils, UDebug, UEpiDataConstants,
+  UEpiUtils, UStringUtils, UUtilTypes;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 
