@@ -962,7 +962,7 @@ function TEpiImportExport.ImportTXT(const aFilename: String;
   var DataFile: TEpiDataFile): Boolean;
 
 begin
-  Debugger.IncIndent;
+{  Debugger.IncIndent;
   Debugger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + aFilename);
   result := false;
 
@@ -978,7 +978,7 @@ begin
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
-    DataStream := TFileStream.Create(aFileName, fmOpenRead);
+    DataStream := TFileStream.Create(aFileName, fmOpenRead);   }
 
 end;
 
