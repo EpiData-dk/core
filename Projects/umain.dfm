@@ -454,12 +454,12 @@ object MainForm: TMainForm
     end
   end
   object OpenDialog1: TOpenDialog
-    Left = 320
-    Top = 56
+    Left = 352
+    Top = 32
   end
   object SaveDialog1: TSaveDialog
     FilterIndex = 0
-    Left = 704
-    Top = 64
+    Left = 744
+    Top = 32
   end
 end

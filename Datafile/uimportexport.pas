@@ -960,7 +960,25 @@ END;   //ImportDBaseFile
 
 function TEpiImportExport.ImportTXT(const aFilename: String;
   var DataFile: TEpiDataFile): Boolean;
+
 begin
+  Debugger.IncIndent;
+  Debugger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + aFilename);
+  result := false;
+
+  if Assigned(DataFile) then
+    DataFile.Reset()
+  else
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+
+  With DataFile do
+  TRY
+    FieldNaming := fnAuto;
+    OrgDataType := dftStata;
+    FileName := aFilename;
+    UpdateProgress(0, Lang(0, 'Reading header information'));
+
+    DataStream := TFileStream.Create(aFileName, fmOpenRead);
 
 end;
 

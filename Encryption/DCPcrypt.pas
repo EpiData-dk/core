@@ -6,7 +6,9 @@
 {******************************************************************************}
 unit DCPcrypt;
 
-{$mode DELPHI}{$H+}
+{$IFDEF FPC}
+  {$mode DELPHI}{$H+}
+{$ENDIF}
 
 interface
 {$I DCPcrypt.Inc}
