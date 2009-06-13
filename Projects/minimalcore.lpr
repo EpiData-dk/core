@@ -18,7 +18,7 @@ uses
   UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO,
   UCheckFileTypes, UDataFileTypes, UEpiDataFile, uimportexport, UValueLabels,
   Base64, DCPcrypt, Rijndael, SHA1, UDateUtils, UDebug, UEpiDataConstants,
-  UEpiUtils, UStringUtils, UUtilTypes;
+  UEpiUtils, UStringUtils, UUtilTypes, UQesHandler;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 
