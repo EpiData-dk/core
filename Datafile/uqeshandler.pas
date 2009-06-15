@@ -108,8 +108,8 @@ begin
     BEGIN
       UpdateProgress((LinNum * 100) div aLines.Count, Lang(20440, 'Building dataform'));
       CurLine := aLines[LinNum];
-  (*
-      IF Trim(CurLine) = '' THEN CurLine := '';
+
+(*      IF Trim(CurLine) = '' THEN CurLine := '';
       WHILE Length(L)>0 DO
       BEGIN
         //Check which code is first in the line
