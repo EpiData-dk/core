@@ -14,18 +14,18 @@ type
   TCheckParser = class(TObject)
   private
     FLines:       TStringList;
-    FCurLin:      String;
+    FCurLin:      UTF8String;
     FCurLinIndex: Integer;
     FEndOfLines:  Boolean;
     function      FGetCurLinIndex:Integer;
   public
     Constructor   Create();
     Destructor    Destroy;  override;
-    Function      GetToken(nwType: TNwType):string;
-    Function      GetUpperToken(nwType: TNwType):String;
-    Function      GetLowerToken(nwType: TNwType):string;
-    Function      GetLineAndFlush:string;
-    Function      GetWholeLine:String;
+    Function      GetToken(nwType: TNwType):UTF8String;
+    Function      GetUpperToken(nwType: TNwType):UTF8String;
+    Function      GetLowerToken(nwType: TNwType):UTF8String;
+    Function      GetLineAndFlush:UTF8String;
+    Function      GetWholeLine:UTF8String;
     Procedure     CommentCurLine;
     Procedure     LoadLines(ChkLines: TStrings);
     property      EndOfLines: Boolean read FEndOfLines write FEndOfLines;
@@ -43,8 +43,8 @@ type
     function      InternalRead(): boolean;
     function      InternalWrite(): boolean;
     function      PreParse(): boolean;
-    function      Lang(Const aCode: cardinal; const Msg: string): string;
-    function      ReportError(const ErrStr: String): boolean;
+    function      Lang(Const aCode: cardinal; const Msg: UTF8String): UTF8String;
+    function      ReportError(const ErrStr: UTF8String): boolean;
     function      RetrieveFieldBlock(CurField: TEpiField): boolean;
     function      RetrieveRange(CurField: TEpiField): boolean;
     function      RetrieveLegals(CurField: TEpiField): boolean;
@@ -57,15 +57,15 @@ type
     function      RetrieveType(CurField: TEpiField): Boolean;
     function      RetrieveKeys(CurField: TEpiField): Boolean;
     function      GetCommandList(CmdList: TChkCommands; CurField: TEpiField): Boolean;
-    function      IsPosibleLetCmd(CurCommand: string; TmpCmdPtr: PCmd): Boolean;
-    function      GetCommand(CurCommand: String; CmdList: TChkCommands; CurField: TEpiField): Boolean;
+    function      IsPosibleLetCmd(CurCommand: UTF8String; TmpCmdPtr: PCmd): Boolean;
+    function      GetCommand(CurCommand: UTF8String; CmdList: TChkCommands; CurField: TEpiField): Boolean;
     function      AddFieldComment(CurField: TEpiField): boolean;
     function      RetrieveLabelBlock(): Boolean;
     function      RetrieveLabel(): Boolean;
     function      RetrieveAssertBlock(): boolean;
     function      AddTopComment(): Boolean;
     function      RetrieveFlawBlock(): boolean;
-    procedure     AddToCheckLines(Const S: String);
+    procedure     AddToCheckLines(Const S: UTF8String);
     procedure     AddStringsToCheckLines(Const Strings: TStrings);
     function      LabelToText(aValueLabelSet: TValueLabelSet): boolean;
     function      AddCommandList(CmdList: TChkCommands): boolean;
@@ -75,8 +75,8 @@ type
   public
     Constructor Create;
     Destructor  Destroy; override;
-    function    ReadCheckFile(const aFileName: string; Df: TEpiDataFile): boolean;
-    function    WriteCheckToFile(const aFileName: string; Df: TEpiDataFile): boolean;
+    function    ReadCheckFile(const aFileName: UTF8String; Df: TEpiDataFile): boolean;
+    function    WriteCheckToFile(const aFileName: UTF8String; Df: TEpiDataFile): boolean;
     function    WriteCheckToStream(Stream: TStream; Df: TEpiDataFile): boolean;
     Property    CheckLines: TStrings read FCheckLines;
     Property    OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
@@ -112,7 +112,7 @@ begin
   FLines.AddStrings(ChkLines);
 end;
 
-Function TCheckParser.GetToken(nwType: TNwType):string;
+Function TCheckParser.GetToken(nwType: TNwType):UTF8String;
 VAR
   n: Integer;
   Stop: Boolean;
@@ -172,23 +172,23 @@ BEGIN
   ELSE Result:='';
 END;  //tparser.GetToken
 
-Function TCheckParser.GetUpperToken(nwType: TNwType):string;
+Function TCheckParser.GetUpperToken(nwType: TNwType):UTF8String;
 BEGIN
   Result:=AnsiUpperCase(GetToken(nwType));
 END;
 
-Function TCheckParser.GetLowerToken(nwType: TNwType):string;
+Function TCheckParser.GetLowerToken(nwType: TNwType):UTF8String;
 BEGIN
   Result:=AnsiLowerCase(GetToken(nwType));
 END;
 
-Function TCheckParser.GetLineAndFlush:String;
+Function TCheckParser.GetLineAndFlush:UTF8String;
 BEGIN
   Result:=FCurLin;
   FCurLin:='';
 END;   //TParser.GetLineAndFlush
 
-Function TCheckParser.GetWholeLine:String;
+Function TCheckParser.GetWholeLine:UTF8String;
 BEGIN
   Result:=FLines[FCurLinIndex];
   FCurLin:='';
@@ -208,7 +208,7 @@ END;
 
 function TCheckFileIO.InternalRead(): boolean;
 var
-  CurCommand: string;
+  CurCommand: UTF8String;
   TmpCF: TEpiCheckFile;
   Res: Boolean;
 begin
@@ -293,7 +293,7 @@ end;
 function TCheckFileIO.InternalWrite(): boolean;
 var
   LocalCheckFile: TEpiCheckFile;
-  S: String;
+  S: UTF8String;
   i, n: integer;
 BEGIN
   FCheckLines.Clear;
@@ -408,7 +408,7 @@ function TCheckFileIO.PreParse(): boolean;
 var
   TmpLines: TStringList;
   i, j: integer;
-  CurLine, fn: string;
+  CurLine, fn: UTF8String;
 begin
   result := false;
   
@@ -452,14 +452,14 @@ begin
   Result := true;
 end;
 
-function TCheckFileIO.Lang(Const aCode: Cardinal; const Msg: string): string;
+function TCheckFileIO.Lang(Const aCode: Cardinal; const Msg: UTF8String): UTF8String;
 begin
   result := Msg;
   if Assigned(FOnTranslate) then
     result := FOnTranslate(aCode, Msg);
 end;
 
-function TCheckFileIO.ReportError(const ErrStr: String): boolean;
+function TCheckFileIO.ReportError(const ErrStr: UTF8String): boolean;
 var
   n:Integer;
 begin
@@ -480,12 +480,12 @@ VAR
 {  n:Integer;
   tmpBool: boolean;
   ValueLabelType: TValueLabelSetType;
-  ValueLabelUse:  String;
+  ValueLabelUse:  UTF8String;
   ValueLabelShow: Boolean;
   tmpCommands: TChkCommands;    }
 
   LocalCheck: TEpiCheckField;
-  CurCommand: string;
+  CurCommand: UTF8String;
   Res: Boolean;
 BEGIN
   {Legal commands in fieldblocks are
@@ -573,9 +573,9 @@ END;
 
 function TCheckFileIO.RetrieveRange(CurField: TEpiField): boolean;
 VAR
-  CurCommand: string;
+  CurCommand: UTF8String;
   LocalChk: TEpiCheckField;
-  tmpS:String;
+  tmpS:UTF8String;
 BEGIN
   Result := true;
   LocalChk := CurField.CheckField;
@@ -603,7 +603,7 @@ END;  //function RetrieveRange
 
 function TCheckFileIO.RetrieveLegals(CurField: TEpiField): boolean;
 VAR
-  CurCommand: string;
+  CurCommand: UTF8String;
   LocalCheck: TEpiCheckField;
 BEGIN
   Result := true;
@@ -647,7 +647,7 @@ END;
 
 function TCheckFileIO.RetrieveMissingValues(CurField: TEpiField): boolean;
 VAR
-  s: string;
+  s: UTF8String;
   i: integer;
   LocalCheck: TEpiCheckField;
 BEGIN
@@ -671,11 +671,11 @@ END;
 
 function TCheckFileIO.RetrieveDefaultValue(CurField: TEpiField): boolean;
 VAR
-  s: string;
+  s: UTF8String;
 BEGIN
   Result := true;
 
-  //Syntax:  DEFAULTVALUE x where x is string
+  //Syntax:  DEFAULTVALUE x where x is UTF8String
   s := FParser.GetToken(nwSameLine);
   IF (length(s) > CurField.FieldLength) THEN
     result := ReportError(Lang(22852, 'Value is too wide for field'));
@@ -690,7 +690,7 @@ END;
 function TCheckFileIO.RetrieveAutosearch(CurField: TEpiField): boolean;
 VAR
   LocalCheck: TEpiCheckField;
-  CurCommand: String;
+  CurCommand: UTF8String;
 BEGIN
   result := true;
   LocalCheck := CurField.CheckField;
@@ -723,7 +723,7 @@ end;
 
 function TCheckFileIO.RetrieveAutoJump(CurField: TEpiField): boolean;
 var
-  CurCommand: String;
+  CurCommand: UTF8String;
 BEGIN
   Result := true;
   CurCommand:=FParser.GetUpperToken(nwSameLine);
@@ -740,7 +740,7 @@ END;
 
 function TCheckFileIO.RetrieveJumps(CurField: TEpiField): boolean;
 VAR
-  CurCommand, TmpS: String;
+  CurCommand, TmpS: UTF8String;
   LocalCheck: TEpiCheckField;
 BEGIN
   Result := true;
@@ -797,7 +797,7 @@ END;
 
 function TCheckFileIO.RetrieveCommentLegal(CurField: TEpiField): boolean;
 var
-  TmpStr, CurCommand: String;
+  TmpStr, CurCommand: UTF8String;
   LocalCheck: TEpiCheckField;
   LocalValueLabel: TValueLabelSet;
   ComLegDF: TEpiDataFile;
@@ -1059,7 +1059,7 @@ end;
 
 function TCheckFileIO.RetrieveType(CurField: TEpiField): Boolean;
 VAR
-  CurCommand: String;
+  CurCommand: UTF8String;
   LocalCheck: TEpiCheckField;
   i: integer;
 BEGIN
@@ -1150,7 +1150,7 @@ function TCheckFileIO.RetrieveKeys(CurField: TEpiField): Boolean;
 VAR
   Number, i: Integer;
   IsUnique, Found: Boolean;
-  CurCommand: String;
+  CurCommand: UTF8String;
   LocalCheck: TEpiCheckField;
   LocalIndex: TEpiIndexFile;
 BEGIN
@@ -1244,7 +1244,7 @@ end;
 
 function TCheckFileIO.GetCommandList(CmdList: TChkCommands; CurField: TEpiField): Boolean;
 var
-  CurCommand: String;
+  CurCommand: UTF8String;
 begin
   if not Assigned(CmdList) then exit;
   result := true; 
@@ -1255,9 +1255,9 @@ begin
   UNTIL (AnsiUpperCase(CurCommand) = 'END') OR (FParser.EndOfLines);
 end;
 
-function TCheckFileIO.IsPosibleLetCmd(CurCommand: string; TmpCmdPtr: PCmd): Boolean;
+function TCheckFileIO.IsPosibleLetCmd(CurCommand: UTF8String; TmpCmdPtr: PCmd): Boolean;
 var
-  TmpStr: String;
+  TmpStr: UTF8String;
   I, N: Integer;
 begin
   Result := true;
@@ -1301,13 +1301,13 @@ begin
   END;
 end;
 
-function TCheckFileIO.GetCommand(CurCommand: String; CmdList: TChkCommands; CurField: TEpiField): Boolean;
+function TCheckFileIO.GetCommand(CurCommand: UTF8String; CmdList: TChkCommands; CurField: TEpiField): Boolean;
 VAR
   TmpPCmd: PCmd;
   TmpCmdRec: TCmd;
   TmpField: TEpiField;
   TmpList, ValList: TStrings;
-  TmpStr: string;
+  TmpStr: UTF8String;
   Dummy: Boolean;
   N, I, J: Integer;
   TmpColor: TColor;
@@ -2245,7 +2245,7 @@ end;
 
 function TCheckFileIO.AddFieldComment(CurField: TEpiField): boolean;
 var
-  S: String;
+  S: UTF8String;
 begin
   S := FParser.GetLineAndFlush;
   CurField.CheckField.FieldComments.Append(FParser.GetWholeLine);
@@ -2254,7 +2254,7 @@ end;
 
 function TCheckFileIO.RetrieveLabelBlock(): Boolean;
 var
-  CurCommand: String;
+  CurCommand: UTF8String;
   Res: Boolean;
 BEGIN
   Result := true;
@@ -2271,7 +2271,7 @@ function TCheckFileIO.RetrieveLabel(): Boolean;
 VAR
   aValueLabelSet: TValueLabelSet;
   CurCommand,
-  TmpStr: String;
+  TmpStr: UTF8String;
 BEGIN
   Result := false;
   CurCommand := FParser.GetLowerToken(nwSameLine);
@@ -2349,7 +2349,7 @@ END;  //TCheckObj.RetrieveLabel
 function TCheckFileIO.RetrieveAssertBlock(): boolean;
 {Reads the CONSISTENCYBLOCK..END block - and ignores it...}
 var
-  CurCommand: String;
+  CurCommand: UTF8String;
 BEGIN
   Result := true;
   REPEAT
@@ -2361,7 +2361,7 @@ END;
 
 function TCheckFileIO.AddTopComment(): boolean;
 VAR
-  s: String;
+  s: UTF8String;
 BEGIN
   s := FParser.GetWholeLine;
   IF Assigned(FDf.CheckFile.TopComments) THEN
@@ -2372,7 +2372,7 @@ END;  //Procedure AddTopComment
 
 function TCheckFileIO.RetrieveFlawBlock(): Boolean;
 var
-  CurCommand: String;
+  CurCommand: UTF8String;
 BEGIN
   Result := False;
   FParser.GetLineAndFlush;
@@ -2392,9 +2392,9 @@ BEGIN
   END;
 END;  //procedure RetrieveFlawBlock
 
-procedure TCheckFileIO.AddToCheckLines(Const S: String);
+procedure TCheckFileIO.AddToCheckLines(Const S: UTF8String);
 var
-  T: string;
+  T: UTF8String;
 begin
   T := DupeString(' ', FIndentLvl * 2);
   FCheckLines.Append(T + S);
@@ -2402,7 +2402,7 @@ end;
 
 procedure TCheckFileIO.AddStringsToCheckLines(Const Strings: TStrings);
 var
-  T: String;
+  T: UTF8String;
   I: Integer;
 begin
   T := DupeString(' ', FIndentLvl * 2);
@@ -2412,7 +2412,7 @@ end;
 
 function TCheckFileIO.LabelToText(aValueLabelSet: TValueLabelSet): boolean;
 var
-  s: string;
+  s: UTF8String;
   i: integer;
   
 BEGIN
@@ -2456,7 +2456,7 @@ end;
 function TCheckFileIO.AddCommandList(CmdList: TChkCommands): Boolean;
 VAR
   i, j, n: integer;
-  s: string;
+  s: UTF8String;
   LocalVltType: TValueLabelSetType;
   Cmd: PCmd;
 BEGIN
@@ -2722,7 +2722,7 @@ END;  //Procedure AddCommandList
 
 Procedure TCheckFileIO.FieldBlockToStrings(aField: TEpiField);
 VAR
-  S: String;
+  S: UTF8String;
   TmpList: TStrings;
   LocalVltType: TValueLabelSetType;
   I: Integer;
@@ -2947,7 +2947,7 @@ begin
   inherited;
 end;
 
-function TCheckFileIO.ReadCheckFile(const aFileName: string;
+function TCheckFileIO.ReadCheckFile(const aFileName: UTF8String;
   Df: TEpiDataFile): boolean;
 begin
   Debugger.IncIndent;
@@ -2981,7 +2981,7 @@ begin
   end;
 end;
 
-function TCheckFileIO.WriteCheckToFile(const aFileName: string;
+function TCheckFileIO.WriteCheckToFile(const aFileName: UTF8String;
   Df: TEpiDataFile): boolean;
 var
   FStream: TFileStream;

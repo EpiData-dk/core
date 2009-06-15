@@ -40,10 +40,10 @@ type
   protected
     fID: longint;
     fInitialized: boolean;
-    fAlgorithm: string;
+    fAlgorithm: UTF8String;
     fBlockSize: longint;
     fMaxKeySize: longint;
-    fNullStr: string;
+    fNullStr: UTF8String;
     fNullInt: longint;
   public
     property ID: longint
@@ -51,7 +51,7 @@ type
     property Initialized: boolean
       read fInitialized;
     procedure Init(var Key; Size: longint; IV: pointer); virtual; abstract;
-    procedure InitStr(const Key: string);
+    procedure InitStr(const Key: UTF8String);
     procedure Burn; virtual; abstract;
     procedure Reset; virtual; abstract;
     procedure EncryptECB(const InBlock; var OutBlock); virtual; abstract;
@@ -63,7 +63,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
   published
-    property Algorithm: string
+    property Algorithm: UTF8String
       read fAlgorithm write fNullStr;
     property BlockSize: longint
       read fBlockSize write fNullInt;
@@ -80,9 +80,9 @@ type
   protected
     fID: longint;
     fInitialized: boolean;
-    fAlgorithm: string;
+    fAlgorithm: UTF8String;
     fHashSize: longint;
-    fNullStr: string;
+    fNullStr: UTF8String;
     procedure SetHashSize(Value: longint); virtual;
   public
     property ID: longint
@@ -92,12 +92,12 @@ type
     procedure Init; virtual; abstract;
     procedure Burn; virtual; abstract;
     procedure Update(const Buffer; Size: longint); virtual; abstract;
-    procedure UpdateStr(const Buffer: string);
+    procedure UpdateStr(const Buffer: UTF8String);
     procedure Final(var Digest); virtual; abstract;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
   published
-    property Algorithm: string
+    property Algorithm: UTF8String
       read fAlgorithm write fNullStr;
     property HashSize: longint
       read fHashSize write SetHashSize;
@@ -146,7 +146,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TDCP_blockcipher.InitStr(const Key: string);
+procedure TDCP_blockcipher.InitStr(const Key: UTF8String);
 var
   Hash: TDCP_defaulthash;
   KeyHash: pointer;
@@ -184,7 +184,7 @@ procedure TDCP_hash.SetHashSize(Value: longint);
 begin
 end;
 
-procedure TDCP_hash.UpdateStr(const Buffer: string);
+procedure TDCP_hash.UpdateStr(const Buffer: UTF8String);
 begin
   Update(Buffer[1],Length(Buffer));
 end;

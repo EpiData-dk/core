@@ -23,11 +23,11 @@ type
     { Private declarations }
     FDoublePW:boolean;
     procedure SetDoublePW(value:boolean);
-    procedure SetFilename(value:string);
+    procedure SetFilename(value:UTF8String);
   public
     { Public declarations }
     property DoublePW:boolean read FDoublePW write SetDoublePW;
-    property Filename:string write SetFilename;
+    property Filename:UTF8String write SetFilename;
   end;
 
 implementation
@@ -66,7 +66,7 @@ begin
     end;
 end;
 
-procedure TformPW.SetFilename(value:string);
+procedure TformPW.SetFilename(value:UTF8String);
 begin
   labelFilename.caption:=value;
 end;

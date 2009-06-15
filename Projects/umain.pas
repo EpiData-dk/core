@@ -76,9 +76,9 @@ type
   private
     { Private declarations }
     procedure LoadData(ShowAsLabels: boolean);
-    function  ShowProgress(Sender: TObject; Percent: Cardinal; Msg: String): TProgressResult;
-    procedure GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: String);
-    procedure ShowDebug(Sender: TObject; Msg: String);
+    function  ShowProgress(Sender: TObject; Percent: Cardinal; Msg: UTF8String): TProgressResult;
+    procedure GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: UTF8String);
+    procedure ShowDebug(Sender: TObject; Msg: UTF8String);
     procedure SetButtons(DatafileIsOpen: Boolean);
   public
     { Public declarations }
@@ -195,7 +195,7 @@ begin
   end;
 end;
 
-function TMainForm.ShowProgress(Sender: TObject; Percent: Cardinal; Msg: String): TProgressResult;
+function TMainForm.ShowProgress(Sender: TObject; Percent: Cardinal; Msg: UTF8String): TProgressResult;
 begin
   if (not pgBar.Visible) then pgBar.Visible := true;
   pgBar.Position := Percent;
@@ -211,7 +211,7 @@ begin
   pgBar.Refresh;
 end;
 
-procedure TMainForm.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: String);
+procedure TMainForm.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: UTF8String);
 var
   FormPW: TFormPW;
 begin
@@ -229,7 +229,7 @@ begin
   end;
 end;
 
-procedure TMainForm.ShowDebug(Sender: TObject; Msg: String);
+procedure TMainForm.ShowDebug(Sender: TObject; Msg: UTF8String);
 begin
   Memo3.Lines.Add(Msg);
 end;
@@ -293,7 +293,7 @@ end;
 procedure TMainForm.saveBtnClick(Sender: TObject);
 var
   PExpSettings: PEpiExportSettings;
-  Ext: String;
+  Ext: UTF8String;
 begin
   if Trim(edOutputFile.Text) = '' then exit;
 
@@ -369,7 +369,7 @@ begin
 end;
 
 procedure TMainForm.filetypeComboChange(Sender: TObject);
-var ext : string;
+var ext : UTF8String;
 begin
   stataCombo.Hide;
   CheckBox2.Checked := false;

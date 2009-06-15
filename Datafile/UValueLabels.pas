@@ -22,9 +22,9 @@ type
     procedure   Clear();
     procedure   Clone(var dest: TValueLabelSets);
     procedure   Assign(Const Src: TValueLabelSets);
-    function    ValueLabelSetByName(Const aName: string): TValueLabelSet;
+    function    ValueLabelSetByName(Const aName: UTF8String): TValueLabelSet;
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
-    procedure   DeleteValueLabelSet(Const Name: string);
+    procedure   DeleteValueLabelSet(Const Name: UTF8String);
     property    Count:integer read GetCount;
     property    Items[index: integer]: TValueLabelSet read GetItem; default;
   end;
@@ -34,29 +34,29 @@ type
   TValueLabelSet = class(TObject)
   private
     FData:     TStringList;
-    FName:     String;
+    FName:     UTF8String;
     FLabelType: TValueLabelSetType;
-    function   GetValue(const aLabel: string): string;
-    procedure  SetValue(const aLabel: string; const aValue: string);
-    function   GetLabel(const aValue: string): string;
-    procedure  SetLabel(const aValue: string; const aLabel: string);
+    function   GetValue(const aLabel: UTF8String): UTF8String;
+    procedure  SetValue(const aLabel: UTF8String; const aValue: UTF8String);
+    function   GetLabel(const aValue: UTF8String): UTF8String;
+    procedure  SetLabel(const aValue: UTF8String; const aLabel: UTF8String);
     function   GetCount:integer;
-    function   GetValues(index:integer):string;
-    procedure  SetValues(index:integer;value:string);
-    function   GetLabels(index:integer):string;
-    procedure  SetLabels(index:integer; alabel:string);
+    function   GetValues(index:integer):UTF8String;
+    procedure  SetValues(index:integer;value:UTF8String);
+    function   GetLabels(index:integer):UTF8String;
+    procedure  SetLabels(index:integer; alabel:UTF8String);
   public
     constructor Create;
     destructor  Destroy; override;
-    procedure   AddValueLabelPair(const aValue, aLabel: string);
+    procedure   AddValueLabelPair(const aValue, aLabel: UTF8String);
     procedure   Clone(var Dest: TValueLabelSet);
     procedure   Clear();
-    property    Name: string read FName write FName;
-    property    Value[const aLabel: string]: string read GetValue write SetValue;
-    property    ValueLabel[const aValue: string]: string read GetLabel write SetLabel;
+    property    Name: UTF8String read FName write FName;
+    property    Value[const aLabel: UTF8String]: UTF8String read GetValue write SetValue;
+    property    ValueLabel[const aValue: UTF8String]: UTF8String read GetLabel write SetLabel;
     property    Count: Integer read GetCount;
-    property    Values[index:integer]:string read GetValues write SetValues;
-    property    Labels[index:integer]:string read GetLabels write SetLabels;
+    property    Values[index:integer]:UTF8String read GetValues write SetValues;
+    property    Labels[index:integer]:UTF8String read GetLabels write SetLabels;
     property    LabelType: TValueLabelSetType read FLabelType write FLabelType;
   end;
 
@@ -72,7 +72,7 @@ begin
   FList.AddObject(trim(aValueLabelSet.Name), aValueLabelSet);
 end;
 
-procedure TValueLabelSets.DeleteValueLabelSet(Const Name: string);
+procedure TValueLabelSets.DeleteValueLabelSet(Const Name: UTF8String);
 var
   idx: integer;
 begin
@@ -120,7 +120,7 @@ begin
 end;
 
 function TValueLabelSets.ValueLabelSetByName(
-  Const aName: string): TValueLabelSet;
+  Const aName: UTF8String): TValueLabelSet;
 var
   idx: integer;
 begin
@@ -160,7 +160,7 @@ end;
 
 { TValueLabelSet }
 
-procedure TValueLabelSet.AddValueLabelPair(const aValue, aLabel: string);
+procedure TValueLabelSet.AddValueLabelPair(const aValue, aLabel: UTF8String);
 var
   idx: integer;
 begin
@@ -208,7 +208,7 @@ begin
   inherited;
 end;
 
-function TValueLabelSet.GetLabel(const aValue: string): string;
+function TValueLabelSet.GetLabel(const aValue: UTF8String): UTF8String;
 var
   idx: integer;
 begin
@@ -217,7 +217,7 @@ begin
     result := TString(FData.Objects[idx]).Str;
 end;
 
-function TValueLabelSet.GetValue(const aLabel: string): string;
+function TValueLabelSet.GetValue(const aLabel: UTF8String): UTF8String;
 var
   i: integer;
 begin
@@ -230,7 +230,7 @@ begin
     end;
 end;
 
-procedure TValueLabelSet.SetLabel(const aValue, aLabel: string);
+procedure TValueLabelSet.SetLabel(const aValue, aLabel: UTF8String);
 var
   idx: integer;
 begin
@@ -239,7 +239,7 @@ begin
   TString(FData.Objects[idx]).Str := aLabel;
 end;
 
-procedure TValueLabelSet.SetValue(const aLabel, aValue: string);
+procedure TValueLabelSet.SetValue(const aLabel, aValue: UTF8String);
 var
   i: integer;
 begin
@@ -256,22 +256,22 @@ begin
   result := FData.Count;
 end;
 
-function TValueLabelSet.GetValues(index:integer):string;
+function TValueLabelSet.GetValues(index:integer):UTF8String;
 begin
   if index < FData.Count then result:=FData[index] else result:='';
 end;
 
-procedure TValueLabelSet.SetValues(index:integer; value:string);
+procedure TValueLabelSet.SetValues(index:integer; value:UTF8String);
 begin
   if index<FData.Count then FData[index]:=value;
 end;
 
-function TValueLabelSet.GetLabels(index:integer):string;
+function TValueLabelSet.GetLabels(index:integer):UTF8String;
 begin
   if index<FData.Count then result:=TString(FData.Objects[index]).Str else result:='';
 end;
 
-procedure TValueLabelSet.SetLabels(index:integer; alabel:string);
+procedure TValueLabelSet.SetLabels(index:integer; alabel:UTF8String);
 begin
   if index<FData.Count then TString(FData.Objects[index]).Str := aLabel;
 end;

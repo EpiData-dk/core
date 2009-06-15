@@ -26,26 +26,26 @@ type
     FConfirm:          boolean;
     FBeforeCmds:       TChkCommands;
     FAfterCmds:        TChkCommands;
-    FMin:              String;
-    FMax:              String;
-    FLegal:            String;
+    FMin:              UTF8String;
+    FMax:              UTF8String;
+    FLegal:            UTF8String;
     FMissingValues:    TMissingValues;
-    FDefaultValue:     String;
-    FAutoFields:       String;
+    FDefaultValue:     UTF8String;
+    FAutoFields:       UTF8String;
     FAutoList:         Boolean;
-    FJumps:            String;
+    FJumps:            UTF8String;
     FJumpResetChar:    Char;
     FValueLabel:       TValueLabelSet;
     FShowValueLabel:   Boolean;
     FValueLabelIsFieldRef: Boolean;
     FTypeType:         TTypeType;
-    FTypeText:         String;
+    FTypeText:         UTF8String;
     FTypeColor:        TColor;
     FHasGlobalDefaultVal: Boolean;
     FFieldScope:       TFieldScope;
     FFieldComments:    TStrings;
-    function           GetMissingValue(Index: integer): string;
-    procedure          SetMissingValue(Index: integer; Value: String);
+    function           GetMissingValue(Index: integer): UTF8String;
+    procedure          SetMissingValue(Index: integer; Value: UTF8String);
     function           GetAutoSearch(): Boolean;
     procedure          InternalReset();
   protected
@@ -65,19 +65,19 @@ type
     property    Confirm:      boolean read FConfirm write FConfirm;
     property    BeforeCmds:   TChkCommands read FBeforeCmds;
     property    AfterCmds:    TChkCommands read FAfterCmds;
-    property    Min:          string read FMin write FMin;
-    property    Max:          string read FMax write FMax;
-    property    Legal:        string read FLegal write FLegal;
-    property    MissingValues[Index: integer]: String read GetMissingValue write SetMissingValue;
-    property    DefaultValue: string read FDefaultValue write FDefaultValue;
-    property    AutoFields:   string read FAutoFields write FAutoFields;
+    property    Min:          UTF8String read FMin write FMin;
+    property    Max:          UTF8String read FMax write FMax;
+    property    Legal:        UTF8String read FLegal write FLegal;
+    property    MissingValues[Index: integer]: UTF8String read GetMissingValue write SetMissingValue;
+    property    DefaultValue: UTF8String read FDefaultValue write FDefaultValue;
+    property    AutoFields:   UTF8String read FAutoFields write FAutoFields;
     property    AutoSearch:   Boolean read GetAutoSearch;
     property    AutoList:     boolean read FAutoList write FAutoList;
-    property    Jumps:        string read FJumps write FJumps;
+    property    Jumps:        UTF8String read FJumps write FJumps;
     property    JumpResetChar: Char read FJumpResetChar write FJumpResetChar;
     property    ShowValueLabel: Boolean read FShowValueLabel write FShowValueLabel;
     property    TypeType:     TTypeType read FTypeType write FTypeType;
-    property    TypeText:     string read FTypeText write FTypeText;
+    property    TypeText:     UTF8String read FTypeText write FTypeText;
     property    TypeColour:   TColor read FTypeColor write FTypeColor;
     property    HasGlobalDefaultVal: Boolean read FHasGlobalDefaultVal write FHasGlobalDefaultVal;
     property    FieldScope:   TFieldScope read FFieldScope write FFieldScope;
@@ -99,7 +99,7 @@ type
     FConfirm:              Boolean;           //If true then a field is not left automatically when filled out
     FAutoSave:             Boolean;           //IF true then user is not asked "Save record to disk?"
     FGlobalMissingValues:  TMissingValues;
-    FGlobalDefaultValue:   String;            //Global default value defined by DEFAULTVALUE ALL X or DEFAULTVALUE field-field, field X
+    FGlobalDefaultValue:   UTF8String;            //Global default value defined by DEFAULTVALUE ALL X or DEFAULTVALUE field-field, field X
     FGlobalTypeCom:        Boolean;           //Show that all fields has a Type Comment Fieldname
     FGlobalTypeComColor:   TColor;
     FMissingAction:        TMissingAction;
@@ -109,10 +109,10 @@ type
     FBackupList:           TStringList;       //List of files to backup
     FErrorInFile:          Boolean;
     FHasCheckFile:         Boolean;
-    FFileName:             String;
+    FFileName:             UTF8String;
     FDefines:              TEpiFields;       
-    function    GetGlobMissing(Index: Integer): String;
-    procedure   SetGlobMissing(Index: Integer; const Value: String);
+    function    GetGlobMissing(Index: Integer): UTF8String;
+    procedure   SetGlobMissing(Index: Integer; const Value: UTF8String);
     procedure   InternalReset();
   protected
 
@@ -120,8 +120,8 @@ type
     Constructor Create();
     Destructor  Destroy(); override;
     procedure   Reset();
-    function    DefineExists(Const aName: string): Boolean;
-    function    DefineByName(Const aName: string): TEpiField;
+    function    DefineExists(Const aName: UTF8String): Boolean;
+    function    DefineByName(Const aName: UTF8String): TEpiField;
     procedure   AddDefine(Field: TEpiField);
     Property    ValueLabels:      TValueLabelSets read FValueLabelSets;
     Property    BeforeFileCmds:   TChkCommands read FBeforeFileCmds write FBeforeFileCmds;        //Commands to be run when file is opened
@@ -131,8 +131,8 @@ type
     Property    RecodeCmds:       TChkCommands read FRecodeCmds write FRecodeCmds;                //Commands to be run during Recode Datafile
     Property    Confirm:          Boolean read FConfirm write FConfirm;
     Property    Autosave:         Boolean read FAutoSave write FAutoSave;
-    Property    GlobalDefaultVal: String read FGlobalDefaultValue write FGlobalDefaultValue;
-    Property    GlobalMissingVal[Index: Integer]: String read GetGlobMissing write SetGlobMissing;
+    Property    GlobalDefaultVal: UTF8String read FGlobalDefaultValue write FGlobalDefaultValue;
+    Property    GlobalMissingVal[Index: Integer]: UTF8String read GetGlobMissing write SetGlobMissing;
     Property    MissingAction:    TMissingAction read FMissingAction write FMissingAction;
     Property    GlobalTypeCom:    Boolean read FGlobalTypeCom write FGlobalTypeCom;
     Property    GlobalTypeComColor: TColor read FGlobalTypeComColor write FGlobalTypeComColor;
@@ -144,18 +144,18 @@ type
     Property    AssertList:       TStringList read FAssertList;
     Property    ErrorInFile:      Boolean read FErrorInFile write FErrorInFile;
     Property    HasCheckFile:     Boolean read FHasCheckFile write FHasCheckFile;
-    Property    FileName:         String read FFileName write FFileName;
+    Property    FileName:         UTF8String read FFileName write FFileName;
   end;
 
   { TEpiField }
 
   TEpiField = class(TObject)
   private
-    FData:         WideString;
+    FData:         UTF8String;
     FOwner:        TEpiFields;
     FFieldNo:      Cardinal;        
     FDisplayChar:  Char;
-    FFieldName:    String;
+    FFieldName:    UTF8String;
     FQuestX:       Cardinal;
     FQuestY:       Cardinal;
     FQuestColor:   Cardinal;
@@ -166,15 +166,15 @@ type
     FFieldLength:  Cardinal;
     FCryptLength:  Cardinal;
     FNumDecimals:  Cardinal;
-    FQuestion:     string;
-    FVariableLabel: string;
+    FQuestion:     UTF8String;
+    FVariableLabel: UTF8String;
     FCheckField:   TEpiCheckField;
-    function       GetFieldTypeName(): WideString;
-    function       GetData(): WideString;
-    procedure      SetData(aData: WideString);
+    function       GetFieldTypeName(): UTF8String;
+    function       GetData(): UTF8String;
+    procedure      SetData(aData: UTF8String);
     function       GetValueLabel(): TValueLabelSet;
-    function       GetValue: WideString;
-    procedure      SetValue(const Value: WideString);
+    function       GetValue: UTF8String;
+    procedure      SetValue(const Value: UTF8String);
   protected
 
   public
@@ -182,11 +182,11 @@ type
     destructor  Destroy(); override;
     procedure   Reset();
     procedure   Clone(Var Dest: TEpiField);
-    property    AsData:      WideString read GetData write SetData;
-    property    AsValue:     WideString read GetValue write SetValue;
+    property    AsData:      UTF8String read GetData write SetData;
+    property    AsValue:     UTF8String read GetValue write SetValue;
     property    FieldNo:     Cardinal read FFieldNo write FFieldNo;
     property    DisplayChar: Char read FDisplayChar write FDisplayChar;
-    property    FieldName:   String read FFieldName write FFieldName;
+    property    FieldName:   UTF8String read FFieldName write FFieldName;
     property    QuestX:      Cardinal read FQuestX write FQuestX;
     property    QuestY:      Cardinal read FQuestY write FQuestY;
     property    QuestColor:  Cardinal read FQuestColor write FQuestColor;
@@ -194,12 +194,12 @@ type
     property    FieldY:      Cardinal read FFieldY write FFieldY;
     property    FieldColor:  Cardinal read FFieldColor write FFieldColor;
     property    FieldType:   TFieldType read FFieldType write FFieldType;
-    property    FieldTypeName: WideString read GetFieldTypeName;
+    property    FieldTypeName: UTF8String read GetFieldTypeName;
     property    FieldLength: Cardinal read FFieldLength write FFieldLength;
     property    CryptLength: Cardinal read FCryptLength write FCryptLength;
     property    NumDecimals: Cardinal read FNumDecimals write FNumDecimals;
-    property    Question:    string read FQuestion write FQuestion;
-    property    VariableLabel: string read FVariableLabel write FVariableLabel;
+    property    Question:    UTF8String read FQuestion write FQuestion;
+    property    VariableLabel: UTF8String read FVariableLabel write FVariableLabel;
     property    CheckField:  TEpiCheckField read FCheckField write FCheckField;
     property    ValueLabelSet: TValueLabelSet read GetValueLabel;
     property    Owner:       TEpiFields read FOwner write FOwner;
@@ -219,8 +219,8 @@ type
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
     destructor  Destroy(); override;
-    function    FieldByName(Const aFieldName: string): TEpiField;
-    function    FieldExists(Const aFieldName: string): boolean;
+    function    FieldByName(Const aFieldName: UTF8String): TEpiField;
+    function    FieldExists(Const aFieldName: UTF8String): boolean;
     Property    Field[Index: integer]: TEpiField read GetField; default;
     Property    Count: Cardinal read GetCount;
     Property    Owned: Boolean read FOwned write FOwned;
@@ -230,7 +230,7 @@ type
 
   TEpiIndexFile = class(TObject)
   private
-    FFileName:       string;
+    FFileName:       UTF8String;
     FIndexFields:    TList;
     FIndexUnique:    Byte;
     function         GetIndexField(Index: integer): TEpiField;
@@ -241,13 +241,13 @@ type
     procedure        InternalReset();
   protected
   public
-    constructor Create(Const aFileName: string);
+    constructor Create(Const aFileName: UTF8String);
     destructor  Destroy; override;
     procedure   Reset();
-    function    IndexNoByName(Const Name: string): Integer;
-    function    IndexFieldByName(Const Name: string): TEpiField;
-    function    IndexExists(Const Name: string): Boolean;
-    property    FileName: string read FFileName write FFileName;
+    function    IndexNoByName(Const Name: UTF8String): Integer;
+    function    IndexFieldByName(Const Name: UTF8String): TEpiField;
+    function    IndexExists(Const Name: UTF8String): Boolean;
+    property    FileName: UTF8String read FFileName write FFileName;
     property    IndexFields[Index: integer]: TEpiField read GetIndexField write SetIndexField;
     property    IndexUnique[Index: integer]: Boolean read GetIndexUnique write SetIndexUnique;
     property    IndexCount: Integer read GetIndexCount;
@@ -257,13 +257,13 @@ type
 
   TEpiDataFile = class(TObject)
   private
-    FFileName:     string;                  // .REC filename.
+    FFileName:     UTF8String;                  // .REC filename.
     FDataStream:   TStream;                 // Stream (memory or file) reading .REC file.
-    FFileLabel:    string;                  // Label of datafile.
+    FFileLabel:    UTF8String;                  // Label of datafile.
     FFields:       TEpiFields;              // Container for all associated fields. (Owned)
     FDataFields:   TEpiFields;              // - holds list of data fields only. (Not Owned)
     FQuestFields:  TEpiFields;              // - holds list of question fields only. (Not Owned. FieldType = ftQuestion)
-    FPassword:     string;                  // Datafile password (~kq:....:kq~)
+    FPassword:     UTF8String;                  // Datafile password (~kq:....:kq~)
     FFieldNaming:  TFieldNaming;            // Datafile fieldnaming convention - Firstword or Auto.
     FCheckFile:    TEpiCheckFile;           // Container for global/datafile level information of the .CHK file.
     FOptions:      TEpiDataFileOptions;     // Options set by Open(...)
@@ -271,7 +271,7 @@ type
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
     FOnPassword:   TRequestPasswordEvent;   // Callback event for password request
     FIndexFile:    TEpiIndexFile;
-    FErrorText:    String;
+    FErrorText:    UTF8String;
     FErrorCode:    Cardinal;
     FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
@@ -288,9 +288,9 @@ type
   protected
     function   InternalOpen(): boolean;
     function   InternalSave(): boolean;
-    function   Lang(LangCode: Integer; Const LangText: string): String;
-    function   RequestPassword(Const EncryptedString: string): boolean;
-    Function   UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
+    function   Lang(LangCode: Integer; Const LangText: UTF8String): UTF8String;
+    function   RequestPassword(Const EncryptedString: UTF8String): boolean;
+    Function   UpdateProgress(Percent: Integer; Msg: UTF8String): TProgressResult;
     Function   TextPos(var F: Textfile): Cardinal;
     function   GetNumFields(): Cardinal;
     function   GetNumDataFields(): Cardinal;
@@ -299,14 +299,14 @@ type
   public
     constructor Create(aOptions: TEpiDataFileOptions = []); virtual;
     destructor Destroy(); override;
-    function   Open(Const aFileName: string): boolean;
-    function   Save(Const aFileName: string): boolean;
-    procedure  SaveMemToFile(Const aFileName: string);
+    function   Open(Const aFileName: UTF8String): boolean;
+    function   Save(Const aFileName: UTF8String): boolean;
+    procedure  SaveMemToFile(Const aFileName: UTF8String);
     procedure  Read(RecNumber: Integer);
     procedure  Write(RecNumber: Integer = NewRecord);
     procedure  Reset();
-    function   FieldByName(Const aFieldName: string): TEpiField;
-    function   FieldExists(Const aFieldName: string): boolean;
+    function   FieldByName(Const aFieldName: UTF8String): TEpiField;
+    function   FieldExists(Const aFieldName: UTF8String): boolean;
     procedure  AddField(AField: TEpiField);
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
@@ -317,9 +317,9 @@ type
     property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property   Options:     TEpiDataFileOptions read FOptions;
-    property   FileName:    String read FFileName write FFileName;
-    property   FileLabel:   string read FFileLabel write FFileLabel;
-    property   Password:    string read FPassword write FPassword;
+    property   FileName:    UTF8String read FFileName write FFileName;
+    property   FileLabel:   UTF8String read FFileLabel write FFileLabel;
+    property   Password:    UTF8String read FPassword write FPassword;
     property   FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
     Property   NumFields:   Cardinal read GetNumFields;
     Property   NumDataFields: Cardinal read GetNumDataFields;
@@ -328,7 +328,7 @@ type
     Property   CheckFile:   TEpiCheckFile read FCheckFile;
     Property   IndexFile:   TEpiIndexFile read GetIndexFile;
     Property   ErrorCode:   Cardinal read FErrorCode write FErrorCode;
-    Property   ErrorText:   String read FErrorText write FErrorText;
+    Property   ErrorText:   UTF8String read FErrorText write FErrorText;
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
     Property   RecordState: TRecordState read FRecordState write FRecordState;
     Property   OrgDataType: TDataFileType read FOrgDataType write FOrgDataType;
@@ -343,12 +343,12 @@ uses
 
 { TEpiCheckField }
 
-function TEpiCheckField.GetMissingValue(Index: integer): string;
+function TEpiCheckField.GetMissingValue(Index: integer): UTF8String;
 begin
   Result := FMissingValues[Index];
 end;
 
-procedure TEpiCheckField.SetMissingValue(Index: integer; Value: String);
+procedure TEpiCheckField.SetMissingValue(Index: integer; Value: UTF8String);
 begin
   FMissingValues[Index] := Value; 
 end;
@@ -487,12 +487,12 @@ begin
   FDefines.Owned  := True;
 end;
 
-function TEpiCheckFile.DefineExists(const aName: string): Boolean;
+function TEpiCheckFile.DefineExists(const aName: UTF8String): Boolean;
 begin
   result := FDefines.FieldExists(aName);
 end;
 
-function TEpiCheckFile.DefineByName(const aName: string): TEpiField;
+function TEpiCheckFile.DefineByName(const aName: UTF8String): TEpiField;
 begin
   result := FDefines.FieldByName(aName);
 end;
@@ -502,13 +502,13 @@ begin
   FDefines.Add(Field);
 end;
 
-function TEpiCheckFile.GetGlobMissing(Index: Integer): String;
+function TEpiCheckFile.GetGlobMissing(Index: Integer): UTF8String;
 begin
   Result := FGlobalMissingValues[Index];
 end;
 
 procedure TEpiCheckFile.SetGlobMissing(Index: Integer;
-  const Value: String);
+  const Value: UTF8String);
 begin
   FGlobalMissingValues[Index] := Value;
 end;
@@ -542,7 +542,7 @@ end;
 
 { TEpiField }
 
-function TEpiField.GetFieldTypeName(): WideString;
+function TEpiField.GetFieldTypeName(): UTF8String;
 begin
   if Assigned(Owner) then
     result := FieldTypeToFieldTypeName(FieldType, FOwner.FDataFile.OnTranslate)
@@ -550,12 +550,12 @@ begin
     result := FieldTypeToFieldTypeName(FieldType, nil);
 end;
 
-function TEpiField.GetData(): WideString;
+function TEpiField.GetData(): UTF8String;
 begin
   Result := Trim(FData);
 end;
 
-procedure TEpiField.SetData(aData: WideString);
+procedure TEpiField.SetData(aData: UTF8String);
 begin
   FData := aData;
 end;
@@ -584,7 +584,7 @@ begin
   end;
 end;
 
-function TEpiField.GetValue: WideString;
+function TEpiField.GetValue: UTF8String;
 begin
   if Assigned(ValueLabelSet) then
     Result := ValueLabelSet.ValueLabel[AsData]
@@ -592,7 +592,7 @@ begin
     Result := AsData;
 end;
 
-procedure TEpiField.SetValue(const Value: WideString);
+procedure TEpiField.SetValue(const Value: UTF8String);
 begin
   if Assigned(ValueLabelSet) then
     ValueLabelSet.AddValueLabelPair(AsData, Value);
@@ -722,7 +722,7 @@ begin
   inherited;
 end;
 
-function TEpiFields.FieldByName(Const aFieldName: string): TEpiField;
+function TEpiFields.FieldByName(Const aFieldName: UTF8String): TEpiField;
 var
   i: integer;
 begin
@@ -735,7 +735,7 @@ begin
     end
 end;
 
-function TEpiFields.FieldExists(Const aFieldName: string): boolean;
+function TEpiFields.FieldExists(Const aFieldName: UTF8String): boolean;
 begin
   result := Assigned(FieldByName(aFieldName)); 
 end;
@@ -808,7 +808,7 @@ var
   ChkIO: TCheckFileIO;
 
   // Reading the textfile:
-  TxtLine: string;
+  TxtLine: UTF8String;
   HeaderLineCount: Integer;
   ValCode: Integer;
   CurrentLine: Integer;
@@ -819,7 +819,7 @@ var
   TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
   TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
   TmpName: string[10];
-  TmpQuestion, TmpStr: string;
+  TmpQuestion, TmpStr: UTF8String;
 begin
   Debugger.IncIndent;
   Debugger.Add(ClassName, 'InternalOpen', 3);
@@ -952,7 +952,7 @@ begin
         // This is not a data field, but a question field.
         if FieldLength = 0 then FieldType := ftQuestion;
 
-        // Unsupported field are automatically converted to string (ftAlfa) fields.
+        // Unsupported field are automatically converted to UTF8String (ftAlfa) fields.
         if (not (FieldType in SupportedFieldTypes)) or
            ((fieldtype in DateFieldTypes) and (FieldLength < 10)) then
           FieldType := ftAlfa;
@@ -1027,7 +1027,7 @@ function TEpiDataFile.InternalSave(): boolean;
 var
   Crypt: boolean;
   i: integer;
-  S, EncData: string;
+  S, EncData: UTF8String;
   Stream: TFileStream;
   ChkIO: TCheckFileIO;
 begin
@@ -1167,16 +1167,16 @@ begin
   end;
 end;
 
-function TEpiDataFile.Lang(LangCode: Integer; Const LangText: string): String;
+function TEpiDataFile.Lang(LangCode: Integer; Const LangText: UTF8String): UTF8String;
 begin
   Result := LangText;
   IF Assigned(FOnTranslate) THEN
     Result := FOnTranslate(langcode, Result)
 end;
 
-function TEpiDataFile.RequestPassword(Const EncryptedString: string): boolean;
+function TEpiDataFile.RequestPassword(Const EncryptedString: UTF8String): boolean;
 var
-  S: String;
+  S: UTF8String;
 begin
   result := false;
   if Trim(Password) = '' then
@@ -1196,7 +1196,7 @@ begin
   end;
 end;
 
-function TEpiDataFile.UpdateProgress(Percent: Integer; Msg: String): TProgressResult;
+function TEpiDataFile.UpdateProgress(Percent: Integer; Msg: UTF8String): TProgressResult;
 begin
   Result := prNormal;
   if Assigned(FOnProgress) then
@@ -1300,10 +1300,10 @@ begin
   end;
 end;
 
-function TEpiDataFile.Open(const aFileName: string): boolean;
+function TEpiDataFile.Open(const aFileName: UTF8String): boolean;
 var
   TmpStream: TFileStream;
-  Ext: string;
+  Ext: UTF8String;
 begin
   Debugger.IncIndent;
   Debugger.Add(Classname, 'Open', 2, 'Filename = "' + aFilename + '"');
@@ -1329,9 +1329,9 @@ begin
   end;
 end;
 
-function TEpiDataFile.Save(Const aFileName: string): boolean;
+function TEpiDataFile.Save(Const aFileName: UTF8String): boolean;
 var
-  Ext: string;
+  Ext: UTF8String;
 begin
   Debugger.IncIndent;
   Debugger.Add(Classname, 'Save', 2, 'Filename = "' + aFilename + '"');
@@ -1347,7 +1347,7 @@ begin
   end;
 end;
 
-procedure TEpiDataFile.SaveMemToFile(Const aFileName: string);
+procedure TEpiDataFile.SaveMemToFile(Const aFileName: UTF8String);
 begin
   if Trim(aFileName) = '' then exit;
 
@@ -1360,7 +1360,7 @@ procedure TEpiDataFile.Read(RecNumber: Integer);
 var
   BufPos, I: integer;
   CharBuf: Array of char;
-  StrBuf, EncData: string;
+  StrBuf, EncData: UTF8String;
   ok: boolean;
 begin
   // Sanity checks:
@@ -1392,7 +1392,7 @@ begin
   else if StrBuf = '^' then
     RecordState := rsVerified;
 
-  StrBuf := StringReplace(String(CharBuf), EOLChars, '', [rfReplaceAll]);
+  StrBuf := StringReplace(UTF8String(CharBuf), EOLChars, '', [rfReplaceAll]);
 
   BufPos := 1;
   for i := 0 TO Fields.Count - 1 DO
@@ -1416,7 +1416,7 @@ end;
 procedure TEpiDataFile.Write(RecNumber: Integer = NewRecord);
 var
   Z, I: Integer;
-  S, EncData: String;
+  S, EncData: UTF8String;
 
 begin
   // Sanity checks:
@@ -1476,12 +1476,12 @@ begin
   FCrypter      := TDCP_rijndael.Create(nil);
 end;
 
-function TEpiDataFile.FieldByName(Const aFieldName: string): TEpiField;
+function TEpiDataFile.FieldByName(Const aFieldName: UTF8String): TEpiField;
 begin
   result := Fields.FieldByName(aFieldName);
 end;
 
-function TEpiDataFile.FieldExists(Const aFieldName: string): boolean;
+function TEpiDataFile.FieldExists(Const aFieldName: UTF8String): boolean;
 begin
   result := Fields.FieldExists(aFieldName);
 end;
@@ -1554,7 +1554,7 @@ begin
   FIndexUnique := 0;
 end;
 
-constructor TEpiIndexFile.Create(const aFileName: string);
+constructor TEpiIndexFile.Create(const aFileName: UTF8String);
 begin
   Reset();
 end;
@@ -1575,7 +1575,7 @@ begin
     FIndexFields.Add(nil);
 end;
 
-function TEpiIndexFile.IndexNoByName(Const Name: string): Integer;
+function TEpiIndexFile.IndexNoByName(Const Name: UTF8String): Integer;
 var
   i: integer;
 begin
@@ -1586,7 +1586,7 @@ begin
       result := i;
 end;
 
-function TEpiIndexFile.IndexFieldByName(Const Name: string): TEpiField;
+function TEpiIndexFile.IndexFieldByName(Const Name: UTF8String): TEpiField;
 var
   i: integer;
 begin
@@ -1597,7 +1597,7 @@ begin
       result := IndexFields[i];
 end;
 
-function TEpiIndexFile.IndexExists(Const Name: string): Boolean;
+function TEpiIndexFile.IndexExists(Const Name: UTF8String): Boolean;
 begin
   result := Assigned(IndexFieldByName(Name));
 end;

@@ -37,7 +37,7 @@ CONST
   MaxRecLineLength=78;    
   MaxFieldNameLen: Byte = 10;
   MaxIndices=3;
-  ChkColorNames:   ARRAY[0..17] OF string =
+  ChkColorNames:   ARRAY[0..17] OF UTF8String =
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',
                      'GREEN', 'LIME', 'LTGRAY', 'MAROON', 'NAVY', 'OLIVE',
                      'PURPLE', 'RED', 'SILVER', 'TEAL', 'WHITE', 'YELLOW');

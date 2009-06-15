@@ -17,7 +17,7 @@ type
 
   PCoreSystemInformation = ^TCoreSystemInformation;
   TCoreSystemInformation = record
-    OSName:         String;     // Windows, Linux (or Mac?).
+    OSName:         UTF8String;     // Windows, Linux (or Mac?).
     OSMajorVersion: Word;       //
     OSMinorVersion: Word;       //
     MemSize:        Int64;      // Physical memory in Bytes.
@@ -28,12 +28,12 @@ type
   end;
 
   // Checks validity of variable name.  
-  function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
+  function CheckVariableName(Const VarName: UTF8String; ValidChars: TCharSet): boolean;
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
-  function IsCompliant(Value: String; Ft: TFieldType):Boolean;
+  function IsCompliant(Value: UTF8String; Ft: TFieldType):Boolean;
 
-  function IsInteger(Value: String): boolean;
-  function IsFloat(Value: String): boolean;
+  function IsInteger(Value: UTF8String): boolean;
+  function IsFloat(Value: UTF8String): boolean;
 
   function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
   function PostInc(Var I: Integer; Const N: Integer = 1): Integer;
@@ -77,7 +77,7 @@ uses
 procedure GlobalMemoryStatusEx; external kernel32 name 'GlobalMemoryStatusEx';
 {$ENDIf}
   
-function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
+function CheckVariableName(Const VarName: UTF8String; ValidChars: TCharSet): boolean;
 var
   i: integer;
 begin
@@ -122,7 +122,7 @@ begin
   end;
 end;
 
-function IsCompliant(Value: String; Ft: TFieldType):Boolean;
+function IsCompliant(Value: UTF8String; Ft: TFieldType):Boolean;
 begin
   Result := True;
   case Ft of
@@ -137,7 +137,7 @@ begin
   end;
 end;
 
-function IsInteger(Value: String): boolean;
+function IsInteger(Value: UTF8String): boolean;
 var
   V, Code: integer;
 begin
@@ -145,7 +145,7 @@ begin
   Result := (Code = 0);
 end;
 
-function IsFloat(Value: String): boolean;
+function IsFloat(Value: UTF8String): boolean;
 var
   Code: integer;
   V: Extended;
@@ -211,7 +211,7 @@ begin
 //  GetResourceManager(ResMan);
 //  FindResource(ResMan.HINSTANCEFunc(), RT_VERSION, RT_VERSION);
   FpUname(UName);
-  CSI.OSName := String(UName.Sysname);
+  CSI.OSName := UTF8String(UName.Sysname);
   CSI.OSMajorVersion := 0;
   CSI.OSMinorVersion := 0;
 

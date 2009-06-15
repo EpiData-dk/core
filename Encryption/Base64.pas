@@ -12,9 +12,9 @@ interface
 uses
   Sysutils;
 
-{ Base64 encode and decode a string }
-function B64Encode(const S: string): string;
-function B64Decode(const S: string): string;
+{ Base64 encode and decode a UTF8String }
+function B64Encode(const S: UTF8String): UTF8String;
+function B64Decode(const S: UTF8String): UTF8String;
 
 {******************************************************************************}
 {******************************************************************************}
@@ -23,7 +23,7 @@ implementation
 const
   B64Table= 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
-function B64Encode(const S: string): string;
+function B64Encode(const S: UTF8String): UTF8String;
 var
   i: integer;
   InBuf: array[0..2] of byte;
@@ -51,14 +51,14 @@ begin
     Result[Length(Result)]:= '=';
 end;
 
-function B64Decode(const S: string): string;
+function B64Decode(const S: UTF8String): UTF8String;
 var
   i: integer;
   InBuf: array[0..3] of byte;
   OutBuf: array[0..2] of byte;
 begin
   if (Length(S) mod 4)<> 0 then
-    raise Exception.Create('Base64: Incorrect string format');
+    raise Exception.Create('Base64: Incorrect UTF8String format');
   SetLength(Result,((Length(S) div 4)-1)*3);
   for i:= 1 to ((Length(S) div 4)-1) do
   begin

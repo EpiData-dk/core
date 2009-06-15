@@ -9,7 +9,7 @@ type
   TBeepTypes = (btWarning,btConfirmation,btStandard);
   TFieldScope = (scNone, scLocal, scGlobal, scCumulative);
   TLeaveStyles = (lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
-  TMissingValues = Array[0..2] of string;   //Holds missing values for fields
+  TMissingValues = Array[0..2] of UTF8String;   //Holds missing values for fields
 
   TChkCmdType = (cmdIF, cmdHelp, cmdHide, cmdUnhide, cmdClear, cmdGoTo, cmdComLegal,
                  cmdExit, cmdDefine, cmdAutosave, cmdConfirm, cmdTypeString,
@@ -24,7 +24,7 @@ type
   TMissingAction = (maIgnoreMissing, maRejectMissing);
 
 CONST
-  ChkCmdNames: Array[TChkCmdType] of String =
+  ChkCmdNames: Array[TChkCmdType] of UTF8String =
                 ('IF', 'HELP', 'HIDE', 'UNHIDE', 'CLEAR', 'GOTO', 'COMMENT',
                 'EXIT', 'DEFINE', 'AUTOSAVE', 'CONFIRM', 'TYPE',
                 'RELATE', 'IGNOREMISSING', 'WRITENOTE', 'BACKUP', 'BEEP',

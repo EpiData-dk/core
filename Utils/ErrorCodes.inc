@@ -1,4 +1,5 @@
 CONST
+  // Datafile:
   EPI_OK=0;
   EPI_NO_MEMORY=1;
   EPI_OPEN_FILE_ERROR=2;
@@ -30,6 +31,10 @@ CONST
 
   EPI_USERCANCELLED=99;
 
+  // QES Related:
+  EPI_QES_NO_FIELDS = 50;
+
+  // Import, Export
   EPI_FAILED=100;
   EPI_IMPORT_FAILED=101;
   EPI_EXPORT_FAILED=102;

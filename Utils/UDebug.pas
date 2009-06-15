@@ -9,7 +9,7 @@ uses
 
 type
 
-  TDebugEvent = procedure(Sender: TObject; Msg: String) of object;
+  TDebugEvent = procedure(Sender: TObject; Msg: UTF8String) of object;
 
   TDebug = class(TObject)
   private
@@ -18,7 +18,7 @@ type
     FIndentLevel: integer;  
     FDebugEvent: TDebugEvent;
     procedure SetDebugLevel(Level: word);
-    function AddIndent(): string;
+    function AddIndent(): UTF8String;
   protected
     constructor Create(DebugLevel: word);
     destructor Destroy(); override;
@@ -28,10 +28,10 @@ type
     procedure IncIndent();
     procedure DecIndent();
     procedure Reset();
-    procedure Add(Msg: String; DebugLevel: Word); overload;
-    procedure Add(aClassName, aMethodName: string; DebugLevel: Word; Msg: String = ''); overload;
-    procedure AddError(aClassName, aMethodName: string; Msg: String; LangCode: Integer = 0);
-    procedure SaveToFile(FileName: string);
+    procedure Add(Msg: UTF8String; DebugLevel: Word); overload;
+    procedure Add(aClassName, aMethodName: UTF8String; DebugLevel: Word; Msg: UTF8String = ''); overload;
+    procedure AddError(aClassName, aMethodName: UTF8String; Msg: UTF8String; LangCode: Integer = 0);
+    procedure SaveToFile(FileName: UTF8String);
     procedure SaveToStream(Stream: TStream);
     property  DebugLevel: word read fDebugLevel write SetDebugLevel;
     property  OnDebugEvent: TDebugEvent read FDebugEvent write FDebugEvent;
@@ -66,7 +66,7 @@ begin
   if Assigned(fData) then FreeAndNil(fData);
 end;
 
-function TDebug.AddIndent(): string;
+function TDebug.AddIndent(): UTF8String;
 begin
   Result := DupeString('  ', fIndentLevel);
 end;
@@ -83,7 +83,7 @@ end;
 
 procedure TDebug.Reset();
 var
-  S: String;
+  S: UTF8String;
   Csi: TCoreSystemInformation;
 begin
   FData.Clear;
@@ -99,7 +99,7 @@ begin
   Add('======================================================', 1);
 end;
 
-procedure TDebug.Add(Msg: String; DebugLevel: Word);
+procedure TDebug.Add(Msg: UTF8String; DebugLevel: Word);
 begin
   if DebugLevel <= fDebugLevel then
   begin
@@ -109,9 +109,9 @@ begin
   end;
 end;
 
-procedure TDebug.Add(aClassName, aMethodName: string; DebugLevel: Word; Msg: String = '');
+procedure TDebug.Add(aClassName, aMethodName: UTF8String; DebugLevel: Word; Msg: UTF8String = '');
 var
-  s: string;
+  s: UTF8String;
 begin
   S := aClassName + '.' + aMethodName;
   if Trim(Msg) <> '' then
@@ -119,7 +119,7 @@ begin
   Add(S, DebugLevel);
 end;
 
-procedure TDebug.AddError(aClassName, aMethodName: string; Msg: String; LangCode: Integer = 0);
+procedure TDebug.AddError(aClassName, aMethodName: UTF8String; Msg: UTF8String; LangCode: Integer = 0);
 begin
   Add(aClassName, aMethodName, 1, 'Error (' + IntToStr(LangCode) + '): ' + Msg);
 end;
@@ -147,7 +147,7 @@ begin
   if Assigned(ODebug) then FreeAndNil(ODebug);
 end;
 
-procedure TDebug.SaveToFile(FileName: string);
+procedure TDebug.SaveToFile(FileName: UTF8String);
 var
   FS: TFileStream;
 begin

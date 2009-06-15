@@ -3,104 +3,182 @@ unit UCheckFileCmds;
 interface
 
 uses
+  // TODO -o Torsten : Get rid of Dialogs and Graphic. It compiles most of the LCL into the binary.
   Classes, UValueLabels, UDataFileTypes, UCheckFileTypes, Dialogs, Graphics;
 
 type
 
   TChkCommands = class;
 
-{  TChkCommand = Class(TObject)
+  { TChkCommand }
+
+  TChkCommand = Class(TObject)
   protected
-    function    CommandType(): TChkCmdType; virtual; abstract;
+    function    GetCommandType(): TChkCmdType; virtual; abstract;
   public
     Constructor Create(); virtual;
     Destructor  Destroy(); override;
-    property    CmdType: TChkCmdType read CommandType;
+    property    CmdType: TChkCmdType read GetCommandType;
   end;
+
+  { TChkIf }
 
   TChkIf = class(TChkCommand)
   private
     FIfCmds:    TChkCommands;
     FElseCmds:  TChkCommands;
-    FExpr:      String;
-    FShowExpr:  String;
+    FExpr:      UTF8String;
+    FShowExpr:  UTF8String;
   protected
-    function    CommandType(): TChkCmdType; override;
+    function    GetCommandType(): TChkCmdType; override;
   public
     constructor Create; override;
     destructor  Destroy; override;
-    Property    Expr: string read FExpr write FExpr;
-    Property    ShowExpr:  string read FShowExpr write FShowExpr;
+    Property    Expr: UTF8String read FExpr write FExpr;
+    Property    ShowExpr:  UTF8String read FShowExpr write FShowExpr;
     Property    IfCmds: TChkCommands read FIfCmds write FIfCmds;
     Property    ElseCmds: TChkCommands read FElseCmds write FElseCmds;
-  end;         }
+  end;
+
+  { TChkHelp }
+
+  TChkHelp = class(TChkCommand)
+  private
+    FString:    UTF8String;
+    FKeys:      UTF8String;
+    FMsgType:   TMsgDlgType;
+  protected
+    function    GetCommandType(): TChkCmdType; override;
+  public
+    constructor Create; override;
+    destructor  Destroy; override;
+    Property    aString: UTF8String read FString write FString;
+    Property    Keys: UTF8String read FKeys write FKeys;
+    Property    MsgType: TMsgDlgType read FMsgType write FMsgType;
+  end;
+
+  { TChkFieldReferer }
+
+  TChkFieldReferer = class(TChkCommand)
+  private
+    FCmdType:    TChkCmdType;
+    FVarNumber:  Integer;
+    FVarName:    UTF8String;
+  protected
+    function    GetCommandType(): TChkCmdType; override;
+  public
+    constructor Create(aCmdType: TChkCmdType);
+    destructor  Destroy; override;
+    Property    VarNumber: Integer read FVarNumber write FVarNumber;
+    Property    VarName: UTF8String read FVarName write FVarName;
+  end;
+
+  { TChkComLegal }
+
+  TChkComLegal = class(TChkCommand)
+  private
+    FVarNumber:       Integer;
+    FValueLabelName:  UTF8String;
+    FValueLabel:      TValueLabelSet;
+    FValueLabelIsFieldRef: Boolean;
+    FValueLabelUse:   UTF8String;
+    FShowList:        Boolean;
+  protected
+    function    GetCommandType(): TChkCmdType; override;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    Property   VarNumber: Integer read FVarNumber write FVarNumber;
+    Property   ValueLabelName: UTF8String read FValueLabelName write FValueLabelName;
+    Property   ValueLabel: TValueLabelSet read FValueLabel write FValueLabel;
+    Property   ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
+    Property   ValueLabelUse: UTF8String read FValueLabelUse write FValueLabelUse;
+    Property   ShowList: Boolean read FShowList write FShowList;
+  end;
+
+  { TChkTypeStr }
+
+  TChkTypeStr = class(TChkCommand)
+  private
+    FVarNumber: Integer;
+    FText:      UTF8String;
+    FColor:     TColor;
+  protected
+    function    GetCommandType(): TChkCmdType; override;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    Property   VarNumber: Integer read FVarNumber write FVarNumber;
+    Property   Text: UTF8String read FText write FText;
+    Property   Color: TColor read FColor write FColor;
+  end;
   
   PCmd = ^TCmd;
   TCmd = record
     Next: PCmd;
     case Command: TChkCmdType of
       cmdIF:
-         (IfExpr:          String[200];
-          IfShowExpr:      String[200];
+         (IfExpr:          string;
+          IfShowExpr:      string;
           IfCmds:          TChkCommands;
           ElseCmds:        TChkCommands);
       cmdHelp:
-         (HelpString:      String[250];
+         (HelpString:      string;
           HelpType:        TMsgDlgType;
-          HelpKeys:        String[10]);
+          HelpKeys:        string);
       cmdHide, cmdUnHide,
       cmdClear, cmdGoto:
          (HideVarNumber:   Integer;
-          HideVarName:     String[10]);
+          HideVarName:     string);
       cmdComLegal:
          (clVarNumber:     Integer;
-          ValueLabelName:  String[40];
+          ValueLabelName:  string;
           ValueLabel:      TValueLabelSet;
           ValueLabelIsFieldRef: Boolean;
-          ValueLabelUse:   string[50];
+          ValueLabelUse:   string;
           ShowList:        Boolean);
       cmdTypeString:
          (tsVarNumber:     Integer;
-          TypeText:        String[40];
+          TypeText:        string;
           Typecolor:       TColor);
       cmdRelate:
-         (RelField:        String[10];
+         (RelField:        string;
           RelFileNo:       Integer;
-          RelFileStr:      String[200];
+          RelFileStr:      string;
           One2One:         Boolean);
       cmdLet:
-         (VarName:         String[20];
+         (VarName:         string;
           VarNumber:       Integer;
           VarIsField:      Boolean;
           CodedWithLET:    Boolean;
-          LetExpr:         String[200]);
+          LetExpr:         string);
       cmdComment:
-         (Comment:         String[200]);
+         (Comment:         string);
       cmdDefine:
-         (FName:           String[20];
+         (FName:           string;
           FeltType:        TFieldType;
           FLength:         Integer;
           FNumDecimals:    Byte;
           FScope:          TFieldScope);
       cmdWriteNote:
-         (FNote:           String[200];
+         (FNote:           string;
           ShowNotes:       Boolean);
       cmdCopyToClipboard:
-         (CopyStr:         String[200]);
+         (CopyStr:         string);
       cmdBackup:
-         (DestLib:         String[200];
+         (DestLib:         string;
           zipit:           Boolean;
           encryptit:       Boolean;
-          filename:        String[200];
-          pw:              string[30];
+          filename:        string;
+          pw:              string;
           dateit:          Boolean);
       cmdBeep:
          (BeepType:        TBeepTypes);
       cmdLoad:
-         (DLLName:         String[200]);
+         (DLLName:         string);
       cmdExecute:
-         (ExecCmdLine:     String[255];
-          ExecParams:      String[255];
+         (ExecCmdLine:     string;
+          ExecParams:      string;
           ExecHide:        Boolean;
           ExecWait:        Boolean);
       cmdLeaveField:
@@ -224,23 +302,21 @@ begin
   result^.ElseCmds := NIL;
 end;
 
-(*
 { TChkCommand }
 
-constructor TChkCommand.Create;
+constructor TChkCommand.Create();
 begin
 
 end;
 
-destructor TChkCommand.Destroy;
+destructor TChkCommand.Destroy();
 begin
-
-  inherited;
+  inherited Destroy();
 end;
 
 { TChkIf }
 
-function TChkIf.CommandType: TChkCmdType;
+function TChkIf.GetCommandType(): TChkCmdType;
 begin
   Result := cmdIF;
 end;
@@ -256,5 +332,74 @@ begin
 
   inherited;
 end;
-    *)
+
+{ TChkHelp }
+
+function TChkHelp.GetCommandType(): TChkCmdType;
+begin
+  Result := cmdHelp;
+end;
+
+constructor TChkHelp.Create;
+begin
+  inherited Create;
+end;
+
+destructor TChkHelp.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TChkFieldReferer }
+
+function TChkFieldReferer.GetCommandType(): TChkCmdType;
+begin
+  Result := FCmdType;
+end;
+
+constructor TChkFieldReferer.Create(aCmdType: TChkCmdType);
+begin
+  FCmdType := aCmdType;
+  inherited Create;
+end;
+
+destructor TChkFieldReferer.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TChkComLegal }
+
+function TChkComLegal.GetCommandType(): TChkCmdType;
+begin
+  Result := cmdComLegal;
+end;
+
+constructor TChkComLegal.Create;
+begin
+  inherited Create;
+end;
+
+destructor TChkComLegal.Destroy;
+begin
+  inherited Destroy;
+end;
+
+{ TChkTypeStr }
+
+function TChkTypeStr.GetCommandType(): TChkCmdType;
+begin
+  Result := cmdTypeString;
+end;
+
+constructor TChkTypeStr.Create;
+begin
+  inherited Create;
+end;
+
+destructor TChkTypeStr.Destroy;
+begin
+  inherited Destroy;
+end;
+
 end.
