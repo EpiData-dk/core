@@ -59,30 +59,30 @@ type
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
     DataStream:   TStream;
-    function      Lang(LangCode: Integer; Const LangText: UTF8String): UTF8String;
-    Function      UpdateProgress(Percent: Integer; Msg: UTF8String): TProgressResult;
+    function      Lang(LangCode: Integer; Const LangText: string): string;
+    Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     procedure     ReadBuf(var Buf: Array of Byte; Count: Integer);
     function      ReadInts(Count: Integer): Integer;
     function      ReadSingle(): Single;
     function      ReadDouble(): Double;
-    function      StringFromBuffer(AChar: PChar; MaxLength: Integer): UTF8String;
+    function      StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
     procedure     WriteBuf(Buf: Array of Byte; Count: Integer);
     procedure     WriteInts(Const Val, Count: Integer);
     procedure     WriteSingle(Val: Single);
     procedure     WriteDouble(Val: Double);
-    procedure     WriteString(Const Str: UTF8String; Const Count: Integer; Terminate: Boolean = True);
+    procedure     WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
   public
     constructor   Create;
     destructor    Destroy; override;
-    function      ImportStata(Const aFilename: UTF8String; var DataFile: TEpiDataFile): Boolean;
-    function      ImportDBase(Const aFilename: UTF8String; var DataFile: TEpiDataFile): Boolean;
-    function      ImportTXT(Const aFilename: UTF8String; var DataFile: TEpiDataFile): Boolean;
-    function      ImportXLS(Const aFilename: UTF8String; var DataFile: TEpiDataFile): Boolean;
-    function      ExportStata(Const aFilename: UTF8String; Const DataFile: TEpiDataFile;
+    function      ImportStata(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ImportXLS(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
                               ExpSetting: PEpiExportSettings): Boolean;
-    function      ExportDBase(Const aFilename: UTF8String; Const DataFile: TEpiDataFile): Boolean;
-    function      ExportTXT(Const aFilename: UTF8String; Const DataFile: TEpiDataFile): Boolean;
-    function      ExportXLS(Const aFilename: UTF8String; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportXLS(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
@@ -95,14 +95,14 @@ uses
 
   { TEpiImportExport }
 
-function TEpiImportExport.Lang(LangCode: Integer; const LangText: UTF8String): UTF8String;
+function TEpiImportExport.Lang(LangCode: Integer; const LangText: string): string;
 begin
   Result := LangText;
   IF Assigned(FOnTranslate) THEN
     Result := FOnTranslate(langcode, Result)
 end;
 
-function TEpiImportExport.UpdateProgress(Percent: Integer; Msg: UTF8String): TProgressResult;
+function TEpiImportExport.UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
 begin
   Result := prNormal;
   if Assigned(FOnProgress) then
@@ -154,7 +154,7 @@ begin
   Result := Double(Buf);
 end;
 
-function TEpiImportExport.StringFromBuffer(AChar: PChar; MaxLength: Integer): UTF8String;
+function TEpiImportExport.StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
 var
   I: integer;
   Src: PChar;
@@ -210,7 +210,7 @@ begin
   WriteBuf(FltByte, 8);
 end;
 
-procedure TEpiImportExport.WriteString(Const Str: UTF8String; Const Count: Integer; Terminate: Boolean = True);
+procedure TEpiImportExport.WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
 var
   StrBuf: PChar;
   z: integer;
@@ -233,7 +233,7 @@ begin
   if Assigned(DataStream) then FreeAndNil(DataStream);
 end;
 
-function TEpiImportExport.ImportStata(const aFilename: UTF8String;
+function TEpiImportExport.ImportStata(const aFilename: string;
   var DataFile: TEpiDataFile): Boolean;
 var
   ByteBuf, ValBuf: Array of Byte;
@@ -243,7 +243,7 @@ var
   I, J, TmpInt: integer;
   TmpFlt: Double;
   TmpField: TEpiField;
-  StrBuf: UTF8String;
+  StrBuf: string;
   WideBuf: WideString;
   TmpValSet: TValueLabelSet;
 
@@ -254,7 +254,7 @@ var
   FloatChar, DoubleChar: Char;
   MissingBaseNum: Cardinal;
 
-  function ReadSingleMissing(var MisVal: UTF8String): Single;
+  function ReadSingleMissing(var MisVal: string): Single;
   var
     Buf: Array[0..3] of Byte absolute Result;
   begin
@@ -274,7 +274,7 @@ var
     end;
   end;
 
-  function ReadDoubleMissing(var MisVal: UTF8String): Double;
+  function ReadDoubleMissing(var MisVal: string): Double;
   var
     Buf: Array[0..7] of Byte absolute Result;
   begin
@@ -411,7 +411,7 @@ begin
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
     DataStream.Read(CharBuf[0], FileLabelLength);
-    FileLabel := UTF8String(CharBuf);
+    FileLabel := string(CharBuf);
 
     // time_stamp \0 terminated (not used in epidata)
     DataStream.Read(CharBuf[0], 18);
@@ -680,7 +680,7 @@ begin
                   Str(TmpFlt : TmpField.FieldLength : TmpField.NumDecimals, StrBuf)
               End;
           else
-            // This is a UTF8String field.
+            // This is a string field.
             SetLength(CharBuf, TmpField.FieldLength);
             DataStream.Read(CharBuf[0], TmpField.FieldLength);
             StrBuf := StringFromBuffer(PChar(@CharBuf[0]), TmpField.FieldLength);
@@ -713,7 +713,7 @@ begin
           J := ReadInts(2);  //get number of entries in label
           SetLength(CharBuf, 10);
           DataStream.Read(CharBuf[0], 10); //Load label definition
-          TmpValSet := ValueLabels.ValueLabelSetByName(UTF8String(CharBuf));
+          TmpValSet := ValueLabels.ValueLabelSetByName(string(CharBuf));
           SetLength(CharBuf, 8);
           FOR i := 0 TO J - 1 DO
           BEGIN
@@ -726,7 +726,7 @@ begin
               Debugger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), UTF8String(CharBuf));
+            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), string(CharBuf));
           END;  //for n
         END;  //if not end of DataStream
         //if stataversion 4
@@ -737,7 +737,7 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          TmpValSet := ValueLabels.ValueLabelSetByName(UTF8String(PChar(@CharBuf[0])));  // Get ValueLabelSet
+          TmpValSet := ValueLabels.ValueLabelSetByName(string(PChar(@CharBuf[0])));  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(4);                                               // Number of entries in label
@@ -778,7 +778,7 @@ begin
   end;
 end;
 
-Function TEpiImportExport.ImportDBase(Const aFilename: UTF8String; var DataFile: TEpiDataFile): Boolean;
+Function TEpiImportExport.ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
 var
   ByteBuf,
   FieldLengths: Array of Byte;
@@ -787,7 +787,7 @@ var
   RSize: LongInt;
   HSize: LongInt;
   TmpField: TEpiField;
-  TmpStr: UTF8String;
+  TmpStr: string;
   J: Integer;
   CurRec: Integer;
   TmpInt: LongInt;
@@ -956,7 +956,7 @@ BEGIN
   END;  //try..finally
 END;   //ImportDBaseFile
 
-function TEpiImportExport.ImportTXT(const aFilename: UTF8String;
+function TEpiImportExport.ImportTXT(const aFilename: string;
   var DataFile: TEpiDataFile): Boolean;
 
 begin
@@ -980,13 +980,13 @@ begin
 
 end;
 
-function TEpiImportExport.ImportXLS(const aFilename: UTF8String;
+function TEpiImportExport.ImportXLS(const aFilename: string;
   var DataFile: TEpiDataFile): Boolean;
 begin
 
 end;
 
-function TEpiImportExport.ExportStata(const aFilename: UTF8String;
+function TEpiImportExport.ExportStata(const aFilename: string;
   const DataFile: TEpiDataFile; ExpSetting: PEpiExportSettings): Boolean;
 var
   ValBuf,
@@ -996,7 +996,7 @@ var
   NVar, NObs,
   I, J, TmpInt: Integer;
   TmpFlt: Double;
-  TmpStr: UTF8String;
+  TmpStr: string;
   TmpChar: Char;
   WritenValueLabels: TStringList;
   UniqueValueLabels: TStringList;
@@ -1018,7 +1018,7 @@ Const
   FloatConst  = #254;
   DoubleConst = #255;
 
-  procedure WriteFloat(Val: Double; Const MisVal: UTF8String);
+  procedure WriteFloat(Val: Double; Const MisVal: string);
   var
     FltByte: Array[0..7] of Byte absolute Val;
   begin
@@ -1034,7 +1034,7 @@ Const
   end;
 
 
-  function UniqueValueLabelName(Str: UTF8String; Const Count: Integer): UTF8String;
+  function UniqueValueLabelName(Str: string; Const Count: Integer): string;
   var
     i, j: integer;
   begin
@@ -1164,7 +1164,7 @@ begin
           ftEuroToday, ftYMDDate, ftYMDToday:
             BEGIN
               Case FieldLength of
-                5: TmpChar    := CHR(StrBaseNum + FieldLength);    //Short dates is UTF8String
+                5: TmpChar    := CHR(StrBaseNum + FieldLength);    //Short dates is string
                 8,10: TmpChar := LongChar;                         //Med. and long dates: longint
               END;
             END;
@@ -1470,13 +1470,13 @@ begin
   end;
 end;
 
-function TEpiImportExport.ExportDBase(Const aFilename: UTF8String; Const DataFile: TEpiDataFile): Boolean;
+function TEpiImportExport.ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
 var
   i, dbRecLength, NObs,
   CurRec, CurField: integer;
   eYear, eMonth, eDay: Word;
   ByteBuf: Array of byte;
-  TmpStr: UTF8String;
+  TmpStr: string;
 begin
   Debugger.IncIndent;
   Debugger.Add(ClassName, 'ExportDBase', 2, 'Filename = ' + aFilename);
@@ -1595,13 +1595,13 @@ begin
   end;
 END;   //procedure ExportToDBASEIII
 
-function TEpiImportExport.ExportTXT(const aFilename: UTF8String;
+function TEpiImportExport.ExportTXT(const aFilename: string;
   const DataFile: TEpiDataFile): Boolean;
 begin
 
 end;
 
-function TEpiImportExport.ExportXLS(const aFilename: UTF8String;
+function TEpiImportExport.ExportXLS(const aFilename: string;
   const DataFile: TEpiDataFile): Boolean;
 begin
 

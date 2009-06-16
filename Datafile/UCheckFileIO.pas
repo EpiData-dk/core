@@ -14,18 +14,18 @@ type
   TCheckParser = class(TObject)
   private
     FLines:       TStringList;
-    FCurLin:      UTF8String;
+    FCurLin:      string;
     FCurLinIndex: Integer;
     FEndOfLines:  Boolean;
     function      FGetCurLinIndex:Integer;
   public
     Constructor   Create();
     Destructor    Destroy;  override;
-    Function      GetToken(nwType: TNwType):UTF8String;
-    Function      GetUpperToken(nwType: TNwType):UTF8String;
-    Function      GetLowerToken(nwType: TNwType):UTF8String;
-    Function      GetLineAndFlush:UTF8String;
-    Function      GetWholeLine:UTF8String;
+    Function      GetToken(nwType: TNwType):string;
+    Function      GetUpperToken(nwType: TNwType):string;
+    Function      GetLowerToken(nwType: TNwType):string;
+    Function      GetLineAndFlush:string;
+    Function      GetWholeLine:string;
     Procedure     CommentCurLine;
     Procedure     LoadLines(ChkLines: TStrings);
     property      EndOfLines: Boolean read FEndOfLines write FEndOfLines;
@@ -43,8 +43,8 @@ type
     function      InternalRead(): boolean;
     function      InternalWrite(): boolean;
     function      PreParse(): boolean;
-    function      Lang(Const aCode: cardinal; const Msg: UTF8String): UTF8String;
-    function      ReportError(const ErrStr: UTF8String): boolean;
+    function      Lang(Const aCode: cardinal; const Msg: string): string;
+    function      ReportError(const ErrStr: string): boolean;
     function      RetrieveFieldBlock(CurField: TEpiField): boolean;
     function      RetrieveRange(CurField: TEpiField): boolean;
     function      RetrieveLegals(CurField: TEpiField): boolean;
@@ -57,15 +57,15 @@ type
     function      RetrieveType(CurField: TEpiField): Boolean;
     function      RetrieveKeys(CurField: TEpiField): Boolean;
     function      GetCommandList(CmdList: TChkCommands; CurField: TEpiField): Boolean;
-    function      IsPosibleLetCmd(CurCommand: UTF8String; TmpCmdPtr: PCmd): Boolean;
-    function      GetCommand(CurCommand: UTF8String; CmdList: TChkCommands; CurField: TEpiField): Boolean;
+    function      IsPosibleLetCmd(CurCommand: string; var TmpCmd: TChkCommand): Boolean;
+    function      GetCommand(CurCommand: string; CmdList: TChkCommands; CurField: TEpiField): Boolean;
     function      AddFieldComment(CurField: TEpiField): boolean;
     function      RetrieveLabelBlock(): Boolean;
     function      RetrieveLabel(): Boolean;
     function      RetrieveAssertBlock(): boolean;
     function      AddTopComment(): Boolean;
     function      RetrieveFlawBlock(): boolean;
-    procedure     AddToCheckLines(Const S: UTF8String);
+    procedure     AddToCheckLines(Const S: string);
     procedure     AddStringsToCheckLines(Const Strings: TStrings);
     function      LabelToText(aValueLabelSet: TValueLabelSet): boolean;
     function      AddCommandList(CmdList: TChkCommands): boolean;
@@ -75,8 +75,8 @@ type
   public
     Constructor Create;
     Destructor  Destroy; override;
-    function    ReadCheckFile(const aFileName: UTF8String; Df: TEpiDataFile): boolean;
-    function    WriteCheckToFile(const aFileName: UTF8String; Df: TEpiDataFile): boolean;
+    function    ReadCheckFile(const aFileName: string; Df: TEpiDataFile): boolean;
+    function    WriteCheckToFile(const aFileName: string; Df: TEpiDataFile): boolean;
     function    WriteCheckToStream(Stream: TStream; Df: TEpiDataFile): boolean;
     Property    CheckLines: TStrings read FCheckLines;
     Property    OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
@@ -112,7 +112,7 @@ begin
   FLines.AddStrings(ChkLines);
 end;
 
-Function TCheckParser.GetToken(nwType: TNwType):UTF8String;
+Function TCheckParser.GetToken(nwType: TNwType):string;
 VAR
   n: Integer;
   Stop: Boolean;
@@ -172,23 +172,23 @@ BEGIN
   ELSE Result:='';
 END;  //tparser.GetToken
 
-Function TCheckParser.GetUpperToken(nwType: TNwType):UTF8String;
+Function TCheckParser.GetUpperToken(nwType: TNwType):string;
 BEGIN
   Result:=AnsiUpperCase(GetToken(nwType));
 END;
 
-Function TCheckParser.GetLowerToken(nwType: TNwType):UTF8String;
+Function TCheckParser.GetLowerToken(nwType: TNwType):string;
 BEGIN
   Result:=AnsiLowerCase(GetToken(nwType));
 END;
 
-Function TCheckParser.GetLineAndFlush:UTF8String;
+Function TCheckParser.GetLineAndFlush:string;
 BEGIN
   Result:=FCurLin;
   FCurLin:='';
 END;   //TParser.GetLineAndFlush
 
-Function TCheckParser.GetWholeLine:UTF8String;
+Function TCheckParser.GetWholeLine:string;
 BEGIN
   Result:=FLines[FCurLinIndex];
   FCurLin:='';
@@ -208,7 +208,7 @@ END;
 
 function TCheckFileIO.InternalRead(): boolean;
 var
-  CurCommand: UTF8String;
+  CurCommand: string;
   TmpCF: TEpiCheckFile;
   Res: Boolean;
 begin
@@ -293,7 +293,7 @@ end;
 function TCheckFileIO.InternalWrite(): boolean;
 var
   LocalCheckFile: TEpiCheckFile;
-  S: UTF8String;
+  S: string;
   i, n: integer;
 BEGIN
   FCheckLines.Clear;
@@ -408,7 +408,7 @@ function TCheckFileIO.PreParse(): boolean;
 var
   TmpLines: TStringList;
   i, j: integer;
-  CurLine, fn: UTF8String;
+  CurLine, fn: string;
 begin
   result := false;
   
@@ -452,14 +452,14 @@ begin
   Result := true;
 end;
 
-function TCheckFileIO.Lang(Const aCode: Cardinal; const Msg: UTF8String): UTF8String;
+function TCheckFileIO.Lang(Const aCode: Cardinal; const Msg: string): string;
 begin
   result := Msg;
   if Assigned(FOnTranslate) then
     result := FOnTranslate(aCode, Msg);
 end;
 
-function TCheckFileIO.ReportError(const ErrStr: UTF8String): boolean;
+function TCheckFileIO.ReportError(const ErrStr: string): boolean;
 var
   n:Integer;
 begin
@@ -480,12 +480,12 @@ VAR
 {  n:Integer;
   tmpBool: boolean;
   ValueLabelType: TValueLabelSetType;
-  ValueLabelUse:  UTF8String;
+  ValueLabelUse:  string;
   ValueLabelShow: Boolean;
   tmpCommands: TChkCommands;    }
 
   LocalCheck: TEpiCheckField;
-  CurCommand: UTF8String;
+  CurCommand: string;
   Res: Boolean;
 BEGIN
   {Legal commands in fieldblocks are
@@ -573,9 +573,9 @@ END;
 
 function TCheckFileIO.RetrieveRange(CurField: TEpiField): boolean;
 VAR
-  CurCommand: UTF8String;
+  CurCommand: string;
   LocalChk: TEpiCheckField;
-  tmpS:UTF8String;
+  tmpS:string;
 BEGIN
   Result := true;
   LocalChk := CurField.CheckField;
@@ -603,7 +603,7 @@ END;  //function RetrieveRange
 
 function TCheckFileIO.RetrieveLegals(CurField: TEpiField): boolean;
 VAR
-  CurCommand: UTF8String;
+  CurCommand: string;
   LocalCheck: TEpiCheckField;
 BEGIN
   Result := true;
@@ -647,7 +647,7 @@ END;
 
 function TCheckFileIO.RetrieveMissingValues(CurField: TEpiField): boolean;
 VAR
-  s: UTF8String;
+  s: string;
   i: integer;
   LocalCheck: TEpiCheckField;
 BEGIN
@@ -671,11 +671,11 @@ END;
 
 function TCheckFileIO.RetrieveDefaultValue(CurField: TEpiField): boolean;
 VAR
-  s: UTF8String;
+  s: string;
 BEGIN
   Result := true;
 
-  //Syntax:  DEFAULTVALUE x where x is UTF8String
+  //Syntax:  DEFAULTVALUE x where x is string
   s := FParser.GetToken(nwSameLine);
   IF (length(s) > CurField.FieldLength) THEN
     result := ReportError(Lang(22852, 'Value is too wide for field'));
@@ -690,7 +690,7 @@ END;
 function TCheckFileIO.RetrieveAutosearch(CurField: TEpiField): boolean;
 VAR
   LocalCheck: TEpiCheckField;
-  CurCommand: UTF8String;
+  CurCommand: string;
 BEGIN
   result := true;
   LocalCheck := CurField.CheckField;
@@ -723,7 +723,7 @@ end;
 
 function TCheckFileIO.RetrieveAutoJump(CurField: TEpiField): boolean;
 var
-  CurCommand: UTF8String;
+  CurCommand: string;
 BEGIN
   Result := true;
   CurCommand:=FParser.GetUpperToken(nwSameLine);
@@ -740,7 +740,7 @@ END;
 
 function TCheckFileIO.RetrieveJumps(CurField: TEpiField): boolean;
 VAR
-  CurCommand, TmpS: UTF8String;
+  CurCommand, TmpS: string;
   LocalCheck: TEpiCheckField;
 BEGIN
   Result := true;
@@ -797,7 +797,7 @@ END;
 
 function TCheckFileIO.RetrieveCommentLegal(CurField: TEpiField): boolean;
 var
-  TmpStr, CurCommand: UTF8String;
+  TmpStr, CurCommand: string;
   LocalCheck: TEpiCheckField;
   LocalValueLabel: TValueLabelSet;
   ComLegDF: TEpiDataFile;
@@ -1059,7 +1059,7 @@ end;
 
 function TCheckFileIO.RetrieveType(CurField: TEpiField): Boolean;
 VAR
-  CurCommand: UTF8String;
+  CurCommand: string;
   LocalCheck: TEpiCheckField;
   i: integer;
 BEGIN
@@ -1100,6 +1100,7 @@ BEGIN
                TYPE COMMENT fieldname
                TYPE COMMENT ALLFIELDS}
     LocalCheck.TypeColour := clBlue;
+    LocalCheck.TypeType := ttComment;
 
     {Next word can be a fieldname, a colour or ALLFIELDS}
     {if not a fieldname then next word is interpreted as a colour}
@@ -1131,6 +1132,7 @@ BEGIN
     IF CurCommand <> '' THEN
     BEGIN
       CurCommand := AnsiUpperCase(CurCommand);
+      LocalCheck.TypeType := ttColour;
       FOR i := 0 TO High(ChkColorNames) DO
         IF CurCommand = ChkColorNames[i] THEN
           LocalCheck.TypeColour := ChkColorTypes[i];
@@ -1150,7 +1152,7 @@ function TCheckFileIO.RetrieveKeys(CurField: TEpiField): Boolean;
 VAR
   Number, i: Integer;
   IsUnique, Found: Boolean;
-  CurCommand: UTF8String;
+  CurCommand: string;
   LocalCheck: TEpiCheckField;
   LocalIndex: TEpiIndexFile;
 BEGIN
@@ -1244,7 +1246,7 @@ end;
 
 function TCheckFileIO.GetCommandList(CmdList: TChkCommands; CurField: TEpiField): Boolean;
 var
-  CurCommand: UTF8String;
+  CurCommand: string;
 begin
   if not Assigned(CmdList) then exit;
   result := true; 
@@ -1255,9 +1257,9 @@ begin
   UNTIL (AnsiUpperCase(CurCommand) = 'END') OR (FParser.EndOfLines);
 end;
 
-function TCheckFileIO.IsPosibleLetCmd(CurCommand: UTF8String; TmpCmdPtr: PCmd): Boolean;
+function TCheckFileIO.IsPosibleLetCmd(CurCommand: string; var TmpCmd: TChkCommand): Boolean;
 var
-  TmpStr: UTF8String;
+  TmpStr: string;
   I, N: Integer;
 begin
   Result := true;
@@ -1292,22 +1294,22 @@ begin
     Exit;
   END;
 
-  WITH TmpCmdPtr^ DO
+  TmpCmd := TChkLet.Create();
+  WITH TChkLet(TmpCmd) DO
   BEGIN
-    Command    := cmdLET;
     VarIsField := FDf.FieldExists(TmpStr);
     VarName    := TmpStr;
-    LetExpr       := trim(Copy(CurCommand, Pos('=', CurCommand) + 1, Length(CurCommand)));
+    LetExpr    := trim(Copy(CurCommand, Pos('=', CurCommand) + 1, Length(CurCommand)));
   END;
 end;
 
-function TCheckFileIO.GetCommand(CurCommand: UTF8String; CmdList: TChkCommands; CurField: TEpiField): Boolean;
+function TCheckFileIO.GetCommand(CurCommand: string; CmdList: TChkCommands; CurField: TEpiField): Boolean;
 VAR
-  TmpPCmd: PCmd;
-  TmpCmdRec: TCmd;
+  TmpCmd: TChkCmdType;
+  TmpChkCmd: TChkCommand;
   TmpField: TEpiField;
   TmpList, ValList: TStrings;
-  TmpStr: UTF8String;
+  TmpStr: string;
   Dummy: Boolean;
   N, I, J: Integer;
   TmpColor: TColor;
@@ -1343,40 +1345,35 @@ BEGIN
      (AnsiUpperCase(CurCommand) = 'ELSE') or
      (CurCommand = '') THEN Exit;
 
-
-
-  TmpCmdRec.IfCmds     := NIL;
-  TmpCmdRec.ElseCmds   := NIL;
-  TmpCmdRec.ValueLabel := NIL;
-
-  IF CurCommand[1] = '*' THEN
-    TmpCmdRec.Command := cmdComment
-  ELSE BEGIN
-    TmpCmdRec.Command := cmdIF;
-    WHILE (TmpCmdRec.Command < cmdLET) AND
-          (ChkCmdNames[TmpCmdRec.Command] <> AnsiUpperCase(CurCommand)) DO
-      TmpCmdRec.Command := Succ(TmpCmdRec.Command);
-    IF (ChkCmdNames[TmpCmdRec.Command] <> AnsiUpperCase(CurCommand)) or
-       (AnsiUpperCase(CurCommand) = 'LET') THEN
-      Result := IsPosibleLetCmd(CurCommand, @TmpCmdRec);
-    if not Result then
-      Exit;
-  END;  //else
+  TmpChkCmd := nil;
 
   try
-    CASE TmpCmdRec.Command OF
+    IF CurCommand[1] = '*' THEN
+      TmpCmd := cmdComment
+    ELSE BEGIN
+      TmpCmd := cmdIF;
+      WHILE (TmpCmd < cmdLET) AND
+            (ChkCmdNames[TmpCmd] <> AnsiUpperCase(CurCommand)) DO
+        TmpCmd := Succ(TmpCmd);
+      IF (ChkCmdNames[TmpCmd] <> AnsiUpperCase(CurCommand)) or
+         (AnsiUpperCase(CurCommand) = 'LET') THEN
+        Result := IsPosibleLetCmd(CurCommand, TmpChkCmd);
+      if not Result then
+        Exit;
+    END;  //else
+
+    CASE TmpCmd OF
       cmdIF:
         BEGIN
-          TmpCmdRec.IfExpr:='';
-          TmpCmdRec.IfCmds := TChkCommands.Create();
+          TmpChkCmd := TChkIf.Create;
           REPEAT
             CurCommand := FParser.GetToken(nwSameKeepQuotes);
-            TmpCmdRec.IfExpr := TmpCmdRec.IfExpr + ' ' + CurCommand;
+            TmpStr := TmpStr + ' ' + CurCommand;
           UNTIL (AnsiUpperCase(CurCommand) = 'THEN') or (CurCommand = '');
           IF AnsiUpperCase(CurCommand) = 'THEN' THEN
           BEGIN
-            TmpCmdRec.IfExpr := TmpCmdRec.IfExpr + ' ';
-            Delete(TmpCmdRec.IfExpr, Pos(' THEN ', AnsiUpperCase(TmpCmdRec.IfExpr)), 6);
+            TmpStr := TmpStr + ' ';
+            Delete(TmpStr, Pos(' THEN ', AnsiUpperCase(TmpStr)), 6);
           END ELSE BEGIN
             // No THEN was found in same line as expression
             CurCommand := FParser.GetToken(nwAny);
@@ -1387,17 +1384,14 @@ BEGIN
             end
           END;
           //Assign If-expression
-          tmpCmdRec.IfExpr := '(' + trim(tmpCmdRec.IfExpr) + ')';
+          TChkIf(TmpChkCmd).Expr := '(' + trim(TmpStr) + ')';
           Dummy := false;
           REPEAT
             CurCommand := FParser.GetToken(nwAny);
             IF AnsiUpperCase(CurCommand) = 'ELSE' THEN
-            Begin
               Dummy := True;
-              TmpCmdRec.ElseCmds := TChkCommands.Create();
-            End;
-            If Dummy then GetCommand(CurCommand, TmpCmdRec.ElseCmds, CurField)
-            ELSE GetCommand(CurCommand, TmpCmdRec.IfCmds, CurField);
+            If Dummy then GetCommand(CurCommand, TChkIf(TmpChkCmd).ElseCmds, CurField)
+            ELSE GetCommand(CurCommand, TChkIf(TmpChkCmd).IfCmds, CurField);
           UNTIL (AnsiUpperCase(CurCommand)='ENDIF') OR (FParser.EndOfLines) OR 
                 (AnsiUpperCase(CurCommand)='END');
           IF (FParser.EndOfLines) AND (AnsiUpperCase(CurCommand)<>'ENDIF') THEN
@@ -1415,10 +1409,11 @@ BEGIN
         BEGIN
           CurCommand := FParser.GetToken(nwSameLine); 
           CurCommand := StringReplace(CurCommand, '\n', #13#10, [rfReplaceAll,rfIgnoreCase]);
-        
-          TmpCmdRec.HelpString := CurCommand;
-          TmpCmdRec.HelpType   := mtInformation;
-          TmpCmdRec.HelpKeys   := '';
+
+          TmpChkCmd := TChkHelp.Create;
+          TChkHelp(TmpChkCmd).Text    := CurCommand;
+          TChkHelp(TmpChkCmd).MsgType := mtInformation;
+          TChkHelp(TmpChkCmd).Keys    := '';
           CurCommand := FParser.GetUpperToken(nwSameLine); 
           IF CurCommand <> '' THEN
           BEGIN
@@ -1426,7 +1421,7 @@ BEGIN
                (CurCommand[Length(CurCommand)] = '"') THEN
             BEGIN
               TmpStr := Copy(CurCommand, 7, Length(CurCommand)-7);
-              TmpCmdRec.HelpKeys := Copy(TmpStr, 1, 10);
+              TChkHelp(TmpChkCmd).Keys := Copy(TmpStr, 1, 10);
             END;
           END;
           IF AnsiUpperCase(Copy(CurCommand, 1, 4)) <> 'TYPE' THEN
@@ -1438,34 +1433,36 @@ BEGIN
             CurCommand := FParser.GetUpperToken(nwSameLine);
           END;
           IF (TmpStr = 'TYPE=ERROR') OR (TmpStr = 'TYPE=E') THEN
-            tmpCmdRec.HelpType := mtError
+            TChkHelp(TmpChkCmd).MsgType := mtError
           ELSE
             IF (TmpStr = 'TYPE=WARNING') OR (TmpStr = 'TYPE=W') THEN
-              tmpCmdRec.HelpType := mtWarning
+              TChkHelp(TmpChkCmd).MsgType := mtWarning
           ELSE
             IF (TmpStr = 'TYPE=CONFIRMATION') OR (TmpStr = 'TYPE=C') THEN
-              tmpCmdRec.HelpType := mtConfirmation;
+              TChkHelp(TmpChkCmd).MsgType := mtConfirmation;
         END;  //case cmdHelp
       cmdHide, cmdUnhide, cmdClear, cmdGoto:
         BEGIN
           {Check if a fieldname exists after command}
           CurCommand:=FParser.GetUpperToken(nwSameLine);
 
+          TmpChkCmd := TChkFieldReferer.Create(TmpCmd);
+
           // Case: (Un)Hide/Goto/Clear <empty> = current field
           IF CurCommand = '' THEN
-            tmpCmdRec.HideVarName := CurField.FieldName
+            TChkFieldReferer(TmpChkCmd).VarName := CurField.FieldName
 
           // Case: GOTO [WRITE | WRITEREC]
           ELSE IF ((CurCommand = 'WRITE') OR (CurCommand = 'WRITEREC')) AND
-             (TmpCmdRec.Command = cmdGoto) THEN
-            tmpCmdRec.HideVarName := 'WRITE'
+             (TChkFieldReferer(TmpChkCmd).CmdType = cmdGoto) THEN
+            TChkFieldReferer(TmpChkCmd).VarName := 'WRITE'
 
           // Case: (Un)Hide/Goto/Clear [COMMENT [LEGAL]]
           ELSE IF (NOT FDf.FieldExists(CurCommand)) AND (CurCommand = 'COMMENT') THEN
           BEGIN
             CurCommand := FParser.GetUpperToken(nwSameLine);
             IF CurCommand = 'LEGAL' THEN
-              tmpCmdRec.HideVarName   := '$$COMLEG';
+              TChkFieldReferer(TmpChkCmd).VarName := '$$COMLEG';
           END
 
           ELSE IF (NOT FDf.FieldExists(CurCommand)) THEN
@@ -1475,28 +1472,31 @@ BEGIN
           END
 
           ELSE
-            tmpCmdRec.HideVarName   := CurCommand;
+            TChkFieldReferer(TmpChkCmd).VarName   := CurCommand;
         END;  //case cmdHide or cmdUnhide
       cmdComLegal:
         BEGIN
+          TmpChkCmd := TChkComLegal.Create;
           TmpField := TEpiField.Create();
           Result := RetrieveCommentLegal(TmpField);
           if Result then
           begin
-            TmpCmdRec.ShowList       := TmpField.CheckField.ShowValueLabel;
-            TmpCmdRec.ValueLabelIsFieldRef := TmpField.CheckField.ValueLabelIsFieldRef;
-            TmpCmdRec.ValueLabel     := TmpField.ValueLabelSet;
+            TChkComLegal(TmpChkCmd).ShowList       := TmpField.CheckField.ShowValueLabel;
+            TChkComLegal(TmpChkCmd).ValueLabelIsFieldRef := TmpField.CheckField.ValueLabelIsFieldRef;
+            TChkComLegal(TmpChkCmd).ValueLabel     := TmpField.ValueLabelSet;
           end;
           FreeAndNil(TmpField);
           Exit;
         END;  //case cmdComLegal
       cmdComment:
         BEGIN
+          TmpChkCmd := TChkComment.Create();
           IF Length(CurCommand) > 200 THEN CurCommand := Copy(CurCommand, 1, 200);
-          tmpCmdRec.Comment:=CurCommand;
+          TChkComment(TmpChkCmd).Comment := CurCommand;
         END;
       cmdDefine:
         BEGIN
+          TmpChkCmd := TChkDefine.Create();
           //get variable name
           CurCommand := FParser.GetToken(nwSameLine);
           IF CurCommand='' THEN
@@ -1515,8 +1515,8 @@ BEGIN
             Exit;
           END;
 
-          tmpCmdRec.FName := CurCommand;
-          tmpCmdRec.FNumDecimals := 0;
+          TChkDefine(TmpChkCmd).FieldName := CurCommand;
+          TChkDefine(TmpChkCmd).NumDecimals := 0;
 
           //Variable name passed all tests - now get the Fieldtype
           CurCommand := FParser.GetUpperToken(nwSameLine);
@@ -1526,7 +1526,9 @@ BEGIN
             Exit;
           END;
 
-          TmpCmdRec.FLength := Length(CurCommand);
+          // TODO -o Torsten : Define common platform for finding variable types
+          //                   - combine with QES handling!
+          TChkDefine(TmpChkCmd).Length := Length(CurCommand);
           IF CurCommand[1]='#' THEN
           BEGIN
             n := 0;
@@ -1541,30 +1543,30 @@ BEGIN
               Exit;
             END ELSE BEGIN
               IF (n > 0) OR (Length(CurCommand) > 4) THEN
-                tmpCmdRec.Felttype := ftFloat
+                TChkDefine(TmpChkCmd).FieldType := ftFloat
               ELSE
-                tmpCmdRec.Felttype := ftInteger;
+                TChkDefine(TmpChkCmd).FieldType := ftInteger;
               IF n > 0 THEN
-                tmpCmdRec.FNumDecimals := Length(CurCommand) - Pos('.', CurCommand)
+                TChkDefine(TmpChkCmd).NumDecimals := Length(CurCommand) - Pos('.', CurCommand)
               ELSE
-                tmpCmdRec.FNumDecimals := 0;
+                TChkDefine(TmpChkCmd).NumDecimals := 0;
             END;
           END  //if numeric
-          ELSE IF CurCommand[1] = '_' THEN tmpCmdRec.Felttype := ftAlfa
-          ELSE IF CurCommand = '<MM/DD/YYYY>' THEN tmpCmdRec.Felttype := ftDate
+          ELSE IF CurCommand[1] = '_' THEN TChkDefine(TmpChkCmd).FieldType := ftAlfa
+          ELSE IF CurCommand = '<MM/DD/YYYY>' THEN TChkDefine(TmpChkCmd).FieldType := ftDate
           ELSE IF Copy(CurCommand, 1, 2) = '<A' THEN
             BEGIN
-              tmpCmdRec.Felttype := ftUpperAlfa;
-              tmpCmdRec.FLength := Length(CurCommand) - 2;
+              TChkDefine(TmpChkCmd).FieldType := ftUpperAlfa;
+              TChkDefine(TmpChkCmd).Length := Length(CurCommand) - 2;
             END
           ELSE IF Copy(Curcommand, 1, 2) = '<S' THEN
             BEGIN
-              tmpCmdRec.Felttype := ftSoundex;
-              tmpCmdRec.FLength := Length(CurCommand)-2;
+              TChkDefine(TmpChkCmd).FieldType := ftSoundex;
+              TChkDefine(TmpChkCmd).Length := Length(CurCommand)-2;
             END
-          ELSE IF CurCommand = '<Y>' THEN tmpCmdRec.Felttype := ftBoolean
-          ELSE IF CurCommand = '<DD/MM/YYYY>' THEN tmpCmdRec.Felttype := ftEuroDate
-          ELSE IF CurCommand = '<YYYY/MM/DD>' THEN tmpCmdRec.Felttype := ftYMDDate
+          ELSE IF CurCommand = '<Y>' THEN TChkDefine(TmpChkCmd).FieldType := ftBoolean
+          ELSE IF CurCommand = '<DD/MM/YYYY>' THEN TChkDefine(TmpChkCmd).FieldType := ftEuroDate
+          ELSE IF CurCommand = '<YYYY/MM/DD>' THEN TChkDefine(TmpChkCmd).FieldType := ftYMDDate
           ELSE BEGIN
             //No legal Fieldtype found
             Result := ReportError(Lang(22778, 'Illegal Fieldtype in DEFINE command'));
@@ -1572,9 +1574,9 @@ BEGIN
           END;
 
           CurCommand := FParser.GetUpperToken(nwSameLine);
-          IF CurCommand = '' THEN tmpCmdRec.FScope := scLocal
-          ELSE IF CurCommand[1] = 'G' THEN tmpCmdRec.FScope := scGlobal
-          ELSE IF CurCommand[1] = 'C' THEN tmpCmdRec.FScope := scCumulative
+          IF CurCommand = '' THEN TChkDefine(TmpChkCmd).Scope := scLocal
+          ELSE IF CurCommand[1] = 'G' THEN TChkDefine(TmpChkCmd).Scope := scGlobal
+          ELSE IF CurCommand[1] = 'C' THEN TChkDefine(TmpChkCmd).Scope := scCumulative
           ELSE BEGIN
             Result := ReportError(Lang(22780, 'Illegal scope in DEFINE command. Use GLOBAL or CUMULATIVE'));
             Exit;
@@ -1584,21 +1586,21 @@ BEGIN
           // Now check is DEF-name is allready used
           // Ignore the DEF if DEF is global and a global def-field with the
           // same Fieldtype exists
-          TmpField := FDf.CheckFile.DefineByName(tmpCmdRec.FName);
+          TmpField := FDf.CheckFile.DefineByName(TChkDefine(TmpChkCmd).FieldName);
           IF Assigned(TmpField) THEN
           BEGIN
             //a DEF-var with same name exists
-            IF (tmpCmdRec.FScope <> scGlobal) OR (TmpField.CheckField.FieldScope <> scGlobal) THEN
+            IF (TChkDefine(TmpChkCmd).Scope <> scGlobal) OR (TmpField.CheckField.FieldScope <> scGlobal) THEN
             BEGIN
               Result := ReportError(Lang(22772,'Dublicate name: The variablename is allready used'));
               Exit;
             END;
 
-            IF (tmpCmdRec.FScope = scGlobal) AND (TmpField.CheckField.FieldScope = scGlobal) THEN
+            IF (TChkDefine(TmpChkCmd).Scope = scGlobal) AND (TmpField.CheckField.FieldScope = scGlobal) THEN
             BEGIN
-              IF NOT ((tmpCmdRec.Felttype = TmpField.Fieldtype) AND
-                      (tmpCmdRec.FLength = TmpField.FieldLength) AND
-                      (tmpCmdRec.FNumDecimals = TmpField.NumDecimals)) THEN
+              IF NOT ((TChkDefine(TmpChkCmd).FieldType = TmpField.Fieldtype) AND
+                      (TChkDefine(TmpChkCmd).Length = TmpField.FieldLength) AND
+                      (TChkDefine(TmpChkCmd).NumDecimals = TmpField.NumDecimals)) THEN
               BEGIN
                 Result := ReportError(Lang(22773,'A global DEFINE with same fieldname but different Fieldtype or length is allready defined'));
                 Exit;
@@ -1607,13 +1609,13 @@ BEGIN
           END;
           IF not Assigned(TmpField) THEN
             TmpField := TEpiField.Create();
-          TmpField.FieldName   := tmpCmdRec.FName;
-          TmpField.Fieldtype   := tmpCmdRec.Felttype;
-          TmpField.FieldLength := tmpCmdRec.FLength;
-          TmpField.NumDecimals := tmpCmdRec.FNumDecimals;
+          TmpField.FieldName   := TChkDefine(TmpChkCmd).FieldName;
+          TmpField.Fieldtype   := TChkDefine(TmpChkCmd).FieldType;
+          TmpField.FieldLength := TChkDefine(TmpChkCmd).Length;
+          TmpField.NumDecimals := TChkDefine(TmpChkCmd).NumDecimals;
           TmpField.AsData      := '';
           TmpField.CheckField  := TEpiCheckField.Create();
-          TmpField.CheckField.FieldScope := tmpCmdRec.FScope;
+          TmpField.CheckField.FieldScope := TChkDefine(TmpChkCmd).Scope;
 
           Fdf.CheckFile.AddDefine(TmpField);
         END;  //case cmdDefine.
@@ -1807,6 +1809,7 @@ BEGIN
       cmdTypeString:
         BEGIN
           {  Syntax: TYPE "text" [colour]  }
+          TmpChkCmd := TChkTypeStr.Create();
           CurCommand := FParser.GetToken(nwSameLine);
           IF AnsiUpperCase(CurCommand)='COMMENT' THEN
           BEGIN
@@ -1818,8 +1821,8 @@ BEGIN
             END;
 
             FDf.CheckFile.GlobalTypeCom := True;
-            TmpCmdRec.TypeText := 'いtypecommentlegalallfieldsい';
-            TmpCmdRec.tsVarNumber := -1;
+            TChkTypeStr(TmpChkCmd).Text := 'いtypecommentlegalallfieldsい';
+            TChkTypeStr(TmpChkCmd).VarNumber := -1;
             CurCommand := FParser.GetUpperToken(nwSameLine);
             IF CurCommand<>'' THEN
             BEGIN
@@ -1845,16 +1848,16 @@ BEGIN
   //        tmpCmdRec.tsVarNumber:=df.FocusedField;
   //        IF Length(CurCommand)>40 THEN tmpCmdRec.TypeText:=Copy(CurCommand,1,40)
           {ELSE }
-          tmpCmdRec.TypeText := CurCommand;
+          TChkTypeStr(TmpChkCmd).Text := CurCommand;
 
           //Get a colour - if present
           CurCommand := FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
-          tmpCmdRec.TypeColor := clBlue;
+          TChkTypeStr(TmpChkCmd).Color := clBlue;
           IF CurCommand<>'' THEN
           BEGIN
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                tmpCmdRec.TypeColor := ChkColorTypes[i];
+                TChkTypeStr(TmpChkCmd).Color := ChkColorTypes[i];
 
             {Read rest of line - compatibility with Epi Info}
             REPEAT
@@ -1864,14 +1867,15 @@ BEGIN
         END;  //case cmdTypeString
       cmdBeep:
         BEGIN
+          TmpChkCmd := TChkBeep.Create;
           CurCommand := FParser.GetUpperToken(nwSameLine);
-          tmpCmdRec.BeepType := btStandard;
+          TChkBeep(TmpChkCmd).BeepType := btStandard;
           IF CurCommand<>'' THEN
           BEGIN
             IF (CurCommand = 'WARNING') OR (CurCommand = 'W') THEN
-              tmpCmdRec.BeepType := btWarning
+              TChkBeep(TmpChkCmd).BeepType := btWarning
             ELSE IF (CurCommand = 'CONFIRMATION') OR (CurCommand = 'C') THEN
-              tmpCmdRec.BeepType := btConfirmation;
+              TChkBeep(TmpChkCmd).BeepType := btConfirmation;
           END;
         END;  //cmdBeep
         // TODO -o Torsten : Load DLL files.
@@ -1918,26 +1922,28 @@ BEGIN
       cmdWriteNote:
         BEGIN
           {Syntax: WRITENOTE "notetext" [SHOW]}
+          TmpChkCmd := TChkWriteNote.Create;
           CurCommand := FParser.GetToken(nwSameLine);
           IF Length(CurCommand) > 200 THEN CurCommand := Copy(CurCommand, 1, 200);
           CurCommand := StringReplace(CurCommand, '\n', #13#10, [rfReplaceAll, rfIgnoreCase]);
-          tmpCmdRec.FNote := CurCommand;
+          TChkWriteNote(TmpChkCmd).Note := CurCommand;
           CurCommand := FParser.GetUpperToken(nwSameLine);
           IF CurCommand='SHOW' THEN
-            tmpCmdRec.ShowNotes := True
+            TChkWriteNote(TmpChkCmd).ShowNotes := True
           ELSE
-            tmpCmdRec.ShowNotes := False;
+            TChkWriteNote(TmpChkCmd).ShowNotes := False;
         END;
       cmdCopyToClipboard:
         BEGIN
           {Syntax: COPYTOCLIPBOARD "text @variable"}
+          TmpChkCmd := TChkClpBrd.Create;
           CurCommand := FParser.GetToken(nwSameLine);
           IF CurCommand='' THEN
           BEGIN
             Result := ReportError(Lang(23028, 'Invalid parameters'));
             Exit;
           END;
-          tmpCmdRec.CopyStr := Copy(CurCommand, 1, 200);
+          TChkClpBrd(TmpChkCmd).Text := Copy(CurCommand, 1, 200);
         END;
       cmdShowLastRecord:
         BEGIN
@@ -1950,21 +1956,22 @@ BEGIN
             Execute bla.htm WAIT
             Execute opera bla.htm WAIT
           }
+          TmpChkCmd := TChkExec.Create;
           CurCommand := FParser.GetToken(nwSameLine);
           IF CurCommand='' THEN
           BEGIN
             Result := ReportError(Lang(22854,'Exe-filename or document-filename is required'));
             Exit;
           END;
-          tmpCmdRec.ExecCmdLine := CurCommand;
+          TChkExec(TmpChkCmd).CmdLine := CurCommand;
 
           //Read next: can be parameters or NOWAIT|WAIT
           CurCommand := FParser.GetToken(nwSameLine);
-          tmpCmdRec.ExecParams := '';
+          TChkExec(TmpChkCmd).Params := '';
           IF (AnsiUpperCase(CurCommand)<>'WAIT') AND (AnsiUpperCase(CurCommand)<>'NOWAIT') THEN
           BEGIN
             //Assume CurCommand contains parameter(s)
-            tmpCmdRec.ExecParams := CurCommand;
+            TChkExec(TmpChkCmd).Params := CurCommand;
             CurCommand := FParser.GetToken(nwSameLine);
           END;
 
@@ -1975,10 +1982,10 @@ BEGIN
             Exit;
           END;
 
-          tmpCmdRec.ExecWait := (CurCommand = 'WAIT');
+          TChkExec(TmpChkCmd).Wait := (CurCommand = 'WAIT');
 
           CurCommand := FParser.GetUpperToken(nwSameLine);
-          tmpCmdRec.ExecHide := (CurCommand = 'HIDE');
+          TChkExec(TmpChkCmd).Hide := (CurCommand = 'HIDE');
         END;
       cmdColor:
         BEGIN
@@ -1989,13 +1996,13 @@ BEGIN
 
                    Colors can be Epi Info color codes
                    or EpiData color words}
-
+          TmpChkCmd := TChkColor.Create;
           CurCommand := FParser.GetUpperToken(nwSameLine);
-          tmpCmdRec.TxtColor := clBlue;
-          tmpCmdRec.BgColor := clBlue;
-          IF CurCommand='QUESTION' THEN tmpCmdRec.ColorCmd:=1
-          ELSE IF CurCommand='DATA' THEN tmpCmdRec.ColorCmd:=2
-          ELSE IF CurCommand='BACKGROUND' THEN tmpCmdRec.ColorCmd:=3
+          TChkColor(TmpChkCmd).TxtColor := clBlue;
+          TChkColor(TmpChkCmd).BgColor := clBlue;
+          IF CurCommand='QUESTION' THEN TChkColor(TmpChkCmd).ColorCmd:=1
+          ELSE IF CurCommand='DATA' THEN TChkColor(TmpChkCmd).ColorCmd:=2
+          ELSE IF CurCommand='BACKGROUND' THEN TChkColor(TmpChkCmd).ColorCmd:=3
           ELSE
             BEGIN
               //could be COLOR fieldname
@@ -2004,27 +2011,27 @@ BEGIN
               Exit;
             END;
 
-          IF tmpCmdRec.ColorCmd=3 THEN
+          IF TChkColor(TmpChkCmd).ColorCmd=3 THEN
           BEGIN
             //command is BACKGROUND
             CurCommand := FParser.GetUpperToken(nwSameLine);
             IF IsInteger(CurCommand) THEN
             BEGIN
-              tmpCmdRec.IsEpiInfoNo := True;
+              TChkColor(TmpChkCmd).IsEpiInfoNo := True;
               n := StrToInt(CurCommand);
               IF (n<0) OR (n>7) THEN
               BEGIN
                 Result := ReportError(Lang(22860, 'Illegal COLOR number'));   //22860=Illegal COLOR number
                 Exit;
               END;
-              tmpCmdRec.BgColor := ChkColorTypes[n];
+              TChkColor(TmpChkCmd).BgColor := ChkColorTypes[n];
               Exit;
             END;
 
-            tmpCmdRec.IsEpiInfoNo := False;
+            TChkColor(TmpChkCmd).IsEpiInfoNo := False;
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                tmpCmdRec.BgColor := ChkColorTypes[i];
+                TChkColor(TmpChkCmd).BgColor := ChkColorTypes[i];
           END;
 
           //read rest of line
@@ -2043,7 +2050,7 @@ BEGIN
 
           if IsInteger(TmpList[0]) then
           begin
-            tmpCmdRec.IsEpiInfoNo := True;
+            TChkColor(TmpChkCmd).IsEpiInfoNo := True;
             n := StrToInt(TmpList[0]);
             IF n > 255 THEN
             BEGIN
@@ -2051,8 +2058,8 @@ BEGIN
               Exit;
             END;
             n := n AND $7F;  //clear first bit which indicates flashing text in epi info
-            tmpCmdRec.BgColor := ChkColorTypes[(n AND $F0) SHR 4];
-            tmpCmdRec.TxtColor := ChkColorTypes[(n AND $0F)];
+            TChkColor(TmpChkCmd).BgColor := ChkColorTypes[(n AND $F0) SHR 4];
+            TChkColor(TmpChkCmd).TxtColor := ChkColorTypes[(n AND $0F)];
             Exit;
           end;
 
@@ -2062,8 +2069,8 @@ BEGIN
               IF CurCommand = ChkColorNames[i] THEN
                 TmpColor := ChkColorTypes[i];
             case n of
-              0: TmpCmdRec.TxtColor := TmpColor;
-              1: TmpCmdRec.BgColor  := TmpColor;
+              0: TChkColor(TmpChkCmd).TxtColor := TmpColor;
+              1: TChkColor(TmpChkCmd).BgColor  := TmpColor;
               2: Begin
                   FDf.CheckFile.FieldHighlightAct := True;
                   FDf.CheckFile.FieldHighlightCol := TmpColor;
@@ -2075,6 +2082,7 @@ BEGIN
         BEGIN
           {syntax: BACKUP "destination-library" [ZIP filename [date]]
            or      BACKUP "destination-library" [ENCRYPT filname password [date]] }
+          TmpChkCmd := TChkBackup.Create;
           IF (CmdList <> FDf.CheckFile.AfterFileCmds) THEN
           BEGIN
             Result := ReportError(Lang(22864, 'BACKUP command only legal in AFTER FILE blocks'));
@@ -2091,14 +2099,14 @@ BEGIN
           // TODO -o Torsten : Relate!
   {        ELSE IF (df.BackupList=NIL) AND (NOT df.IsRelateFile) THEN
             BEGIN }
-          tmpCmdRec.zipit     := False;
-          tmpCmdrec.encryptit := False;
-          tmpCmdRec.DestLib   := CurCommand;
-          CurCommand          := FParser.GetUpperToken(nwSameLine);
+          TChkBackup(TmpChkCmd).Zip     := False;
+          TChkBackup(TmpChkCmd).Encrypt := False;
+          TChkBackup(TmpChkCmd).DestLib := CurCommand;
+          CurCommand                    := FParser.GetUpperToken(nwSameLine);
 
           IF (CurCommand <> 'ZIP') AND (CurCommand <> 'ENCRYPT') THEN
           BEGIN
-            FDf.CheckFile.BackupList.Append(tmpCmdRec.DestLib);
+            FDf.CheckFile.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
             FDf.CheckFile.BackupList.Append(FDf.Filename);
             Exit;
           END;
@@ -2113,11 +2121,11 @@ BEGIN
               Exit;
             END;
 
-            FDf.CheckFile.BackupList.Append(tmpCmdRec.DestLib);
-            tmpCmdRec.zipit    := True;
-            tmpCmdrec.filename := ExtractFilename(CurCommand);
-            CurCommand         := FParser.GetUpperToken(nwSameLine);   //get date parameter
-            IF CurCommand = 'DATE' THEN tmpCmdRec.dateit := True;
+            FDf.CheckFile.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
+            TChkBackup(TmpChkCmd).Zip    := True;
+            TChkBackup(TmpChkCmd).Filename := ExtractFilename(CurCommand);
+            CurCommand                     := FParser.GetUpperToken(nwSameLine);   //get date parameter
+            IF CurCommand = 'DATE' THEN TChkBackup(TmpChkCmd).AddDate := True;
             Exit;
           END;
 
@@ -2129,24 +2137,25 @@ BEGIN
             Exit;
           END;
 
-          tmpCmdRec.encryptit := True;
-          tmpCmdRec.filename  := ExtractFilename(CurCommand);
-          CurCommand          := FParser.GetToken(nwSameLine);   //get the password
+          TChkBackup(TmpChkCmd).Encrypt := True;
+          TChkBackup(TmpChkCmd).Filename  := ExtractFilename(CurCommand);
+          CurCommand                      := FParser.GetToken(nwSameLine);   //get the password
           IF CurCommand='' THEN
           BEGIN
             Result := ReportError(Lang(22888, 'Password must follow ENCRYPT and filename'));
             Exit;
           END;
 
-          FDf.CheckFile.BackupList.Append(tmpCmdRec.DestLib);
-          tmpCmdRec.pw := CurCommand;
-          CurCommand   := FParser.GetUpperToken(nwSameLine);  //get date parameter
-          IF CurCommand = 'DATE' THEN tmpCmdRec.dateit := True;
+          FDf.CheckFile.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
+          TChkBackup(TmpChkCmd).Password := CurCommand;
+          CurCommand                     := FParser.GetUpperToken(nwSameLine);  //get date parameter
+          IF CurCommand = 'DATE' THEN TChkBackup(TmpChkCmd).AddDate := True;
         END;  //end case cmdBackup
       cmdRelate:
         BEGIN
           //Syntax: RELATE fieldname filename [1]
           //Get fieldname
+          TmpChkCmd := TChkRelate.Create;
           CurCommand:=FParser.GetToken(nwSameLine);
           IF CurCommand='' THEN
           BEGIN
@@ -2170,7 +2179,7 @@ BEGIN
           end;
 
           //Get relatefile name
-          tmpCmdRec.RelField := TmpField.FieldName;  //save fieldname
+          TChkRelate(TmpChkCmd).RelField := TmpField.FieldName;  //save fieldname
 
           Curcommand:=FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
           IF CurCommand='' THEN
@@ -2193,7 +2202,7 @@ BEGIN
             Exit;
           END;
 
-          tmpCmdRec.RelFileStr := ExtractFileName(CurCommand);
+          TChkRelate(TmpChkCmd).RelFileStr := ExtractFileName(CurCommand);
 
           // TODO -o Torsten : Relate!
 (*          TopDf:=TEpiDataFile(df.TopEpiDataFile);
@@ -2229,23 +2238,24 @@ BEGIN
 
           //Get One2One marker
           CurCommand := FParser.GetToken(nwSameLine);
-          tmpCmdRec.One2One := (CurCommand = '1');
+          TChkRelate(TmpChkCmd).One2One := (CurCommand = '1');
 //          AInfo^.One2One:=tmpCmdRec.One2One;
         END;   //case cmdRelate
+    else
+      if not ((TmpCmd = cmdLet) and result) then
+        TmpChkCmd := TChkOther.Create(TmpCmd);
     END;  //Case
   finally
     if Result then
-    begin
-      TmpPCmd := New(PCmd);
-      TmpPCmd^ := TmpCmdRec;
-      CmdList.AddCommand(TmpPCmd);
-    end;
+      CmdList.AddCommand(TmpChkCmd)
+    else
+      if Assigned(TmpChkCmd) then FreeAndNil(TmpChkCmd);
   end;
 end;
 
 function TCheckFileIO.AddFieldComment(CurField: TEpiField): boolean;
 var
-  S: UTF8String;
+  S: string;
 begin
   S := FParser.GetLineAndFlush;
   CurField.CheckField.FieldComments.Append(FParser.GetWholeLine);
@@ -2254,7 +2264,7 @@ end;
 
 function TCheckFileIO.RetrieveLabelBlock(): Boolean;
 var
-  CurCommand: UTF8String;
+  CurCommand: string;
   Res: Boolean;
 BEGIN
   Result := true;
@@ -2271,7 +2281,7 @@ function TCheckFileIO.RetrieveLabel(): Boolean;
 VAR
   aValueLabelSet: TValueLabelSet;
   CurCommand,
-  TmpStr: UTF8String;
+  TmpStr: string;
 BEGIN
   Result := false;
   CurCommand := FParser.GetLowerToken(nwSameLine);
@@ -2349,7 +2359,7 @@ END;  //TCheckObj.RetrieveLabel
 function TCheckFileIO.RetrieveAssertBlock(): boolean;
 {Reads the CONSISTENCYBLOCK..END block - and ignores it...}
 var
-  CurCommand: UTF8String;
+  CurCommand: string;
 BEGIN
   Result := true;
   REPEAT
@@ -2361,7 +2371,7 @@ END;
 
 function TCheckFileIO.AddTopComment(): boolean;
 VAR
-  s: UTF8String;
+  s: string;
 BEGIN
   s := FParser.GetWholeLine;
   IF Assigned(FDf.CheckFile.TopComments) THEN
@@ -2372,7 +2382,7 @@ END;  //Procedure AddTopComment
 
 function TCheckFileIO.RetrieveFlawBlock(): Boolean;
 var
-  CurCommand: UTF8String;
+  CurCommand: string;
 BEGIN
   Result := False;
   FParser.GetLineAndFlush;
@@ -2392,9 +2402,9 @@ BEGIN
   END;
 END;  //procedure RetrieveFlawBlock
 
-procedure TCheckFileIO.AddToCheckLines(Const S: UTF8String);
+procedure TCheckFileIO.AddToCheckLines(Const S: string);
 var
-  T: UTF8String;
+  T: string;
 begin
   T := DupeString(' ', FIndentLvl * 2);
   FCheckLines.Append(T + S);
@@ -2402,7 +2412,7 @@ end;
 
 procedure TCheckFileIO.AddStringsToCheckLines(Const Strings: TStrings);
 var
-  T: UTF8String;
+  T: string;
   I: Integer;
 begin
   T := DupeString(' ', FIndentLvl * 2);
@@ -2412,7 +2422,7 @@ end;
 
 function TCheckFileIO.LabelToText(aValueLabelSet: TValueLabelSet): boolean;
 var
-  s: UTF8String;
+  s: string;
   i: integer;
   
 BEGIN
@@ -2456,40 +2466,40 @@ end;
 function TCheckFileIO.AddCommandList(CmdList: TChkCommands): Boolean;
 VAR
   i, j, n: integer;
-  s: UTF8String;
+  s: string;
   LocalVltType: TValueLabelSetType;
-  Cmd: PCmd;
+  Cmd: TChkCommand;
 BEGIN
   // Sanity check;
-  IF CmdList=NIL THEN Exit;
-  IF CmdList.Count=0 THEN Exit;
+  IF CmdList = NIL THEN Exit;
+  IF CmdList.Count = 0 THEN Exit;
 
   FOR j := 0 TO CmdList.Count - 1 DO
   BEGIN
-    Cmd := PCmd(CmdList[j]);
-    CASE Cmd^.Command OF
+    Cmd := CmdList[j];
+    CASE Cmd.CmdType OF
       cmdIF:
         BEGIN
-          AddToCheckLines('IF ' + trim(cmd^.IfExpr) + ' THEN');
+          AddToCheckLines('IF ' + trim(TChkIf(cmd).Expr) + ' THEN');
           Inc(FIndentLvl);
-          AddCommandList(Cmd^.IfCmds);
+          AddCommandList(TChkIf(cmd).IfCmds);
           Dec(FIndentLvl);
-          IF cmd^.ElseCmds<>NIL THEN
+          IF TChkIf(cmd).ElseCmds.Count > 0 THEN
           BEGIN
             AddToCheckLines('ELSE');
             Inc(FIndentLvl);
-            AddCommandList(cmd^.ElseCmds);
+            AddCommandList(TChkIf(cmd).ElseCmds);
             Dec(FIndentLvl);
           END;
           AddToCheckLines('ENDIF');
         END;  //case cmdIF
       cmdHelp:
         BEGIN
-          S := '"' + cmd^.HelpString + '"';
+          S := '"' + TChkHelp(cmd).Text + '"';
           S := StringReplace(S, #13#10, '\n', [rfReplaceAll, rfIgnoreCase]);
-          IF trim(cmd^.HelpKeys) <> '' THEN
-            S := S + ' KEYS="' + trim(AnsiUpperCase(cmd^.HelpKeys)) + '"';
-          CASE cmd^.HelpType OF
+          IF trim(TChkHelp(cmd).Keys) <> '' THEN
+            S := S + ' KEYS="' + trim(AnsiUpperCase(TChkHelp(cmd).Keys)) + '"';
+          CASE TChkHelp(cmd).MsgType OF
             mtError:        S := S + ' TYPE=ERROR';
             mtWarning:      S := S + ' TYPE=WARNING';
             mtConfirmation: S := S + ' TYPE=CONFIRMATION';
@@ -2498,35 +2508,35 @@ BEGIN
         END;  //case cmdHelp
       cmdWriteNote:
         BEGIN
-          S := '"' + cmd^.FNote + '"';
+          S := '"' + TChkWriteNote(cmd).Note + '"';
           S := StringReplace(S, #13#10, '\n', [rfReplaceAll, rfIgnoreCase]);
-          IF cmd^.ShowNotes THEN S := S + ' SHOW';
+          IF TChkWriteNote(cmd).ShowNotes THEN S := S + ' SHOW';
           AddToCheckLines('WRITENOTE ' + S);
         END;  //case cmdWriteNote
       cmdCopyToClipboard:
-        AddToCheckLines('COPYTOCLIPBOARD "' + cmd^.CopyStr + '"');
+        AddToCheckLines('COPYTOCLIPBOARD "' + TChkClpBrd(cmd).Text + '"');
       cmdHide:
-        AddToCheckLines('HIDE' + ' ' + cmd^.HideVarName);
+        AddToCheckLines('HIDE' + ' ' + TChkFieldReferer(cmd).VarName);
       cmdUnHide:
-        AddToCheckLines('UNHIDE' + ' ' + cmd^.HideVarName);
+        AddToCheckLines('UNHIDE' + ' ' + TChkFieldReferer(cmd).VarName);
       cmdClear:
         BEGIN
           S := 'CLEAR';
-          IF cmd^.HideVarName='$$COMLEG' THEN
+          IF TChkFieldReferer(cmd).VarName='$$COMLEG' THEN
             S := S + ' COMMENT LEGAL'
           ELSE
-            S := S + ' ' + cmd^.HideVarName;
+            S := S + ' ' + TChkFieldReferer(cmd).VarName;
           AddToCheckLines(S);
         END;  //case cmdClear
       cmdGoto:
-        AddToCheckLines('GOTO ' + cmd^.HideVarName);
+        AddToCheckLines('GOTO ' + TChkFieldReferer(cmd).VarName);
       cmdExit:
         AddToCheckLines('EXIT');
       cmdQuit:
         AddToCheckLines('QUIT');
       cmdTypeString:
         BEGIN
-          IF cmd^.TypeText = 'いtypecommentlegalallfieldsい' THEN
+          IF TChkTypeStr(cmd).Text = 'いtypecommentlegalallfieldsい' THEN
           BEGIN
             S := 'TYPE COMMENT ALLFIELDS';
             IF FDf.CheckFile.GlobalTypeComColor <> 0 THEN
@@ -2534,100 +2544,100 @@ BEGIN
                 if ChkColorTypes[i] = FDf.CheckFile.GlobalTypeComColor then
                   S := S + ' ' + ChkColorNames[i];
           END ELSE BEGIN
-            S := 'TYPE "' + cmd^.TypeText + '"';
-            IF cmd^.TypeColor <> 2 THEN
+            S := 'TYPE "' + TChkTypeStr(cmd).Text + '"';
+            IF TChkTypeStr(cmd).Color <> 2 THEN
               For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = cmd^.TypeColor then
+                if ChkColorTypes[i] = TChkTypeStr(cmd).Color then
                   S := S + ' ' + ChkColorNames[i];
           END;
           AddToCheckLines(S);
         END;
       cmdBackup:
         begin
-          S := 'BACKUP ' + cmd^.DestLib;
-          if Cmd^.zipit or Cmd^.encryptit then
+          S := 'BACKUP ' + TChkBackup(cmd).DestLib;
+          if TChkBackup(cmd).Zip or TChkBackup(cmd).Encrypt then
           begin
-            if Cmd^.encryptit then
+            if TChkBackup(cmd).Encrypt then
               S := S + ' ENCRYPT ';
-            if Cmd^.zipit then
+            if TChkBackup(cmd).Zip then
               S := S + ' ZIP ';
-            S := S + Cmd^.filename;
-            if Cmd^.encryptit then
-              S := S + ' ' + Cmd^.pw;
-            if Cmd^.dateit then
+            S := S + TChkBackup(cmd).Filename;
+            if TChkBackup(cmd).Encrypt then
+              S := S + ' ' + TChkBackup(cmd).Password;
+            if TChkBackup(cmd).AddDate then
               S := S + ' DATE';
           end;
           AddToCheckLines(S);
         end;
       cmdLoad:
         BEGIN
-          S := cmd^.DLLName;
+          S := TChkLoadLib(cmd).LibName;
           IF pos(' ', S) > 0 THEN S := '"' + S + '"';
           AddToCheckLines('LOAD ' + S);
         END;
       cmdExecute:
         BEGIN
-          IF pos(' ', cmd^.ExecCmdLine) > 0 THEN
-            S := 'EXECUTE ' + '"' + cmd^.ExecCmdLine + '"'
+          IF pos(' ', TChkExec(cmd).CmdLine) > 0 THEN
+            S := 'EXECUTE ' + '"' + TChkExec(cmd).CmdLine + '"'
           ELSE
-            S := 'EXECUTE ' + cmd^.ExecCmdLine;
-          IF cmd^.ExecParams <> '' THEN
+            S := 'EXECUTE ' + TChkExec(cmd).CmdLine;
+          IF TChkExec(cmd).Params <> '' THEN
           BEGIN
-            IF pos(' ', cmd^.ExecParams) > 0 THEN
-              S := S + ' "' + cmd^.ExecParams + '"'
+            IF pos(' ', TChkExec(cmd).Params) > 0 THEN
+              S := S + ' "' + TChkExec(cmd).Params + '"'
             ELSE
-              S := S + ' ' + cmd^.ExecParams;
+              S := S + ' ' + TChkExec(cmd).Params;
           END;
-          IF cmd^.ExecWait THEN
+          IF TChkExec(cmd).Wait THEN
             S := S + ' WAIT'
           ELSE
             S := S + ' NOWAIT';
-          IF cmd^.ExecHide THEN
+          IF TChkExec(cmd).Hide THEN
             S := S + ' HIDE';
           AddToCheckLines(S);
         END;
       cmdBeep:
         BEGIN
           S := 'BEEP';
-          IF cmd^.Beeptype = btWarning THEN S := S + ' Warning';
-          IF cmd^.BeepType = btConfirmation THEN S := S + ' Confirmation';
+          IF TChkBeep(cmd).Beeptype = btWarning THEN S := S + ' Warning';
+          IF TChkBeep(cmd).BeepType = btConfirmation THEN S := S + ' Confirmation';
           AddToCheckLines(S);
         END;
       cmdRelate:
         BEGIN
-          S := 'RELATE ' + trim(cmd^.RelField) + ' ';
-          IF Pos(' ',cmd^.RelFileStr) > 0 THEN
-            S := S + '"' + cmd^.RelFileStr + '"'
+          S := 'RELATE ' + trim(TChkRelate(cmd).RelField) + ' ';
+          IF Pos(' ',TChkRelate(cmd).RelFileStr) > 0 THEN
+            S := S + '"' + TChkRelate(cmd).RelFileStr + '"'
           ELSE
-            S := S + cmd^.RelFileStr;
-          IF cmd^.One2One THEN
+            S := S + TChkRelate(cmd).RelFileStr;
+          IF TChkRelate(cmd).One2One THEN
             S := S + ' 1';
           AddToCheckLines(S);
         END;
       cmdComLegal:
         BEGIN
-          IF cmd^.ValueLabel <> NIL THEN
+          IF Assigned(TChkComLegal(cmd).ValueLabel) THEN
           BEGIN
-            LocalVltType := cmd^.ValueLabel.LabelType;
-            if (LocalVltType = vltLocal) and (cmd^.ValueLabelIsFieldRef) then
+            LocalVltType := TChkComLegal(cmd).ValueLabel.LabelType;
+            if (LocalVltType = vltLocal) and (TChkComLegal(cmd).ValueLabelIsFieldRef) then
              LocalVltType := vltGlobal;
             case LocalVltType of
               vltLocal:
                 begin
                   S := 'COMMENT LEGAL';
-                  if cmd^.ShowList then S := S + ' SHOW';
+                  if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
                   AddToCheckLines(S);
                   Inc(FIndentLvl);
-                  LabelToText(cmd^.ValueLabel);
+                  LabelToText(TChkComLegal(cmd).ValueLabel);
                   Dec(FIndentLvl);
                 end;
               vltGlobal, vltFile:
                 begin
                   S := 'COMMENT LEGAL ';
-                  if cmd^.ValueLabel.LabelType <> vltFile then
+                  if TChkComLegal(cmd).ValueLabel.LabelType <> vltFile then
                     S := S + 'USE ';
-                  S := S + cmd^.ValueLabelName;
-                  if cmd^.ShowList then S := S + ' SHOW';
+                  S := S + TChkComLegal(cmd).ValueLabelName;
+                  if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
                   AddToCheckLines(S);
                 end;
             end;  //case
@@ -2635,35 +2645,35 @@ BEGIN
         END;  //case cmdComLegal
       cmdLet:
         BEGIN
-          S := trim(cmd^.LetExpr);
+          S := trim(TChkLet(cmd).LetExpr);
           S := StringReplace(S, '_M', ' .', [rfReplaceAll, rfIgnoreCase]);
-          S := cmd^.VarName + ' = ' + S;
-          IF cmd^.CodedWithLet THEN
+          S := TChkLet(cmd).VarName + ' = ' + S;
+          IF TChkLet(cmd).CodedWithLet THEN
             S := 'LET ' + S;
           AddToCheckLines(S);
         END;  //case cmdLet
       cmdDefine:
         BEGIN
-          CASE cmd^.Felttype OF
-            ftInteger:   S := DupeString('#', cmd^.FLength);
-            ftAlfa:      S := DupeString('_', cmd^.FLength);
+          CASE TChkDefine(cmd).FieldType OF
+            ftInteger:   S := DupeString('#', TChkDefine(cmd).Length);
+            ftAlfa:      S := DupeString('_', TChkDefine(cmd).Length);
             ftDate:      S := '<MM/DD/YYYY>';
             ftYMDDate:   S := '<YYYY/MM/DD>';          //&&
-            ftUpperAlfa: S := '<A' + DupeString('A', cmd^.FLength-1) + '>';
-            ftSoundex:   S := '<S' + DupeString('S', cmd^.FLength-1) + '>';
+            ftUpperAlfa: S := '<A' + DupeString('A', TChkDefine(cmd).Length-1) + '>';
+            ftSoundex:   S := '<S' + DupeString('S', TChkDefine(cmd).Length-1) + '>';
             ftBoolean:   S := '<Y>';
             ftFloat:     BEGIN
-                           S := DupeString('#', cmd^.FLength - cmd^.FNumDecimals - 1);
-                           IF cmd^.FNumDecimals = 0 THEN
+                           S := DupeString('#', TChkDefine(cmd).Length - TChkDefine(cmd).NumDecimals - 1);
+                           IF TChkDefine(cmd).NumDecimals = 0 THEN
                              S := S + '#'
                            ELSE
-                             S := S + '.' + DupeString('#', cmd^.FNumDecimals);
+                             S := S + '.' + DupeString('#', TChkDefine(cmd).NumDecimals);
                          END;   
             ftEuroDate:  S := '<DD/MM/YYYY>';
           END;
-          S := 'DEFINE ' + cmd^.FName +'  ' + S;
-          IF cmd^.FScope = scGlobal THEN S := S + ' GLOBAL';
-          IF cmd^.FScope = scCumulative THEN S := S + ' CUMULATIVE';
+          S := 'DEFINE ' + TChkDefine(cmd).FieldName +'  ' + S;
+          IF TChkDefine(cmd).Scope = scGlobal THEN S := S + ' GLOBAL';
+          IF TChkDefine(cmd).Scope = scCumulative THEN S := S + ' CUMULATIVE';
           AddToCheckLines(S);
         END;  //case cmdDefine
       cmdAutoSave:
@@ -2676,43 +2686,43 @@ BEGIN
       cmdColor:
         BEGIN
           S := 'COLOR ';
-          CASE cmd^.ColorCmd OF
+          CASE TChkColor(cmd).ColorCmd OF
             1: S := S + 'QUESTION ';
             2: S := S + 'DATA ';
             3: S := S + 'BACKGROUND ';
           END;  //case
-          IF cmd^.IsEpiInfoNo THEN
+          IF TChkColor(cmd).IsEpiInfoNo THEN
           BEGIN
-            IF cmd^.ColorCmd = 3 THEN S := S + IntToStr(cmd^.BgColor)
+            IF TChkColor(cmd).ColorCmd = 3 THEN S := S + IntToStr(TChkColor(cmd).BgColor)
             ELSE BEGIN
-              n := (cmd^.BgColor SHL 4);
-              n := n AND cmd^.TxtColor;
+              n := (TChkColor(cmd).BgColor SHL 4);
+              n := n AND TChkColor(cmd).TxtColor;
               S := S + IntToStr(n);
             END;
           END ELSE BEGIN
-            IF cmd^.ColorCmd = 3 THEN
+            IF TChkColor(cmd).ColorCmd = 3 THEN
             begin
               For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = cmd^.BgColor then
+                if ChkColorTypes[i] = TChkColor(cmd).BgColor then
                   S := S + ' ' + ChkColorNames[i];
             end ELSE BEGIN
               For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = cmd^.txtcolor then
+                if ChkColorTypes[i] = TChkColor(cmd).txtcolor then
                   S := S + ' ' + ChkColorNames[i];
-              IF cmd^.BgColor <> 255 THEN
+              IF TChkColor(cmd).BgColor <> 255 THEN
                 For i := 0 to High(ChkColorTypes) do
-                  if ChkColorTypes[i] = cmd^.bgcolor then
+                  if ChkColorTypes[i] = TChkColor(cmd).bgcolor then
                     S := S + ' ' + ChkColorNames[i];
             END;
           END;
           AddToCheckLines(S);
         END;
       cmdComment:
-        AddToCheckLines(cmd^.Comment);
+        AddToCheckLines(TChkComment(cmd).Comment);
       cmdLeaveField:
         BEGIN
           S := 'cmdLeaveField -';
-          IF cmd^.IsLastField THEN
+          IF TChkLeaveField(cmd).IsLastField THEN
             S := S + 'LastField';
           AddToCheckLines(S);
         END;      
@@ -2722,7 +2732,7 @@ END;  //Procedure AddCommandList
 
 Procedure TCheckFileIO.FieldBlockToStrings(aField: TEpiField);
 VAR
-  S: UTF8String;
+  S: string;
   TmpList: TStrings;
   LocalVltType: TValueLabelSetType;
   I: Integer;
@@ -2869,8 +2879,8 @@ BEGIN
       end;
 
       Case TypeType of
+        {Write TYPE STATUSBAR}
         ttStatusBar:
-          {Write TYPE STATUSBAR}
           begin
             S := 'TYPE STATUSBAR';
             IF TypeText <> '' THEN S := S + ' "' + TypeText + '"';
@@ -2880,6 +2890,9 @@ BEGIN
                   S := S + ' ' + ChkColorNames[i];
             AddToCheckLines(S);
           END;
+        {Write TYPE COMMENT}
+        ttComment:
+          AddToCheckLines('TYPE COMMENT');
         {Write TYPE COMMENT ALLFIELDS}
         ttAllFields:
           Begin
@@ -2947,7 +2960,7 @@ begin
   inherited;
 end;
 
-function TCheckFileIO.ReadCheckFile(const aFileName: UTF8String;
+function TCheckFileIO.ReadCheckFile(const aFileName: string;
   Df: TEpiDataFile): boolean;
 begin
   Debugger.IncIndent;
@@ -2981,7 +2994,7 @@ begin
   end;
 end;
 
-function TCheckFileIO.WriteCheckToFile(const aFileName: UTF8String;
+function TCheckFileIO.WriteCheckToFile(const aFileName: string;
   Df: TEpiDataFile): boolean;
 var
   FStream: TFileStream;

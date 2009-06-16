@@ -7,19 +7,19 @@ interface
 uses
   SysUtils, UDataFileTypes, UEpiDataConstants;
 
-  function EpiIsDate(var Value: UTF8String; Ft: TFieldType): boolean;
-  Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): UTF8String;
-  function EpiDateToDateTime(Const Str: UTF8String; Ft: TFieldType; Len: Integer): TDateTime;
+  function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
+  Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;
+  function EpiDateToDateTime(Const Str: string; Ft: TFieldType; Len: Integer): TDateTime;
 
 implementation
 
 uses
   UEpiUtils;
 
-function EpiIsDate(var Value: UTF8String; Ft: TFieldType): boolean;
+function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
 var
   TmpS,
-  eYearStr, eMonthStr, eDayStr: UTF8String;
+  eYearStr, eMonthStr, eDayStr: string;
   i, qq: integer;
   Year, Month, Day, m2, d2: word;
   tmpDate: TDateTime;
@@ -43,14 +43,14 @@ begin
       tmpS[qq]:='¤';
       IF pos(DateSeparator, tmpS)>0 THEN
       BEGIN
-        //UTF8String has two slashes meaning year is included
+        //string has two slashes meaning year is included
         eYearStr:=Copy(tmpS,1,pos('¤',tmpS)-1);
         Delete(tmpS,1,pos('¤',tmpS));    //deletes year and separator
         eMonthStr:=copy(tmpS,1,pos(DateSeparator,tmpS)-1);
         Delete(tmpS,1,pos(DateSeparator,tmpS));   //deletes month and second separator
         eDayStr:=tmpS;
       END ELSE BEGIN
-        //UTF8String has one slash meaning year is not included
+        //string has one slash meaning year is not included
         eYearStr:='';
         eMonthStr:=copy(tmpS,1,pos('¤',tmpS)-1);
         Delete(tmpS,1,pos('¤',tmpS));  //deletes month and separator
@@ -73,7 +73,7 @@ begin
       END;   //if there is a second slash
     END;  //if not YMDDate
     //if there is a first slash
-  END ELSE BEGIN   //the UTF8String contains no slash
+  END ELSE BEGIN   //the string contains no slash
     IF (Ft=ftYMDDate) OR (Ft=ftYMDToday) THEN  //&&
       BEGIN
         eMonthStr:='';
@@ -106,7 +106,7 @@ begin
         eMonthStr:=Copy(tmpS,3,2);
         eYearStr:=Copy(tmpS,5,4);
       END;
-  END;  //if UTF8String has no slash
+  END;  //if string has no slash
   IF (trim(eMonthStr)<>'') AND (isInteger(eMonthStr))
     THEN Month:=StrToInt(trim(eMonthStr)) ELSE Result:=False;
   IF (trim(eDayStr)<>'') AND (IsInteger(eDayStr))
@@ -146,7 +146,7 @@ begin
   END;
 end;
 
-Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): UTF8String;
+Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;
 BEGIN
   Case Ft of
     ftEuroDate, ftEuroToday:
@@ -158,7 +158,7 @@ BEGIN
   end;
 END;
 
-function EpiDateToDateTime(Const Str: UTF8String; Ft: TFieldType; Len: Integer): TDateTime;
+function EpiDateToDateTime(Const Str: string; Ft: TFieldType; Len: Integer): TDateTime;
 var
   eDay,eMonth,eYear: Word;
 BEGIN

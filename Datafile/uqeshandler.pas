@@ -16,9 +16,9 @@ type
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FLines:       TStringList;
-    FCurLine:     UTF8String;
-    Function      UpdateProgress(Percent: Integer; Msg: UTF8String): TProgressResult;
-    function      Lang(LangCode: Integer; Const LangText: UTF8String): UTF8String;
+    FCurLine:     string;
+    Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
+    function      Lang(LangCode: Integer; Const LangText: string): string;
 
     function      makeLabel(): TEpiField;
     function      makeNumField(StartPos: Integer): TEpiField;
@@ -31,14 +31,14 @@ type
     function      makeToday(StartPos: Integer):TEpiField;
     function      makeSoundex(StartPos: Integer): TEpiField;
     function      makeCrypt(StartPos: Integer): TEpiField;
-    property      CurLine: UTF8String read FCurLine write FCurLine;
+    property      CurLine: string read FCurLine write FCurLine;
   public
     constructor Create;
     destructor Destroy; override;
     function   QesToDatafile(Const aStream: TStream; var Df: TEpiDataFile): boolean; overload;
     function   QesToDatafile(Const aLines: TStringList; var Df: TEpiDataFile): boolean; overload;
-    function   QesToDatafile(Const aFilename: UTF8String; var Df: TEpiDataFile): boolean; overload;
-    function   DatafileToQes(Const Df: TEpiDatafile; Const aFileName: UTF8String): boolean;
+    function   QesToDatafile(Const aFilename: string; var Df: TEpiDataFile): boolean; overload;
+    function   DatafileToQes(Const Df: TEpiDatafile; Const aFileName: string): boolean;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
   end;
@@ -46,11 +46,11 @@ type
 implementation
 
 uses
-  UDebug, Math, UEpiDataConstants;
+  UDebug, Math, UEpiDataConstants, FileUtil;
 
 { TQesHandler }
 
-function TQesHandler.UpdateProgress(Percent: Integer; Msg: UTF8String
+function TQesHandler.UpdateProgress(Percent: Integer; Msg: string
   ): TProgressResult;
 begin
   Result := prNormal;
@@ -60,7 +60,7 @@ begin
   end;
 end;
 
-function TQesHandler.Lang(LangCode: Integer; const LangText: UTF8String): UTF8String;
+function TQesHandler.Lang(LangCode: Integer; const LangText: string): string;
 begin
   Result := LangText;
   IF Assigned(FOnTranslate) THEN
@@ -245,7 +245,7 @@ begin
   end;
 end;
 
-function TQesHandler.QesToDatafile(const aFilename: UTF8String; var Df: TEpiDataFile
+function TQesHandler.QesToDatafile(const aFilename: string; var Df: TEpiDataFile
   ): boolean;
 var
   aLines: TStringList;
@@ -260,7 +260,7 @@ begin
 end;
 
 function TQesHandler.DatafileToQes(const Df: TEpiDatafile;
-  const aFileName: UTF8String): boolean;
+  const aFileName: string): boolean;
 begin
   // Todo -o Torsten : Implement DatafileToQes
 end;

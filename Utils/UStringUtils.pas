@@ -11,15 +11,15 @@ type
 
   TString = class(TObject)
   private
-    fStr: UTF8String;
+    fStr: string;
   public
-    constructor Create(const AStr: UTF8String) ;
-    property Str: UTF8String read FStr write FStr;
+    constructor Create(const AStr: string) ;
+    property Str: string read FStr write FStr;
   end;
 
-  function FirstWord(Const S: UTF8String; MaxLength: Cardinal): UTF8String;
-  Function FitLength(Const S: UTF8String; L: Integer):UTF8String;
-  procedure SplitString(const Source: UTF8String; var List: TStrings; const Splitters: TCharset = [' ']);
+  function FirstWord(Const S: string; MaxLength: Cardinal): string;
+  Function FitLength(Const S: string; L: Integer):string;
+  procedure SplitString(const Source: string; var List: TStrings; const Splitters: TCharset = [' ']);
 
 implementation
 
@@ -28,7 +28,7 @@ uses
   StrUtils;
 { TString }
 
-constructor TString.Create(const AStr: UTF8String) ;
+constructor TString.Create(const AStr: string) ;
 begin
    inherited Create;
    FStr := AStr;
@@ -36,7 +36,7 @@ end;
 
 
 
-function FirstWord(Const S: UTF8String; MaxLength: Cardinal): UTF8String;
+function FirstWord(Const S: string; MaxLength: Cardinal): string;
 var
   n: Integer;
 begin
@@ -47,8 +47,8 @@ begin
   Result := Copy(s, 1, n-1);
 end;
 
-Function FitLength(Const S: UTF8String; L: Integer):UTF8String;
-{Makes sure that a UTF8String is exactly L chars in length}
+Function FitLength(Const S: string; L: Integer):string;
+{Makes sure that a string is exactly L chars in length}
 begin
   Result := s;
   if Length(s) > L then
@@ -58,10 +58,10 @@ begin
 end;
 
 
-procedure SplitString(const Source: UTF8String; var List: TStrings; const Splitters: TCharset = [' ']);
+procedure SplitString(const Source: string; var List: TStrings; const Splitters: TCharset = [' ']);
 var
   P, P1: PChar;
-  S: UTF8String;
+  S: string;
 begin
   if not Assigned(List) then
     List := TStringList.Create;

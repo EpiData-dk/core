@@ -9,9 +9,9 @@ uses
 
   function  TinyDocumentation(Df: TEpiDatafile): TStrings;
   function  DocumentDataFile(Df: TEpiDatafile): TStrings;
-  function  LoadDataFile(var Df: TEpiDataFile; Const FileName: UTF8String; IgnoreChecks: Boolean;
+  function  LoadDataFile(var Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent): boolean;
-  function  SaveDataFile(Df: TEpiDataFile; Const FileName: UTF8String; IgnoreChecks: Boolean;
+  function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
                          ExportSettings: PEpiExportSettings): boolean;
   function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
@@ -56,12 +56,12 @@ begin
   Result.Add('Num records = ' + inttostr(Df.NumRecords));
 end;
 
-function  LoadDataFile(var Df: TEpiDataFile; Const FileName: UTF8String; IgnoreChecks: Boolean;
+function  LoadDataFile(var Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                        ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent): boolean;
 var
   LoadOptions: TEpiDataFileOptions;
   Importer: TEpiImportExport;
-  S: UTF8String;
+  S: string;
 begin
   if Assigned(Df) then FreeAndNil(Df);
 
@@ -87,14 +87,14 @@ begin
   end;
 end;
 
-function  SaveDataFile(Df: TEpiDataFile; Const FileName: UTF8String; IgnoreChecks: Boolean;
+function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                        ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
                        ExportSettings: PEpiExportSettings): boolean;
 var
   OutDf: TEpiDataFile;
   I, J: Integer;
   TmpField: TEpiField;
-  S: UTF8String;
+  S: string;
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
 begin
@@ -148,16 +148,16 @@ TCharSet=Set of Char;
 var
   res: TStringList;
   FileSiz:LongInt;
-  SizeUnit,tmpStr,tmpType,tmpWidth: UTF8String;
+  SizeUnit,tmpStr,tmpType,tmpWidth: string;
   UsesValueLabels:boolean;
   nN,nN2,nN3,FieldNumber:integer;
   QuestStr,CheckStr,ValLabelStr:ARRAY [1..25] OF string[20];
   AutoList:Tstringlist;
   aValueLabelSet: TValueLabelSet;
-  aValue,aLabel,valuelabelname: UTF8String;
+  aValue,aLabel,valuelabelname: string;
   epd: TEpiDatafile;
 
-  Function CutString(VAR s:UTF8String; ch:TCharSet; wid:Integer):UTF8String;
+  Function CutString(VAR s:string; ch:TCharSet; wid:Integer):string;
   VAR
     LastOccur, cN:Integer;
   BEGIN

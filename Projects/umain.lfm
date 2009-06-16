@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Height = 745
   Top = 231
   Width = 881
-  ActiveControl = Panel7
+  ActiveControl = Panel1
   Caption = 'Core Test Project'
   ClientHeight = 745
   ClientWidth = 881

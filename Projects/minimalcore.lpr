@@ -2,7 +2,7 @@ program minimalcore;
 
 {$mode objfpc}{$H+}
 
-{$DEFINE EPIWARNING}
+{.$DEFINE EPIWARNING}
 
 uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
