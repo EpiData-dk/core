@@ -488,12 +488,12 @@ object MainForm: TMainForm
     end
   end
   object OpenDialog1: TOpenDialog
-    left = 320
-    top = 56
+    left = 360
+    top = 32
   end
   object SaveDialog1: TSaveDialog
     FilterIndex = 0
-    left = 704
-    top = 64
+    left = 736
+    top = 32
   end
 end

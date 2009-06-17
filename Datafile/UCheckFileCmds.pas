@@ -153,6 +153,7 @@ type
     FLetExpr:      string;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -170,6 +171,7 @@ type
     FComment: string;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -187,6 +189,7 @@ type
     FScope:       TFieldScope;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -199,14 +202,13 @@ type
 
   { TChkWriteNote }
 
-  { TChkWriteNote }
-
   TChkWriteNote = class(TChkCommand)
   private
     FNote:      string;
     FShowNotes: Boolean;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -221,6 +223,7 @@ type
     FText: string;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -239,6 +242,7 @@ type
     FAddDate:  Boolean;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -257,6 +261,7 @@ type
     FBeepType: TBeepTypes;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -270,6 +275,7 @@ type
     FLibName: string;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -286,6 +292,7 @@ type
     FWait:    Boolean;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -303,6 +310,7 @@ type
     FIsLastField: Boolean;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -321,6 +329,7 @@ type
     FFieldNo:     Byte;
   protected
     function    GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -338,90 +347,13 @@ type
     FCmdType: TChkCmdType;
   protected
     function  GetCommandType(): TChkCmdType; override;
+    procedure Clone(var Dst: TChkCommand); override;
   public
     constructor Create(aCmdType: TChkCmdType);
     destructor Destroy; override;
   end;
 
-(*
-  PCmd = ^TCmd;
-  TCmd = record
-    Next: PCmd;
-    case Command: TChkCmdType of
-      cmdIF:
-         (IfExpr:          string;
-          IfShowExpr:      string;
-          IfCmds:          TChkCommands;
-          ElseCmds:        TChkCommands);
-      cmdHelp:
-         (HelpString:      string;
-          HelpType:        TMsgDlgType;
-          HelpKeys:        string);
-      cmdHide, cmdUnHide,
-      cmdClear, cmdGoto:
-         (HideVarNumber:   Integer;
-          HideVarName:     string);
-      cmdComLegal:
-         (clVarNumber:     Integer;
-          ValueLabelName:  string;
-          ValueLabel:      TValueLabelSet;
-          ValueLabelIsFieldRef: Boolean;
-          ValueLabelUse:   string;
-          ShowList:        Boolean);
-      cmdTypeString:
-         (tsVarNumber:     Integer;
-          TypeText:        string;
-          Typecolor:       TColor);
-      cmdRelate:
-         (RelField:        string;
-          RelFileNo:       Integer;
-          RelFileStr:      string;
-          One2One:         Boolean);
-      cmdLet:
-         (VarName:         string;
-          VarNumber:       Integer;
-          VarIsField:      Boolean;
-          CodedWithLET:    Boolean;
-          LetExpr:         string);
-      cmdComment:
-         (Comment:         string);
-      cmdDefine:
-         (FName:           string;
-          FeltType:        TFieldType;
-          FLength:         Integer;
-          FNumDecimals:    Byte;
-          FScope:          TFieldScope);
-      cmdWriteNote:
-         (FNote:           string;
-          ShowNotes:       Boolean);
-      cmdCopyToClipboard:
-         (CopyStr:         string);
-      cmdBackup:
-         (DestLib:         string;
-          zipit:           Boolean;
-          encryptit:       Boolean;
-          filename:        string;
-          pw:              string;
-          dateit:          Boolean);
-      cmdBeep:
-         (BeepType:        TBeepTypes);
-      cmdLoad:
-         (DLLName:         string);
-      cmdExecute:
-         (ExecCmdLine:     string;
-          ExecParams:      string;
-          ExecHide:        Boolean;
-          ExecWait:        Boolean);
-      cmdLeaveField:
-         (cLeaveStyle:     TLeaveStyles;
-          IsLastField:     Boolean);
-      cmdColor:
-         (ColorCmd:        Byte;      //1=color question, 2=color data,  3=color background, 4=color fieldname
-          TxtColor:        TColor;
-          BgColor:         TColor;
-          IsEpiInfoNo:     Boolean;
-          CFieldno:        Byte);
-    end;   *)
+  { TChkCommands }
 
   TChkCommands = class(TObject)
   private
@@ -436,23 +368,6 @@ type
     property    Count: integer read GetCount;
     property    Items[index:integer]: TChkCommand read GetItem; default;
   end;
-
-{  TChkCommands = class(TObject)
-  private
-    FList: TList;
-    function GetCount:integer;
-    function GetItem(index:integer):PCmd;
-    Procedure DisposeCommandList(aList: TList);
-  public
-    constructor Create();
-    destructor  Destroy(); override;
-    procedure   AddCommand(aCmd: PCmd);
-    procedure   Clone(var Dest: TChkCommands);
-    function    NewCmd: PCmd;
-    property    Count: integer read GetCount;
-    property    items[index:integer]:PCmd read GetItem; default;
-    property    List:TList read FList;
-  end;   }
 
 implementation
 
@@ -720,9 +635,24 @@ begin
   Result := cmdLet;
 end;
 
+procedure TChkLet.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkLet(Dst).FVarNumber := FVarNumber;
+  TChkLet(Dst).FVarName := FVarName;
+  TChkLet(Dst).FCodedWithLET := FCodedWithLET;
+  TChkLet(Dst).FLetExpr := FLetExpr;
+  TChkLet(Dst).FVarIsField := FVarIsField;
+end;
+
 constructor TChkLet.Create;
 begin
   inherited Create;
+  FVarNumber := 0;
+  FVarName := '';
+  FCodedWithLET := false;
+  FLetExpr := '';
+  FVarIsField := false;
 end;
 
 destructor TChkLet.Destroy;
@@ -737,9 +667,16 @@ begin
   Result := cmdComment;
 end;
 
+procedure TChkComment.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkComment(Dst).FComment := FComment;
+end;
+
 constructor TChkComment.Create;
 begin
   inherited Create;
+  FComment := '';
 end;
 
 destructor TChkComment.Destroy;
@@ -754,9 +691,24 @@ begin
   Result := cmdDefine;
 end;
 
+procedure TChkDefine.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkDefine(Dst).FFieldName := FFieldName;
+  TChkDefine(Dst).FFieldType := FFieldType;
+  TChkDefine(Dst).FLength := FLength;
+  TChkDefine(Dst).FNumDecimals := FNumDecimals;
+  TChkDefine(Dst).FScope := FScope;
+end;
+
 constructor TChkDefine.Create;
 begin
   inherited Create;
+  FFieldName := '';
+  FFieldType := ftAlfa;
+  FLength := 0;
+  FNumDecimals := 0;
+  FScope := scNone;
 end;
 
 destructor TChkDefine.Destroy;
@@ -771,9 +723,18 @@ begin
   Result := cmdWriteNote;
 end;
 
+procedure TChkWriteNote.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkWriteNote(Dst).FNote := FNote;
+  TChkWriteNote(Dst).FShowNotes := FShowNotes;
+end;
+
 constructor TChkWriteNote.Create;
 begin
   inherited Create;
+  FNote := '';
+  FShowNotes := false;
 end;
 
 destructor TChkWriteNote.Destroy;
@@ -788,9 +749,16 @@ begin
   Result := cmdCopyToClipboard;
 end;
 
+procedure TChkClpBrd.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkClpBrd(Dst).FText := FText;
+end;
+
 constructor TChkClpBrd.Create;
 begin
   inherited Create;
+  FText := '';
 end;
 
 destructor TChkClpBrd.Destroy;
@@ -805,9 +773,26 @@ begin
   Result := cmdBackup;
 end;
 
+procedure TChkBackup.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkBackup(Dst).FDestLib :=FDestLib;
+  TChkBackup(Dst).FZip := FZip;
+  TChkBackup(Dst).FEncrypt := FEncrypt;
+  TChkBackup(Dst).FFilename := FFilename;
+  TChkBackup(Dst).FPass := FPass;
+  TChkBackup(Dst).FAddDate := FAddDate;
+end;
+
 constructor TChkBackup.Create;
 begin
   inherited Create;
+  FDestLib := '';
+  FZip := false;
+  FEncrypt := false;
+  FFilename := '';
+  FPass := '';
+  FAddDate := false;
 end;
 
 destructor TChkBackup.Destroy;
@@ -822,9 +807,16 @@ begin
   Result := cmdBeep;
 end;
 
+procedure TChkBeep.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkBeep(Dst).FBeepType := FBeepType;
+end;
+
 constructor TChkBeep.Create;
 begin
   inherited Create;
+  FBeepType := btStandard;
 end;
 
 destructor TChkBeep.Destroy;
@@ -839,9 +831,16 @@ begin
   Result := cmdLoad;
 end;
 
+procedure TChkLoadLib.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkLoadLib(Dst).FLibName := FLibName;
+end;
+
 constructor TChkLoadLib.Create;
 begin
   inherited Create;
+  FLibName := '';
 end;
 
 destructor TChkLoadLib.Destroy;
@@ -856,9 +855,22 @@ begin
   Result := cmdExecute;
 end;
 
+procedure TChkExec.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkExec(Dst).FCmdLine := FCmdLine;
+  TChkExec(Dst).FParams := FParams;
+  TChkExec(Dst).FHide := FHide;
+  TChkExec(Dst).FWait := FWait;
+end;
+
 constructor TChkExec.Create;
 begin
   inherited Create;
+  FCmdLine := '';
+  FParams := '';
+  FHide := false;
+  FWait := false;
 end;
 
 destructor TChkExec.Destroy;
@@ -873,9 +885,18 @@ begin
   Result := cmdLeaveField;
 end;
 
+procedure TChkLeaveField.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkLeaveField(Dst).FIsLastField := FIsLastField;
+  TChkLeaveField(Dst).FLeaveStyle := FLeaveStyle;
+end;
+
 constructor TChkLeaveField.Create;
 begin
   inherited Create;
+  FIsLastField := false;
+  FLeaveStyle := lsNone;
 end;
 
 destructor TChkLeaveField.Destroy;
@@ -890,9 +911,24 @@ begin
   Result := cmdColor;
 end;
 
+procedure TChkColor.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkColor(Dst).FColorCmd := FColorCmd;
+  TChkColor(Dst).FTxtColor := FTxtColor;
+  TChkColor(Dst).FBgColor := FBgColor;
+  TChkColor(Dst).FIsEpiInfoNo := FIsEpiInfoNo;
+  TChkColor(Dst).FFieldNo := FFieldNo;
+end;
+
 constructor TChkColor.Create;
 begin
   inherited Create;
+  FColorCmd := 0;
+  FTxtColor := clBlue;
+  FBgColor := clBlue;
+  FIsEpiInfoNo := false;
+  FFieldNo := 0;
 end;
 
 destructor TChkColor.Destroy;
@@ -906,6 +942,12 @@ end;
 function TChkOther.GetCommandType(): TChkCmdType;
 begin
   Result := FCmdType;
+end;
+
+procedure TChkOther.Clone(var Dst: TChkCommand);
+begin
+  inherited Clone(Dst);
+  TChkOther(Dst).FCmdType := FCmdType;
 end;
 
 constructor TChkOther.Create(aCmdType: TChkCmdType);

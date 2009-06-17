@@ -5,7 +5,7 @@ unit UCommon;
 interface
 
 uses
-  Classes, Dialogs, UEpidataFile, UDatafileTypes, UImportExport;
+  Classes, Dialogs, UEpidataFile, UDataFileTypes, UImportExport;
 
   function  TinyDocumentation(Df: TEpiDatafile): TStrings;
   function  DocumentDataFile(Df: TEpiDatafile): TStrings;
@@ -119,11 +119,12 @@ begin
   OutDf := TEpiDataFile.Create(SaveOptions);
   OutDf.OnPassword   := GetPassword;
   OutDf.Filelabel    := Df.FileLabel;
-//  OutDf.ValueLabels.Assign(Df.ValueLabels);
+  OutDf.ValueLabels.Assign(Df.ValueLabels);
 
   for i := 0 to Df.NumFields - 1 do
   begin
     TmpField := TEpiField.Create();
+    TmpField.DataFile := OutDf;
     Df[i].Clone(TmpField);
     OutDf.AddField(TmpField);
   end;

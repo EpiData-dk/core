@@ -2982,6 +2982,7 @@ begin
       FCheckLines.LoadFromFile(aFileName);
     except
       FreeAndNil(FCheckLines);
+      Debugger.AddError(ClassName, 'ReadCheckFile', Format('Error reading the checkfile %s', [aFileName]),20130);
       FErrorLines.Add(Format(Lang(20130,'Error reading the checkfile %s'), [aFileName]));
       Exit;
     end;

@@ -9,26 +9,6 @@ uses
   
 type
 
-  TValueLabelSet = class;
-
-  TValueLabelSets = class(TObject)
-  private
-    FList: TStringList;
-    function GetCount:integer;
-    function GetItem(index:integer):TValueLabelSet;
-  public
-    constructor Create();
-    destructor  Destroy(); override;
-    procedure   Clear();
-    procedure   Clone(var dest: TValueLabelSets);
-    procedure   Assign(Const Src: TValueLabelSets);
-    function    ValueLabelSetByName(Const aName: string): TValueLabelSet;
-    procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
-    procedure   DeleteValueLabelSet(Const Name: string);
-    property    Count:integer read GetCount;
-    property    Items[index: integer]: TValueLabelSet read GetItem; default;
-  end;
-
   TValueLabelSetType = (vltGlobal, vltLocal, vltFile);
 
   TValueLabelSet = class(TObject)
@@ -60,6 +40,24 @@ type
     property    LabelType: TValueLabelSetType read FLabelType write FLabelType;
   end;
 
+  TValueLabelSets = class(TObject)
+  private
+    FList: TStringList;
+    function GetCount:integer;
+    function GetItem(index:integer):TValueLabelSet;
+  public
+    constructor Create();
+    destructor  Destroy(); override;
+    procedure   Clear();
+    procedure   Clone(var dest: TValueLabelSets);
+    procedure   Assign(Const Src: TValueLabelSets);
+    function    ValueLabelSetByName(Const aName: string): TValueLabelSet;
+    procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
+    procedure   DeleteValueLabelSet(Const Name: string);
+    property    Count:integer read GetCount;
+    property    Items[index: integer]: TValueLabelSet read GetItem; default;
+  end;
+
 implementation
 
 uses
@@ -85,7 +83,9 @@ var
   i: integer;
 begin
   for i := 0 to FList.Count - 1 do
-    TValueLabelSet(FList.Objects[i]).Destroy;
+  begin
+    TValueLabelSet(FList.Objects[i]).Free;
+  end;
 end;
 
 procedure TValueLabelSets.Clone(var dest: TValueLabelSets);

@@ -153,6 +153,7 @@ type
   private
     FData:         string;
     FOwner:        TEpiFields;
+    FDataFile:     TEpiDataFile;
     FFieldNo:      Cardinal;        
     FDisplayChar:  Char;
     FFieldName:    string;
@@ -202,7 +203,8 @@ type
     property    VariableLabel: string read FVariableLabel write FVariableLabel;
     property    CheckField:  TEpiCheckField read FCheckField write FCheckField;
     property    ValueLabelSet: TValueLabelSet read GetValueLabel;
-    property    Owner:       TEpiFields read FOwner write FOwner;
+    property    Owner:       TEpiFields read FOwner;
+    property    DataFile:    TEpiDataFile read FDataFile write FDataFile;
   end;
 
   { TEpiFields }
@@ -607,10 +609,10 @@ begin
   if not Assigned(Dest) then
     Dest := TEpiField.Create();
 
-  // Reset all values... but retain ownership.
-  Ptr := Dest.Owner;
+  // Reset all values... but retain Datafile linkage.
+  Ptr := Dest.DataFile;
   Dest.Reset();
-  Dest.Owner := TEpiFields(Ptr);
+  Dest.DataFile := TEpiDataFile(Ptr);
 
   // Copy Field related values:
   Dest.FDisplayChar := FDisplayChar;
@@ -636,18 +638,19 @@ begin
 
   // Set Valuelabels here since CheckField does not have Owner info.
   // Scenarios:
-  // - 1: Dest field has an owner. Then any potetial valuelabels should be found
-  //      through Dest.owner's valuelabelsets.
-  // - 2: Dest has NO owner. This could be a temporary clone, etc.
+  // - 1: Dest field has a link to a Datafile. Then any potential valuelabels should be found
+  //      through Dest.Datafile's valuelabelsets.
+  // - 2: Dest has NO Datafile. This could be a temporary clone, etc.
   //      Copy the Valuelabelset, assign it to Dest field (and posibly also create
   //      the CheckField) and let and TEpiDataFile.AddField handle Valuelabels.
   //      This will reset label type (to vltLocal), since at present it is not known
   //      how the valuelabelset is related to anything else...
   if Assigned(ValueLabelSet) then
   begin
-    if Assigned(Dest.Owner) then
-      Dest.CheckField.FValueLabel := Dest.Owner.FDataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
-    else begin
+    if Assigned(Dest.DataFile) then
+    begin
+      Dest.CheckField.FValueLabel := Dest.DataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
+    end else begin
       If not Assigned(Dest.CheckField) then
         Dest.CheckField := TEpiCheckField.Create();
       ValueLabelSet.Clone(Dest.CheckField.FValueLabel);
@@ -670,6 +673,7 @@ begin
 
   FData          := '';
   FOwner         := nil;
+  FDataFile      := nil;
   FFieldNo       := 0;
   FDisplayChar   := '_';
   FFieldName     := '';
@@ -743,7 +747,10 @@ end;
 procedure TEpiFields.Add(aField: TEpiField);
 begin
   if Owned then
-    aField.Owner := self;
+  begin
+    aField.FOwner := self;
+    aField.FDataFile := Self.FDataFile;
+  end;
   FList.Add(aField);
 end;
 
