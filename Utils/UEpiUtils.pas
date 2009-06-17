@@ -212,20 +212,27 @@ begin
 //  FindResource(ResMan.HINSTANCEFunc(), RT_VERSION, RT_VERSION);
   FpUname(UName);
   CSI.OSName := string(UName.Sysname);
-  CSI.OSMajorVersion := 0;
-  CSI.OSMinorVersion := 0;
-
-  CSI.PrgVersion.Major   := 0;
-  CSI.PrgVersion.Minor   := 1;
-  CSI.PrgVersion.Release := 0;
-  CSI.PrgVersion.Build   := 92;
-
   PInfo := new(PSysInfo);
   Sysinfo(PInfo);
   Info := PInfo^;
   CSI.MemSize := (Info.totalram * Info.mem_unit);
   CSI.MemUsage := Floor(100 * (Info.totalram - (Info.freeram)) / Info.totalram);
   {$ELSE}
+  CSI.OSName := 'Windows';
+  CSI.MemSize := 0;
+  CSI.MemUsage := 0;
+  {$ENDIF}
+  CSI.OSMajorVersion := 0;
+  CSI.OSMinorVersion := 0;
+
+  CSI.PrgVersion.Major   := 0;
+  CSI.PrgVersion.Minor   := 1;
+  CSI.PrgVersion.Release := 1;
+  CSI.PrgVersion.Build   := 93;
+
+
+
+{  {$ELSE}
   {$IFNDEF FPC}
   GetBuildInfo(CSI.PrgVersion);
   Ovi.dwOSVersionInfoSize := SizeOf(TOSVersionInfo);
@@ -248,7 +255,7 @@ begin
     CSI.MemUsage := MsEx.dwMemoryLoad;
   end;
   {$ENDIF}
-  {$ENDIF}
+  {$ENDIF}             }
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!
   CSI.CoreRevision := 0;

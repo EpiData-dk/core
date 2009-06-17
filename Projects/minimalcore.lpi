@@ -9,12 +9,13 @@
       <Title Value="EpiData Software Core Test Project"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="3"/>
+      <ActiveEditorIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <CurrentMajorRevNr Value="1"/>
-      <CurrentBuildNr Value="92"/>
+      <CurrentMinorRevNr Value="1"/>
+      <CurrentBuildNr Value="93"/>
       <ProjectVersion Value="0.1.0.92"/>
       <CharSet Value="04B0"/>
     </VersionInfo>
@@ -40,7 +41,7 @@
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="minimalcore"/>
-        <CursorPos X="83" Y="18"/>
+        <CursorPos X="63" Y="19"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="203"/>
@@ -52,10 +53,10 @@
         <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UMain"/>
-        <CursorPos X="41" Y="114"/>
-        <TopLine Value="1"/>
+        <CursorPos X="78" Y="382"/>
+        <TopLine Value="354"/>
         <EditorIndex Value="1"/>
-        <UsageCount Value="125"/>
+        <UsageCount Value="127"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
@@ -476,7 +477,7 @@
         <UnitName Value="UWarning"/>
         <CursorPos X="1" Y="30"/>
         <TopLine Value="1"/>
-        <UsageCount Value="128"/>
+        <UsageCount Value="130"/>
       </Unit65>
       <Unit66>
         <Filename Value="..\..\..\..\..\..\usr\local\share\lazarus\lcl\include\customform.inc"/>
@@ -752,16 +753,16 @@
         <UnitName Value="UCommon"/>
         <CursorPos X="52" Y="126"/>
         <TopLine Value="105"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit106>
       <Unit107>
         <Filename Value="..\Datafile\UCheckFileCmds.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileCmds"/>
-        <CursorPos X="81" Y="10"/>
+        <CursorPos X="73" Y="19"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="3"/>
-        <UsageCount Value="107"/>
+        <EditorIndex Value="7"/>
+        <UsageCount Value="109"/>
         <Loaded Value="True"/>
       </Unit107>
       <Unit108>
@@ -770,7 +771,7 @@
         <UnitName Value="UCheckFileIO"/>
         <CursorPos X="80" Y="2979"/>
         <TopLine Value="2956"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit108>
       <Unit109>
         <Filename Value="..\Datafile\UCheckFileTypes.pas"/>
@@ -778,7 +779,7 @@
         <UnitName Value="UCheckFileTypes"/>
         <CursorPos X="5" Y="13"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit109>
       <Unit110>
         <Filename Value="..\Datafile\UDataFileTypes.pas"/>
@@ -786,7 +787,7 @@
         <UnitName Value="UDataFileTypes"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit110>
       <Unit111>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
@@ -794,8 +795,8 @@
         <UnitName Value="UEpiDataFile"/>
         <CursorPos X="1" Y="1507"/>
         <TopLine Value="1487"/>
-        <EditorIndex Value="2"/>
-        <UsageCount Value="107"/>
+        <EditorIndex Value="6"/>
+        <UsageCount Value="109"/>
         <Loaded Value="True"/>
       </Unit111>
       <Unit112>
@@ -804,7 +805,7 @@
         <UnitName Value="UImportExport"/>
         <CursorPos X="1" Y="4"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit112>
       <Unit113>
         <Filename Value="..\Datafile\UValueLabels.pas"/>
@@ -812,7 +813,7 @@
         <UnitName Value="UValueLabels"/>
         <CursorPos X="1" Y="206"/>
         <TopLine Value="238"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit113>
       <Unit114>
         <Filename Value="..\Encryption\Base64.pas"/>
@@ -820,7 +821,7 @@
         <UnitName Value="Base64"/>
         <CursorPos X="1" Y="9"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit114>
       <Unit115>
         <Filename Value="..\Encryption\DCPcrypt.pas"/>
@@ -828,7 +829,7 @@
         <UnitName Value="DCPcrypt"/>
         <CursorPos X="20" Y="9"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit115>
       <Unit116>
         <Filename Value="..\Encryption\Rijndael.pas"/>
@@ -836,7 +837,7 @@
         <UnitName Value="Rijndael"/>
         <CursorPos X="1" Y="10"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit116>
       <Unit117>
         <Filename Value="..\Encryption\SHA1.pas"/>
@@ -844,7 +845,7 @@
         <UnitName Value="SHA1"/>
         <CursorPos X="1" Y="10"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit117>
       <Unit118>
         <Filename Value="..\Utils\UDateUtils.pas"/>
@@ -852,31 +853,37 @@
         <UnitName Value="UDateUtils"/>
         <CursorPos X="20" Y="3"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit118>
       <Unit119>
         <Filename Value="..\Utils\UDebug.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDebug"/>
-        <CursorPos X="22" Y="40"/>
-        <TopLine Value="19"/>
-        <UsageCount Value="107"/>
+        <CursorPos X="16" Y="91"/>
+        <TopLine Value="84"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
       </Unit119>
       <Unit120>
         <Filename Value="..\Utils\UEpiDataConstants.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataConstants"/>
-        <CursorPos X="46" Y="34"/>
-        <TopLine Value="34"/>
-        <UsageCount Value="107"/>
+        <CursorPos X="3" Y="14"/>
+        <TopLine Value="1"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
       </Unit120>
       <Unit121>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiUtils"/>
-        <CursorPos X="65" Y="186"/>
-        <TopLine Value="161"/>
-        <UsageCount Value="107"/>
+        <CursorPos X="21" Y="223"/>
+        <TopLine Value="209"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
       </Unit121>
       <Unit122>
         <Filename Value="..\Utils\UStringUtils.pas"/>
@@ -884,7 +891,7 @@
         <UnitName Value="UStringUtils"/>
         <CursorPos X="1" Y="8"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit122>
       <Unit123>
         <Filename Value="..\Utils\UUtilTypes.pas"/>
@@ -892,7 +899,7 @@
         <UnitName Value="UUtilTypes"/>
         <CursorPos X="1" Y="4"/>
         <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <UsageCount Value="109"/>
       </Unit123>
       <Unit124>
         <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\sysutils.pp"/>
@@ -905,9 +912,11 @@
         <Filename Value="..\Datafile\uqeshandler.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UQesHandler"/>
-        <CursorPos X="48" Y="228"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="107"/>
+        <CursorPos X="44" Y="29"/>
+        <TopLine Value="20"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="109"/>
+        <Loaded Value="True"/>
       </Unit125>
       <Unit126>
         <Filename Value="..\..\..\Analysis\trunk\UFrames.pas"/>
@@ -1158,11 +1167,39 @@
         <UsageCount Value="10"/>
       </Unit164>
     </Units>
-    <JumpHistory Count="1" HistoryIndex="0">
+    <JumpHistory Count="8" HistoryIndex="7">
       <Position1>
         <Filename Value="umain.pas"/>
         <Caret Line="147" Column="31" TopLine="125"/>
       </Position1>
+      <Position2>
+        <Filename Value="..\Datafile\uqeshandler.pas"/>
+        <Caret Line="228" Column="48" TopLine="186"/>
+      </Position2>
+      <Position3>
+        <Filename Value="umain.pas"/>
+        <Caret Line="212" Column="33" TopLine="186"/>
+      </Position3>
+      <Position4>
+        <Filename Value="umain.pas"/>
+        <Caret Line="360" Column="12" TopLine="354"/>
+      </Position4>
+      <Position5>
+        <Filename Value="..\Utils\UDebug.pas"/>
+        <Caret Line="91" Column="16" TopLine="84"/>
+      </Position5>
+      <Position6>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="257" Column="29" TopLine="221"/>
+      </Position6>
+      <Position7>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="18" Column="83" TopLine="1"/>
+      </Position7>
+      <Position8>
+        <Filename Value="minimalcore.lpr"/>
+        <Caret Line="31" Column="58" TopLine="1"/>
+      </Position8>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -1174,7 +1211,6 @@
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)\"/>
       <OtherUnitFiles Value="..\Datafile\;..\Encryption\;..\Utils\"/>
-      <LCLWidgetType Value="win32"/>
     </SearchPaths>
     <Parsing>
       <SyntaxOptions>
@@ -1184,27 +1220,16 @@
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
-      <Checks>
-        <IOChecks Value="True"/>
-        <RangeChecks Value="True"/>
-        <OverflowChecks Value="True"/>
-        <StackChecks Value="True"/>
-      </Checks>
-      <VerifyObjMethodCallValidity Value="True"/>
-      <TargetOS Value="Win32"/>
+      <SmartLinkUnit Value="True"/>
       <Optimizations>
-        <OptimizationLevel Value="0"/>
+        <OptimizationLevel Value="3"/>
       </Optimizations>
     </CodeGeneration>
     <Linking>
       <Debugging>
         <UseLineInfoUnit Value="False"/>
       </Debugging>
-      <Options>
-        <Win32>
-          <GraphicApplication Value="True"/>
-        </Win32>
-      </Options>
+      <LinkSmart Value="True"/>
     </Linking>
     <Other>
       <CompilerPath Value="$(CompPath)"/>

@@ -206,9 +206,10 @@ begin
   if Msg <> pgLabel.Caption then
   begin
     pgLabel.Caption := Msg;
-    pgLabel.Refresh;
+  //  pgLabel.Refresh;
   end;
-  pgBar.Refresh;
+//  pgBar.Refresh;
+  Application.ProcessMessages;
 end;
 
 procedure TMainForm.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: string);

@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Height = 745
   Top = 231
   Width = 881
-  ActiveControl = Panel1
+  ActiveControl = PageControl1
   Caption = 'Core Test Project'
   ClientHeight = 745
   ClientWidth = 881
@@ -259,9 +259,13 @@ object MainForm: TMainForm
         Top = 0
         Width = 875
         Align = alClient
+        Font.CharSet = 4
+        Font.Height = -11
+        Font.Name = 'MS Sans Serif'
         Lines.Strings = (
           ''
         )
+        ParentFont = False
         TabOrder = 0
       end
     end
@@ -276,7 +280,7 @@ object MainForm: TMainForm
         Top = 0
         Width = 875
         Align = alClient
-        Font.CharSet = ANSI_CHARSET
+        Font.CharSet = 4
         Font.Height = -13
         Font.Name = 'Courier New'
         ParentFont = False
@@ -337,9 +341,9 @@ object MainForm: TMainForm
           Top = 41
           Width = 433
           Align = alClient
-          Font.CharSet = ANSI_CHARSET
+          Font.CharSet = 4
           Font.Height = -13
-          Font.Name = 'Fixedsys'
+          Font.Name = 'Courier New'
           ParentFont = False
           ScrollBars = ssVertical
           TabOrder = 1
@@ -384,9 +388,9 @@ object MainForm: TMainForm
           Top = 41
           Width = 437
           Align = alClient
-          Font.CharSet = ANSI_CHARSET
+          Font.CharSet = 4
           Font.Height = -13
-          Font.Name = 'Fixedsys'
+          Font.Name = 'Courier New'
           ParentFont = False
           ScrollBars = ssVertical
           TabOrder = 1
@@ -404,7 +408,11 @@ object MainForm: TMainForm
         Top = 41
         Width = 875
         Align = alClient
+        Font.CharSet = 4
+        Font.Height = -12
+        Font.Name = 'Courier New'
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing]
+        ParentFont = False
         TabOrder = 0
         TitleFont.Height = -11
         TitleFont.Name = 'MS Sans Serif'
@@ -422,7 +430,8 @@ object MainForm: TMainForm
           Left = 16
           Height = 25
           Top = 8
-          Width = 75
+          Width = 84
+          AutoSize = True
           Caption = 'Show Values'
           OnClick = Button2Click
           TabOrder = 0
@@ -431,7 +440,8 @@ object MainForm: TMainForm
           Left = 112
           Height = 25
           Top = 8
-          Width = 75
+          Width = 84
+          AutoSize = True
           Caption = 'Show Labels'
           OnClick = Button3Click
           TabOrder = 1
@@ -449,9 +459,9 @@ object MainForm: TMainForm
         Top = 41
         Width = 875
         Align = alClient
-        Font.CharSet = ANSI_CHARSET
+        Font.CharSet = 4
         Font.Height = -11
-        Font.Name = 'Fixedsys'
+        Font.Name = 'courier new [monotype]'
         ParentFont = False
         ScrollBars = ssBoth
         TabOrder = 0
