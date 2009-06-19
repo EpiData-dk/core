@@ -1,9 +1,9 @@
 object MainForm: TMainForm
-  Left = 558
+  Left = 593
   Height = 745
-  Top = 231
+  Top = 220
   Width = 881
-  ActiveControl = PageControl1
+  ActiveControl = Panel1
   Caption = 'Core Test Project'
   ClientHeight = 745
   ClientWidth = 881
@@ -245,9 +245,9 @@ object MainForm: TMainForm
     Height = 568
     Top = 177
     Width = 881
-    ActivePage = TabSheet5
+    ActivePage = TabSheet3
     Align = alClient
-    TabIndex = 4
+    TabIndex = 3
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'
@@ -408,12 +408,13 @@ object MainForm: TMainForm
         Top = 41
         Width = 875
         Align = alClient
-        Font.CharSet = 4
+        Font.CharSet = OEM_CHARSET
         Font.Height = -12
         Font.Name = 'Courier New'
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing]
         ParentFont = False
         TabOrder = 0
+        TitleFont.CharSet = OEM_CHARSET
         TitleFont.Height = -11
         TitleFont.Name = 'MS Sans Serif'
       end

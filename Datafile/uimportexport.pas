@@ -58,6 +58,7 @@ type
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
+    FStringMode:  TStringMode;
     DataStream:   TStream;
     function      Lang(LangCode: Integer; Const LangText: string): string;
     Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
@@ -86,12 +87,13 @@ type
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
+    property      StringMode: TStringMode read FStringMode;
   end;
 
 implementation
 
 uses
-  UValueLabels, UEpiDataConstants, UEpiUtils, Math, StrUtils, UDateUtils;
+  UValueLabels, UEpiDataConstants, UEpiUtils, Math, StrUtils, UDateUtils, FileUtil;
 
   { TEpiImportExport }
 
@@ -166,7 +168,7 @@ begin
   begin
     Result := Result + Src[i];
     Inc(i);
-  end
+  end;
 end;
 
 procedure TEpiImportExport.WriteBuf(Buf: Array of Byte; Count: Integer);
@@ -319,6 +321,7 @@ begin
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
     DataStream := TFileStream.Create(aFileName, fmOpenRead);
+    FStringMode := smAnsi;
 
     // ********************************
     //           STATA HEADER
@@ -478,7 +481,7 @@ begin
           Exit;
         END;
         TmpField.FieldType := ftAlfa;
-        TmpField.FieldLength := Ord(TypeList[i]) - StrBaseNum;
+        TmpField.FieldLength := (Ord(TypeList[i]) - StrBaseNum) * 2;
       END;
       // - varlist
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
@@ -681,9 +684,10 @@ begin
               End;
           else
             // This is a string field.
-            SetLength(CharBuf, TmpField.FieldLength);
-            DataStream.Read(CharBuf[0], TmpField.FieldLength);
-            StrBuf := StringFromBuffer(PChar(@CharBuf[0]), TmpField.FieldLength);
+            SetLength(CharBuf, TmpField.FieldLength div 2);
+            FillChar(CharBuf[0], Length(CharBuf), 0);
+            DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
+            StrBuf := SysToUTF8(String(CharBuf));
           end;
 
           IF (StrBuf <> '') AND (TmpField.Fieldtype in DateFieldTypes) THEN

@@ -228,7 +228,7 @@ begin
   CSI.PrgVersion.Major   := 0;
   CSI.PrgVersion.Minor   := 1;
   CSI.PrgVersion.Release := 1;
-  CSI.PrgVersion.Build   := 93;
+  CSI.PrgVersion.Build   := 94;
 
 
 

@@ -32,7 +32,8 @@ CONST
   EPI_USERCANCELLED=99;
 
   // QES Related:
-  EPI_QES_NO_FIELDS = 50;
+  EPI_QES_FAILED = 50;
+  EPI_QES_NO_FIELDS = 51;
 
   // Import, Export
   EPI_FAILED=100;

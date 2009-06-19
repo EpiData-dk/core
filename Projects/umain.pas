@@ -366,7 +366,6 @@ begin
 
   if SaveDialog1.Execute then
     Debugger.SaveToFile(SaveDialog1.FileName);
-
 end;
 
 procedure TMainForm.filetypeComboChange(Sender: TObject);
