@@ -1565,6 +1565,7 @@ end;
 constructor TEpiIndexFile.Create(const aFileName: string);
 begin
   Reset();
+  FFileName := aFileName;
 end;
 
 destructor TEpiIndexFile.Destroy;
