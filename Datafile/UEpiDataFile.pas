@@ -398,13 +398,13 @@ end;
 
 destructor TEpiCheckField.Destroy;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'Destroy', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'Destroy', 3);
   try
     InternalReset();
     inherited;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -468,13 +468,13 @@ end;
 
 destructor TEpiCheckFile.Destroy;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'Destroy', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'Destroy', 3);
   try
     InternalReset();
     inherited;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end
 end;
 
@@ -576,13 +576,13 @@ end;
 
 destructor TEpiField.Destroy;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'Destroy', 3, 'Fieldname = ' + FieldName);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'Destroy', 3, 'Fieldname = ' + FieldName);
   try
     Reset();
     inherited;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -828,8 +828,8 @@ var
   TmpName: string[10];
   TmpQuestion, TmpStr: string;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'InternalOpen', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'InternalOpen', 3);
   result := false;
 
   OrgDataType := dftEpiData;
@@ -843,7 +843,7 @@ begin
     FErrorText := Format(Lang(20108,'Data file %s could not be opened.'),[Filename]) + #13 +
                          Lang(20208,'Please check if the file is in use and that the file name is legal.');
     FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-    Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 20108);
+    EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20108);
     Exit;
   end;
 
@@ -861,7 +861,7 @@ begin
       begin
         FErrorText := Format(Lang(0, 'File version information invalid %s'), [Filename]);
         FErrorCode := EPI_FILE_VERSION_ERROR;
-        Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
         CloseFile(TxtFile);
         Exit;
       end;
@@ -875,7 +875,7 @@ begin
       begin
         FErrorText := Lang(9020, 'Incorrect password entered');
         FErrorcode := EPI_INVALID_PASSWORD;
-        Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
         CloseFile(TxtFile);
         Exit;
       end;
@@ -897,7 +897,7 @@ begin
     begin
       FErrorText := Format(Lang(20112, 'Incorrect format of datafile %s'), [Filename]);
       FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-      Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 20112);
+      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20112);
       CloseFile(TxtFile);
       Exit;
     end;
@@ -906,12 +906,12 @@ begin
     // Read field defining header lines.
     for CurrentLine := 1 to HeaderLineCount do
     begin
-      Debugger.Add(ClassName, 'InternalOpen', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
+      EpiLogger.Add(ClassName, 'InternalOpen', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
       if UpdateProgress((CurrentLine*100) DIV HeaderLineCount, lang(0,'Opening data file'))=prCancel then
       begin
         FErrorText := Lang(0, 'Cancelled by user');
         FErrorcode := EPI_USERCANCELLED;
-        Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
         CloseFile(TxtFile);
         Exit;
       end;
@@ -997,7 +997,7 @@ begin
     begin
       FErrorText := Format(Lang(20118, 'Error in datafile %s.~~One or more records are corrupted.'), [Filename]);
       FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-      Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 20118);
+      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20118);
       Exit;
     end;
 
@@ -1015,7 +1015,7 @@ begin
             ErrorCode := EPI_CHECKFILE_ERROR;
             for i := 0 to ChkIO.ErrorLines.Count -1 do
               ErrorText := ErrorText + #13#10 + ChkIO.ErrorLines[i];
-            Debugger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+            EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
           end;
         except
           ErrorCode := EPI_CHECKFILE_ERROR;
@@ -1026,7 +1026,7 @@ begin
       end
     end;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -1038,8 +1038,8 @@ var
   Stream: TFileStream;
   ChkIO: TCheckFileIO;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(Classname, 'InternalSave', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'InternalSave', 3);
   result := false;
 
   IF Fields.Count = 0 THEN
@@ -1098,7 +1098,7 @@ begin
     FOR i := 0 TO NumFields - 1 DO
     WITH Fields[i] DO
     BEGIN
-      Debugger.Add(Classname, 'InternalSave', 3, 'Writing heading no. ' + IntToStr(i+1));
+      EpiLogger.Add(Classname, 'InternalSave', 3, 'Writing heading no. ' + IntToStr(i+1));
       // - Fieldchar
       IF (FieldType = ftInteger) OR (FieldType = ftFloat) OR
          (FieldType = ftIDNUM) THEN
@@ -1168,7 +1168,7 @@ begin
       end;
     end;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
     if Assigned(Stream) then FreeAndNil(Stream);
     if Assigned(ChkIO) then FreeAndNil(ChkIO);
   end;
@@ -1198,7 +1198,7 @@ begin
   except
     FErrorText := Lang(0, 'Fatal Error in decrypting password.');
     FErrorCode := EPI_INVALID_PASSWORD;
-    Debugger.AddError(ClassName, 'RequestPassword', ErrorText, 0);
+    EpiLogger.AddError(ClassName, 'RequestPassword', ErrorText, 0);
     Abort;
   end;
 end;
@@ -1279,8 +1279,8 @@ constructor TEpiDataFile.Create(aOptions: TEpiDataFileOptions);
 var
   p: pointer;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'Create', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'Create', 3);
   try
     Reset();
 
@@ -1291,19 +1291,19 @@ begin
 
     FFieldNaming := fnFirstWord;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
 destructor TEpiDataFile.Destroy();
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'Destroy', 2, 'Filename = ' + FileName);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'Destroy', 2, 'Filename = ' + FileName);
   try
     InternalReset();
     inherited Destroy();
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -1312,8 +1312,8 @@ var
   TmpStream: TFileStream;
   Ext: string;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(Classname, 'Open', 2, 'Filename = "' + aFilename + '"');
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'Open', 2, 'Filename = "' + aFilename + '"');
   try
     FFileName := aFileName;
 
@@ -1329,10 +1329,10 @@ begin
       FErrorText := Format(Lang(0, 'Unsupported file type for direct reading: %s'), [Ext]);
       FErrorCode := EPI_OPEN_FILE_ERROR;
       result := False;
-      Debugger.AddError(Classname, 'Open', ErrorText, 0);
+      EpiLogger.AddError(Classname, 'Open', ErrorText, 0);
     end;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -1340,8 +1340,8 @@ function TEpiDataFile.Save(Const aFileName: string): boolean;
 var
   Ext: string;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(Classname, 'Save', 2, 'Filename = "' + aFilename + '"');
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'Save', 2, 'Filename = "' + aFilename + '"');
   try
     FFileName := aFileName;
 
@@ -1350,7 +1350,7 @@ begin
 
     Result := InternalSave();
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -1375,7 +1375,7 @@ begin
   begin
     FErrorText := Lang(0, 'Index error in reading.');
     FErrorCode := EPI_READ_FILE_ERROR;
-    Debugger.AddError(Classname, 'Read', ErrorText, 0);
+    EpiLogger.AddError(Classname, 'Read', ErrorText, 0);
     raise Exception.Create('Index error in reading.');
   end;
 
@@ -1388,7 +1388,7 @@ begin
   begin
     FErrorText := Lang(20464, 'Error reading record');
     FErrorCode := EPI_READ_FILE_ERROR;
-    Debugger.AddError(Classname, 'Open', ErrorText, 20464);
+    EpiLogger.AddError(Classname, 'Open', ErrorText, 20464);
     raise Exception.Create('Error reading record');
   end;
 

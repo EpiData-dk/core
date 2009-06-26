@@ -144,7 +144,7 @@ end;
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   if Assigned(Df) then FreeAndNil(Df);
-  TDebug.DestroyInstance;
+  TEpiLog.DestroyInstance;
 end;
 
 procedure TMainForm.SpeedButton1Click(Sender: TObject);
@@ -249,9 +249,9 @@ end;
 
 procedure TMainForm.FormShow(Sender: TObject);
 begin
-  Debugger.DebugLevel := cbDebug.ItemIndex;
-  Debugger.OnDebugEvent := @ShowDebug;
-  Debugger.Reset;
+  EpiLogger.DebugLevel := cbDebug.ItemIndex;
+  EpiLogger.OnDebugEvent := @ShowDebug;
+  EpiLogger.Reset;
   closeBtnClick(nil);
 
   cbDebug.Items.Clear;
@@ -307,11 +307,11 @@ begin
   end;
 
   Ext := ChangeFileExt(edOutputFile.Text, Ext);
-  Debugger.Add('Saving file to: ' + ext, 2);
+  EpiLogger.Add('Saving file to: ' + ext, 2);
   SaveDialog1.FileName := ext;
   if fileexists(ext) then
   begin
-    Debugger.Add('Cannot overwrite existing file: ' + ext, 2);
+    EpiLogger.Add('Cannot overwrite existing file: ' + ext, 2);
 //    Exit;
   end;
 
@@ -330,7 +330,7 @@ begin
   if filetypeCombo.ItemIndex < 3 then
     SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings)
   else
-    Debugger.Add('File type not yet implemented', 2);
+    EpiLogger.Add('File type not yet implemented', 2);
 end;
 
 procedure TMainForm.closeBtnClick(Sender: TObject);
@@ -350,14 +350,14 @@ end;
 
 procedure TMainForm.cbDebugChange(Sender: TObject);
 begin
-  Debugger.DebugLevel := cbDebug.ItemIndex;
-  Debugger.Add(Format('Debug level: %d',[cbDebug.ItemIndex]), 1);
+  EpiLogger.DebugLevel := cbDebug.ItemIndex;
+  EpiLogger.Add(Format('Debug level: %d',[cbDebug.ItemIndex]), 1);
 end;
 
 procedure TMainForm.Button6Click(Sender: TObject);
 begin
   Memo3.Clear;
-  Debugger.Reset;
+  EpiLogger.Reset;
 end;
 
 procedure TMainForm.Button7Click(Sender: TObject);
@@ -365,7 +365,7 @@ begin
   SaveDialog1.Filter := '';
 
   if SaveDialog1.Execute then
-    Debugger.SaveToFile(SaveDialog1.FileName);
+    EpiLogger.SaveToFile(SaveDialog1.FileName);
 end;
 
 procedure TMainForm.filetypeComboChange(Sender: TObject);
@@ -384,7 +384,7 @@ begin
     3: Ext := '.csv';
     4: Ext := '.xls';
   end;
-  Debugger.Add('Filetype chosen: ' + ext, 2);
+  EpiLogger.Add('Filetype chosen: ' + ext, 2);
   edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
 end;
 

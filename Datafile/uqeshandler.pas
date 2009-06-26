@@ -290,8 +290,8 @@ var
   N: Int64;
   TmpField: TEpiField;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(Classname, 'QesToDatafile', 2);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'QesToDatafile', 2);
   FLines.Assign(aLines);
 
   Result := false;
@@ -350,7 +350,7 @@ begin
     end;
 
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
     DataFile := Df;
   end;
 end;

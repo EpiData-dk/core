@@ -212,8 +212,8 @@ var
   TmpCF: TEpiCheckFile;
   Res: Boolean;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'InternalRead', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'InternalRead', 3);
   result := false;
 
   if not PreParse() then
@@ -285,7 +285,7 @@ begin
       Result := Result and Res;
     UNTIL FParser.EndOfLines;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
     if Assigned(FParser) then FreeAndNil(FParser);
   end;
 end;
@@ -2963,8 +2963,8 @@ end;
 function TCheckFileIO.ReadCheckFile(const aFileName: string;
   Df: TEpiDataFile): boolean;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'ReadCheckFile', 2, 'Check File = ' + aFileName);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ReadCheckFile', 2, 'Check File = ' + aFileName);
 
   result := false;
   try
@@ -2982,7 +2982,7 @@ begin
       FCheckLines.LoadFromFile(aFileName);
     except
       FreeAndNil(FCheckLines);
-      Debugger.AddError(ClassName, 'ReadCheckFile', Format('Error reading the checkfile %s', [aFileName]),20130);
+      EpiLogger.AddError(ClassName, 'ReadCheckFile', Format('Error reading the checkfile %s', [aFileName]),20130);
       FErrorLines.Add(Format(Lang(20130,'Error reading the checkfile %s'), [aFileName]));
       Exit;
     end;
@@ -2991,7 +2991,7 @@ begin
     result := InternalRead();
     FDf.CheckFile.ErrorInFile := not result;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -3013,8 +3013,8 @@ function TCheckFileIO.WriteCheckToStream(Stream: TStream; Df: TEpiDataFile): boo
 var
   i: integer;
 begin
-  Debugger.IncIndent;
-  Debugger.Add(ClassName, 'WriteCheckToStream', 2, 'Streamtype = ' + Stream.ClassName);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'WriteCheckToStream', 2, 'Streamtype = ' + Stream.ClassName);
   result := false;
 
   try
@@ -3034,7 +3034,7 @@ begin
 
     Stream.Position := 0;
   finally
-    Debugger.DecIndent;
+    EpiLogger.DecIndent;
   end;
 end;
 

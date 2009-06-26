@@ -9,21 +9,21 @@ uses
 
 type
 
-  TDebugEvent = procedure(Sender: TObject; Msg: string) of object;
+  TEpiLogEvent = procedure(Sender: TObject; Msg: string) of object;
 
-  TDebug = class(TObject)
+  TEpiLog = class(TObject)
   private
     FDebugLevel: word;
     FData: TStringList;
     FIndentLevel: integer;  
-    FDebugEvent: TDebugEvent;
+    FDebugEvent: TEpiLogEvent;
     procedure SetDebugLevel(Level: word);
     function AddIndent(): string;
   protected
     constructor Create(DebugLevel: word);
     destructor Destroy(); override;
   public
-    class function GetInstance(): TDebug;
+    class function GetInstance(): TEpiLog;
     class procedure DestroyInstance();
     procedure IncIndent();
     procedure DecIndent();
@@ -34,54 +34,54 @@ type
     procedure SaveToFile(FileName: string);
     procedure SaveToStream(Stream: TStream);
     property  DebugLevel: word read fDebugLevel write SetDebugLevel;
-    property  OnDebugEvent: TDebugEvent read FDebugEvent write FDebugEvent;
+    property  OnDebugEvent: TEpiLogEvent read FDebugEvent write FDebugEvent;
   end;
 
-function Debugger(): TDebug;
+function EpiLogger(): TEpiLog;
 
 implementation
 
 uses SysUtils, StrUtils, UEpiUtils;
 
 var
-  ODebug: TDebug = nil;
+  ODebug: TEpiLog = nil;
 
 const
   MaxLevel: word = 3;
 
-function Debugger(): TDebug;
+function EpiLogger(): TEpiLog;
 begin
-  Result := TDebug.GetInstance;
+  Result := TEpiLog.GetInstance;
 end;
 
-constructor TDebug.Create(DebugLevel: word);
+constructor TEpiLog.Create(DebugLevel: word);
 begin
   fDebugLevel := DebugLevel;
   fIndentLevel := 0;
   fData := TStringList.Create();
 end;
 
-destructor TDebug.Destroy();
+destructor TEpiLog.Destroy();
 begin
   if Assigned(fData) then FreeAndNil(fData);
 end;
 
-function TDebug.AddIndent(): string;
+function TEpiLog.AddIndent(): string;
 begin
   Result := DupeString('  ', fIndentLevel);
 end;
 
-procedure TDebug.IncIndent();
+procedure TEpiLog.IncIndent();
 begin
   inc(fIndentLevel);
 end;
 
-procedure TDebug.DecIndent();
+procedure TEpiLog.DecIndent();
 begin
   Dec(fIndentLevel);
 end;
 
-procedure TDebug.Reset();
+procedure TEpiLog.Reset();
 var
   S: string;
   Csi: TCoreSystemInformation;
@@ -99,7 +99,7 @@ begin
   Add('======================================================', 1);
 end;
 
-procedure TDebug.Add(Msg: string; DebugLevel: Word);
+procedure TEpiLog.Add(Msg: string; DebugLevel: Word);
 begin
   if DebugLevel <= fDebugLevel then
   begin
@@ -109,7 +109,7 @@ begin
   end;
 end;
 
-procedure TDebug.Add(aClassName, aMethodName: string; DebugLevel: Word; Msg: string = '');
+procedure TEpiLog.Add(aClassName, aMethodName: string; DebugLevel: Word; Msg: string = '');
 var
   s: string;
 begin
@@ -119,12 +119,12 @@ begin
   Add(S, DebugLevel);
 end;
 
-procedure TDebug.AddError(aClassName, aMethodName: string; Msg: string; LangCode: Integer = 0);
+procedure TEpiLog.AddError(aClassName, aMethodName: string; Msg: string; LangCode: Integer = 0);
 begin
   Add(aClassName, aMethodName, 1, 'Error (' + IntToStr(LangCode) + '): ' + Msg);
 end;
 
-procedure TDebug.SetDebugLevel(Level: word);
+procedure TEpiLog.SetDebugLevel(Level: word);
 begin
   if Level > MaxLevel then
     fDebugLevel := MaxLevel
@@ -132,22 +132,22 @@ begin
     fDebugLevel := Level;
 end;
 
-class function TDebug.GetInstance: TDebug;
+class function TEpiLog.GetInstance: TEpiLog;
 begin
   if not Assigned(ODebug) then
   begin
-    ODebug := TDebug.Create(1);
+    ODebug := TEpiLog.Create(1);
     ODebug.Reset;
   end;
   result := ODebug;
 end;
 
-class procedure TDebug.DestroyInstance;
+class procedure TEpiLog.DestroyInstance;
 begin
   if Assigned(ODebug) then FreeAndNil(ODebug);
 end;
 
-procedure TDebug.SaveToFile(FileName: string);
+procedure TEpiLog.SaveToFile(FileName: string);
 var
   FS: TFileStream;
 begin
@@ -160,7 +160,7 @@ begin
   end;
 end;
 
-procedure TDebug.SaveToStream(Stream: TStream);
+procedure TEpiLog.SaveToStream(Stream: TStream);
 begin
   FData.SaveToStream(Stream);
 end;

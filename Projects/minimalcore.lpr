@@ -27,7 +27,7 @@ var
   mr: integer;
 {$ENDIF}
 begin
-  {$I minimalcore.lrs}
+//  {$I minimalcore.lrs}
   Application.Title := 'EpiData Software Core Test Project';
   Application.Initialize;
 {$IFDEF EPIWARNING}
