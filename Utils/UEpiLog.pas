@@ -1,4 +1,4 @@
-unit UDebug;
+unit UEpiLog;
 
 {$mode objfpc}{$H+}
 

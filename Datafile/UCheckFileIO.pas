@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, UCheckFileCmds, UDataFileTypes, UEpiDataFile, UValueLabels,
-  UDebug;
+  UEpiLog;
 
 type
 

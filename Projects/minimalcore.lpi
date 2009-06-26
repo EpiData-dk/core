@@ -9,6 +9,7 @@
       <Title Value="EpiData Software Core Test Project"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
+      <ActiveEditorIndexAtStart Value="3"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -35,23 +36,25 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="37">
+    <Units Count="38">
       <Unit0>
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="minimalcore"/>
-        <CursorPos X="3" Y="30"/>
+        <CursorPos X="47" Y="21"/>
         <TopLine Value="1"/>
+        <EditorIndex Value="0"/>
         <UsageCount Value="203"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit0>
       <Unit1>
         <Filename Value="..\Datafile\uqeshandler.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UQesHandler"/>
-        <CursorPos X="53" Y="27"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <CursorPos X="30" Y="46"/>
+        <TopLine Value="8"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
@@ -60,7 +63,7 @@
         <UnitName Value="UCommon"/>
         <CursorPos X="17" Y="158"/>
         <TopLine Value="134"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
@@ -70,9 +73,9 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UMain"/>
-        <CursorPos X="20" Y="147"/>
-        <TopLine Value="123"/>
-        <UsageCount Value="88"/>
+        <CursorPos X="53" Y="94"/>
+        <TopLine Value="70"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
@@ -84,7 +87,7 @@
         <UnitName Value="UPWform"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
@@ -96,23 +99,23 @@
         <UnitName Value="UWarning"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\Datafile\UCheckFileCmds.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileCmds"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\Datafile\UCheckFileIO.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileIO"/>
-        <CursorPos X="15" Y="2985"/>
-        <TopLine Value="2961"/>
-        <UsageCount Value="88"/>
+        <CursorPos X="10" Y="9"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
@@ -121,34 +124,36 @@
         <UnitName Value="UCheckFileTypes"/>
         <CursorPos X="3" Y="22"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\Datafile\UDataFileTypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDataFileTypes"/>
-        <CursorPos X="1" Y="34"/>
+        <CursorPos X="16" Y="6"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="90"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataFile"/>
-        <CursorPos X="14" Y="1391"/>
-        <TopLine Value="1343"/>
-        <UsageCount Value="88"/>
+        <CursorPos X="59" Y="8"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="14" Y="1597"/>
-        <TopLine Value="1549"/>
-        <UsageCount Value="88"/>
+        <CursorPos X="59" Y="8"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit11>
       <Unit12>
@@ -157,49 +162,50 @@
         <UnitName Value="UValueLabels"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit12>
       <Unit13>
         <Filename Value="..\Encryption\Base64.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Base64"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit13>
       <Unit14>
         <Filename Value="..\Encryption\DCPcrypt.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="DCPcrypt"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\Encryption\Rijndael.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Rijndael"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit15>
       <Unit16>
         <Filename Value="..\Encryption\SHA1.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="SHA1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit16>
       <Unit17>
         <Filename Value="..\Utils\UDateUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDateUtils"/>
-        <CursorPos X="1" Y="1"/>
+        <CursorPos X="52" Y="10"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <EditorIndex Value="1"/>
+        <UsageCount Value="90"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit17>
       <Unit18>
         <Filename Value="..\Utils\UDebug.pas"/>
-        <IsPartOfProject Value="True"/>
         <UnitName Value="UDebug"/>
         <CursorPos X="8" Y="14"/>
         <TopLine Value="1"/>
@@ -210,9 +216,11 @@
         <Filename Value="..\Utils\UEpiDataConstants.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataConstants"/>
-        <CursorPos X="1" Y="1"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <CursorPos X="77" Y="52"/>
+        <TopLine Value="24"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="90"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit19>
       <Unit20>
@@ -221,7 +229,7 @@
         <UnitName Value="UEpiUtils"/>
         <CursorPos X="3" Y="165"/>
         <TopLine Value="7"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit20>
       <Unit21>
@@ -230,7 +238,7 @@
         <UnitName Value="UStringUtils"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit21>
       <Unit22>
@@ -239,7 +247,7 @@
         <UnitName Value="UUtilTypes"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="90"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit22>
       <Unit23>
@@ -330,8 +338,22 @@
         <UsageCount Value="9"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit36>
+      <Unit37>
+        <Filename Value="..\Utils\UEpiLog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UEpiLog"/>
+        <CursorPos X="1" Y="36"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="22"/>
+        <SyntaxHighlighter Value="Delphi"/>
+      </Unit37>
     </Units>
-    <JumpHistory Count="0" HistoryIndex="-1"/>
+    <JumpHistory Count="1" HistoryIndex="0">
+      <Position1>
+        <Filename Value="..\Utils\UDateUtils.pas"/>
+        <Caret Line="10" Column="52" TopLine="1"/>
+      </Position1>
+    </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="8"/>

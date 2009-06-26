@@ -5,7 +5,7 @@ unit UImportExport;
 interface
 
 uses
-  Classes, SysUtils, UEpiDataFile, UDataFileTypes, UDebug;
+  Classes, SysUtils, UEpiDataFile, UDataFileTypes, UEpiLog;
 
 type
 

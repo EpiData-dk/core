@@ -50,7 +50,7 @@ type
 implementation
 
 uses
-  UDebug, Math, UEpiDataConstants, FileUtil, UEpiUtils;
+  UEpiLog, Math, UEpiDataConstants, FileUtil, UEpiUtils;
 
 { TQesHandler }
 

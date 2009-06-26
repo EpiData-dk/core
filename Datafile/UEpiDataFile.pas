@@ -5,7 +5,7 @@ unit UEpiDataFile;
 interface
 
 uses
-  Classes, UValueLabels, Rijndael, UCheckFileCmds, UDebug,
+  Classes, UValueLabels, Rijndael, UCheckFileCmds, UEpiLog,
   UCheckFileTypes, Graphics, UDataFileTypes, UEpiDataConstants;
 
 type

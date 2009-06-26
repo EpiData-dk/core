@@ -17,8 +17,8 @@ uses
   {$ENDIF EPIWARNING}
   UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO,
   UCheckFileTypes, UDataFileTypes, UEpiDataFile, uimportexport, UValueLabels,
-  Base64, DCPcrypt, Rijndael, SHA1, UDateUtils, UDebug, UEpiDataConstants,
-  UEpiUtils, UStringUtils, UUtilTypes, UQesHandler;
+  Base64, DCPcrypt, Rijndael, SHA1, UDateUtils, UEpiDataConstants,
+  UEpiUtils, UStringUtils, UUtilTypes, UEpiLog, UQesHandler;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 
