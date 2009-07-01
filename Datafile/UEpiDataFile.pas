@@ -151,7 +151,9 @@ type
 
   TEpiField = class(TObject)
   private
-    FData:         string;
+    FData:         array of string;
+    FSize:         integer;
+    FCapacity:     integer;
     FOwner:        TEpiFields;
     FDataFile:     TEpiDataFile;
     FFieldNo:      Cardinal;        
@@ -170,12 +172,14 @@ type
     FQuestion:     string;
     FVariableLabel: string;
     FCheckField:   TEpiCheckField;
-    function       GetFieldTypeName(): string;
-    function       GetData(): string;
-    procedure      SetData(aData: string);
-    function       GetValueLabel(): TValueLabelSet;
-    function       GetValue: string;
-    procedure      SetValue(const Value: string);
+    function       GetData(Index: integer): string;
+    function       GetFieldTypeName: string;
+    function       GetSize: integer;
+    function       GetValueLabel: TValueLabelSet;
+    procedure      SetData(Index: integer; aData: string);
+    function       GetValue(Index: integer): string;
+    procedure      SetSize(const AValue: integer);
+    procedure      SetValue(Index: integer; const Value: string);
   protected
 
   public
@@ -183,8 +187,9 @@ type
     destructor  Destroy(); override;
     procedure   Reset();
     procedure   Clone(Var Dest: TEpiField);
-    property    AsData:      string read GetData write SetData;
-    property    AsValue:     string read GetValue write SetValue;
+    property    Size: integer read GetSize write SetSize;
+    property    Data[Index: integer]:  string read GetData write SetData;
+    property    Value[Index: integer]: string read GetValue write SetValue;
     property    FieldNo:     Cardinal read FFieldNo write FFieldNo;
     property    DisplayChar: Char read FDisplayChar write FDisplayChar;
     property    FieldName:   string read FFieldName write FFieldName;
@@ -544,7 +549,17 @@ end;
 
 { TEpiField }
 
-function TEpiField.GetFieldTypeName(): string;
+function TEpiField.GetAsValue(Index: integer): string;
+begin
+
+end;
+
+function TEpiField.GetData(Index: integer): string;
+begin
+
+end;
+
+function TEpiField.GetFieldTypeName: string;
 begin
   if Assigned(Owner) then
     result := FieldTypeToFieldTypeName(FieldType, FOwner.FDataFile.OnTranslate)
@@ -552,26 +567,51 @@ begin
     result := FieldTypeToFieldTypeName(FieldType, nil);
 end;
 
-function TEpiField.GetData(): string;
+function TEpiField.GetSize: integer;
 begin
-  Result := Trim(FData);
+  result := FSize;
 end;
 
-procedure TEpiField.SetData(aData: string);
-begin
-  FData := aData;
-end;
-
-function TEpiField.GetValueLabel(): TValueLabelSet;
+function TEpiField.GetValueLabel: TValueLabelSet;
 begin
   result := nil;
   if Assigned(CheckField) then
     result := CheckField.ValueLabel;
 end;
 
+procedure TEpiField.SetData(Index: integer; aData: string);
+begin
+
+end;
+
+function TEpiField.GetValue(Index: integer): string;
+begin
+
+end;
+
+procedure TEpiField.SetSize(const AValue: integer);
+begin
+  FSize := AValue;
+end;
+
+procedure TEpiField.SetValue(Index: integer; const Value: string);
+begin
+
+end;
+
 constructor TEpiField.Create();
 begin
   Reset();
+end;
+
+destructor TEpiField.Destroy();
+begin
+  inherited Destroy();
+end;
+
+procedure TEpiField.Reset();
+begin
+
 end;
 
 destructor TEpiField.Destroy;
@@ -584,20 +624,6 @@ begin
   finally
     EpiLogger.DecIndent;
   end;
-end;
-
-function TEpiField.GetValue: string;
-begin
-  if Assigned(ValueLabelSet) then
-    Result := ValueLabelSet.ValueLabel[AsData]
-  else
-    Result := AsData;
-end;
-
-procedure TEpiField.SetValue(const Value: string);
-begin
-  if Assigned(ValueLabelSet) then
-    ValueLabelSet.AddValueLabelPair(AsData, Value);
 end;
 
 procedure TEpiField.Clone(var Dest: TEpiField);
