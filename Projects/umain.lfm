@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 593
-  Height = 745
-  Top = 220
+  Left = 391
+  Height = 734
+  Top = 6
   Width = 881
   ActiveControl = Panel1
   Caption = 'Core Test Project'
-  ClientHeight = 745
+  ClientHeight = 734
   ClientWidth = 881
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
@@ -50,7 +50,7 @@ object MainForm: TMainForm
       Left = 16
       Height = 14
       Top = 135
-      Width = 56
+      Width = 68
       Anchors = [akLeft, akBottom]
       Caption = 'Processing:'
       ParentColor = False
@@ -59,7 +59,7 @@ object MainForm: TMainForm
       Left = 96
       Height = 14
       Top = 135
-      Width = 67
+      Width = 83
       Anchors = [akLeft, akBottom]
       Caption = 'progressLabel'
       ParentColor = False
@@ -92,7 +92,7 @@ object MainForm: TMainForm
       Left = 144
       Height = 14
       Top = 104
-      Width = 47
+      Width = 55
       Caption = 'Log level:'
       ParentColor = False
     end
@@ -106,7 +106,7 @@ object MainForm: TMainForm
       EditLabel.Left = 24
       EditLabel.Height = 14
       EditLabel.Top = 15
-      EditLabel.Width = 44
+      EditLabel.Width = 54
       EditLabel.Caption = 'Input file:'
       EditLabel.ParentColor = False
       TabOrder = 0
@@ -131,9 +131,9 @@ object MainForm: TMainForm
     end
     object CheckBox1: TCheckBox
       Left = 144
-      Height = 17
+      Height = 22
       Top = 72
-      Width = 87
+      Width = 100
       Caption = 'Read CHK file'
       Checked = True
       State = cbChecked
@@ -149,7 +149,7 @@ object MainForm: TMainForm
       EditLabel.Left = 432
       EditLabel.Height = 14
       EditLabel.Top = 15
-      EditLabel.Width = 52
+      EditLabel.Width = 64
       EditLabel.Caption = 'Output file:'
       EditLabel.ParentColor = False
       TabOrder = 4
@@ -166,9 +166,9 @@ object MainForm: TMainForm
     end
     object CheckBox2: TCheckBox
       Left = 560
-      Height = 17
+      Height = 22
       Top = 72
-      Width = 86
+      Width = 100
       Caption = 'Write CHK file'
       Checked = True
       State = cbChecked
@@ -176,10 +176,10 @@ object MainForm: TMainForm
     end
     object stataCombo: TComboBox
       Left = 584
-      Height = 21
+      Height = 27
       Top = 104
       Width = 145
-      ItemHeight = 13
+      ItemHeight = 0
       ItemIndex = 3
       Items.Strings = (
         'Stata 4/5'
@@ -204,10 +204,10 @@ object MainForm: TMainForm
     end
     object cbDebug: TComboBox
       Left = 200
-      Height = 21
+      Height = 27
       Top = 100
       Width = 145
-      ItemHeight = 13
+      ItemHeight = 0
       ItemIndex = 2
       Items.Strings = (
         '0 - None'
@@ -222,11 +222,11 @@ object MainForm: TMainForm
     end
     object filetypeCombo: TComboBox
       Left = 432
-      Height = 21
+      Height = 27
       Top = 104
       Width = 145
       Enabled = False
-      ItemHeight = 13
+      ItemHeight = 0
       ItemIndex = 0
       Items.Strings = (
         'EpiData'
@@ -242,7 +242,7 @@ object MainForm: TMainForm
   end
   object PageControl1: TPageControl
     Left = 0
-    Height = 568
+    Height = 557
     Top = 177
     Width = 881
     ActivePage = TabSheet3
@@ -251,13 +251,13 @@ object MainForm: TMainForm
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'
-      ClientHeight = 542
-      ClientWidth = 873
+      ClientHeight = 533
+      ClientWidth = 875
       object Memo1: TMemo
         Left = 0
-        Height = 542
+        Height = 533
         Top = 0
-        Width = 873
+        Width = 875
         Align = alClient
         Font.CharSet = 4
         Font.Height = -11
@@ -271,14 +271,14 @@ object MainForm: TMainForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Documentation:'
-      ClientHeight = 542
-      ClientWidth = 873
+      ClientHeight = 533
+      ClientWidth = 875
       ImageIndex = 1
       object Memo2: TMemo
         Left = 0
-        Height = 542
+        Height = 533
         Top = 0
-        Width = 873
+        Width = 875
         Align = alClient
         Font.CharSet = 4
         Font.Height = -13
@@ -290,24 +290,24 @@ object MainForm: TMainForm
     end
     object TabSheet4: TTabSheet
       Caption = 'ChkFiles'
-      ClientHeight = 542
-      ClientWidth = 873
+      ClientHeight = 533
+      ClientWidth = 875
       ImageIndex = 2
       object Splitter1: TSplitter
         Left = 433
-        Height = 542
+        Height = 533
         Top = 0
         Width = 5
         Beveled = True
       end
       object Panel3: TPanel
         Left = 0
-        Height = 542
+        Height = 533
         Top = 0
         Width = 433
         Align = alLeft
         BevelOuter = bvNone
-        ClientHeight = 542
+        ClientHeight = 533
         ClientWidth = 433
         TabOrder = 0
         object Panel5: TPanel
@@ -337,7 +337,7 @@ object MainForm: TMainForm
         end
         object orgChkMemo: TMemo
           Left = 0
-          Height = 501
+          Height = 492
           Top = 41
           Width = 433
           Align = alClient
@@ -351,23 +351,23 @@ object MainForm: TMainForm
       end
       object Panel4: TPanel
         Left = 438
-        Height = 542
+        Height = 533
         Top = 0
-        Width = 435
+        Width = 437
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 542
-        ClientWidth = 435
+        ClientHeight = 533
+        ClientWidth = 437
         TabOrder = 1
         object Panel6: TPanel
           Left = 0
           Height = 41
           Top = 0
-          Width = 435
+          Width = 437
           Align = alTop
           BevelOuter = bvLowered
           ClientHeight = 41
-          ClientWidth = 435
+          ClientWidth = 437
           TabOrder = 0
           object Label2: TLabel
             Left = 16
@@ -384,9 +384,9 @@ object MainForm: TMainForm
         end
         object parsedChkMemo: TMemo
           Left = 0
-          Height = 501
+          Height = 492
           Top = 41
-          Width = 435
+          Width = 437
           Align = alClient
           Font.CharSet = 4
           Font.Height = -13
@@ -399,14 +399,14 @@ object MainForm: TMainForm
     end
     object TabSheet3: TTabSheet
       Caption = 'Data'
-      ClientHeight = 542
-      ClientWidth = 873
+      ClientHeight = 522
+      ClientWidth = 875
       ImageIndex = 2
       object sg: TStringGrid
         Left = 0
-        Height = 501
+        Height = 481
         Top = 41
-        Width = 873
+        Width = 875
         Align = alClient
         Font.CharSet = OEM_CHARSET
         Font.Height = -12
@@ -422,16 +422,16 @@ object MainForm: TMainForm
         Left = 0
         Height = 41
         Top = 0
-        Width = 873
+        Width = 875
         Align = alTop
         ClientHeight = 41
-        ClientWidth = 873
+        ClientWidth = 875
         TabOrder = 1
         object Button2: TButton
           Left = 16
-          Height = 23
+          Height = 25
           Top = 8
-          Width = 88
+          Width = 84
           AutoSize = True
           Caption = 'Show Values'
           OnClick = Button2Click
@@ -439,9 +439,9 @@ object MainForm: TMainForm
         end
         object Button3: TButton
           Left = 112
-          Height = 23
+          Height = 25
           Top = 8
-          Width = 87
+          Width = 84
           AutoSize = True
           Caption = 'Show Labels'
           OnClick = Button3Click
@@ -451,14 +451,14 @@ object MainForm: TMainForm
     end
     object TabSheet5: TTabSheet
       Caption = 'Log:'
-      ClientHeight = 542
-      ClientWidth = 873
+      ClientHeight = 533
+      ClientWidth = 875
       ImageIndex = 4
       object Memo3: TMemo
         Left = 0
-        Height = 501
+        Height = 492
         Top = 41
-        Width = 873
+        Width = 875
         Align = alClient
         Font.CharSet = 4
         Font.Height = -11
@@ -472,10 +472,10 @@ object MainForm: TMainForm
         Left = 0
         Height = 41
         Top = 0
-        Width = 873
+        Width = 875
         Align = alTop
         ClientHeight = 41
-        ClientWidth = 873
+        ClientWidth = 875
         TabOrder = 1
         object Button6: TButton
           Left = 8

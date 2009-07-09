@@ -21,7 +21,7 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataConstants;
+  UEpiDataConstants, UEpiUtils;
 
 function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
 begin
@@ -136,7 +136,7 @@ begin
     ShowProgress(nil, (I * 100) DIV Df.NumRecords, 'Saving Records');
     Df.Read(I);
     for J := 0 to Df.NumFields - 1 do
-      OutDf[J].AsData := Df[J].AsData;
+      OutDf[J].AsString[i] := Df[J].AsString[i];
     OutDf.Write();
   end;
   FreeAndNil(OutDf);
@@ -392,7 +392,7 @@ NUM Name       Variable label        Type            Width  Checks              
                 IF (nN2<aValueLabelSet.count) AND (nN2=25)
                 THEN ValLabelStr[25]:='...';
               END;
-            tmpType:=epd[nN].FieldtypeName;
+            tmpType:=FieldTypeToFieldTypeName(epd[nN].FieldType, nil);
             tmpWidth:=IntToStr(epd[nN].FieldLength);
             IF (epd[nN].Fieldtype=ftFloat) AND (epd[nN].NumDecimals>0)
             THEN tmpWidth:=tmpWidth+':'+IntToStr(epd[nN].NumDecimals);

@@ -5,13 +5,13 @@ unit UEpiDataConstants;
 interface
 
 uses
-  UDataFileTypes, Graphics;
+  UDataFileTypes, Graphics, math;
   
 type
   TCharSet = Set of Char;
 
 CONST
-  CoreVersion = 1;
+  CoreVersion = 2;
 
   NewRecord = -1;
   NumChars:        TCharSet = ['0'..'9'];

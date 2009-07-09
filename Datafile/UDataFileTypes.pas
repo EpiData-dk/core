@@ -4,7 +4,19 @@ unit UDataFileTypes;
 
 interface
 
+uses
+  Variants;
+
 type
+  EpiInteger   = Integer;
+  EpiFloat     = Extended;
+  EpiDate      = Integer;
+  EpiTime      = Double;
+  EpiDateTime  = Double;
+  EpiString    = string;
+  EpiBool      = Byte;
+  EpiVariant   = Variant;
+
   TFieldNaming = (fnFirstWord, fnAuto); 
   TFieldType   = (ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftCheckBox,
                   ftBoolean, ftFloat, ftPhoneNum, ftTime, ftLocalNum,

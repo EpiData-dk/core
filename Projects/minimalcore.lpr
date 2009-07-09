@@ -5,7 +5,9 @@ program minimalcore;
 {.$DEFINE EPIWARNING}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
+  {$IFDEF UNIX}
+  cwstring,
+  {$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset

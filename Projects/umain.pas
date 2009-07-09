@@ -178,7 +178,6 @@ begin
   numrecs := df.NumRecords;
   for row := 1 to numrecs do
   begin
-    df.Read(row);
     ShowProgress(nil, Floor((row/numrecs)*100), 'Reading records');
     sg.Cells[0, row] := inttostr(row);
     i := 1;
@@ -186,10 +185,10 @@ begin
     begin
       if df[col].Fieldtype <> ftQuestion then
       begin
-        if ShowAsLabels then
+{        if ShowAsLabels then
           sg.Cells[PostInc(i), row] := df[col].AsValue
-        else
-          sg.Cells[PostInc(i), row] := df[col].AsData;
+        else}
+          sg.Cells[PostInc(i), row] := df[col].AsString[row];
       end;
     end;
   end;

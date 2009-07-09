@@ -36,12 +36,12 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="38">
+    <Units Count="36">
       <Unit0>
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="minimalcore"/>
-        <CursorPos X="47" Y="21"/>
+        <CursorPos X="7" Y="9"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="203"/>
@@ -54,16 +54,16 @@
         <UnitName Value="UQesHandler"/>
         <CursorPos X="30" Y="46"/>
         <TopLine Value="8"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit1>
       <Unit2>
         <Filename Value="ucommon.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCommon"/>
-        <CursorPos X="17" Y="158"/>
-        <TopLine Value="134"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="43" Y="395"/>
+        <TopLine Value="383"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit2>
       <Unit3>
@@ -73,9 +73,9 @@
         <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UMain"/>
-        <CursorPos X="53" Y="94"/>
-        <TopLine Value="70"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="37" Y="182"/>
+        <TopLine Value="178"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit3>
       <Unit4>
@@ -87,7 +87,7 @@
         <UnitName Value="UPWform"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit4>
       <Unit5>
@@ -99,23 +99,23 @@
         <UnitName Value="UWarning"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\Datafile\UCheckFileCmds.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileCmds"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\Datafile\UCheckFileIO.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileIO"/>
-        <CursorPos X="10" Y="9"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="41" Y="1612"/>
+        <TopLine Value="1600"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit7>
       <Unit8>
@@ -124,26 +124,28 @@
         <UnitName Value="UCheckFileTypes"/>
         <CursorPos X="3" Y="22"/>
         <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\Datafile\UDataFileTypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDataFileTypes"/>
-        <CursorPos X="16" Y="6"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="1" Y="19"/>
+        <TopLine Value="9"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="153"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataFile"/>
-        <CursorPos X="20" Y="179"/>
-        <TopLine Value="163"/>
+        <CursorPos X="50" Y="1938"/>
+        <TopLine Value="1934"/>
         <EditorIndex Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit10>
@@ -151,9 +153,9 @@
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="59" Y="8"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="3" Y="1490"/>
+        <TopLine Value="1482"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit11>
       <Unit12>
@@ -162,44 +164,46 @@
         <UnitName Value="UValueLabels"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit12>
       <Unit13>
         <Filename Value="..\Encryption\Base64.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Base64"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit13>
       <Unit14>
         <Filename Value="..\Encryption\DCPcrypt.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="DCPcrypt"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\Encryption\Rijndael.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Rijndael"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit15>
       <Unit16>
         <Filename Value="..\Encryption\SHA1.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="SHA1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit16>
       <Unit17>
         <Filename Value="..\Utils\UDateUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDateUtils"/>
-        <CursorPos X="52" Y="10"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="77" Y="165"/>
+        <TopLine Value="161"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="153"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit17>
       <Unit18>
@@ -207,25 +211,29 @@
         <UnitName Value="UDebug"/>
         <CursorPos X="8" Y="14"/>
         <TopLine Value="1"/>
-        <UsageCount Value="88"/>
+        <UsageCount Value="83"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\Utils\UEpiDataConstants.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataConstants"/>
-        <CursorPos X="46" Y="31"/>
-        <TopLine Value="26"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="42" Y="61"/>
+        <TopLine Value="46"/>
+        <EditorIndex Value="6"/>
+        <UsageCount Value="153"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiUtils"/>
-        <CursorPos X="3" Y="165"/>
-        <TopLine Value="7"/>
-        <UsageCount Value="90"/>
+        <CursorPos X="1" Y="37"/>
+        <TopLine Value="25"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="153"/>
+        <Loaded Value="True"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit20>
       <Unit21>
@@ -234,7 +242,7 @@
         <UnitName Value="UStringUtils"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit21>
       <Unit22>
@@ -243,128 +251,221 @@
         <UnitName Value="UUtilTypes"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="153"/>
         <SyntaxHighlighter Value="Delphi"/>
       </Unit22>
       <Unit23>
-        <Filename Value="..\..\..\..\FreePascal\fpc\rtl\inc\ustrings.inc"/>
-        <CursorPos X="1" Y="308"/>
-        <TopLine Value="287"/>
-        <UsageCount Value="4"/>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\inc\ustringh.inc"/>
+        <CursorPos X="3" Y="95"/>
+        <TopLine Value="83"/>
+        <UsageCount Value="10"/>
       </Unit23>
       <Unit24>
-        <Filename Value="..\..\..\..\FreePascal\fpc\rtl\i386\i386.inc"/>
-        <CursorPos X="1" Y="1484"/>
-        <TopLine Value="1463"/>
-        <UsageCount Value="4"/>
-      </Unit24>
-      <Unit25>
-        <Filename Value="..\..\..\..\FreePascal\fpc\rtl\objpas\sysutils\sysstr.inc"/>
-        <CursorPos X="1" Y="552"/>
-        <TopLine Value="531"/>
-        <UsageCount Value="4"/>
-      </Unit25>
-      <Unit26>
-        <Filename Value="..\..\..\..\FreePascal\fpc\rtl\inc\astrings.inc"/>
-        <CursorPos X="1" Y="122"/>
-        <TopLine Value="101"/>
-        <UsageCount Value="4"/>
-      </Unit26>
-      <Unit27>
-        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\inc\ustringh.inc"/>
-        <CursorPos X="10" Y="102"/>
-        <TopLine Value="78"/>
-        <UsageCount Value="3"/>
-      </Unit27>
-      <Unit28>
-        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\inc\ustrings.inc"/>
-        <CursorPos X="17" Y="2333"/>
-        <TopLine Value="2331"/>
-        <UsageCount Value="3"/>
-      </Unit28>
-      <Unit29>
-        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\objpas\sysutils\sysstrh.inc"/>
-        <CursorPos X="10" Y="229"/>
-        <TopLine Value="208"/>
-        <UsageCount Value="3"/>
-      </Unit29>
-      <Unit30>
-        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\objpas\sysutils\sysstr.inc"/>
-        <CursorPos X="3" Y="2603"/>
-        <TopLine Value="2577"/>
-        <UsageCount Value="3"/>
-      </Unit30>
-      <Unit31>
-        <Filename Value="..\..\..\..\..\..\usr\local\share\lazarus\lcl\include\fileutil.inc"/>
-        <CursorPos X="3" Y="102"/>
-        <TopLine Value="100"/>
-        <UsageCount Value="4"/>
-      </Unit31>
-      <Unit32>
-        <Filename Value="..\..\..\..\FreePascal\fpc\rtl\inc\except.inc"/>
-        <CursorPos X="1" Y="227"/>
-        <TopLine Value="206"/>
-        <UsageCount Value="4"/>
-      </Unit32>
-      <Unit33>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\unix\cwstring.pp"/>
         <UnitName Value="cwstring"/>
-        <CursorPos X="1" Y="261"/>
-        <TopLine Value="240"/>
-        <UsageCount Value="4"/>
-      </Unit33>
-      <Unit34>
-        <Filename Value="umain.lfm"/>
-        <CursorPos X="1" Y="1"/>
-        <TopLine Value="1"/>
-        <UsageCount Value="3"/>
-        <SyntaxHighlighter Value="LFM"/>
-      </Unit34>
-      <Unit35>
+        <CursorPos X="45" Y="747"/>
+        <TopLine Value="734"/>
+        <UsageCount Value="9"/>
+      </Unit24>
+      <Unit25>
         <Filename Value="..\..\..\..\..\..\usr\local\share\lazarus\lcl\fileutil.pas"/>
         <UnitName Value="FileUtil"/>
         <CursorPos X="16" Y="187"/>
         <TopLine Value="166"/>
-        <UsageCount Value="31"/>
-      </Unit35>
-      <Unit36>
+        <UsageCount Value="26"/>
+      </Unit25>
+      <Unit26>
         <Filename Value="..\Utils\ErrorCodes.inc"/>
         <CursorPos X="1" Y="37"/>
         <TopLine Value="1"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="4"/>
         <SyntaxHighlighter Value="Delphi"/>
-      </Unit36>
-      <Unit37>
+      </Unit26>
+      <Unit27>
         <Filename Value="..\Utils\UEpiLog.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiLog"/>
         <CursorPos X="1" Y="36"/>
         <TopLine Value="1"/>
-        <UsageCount Value="22"/>
+        <UsageCount Value="85"/>
         <SyntaxHighlighter Value="Delphi"/>
-      </Unit37>
+      </Unit27>
+      <Unit28>
+        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
+        <UnitName Value="UVectors"/>
+        <CursorPos X="10" Y="2662"/>
+        <TopLine Value="2654"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\objpas\objpas.pp"/>
+        <UnitName Value="objpas"/>
+        <CursorPos X="25" Y="26"/>
+        <TopLine Value="14"/>
+        <UsageCount Value="11"/>
+      </Unit29>
+      <Unit30>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\inc\variants.pp"/>
+        <UnitName Value="variants"/>
+        <CursorPos X="3" Y="425"/>
+        <TopLine Value="413"/>
+        <UsageCount Value="5"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\inc\systemh.inc"/>
+        <CursorPos X="3" Y="301"/>
+        <TopLine Value="289"/>
+        <UsageCount Value="11"/>
+      </Unit31>
+      <Unit32>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\objpas\math.pp"/>
+        <UnitName Value="math"/>
+        <CursorPos X="8" Y="121"/>
+        <TopLine Value="117"/>
+        <UsageCount Value="9"/>
+      </Unit32>
+      <Unit33>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\objpas\sysutils\sysstrh.inc"/>
+        <CursorPos X="10" Y="90"/>
+        <TopLine Value="70"/>
+        <UsageCount Value="10"/>
+      </Unit33>
+      <Unit34>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\objpas\sysutils\sysstr.inc"/>
+        <CursorPos X="24" Y="501"/>
+        <TopLine Value="499"/>
+        <UsageCount Value="10"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\2.3.1\rtl\inc\objpash.inc"/>
+        <CursorPos X="23" Y="175"/>
+        <TopLine Value="163"/>
+        <UsageCount Value="10"/>
+      </Unit35>
     </Units>
-    <JumpHistory Count="5" HistoryIndex="4">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="174" Column="5" TopLine="169"/>
+        <Caret Line="2502" Column="81" TopLine="2490"/>
       </Position1>
       <Position2>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="179" Column="9" TopLine="165"/>
+        <Caret Line="786" Column="32" TopLine="772"/>
       </Position2>
       <Position3>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="630" Column="21" TopLine="630"/>
+        <Caret Line="191" Column="70" TopLine="182"/>
       </Position3>
       <Position4>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="587" Column="1" TopLine="574"/>
+        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
+        <Caret Line="3355" Column="15" TopLine="3351"/>
       </Position4>
       <Position5>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="175" Column="31" TopLine="175"/>
+        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
+        <Caret Line="2660" Column="6" TopLine="2654"/>
       </Position5>
+      <Position6>
+        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
+        <Caret Line="91" Column="17" TopLine="79"/>
+      </Position6>
+      <Position7>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="341" Column="1" TopLine="330"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
+        <Caret Line="3353" Column="3" TopLine="3351"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="191" Column="23" TopLine="180"/>
+      </Position9>
+      <Position10>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="775" Column="30" TopLine="775"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="191" Column="21" TopLine="183"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="775" Column="11" TopLine="775"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="191" Column="70" TopLine="191"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="777" Column="6" TopLine="767"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="191" Column="39" TopLine="183"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="777" Column="6" TopLine="775"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="173" Column="20" TopLine="161"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="312" Column="9" TopLine="300"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="317" Column="6" TopLine="308"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="410" Column="1" TopLine="399"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="803" Column="18" TopLine="791"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="193" Column="17" TopLine="109"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="158" Column="29" TopLine="140"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="241" Column="25" TopLine="229"/>
+      </Position24>
+      <Position25>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="267" Column="59" TopLine="244"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1927" Column="17" TopLine="1917"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="157" Column="27" TopLine="154"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="257" Column="30" TopLine="234"/>
+      </Position28>
+      <Position29>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1881" Column="3" TopLine="1879"/>
+      </Position29>
+      <Position30>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="563" Column="30" TopLine="549"/>
+      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

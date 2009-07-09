@@ -5,7 +5,7 @@ unit UEpiUtils;
 interface
 
 USES
-  SysUtils, UEpiDataConstants, UDataFileTypes;
+  SysUtils, UEpiDataConstants, UDataFileTypes, UEpiDataFile;
 
 type
   TPrgVersionInfo = record
@@ -29,7 +29,7 @@ type
 
   // Checks validity of variable name.  
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
-  function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
+  function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
 
   function IsInteger(Value: string): boolean;
@@ -87,7 +87,7 @@ begin
   result := true;
 end;
 
-function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
+function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
 var
   i: integer;
 begin

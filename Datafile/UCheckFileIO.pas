@@ -1028,11 +1028,10 @@ BEGIN
     End;
 
     // Todo -o Torsten: Index
-{    IF (ComLegDf.IndexCount < 2) THEN
+    IF (ComLegDf.IndexFile.IndexCount < 2) THEN
     BEGIN
       Result := ReportError(Format(Lang(22832, 'Datafile %s must contain two KEY-fields'), [ComLegDf.Filename]));
-      Result:=NIL;
-    END    }
+    END;
 
     LocalValueLabel := TValueLabelSet.Create;
     LocalValueLabel.Name := CurCommand;
@@ -1042,10 +1041,8 @@ BEGIN
     TextField  := ComLegDf.IndexFile.Indexfields[2];
 
     FOR i := 1 TO ComLegDf.NumRecords DO
-    BEGIN
-      ComLegDf.Read(i);
-      LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsData, 1, 30), Copy(TextField.AsData, 1, 80));
-    END;
+      LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsString[i], 1, 30), Copy(TextField.AsString[i], 1, 80));
+
     FDf.ValueLabels.AddValueLabelSet(LocalValueLabel);
 
     LocalCheck.ValueLabel := LocalValueLabel;
@@ -1608,12 +1605,11 @@ BEGIN
             END;
           END;
           IF not Assigned(TmpField) THEN
-            TmpField := TEpiField.Create();
+            TmpField := TEpiField.CreateField(TChkDefine(TmpChkCmd).FieldType, 1);
           TmpField.FieldName   := TChkDefine(TmpChkCmd).FieldName;
-          TmpField.Fieldtype   := TChkDefine(TmpChkCmd).FieldType;
           TmpField.FieldLength := TChkDefine(TmpChkCmd).Length;
           TmpField.NumDecimals := TChkDefine(TmpChkCmd).NumDecimals;
-          TmpField.AsData      := '';
+          TmpField.IsMissing[1] := true;
           TmpField.CheckField  := TEpiCheckField.Create();
           TmpField.CheckField.FieldScope := TChkDefine(TmpChkCmd).Scope;
 

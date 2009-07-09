@@ -424,6 +424,7 @@ begin
     // ********************************
     // - typlist: the variable's types
     // - varlist: variable names
+    // TODO -o Torsten : Redesign to create correct decendant of TEpiField.
     SetLength(TypeList, NVar);
     DataStream.Read(TypeList[0], nVar);
 
@@ -622,6 +623,7 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
+    // TODO -o Torsten : Redesign reding of data into correct TEpiField-types.
     TRY
       FOR CurRec := 1 TO nObs DO
       BEGIN
@@ -696,7 +698,7 @@ begin
             // TODO -O Torsten : Handle dates in Stata.
 //              s:=mibDateToStr(tmpDate,EField.Fieldtype);
           END;  //if date variable
-          TmpField.AsData := StrBuf;
+          TmpField.AsString[CurRec] := StrBuf;
         END;  //for CurField
         Write();
       END;  //for CurRec
@@ -837,7 +839,7 @@ BEGIN
     DataStream.Seek(32, soBeginning);
 
     {Read field descriptors}
-    SetLength(CharBuf, 12);
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.SetLength(CharBuf, 12);
     SetLength(ByteBuf, 20);
     While True do
     begin
@@ -907,6 +909,7 @@ BEGIN
     Save(FileName);
 
     {Read data}
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     DataStream.Position := HSize;
     FOR CurRec := 1 TO NObs DO
     BEGIN
@@ -949,7 +952,7 @@ BEGIN
               END;  //case ftBoolean
           END;  //case
         END;  //if s<>''
-        AsData := Trim(TmpStr);
+        AsString[CurRec] := Trim(TmpStr);
       END;  //for CurField
       Write();
     END;  //for CurRec
@@ -1137,6 +1140,7 @@ begin
     //         STATA DESCRIBTORS
     // ********************************
     // - typlist: the variable's types
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     SetLength(TypeList, NVar);
     SetLength(ByteBuf, NVar);
     FOR i := 0 to NVar - 1 DO
@@ -1302,6 +1306,7 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     TRY
       FOR CurRec := 1 TO NObs DO
       BEGIN
@@ -1311,7 +1316,7 @@ begin
         FOR CurField := 0 TO NVar - 1 DO
         With DataFields[CurField] do
         BEGIN
-          TmpStr := AsData;
+          TmpStr := AsString[CurRec];
 
           // StrToFloat expects decimal separator to be in current locale.
           // It is always stored as "." in EpiData.
@@ -1530,6 +1535,7 @@ begin
     DataStream.Write(ByteBuf[0], 20);                //header offset 12 - 20 x unused bytes
 
     {Write field descriptions}
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     SetLength(ByteBuf, 14);
     FillChar(ByteBuf[0], 14, 0);
     ByteBuf[5] := 1;
@@ -1559,6 +1565,7 @@ begin
     WriteInts($0D, 1);   //write Header Terminator
 
     {write records}
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     NObs := NumRecords;
     TRY
       FOR CurRec := 1 TO NObs DO
@@ -1574,7 +1581,7 @@ begin
         FOR CurField := 0 TO DataFields.Count - 1 DO
         WITH DataFields[CurField] DO
         BEGIN
-          TmpStr := AsData;
+          TmpStr := AsString[CurRec];
           CASE FieldType of
             ftAlfa, ftUpperAlfa, ftCrypt,
             ftBoolean, ftSoundex,
