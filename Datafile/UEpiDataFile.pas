@@ -182,8 +182,8 @@ type
     function GetCapacity: Integer; virtual; abstract;
     function GetIsMissing(const index: Integer): boolean; virtual; abstract;
     function GetIsMissingValue(const index: Integer): boolean; virtual; abstract;
-    function GetSize: Integer; virtual; abstract;
-    procedure Grow; virtual; abstract;
+    function GetSize: Integer; virtual;
+    procedure Grow; virtual;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); virtual; abstract;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); virtual; abstract;
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); virtual; abstract;
@@ -191,19 +191,20 @@ type
     procedure SetAsString(const index: Integer; const AValue: EpiString); virtual; abstract;
     procedure SetCapacity(AValue: Integer); virtual; abstract;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); virtual; abstract;
-    procedure SetSize(const AValue: Integer); virtual; abstract;
+    procedure SetSize(const AValue: Integer); virtual;
     constructor Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true); virtual;
     property Capacity: Integer read GetCapacity write SetCapacity;
   public
     constructor Create;
     destructor  Destroy; override;
-    class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0): TEpiField;
+    class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0;
+      SetAllMissing: boolean = true): TEpiField;
     procedure   Reset();
     procedure   Clone(Var Dest: TEpiField);
     // New Additions to branch version.
     procedure Exchange(i,j: integer); virtual; abstract;
     function Compare(i,j: integer): integer; virtual; abstract;
-    procedure NewRecords(ACount: Integer = 1); virtual; abstract;
+    procedure NewRecords(ACount: Integer = 1); virtual;
     // ================================
 //    property    Data[Index: integer]:  string read GetData write SetData;
 //    property    Value[Index: integer]: string read GetValue write SetValue;
@@ -255,8 +256,6 @@ type
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
-    function GetSize: Integer; override;
-    procedure Grow; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool);
       override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
@@ -269,14 +268,12 @@ type
     procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean);
       override;
-    procedure SetSize(const AValue: Integer); override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
-    procedure NewRecords(ACount: Integer=1); override;
   published
 
   end;
@@ -775,6 +772,24 @@ begin
     result := CheckField.ValueLabel;
 end;
 
+function TEpiField.GetSize: Integer;
+begin
+  result := FSize;
+end;
+
+procedure TEpiField.Grow;
+begin
+  Capacity := Trunc(Capacity * Field_Growth_Factor);
+end;
+
+procedure TEpiField.SetSize(const AValue: Integer);
+begin
+  if AValue = Size then exit;
+  if AValue > Capacity then
+    Capacity := AValue;
+  FSize := AValue;
+end;
+
 constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true);
 begin
   Reset();
@@ -785,13 +800,14 @@ begin
   Reset();
 end;
 
-class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal
-  ): TEpiField;
+class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal;
+  SetAllMissing: boolean = true): TEpiField;
 begin
   // Todo -o Torsten : Finish coding CREATEFIELD.
   case aFieldType of
-    ftAlfa: Exit;
-
+    ftAlfa, ftUpperAlfa,
+    ftCrypt, ftSoundex:
+      result := TEpiStringField.Create(aSize, aFieldType, SetAllMissing);
   else
     // TODO -o Torsten : Exception should happen;
     exit;
@@ -875,6 +891,14 @@ begin
    Dest.Owner.FDataFile.IndexFile.IndexFields[I] := Dest;
    Dest.Owner.FDataFile.IndexFile.IndexUnique[I] := Owner.FDataFile.IndexFile.IndexUnique[I];
   end;
+end;
+
+procedure TEpiField.NewRecords(ACount: Integer);
+begin
+  if ACount <= 0 then exit;
+  if (Size + ACount) > Capacity then
+    Grow;
+  Size := Size + ACount;
 end;
 
 procedure TEpiField.Reset();
@@ -1877,16 +1901,6 @@ begin
   // TODO : TEpiIntField.GetIsMissingValue
 end;
 
-function TEpiIntField.GetSize: Integer;
-begin
-  result := FSize;
-end;
-
-procedure TEpiIntField.Grow;
-begin
-
-end;
-
 procedure TEpiIntField.SetAsBoolean(const index: Integer; const AValue: EpiBool
   );
 begin
@@ -1942,14 +1956,6 @@ begin
   AsInteger[index] := DefaultMissing;
 end;
 
-procedure TEpiIntField.SetSize(const AValue: Integer);
-begin
-  if AValue = Size then exit;
-  if AValue > Capacity then
-    Capacity := AValue;
-  FSize := AValue;
-end;
-
 class function TEpiIntField.CheckMissing(AValue: EpiInteger): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -1979,13 +1985,6 @@ begin
   AsInteger[j] := TmpInt;
 end;
 
-procedure TEpiIntField.NewRecords(ACount: Integer);
-begin
-  if ACount <= 0 then exit;
-  if (Size + ACount) > Capacity then
-    Grow;
-  Size := Size + ACount;
-end;
 
 { TEpiFloatField }
 
