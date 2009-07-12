@@ -189,9 +189,11 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); virtual; abstract;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); virtual; abstract;
     procedure SetAsString(const index: Integer; const AValue: EpiString); virtual; abstract;
+    procedure SetCapacity(AValue: Integer); virtual; abstract;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); virtual; abstract;
     procedure SetSize(const AValue: Integer); virtual; abstract;
     constructor Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true); virtual;
+    property Capacity: Integer read GetCapacity write SetCapacity;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -201,6 +203,7 @@ type
     // New Additions to branch version.
     procedure Exchange(i,j: integer); virtual; abstract;
     function Compare(i,j: integer): integer; virtual; abstract;
+    procedure NewRecords(ACount: Integer = 1); virtual; abstract;
     // ================================
 //    property    Data[Index: integer]:  string read GetData write SetData;
 //    property    Value[Index: integer]: string read GetValue write SetValue;
@@ -226,7 +229,6 @@ type
     property    DataFile:    TEpiDataFile read FDataFile write FDataFile;
     // New Additions to branch version.
     property Size: Integer read GetSize write SetSize;
-    property Capacity: Integer read GetCapacity;
     property IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
     property IsMissingValue[const index: Integer]: boolean read GetIsMissingValue;
     property AsBoolean[const index: Integer]: EpiBool read GetAsBoolean write SetAsBoolean;
@@ -264,6 +266,7 @@ type
       override;
     procedure SetAsString(const index: Integer; const AValue: EpiString);
       override;
+    procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean);
       override;
     procedure SetSize(const AValue: Integer); override;
@@ -273,6 +276,7 @@ type
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
+    procedure NewRecords(ACount: Integer=1); override;
   published
 
   end;
@@ -873,7 +877,7 @@ begin
   end;
 end;
 
-procedure TEpiField.Reset;
+procedure TEpiField.Reset();
 begin
   if Assigned(FCheckField) then FreeAndNil(FCheckField);
 
@@ -1860,7 +1864,7 @@ end;
 
 function TEpiIntField.GetCapacity: Integer;
 begin
-
+  result := Length(FData);
 end;
 
 function TEpiIntField.GetIsMissing(const index: Integer): boolean;
@@ -1925,6 +1929,13 @@ begin
     AsInteger[index] := StrToIntDef(AValue, DefaultMissing);
 end;
 
+procedure TEpiIntField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
+
 procedure TEpiIntField.SetIsMissing(const index: Integer; const AValue: boolean
   );
 begin
@@ -1935,7 +1946,7 @@ procedure TEpiIntField.SetSize(const AValue: Integer);
 begin
   if AValue = Size then exit;
   if AValue > Capacity then
-    Grow;
+    Capacity := AValue;
   FSize := AValue;
 end;
 
@@ -1966,6 +1977,14 @@ begin
   TmpInt := AsInteger[i];
   AsInteger[i] := AsInteger[j];
   AsInteger[j] := TmpInt;
+end;
+
+procedure TEpiIntField.NewRecords(ACount: Integer);
+begin
+  if ACount <= 0 then exit;
+  if (Size + ACount) > Capacity then
+    Grow;
+  Size := Size + ACount;
 end;
 
 { TEpiFloatField }

@@ -68,9 +68,9 @@
       </Unit2>
       <Unit3>
         <Filename Value="umain.pas"/>
+        <IsPartOfProject Value="True"/>
         <ComponentName Value="MainForm"/>
         <HasResources Value="True"/>
-        <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UMain"/>
         <CursorPos X="37" Y="182"/>
@@ -80,9 +80,9 @@
       </Unit3>
       <Unit4>
         <Filename Value="upwform.pas"/>
+        <IsPartOfProject Value="True"/>
         <ComponentName Value="formPW"/>
         <HasResources Value="True"/>
-        <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UPWform"/>
         <CursorPos X="1" Y="1"/>
@@ -92,9 +92,9 @@
       </Unit4>
       <Unit5>
         <Filename Value="uwarning.pas"/>
+        <IsPartOfProject Value="True"/>
         <ComponentName Value="WarningForm"/>
         <HasResources Value="True"/>
-        <IsPartOfProject Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UWarning"/>
         <CursorPos X="1" Y="1"/>
@@ -132,7 +132,7 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDataFileTypes"/>
         <CursorPos X="1" Y="19"/>
-        <TopLine Value="9"/>
+        <TopLine Value="7"/>
         <EditorIndex Value="5"/>
         <UsageCount Value="153"/>
         <Loaded Value="True"/>
@@ -142,8 +142,8 @@
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataFile"/>
-        <CursorPos X="50" Y="1938"/>
-        <TopLine Value="1934"/>
+        <CursorPos X="14" Y="258"/>
+        <TopLine Value="237"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="153"/>
         <Loaded Value="True"/>
@@ -200,7 +200,7 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDateUtils"/>
         <CursorPos X="77" Y="165"/>
-        <TopLine Value="161"/>
+        <TopLine Value="158"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="153"/>
         <Loaded Value="True"/>
@@ -219,7 +219,7 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataConstants"/>
         <CursorPos X="42" Y="61"/>
-        <TopLine Value="46"/>
+        <TopLine Value="30"/>
         <EditorIndex Value="6"/>
         <UsageCount Value="153"/>
         <Loaded Value="True"/>
@@ -348,123 +348,123 @@
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="2502" Column="81" TopLine="2490"/>
+        <Caret Line="775" Column="30" TopLine="775"/>
       </Position1>
       <Position2>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="786" Column="32" TopLine="772"/>
+        <Caret Line="191" Column="21" TopLine="183"/>
       </Position2>
       <Position3>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="191" Column="70" TopLine="182"/>
+        <Caret Line="775" Column="11" TopLine="775"/>
       </Position3>
       <Position4>
-        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
-        <Caret Line="3355" Column="15" TopLine="3351"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="191" Column="70" TopLine="191"/>
       </Position4>
       <Position5>
-        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
-        <Caret Line="2660" Column="6" TopLine="2654"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="777" Column="6" TopLine="767"/>
       </Position5>
       <Position6>
-        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
-        <Caret Line="91" Column="17" TopLine="79"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="191" Column="39" TopLine="183"/>
       </Position6>
       <Position7>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="341" Column="1" TopLine="330"/>
+        <Caret Line="777" Column="6" TopLine="775"/>
       </Position7>
       <Position8>
-        <Filename Value="..\..\..\Analysis\source\UVectors.pas"/>
-        <Caret Line="3353" Column="3" TopLine="3351"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="173" Column="20" TopLine="161"/>
       </Position8>
       <Position9>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="191" Column="23" TopLine="180"/>
+        <Caret Line="312" Column="9" TopLine="300"/>
       </Position9>
       <Position10>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="775" Column="30" TopLine="775"/>
+        <Caret Line="317" Column="6" TopLine="308"/>
       </Position10>
       <Position11>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="191" Column="21" TopLine="183"/>
+        <Caret Line="410" Column="1" TopLine="399"/>
       </Position11>
       <Position12>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="775" Column="11" TopLine="775"/>
+        <Caret Line="803" Column="18" TopLine="791"/>
       </Position12>
       <Position13>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="191" Column="70" TopLine="191"/>
+        <Caret Line="193" Column="17" TopLine="109"/>
       </Position13>
       <Position14>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="777" Column="6" TopLine="767"/>
+        <Caret Line="158" Column="29" TopLine="140"/>
       </Position14>
       <Position15>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="191" Column="39" TopLine="183"/>
+        <Caret Line="241" Column="25" TopLine="229"/>
       </Position15>
       <Position16>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="777" Column="6" TopLine="775"/>
+        <Caret Line="267" Column="59" TopLine="244"/>
       </Position16>
       <Position17>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="173" Column="20" TopLine="161"/>
+        <Caret Line="1927" Column="17" TopLine="1917"/>
       </Position17>
       <Position18>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="312" Column="9" TopLine="300"/>
+        <Caret Line="157" Column="27" TopLine="154"/>
       </Position18>
       <Position19>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="317" Column="6" TopLine="308"/>
+        <Caret Line="257" Column="30" TopLine="234"/>
       </Position19>
       <Position20>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="410" Column="1" TopLine="399"/>
+        <Caret Line="1881" Column="3" TopLine="1879"/>
       </Position20>
       <Position21>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="803" Column="18" TopLine="791"/>
+        <Caret Line="563" Column="30" TopLine="549"/>
       </Position21>
       <Position22>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="193" Column="17" TopLine="109"/>
+        <Caret Line="1938" Column="50" TopLine="1934"/>
       </Position22>
       <Position23>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="158" Column="29" TopLine="140"/>
+        <Caret Line="204" Column="53" TopLine="172"/>
       </Position23>
       <Position24>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="241" Column="25" TopLine="229"/>
+        <Caret Line="1976" Column="5" TopLine="1934"/>
       </Position24>
       <Position25>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="267" Column="59" TopLine="244"/>
+        <Caret Line="275" Column="15" TopLine="249"/>
       </Position25>
       <Position26>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1927" Column="17" TopLine="1917"/>
+        <Caret Line="780" Column="5" TopLine="738"/>
       </Position26>
       <Position27>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="157" Column="27" TopLine="154"/>
+        <Caret Line="777" Column="1" TopLine="756"/>
       </Position27>
       <Position28>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="257" Column="30" TopLine="234"/>
+        <Caret Line="879" Column="28" TopLine="837"/>
       </Position28>
       <Position29>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1881" Column="3" TopLine="1879"/>
+        <Caret Line="192" Column="42" TopLine="172"/>
       </Position29>
       <Position30>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="563" Column="30" TopLine="549"/>
+        <Caret Line="1935" Column="5" TopLine="1893"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>
