@@ -53,8 +53,6 @@ CONST
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');
 
-
-
   SupportedFieldTypes:
     TFieldTypes = [ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
                    ftToday, ftEuroDate, ftIDNUM, ftQuestion, ftEuroToday,
@@ -63,6 +61,18 @@ CONST
   DateFieldTypes:
     TFieldTypes = [ftDate, ftToday, ftEuroDate, ftEuroToday,
                    ftYMDDate,ftYMDToday];
+
+  IntFieldTypes:
+    TFieldTypes = [ftInteger, ftIDNUM];
+
+  FloatFieldTypes:
+    TFieldTypes = [ftFloat, ftInteger];
+
+  BoolFieldTypes:
+    TFieldTypes = [ftBoolean];
+
+  StringFieldTypes:
+    TFieldTypes = [ftAlfa, ftUpperAlfa, ftSoundex, ftCrypt];
 
 
   {$I ErrorCodes.inc}

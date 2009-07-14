@@ -217,7 +217,7 @@ type
     property    FieldX:      Cardinal read FFieldX write FFieldX;
     property    FieldY:      Cardinal read FFieldY write FFieldY;
     property    FieldColor:  Cardinal read FFieldColor write FFieldColor;
-    property    FieldType:   TFieldType read FFieldType write FFieldType;
+    property    FieldType:   TFieldType read FFieldType; // write FFieldType;
 //    property    FieldTypeName: string read GetFieldTypeName;
     property    FieldLength: Cardinal read FFieldLength write FFieldLength;
     property    CryptLength: Cardinal read FCryptLength write FCryptLength;
@@ -271,6 +271,8 @@ type
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
+       SetAllMissing: boolean = true); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -805,9 +807,7 @@ class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal;
 begin
   // Todo -o Torsten : Finish coding CREATEFIELD.
   case aFieldType of
-    ftAlfa, ftUpperAlfa,
-    ftCrypt, ftSoundex:
-      result := TEpiStringField.Create(aSize, aFieldType, SetAllMissing);
+    ftInteger: Result := TEpiIntField.Create(aSize, aFieldType, SetAllMissing);
   else
     // TODO -o Torsten : Exception should happen;
     exit;
@@ -1964,6 +1964,13 @@ end;
 class function TEpiIntField.DefaultMissing: EpiInteger;
 begin
   result := NA_INT;
+end;
+
+constructor TEpiIntField.Create(ASize: Cardinal; AFieldType: TFieldType;
+  SetAllMissing: boolean);
+begin
+  if not (AFieldType in DateFieldTypes ;
+  inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
 function TEpiIntField.Compare(i, j: integer): integer;
