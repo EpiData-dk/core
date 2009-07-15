@@ -692,9 +692,8 @@ begin
 
           IF (StrBuf <> '') AND (TmpField.Fieldtype in DateFieldTypes) THEN
           BEGIN
-            TmpFlt := StrToFloat(StrBuf) + 21916;  {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
-            // TODO -O Torsten : Handle dates in Stata.
-//              s:=mibDateToStr(tmpDate,EField.Fieldtype);
+            {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
+            StrBuf := EpiDateTimeToStr(StrToFloat(StrBuf) + 21916, TmpField.FieldType);
           END;  //if date variable
           TmpField.AsData := StrBuf;
         END;  //for CurField
@@ -1373,6 +1372,8 @@ begin
                     {Date is converted from Delphi's 30/12-1899 base
                      to Stata's 1/1-1960 base by substracting 21916 days}
                     TmpInt := Round(EpiDateToDateTime(TmpStr, FieldType, FieldLength) - 21916)
+                  else if FieldType = ftBoolean then
+                    TmpInt := BoolStrToInt(TmpStr)
                   else
                     TmpInt := StrToInt(TmpStr);
                 end;
@@ -1395,6 +1396,7 @@ begin
               EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 22306);
               Exit;
             end;
+            if TmpStr = '..' then TmpStr := '';
             WriteString(TmpStr, FieldLength);
           end;
         END;  //for CurVar
@@ -1582,7 +1584,15 @@ begin
               WriteString(Trim(TmpStr), FieldLength, False);
             ftDate, ftToday, ftEuroDate,
             ftEuroToday,ftYMDDate,ftYMDToday:
-              WriteString(FormatDateTime('yyyymmdd', EpiDateToDateTime(TmpStr, FieldType, FieldLength)), 8, False);
+              begin
+                if Trim(TmpStr) ='' then
+                begin
+                  ErrorCode := EPI_EXPORT_FAILED;
+                  ErrorText := Format(Lang(22306, 'Illegal date found in record # %d, field %s'), [CurRec, FieldName]);
+                  Exit;
+                end;
+                WriteString(FormatDateTime('yyyymmdd', EpiDateToDateTime(TmpStr, FieldType, FieldLength)), 8, False);
+              end;
           END;   //Case
         END;  //with CurField
       END;  //for CurRec
@@ -1597,7 +1607,7 @@ begin
     EpiLogger.DecIndent;
     if Assigned(DataStream) then FreeAndNil(DataStream);
   end;
-END;   //procedure ExportToDBASEIII
+END;
 
 function TEpiImportExport.ExportTXT(const aFilename: string;
   const DataFile: TEpiDataFile): Boolean;

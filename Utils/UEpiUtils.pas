@@ -38,6 +38,8 @@ type
   function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
   function PostInc(Var I: Integer; Const N: Integer = 1): Integer;
 
+  function BoolStrToInt(Const AValue: string): integer;
+
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
 
@@ -189,6 +191,13 @@ begin
   FreeMem(VerInfo, VerInfoSize);
 end;
 {$ENDIF FPC}
+
+function BoolStrToInt(const AValue: string): integer;
+begin
+  Result := 0;
+  if Length(AValue) = 0 then exit;
+  Result := Integer(AValue[1] in BooleanYesChars);
+end;
 
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var

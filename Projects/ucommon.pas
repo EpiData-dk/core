@@ -5,7 +5,7 @@ unit UCommon;
 interface
 
 uses
-  Classes, Dialogs, UEpidataFile, UDataFileTypes, UImportExport;
+  Classes, Dialogs, UEpiDataFile, UDataFileTypes, UImportExport;
 
   function  TinyDocumentation(Df: TEpiDatafile): TStrings;
   function  DocumentDataFile(Df: TEpiDatafile): TStrings;
@@ -105,9 +105,9 @@ begin
     Exporter.OnProgress := ShowProgress;
     S := AnsiUpperCase(ExtractFileExt(FileName));
     if S = '.DTA' then
-      Exporter.ExportStata(FileName, Df, ExportSettings)
+      result:= Exporter.ExportStata(FileName, Df, ExportSettings)
     else if S = '.DBF' then
-      Exporter.ExportDBase(FileName, Df);
+      result := Exporter.ExportDBase(FileName, Df);
     FreeAndNil(Exporter);
     Exit;
   end;

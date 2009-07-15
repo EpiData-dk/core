@@ -20,9 +20,10 @@ CONST
   IntegerChars:    TCharSet = ['0'..'9','-','+'];
   FloatChars:      TCharSet = ['0'..'9', '.', ',', '-', '+'];
   DateChars:       TCharSet = ['0'..'9','/'];
-  BooleanChars:    TCharSet = ['y','Y','n','N','1','0'];
   BooleanYesChars: TCharSet = ['y','Y','1','t','T'];
   BooleanNoChars:  TCharSet = ['n','N','0','f','F'];
+  BooleanChars:    TCharSet = ['y','Y','1','t','T','n','N','0','f','F'];
+//  BooleanChars:    TCharSet = BooleanNoChars + BooleanYesChars;
   DateSeparators:  TCharSet = ['-', '/', ':', '.'];
 
   EOLchars:        array[0..2] of char = '!'#13#10;

@@ -328,8 +328,16 @@ begin
   end;
 
   if filetypeCombo.ItemIndex < 3 then
-    SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings)
-  else
+  begin
+    if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
+    begin
+      EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
+      EpiLogger.Add('Please see "File Info:" tab-page for details.', 1);
+      PageControl1.ActivePage := TabSheet5;
+      Memo1.Lines.Clear;
+      Memo1.Lines.Add(Df.ErrorText);
+    end;
+  end else
     EpiLogger.Add('File type not yet implemented', 2);
 end;
 
