@@ -22,6 +22,7 @@ type
     LabelNo:      integer;
     Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     function      Lang(LangCode: Integer; Const LangText: string): string;
+    function      ExtractFieldName(const AText: string): string;
   protected
     function      makeLabel(LineNum: Integer): TEpiField;
     function      makeNumField(StartPos: Integer): TEpiField;
@@ -50,7 +51,7 @@ type
 implementation
 
 uses
-  UEpiLog, Math, UEpiDataConstants, FileUtil, UEpiUtils;
+  UEpiLog, Math, UEpiDataConstants, FileUtil, UEpiUtils, UStringUtils;
 
 { TQesHandler }
 
@@ -69,6 +70,74 @@ begin
   Result := LangText;
   IF Assigned(FOnTranslate) THEN
     Result := FOnTranslate(langcode, Result)
+end;
+
+function TQesHandler.ExtractFieldName(const AText: string): string;
+begin
+  Result := AText;
+
+  IF Result = '' THEN Result := ' ';
+
+  if Df.FieldNaming = fnAuto then
+    Result := FirstWord(Result, MaxFieldNameLen)
+  else  IF Pos('{', Result) > 0 THEN
+    Result := ExtractStrBetween(Result, '{', '}')
+  else begin
+//    Result := StripWordsFromString(Result, CommonWords);
+  end;
+
+(*
+        StripCommonWords;
+        IF NumValidChars(q)=0 THEN
+          BEGIN
+            IF df^.FieldList.Count>0 THEN
+              BEGIN   //Try to find a name in prev. non-label field
+                gfN:=df^.FieldList.Count;
+                FoundName:=False;
+                WHILE (gfN>0) AND (NOT FoundName) DO
+                  BEGIN
+                    IF (PeField(df^.FieldList.Items[gfN-1])^.Felttype<>ftQuestion)
+                    THEN FoundName:=True;
+                    IF NOT FoundName THEN DEC(gfN);
+                  END;  //While
+                IF FoundName
+                THEN TempName:=PeField(df^.FieldList.Items[gfN-1])^.FName
+                ELSE TempName:='FIELD1';
+                WHILE Length(TempName)<FieldNameLen DO TempName:=TempName+' ';
+              END;  //if feltliste.count>0
+          END    //if numvalidchars=0
+        ELSE
+          BEGIN   //Construct name from question
+            QIndex:=0;
+            NameIndex:=0;
+            WHILE (QIndex<Length(q)) AND (NameIndex<FieldNameLen) DO
+              BEGIN
+                INC(QIndex);
+                IF (q[QIndex] in AlfaNumChars) THEN
+                  BEGIN
+                    INC(NameIndex);
+                    TempName[NameIndex]:=q[QIndex];
+                  END;  //if char in AlfaNumChars
+              END;   //while
+          END;   //construct name from question
+      END;  //if there were no curly brackets
+    END;  //if tempName=NoName
+
+    if not CheckVariableName(Result, AlfaNumChars) then
+      Result := 'FIELD1';
+    if (Length(Result) > 0) and (Result[1] in NumChars) then
+      Result := 'N' + Result;
+
+  IF (TempName=' ') or (TempName=Noname) then tempname:='FIELD1';
+  //IF AnsiLowercase(TempName)='date' THEN TempName:=TempName+'1';     Funktion fjernet 080404 - bør erstattes med warning
+  WHILE Length(TempName)<FieldNameLen DO TempName:=TempName+' ';
+  IF Length(TempName)>FieldNameLen THEN TempName:=Copy(TempName,1,FieldNameLen);
+  IF NOT NameIsUnique(Tempname,df,FieldNameLen) THEN REPEAT UNTIL NameIsUnique(TempName,df,FieldNameLen);
+  Case FieldNameCase OF
+    fcUpper: TempName:=AnsiUpperCase(TempName);
+    fcLower: TempName:=AnsiLowerCase(TempName);
+  END;  //case;
+  GetFieldName:=TempName;    *)
 end;
 
 function TQesHandler.makeLabel(LineNum: Integer): TEpiField;
@@ -93,7 +162,10 @@ function TQesHandler.makeNumField(StartPos: Integer): TEpiField;
 VAR
   I:Integer;
   St, En: Integer;
+  NumStr: String;
 BEGIN
+  result := nil;
+
   St := StartPos;
   WHILE (CurLine[StartPos] in ['#', ',', '.'])  AND (StartPos <= Length(CurLine)) DO
     INC(StartPos);
@@ -109,105 +181,98 @@ BEGIN
     Exit;
   END;
 
-(*  Indhold:=COPY(L,FeltStart,FeltSlut-Feltstart+1);
-  AntalKomma:=0;
-  //Check if number is decimalnumber
-  FOR tt:=1 TO Length(Indhold) DO
-    IF (Indhold[tt]='.') OR (Indhold[tt]=',') THEN INC(AntalKomma);
-  IF (AntalKomma>1) OR (Indhold[Length(Indhold)]='.') OR (Indhold[Length(Indhold)]='.') THEN
+  NumStr := Copy(CurLine, St, En - St + 1);
+
+  if (StrCountChars(NumStr, ['.', ',']) > 1) or (NumStr[Length(NumStr)] in ['.', ',']) then
+  begin
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20422, 'Error in floating point field in line %d:'), [0]);
+    Delete(CurLine, 1, En);
+    Exit;
+  end;
+
+
+(*
+  INC(FeltNr);
+  FeltNavn:=GetFieldName(COPY(L,1,FeltStart-1));
+  New(eField);
+  ResetField(eField);
+  AntalDecimaler:=0;
+  IF AntalKomma=1 THEN
     BEGIN
-      {$IFNDEF epidat}
-      MidLin.Append(Format(Lang(20422),[LinNum+1]));    //'Error in floating point field in line %d:'
-      {$ELSE}
-      MidLin.Append(Format('Error in floating point field in line %d:',[LinNum+1]));
-      {$ENDIF}
-      MidLin.Append(Lin[LinNum]);
-      MidLin.Append(' ');
-      CreateIndtastningsFormError:=TRUE;
-      Delete(L,1,FeltSlut);
-      INC(CurX,FeltSlut);
-    END
-  ELSE
+      AntalDecimaler:=Length(Indhold)-Pos('.',Indhold);
+      IF Pos('.',Indhold)=0 THEN
+        AntalDecimaler:=Length(Indhold)-Pos(',',Indhold);
+    END;
+  WITH eField^ DO
     BEGIN
-      INC(FeltNr);
-      FeltNavn:=GetFieldName(COPY(L,1,FeltStart-1));
-      New(eField);
-      ResetField(eField);
-      AntalDecimaler:=0;
-      IF AntalKomma=1 THEN
+      FName:=FeltNavn;
+      FLength:=FeltSlut-FeltStart+1;
+      FNumDecimals:=AntalDecimaler;
+      IF (AntalKomma=1) OR (FLength>9) THEN Felttype:=ftFloat
+      ELSE Felttype:=ftInteger;
+      IF FeltStart>1 THEN    //is there question before the field?
         BEGIN
-          AntalDecimaler:=Length(Indhold)-Pos('.',Indhold);
-          IF Pos('.',Indhold)=0 THEN
-            AntalDecimaler:=Length(Indhold)-Pos(',',Indhold);
-        END;
-      WITH eField^ DO
-        BEGIN
-          FName:=FeltNavn;
-          FLength:=FeltSlut-FeltStart+1;
-          FNumDecimals:=AntalDecimaler;
-          IF (AntalKomma=1) OR (FLength>9) THEN Felttype:=ftFloat
-          ELSE Felttype:=ftInteger;
-          IF FeltStart>1 THEN    //is there question before the field?
+          FQuestTop:=CurTop+2;
+          FQuestLeft:=CurLeft;
+          FQuestion:=RemoveCurly(COPY(L,1,FeltStart-1));
+          FOriginalQuest:=FQuestion;
+          TabsInNextField:=0;
+          WHILE FQuestion[Length(FQuestion)]='@' DO
             BEGIN
-              FQuestTop:=CurTop+2;
-              FQuestLeft:=CurLeft;
-              FQuestion:=RemoveCurly(COPY(L,1,FeltStart-1));
-              FOriginalQuest:=FQuestion;
-              TabsInNextField:=0;
-              WHILE FQuestion[Length(FQuestion)]='@' DO
+              INC(TabsInNextField);
+              FQuestion:=COPY(FQuestion,1,Length(FQuestion)-1);
+            END;  //While
+          FVariableLabel:=trim(FQuestion);
+          IF (NOT df^.EpiInfoFieldNaming) AND (trim(FQuestion)<>'') THEN
+            BEGIN
+              s:=FirstWord(FVariableLabel);
+              Delete(FVariableLabel,Pos(s,FVariableLabel),Length(s));
+              FVariableLabel:=trim(FVariableLabel);
+              IF df^.UpdateFieldnameInQuestion THEN
                 BEGIN
-                  INC(TabsInNextField);
-                  FQuestion:=COPY(FQuestion,1,Length(FQuestion)-1);
-                END;  //While
-              FVariableLabel:=trim(FQuestion);
-              IF (NOT df^.EpiInfoFieldNaming) AND (trim(FQuestion)<>'') THEN
-                BEGIN
-                  s:=FirstWord(FVariableLabel);
-                  Delete(FVariableLabel,Pos(s,FVariableLabel),Length(s));
-                  FVariableLabel:=trim(FVariableLabel);
-                  IF df^.UpdateFieldnameInQuestion THEN
-                    BEGIN
-                      s:=trim(FirstWord(FQuestion));
-                      tt:=Pos(s,FQuestion);
-                      Delete(FQuestion,tt,Length(s));
-                      Insert(trim(FName),FQuestion,tt);
-                      s:=trim(FirstWord(FOriginalQuest));
-                      tt:=Pos(s,FOriginalQuest);
-                      Delete(FOriginalQuest,tt,Length(s));
-                      Insert(trim(FName),FOriginalQuest,tt);
-                    END;
+                  s:=trim(FirstWord(FQuestion));
+                  tt:=Pos(s,FQuestion);
+                  Delete(FQuestion,tt,Length(s));
+                  Insert(trim(FName),FQuestion,tt);
+                  s:=trim(FirstWord(FOriginalQuest));
+                  tt:=Pos(s,FOriginalQuest);
+                  Delete(FOriginalQuest,tt,Length(s));
+                  Insert(trim(FName),FOriginalQuest,tt);
                 END;
-              FQuestY:=LinNum+1;
-              FQuestX:=CurX;
-              INC(CurX,Length(FOriginalQuest));  // tidligere FQuestion
-              {$IFNDEF epidat}
-              ObjHeight:=MainForm.Canvas.TextHeight(FQuestion);
-              ObjWidth:=MainForm.Canvas.TextWidth(FQuestion);
-              {$ENDIF}
-              INC(CurLeft,ObjWidth);
-              IF ObjHeight>Tallest THEN Tallest:=ObjHeight;
-            END;   //if label before field
-          FLength:=FeltSlut-FeltStart+1;
-          {$IFNDEF epidat}
-          FFieldWidth:=(MainForm.Canvas.TextWidth('9')*(FLength+2))+6;
-          {$ENDIF}
-          FFieldTop:=CurTop;
-          IF TabsInNextField>0 THEN
-            BEGIN
-              CurLeft:=((Curleft DIV EvenTabValue)+
-                    TabsInNextField)*EvenTabValue;
-              TabsInNextField:=0;
             END;
-          FFieldLeft:=CurLeft;
-          FFieldY:=LinNum+1;
-          FFieldX:=CurX;
-          FFieldText:='';
-          INC(CurLeft,FFieldWidth);
-          t:=FLength;
-        END;   //with eField do
-      df^.FieldList.Add(eField);
-      Delete(L,1,FeltSlut);
-      INC(CurX,t);
+          FQuestY:=LinNum+1;
+          FQuestX:=CurX;
+          INC(CurX,Length(FOriginalQuest));  // tidligere FQuestion
+          {$IFNDEF epidat}
+          ObjHeight:=MainForm.Canvas.TextHeight(FQuestion);
+          ObjWidth:=MainForm.Canvas.TextWidth(FQuestion);
+          {$ENDIF}
+          INC(CurLeft,ObjWidth);
+          IF ObjHeight>Tallest THEN Tallest:=ObjHeight;
+        END;   //if label before field
+      FLength:=FeltSlut-FeltStart+1;
+      {$IFNDEF epidat}
+      FFieldWidth:=(MainForm.Canvas.TextWidth('9')*(FLength+2))+6;
+      {$ENDIF}
+      FFieldTop:=CurTop;
+      IF TabsInNextField>0 THEN
+        BEGIN
+          CurLeft:=((Curleft DIV EvenTabValue)+
+                TabsInNextField)*EvenTabValue;
+          TabsInNextField:=0;
+        END;
+      FFieldLeft:=CurLeft;
+      FFieldY:=LinNum+1;
+      FFieldX:=CurX;
+      FFieldText:='';
+      INC(CurLeft,FFieldWidth);
+      t:=FLength;
+    END;   //with eField do
+  df^.FieldList.Add(eField);
+  Delete(L,1,FeltSlut);
+  INC(CurX,t);
     END;  //if AntalKomma>1 *)
 end;
 

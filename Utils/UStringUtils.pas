@@ -5,7 +5,7 @@ unit UStringUtils;
 interface
 
 uses
-  Classes,  SysUtils, UEpiDataConstants;
+  Classes,  SysUtils, UEpiDataConstants, UUtilTypes;
 
 type
 
@@ -20,6 +20,9 @@ type
   function FirstWord(Const S: string; MaxLength: Cardinal): string;
   Function FitLength(Const S: string; L: Integer):string;
   procedure SplitString(const Source: string; var List: TStrings; const Splitters: TCharset = [' ']);
+  function StrCountChars(const Source: string; const FindChars: TCharSet): integer;
+  function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
+  function StripWordsFromString(Const Source: string; StripWords: array of string): string;
 
 implementation
 
@@ -86,6 +89,45 @@ begin
   finally
     list.EndUpdate;
   end;
+end;
+
+function StrCountChars(const Source: string; const FindChars: TCharSet): integer;
+var
+  i: integer;
+begin
+  result := 0;
+  for i := 1 to Length(Source) do
+    if Source[i] in FindChars then inc(result);
+end;
+
+function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
+var
+  PB, PE: PChar;
+begin
+  Result := '';
+  // Work with PChars.
+  PB := PChar(Source);
+  // Skip until first occurance of BeginChar.
+  while not (PB^ in [#0, BeginChar]) do PB := PB + 1;
+  // We may have reached the end.
+  if PB^ = #0 then exit;
+  PE := PB;
+  // Skip until end.
+  while not (PE^ in [#0, EndChar]) do PE := PE + 1;
+  // If end is reached here, there were no termination to "between" section.
+  if PE^= #0 then exit;
+  SetString(result, PB, PE - PB);
+end;
+
+function StripWordsFromString(const Source: string; StripWords: array of string
+  ): string;
+var
+  NumWords: Integer;
+  i: Integer;
+begin
+  Result := Source;
+  for i := 0 to NumWords -1 do
+    Result := StringReplace(Result, StripWords[i], '', [rfIgnoreCase, rfReplaceAll]);
 end;
        
 end.

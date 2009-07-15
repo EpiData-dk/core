@@ -47,14 +47,17 @@ CONST
                      clGreen, clLime, clLtGray, clMaroon, clNavy, clOlive,
                      clPurple, clRed, clSilver, clTeal, clWhite, clYellow);
                      
-  FieldTypeNames: Array[0..20] of widestring =
+  FieldTypeNames: Array[0..20] of string =
                    ('Numeric', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
                     'Boolean', 'Numeric', 'Phonenumber', 'Time', 'Local phonenumber',
                     'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Question',
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');
 
-
+  CommonWords: packed array[0..13] of String[10]=
+      ('OF',      'AND',    'IF NO',    'IF YES',   'WHO',
+       'WHERE',   'WHAT',   'DID',      'WHEN',     'HOW MANY',
+       'THE',     'TO',     'IF',       'ARE');
 
   SupportedFieldTypes:
     TFieldTypes = [ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
