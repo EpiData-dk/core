@@ -91,7 +91,7 @@ implementation
 
 uses
   Math, UValueLabels, UStringUtils, StrUtils, UPWform, UEpiUtils, UCheckFileIO,
-  UEpiDataConstants, UImportExport, ucommon, UEpiLog;
+  UEpiDataGlobals, UImportExport, ucommon, UEpiLog;
 
 var
   Df: TEpiDataFile = nil;

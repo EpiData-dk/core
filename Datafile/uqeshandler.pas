@@ -51,7 +51,7 @@ type
 implementation
 
 uses
-  UEpiLog, Math, UEpiDataConstants, FileUtil, UEpiUtils, UStringUtils;
+  UEpiLog, Math, UEpiDataGlobals, FileUtil, UEpiUtils, UStringUtils;
 
 { TQesHandler }
 

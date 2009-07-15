@@ -5,7 +5,7 @@ unit UEpiUtils;
 interface
 
 USES
-  SysUtils, UEpiDataConstants, UDataFileTypes;
+  SysUtils, UEpiDataGlobals, UDataFileTypes;
 
 type
   TPrgVersionInfo = record

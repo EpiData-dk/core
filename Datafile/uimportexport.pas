@@ -93,7 +93,7 @@ type
 implementation
 
 uses
-  UValueLabels, UEpiDataConstants, UEpiUtils, Math, StrUtils, UDateUtils, FileUtil;
+  UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils, FileUtil;
 
   { TEpiImportExport }
 

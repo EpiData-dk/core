@@ -5,7 +5,7 @@ unit UDateUtils;
 interface
 
 uses
-  SysUtils, UDataFileTypes, UEpiDataConstants;
+  SysUtils, UDataFileTypes, UEpiDataGlobals;
 
   function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
   Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;

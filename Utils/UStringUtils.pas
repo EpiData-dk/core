@@ -5,7 +5,7 @@ unit UStringUtils;
 interface
 
 uses
-  Classes,  SysUtils, UEpiDataConstants, UUtilTypes;
+  Classes,  SysUtils, UEpiDataGlobals, UUtilTypes;
 
 type
 

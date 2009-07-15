@@ -1,4 +1,4 @@
-unit UEpiDataConstants;
+unit UEpiDataGlobals;
 
 {$mode objfpc}{$H+}
 
@@ -15,15 +15,9 @@ CONST
 
   NewRecord = -1;
   NumChars:        TCharSet = ['0'..'9'];
-  AlfaNumChars:    TCharSet = ['0'..'9','A'..'Z','a'..'z'];
   AlfaChars:       TCharSet = ['A'..'Z','a'..'z'];
-  IntegerChars:    TCharSet = ['0'..'9','-','+'];
-  FloatChars:      TCharSet = ['0'..'9', '.', ',', '-', '+'];
-  DateChars:       TCharSet = ['0'..'9','/'];
-  BooleanYesChars: TCharSet = ['y','Y','1','t','T'];
-  BooleanNoChars:  TCharSet = ['n','N','0','f','F'];
-  BooleanChars:    TCharSet = ['y','Y','1','t','T','n','N','0','f','F'];
-//  BooleanChars:    TCharSet = BooleanNoChars + BooleanYesChars;
+  SignChars:       TCharSet = ['+', '-'];
+  CommaChars:      TCharSet = ['.', ','];
   DateSeparators:  TCharSet = ['-', '/', ':', '.'];
 
   EOLchars:        array[0..2] of char = '!'#13#10;
@@ -54,10 +48,10 @@ CONST
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');
 
-  CommonWords: packed array[0..13] of String[10]=
+ (* CommonWords: packed array[0..13] of String[10]=
       ('OF',      'AND',    'IF NO',    'IF YES',   'WHO',
        'WHERE',   'WHAT',   'DID',      'WHEN',     'HOW MANY',
-       'THE',     'TO',     'IF',       'ARE');
+       'THE',     'TO',     'IF',       'ARE');            *)
 
   SupportedFieldTypes:
     TFieldTypes = [ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
@@ -68,9 +62,58 @@ CONST
     TFieldTypes = [ftDate, ftToday, ftEuroDate, ftEuroToday,
                    ftYMDDate,ftYMDToday];
 
+var
+  // CommonWords: List of common english word that is used to strip
+  //              string when creating new variables.
+  CommonWords: array of string;
+  BooleanYesChars: TCharSet = ['y','Y','1','t','T'];
+  BooleanNoChars:  TCharSet = ['n','N','0','f','F'];
+  BooleanChars:    TCharSet;
+  AlfaNumChars:    TCharSet;
+  DateChars:       TCharSet;
+  IntegerChars:    TCharSet;
+  FloatChars:      TCharSet;
 
   {$I ErrorCodes.inc}
 
 implementation
+
+var
+  Initialized: boolean = false;
+
+procedure InitGlobals;
+begin
+  if Initialized then exit;
+
+  // Setting initial common english words.
+  SetLength(CommonWords, 14);
+  CommonWords[0] := 'OF';
+  CommonWords[1] := 'AND';
+  CommonWords[2] := 'IF NO';
+  CommonWords[3] := 'IF YES';
+  CommonWords[4] := 'WHO';
+  CommonWords[5] := 'WHERE';
+  CommonWords[6] := 'WHAT';
+  CommonWords[7] := 'DID';
+  CommonWords[8] := 'WHEN';
+  CommonWords[9] := 'HOW MANY';
+  CommonWords[10] := 'THE';
+  CommonWords[11] := 'TO';
+  CommonWords[12] := 'IF';
+  CommonWords[13] := 'ARE';
+
+  // Common global sets.
+  BooleanChars := BooleanYesChars + BooleanNoChars;
+  AlfaNumChars := AlfaChars + NumChars;
+  DateChars    := NumChars + DateSeparators;
+  IntegerChars := NumChars + SignChars;
+  FloatChars   := IntegerChars + CommaChars;
+  //
+
+  Initialized := true;
+end;
+
+initialization
+  InitGlobals;
 
 end.

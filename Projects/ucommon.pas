@@ -21,7 +21,7 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataConstants;
+  UEpiDataGlobals;
 
 function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
 begin

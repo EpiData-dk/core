@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, UValueLabels, Rijndael, UCheckFileCmds, UEpiLog,
-  UCheckFileTypes, Graphics, UDataFileTypes, UEpiDataConstants;
+  UCheckFileTypes, Graphics, UDataFileTypes, UEpiDataGlobals;
 
 type
 

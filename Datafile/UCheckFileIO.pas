@@ -87,7 +87,7 @@ implementation
 
 uses
   SysUtils, UCheckFileTypes, UEpiUtils, TypInfo,
-  Graphics, UEpiDataConstants, Dialogs, UStringUtils,
+  Graphics, UEpiDataGlobals, Dialogs, UStringUtils,
   StrUtils;
 
 { TCheckParser }
