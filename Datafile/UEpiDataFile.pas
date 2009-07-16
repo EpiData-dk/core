@@ -283,33 +283,34 @@ type
     FRecordState:  TRecordState;
     FCurRecord:    Integer;
     FOrgDataType:  TDataFileType;
-    function       GetField(Index: integer): TEpiField;
-    function       GetValueLabels(): TValueLabelSets;
-    function       GetIndexFile(): TEpiIndexFile;
-    procedure      InternalReset();
+    function GetField(Index: integer): TEpiField;
+    function GetIndexFile: TEpiIndexFile;
+    function GetValueLabels: TValueLabelSets;
+    procedure  InternalReset;
   protected
-    function   InternalOpen(): boolean;
-    function   InternalSave(): boolean;
+    function   InternalOpen: boolean;
+    function   InternalSave: boolean;
     function   Lang(LangCode: Integer; Const LangText: string): string;
     function   RequestPassword(Const EncryptedString: string): boolean;
     Function   UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     Function   TextPos(var F: Textfile): Cardinal;
-    function   GetNumFields(): Cardinal;
-    function   GetNumDataFields(): Cardinal;
-    function   GetNumRecords(): Integer;
-    function   GetEOFMarker(): Boolean;
+    function   GetNumFields: Cardinal;
+    function   GetNumDataFields: Cardinal;
+    function   GetNumRecords: Integer;
+    function   GetEOFMarker: Boolean;
   public
     constructor Create(aOptions: TEpiDataFileOptions = []); virtual;
-    destructor Destroy(); override;
+    destructor Destroy; override;
     function   Open(Const aFileName: string): boolean;
     function   Save(Const aFileName: string): boolean;
     procedure  SaveMemToFile(Const aFileName: string);
     procedure  Read(RecNumber: Integer);
     procedure  Write(RecNumber: Integer = NewRecord);
-    procedure  Reset();
+    procedure  Reset;
     function   FieldByName(Const aFieldName: string): TEpiField;
     function   FieldExists(Const aFieldName: string): boolean;
     procedure  AddField(AField: TEpiField);
+    function   CreateUniqueFieldName(Const AText: string): string;
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
     property   DataFields:  TEpiFields read FDataFields;
@@ -762,21 +763,24 @@ begin
   result := Fields[Index];
 end;
 
-function TEpiDataFile.GetValueLabels(): TValueLabelSets;
-begin
-  result := nil;
-  if Assigned(CheckFile) then
-    Result := CheckFile.ValueLabels;
-end;
 
-function TEpiDataFile.GetIndexFile(): TEpiIndexFile;
+function TEpiDataFile.GetIndexFile: TEpiIndexFile;
 begin
   if not Assigned(FIndexFile) then
     FIndexFile := TEpiIndexFile.Create(ChangeFileExt(FileName, '.EIX'));
   result := FIndexFile;
 end;
 
-procedure TEpiDataFile.InternalReset();
+function TEpiDataFile.GetValueLabels: TValueLabelSets;
+begin
+  result := nil;
+  if Assigned(CheckFile) then
+    Result := CheckFile.ValueLabels;
+end;
+
+
+
+procedure TEpiDataFile.InternalReset;
 begin
   if Assigned(FDataStream) then FreeAndNil(FDataStream);
   if Assigned(FFields) then FreeAndNil(FFields);
@@ -805,7 +809,7 @@ begin
   FOrgDataType    := dftEpiData;
 end;
 
-function TEpiDataFile.InternalOpen(): boolean;
+function TEpiDataFile.InternalOpen: boolean;
 var
   // Misc:
   TempInt, I: integer;
@@ -1030,7 +1034,7 @@ begin
   end;
 end;
 
-function TEpiDataFile.InternalSave(): boolean;
+function TEpiDataFile.InternalSave: boolean;
 var
   Crypt: boolean;
   i: integer;
@@ -1224,17 +1228,17 @@ begin
   end;
 end;
 
-function TEpiDataFile.GetNumFields(): Cardinal;
+function TEpiDataFile.GetNumFields: Cardinal;
 begin
   result := Fields.Count;
 end;
 
-function TEpiDataFile.GetNumDataFields(): Cardinal;
+function TEpiDataFile.GetNumDataFields: Cardinal;
 begin
   result := DataFields.Count;
 end;
 
-function TEpiDataFile.GetNumRecords(): Integer;
+function TEpiDataFile.GetNumRecords: Integer;
 var
   buf: Array[0..1] of Char;
   TmpPos: Cardinal;
@@ -1260,7 +1264,7 @@ BEGIN
     Result := Result div FFullRecLength;
 end;
 
-function TEpiDataFile.GetEOFMarker(): Boolean;
+function TEpiDataFile.GetEOFMarker: Boolean;
 var
   TmpPos: cardinal;
   Buf: Char;
@@ -1295,13 +1299,13 @@ begin
   end;
 end;
 
-destructor TEpiDataFile.Destroy();
+destructor TEpiDataFile.Destroy;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Destroy', 2, 'Filename = ' + FileName);
   try
     InternalReset();
-    inherited Destroy();
+    inherited Destroy;
   finally
     EpiLogger.DecIndent;
   end;
@@ -1471,7 +1475,7 @@ begin
   FCurRecord := RecNumber;
 end;
 
-procedure TEpiDataFile.Reset();
+procedure TEpiDataFile.Reset;
 begin
   InternalReset();
 
@@ -1509,6 +1513,25 @@ begin
        AField.ValueLabelSet then
       exit;
     ValueLabels.AddValueLabelSet(AField.ValueLabelSet);
+  end;
+end;
+
+function TEpiDataFile.CreateUniqueFieldName(const AText: string): string;
+var
+  Number: Integer;
+begin
+  result := AText;
+
+  // If fieldname is unique, do nothing.
+  Number := 0;
+  while FieldExists(result) do
+  begin
+    // not unique, find a new.
+    if Length(Result) = MaxFieldNameLen then
+      Result := Copy(Result, 1, MaxFieldNameLen - Length(IntToStr(Number))) + IntToStr(Number)
+    else
+      Result := Result + IntToStr(Number);
+    Inc(Number);
   end;
 end;
 
