@@ -14,7 +14,6 @@ uses
   function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
                          ExportSettings: PEpiExportSettings): boolean;
-  function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
   procedure SetFilter(aDialog: TOpenDialog);
 
 implementation
@@ -22,11 +21,6 @@ implementation
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
   UEpiDataGlobals;
-
-function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
-begin
-
-end;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
@@ -143,9 +137,6 @@ begin
 end;
 
 function  DocumentDataFile(Df: TEpiDatafile): TStrings;
-type
-TCharSet=Set of Char;
-
 var
   res: TStringList;
   FileSiz:LongInt;

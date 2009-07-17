@@ -128,7 +128,7 @@ implementation
 
 uses
   UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
-  FileUtil, UQesHandler;
+  FileUtil, UQesHandler, Clipbrd;
 
   { TEpiImportExport }
 
@@ -999,6 +999,7 @@ function TEpiImportExport.ImportTXT(const aFilename: string;
 var
   QESHandler: TQesHandler;
   ImportLines: TStrings;
+  TmpStr: String;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + aFilename);
@@ -1031,9 +1032,23 @@ begin
 
     // Importing from ClipBoard?
     if aFilename = '' then
-      ImportLines.Clear  // TODO!
-    else
+    begin
+      if Clipboard.HasFormat(CF_Text) then
+      begin
+        TmpStr := StringReplace(Clipboard.AsText, #13#10, #1, [rfReplaceAll]);
+        ImportLines.Delimiter := #1;
+        ImportLines.StrictDelimiter := true;
+        ImportLines.DelimitedText := TmpStr;
+      end;
+    end else
       ImportLines.LoadFromFile(aFileName);
+
+    if ImportLines.Count = 0 then
+    begin
+      ErrorCode := EPI_IMPORT_FAILED;
+      ErrorText := Lang(0, 'ClipBoard or File contains no data.');
+      Exit;
+    end;
 
   finally
     if Assigned(QESHandler) then FreeAndNil(QESHandler);

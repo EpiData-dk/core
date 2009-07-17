@@ -6,9 +6,9 @@ interface
 
 uses
   LResources,
-  Messages, SysUtils, Variants, Classes, Controls, Forms,
+  SysUtils, Variants, Classes, Controls, Forms,
   Dialogs, StdCtrls, Buttons, ExtCtrls, ComCtrls, UEpiDataFile, Grids,
-  UDataFileTypes, Graphics, FileCtrl;
+  UDataFileTypes, Graphics;
 
 type
 
@@ -90,7 +90,7 @@ var
 implementation
 
 uses
-  Math, UValueLabels, UStringUtils, StrUtils, UPWform, UEpiUtils, UCheckFileIO,
+  Math, UPWform, UEpiUtils, UCheckFileIO,
   UEpiDataGlobals, UImportExport, ucommon, UEpiLog;
 
 var
@@ -145,6 +145,7 @@ procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   if Assigned(Df) then FreeAndNil(Df);
   TEpiLog.DestroyInstance;
+  CloseAction := caFree;
 end;
 
 procedure TMainForm.SpeedButton1Click(Sender: TObject);
