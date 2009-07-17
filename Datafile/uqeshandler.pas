@@ -30,13 +30,13 @@ type
     function      makeNumField(StartPos: Integer): TEpiField;
     function      makeTxtField(StartPos: Integer): TEpiField;
     function      makeOtherField(StartPos: Integer): TEpiField;
-    function      makeBoolField(StartPos: Integer): TEpiField;
-    function      makeUpperAlfa(StartPos: Integer): TEpiField;
-    function      makeIdNum(StartPos: Integer): TEpiField;
-    function      makeDate(StartPos: Integer): TEpiField;
-    function      makeToday(StartPos: Integer):TEpiField;
-    function      makeSoundex(StartPos: Integer): TEpiField;
-    function      makeCrypt(StartPos: Integer): TEpiField;
+    function      makeBoolField(StartPos, EndPos: Integer): TEpiField;
+    function      makeUpperAlfa(StartPos, EndPos: Integer): TEpiField;
+    function      makeIdNum(StartPos, EndPos: Integer): TEpiField;
+    function      makeDate(StartPos, EndPos: Integer; Ft: TFieldType): TEpiField;
+    function      makeToday(StartPos, EndPos: Integer):TEpiField;
+    function      makeSoundex(StartPos, EndPos: Integer): TEpiField;
+    function      makeCrypt(StartPos, EndPos: Integer): TEpiField;
     property      CurX: integer read FCurX write FCurX;
     property      Df: TEpiDataFile read FDf write FDf;
   public
@@ -253,76 +253,106 @@ begin
     Exit;
   end;
 
-  FieldCode := AnsiUpperCase(Copy(CurLine, St + 1, En - St));
-(*  case FieldCode[1] of
-    'Y': begin
-           if Length(FieldCode) = 1 then
-             result := makeBoolField(St)
+  FieldCode := AnsiUpperCase(Copy(CurLine, St, En - St + 1));
 
-         end;
+  IF (FieldCode='<Y>')              THEN makeBoolField(St, En);
+  IF COPY(FieldCode,1,2)='<A'       THEN makeUpperAlfa(St, En);
+  IF COPY(FieldCode,1,6)='<IDNUM'   THEN makeIdNum(St, En);
+  IF (COPY(FieldCode,1,6)='<MM/DD') Then makeDate(St, En, ftDate);
+  If (COPY(FieldCode,1,6)='<DD/MM') Then makeDate(St, En, ftEuroDate);
+  If (FieldCode='<YYYY/MM/DD>')     THEN makeDate(St, En, ftYMDDate);
+  IF COPY(FieldCode,1,6)='<TODAY'   THEN makeToday(St, En);
+  IF COPY(FieldCode,1,2)='<S'       THEN makeSoundex(St, En);
+  IF COPY(FieldCode,1,2)='<E'       THEN makeCrypt(St, En);  //&&
+  IF FieldCode<>'Done' THEN
+  BEGIN
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20434, 'Unknown code found in line %d:'), [0]);
+    Delete(CurLine, 1, En);
+    Exit;
+  END;   //if CodeFound not Done
+end;
+
+function TQesHandler.makeBoolField(StartPos, EndPos: Integer): TEpiField;
+begin
+  Result := makeField(ftBoolean, StartPos, EndPos);
+  Result.FieldLength := 1;
+end;
+
+function TQesHandler.makeUpperAlfa(StartPos, EndPos: Integer): TEpiField;
+begin
+  Result := makeField(ftUpperAlfa, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 80 then
+  begin
+    Result.FieldLength := 80;
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20428, 'Upper-case text field in line %d exceeds maximum length of 80 characters:'),[0]);
   end;
-
-
-    BEGIN
-      FeltSlut:=pos('>',L);
-      CodeFound:=ANSIUpperCase(COPY(L,FeltStart,FeltSlut-FeltStart+1));
-      IF (CodeFound='<Y>') THEN MakeBoolean;
-      IF COPY(CodeFound,1,2)='<A' THEN MakeUpperAlfa;
-      IF COPY(CodeFound,1,6)='<IDNUM' THEN MakeIDNum;
-      IF (COPY(CodeFound,1,6)='<MM/DD') OR
-         (COPY(CodeFound,1,6)='<DD/MM') OR
-         (CodeFound='<YYYY/MM/DD>') THEN MakeDate;  //&&
-      IF COPY(CodeFound,1,6)='<TODAY' THEN MakeToday;
-      IF COPY(CodeFound,1,2)='<S' THEN MakeSoundex;
-      IF COPY(CodeFound,1,2)='<E' THEN MakeCrypt;  //&&
-      IF CodeFound<>'Done' THEN
-        BEGIN
-          {$IFNDEF epidat}
-          MidLin.Append(Format(Lang(20434),[LinNum+1]));  //'Unknown code found in line %d:'
-          {$ELSE}
-          MidLin.Append(Format('Unknown code found in line %d:',[LinNum+1]));
-          {$ENDIF}
-          MidLin.Append(Lin[LinNum]);
-          MidLin.Append(' ');
-          CreateIndtastningsFormError:=TRUE;
-          Delete(L,1,FeltSlut);
-        END;   //if CodeFound not Done
-      END;  //if slut-tegn mangler   *)
 end;
 
-function TQesHandler.makeBoolField(StartPos: Integer): TEpiField;
+function TQesHandler.makeIdNum(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftIDNUM, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 18 then
+  begin
+    Result.FieldLength := 18;
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20430, 'IDNUM field in line %d exceeds maximum length of 18 characters:'),[0]);
+  end;
 end;
 
-function TQesHandler.makeUpperAlfa(StartPos: Integer): TEpiField;
+function TQesHandler.makeDate(StartPos, EndPos: Integer; Ft: TFieldType): TEpiField;
 begin
-
+  Result := makeField(Ft, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 10 then
+    Result.FieldLength := 10;
 end;
 
-function TQesHandler.makeIdNum(StartPos: Integer): TEpiField;
+function TQesHandler.makeToday(StartPos, EndPos: Integer): TEpiField;
+var
+  TempCode: String;
+  Ft: TFieldType;
+  FLength: Integer;
 begin
-
+  TempCode := Copy(CurLine, StartPos, EndPos - StartPos);
+  FLength := 0;
+  IF TempCode = '<TODAY-DMY>'  THEN BEGIN Ft := ftEuroToday; FLength:=10; END;
+  IF TempCode = '<TODAY-MDY>'  THEN BEGIN Ft := ftToday;     FLength:=10; END;
+  IF TempCode = '<TODAY-YMD>'  THEN BEGIN Ft := ftYMDToday;  FLength:=10; END;
+  IF TempCode = '<TODAY>'      THEN BEGIN Ft := ftToday;     FLength:=5;  END;
+  IF TempCode = '<TODAY/YY>'   THEN BEGIN Ft := ftToday;     FLength:=8;  END;
+  IF TempCode = '<TODAY/YYYY>' THEN BEGIN Ft := ftToday;     FLength:=10; END;
+  IF FLength = 0               THEN BEGIN Ft := ftEuroToday; FLength:=10; END;
+  Result := makeField(Ft, StartPos, EndPos);
+  Result.FieldLength := FLength;
 end;
 
-function TQesHandler.makeDate(StartPos: Integer): TEpiField;
+function TQesHandler.makeSoundex(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftSoundex, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 80 then
+    Result.FieldLength := 80;
 end;
 
-function TQesHandler.makeToday(StartPos: Integer): TEpiField;
+function TQesHandler.makeCrypt(StartPos, EndPos: Integer): TEpiField;
 begin
-
-end;
-
-function TQesHandler.makeSoundex(StartPos: Integer): TEpiField;
-begin
-
-end;
-
-function TQesHandler.makeCrypt(StartPos: Integer): TEpiField;
-begin
-
+  Result := makeField(ftCrypt, StartPos, EndPos);
+  Result.CryptLength := Result.FieldLength - 2;
+  Result.FieldLength := GetEncodedLength(Result.CryptLength);
+  if Result.CryptLength > 60 then
+  begin
+    Result.FieldLength := 60;
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20429, 'Encrypt field in line %d exceeds maximum length of 60 characters:'),[0]);
+  end;
 end;
 
 constructor TQesHandler.Create;
@@ -404,12 +434,6 @@ begin
         Df.AddField(TmpField);
         IF trim(CurLine) = '' THEN CurLine := '';
       END;  //while
-(*      CurTop:=CurTop+(Tallest DIV 2);
-      CASE LineHeight OF
-        0: CurTop:=CurTop+Tallest;              //lineheight=1
-        1: CurTop:=CurTop+((Tallest*3) DIV 2);  //Lineheight=1½
-        2: CurTop:=CurTop+Tallest+Tallest;      //LineHeight=2
-      END; *)
     END;  //for LinNum
     IF Df.NumDataFields = 0 THEN
     BEGIN

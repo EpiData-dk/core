@@ -50,6 +50,39 @@ const
                      EndRecord:    -1);
 
 type
+  // Import records:
+  //
+  TEpiImportSettings = record
+    ForceFileVersion: Integer;
+    StartRecord:      Integer;
+    EndRecord:        Integer;
+  end;
+  PEpiImportSettings = ^TEpiImportSettings;
+
+  TEpiTxtImportSettings = record
+    ImportSettings: PEpiImportSettings;
+    QESFileName:    string;
+    UseQESFile:     boolean;
+    FieldSeparator: Char;
+    DateSeparator:  Char;
+  end;
+  PEpiTxtImportSettings = ^TEpiTxtImportSettings;
+
+const
+  ImportAll: TEpiImportSettings =
+   (ForceFileVersion: -1;
+    StartRecord:      1;
+    EndRecord:        -1);
+
+  ImportTxtGuess: TEpiTxtImportSettings = (
+    ImportSettings: @ImportAll;
+    QESFileName:    '';
+    UseQESFile:     false;
+    FieldSeparator: #0;
+    DateSeparator:  #0;
+    );
+
+type
 
   { TEpiImportExport }
 
@@ -77,7 +110,8 @@ type
     destructor    Destroy; override;
     function      ImportStata(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
-    function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
+                            TxtImpSetting: PEpiTxtImportSettings): Boolean;
     function      ImportXLS(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
                               ExpSetting: PEpiExportSettings): Boolean;
@@ -93,7 +127,8 @@ type
 implementation
 
 uses
-  UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils, FileUtil;
+  UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
+  FileUtil, UQesHandler;
 
   { TEpiImportExport }
 
@@ -960,10 +995,12 @@ BEGIN
 END;   //ImportDBaseFile
 
 function TEpiImportExport.ImportTXT(const aFilename: string;
-  var DataFile: TEpiDataFile): Boolean;
-
+  var DataFile: TEpiDataFile; TxtImpSetting: PEpiTxtImportSettings): Boolean;
+var
+  QESHandler: TQesHandler;
+  ImportLines: TStrings;
 begin
-{  EpiLogger.IncIndent;
+  EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + aFilename);
   result := false;
 
@@ -972,6 +1009,17 @@ begin
   else
     DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
 
+  QESHandler := nil;
+  if TxtImpSetting^.UseQESFile then
+  begin
+    QESHandler := TQesHandler.Create;
+    if Not QESHandler.QesToDatafile(TxtImpSetting^.QESFileName, DataFile) then
+      Exit;
+  end else begin
+    // Guess structure based on content.
+  end;
+
+  // IMPORT.
   With DataFile do
   TRY
     FieldNaming := fnAuto;
@@ -979,8 +1027,17 @@ begin
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
-    DataStream := TFileStream.Create(aFileName, fmOpenRead);   }
+    ImportLines := TStringList.Create;
 
+    // Importing from ClipBoard?
+    if aFilename = '' then
+      ImportLines.Clear  // TODO!
+    else
+      ImportLines.LoadFromFile(aFileName);
+
+  finally
+    if Assigned(QESHandler) then FreeAndNil(QESHandler);
+  end;
 end;
 
 function TEpiImportExport.ImportXLS(const aFilename: string;

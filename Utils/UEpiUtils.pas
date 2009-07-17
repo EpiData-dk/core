@@ -27,18 +27,21 @@ type
     CoreRevision:   Cardinal;   // Subversion revision.
   end;
 
-  // Checks validity of variable name.  
+  // Validity checks!
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
-
   function IsInteger(Value: string): boolean;
   function IsFloat(Value: string): boolean;
 
+  // Custom operators.
   function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
   function PostInc(Var I: Integer; Const N: Integer = 1): Integer;
 
+  // Misc. conversion.
   function BoolStrToInt(Const AValue: string): integer;
+  function GetEncodedLength(decodedlength: byte): byte;
+  function GetDecodedLength(encodedlength: byte): byte;
 
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
@@ -197,6 +200,16 @@ begin
   Result := 0;
   if Length(AValue) = 0 then exit;
   Result := Integer(AValue[1] in BooleanYesChars);
+end;
+
+function GetEncodedLength(decodedlength: byte): byte;
+begin
+  result := (decodedlength div 3) * 4;
+end;
+
+function GetDecodedLength(encodedlength: byte): byte;
+begin
+  result := (encodedlength div 4) * 3;
 end;
 
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);

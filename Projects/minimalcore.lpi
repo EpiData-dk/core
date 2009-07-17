@@ -14,7 +14,7 @@
       <UseAppBundle Value="False"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="1"/>
+      <ActiveEditorIndexAtStart Value="0"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -41,25 +41,23 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="37">
+    <Units Count="41">
       <Unit0>
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="minimalcore"/>
         <CursorPos X="64" Y="21"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="0"/>
         <UsageCount Value="203"/>
-        <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="..\Datafile\uqeshandler.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UQesHandler"/>
-        <CursorPos X="42" Y="256"/>
-        <TopLine Value="233"/>
+        <CursorPos X="78" Y="64"/>
+        <TopLine Value="24"/>
         <EditorIndex Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
@@ -68,7 +66,7 @@
         <UnitName Value="UCommon"/>
         <CursorPos X="18" Y="24"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit2>
       <Unit3>
         <Filename Value="umain.pas"/>
@@ -77,9 +75,11 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UMain"/>
-        <CursorPos X="18" Y="94"/>
-        <TopLine Value="70"/>
-        <UsageCount Value="157"/>
+        <CursorPos X="118" Y="286"/>
+        <TopLine Value="250"/>
+        <EditorIndex Value="2"/>
+        <UsageCount Value="168"/>
+        <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="upwform.pas"/>
@@ -90,7 +90,7 @@
         <UnitName Value="UPWform"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit4>
       <Unit5>
         <Filename Value="uwarning.pas"/>
@@ -101,13 +101,13 @@
         <UnitName Value="UWarning"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\Datafile\UCheckFileCmds.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCheckFileCmds"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit6>
       <Unit7>
         <Filename Value="..\Datafile\UCheckFileIO.pas"/>
@@ -115,7 +115,7 @@
         <UnitName Value="UCheckFileIO"/>
         <CursorPos X="28" Y="90"/>
         <TopLine Value="66"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\Datafile\UCheckFileTypes.pas"/>
@@ -123,7 +123,7 @@
         <UnitName Value="UCheckFileTypes"/>
         <CursorPos X="3" Y="22"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\Datafile\UDataFileTypes.pas"/>
@@ -131,7 +131,7 @@
         <UnitName Value="UDataFileTypes"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit9>
       <Unit10>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
@@ -139,18 +139,16 @@
         <UnitName Value="UEpiDataFile"/>
         <CursorPos X="17" Y="203"/>
         <TopLine Value="180"/>
-        <EditorIndex Value="4"/>
-        <UsageCount Value="157"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="168"/>
       </Unit10>
       <Unit11>
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="39" Y="491"/>
-        <TopLine Value="466"/>
-        <EditorIndex Value="5"/>
-        <UsageCount Value="157"/>
+        <CursorPos X="78" Y="1024"/>
+        <TopLine Value="997"/>
+        <EditorIndex Value="0"/>
+        <UsageCount Value="168"/>
         <Loaded Value="True"/>
       </Unit11>
       <Unit12>
@@ -159,31 +157,31 @@
         <UnitName Value="UValueLabels"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit12>
       <Unit13>
         <Filename Value="..\Encryption\Base64.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Base64"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit13>
       <Unit14>
         <Filename Value="..\Encryption\DCPcrypt.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="DCPcrypt"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\Encryption\Rijndael.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Rijndael"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit15>
       <Unit16>
         <Filename Value="..\Encryption\SHA1.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="SHA1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit16>
       <Unit17>
         <Filename Value="..\Utils\UDateUtils.pas"/>
@@ -191,31 +189,29 @@
         <UnitName Value="UDateUtils"/>
         <CursorPos X="90" Y="29"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit17>
       <Unit18>
         <Filename Value="..\Utils\UDebug.pas"/>
         <UnitName Value="UDebug"/>
         <CursorPos X="8" Y="14"/>
         <TopLine Value="1"/>
-        <UsageCount Value="81"/>
+        <UsageCount Value="80"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\Utils\UEpiDataConstants.pas"/>
         <UnitName Value="UEpiDataConstants"/>
         <CursorPos X="71" Y="12"/>
         <TopLine Value="1"/>
-        <UsageCount Value="103"/>
+        <UsageCount Value="102"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiUtils"/>
-        <CursorPos X="3" Y="86"/>
-        <TopLine Value="82"/>
-        <EditorIndex Value="6"/>
-        <UsageCount Value="157"/>
-        <Loaded Value="True"/>
+        <CursorPos X="12" Y="44"/>
+        <TopLine Value="21"/>
+        <UsageCount Value="168"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\Utils\UStringUtils.pas"/>
@@ -223,9 +219,7 @@
         <UnitName Value="UStringUtils"/>
         <CursorPos X="16" Y="48"/>
         <TopLine Value="29"/>
-        <EditorIndex Value="3"/>
-        <UsageCount Value="157"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="168"/>
       </Unit21>
       <Unit22>
         <Filename Value="..\Utils\UUtilTypes.pas"/>
@@ -233,20 +227,20 @@
         <UnitName Value="UUtilTypes"/>
         <CursorPos X="3" Y="8"/>
         <TopLine Value="1"/>
-        <UsageCount Value="157"/>
+        <UsageCount Value="168"/>
       </Unit22>
       <Unit23>
         <Filename Value="..\..\..\..\..\..\usr\local\share\lazarus\lcl\fileutil.pas"/>
         <UnitName Value="FileUtil"/>
-        <CursorPos X="16" Y="187"/>
-        <TopLine Value="166"/>
-        <UsageCount Value="24"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="23"/>
       </Unit23>
       <Unit24>
         <Filename Value="..\Utils\ErrorCodes.inc"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit24>
       <Unit25>
         <Filename Value="..\Utils\UEpiLog.pas"/>
@@ -254,53 +248,51 @@
         <UnitName Value="UEpiLog"/>
         <CursorPos X="1" Y="36"/>
         <TopLine Value="1"/>
-        <UsageCount Value="89"/>
+        <UsageCount Value="100"/>
       </Unit25>
       <Unit26>
         <Filename Value="..\..\..\Entry\source\FileUnit.pas"/>
         <UnitName Value="FileUnit"/>
-        <CursorPos X="44" Y="2458"/>
-        <TopLine Value="2416"/>
-        <EditorIndex Value="7"/>
+        <CursorPos X="67" Y="2401"/>
+        <TopLine Value="2412"/>
         <UsageCount Value="20"/>
-        <Loaded Value="True"/>
       </Unit26>
       <Unit27>
         <Filename Value="..\..\..\Entry\source\EPITypes.pas"/>
         <UnitName Value="EPITypes"/>
-        <CursorPos X="22" Y="1256"/>
-        <TopLine Value="1259"/>
+        <CursorPos X="3" Y="2925"/>
+        <TopLine Value="2923"/>
         <UsageCount Value="31"/>
       </Unit27>
       <Unit28>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\unix\sysunixh.inc"/>
         <CursorPos X="2" Y="32"/>
         <TopLine Value="9"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit28>
       <Unit29>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\inc\ustringh.inc"/>
         <CursorPos X="11" Y="32"/>
         <TopLine Value="9"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit29>
       <Unit30>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\inc\ustrings.inc"/>
         <CursorPos X="3" Y="1669"/>
         <TopLine Value="1665"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit30>
       <Unit31>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\classesh.inc"/>
         <CursorPos X="10" Y="1888"/>
         <TopLine Value="1842"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit31>
       <Unit32>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\classes.inc"/>
         <CursorPos X="3" Y="251"/>
         <TopLine Value="220"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit32>
       <Unit33>
         <Filename Value="..\Utils\uepidataglobals.pas"/>
@@ -308,114 +300,118 @@
         <UnitName Value="UEpiDataGlobals"/>
         <CursorPos X="3" Y="68"/>
         <TopLine Value="45"/>
-        <UsageCount Value="69"/>
+        <UsageCount Value="80"/>
       </Unit33>
       <Unit34>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\inc\objpash.inc"/>
         <CursorPos X="22" Y="177"/>
         <TopLine Value="154"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit34>
       <Unit35>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\sysstrh.inc"/>
-        <CursorPos X="10" Y="76"/>
+        <CursorPos X="127" Y="71"/>
         <TopLine Value="53"/>
-        <EditorIndex Value="2"/>
-        <UsageCount Value="10"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="9"/>
       </Unit35>
       <Unit36>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\sysstr.inc"/>
         <CursorPos X="22" Y="1750"/>
         <TopLine Value="1729"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="9"/>
       </Unit36>
+      <Unit37>
+        <Filename Value="..\..\..\Entry\source\ImportUnit.pas"/>
+        <UnitName Value="ImportUnit"/>
+        <CursorPos X="42" Y="1662"/>
+        <TopLine Value="1642"/>
+        <EditorIndex Value="3"/>
+        <UsageCount Value="15"/>
+        <Loaded Value="True"/>
+      </Unit37>
+      <Unit38>
+        <Filename Value="..\..\..\..\FreePascal\fpcsrc\packages\palmunits\src\clipboard.pp"/>
+        <UnitName Value="clipboard"/>
+        <CursorPos X="84" Y="50"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit38>
+      <Unit39>
+        <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\morphos\clipboard.pas"/>
+        <UnitName Value="clipboard"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit39>
+      <Unit40>
+        <Filename Value="..\..\..\..\FreePascal\fpcsrc\packages\amunits\src\coreunits\clipboard.pas"/>
+        <UnitName Value="clipboard"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit40>
     </Units>
-    <JumpHistory Count="21" HistoryIndex="20">
+    <JumpHistory Count="15" HistoryIndex="14">
       <Position1>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="150" Column="24" TopLine="150"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="26" Column="3" TopLine="1"/>
       </Position1>
       <Position2>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="181" Column="35" TopLine="158"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="39" Column="3" TopLine="14"/>
       </Position2>
       <Position3>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="186" Column="9" TopLine="171"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="32" Column="29" TopLine="9"/>
       </Position3>
       <Position4>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="151" Column="19" TopLine="151"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="77" Column="30" TopLine="45"/>
       </Position4>
       <Position5>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="196" Column="65" TopLine="171"/>
+        <Filename Value="umain.pas"/>
+        <Caret Line="94" Column="18" TopLine="70"/>
       </Position5>
       <Position6>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="115" Column="5" TopLine="94"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="82" Column="7" TopLine="47"/>
       </Position6>
       <Position7>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="195" Column="63" TopLine="172"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="113" Column="23" TopLine="83"/>
       </Position7>
       <Position8>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="196" Column="39" TopLine="173"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="997" Column="24" TopLine="983"/>
       </Position8>
       <Position9>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="189" Column="20" TopLine="160"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="114" Column="65" TopLine="87"/>
       </Position9>
       <Position10>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="326" Column="40" TopLine="304"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1010" Column="22" TopLine="996"/>
       </Position10>
       <Position11>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="327" Column="37" TopLine="304"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="131" Column="3" TopLine="105"/>
       </Position11>
       <Position12>
-        <Filename Value="..\..\..\Entry\source\FileUnit.pas"/>
-        <Caret Line="1848" Column="72" TopLine="1831"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1001" Column="1" TopLine="997"/>
       </Position12>
       <Position13>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="327" Column="40" TopLine="304"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1014" Column="27" TopLine="997"/>
       </Position13>
       <Position14>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="353" Column="39" TopLine="330"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1017" Column="41" TopLine="997"/>
       </Position14>
       <Position15>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="243" Column="1" TopLine="231"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1001" Column="29" TopLine="997"/>
       </Position15>
-      <Position16>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="255" Column="11" TopLine="232"/>
-      </Position16>
-      <Position17>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="243" Column="22" TopLine="232"/>
-      </Position17>
-      <Position18>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="264" Column="3" TopLine="245"/>
-      </Position18>
-      <Position19>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="232" Column="112" TopLine="210"/>
-      </Position19>
-      <Position20>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="246" Column="12" TopLine="223"/>
-      </Position20>
-      <Position21>
-        <Filename Value="..\Datafile\uqeshandler.pas"/>
-        <Caret Line="252" Column="99" TopLine="230"/>
-      </Position21>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
