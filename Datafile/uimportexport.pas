@@ -65,6 +65,8 @@ type
     UseQESFile:     boolean;
     FieldSeparator: Char;
     DateSeparator:  Char;
+    QuoteChar:      Char;
+    FixedFormat:    Boolean;
   end;
   PEpiTxtImportSettings = ^TEpiTxtImportSettings;
 
@@ -80,6 +82,8 @@ const
     UseQESFile:     false;
     FieldSeparator: #0;
     DateSeparator:  #0;
+    QuoteChar:      '"';
+    FixedFormat:    false;
     );
 
 type
@@ -105,6 +109,7 @@ type
     procedure     WriteSingle(Val: Single);
     procedure     WriteDouble(Val: Double);
     procedure     WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
+    function      GuessTxtFile(DataFile: TEpiDataFile; TxtImpSetting: PEpiTxtImportSettings): boolean;
   public
     constructor   Create;
     destructor    Destroy; override;
@@ -128,7 +133,7 @@ implementation
 
 uses
   UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
-  FileUtil, UQesHandler, Clipbrd;
+  FileUtil, UQesHandler, Clipbrd, UStringUtils;
 
   { TEpiImportExport }
 
@@ -258,6 +263,13 @@ begin
   StrPLCopy(PChar(@StrBuf[0]), Str, Count - 1 + z);
   DataStream.Write(StrBuf[0], Count);
   StrDispose(StrBuf);
+end;
+
+function TEpiImportExport.GuessTxtFile(DataFile: TEpiDataFile;
+  TxtImpSetting: PEpiTxtImportSettings): boolean;
+begin
+  // TODO -o Torsten: GuessTxtFile
+  result := false;
 end;
 
 constructor TEpiImportExport.Create;
@@ -1000,9 +1012,14 @@ var
   QESHandler: TQesHandler;
   ImportLines: TStrings;
   TmpStr: String;
+  FieldLines: TStringList;
+  i: Integer;
+  j: Integer;
+  TmpField: TEpiField;
+  ok: Boolean;
 begin
   EpiLogger.IncIndent;
-  EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + aFilename);
+  EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
   result := false;
 
   if Assigned(DataFile) then
@@ -1010,15 +1027,12 @@ begin
   else
     DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
 
+  if (TxtImpSetting = nil) then
+    TxtImpSetting := @ImportTxtGuess;
+
   QESHandler := nil;
-  if TxtImpSetting^.UseQESFile then
-  begin
-    QESHandler := TQesHandler.Create;
-    if Not QESHandler.QesToDatafile(TxtImpSetting^.QESFileName, DataFile) then
-      Exit;
-  end else begin
-    // Guess structure based on content.
-  end;
+  ImportLines := nil;
+  FieldLines := nil;
 
   // IMPORT.
   With DataFile do
@@ -1026,7 +1040,7 @@ begin
     FieldNaming := fnAuto;
     OrgDataType := dftStata;
     FileName := aFilename;
-    UpdateProgress(0, Lang(0, 'Reading header information'));
+    UpdateProgress(0, Lang(0, 'Initializing'));
 
     ImportLines := TStringList.Create;
 
@@ -1035,8 +1049,11 @@ begin
     begin
       if Clipboard.HasFormat(CF_Text) then
       begin
-        TmpStr := StringReplace(Clipboard.AsText, #13#10, #1, [rfReplaceAll]);
+        TmpStr := Clipboard.AsText;
+        {$IFDEF MSWINDOWS} // When compiling for linux (GTK2) the strings are automatically split at char #10.
+        TmpStr := StringReplace(TmpStr, #13#10, #1, [rfReplaceAll]);
         ImportLines.Delimiter := #1;
+        {$ENDIF}
         ImportLines.StrictDelimiter := true;
         ImportLines.DelimitedText := TmpStr;
       end;
@@ -1050,8 +1067,87 @@ begin
       Exit;
     end;
 
+    if TxtImpSetting^.UseQESFile then
+    begin
+      QESHandler := TQesHandler.Create;
+      if Not QESHandler.QesToDatafile(TxtImpSetting^.QESFileName, DataFile) then
+        Exit;
+    end else begin
+      // Guess structure based on content.
+      if not GuessTxtFile(DataFile, TxtImpSetting) then
+        Exit;
+    end;
+
+    DataFile.Save('');
+
+    WriteLn('FieldSepator: ' + TxtImpSetting^.FieldSeparator);
+    WriteLn('QuoteChar: ' + TxtImpSetting^.QuoteChar);
+
+    FieldLines := TStringList.Create;
+    for i := 0 to ImportLines.Count -1 do
+    begin
+      if Trim(ImportLines[i]) = '' then continue;
+      WriteLn('Line to split: ' + ImportLines[i]);
+      SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+      WriteLn('First line split: ' + FieldLines[0]);
+
+      if FieldLines.Count > NumDataFields then
+      begin
+        ErrorCode := EPI_IMPORT_FAILED;
+        ErrorText := Format(Lang(0, 'Error in line %d. To many delimiters - found %d, should be %d'), [i + 1, FieldLines.Count - 1, NumDataFields - 1]);
+        Exit;
+      end;
+
+      for j := 0 to FieldLines.Count -1 do
+      begin
+        TmpStr   := FieldLines[j];
+        TmpField := DataFields[j];
+        case TmpField.FieldType of
+          ftInteger, ftIDNUM:
+            ok := IsInteger(TmpStr);
+          ftAlfa,ftUpperAlfa,
+          ftSoundex,ftCrypt:
+            ok := True;
+          ftBoolean:
+            BEGIN
+              Ok := true;
+              TmpStr := AnsiUpperCase(Trim(TmpStr));
+              IF (Length(TmpStr) >= 1) and
+                 (TmpStr[1] in BooleanYesChars) THEN
+                TmpStr := 'Y'
+              else
+                TmpStr := 'N';
+            END;
+          ftFloat:
+            ok := IsFloat(TmpStr);
+          ftDate,ftEuroDate,ftToday,
+          ftYMDDate,ftYMDToday,ftEuroToday:
+            ok := EpiIsDate(TmpStr, TmpField.FieldType);
+        end;
+        if not ok then
+        begin
+          ErrorCode := EPI_IMPORT_FAILED;
+          ErrorText := Format(Lang(0, 'Error in line %d') + #13#10 +
+             Lang(23958, 'Data (''%s'') is not compliant with the fieldtype of field %s (%s).'),
+            [i + 1, TmpStr, TmpField.FieldName, FieldTypeToFieldTypeName(TmpField.FieldType, OnTranslate)]);
+          Exit;
+        end;
+        IF Length(TmpStr) > TmpField.FieldLength THEN
+        BEGIN
+          ErrorCode := EPI_IMPORT_FAILED;
+          ErrorText := Format(Lang(0, 'Error in line %d') + #13#10 +
+             Lang(23960, 'Data (''%s'') too wide to fit in the field %s'),
+            [i + 1, TmpStr, TmpField.FieldName]);
+          Exit;
+        END;
+        TmpField.AsData := TmpStr;
+      end;
+      Write();
+    end;
   finally
     if Assigned(QESHandler) then FreeAndNil(QESHandler);
+    if Assigned(ImportLines) then FreeAndNil(ImportLines);
+    if Assigned(FieldLines) then FreeAndNil(FieldLines);
   end;
 end;
 

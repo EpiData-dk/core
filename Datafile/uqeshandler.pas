@@ -149,7 +149,6 @@ begin
       VariableLabel := Copy(VariableLabel, Length(TmpStr) + 1, Length(VariableLabel));
     end;
   end;
-  Df.AddField(result);
   Delete(CurLine, 1, PosEnd);
 end;
 
@@ -176,13 +175,12 @@ VAR
   I:Integer;
   St, En: Integer;
   NumStr: String;
-  TmpField: TEpiField;
   Tmpstr: String;
 BEGIN
   result := nil;
 
   St := StartPos;
-  WHILE (CurLine[StartPos] in ['#', ',', '.'])  AND (StartPos <= Length(CurLine)) DO
+  WHILE (StartPos <= Length(CurLine)) and (CurLine[StartPos] in ['#', ',', '.']) DO
     INC(StartPos);
   En := StartPos - 1;
 
@@ -207,11 +205,12 @@ BEGIN
     Exit;
   end;
 
-  TmpField := makeField(ftInteger, St, En);
+  Result := makeField(ftInteger, St, En);
   if (StrCountChars(NumStr, ['.', ',']) > 0) then
   begin
     Tmpstr      := BoolToStr(Pos('.', NumStr) > 0, '.', ',');
-    TmpField.NumDecimals := Length(NumStr) - Pos(TmpStr, NumStr);
+    Result.NumDecimals := Length(NumStr) - Pos(TmpStr, NumStr);
+    Result.FieldType := ftFloat;
   end;
 end;
 
@@ -221,7 +220,7 @@ var
 begin
   St := StartPos;
 
-  WHILE (CurLine[StartPos] in ['_']) AND (StartPos <= Length(CurLine)) DO
+  WHILE (StartPos <= Length(CurLine)) and (CurLine[StartPos] in ['_']) DO
     INC(StartPos);
   En := StartPos - 1;
 
@@ -234,7 +233,7 @@ begin
     Exit;
   end;
 
-  makeField(ftAlfa, St, En);
+  result := makeField(ftAlfa, St, En);
 end;
 
 function TQesHandler.makeOtherField(StartPos: Integer): TEpiField;
@@ -255,16 +254,16 @@ begin
 
   FieldCode := AnsiUpperCase(Copy(CurLine, St, En - St + 1));
 
-  IF (FieldCode='<Y>')              THEN makeBoolField(St, En);
-  IF COPY(FieldCode,1,2)='<A'       THEN makeUpperAlfa(St, En);
-  IF COPY(FieldCode,1,6)='<IDNUM'   THEN makeIdNum(St, En);
-  IF (COPY(FieldCode,1,6)='<MM/DD') Then makeDate(St, En, ftDate);
-  If (COPY(FieldCode,1,6)='<DD/MM') Then makeDate(St, En, ftEuroDate);
-  If (FieldCode='<YYYY/MM/DD>')     THEN makeDate(St, En, ftYMDDate);
-  IF COPY(FieldCode,1,6)='<TODAY'   THEN makeToday(St, En);
-  IF COPY(FieldCode,1,2)='<S'       THEN makeSoundex(St, En);
-  IF COPY(FieldCode,1,2)='<E'       THEN makeCrypt(St, En);  //&&
-  IF FieldCode<>'Done' THEN
+  IF (FieldCode='<Y>')              THEN result := makeBoolField(St, En);
+  IF COPY(FieldCode,1,2)='<A'       THEN result := makeUpperAlfa(St, En);
+  IF COPY(FieldCode,1,6)='<IDNUM'   THEN result := makeIdNum(St, En);
+  IF (COPY(FieldCode,1,6)='<MM/DD') Then result := makeDate(St, En, ftDate);
+  If (COPY(FieldCode,1,6)='<DD/MM') Then result := makeDate(St, En, ftEuroDate);
+  If (FieldCode='<YYYY/MM/DD>')     THEN result := makeDate(St, En, ftYMDDate);
+  IF COPY(FieldCode,1,6)='<TODAY'   THEN result := makeToday(St, En);
+  IF COPY(FieldCode,1,2)='<S'       THEN result := makeSoundex(St, En);
+  IF COPY(FieldCode,1,2)='<E'       THEN result := makeCrypt(St, En);  //&&
+  IF FieldCode <> 'Done' THEN
   BEGIN
     Df.ErrorCode := EPI_QES_FAILED;
     // TODO -o Torsten : LineNum
@@ -414,7 +413,7 @@ begin
       WHILE Length(CurLine)>0 DO
       BEGIN
         //Check which code is first in the line
-        FirstPos := MaxInt;
+        FirstPos := -MaxInt;
         N := pos('#', CurLine);
         IF (N > 0) Then FirstPos := Max(N, FirstPos);
         N := pos('_', CurLine);
@@ -441,7 +440,7 @@ begin
       Df.ErrorCode := EPI_QES_NO_FIELDS;
       Exit;
     end;
-
+    Result := true;
   finally
     EpiLogger.DecIndent;
     DataFile := Df;
@@ -453,6 +452,7 @@ function TQesHandler.QesToDatafile(const aFilename: string; var DataFile: TEpiDa
 var
   aLines: TStringList;
 begin
+  result := false;
   aLines := TStringList.Create;
   try
     aLines.LoadFromFile(aFilename);

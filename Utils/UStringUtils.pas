@@ -19,7 +19,8 @@ type
 
   function FirstWord(Const S: string; MaxLength: Cardinal): string;
   Function FitLength(Const S: string; L: Integer):string;
-  procedure SplitString(const Source: string; var List: TStrings; const Splitters: TCharset = [' ']);
+  procedure SplitString(const Source: string; var List: TStrings;
+    const Splitters: TCharset = [' ']; const QuoteChars: TCharSet = ['"']);
   function StrCountChars(const Source: string; const FindChars: TCharSet): integer;
   function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
   function StripWordsFromString(Const Source: string; StripWords: array of string): string;
@@ -61,7 +62,8 @@ begin
 end;
 
 
-procedure SplitString(const Source: string; var List: TStrings; const Splitters: TCharset = [' ']);
+procedure SplitString(const Source: string; var List: TStrings;
+  const Splitters: TCharset = [' ']; const QuoteChars: TCharSet = ['"']);
 var
   P, P1: PChar;
   S: string;
@@ -75,8 +77,8 @@ begin
     while P^ in [#1..' '] do P := P + 1;
     while P^ <> #0 do
     begin
-      if P^ = '"' then
-        S := AnsiExtractQuotedStr(P, '"')
+      if P^ in QuoteChars then
+        S := AnsiExtractQuotedStr(P, P^)
       else
       begin
         P1 := P;

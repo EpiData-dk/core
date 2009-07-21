@@ -782,7 +782,7 @@ end;
 
 procedure TEpiDataFile.InternalReset;
 begin
-  if Assigned(FDataStream) then FreeAndNil(FDataStream);
+  if Assigned(FDataStream) then FDataStream.Size := 0;
   if Assigned(FFields) then FreeAndNil(FFields);
   if Assigned(FDataFields) then FreeAndNil(FDataFields);
   if Assigned(FQuestFields) then FreeAndNil(FQuestFields);
@@ -1305,6 +1305,7 @@ begin
   EpiLogger.Add(ClassName, 'Destroy', 2, 'Filename = ' + FileName);
   try
     InternalReset();
+    if Assigned(FDataStream) then FreeAndNil(FDataStream);
     inherited Destroy;
   finally
     EpiLogger.DecIndent;

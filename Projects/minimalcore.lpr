@@ -15,10 +15,10 @@ uses
   UWarning,
   Controls,
   {$ENDIF EPIWARNING}
-  UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO,
-  UCheckFileTypes, UDataFileTypes, UEpiDataFile, uimportexport, UValueLabels,
-  Base64, DCPcrypt, Rijndael, SHA1, UDateUtils,
-  UEpiUtils, UStringUtils, UUtilTypes, UEpiLog, uepidataglobals, UQesHandler;
+  UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO, UCheckFileTypes,
+  UDataFileTypes, UEpiDataFile, uimportexport, UValueLabels, Base64, DCPcrypt,
+  Rijndael, SHA1, UDateUtils, UEpiUtils, UStringUtils, UUtilTypes, UEpiLog,
+  uepidataglobals, UQesHandler, uimportform;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 

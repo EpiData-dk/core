@@ -15,6 +15,7 @@ type
   { TMainForm }
 
   TMainForm = class(TForm)
+    clipBrdChkBox: TCheckBox;
     Panel1: TPanel;
     edInputFile: TLabeledEdit;
     SpeedButton1: TSpeedButton;
@@ -59,6 +60,7 @@ type
     Button6: TButton;
     Button7: TButton;
     filetypeCombo: TComboBox;
+    procedure clipBrdChkBoxChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure readBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
@@ -105,7 +107,8 @@ var
   ChkIO:  TCheckFileIO;
   Lst: TStrings;
 begin
-  if Trim(edInputFile.Text) = '' then exit;
+
+  if (not clipBrdChkBox.Checked) and (Trim(edInputFile.Text) = '') then exit;
 
   Sg.ColCount := 2;
   Sg.RowCount := 2;
@@ -139,6 +142,11 @@ begin
 
   FreeAndNil(ChkIO);
   FreeAndNil(Stream);
+end;
+
+procedure TMainForm.clipBrdChkBoxChange(Sender: TObject);
+begin
+  edInputFile.Enabled := not clipBrdChkBox.Checked;
 end;
 
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);

@@ -20,14 +20,14 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataGlobals;
+  UEpiDataGlobals, uimportform, Controls;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
-  aDialog.Filter := 'Supported data files (*.rec,*.dta,*.dbf)|*.rec;*.dta;*.dbf|'
+  aDialog.Filter := 'Supported data files|*.rec;*.dta;*.txt;*.csv;*.dbf|'
                   + 'EpiData data file (*.rec)|*.rec|'
                   + 'Stata file (*.dta)|*.dta|'
-//                  + 'Text file (*.txt)|*.txt|'
+                  + 'Text file (*.txt,*.csv)|*.txt|'
                   + 'dBase file (*.dbf)|*.dbf|'
                   + 'All files (*.*)|*.*';
   aDialog.FilterIndex := 0;
@@ -56,6 +56,7 @@ var
   LoadOptions: TEpiDataFileOptions;
   Importer: TEpiImportExport;
   S: string;
+  impform: TImportForm;
 begin
   if Assigned(Df) then FreeAndNil(Df);
 
@@ -67,11 +68,18 @@ begin
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
-    S := AnsiUpperCase(ExtractFileExt(FileName));
+    S := Trim(AnsiUpperCase(ExtractFileExt(FileName)));
     if S = '.DTA' then
       Result := Importer.ImportStata(FileName, Df)
     else if S = '.DBF' then
-      Result := Importer.ImportDBase(FileName, Df);
+      Result := Importer.ImportDBase(FileName, Df)
+    else if (S = '.TXT') or (S = '.CSV') or (S='') then
+    begin
+      impform := TImportForm.Create(nil);
+      if impform.ShowModal = mrCancel then exit;
+      Result := Importer.ImportTXT(FileName, Df, impform.ImportSetting);
+      FreeAndNil(impform);
+    end;
     FreeAndNil(Importer);
   end else begin
     Df := TEpiDataFile.Create(LoadOptions);
