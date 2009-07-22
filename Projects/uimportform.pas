@@ -52,13 +52,22 @@ begin
 end;
 
 procedure TImportForm.Button1Click(Sender: TObject);
+var
+  ok: Boolean;
+  deltxt: String;
+  andtxt: string;
+  res: String;
+const
+  delimiterlist: array[0..3] of char =
+    (';', ',', #9, #32);
 begin
   if guessRadio.Checked then
     FImportSetting := @ImportTxtGuess
   else begin
     FImportSetting := new(PEpiTxtImportSettings);
     FImportSetting^.QESFileName := qesEdit.Text;
-    FImportSetting^.FieldSeparator := BoolToStr(Trim(delimiterEdit.Text) <> '', delimiterEdit.Text, delimiterCombo.Items[delimiterCombo.ItemIndex])[1];
+    FImportSetting^.FieldSeparator := BoolToStr(Trim(delimiterEdit.Text) <> '',
+      delimiterEdit.Text, delimiterlist[delimiterCombo.ItemIndex])[1];
     FImportSetting^.QuoteChar := '"';
     FImportSetting^.UseQESFile := true;
     FImportSetting^.FixedFormat := false;

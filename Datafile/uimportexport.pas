@@ -109,7 +109,8 @@ type
     procedure     WriteSingle(Val: Single);
     procedure     WriteDouble(Val: Double);
     procedure     WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
-    function      GuessTxtFile(DataFile: TEpiDataFile; TxtImpSetting: PEpiTxtImportSettings): boolean;
+    function      GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
+                    TxtImpSetting: PEpiTxtImportSettings): boolean;
   public
     constructor   Create;
     destructor    Destroy; override;
@@ -265,11 +266,226 @@ begin
   StrDispose(StrBuf);
 end;
 
-function TEpiImportExport.GuessTxtFile(DataFile: TEpiDataFile;
+function TEpiImportExport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
   TxtImpSetting: PEpiTxtImportSettings): boolean;
+var
+  tabcount, semicoloncount, commacount,
+  spacecount: Integer;
+  istab, issemi, iscomma, isspace: Boolean;
+  i: Integer;
+  LineCount: LongInt;
+  w: LongInt;
+  TmpStr: string;
+  SepChar: Char;
+  FieldCount: LongInt;
 begin
   // TODO -o Torsten: GuessTxtFile
   result := false;
+
+  tabcount:=0;   semicoloncount:=0; commacount:=0;   spacecount:=0;
+
+  LineCount := Math.Min(10, Lines.Count);
+  for i := 0 to LineCount - 1 do
+  begin
+    TmpStr := TrimRight(Lines[i]);
+    inc(tabcount, StrCountChars(TmpStr, [#9]));
+    inc(semicoloncount, StrCountChars(TmpStr, [';']));
+    inc(commacount, StrCountChars(TmpStr, [',']));
+    inc(spacecount, StrCountChars(TmpStr, [' ']));
+  end;
+  tabcount := Round(tabcount / LineCount);
+  semicoloncount := Round(semicoloncount / LineCount);
+  commacount := Round(commacount / LineCount);
+  spacecount := Round(spacecount / LineCount);
+
+  istab:=true;   issemi:=true; iscomma:=true;   isspace:=true;
+  { Look for field separator char }
+  for i :=0 to LineCount do
+  begin
+    TmpStr := TrimRight(Lines[i]);
+    if trim(TmpStr)='' then continue;
+
+    if (istab) then
+    begin
+      w := StrCountChars(TmpStr, [#9]);
+      if w = 0 then istab := false;
+      if w > tabcount then istab := false;
+    end;
+
+    if (issemi) then
+    begin
+      w := StrCountChars(TmpStr, [';']);
+      if w = 0 then issemi := false;
+      if w > semicoloncount then issemi := false;
+    end;
+
+    if (iscomma) then
+    begin
+      w := StrCountChars(TmpStr, [',']);
+      if w = 0 then iscomma := false;
+      if w > commacount then iscomma := false;
+    end;
+
+    if (isspace) then
+    begin
+      w := StrCountChars(TmpStr, [' ']);
+      if w = 0 then isspace := false;
+      if w > spacecount then isspace := false;
+    end;
+  end; //for
+
+  { Priority: tab, semicolon, comma, space    }
+  if istab        then begin SepChar := #9;  FieldCount := tabcount;       end
+  else if issemi  then begin SepChar := ';'; FieldCount := semicoloncount; end
+  else if iscomma then begin SepChar := ','; FieldCount := commacount;     end
+  else if isspace then begin SepChar := ' '; FieldCount := spacecount;     end
+  //else databaserror('Illegal formal of textfile. Fieldseparator not found.',nil);
+  else begin
+    DataFile.ErrorCode := EPI_IMPORT_FAILED;
+    DataFile.ErrorText := Lang(0, 'Illegal formal of textfile. Fieldseparator not found.');
+    Exit;
+  end;
+
+  {Test for field types and test if fieldnames in first row:
+               integer [0..9,-,+], if present, then minus/plus must be first char
+               float [0..9,-,+,.,','], Only one comma/dot present. If present, then minus/plus must be first char
+               fieldnametype [A..Z,a..z,0..9], first char not numeric
+               dates [0..9,/,-], Year must be 4-digit, recognizes MDY, DMY, YMD
+               string [all chars]
+  }
+(*
+  FFieldnamesInRow1:=true;
+  for curlin:=0 to lin.count-1 DO
+  BEGIN
+    s:=lin[curlin];
+    if trim(s)<>'' THEN
+    begin
+      feltstart:=1;
+      for curfelt:=1 to FFieldCount do
+      begin
+        n:=FieldEndPos(s,feltstart);
+        if n>0 then s[n]:=#250;
+        nestefeltstart:=n+1;
+        felttext:=copy(s,feltstart,nestefeltstart-feltstart-1);
+        feltstart:=nestefeltstart;
+        if length(felttext)>0 then
+          if (felttext[1] in QuoteChars) and (felttext[length(felttext)] in Quotechars) and
+             (felttext[1]=felttext[length(felttext)]) then
+            felttext:=copy(felttext,2,length(felttext)-2);   //remove quotes
+        IF curlin=0 THEN
+        BEGIN
+          PFelttype(Felttyper1.items[curfelt-1])^:=TestText(felttext,PFelttype(Felttyper1.items[curfelt-1])^);
+          IF PFelttype(Felttyper1.items[curfelt-1])^<>fktFieldname THEN FFieldnamesInRow1:=false;
+          Feltnavne[curfelt-1]:=RemoveSpaces(felttext);
+          IF Length(Feltnavne[curfelt-1])>10 THEN
+            begin
+              FFieldnamesInRow1:=false;
+              IF PFelttype(Felttyper1.items[curfelt-1])^=fktFieldname then PFelttype(Felttyper1.items[curfelt-1])^:=fktString;
+            end;
+        END ELSE BEGIN
+          PFelttype(Felttyper.items[curfelt-1])^:=TestText(felttext,PFelttype(Felttyper.items[curfelt-1])^);
+          IF PFelttype(Felttyper.items[curfelt-1])^=fktFieldname THEN PFelttype(Felttyper.items[curfelt-1])^:=fktString;
+        END;
+      end;  //for curfelt
+    end;  //if
+  END;  //for curlin
+
+  IF (NOT FFieldnamesInRow1) THEN
+    BEGIN
+      AllFirstAreString:=true;
+      AllOtherAreString:=true;
+      for n:=0 TO FFieldCount-1 DO
+        BEGIN
+          IF (NOT (PFelttype(Felttyper1.Items[n])^ in [fktFieldname,fktString])) THEN AllFirstAreString:=false;
+          IF (NOT (PFelttype(Felttyper.Items[n])^=fktString)) THEN AllOtherAreString:=false;
+        END;
+      IF (AllFirstAreString) AND (NOT AllOtherAreString) THEN
+        BEGIN
+          //First row are all ftFieldname or ftString AND other rows contains ftInt or ftFloat: make legal fieldnames
+          FFieldnamesInRow1:=true;
+          w:=0;
+          FOR n:=0 TO FFieldCount-1 DO
+            BEGIN
+              IF PFelttype(Felttyper1.Items[n])^<>fktFieldname THEN
+                BEGIN
+                  repeat
+                    INC(w);
+                    s:='v'+inttostr(w);
+                  until feltnavne.IndexOf(s)=-1;
+                  fieldlabels[n]:=feltnavne[n];
+                  feltnavne[n]:=s;
+                END;  //if
+            END;  //for
+        END
+      ELSE
+        for n:=0 to FFieldCount-1 DO
+          feltnavne[n]:=('v'+inttostr(n+1));
+    END;  //if
+
+  FRecordSize:=0;
+  FOR n:=0 TO FFieldCount-1 DO
+    BEGIN
+      fld:=TeField.Create;
+      IF (NOT FFieldnamesInRow1) THEN s:='v'+IntToStr(n+1) ELSE s:=feltnavne[n];
+      fld.Fieldname:=s;
+      fld.FVariableLabel:=fieldlabels[n];
+      CASE PFelttype(Felttyper.Items[n])^ OF
+        fktInt:
+          begin
+            fld.Felttype:= ftInteger;
+            fld.FLength:=1;
+            INC(FRecordSize,14);
+          end;
+        fktFloat:
+          begin
+            fld.Felttype:= ftFloat;
+            fld.FNumDecimals:=1;
+            fld.FLength:=3;
+            INC(FRecordSize,14)
+          end;
+        fktMDY:
+          begin
+            fld.Felttype := ftDate;
+            fld.FFieldFormat:='%MDY';
+            fld.FLength:=10;
+            INC(FRecordSize,10);
+          end;
+        fktDMY:
+          begin
+            fld.Felttype := ftEuroDate;
+            fld.FFieldformat:='%DMY';
+            fld.FLength:=10;
+            INC(FRecordSize,10);
+          end;
+        fktYMD:
+          begin
+            fld.Felttype := ftYMDDate;
+            fld.FFieldformat:='%YMD';
+            fld.FLength:=10;
+            INC(FRecordSize,10);
+          end;
+        fktString,fktFieldname:
+          begin
+            fld.Felttype:=ftAlfa;
+            fld.FLength:=2;
+            INC(FRecordSize,80);
+          end;
+      ELSE
+        fld.Felttype := ftRes4;
+      END;  //case
+      fld.FFieldNo:=n;
+      IF fld.Felttype <> ftRes4 then
+        begin
+          FEpiFile.AddField(fld);
+        end
+      else
+        begin
+          fld.Free;
+          DatabaseErrorFmt(SFieldTypeNotSupported, [s]);
+        end;
+
+    END;  //for
+                 *)
 end;
 
 constructor TEpiImportExport.Create;
@@ -1074,7 +1290,7 @@ begin
         Exit;
     end else begin
       // Guess structure based on content.
-      if not GuessTxtFile(DataFile, TxtImpSetting) then
+      if not GuessTxtFile(DataFile, ImportLines, TxtImpSetting) then
         Exit;
     end;
 

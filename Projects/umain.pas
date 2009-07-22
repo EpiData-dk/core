@@ -106,42 +106,56 @@ var
   Stream: TStream;
   ChkIO:  TCheckFileIO;
   Lst: TStrings;
+  Res: Boolean;
 begin
 
   if (not clipBrdChkBox.Checked) and (Trim(edInputFile.Text) = '') then exit;
 
-  Sg.ColCount := 2;
-  Sg.RowCount := 2;
-  Memo1.Lines.Clear;
-  Memo2.Lines.Clear;
-  orgChkMemo.Clear;
-  parsedChkMemo.Clear;
+  try
+    Sg.ColCount := 2;
+    Sg.RowCount := 2;
+    Memo1.Lines.Clear;
+    Memo2.Lines.Clear;
+    orgChkMemo.Clear;
+    parsedChkMemo.Clear;
 
-  pgLabel.Caption := '';
+    pgLabel.Caption := '';
+    ChkIO := nil;
+    Stream := nil;
+    Lst := nil;
 
-  LoadDataFile(Df, edInputFile.Text, not CheckBox1.Checked, @ShowProgress, @GetPassword);
+    LoadDataFile(Df, edInputFile.Text, not CheckBox1.Checked, @ShowProgress, @GetPassword);
 
-  Lst := TinyDocumentation(Df);
-  Memo1.Lines.AddStrings(Lst);
-  FreeAndNil(Lst);
-  Lst := DocumentDataFile(Df);
-  Memo2.Lines.AddStrings(Lst);
-  FreeAndNil(Lst);
+    if not Assigned(Df) then
+    begin
+      EpiLogger.Add('No Datafile Defined, this is probably because importform was canceled.', 1);
+      Memo1.Lines.Clear;
+      Memo1.Lines.Add('No Datafile Defined.');
+      Exit
+    end;
 
-  if FileExists(ChangeFileExt(Df.FileName, '.chk')) then
-    orgChkMemo.Lines.LoadFromFile(ChangeFileExt(Df.FileName, '.chk'));
+    Lst := TinyDocumentation(Df);
+    Memo1.Lines.AddStrings(Lst);
+    FreeAndNil(Lst);
+    Lst := DocumentDataFile(Df);
+    Memo2.Lines.AddStrings(Lst);
+    FreeAndNil(Lst);
 
-  Stream := TMemoryStream.Create();
-  ChkIO := TCheckFileIO.Create();
-  ChkIO.WriteCheckToStream(Stream, Df);
-  parsedChkMemo.Lines.LoadFromStream(Stream);
+    if FileExists(ChangeFileExt(Df.FileName, '.chk')) then
+      orgChkMemo.Lines.LoadFromFile(ChangeFileExt(Df.FileName, '.chk'));
 
-  LoadData(false);
+    Stream := TMemoryStream.Create();
+    ChkIO := TCheckFileIO.Create();
+    ChkIO.WriteCheckToStream(Stream, Df);
+    parsedChkMemo.Lines.LoadFromStream(Stream);
 
-  SetButtons(True);
+    LoadData(false);
 
-  FreeAndNil(ChkIO);
-  FreeAndNil(Stream);
+    SetButtons(True);
+  finally
+    if Assigned(ChkIO) then FreeAndNil(ChkIO);
+    if Assigned(Stream) then FreeAndNil(Stream);
+  end;
 end;
 
 procedure TMainForm.clipBrdChkBoxChange(Sender: TObject);

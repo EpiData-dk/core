@@ -40,6 +40,10 @@ type
 
   // Misc. conversion.
   function BoolStrToInt(Const AValue: string): integer;
+  {$IFNDEF VER2_3}
+  function BoolToStr(B: Boolean;const TrueS,FalseS:string): string; inline;
+  {$ENDIF}
+
   function GetEncodedLength(decodedlength: byte): byte;
   function GetDecodedLength(encodedlength: byte): byte;
 
@@ -201,6 +205,13 @@ begin
   if Length(AValue) = 0 then exit;
   Result := Integer(AValue[1] in BooleanYesChars);
 end;
+
+{$IFNDEF VER2_3}
+function BoolToStr(B: boolean; const TrueS, FalseS: string): string;
+begin
+  if B then Result:=TrueS else BoolToStr:=FalseS;
+end;
+{$ENDIF}
 
 function GetEncodedLength(decodedlength: byte): byte;
 begin

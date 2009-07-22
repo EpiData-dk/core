@@ -3,7 +3,7 @@ object ImportForm: TImportForm
   Height = 463
   Top = 384
   Width = 704
-  ActiveControl = guessRadio
+  ActiveControl = qesEdit
   Caption = 'ImportForm'
   ClientHeight = 463
   ClientWidth = 704
@@ -48,7 +48,7 @@ object ImportForm: TImportForm
       Caption = 'Guess'
       Enabled = False
       OnChange = guessRadioChange
-      TabOrder = 4
+      TabOrder = 2
       TabStop = False
     end
     object fixedRadio: TRadioButton
@@ -59,7 +59,7 @@ object ImportForm: TImportForm
       Caption = 'Fixed format'
       Enabled = False
       OnChange = guessRadioChange
-      TabOrder = 2
+      TabOrder = 4
       TabStop = False
     end
     object delimiterRadio: TRadioButton
@@ -116,8 +116,8 @@ object ImportForm: TImportForm
         Font.Name = 'Sans'
         ItemHeight = 0
         Items.Strings = (
-          ' ;'
-          ' ,'
+          ';'
+          ','
           'TAB'
           'Space'
           'Other'
