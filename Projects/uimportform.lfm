@@ -1,7 +1,7 @@
 object ImportForm: TImportForm
-  Left = 568
+  Left = 651
   Height = 463
-  Top = 277
+  Top = 351
   Width = 704
   ActiveControl = qesEdit
   Caption = 'ImportForm'
@@ -46,7 +46,6 @@ object ImportForm: TImportForm
       Top = 7
       Width = 64
       Caption = 'Guess'
-      Enabled = False
       OnChange = guessRadioChange
       TabOrder = 2
       TabStop = False
@@ -55,7 +54,7 @@ object ImportForm: TImportForm
       Left = 14
       Height = 22
       Top = 39
-      Width = 103
+      Width = 107
       Caption = 'Fixed format'
       Enabled = False
       OnChange = guessRadioChange
@@ -66,7 +65,7 @@ object ImportForm: TImportForm
       Left = 14
       Height = 22
       Top = 71
-      Width = 136
+      Width = 140
       Caption = 'Delimited format:'
       Checked = True
       OnChange = guessRadioChange
@@ -83,7 +82,7 @@ object ImportForm: TImportForm
       EditLabel.Left = 174
       EditLabel.Height = 18
       EditLabel.Top = 18
-      EditLabel.Width = 56
+      EditLabel.Width = 58
       EditLabel.Caption = 'QES File:'
       EditLabel.ParentColor = False
       Font.Height = -11

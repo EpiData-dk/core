@@ -33,7 +33,7 @@ type
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
   function IsInteger(Value: string): boolean;
   function IsFloat(Value: string): boolean;
-  function FindFieldType(var Value: String): TFieldType;
+  function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
 
   // Custom operators.
   function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
@@ -164,14 +164,23 @@ begin
   Result := (Code = 0);
 end;
 
-function FindFieldType(var Value: String): TFieldType;
+(*
+  TFieldType   = (ftInteger, ftAlfa, ftDate, ...,
+                  ftFloat, ..., ftEuroDate, ...,
+                  ftYMDDate, ...); *)
+
+// FindFieldType:
+//  - Tries to find the field type based on the following precedence: (lowest first)
+//  - Interger, Float, Date(MDY, DMY, YMD), String.
+
+function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
 begin
-  if IsInteger(Value) then result :=ftInteger
-  else if IsFloat(Value) then result :=ftFloat
-  else if CheckVariableName(Value, AlfaNumChars) then result :=ftAlfa
-  else if EpiIsDate(Value, ftDate) then result := ftDate
-  else if EpiIsDate(Value, ftEuroDate) then result := ftEuroDate
-  else if EpiIsDate(Value, ftYMDDate) then result := ftYMDDate;
+  if (PrevFT = ftInteger)                                 and IsInteger(Value)             then result :=ftInteger
+  else if (PrevFT in [ftInteger, ftFloat])                and IsFloat(Value)               then result :=ftFloat
+  else if (PrevFT in [ftInteger, ftFloat, ftDate])        and EpiIsDate(Value, ftDate)     then result := ftDate
+  else if ((PrevFT <> ftAlfa) and (PrevFT <= ftEuroDate)) and EpiIsDate(Value, ftEuroDate) then result := ftEuroDate
+  else if ((PrevFT <> ftAlfa) and (PrevFT <= ftYMDDate))  and EpiIsDate(Value, ftYMDDate)  then result := ftYMDDate
+  else result := ftAlfa;
 end;
 
 function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
