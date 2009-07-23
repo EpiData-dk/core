@@ -33,6 +33,7 @@ type
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
   function IsInteger(Value: string): boolean;
   function IsFloat(Value: string): boolean;
+  function FindFieldType(var Value: String): TFieldType;
 
   // Custom operators.
   function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
@@ -161,6 +162,16 @@ var
 begin
   Val(Value, V, Code);
   Result := (Code = 0);
+end;
+
+function FindFieldType(var Value: String): TFieldType;
+begin
+  if IsInteger(Value) then result :=ftInteger
+  else if IsFloat(Value) then result :=ftFloat
+  else if CheckVariableName(Value, AlfaNumChars) then result :=ftAlfa
+  else if EpiIsDate(Value, ftDate) then result := ftDate
+  else if EpiIsDate(Value, ftEuroDate) then result := ftEuroDate
+  else if EpiIsDate(Value, ftYMDDate) then result := ftYMDDate;
 end;
 
 function PreInc(Var I: Integer; Const N: Integer = 1): Integer;

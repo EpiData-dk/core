@@ -272,12 +272,11 @@ var
   tabcount, semicoloncount, commacount,
   spacecount: Integer;
   istab, issemi, iscomma, isspace: Boolean;
-  i: Integer;
-  LineCount: LongInt;
-  w: LongInt;
+  i, LineCount, FieldCount, w: Integer;
   TmpStr: string;
   SepChar: Char;
-  FieldCount: LongInt;
+  TmpField: TEpiField;
+  FtList: array of TFieldType;
 begin
   // TODO -o Torsten: GuessTxtFile
   result := false;
@@ -335,15 +334,31 @@ begin
   end; //for
 
   { Priority: tab, semicolon, comma, space    }
-  if istab        then begin SepChar := #9;  FieldCount := tabcount;       end
-  else if issemi  then begin SepChar := ';'; FieldCount := semicoloncount; end
-  else if iscomma then begin SepChar := ','; FieldCount := commacount;     end
-  else if isspace then begin SepChar := ' '; FieldCount := spacecount;     end
-  //else databaserror('Illegal formal of textfile. Fieldseparator not found.',nil);
+  if istab        then begin SepChar := #9;  FieldCount := tabcount + 1;       end
+  else if issemi  then begin SepChar := ';'; FieldCount := semicoloncount + 1; end
+  else if iscomma then begin SepChar := ','; FieldCount := commacount + 1;     end
+  else if isspace then begin SepChar := ' '; FieldCount := spacecount + 1;     end
   else begin
     DataFile.ErrorCode := EPI_IMPORT_FAILED;
     DataFile.ErrorText := Lang(0, 'Illegal formal of textfile. Fieldseparator not found.');
     Exit;
+  end;
+
+  SetLength(FtList, FieldCount);
+  for i := 0 to LineCount do
+  begin
+    TmpStr := Lines[i];
+    if Trim(TmpStr) = '' then continue;
+
+  end;
+
+  // Create Fields.
+  for i := 1 to FieldCount do
+  begin
+    TmpField := TEpiField.Create;
+    TmpField.FieldName := 'V' + IntToStr(i);
+    TmpField.FieldNo := i;
+    DataFile.AddField(TmpField);
   end;
 
   {Test for field types and test if fieldnames in first row:

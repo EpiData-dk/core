@@ -22,12 +22,6 @@ CONST
 
   EOLchars:        array[0..2] of char = '!'#13#10;
   DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
-{  TerminatorChars: Set of CHAR=['!','?','^'];
-
-  NewLine:Byte=13;
-  LineFeed:Byte=10;
-  CRLF=#13#10;
-}
 
   MaxRecLineLength=78;    
   MaxFieldNameLen: Byte = 10;
@@ -47,11 +41,6 @@ CONST
                     'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Question',
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');
-
- (* CommonWords: packed array[0..13] of String[10]=
-      ('OF',      'AND',    'IF NO',    'IF YES',   'WHO',
-       'WHERE',   'WHAT',   'DID',      'WHEN',     'HOW MANY',
-       'THE',     'TO',     'IF',       'ARE');            *)
 
   SupportedFieldTypes:
     TFieldTypes = [ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
