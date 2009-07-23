@@ -1,9 +1,9 @@
 { This is an automatically generated lazarus resource file }
 
 LazarusResources.Add('TImportForm','FORMDATA',[
-  'TPF0'#11'TImportForm'#10'ImportForm'#4'Left'#3'X'#3#6'Height'#3#207#1#3'Top'
-  +#3#128#1#5'Width'#3#192#2#13'ActiveControl'#7#7'qesEdit'#7'Caption'#6#10'Imp'
-  +'ortForm'#12'ClientHeight'#3#207#1#11'ClientWidth'#3#192#2#10'LCLVersion'#6#6
+  'TPF0'#11'TImportForm'#10'ImportForm'#4'Left'#3'8'#2#6'Height'#3#207#1#3'Top'
+  +#3#21#1#5'Width'#3#192#2#13'ActiveControl'#7#7'qesEdit'#7'Caption'#6#10'Impo'
+  +'rtForm'#12'ClientHeight'#3#207#1#11'ClientWidth'#3#192#2#10'LCLVersion'#6#6
   +'0.9.27'#0#9'TGroupBox'#9'GroupBox1'#4'Left'#2#8#6'Height'#3#232#0#3'Top'#2#8
   +#5'Width'#3'X'#2#7'Caption'#6#13'Import format'#12'ClientHeight'#3#213#0#11
   +'ClientWidth'#3'T'#2#8'TabOrder'#2#0#0#12'TSpeedButton'#7'openBtn'#4'Left'#3
@@ -24,15 +24,15 @@ LazarusResources.Add('TImportForm','FORMDATA',[
   +'tton'#10'guessRadio'#4'Left'#2#14#6'Height'#2#22#3'Top'#2#7#5'Width'#2'@'#7
   +'Caption'#6#5'Guess'#7'Enabled'#8#8'OnChange'#7#16'guessRadioChange'#8'TabOr'
   +'der'#2#2#7'TabStop'#8#0#0#12'TRadioButton'#10'fixedRadio'#4'Left'#2#14#6'He'
-  +'ight'#2#22#3'Top'#2''''#5'Width'#2'k'#7'Caption'#6#12'Fixed format'#7'Enabl'
+  +'ight'#2#22#3'Top'#2''''#5'Width'#2'g'#7'Caption'#6#12'Fixed format'#7'Enabl'
   +'ed'#8#8'OnChange'#7#16'guessRadioChange'#8'TabOrder'#2#4#7'TabStop'#8#0#0#12
   +'TRadioButton'#14'delimiterRadio'#4'Left'#2#14#6'Height'#2#22#3'Top'#2'G'#5
-  +'Width'#3#140#0#7'Caption'#6#17'Delimited format:'#7'Checked'#9#8'OnChange'#7
+  +'Width'#3#136#0#7'Caption'#6#17'Delimited format:'#7'Checked'#9#8'OnChange'#7
   +#16'guessRadioChange'#5'State'#7#9'cbChecked'#8'TabOrder'#2#1#0#0#12'TLabele'
   +'dEdit'#7'qesEdit'#4'Left'#3#174#0#6'Height'#2#23#3'Top'#2''''#5'Width'#3'h'
   +#1' EditLabel.AnchorSideLeft.Control'#7#7'qesEdit"EditLabel.AnchorSideBottom'
   +'.Control'#7#7'qesEdit'#14'EditLabel.Left'#3#174#0#16'EditLabel.Height'#2#18
-  +#13'EditLabel.Top'#2#18#15'EditLabel.Width'#2':'#17'EditLabel.Caption'#6#9'Q'
+  +#13'EditLabel.Top'#2#18#15'EditLabel.Width'#2'8'#17'EditLabel.Caption'#6#9'Q'
   +'ES File:'#21'EditLabel.ParentColor'#8#11'Font.Height'#2#245#9'Font.Name'#6#4
   +'Sans'#10'ParentFont'#8#8'TabOrder'#2#0#0#0#9'TGroupBox'#12'delimiterBox'#4
   +'Left'#2'&'#6'Height'#2'i'#3'Top'#2'c'#5'Width'#3'Q'#1#12'ClientHeight'#2'e'

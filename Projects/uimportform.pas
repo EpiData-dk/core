@@ -43,6 +43,8 @@ var
 
 implementation
 
+uses
+  UEpiUtils;
 { TImportForm }
 
 procedure TImportForm.delimiterComboChange(Sender: TObject);

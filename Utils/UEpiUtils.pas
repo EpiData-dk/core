@@ -42,7 +42,7 @@ type
   // Misc. conversion.
   function BoolStrToInt(Const AValue: string): integer;
   {$IFNDEF VER2_3}
-  function BoolToStr(B: Boolean;const TrueS,FalseS:string): string; inline;
+  function BoolToStr(B: Boolean;const TrueS,FalseS:string): string; inline; overload;
   {$ENDIF}
 
   function GetEncodedLength(decodedlength: byte): byte;
