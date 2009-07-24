@@ -31,8 +31,8 @@ type
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
-  function IsInteger(Value: string): boolean;
-  function IsFloat(Value: string): boolean;
+  function IsInteger(const Value: string): boolean;
+  function IsFloat(const Value: string): boolean;
   function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
 
   // Custom operators.
@@ -147,27 +147,28 @@ begin
   end;
 end;
 
-function IsInteger(Value: string): boolean;
+function IsInteger(const Value: string): boolean;
 var
   V, Code: integer;
 begin
+  result := false;
+  if Length(Value) > 4 then exit;
   Val(Value, V, Code);
   Result := (Code = 0);
 end;
 
-function IsFloat(Value: string): boolean;
+function IsFloat(const Value: string): boolean;
 var
   Code: integer;
   V: Extended;
+  TmpStr: String;
 begin
-  Val(Value, V, Code);
+  result := false;
+  if Length(Value) > 10 then exit;
+  TmpStr := StringReplace(Value, ',', '.', [rfReplaceAll]);
+  Val(TmpStr, V, Code);
   Result := (Code = 0);
 end;
-
-(*
-  TFieldType   = (ftInteger, ftAlfa, ftDate, ...,
-                  ftFloat, ..., ftEuroDate, ...,
-                  ftYMDDate, ...); *)
 
 // FindFieldType:
 //  - Tries to find the field type based on the following precedence: (lowest first)

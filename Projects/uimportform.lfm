@@ -46,9 +46,10 @@ object ImportForm: TImportForm
       Top = 7
       Width = 64
       Caption = 'Guess'
+      Checked = True
       OnChange = guessRadioChange
-      TabOrder = 2
-      TabStop = False
+      State = cbChecked
+      TabOrder = 0
     end
     object fixedRadio: TRadioButton
       Left = 14
@@ -67,10 +68,9 @@ object ImportForm: TImportForm
       Top = 71
       Width = 140
       Caption = 'Delimited format:'
-      Checked = True
       OnChange = guessRadioChange
-      State = cbChecked
-      TabOrder = 1
+      TabOrder = 2
+      TabStop = False
     end
     object qesEdit: TLabeledEdit
       Left = 174
@@ -88,7 +88,8 @@ object ImportForm: TImportForm
       Font.Height = -11
       Font.Name = 'Sans'
       ParentFont = False
-      TabOrder = 0
+      TabOrder = 1
+      Visible = False
     end
     object delimiterBox: TGroupBox
       Left = 38
@@ -98,6 +99,7 @@ object ImportForm: TImportForm
       ClientHeight = 101
       ClientWidth = 333
       TabOrder = 3
+      Visible = False
       object Label1: TLabel
         Left = 14
         Height = 18

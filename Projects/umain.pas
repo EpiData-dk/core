@@ -107,6 +107,7 @@ var
   ChkIO:  TCheckFileIO;
   Lst: TStrings;
   Res: Boolean;
+  TmpStr: String;
 begin
 
   if (not clipBrdChkBox.Checked) and (Trim(edInputFile.Text) = '') then exit;
@@ -124,7 +125,8 @@ begin
     Stream := nil;
     Lst := nil;
 
-    LoadDataFile(Df, edInputFile.Text, not CheckBox1.Checked, @ShowProgress, @GetPassword);
+    TmpStr := BoolToStr(clipBrdChkBox.Checked, '', edInputFile.Text);
+    LoadDataFile(Df, TmpStr, not CheckBox1.Checked, @ShowProgress, @GetPassword);
 
     if not Assigned(Df) then
     begin

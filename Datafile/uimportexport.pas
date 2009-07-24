@@ -110,7 +110,7 @@ type
     procedure     WriteDouble(Val: Double);
     procedure     WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
     function      GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
-                    TxtImpSetting: PEpiTxtImportSettings): boolean;
+                    TxtImpSetting: PEpiTxtImportSettings; var SkipFirstLine: boolean): boolean;
   public
     constructor   Create;
     destructor    Destroy; override;
@@ -267,7 +267,7 @@ begin
 end;
 
 function TEpiImportExport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
-  TxtImpSetting: PEpiTxtImportSettings): boolean;
+  TxtImpSetting: PEpiTxtImportSettings; var SkipFirstLine: boolean): boolean;
 var
   tabcount, semicoloncount, commacount,
   spacecount: Integer;
@@ -279,27 +279,34 @@ var
   FieldStrings: TStrings;
   j: Integer;
   TmpFT: TFieldType;
+  FieldNameInRow1: Boolean;
+  ok: Boolean;
 begin
   // TODO -o Torsten: GuessTxtFile
   result := false;
+  SkipFirstLine := false;
+
 
   FieldStrings := nil;
   TmpField := nil;
   try
     tabcount:=0;   semicoloncount:=0; commacount:=0;   spacecount:=0;
     LineCount := Math.Min(10, Lines.Count);
+    w := 0;
     for i := 0 to LineCount - 1 do
     begin
       TmpStr := TrimRight(Lines[i]);
+      if Trim(TmpStr) = '' then continue;
+      Inc(w);
       inc(tabcount, StrCountChars(TmpStr, [#9]));
       inc(semicoloncount, StrCountChars(TmpStr, [';']));
       inc(commacount, StrCountChars(TmpStr, [',']));
       inc(spacecount, StrCountChars(TmpStr, [' ']));
     end;
-    tabcount := Round(tabcount / LineCount);
-    semicoloncount := Round(semicoloncount / LineCount);
-    commacount := Round(commacount / LineCount);
-    spacecount := Round(spacecount / LineCount);
+    tabcount := Round(tabcount / w);
+    semicoloncount := Round(semicoloncount / w);
+    commacount := Round(commacount / w);
+    spacecount := Round(spacecount / w);
 
     istab:=true;   issemi:=true; iscomma:=true;   isspace:=true;
     { Look for field separator char }
@@ -366,8 +373,6 @@ begin
       end;
     end;
 
-    // TODO -o Torsten : Guess field names and variable labels.
-
     // Create Fields.
     for i := 1 to FieldCount do
     begin
@@ -394,6 +399,47 @@ begin
       DataFile.AddField(TmpField);
     end;
 
+    // Guess field names (and variable labels).
+    FieldNameInRow1 := false;
+    SplitString(Lines[0], FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+    for i := 0 to FieldStrings.Count - 1 do
+    begin
+      TmpStr := FieldStrings[i];
+      TmpField := DataFile.DataFields[i];
+      case TmpField.FieldType of
+        ftInteger, ftIDNUM:
+          ok := IsInteger(TmpStr);
+        ftAlfa,ftUpperAlfa,
+        ftSoundex,ftCrypt:
+          ok := True;
+        ftBoolean:
+          BEGIN
+            Ok := true;
+            TmpStr := AnsiUpperCase(Trim(TmpStr));
+            IF (Length(TmpStr) >= 1) and
+               (TmpStr[1] in BooleanYesChars) THEN
+              TmpStr := 'Y'
+            else
+              TmpStr := 'N';
+          END;
+        ftFloat:
+          ok := IsFloat(TmpStr);
+        ftDate,ftEuroDate,ftToday,
+        ftYMDDate,ftYMDToday,ftEuroToday:
+          ok := EpiIsDate(TmpStr, TmpField.FieldType);
+      end;
+      if (not ok) and (FindFieldType(TmpStr, ftInteger) = ftAlfa) then
+        FieldNameInRow1 := true;
+    end;
+    if FieldNameInRow1 then
+    begin
+      for i := 0 to FieldStrings.Count - 1 do
+      begin
+        DataFile.DataFields[i].FieldName := FieldStrings[i];
+        DataFile.DataFields[i].VariableLabel := FieldStrings[i];
+      end;
+      SkipFirstLine := true;
+    end;
     result := true;
   finally
     if Assigned(FieldStrings) then FreeAndNil(FieldStrings);
@@ -1144,7 +1190,7 @@ var
   i: Integer;
   j: Integer;
   TmpField: TEpiField;
-  ok: Boolean;
+  skipfirstline, ok: Boolean;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
@@ -1178,10 +1224,8 @@ begin
       if Clipboard.HasFormat(CF_Text) then
       begin
         TmpStr := Clipboard.AsText;
-        {$IFDEF MSWINDOWS} // When compiling for linux (GTK2) the strings are automatically split at char #10.
         TmpStr := StringReplace(TmpStr, #13#10, #1, [rfReplaceAll]);
         ImportLines.Delimiter := #1;
-        {$ENDIF}
         ImportLines.StrictDelimiter := true;
         ImportLines.DelimitedText := TmpStr;
       end;
@@ -1198,26 +1242,22 @@ begin
     if TxtImpSetting^.UseQESFile then
     begin
       QESHandler := TQesHandler.Create;
+      skipfirstline := true;
       if Not QESHandler.QesToDatafile(TxtImpSetting^.QESFileName, DataFile) then
         Exit;
     end else begin
       // Guess structure based on content.
-      if not GuessTxtFile(DataFile, ImportLines, TxtImpSetting) then
+      if not GuessTxtFile(DataFile, ImportLines, TxtImpSetting, skipfirstline) then
         Exit;
     end;
 
     DataFile.Save('');
 
-    WriteLn('FieldSepator: ' + TxtImpSetting^.FieldSeparator);
-    WriteLn('QuoteChar: ' + TxtImpSetting^.QuoteChar);
-
     FieldLines := TStringList.Create;
-    for i := 0 to ImportLines.Count -1 do
+    for i := StrToInt(BoolToStr(skipfirstline, '1', '0')) to ImportLines.Count -1 do
     begin
       if Trim(ImportLines[i]) = '' then continue;
-      WriteLn('Line to split: ' + ImportLines[i]);
       SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
-      WriteLn('First line split: ' + FieldLines[0]);
 
       if FieldLines.Count > NumDataFields then
       begin

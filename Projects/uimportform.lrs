@@ -1,3 +1,5 @@
+{ This is an automatically generated lazarus resource file }
+
 LazarusResources.Add('TImportForm','FORMDATA',[
   'TPF0'#11'TImportForm'#10'ImportForm'#4'Left'#3#139#2#6'Height'#3#207#1#3'Top'
   +#3'_'#1#5'Width'#3#192#2#13'ActiveControl'#7#7'qesEdit'#7'Caption'#6#10'Impo'
@@ -20,32 +22,32 @@ LazarusResources.Add('TImportForm','FORMDATA',[
   +'3'#176#0#0#3'3'#187'33www3w'#255';'#179'3;'#179'3;'#179'7s37s37s'#179'33;3'
   +'33;s3373337'#9'NumGlyphs'#2#2#7'OnClick'#7#12'openBtnClick'#0#0#12'TRadioBu'
   +'tton'#10'guessRadio'#4'Left'#2#14#6'Height'#2#22#3'Top'#2#7#5'Width'#2'@'#7
-  +'Caption'#6#5'Guess'#8'OnChange'#7#16'guessRadioChange'#8'TabOrder'#2#2#7'Ta'
-  +'bStop'#8#0#0#12'TRadioButton'#10'fixedRadio'#4'Left'#2#14#6'Height'#2#22#3
-  +'Top'#2''''#5'Width'#2'k'#7'Caption'#6#12'Fixed format'#7'Enabled'#8#8'OnCha'
-  +'nge'#7#16'guessRadioChange'#8'TabOrder'#2#4#7'TabStop'#8#0#0#12'TRadioButto'
-  +'n'#14'delimiterRadio'#4'Left'#2#14#6'Height'#2#22#3'Top'#2'G'#5'Width'#3#140
-  +#0#7'Caption'#6#17'Delimited format:'#7'Checked'#9#8'OnChange'#7#16'guessRad'
-  +'ioChange'#5'State'#7#9'cbChecked'#8'TabOrder'#2#1#0#0#12'TLabeledEdit'#7'qe'
-  +'sEdit'#4'Left'#3#174#0#6'Height'#2#23#3'Top'#2''''#5'Width'#3'h'#1' EditLab'
-  +'el.AnchorSideLeft.Control'#7#7'qesEdit"EditLabel.AnchorSideBottom.Control'#7
-  +#7'qesEdit'#14'EditLabel.Left'#3#174#0#16'EditLabel.Height'#2#18#13'EditLabe'
-  +'l.Top'#2#18#15'EditLabel.Width'#2':'#17'EditLabel.Caption'#6#9'QES File:'#21
-  +'EditLabel.ParentColor'#8#11'Font.Height'#2#245#9'Font.Name'#6#4'Sans'#10'Pa'
-  +'rentFont'#8#8'TabOrder'#2#0#0#0#9'TGroupBox'#12'delimiterBox'#4'Left'#2'&'#6
-  +'Height'#2'i'#3'Top'#2'c'#5'Width'#3'Q'#1#12'ClientHeight'#2'e'#11'ClientWid'
-  +'th'#3'M'#1#8'TabOrder'#2#3#0#6'TLabel'#6'Label1'#4'Left'#2#14#6'Height'#2#18
-  +#3'Top'#2#14#5'Width'#2'B'#7'Caption'#6#10'Delimiter:'#11'ParentColor'#8#0#0
-  +#9'TComboBox'#14'delimiterCombo'#4'Left'#2'^'#6'Height'#2#31#3'Top'#2#3#5'Wi'
-  +'dth'#2'd'#11'Font.Height'#2#243#9'Font.Name'#6#4'Sans'#10'ItemHeight'#2#0#13
-  +'Items.Strings'#1#6#1';'#6#1','#6#3'TAB'#6#5'Space'#6#5'Other'#0#8'OnChange'
-  +#7#20'delimiterComboChange'#10'ParentFont'#8#5'Style'#7#14'csDropDownList'#8
-  +'TabOrder'#2#0#0#0#5'TEdit'#13'delimiterEdit'#4'Left'#3#214#0#6'Height'#2#27
-  +#3'Top'#2#3#5'Width'#2'('#8'TabOrder'#2#1#7'Visible'#8#0#0#0#0#7'TButton'#7
-  +'Button1'#4'Left'#3#160#0#6'Height'#2#25#3'Top'#3#0#1#5'Width'#2'K'#7'Captio'
-  +'n'#6#2'Ok'#11'ModalResult'#2#1#7'OnClick'#7#12'Button1Click'#8'TabOrder'#2#1
-  +#0#0#7'TButton'#7'Button2'#4'Left'#3#16#1#6'Height'#2#25#3'Top'#3#0#1#5'Widt'
-  +'h'#2'K'#7'Caption'#6#6'Cancel'#11'ModalResult'#2#2#8'TabOrder'#2#2#0#0#11'T'
-  +'OpenDialog'#11'OpenDialog1'#6'Filter'#6#23'QES Files (*.qes)|*.qes'#4'left'
-  +#3#176#1#3'top'#3#160#0#0#0#0
+  +'Caption'#6#5'Guess'#7'Checked'#9#8'OnChange'#7#16'guessRadioChange'#5'State'
+  +#7#9'cbChecked'#8'TabOrder'#2#0#0#0#12'TRadioButton'#10'fixedRadio'#4'Left'#2
+  +#14#6'Height'#2#22#3'Top'#2''''#5'Width'#2'k'#7'Caption'#6#12'Fixed format'#7
+  +'Enabled'#8#8'OnChange'#7#16'guessRadioChange'#8'TabOrder'#2#4#7'TabStop'#8#0
+  +#0#12'TRadioButton'#14'delimiterRadio'#4'Left'#2#14#6'Height'#2#22#3'Top'#2
+  +'G'#5'Width'#3#140#0#7'Caption'#6#17'Delimited format:'#8'OnChange'#7#16'gue'
+  +'ssRadioChange'#8'TabOrder'#2#2#7'TabStop'#8#0#0#12'TLabeledEdit'#7'qesEdit'
+  +#4'Left'#3#174#0#6'Height'#2#23#3'Top'#2''''#5'Width'#3'h'#1' EditLabel.Anch'
+  +'orSideLeft.Control'#7#7'qesEdit"EditLabel.AnchorSideBottom.Control'#7#7'qes'
+  +'Edit'#14'EditLabel.Left'#3#174#0#16'EditLabel.Height'#2#18#13'EditLabel.Top'
+  +#2#18#15'EditLabel.Width'#2':'#17'EditLabel.Caption'#6#9'QES File:'#21'EditL'
+  +'abel.ParentColor'#8#11'Font.Height'#2#245#9'Font.Name'#6#4'Sans'#10'ParentF'
+  +'ont'#8#8'TabOrder'#2#1#7'Visible'#8#0#0#9'TGroupBox'#12'delimiterBox'#4'Lef'
+  +'t'#2'&'#6'Height'#2'i'#3'Top'#2'c'#5'Width'#3'Q'#1#12'ClientHeight'#2'e'#11
+  +'ClientWidth'#3'M'#1#8'TabOrder'#2#3#7'Visible'#8#0#6'TLabel'#6'Label1'#4'Le'
+  +'ft'#2#14#6'Height'#2#18#3'Top'#2#14#5'Width'#2'B'#7'Caption'#6#10'Delimiter'
+  +':'#11'ParentColor'#8#0#0#9'TComboBox'#14'delimiterCombo'#4'Left'#2'^'#6'Hei'
+  +'ght'#2#31#3'Top'#2#3#5'Width'#2'd'#11'Font.Height'#2#243#9'Font.Name'#6#4'S'
+  +'ans'#10'ItemHeight'#2#0#13'Items.Strings'#1#6#1';'#6#1','#6#3'TAB'#6#5'Spac'
+  +'e'#6#5'Other'#0#8'OnChange'#7#20'delimiterComboChange'#10'ParentFont'#8#5'S'
+  +'tyle'#7#14'csDropDownList'#8'TabOrder'#2#0#0#0#5'TEdit'#13'delimiterEdit'#4
+  +'Left'#3#214#0#6'Height'#2#27#3'Top'#2#3#5'Width'#2'('#8'TabOrder'#2#1#7'Vis'
+  +'ible'#8#0#0#0#0#7'TButton'#7'Button1'#4'Left'#3#160#0#6'Height'#2#25#3'Top'
+  +#3#0#1#5'Width'#2'K'#7'Caption'#6#2'Ok'#11'ModalResult'#2#1#7'OnClick'#7#12
+  +'Button1Click'#8'TabOrder'#2#1#0#0#7'TButton'#7'Button2'#4'Left'#3#16#1#6'He'
+  +'ight'#2#25#3'Top'#3#0#1#5'Width'#2'K'#7'Caption'#6#6'Cancel'#11'ModalResult'
+  +#2#2#8'TabOrder'#2#2#0#0#11'TOpenDialog'#11'OpenDialog1'#6'Filter'#6#23'QES '
+  +'Files (*.qes)|*.qes'#4'left'#3#176#1#3'top'#3#160#0#0#0#0
 ]);

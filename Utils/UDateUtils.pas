@@ -24,12 +24,14 @@ var
   Year, Month, Day, m2, d2: word;
   tmpDate: TDateTime;
 begin
-  Result := true;
-  TmpS := Value;
+  result := false;
+  if Length(Value) > 10 then exit;
 
-  IF Trim(TmpS) = '' THEN
+  Result := true;
+  IF Trim(Value) = '' THEN
     Exit;
 
+  TmpS := Value;
   TmpS := StringReplace(TmpS, '-', DateSeparator, [rfReplaceAll]);
   TmpS := StringReplace(TmpS, '/', DateSeparator, [rfReplaceAll]);
   TmpS := StringReplace(TmpS, ':', DateSeparator, [rfReplaceAll]);
