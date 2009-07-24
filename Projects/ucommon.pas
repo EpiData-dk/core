@@ -79,8 +79,10 @@ begin
       if impform.ShowModal = mrCancel then exit;
       Result := Importer.ImportTXT(FileName, Df, impform.ImportSetting);
       FreeAndNil(impform);
+      WriteLn('impform');
     end;
     FreeAndNil(Importer);
+      WriteLn('Importer');
   end else begin
     Df := TEpiDataFile.Create(LoadOptions);
     Df.OnProgress := ShowProgress;
@@ -192,9 +194,10 @@ begin
     res.Append('');
 
     {Write datafile information}
-    tmpstr := FitLength('Last revision:',23)+
-      FormatDateTime('d. mmm yyyy t',
-      FileDateToDateTime(FileAge(epd.Filename)));
+    if Trim(epd.FileName) <> '' then
+      tmpstr := FitLength('Last revision:',23)+
+        FormatDateTime('d. mmm yyyy t',
+        FileDateToDateTime(FileAge(epd.Filename)));
     res.Append(tmpstr);
     res.Append(FitLength('Number of fields:',23)+IntToStr(epd.NumFields));
     tmpStr:=FitLength('Number of records:',23);
