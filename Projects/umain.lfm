@@ -1,7 +1,7 @@
 object MainForm: TMainForm
-  Left = 629
+  Left = 391
   Height = 647
-  Top = 299
+  Top = 230
   Width = 881
   ActiveControl = Panel1
   Caption = 'Core Test Project'
@@ -248,6 +248,16 @@ object MainForm: TMainForm
       OnChange = clipBrdChkBoxChange
       TabOrder = 11
     end
+    object expclipBrdChkBox: TCheckBox
+      Left = 432
+      Height = 22
+      Top = 60
+      Width = 128
+      Caption = 'Export to Clipboard'
+      Enabled = False
+      OnChange = expclipBrdChkBoxChange
+      TabOrder = 12
+    end
   end
   object PageControl1: TPageControl
     Left = 0
@@ -260,11 +270,11 @@ object MainForm: TMainForm
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'
-      ClientHeight = 412
+      ClientHeight = 415
       ClientWidth = 875
       object Memo1: TMemo
         Left = 0
-        Height = 412
+        Height = 415
         Top = 0
         Width = 875
         Align = alClient
@@ -280,12 +290,12 @@ object MainForm: TMainForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Documentation:'
-      ClientHeight = 412
+      ClientHeight = 415
       ClientWidth = 875
       ImageIndex = 1
       object Memo2: TMemo
         Left = 0
-        Height = 412
+        Height = 415
         Top = 0
         Width = 875
         Align = alClient
@@ -299,24 +309,24 @@ object MainForm: TMainForm
     end
     object TabSheet4: TTabSheet
       Caption = 'ChkFiles'
-      ClientHeight = 412
+      ClientHeight = 415
       ClientWidth = 875
       ImageIndex = 2
       object Splitter1: TSplitter
         Left = 433
-        Height = 412
+        Height = 415
         Top = 0
         Width = 5
         Beveled = True
       end
       object Panel3: TPanel
         Left = 0
-        Height = 412
+        Height = 415
         Top = 0
         Width = 433
         Align = alLeft
         BevelOuter = bvNone
-        ClientHeight = 412
+        ClientHeight = 415
         ClientWidth = 433
         TabOrder = 0
         object Panel5: TPanel
@@ -346,7 +356,7 @@ object MainForm: TMainForm
         end
         object orgChkMemo: TMemo
           Left = 0
-          Height = 371
+          Height = 374
           Top = 41
           Width = 433
           Align = alClient
@@ -360,12 +370,12 @@ object MainForm: TMainForm
       end
       object Panel4: TPanel
         Left = 438
-        Height = 412
+        Height = 415
         Top = 0
         Width = 437
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 412
+        ClientHeight = 415
         ClientWidth = 437
         TabOrder = 1
         object Panel6: TPanel
@@ -393,7 +403,7 @@ object MainForm: TMainForm
         end
         object parsedChkMemo: TMemo
           Left = 0
-          Height = 371
+          Height = 374
           Top = 41
           Width = 437
           Align = alClient
@@ -408,12 +418,12 @@ object MainForm: TMainForm
     end
     object TabSheet3: TTabSheet
       Caption = 'Data'
-      ClientHeight = 412
+      ClientHeight = 415
       ClientWidth = 875
       ImageIndex = 2
       object sg: TStringGrid
         Left = 0
-        Height = 371
+        Height = 374
         Top = 41
         Width = 875
         Align = alClient
@@ -460,12 +470,12 @@ object MainForm: TMainForm
     end
     object TabSheet5: TTabSheet
       Caption = 'Log:'
-      ClientHeight = 412
+      ClientHeight = 415
       ClientWidth = 875
       ImageIndex = 4
       object Memo3: TMemo
         Left = 0
-        Height = 371
+        Height = 374
         Top = 41
         Width = 875
         Align = alClient

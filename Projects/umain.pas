@@ -16,6 +16,7 @@ type
 
   TMainForm = class(TForm)
     clipBrdChkBox: TCheckBox;
+    expclipBrdChkBox: TCheckBox;
     Panel1: TPanel;
     edInputFile: TLabeledEdit;
     SpeedButton1: TSpeedButton;
@@ -61,6 +62,7 @@ type
     Button7: TButton;
     filetypeCombo: TComboBox;
     procedure clipBrdChkBoxChange(Sender: TObject);
+    procedure expclipBrdChkBoxChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure readBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
@@ -163,6 +165,13 @@ end;
 procedure TMainForm.clipBrdChkBoxChange(Sender: TObject);
 begin
   edInputFile.Enabled := not clipBrdChkBox.Checked;
+  SpeedButton1.Enabled := edInputFile.Enabled;
+end;
+
+procedure TMainForm.expclipBrdChkBoxChange(Sender: TObject);
+begin
+  edOutputFile.Enabled := not expclipBrdChkBox.Checked;
+  SpeedButton2.Enabled := edOutputFile.Enabled;
 end;
 
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -265,7 +274,9 @@ begin
   closeBtn.Enabled := DatafileIsOpen;
   saveBtn.Enabled := DatafileIsOpen;
   SpeedButton2.Enabled := DatafileIsOpen;
+  expclipBrdChkBox.Enabled := DatafileIsOpen;
   filetypeCombo.Enabled := DatafileIsOpen;
+
 
   Caption := FrmCaption;
   if DatafileIsOpen then
@@ -289,7 +300,7 @@ begin
   // add instructions
   Memo1.Lines.Add('Purpose of this application: Test core module for reading and saving data');
   Memo1.Lines.Add('Do NOT use this as a conversion tool - except for test situations');
-  Memo1.Lines.Add(' ');
+  Memo1.Lines.Add('');
   Memo1.Lines.Add('Report any problems and discuss on the EpiData list');
   Memo1.Lines.Add('Use: Find files with the dialogs and click read - save or close');
   Memo1.Lines.Add('The log contains calls to the core module depending on log level specified');
@@ -318,20 +329,23 @@ end;
 
 procedure TMainForm.saveBtnClick(Sender: TObject);
 var
-  PExpSettings: PEpiExportSettings;
+  PExpSettings: PEpiStataExportSettings;
   Ext: string;
 begin
-  if Trim(edOutputFile.Text) = '' then exit;
+  if (not expclipBrdChkBox.Checked) and (Trim(edOutputFile.Text) = '') then exit;
 
-  case filetypeCombo.ItemIndex of
-    0: Ext := '.rec';
-    1: Ext := '.dta';
-    2: Ext := '.dbf';
-    3: Ext := '.csv';
-    4: Ext := '.xls';
-  end;
+  if (not expclipBrdChkBox.Checked) then
+    case filetypeCombo.ItemIndex of
+      0: Ext := '.rec';
+      1: Ext := '.dta';
+      2: Ext := '.dbf';
+      3: Ext := '.csv';
+      4: Ext := '.xls';
+    end
+  else
+    Ext := '';
 
-  Ext := ChangeFileExt(edOutputFile.Text, Ext);
+  Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edInputFile.Text), Ext);
   EpiLogger.Add('Saving file to: ' + ext, 2);
   SaveDialog1.FileName := ext;
   if fileexists(ext) then
@@ -352,7 +366,7 @@ begin
     end;
   end;
 
-  if filetypeCombo.ItemIndex < 3 then
+  if filetypeCombo.ItemIndex < 4 then
   begin
     if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
     begin

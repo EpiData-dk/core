@@ -10,44 +10,74 @@ uses
 type
 
   // Export record:
-  // - FileVersion:     Used in Stata and DBase file to name specific version of file.
   // - Start/EndRecord: Interger to name starting and ending record to export.
   //                    To include all use 1 as starting record and -1 as ending record.
   //                    Out of bounds is checked. Negative interval is ignored (=> no data exported)
   TEpiExportSettings = record
-    FileVersion: Integer;
     StartRecord: Integer;
     EndRecord:   Integer;
   end;
   PEpiExportSettings = ^TEpiExportSettings;
 
+  // Stata export
+  // - FileVersion:     Used to name specific version of file.
+  TEpiStataExportSettings = record
+    ExportSettings:  PEpiExportSettings;
+    FileVersion: Integer;
+  end;
+  PEpiStataExportSettings = ^TEpiStataExportSettings;
+
+  TEpiTxtExportSettings = record
+    ExportSettings:  PEpiExportSettings;
+    FieldSeparator:  Char;
+    DateSeparator:   Char;
+    QuoteChar:       Char;
+    FixedFormat:     Boolean;
+    WriteFieldNames: Boolean;
+  end;
+  PEpiTxtExportSettings = ^TEpiTxtExportSettings;
+
 const
+
+  ExportAll : TEpiExportSettings = (
+    StartRecord:  1;
+    EndRecord:    -1
+  );
 
   //  Stata Version 4    = $69;
   //  Stata Version 6    = $6C;
   //  Stata Version 7    = $6E;
   //  Stata Version 8+9  = $71;
   //  Stata Version 10   = $72;
-  ExportStata4_5: TEpiExportSettings =
-                    (FileVersion:  $69;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata6:   TEpiExportSettings =
-                    (FileVersion:  $6C;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata7:   TEpiExportSettings =
-                    (FileVersion:  $6E;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata8_9: TEpiExportSettings =
-                    (FileVersion:  $71;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata10:  TEpiExportSettings =
-                    (FileVersion:  $72;
-                     StartRecord:  1;
-                     EndRecord:    -1);
+  ExportStata4_5: TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $69
+  );
+  ExportStata6:   TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $6C
+  );
+  ExportStata7:   TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $6E
+  );
+  ExportStata8_9: TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $71
+  );
+  ExportStata10:  TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $72
+  );
+
+  ExportTxtStandard: TEpiTxtExportSettings = (
+    ExportSettings:  @ExportAll;
+    FieldSeparator:  #9;
+    DateSeparator:   '-';
+    QuoteChar:       '"';
+    FixedFormat:     false;
+    WriteFieldNames: true;
+  );
 
 type
   // Import records:
@@ -120,9 +150,10 @@ type
                             TxtImpSetting: PEpiTxtImportSettings): Boolean;
     function      ImportXLS(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
-                              ExpSetting: PEpiExportSettings): Boolean;
+                              ExpSetting: PEpiStataExportSettings): Boolean;
     function      ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
-    function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile;
+                    ExpSettings: PEpiTxtExportSettings): Boolean;
     function      ExportXLS(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
@@ -1327,7 +1358,7 @@ begin
 end;
 
 function TEpiImportExport.ExportStata(const aFilename: string;
-  const DataFile: TEpiDataFile; ExpSetting: PEpiExportSettings): Boolean;
+  const DataFile: TEpiDataFile; ExpSetting: PEpiStataExportSettings): Boolean;
 var
   ValBuf,
   ByteBuf: Array of Byte;
@@ -1947,9 +1978,80 @@ begin
 END;
 
 function TEpiImportExport.ExportTXT(const aFilename: string;
-  const DataFile: TEpiDataFile): Boolean;
+  const DataFile: TEpiDataFile; ExpSettings: PEpiTxtExportSettings): Boolean;
+var
+  i: Integer;
+  FieldSep: Char;
+  DateSep: Char;
+  QuoteCh: Char;
+  TmpStr: String;
+  NObs: LongInt;
+  CurRec: Integer;
 begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ExportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
+  Result := false;
 
+  // Sanity checks:
+  if not Assigned(DataFile) then Exit;
+
+  with DataFile do
+  try
+    UpdateProgress(0, Lang(0, 'Writing header information'));
+
+    if aFilename = '' then
+      DataStream := TMemoryStream.Create
+    else
+      DataStream := TFileStream.Create(aFileName, fmCreate);
+
+    FieldSep := ExpSettings^.FieldSeparator;
+    DateSep  := ExpSettings^.DateSeparator;
+    QuoteCh  := ExpSettings^.QuoteChar;
+
+    if ExpSettings^.WriteFieldNames then
+    begin
+      for i := 0 to NumDataFields - 1do
+      begin
+        TmpStr := DataFields[i].FieldName;
+        if ExpSettings^.FixedFormat then
+          TmpStr := Format('%-*s', [MaxFieldNameLen, TmpStr]);
+        TmpStr := TmpStr + FieldSep;
+        DataStream.Write(TmpStr[1], Length(TmpStr));
+      end;
+      DataStream.Seek(-1, soCurrent);
+      TmpStr := #13#10;
+      DataStream.Write(TmpStr[1], 2);
+    end;
+
+    { Write Data }
+    NObs := NumRecords;
+    for CurRec := 1 to NObs do
+    begin
+       UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
+       Read(CurRec);
+
+       for i := 0 to NumDataFields - 1 do
+       begin
+        TmpStr := DataFields[i].AsData;
+        if ExpSettings^.FixedFormat then
+          TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
+        if DataFields[i].FieldType in [ftAlfa, ftUpperAlfa, ftCrypt, ftSoundex] then
+          TmpStr := AnsiQuotedStr(TmpStr, QuoteCh);
+        TmpStr := TmpStr + FieldSep;
+        DataStream.Write(TmpStr[1], Length(TmpStr));
+       end;
+      DataStream.Seek(-1, soCurrent);
+      TmpStr := #13#10;
+      DataStream.Write(TmpStr[1], 2);
+    end;
+
+    if DataStream is TMemoryStream then
+      Clipboard.SetFormat(CF_Text, DataStream);
+
+    result := true;
+  finally
+    EpiLogger.DecIndent;
+  end;
 end;
 
 function TEpiImportExport.ExportXLS(const aFilename: string;

@@ -13,7 +13,7 @@ uses
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent): boolean;
   function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
-                         ExportSettings: PEpiExportSettings): boolean;
+                         ExportSettings: Pointer): boolean;
   procedure SetFilter(aDialog: TOpenDialog);
 
 implementation
@@ -93,7 +93,7 @@ end;
 
 function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                        ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
-                       ExportSettings: PEpiExportSettings): boolean;
+                       ExportSettings: Pointer): boolean;
 var
   OutDf: TEpiDataFile;
   I, J: Integer;
@@ -102,16 +102,17 @@ var
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
 begin
-
   if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
   begin
     Exporter := TEpiImportExport.Create();
     Exporter.OnProgress := ShowProgress;
     S := AnsiUpperCase(ExtractFileExt(FileName));
     if S = '.DTA' then
-      result:= Exporter.ExportStata(FileName, Df, ExportSettings)
+      result:= Exporter.ExportStata(FileName, Df, PEpiStataExportSettings(ExportSettings))
     else if S = '.DBF' then
-      result := Exporter.ExportDBase(FileName, Df);
+      result := Exporter.ExportDBase(FileName, Df)
+    else if (S = '.CSV') or (Trim(FileName) = '') then
+      result := Exporter.ExportTXT(FileName, Df, @ExportTxtStandard);
     FreeAndNil(Exporter);
     Exit;
   end;
