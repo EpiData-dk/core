@@ -1,26 +1,26 @@
 object ImportForm: TImportForm
-  Left = 377
-  Height = 461
-  Top = 299
-  Width = 701
+  Left = 405
+  Height = 183
+  Top = 119
+  Width = 629
   ActiveControl = guessRadio
   Caption = 'ImportForm'
-  ClientHeight = 461
-  ClientWidth = 701
+  ClientHeight = 183
+  ClientWidth = 629
   LCLVersion = '0.9.27'
   object GroupBox1: TGroupBox
     Left = 8
-    Height = 232
+    Height = 136
     Top = 8
     Width = 600
     Caption = 'Import format'
-    ClientHeight = 216
+    ClientHeight = 118
     ClientWidth = 596
     TabOrder = 0
     object openBtn: TSpeedButton
-      Left = 542
+      Left = 486
       Height = 22
-      Top = 39
+      Top = 26
       Width = 23
       Color = clBtnFace
       Glyph.Data = {
@@ -42,9 +42,9 @@ object ImportForm: TImportForm
     end
     object guessRadio: TRadioButton
       Left = 14
-      Height = 22
+      Height = 17
       Top = 7
-      Width = 59
+      Width = 49
       Caption = 'Guess'
       Checked = True
       OnChange = guessRadioChange
@@ -53,9 +53,9 @@ object ImportForm: TImportForm
     end
     object fixedRadio: TRadioButton
       Left = 14
-      Height = 22
-      Top = 39
-      Width = 91
+      Height = 17
+      Top = 28
+      Width = 81
       Caption = 'Fixed format'
       Enabled = False
       OnChange = guessRadioChange
@@ -64,25 +64,25 @@ object ImportForm: TImportForm
     end
     object delimiterRadio: TRadioButton
       Left = 14
-      Height = 22
+      Height = 17
       Top = 71
-      Width = 116
+      Width = 102
       Caption = 'Delimited format:'
       OnChange = guessRadioChange
       TabOrder = 2
       TabStop = False
     end
     object qesEdit: TLabeledEdit
-      Left = 174
-      Height = 23
-      Top = 39
+      Left = 110
+      Height = 24
+      Top = 24
       Width = 360
       EditLabel.AnchorSideLeft.Control = qesEdit
       EditLabel.AnchorSideBottom.Control = qesEdit
-      EditLabel.Left = 174
-      EditLabel.Height = 15
-      EditLabel.Top = 21
-      EditLabel.Width = 52
+      EditLabel.Left = 110
+      EditLabel.Height = 14
+      EditLabel.Top = 7
+      EditLabel.Width = 44
       EditLabel.Caption = 'QES File:'
       EditLabel.ParentColor = False
       Font.Height = -11
@@ -92,30 +92,30 @@ object ImportForm: TImportForm
       Visible = False
     end
     object delimiterBox: TGroupBox
-      Left = 38
-      Height = 105
-      Top = 99
-      Width = 337
-      ClientHeight = 101
-      ClientWidth = 333
+      Left = 118
+      Height = 57
+      Top = 48
+      Width = 272
+      ClientHeight = 39
+      ClientWidth = 268
       TabOrder = 3
       Visible = False
       object Label1: TLabel
         Left = 14
-        Height = 15
-        Top = 14
-        Width = 53
+        Height = 14
+        Top = 8
+        Width = 46
         Caption = 'Delimiter:'
         ParentColor = False
       end
       object delimiterCombo: TComboBox
         Left = 94
-        Height = 28
+        Height = 24
         Top = 3
         Width = 100
         Font.Height = -13
         Font.Name = 'Sans'
-        ItemHeight = 0
+        ItemHeight = 16
         Items.Strings = (
           ';'
           ','
@@ -130,7 +130,7 @@ object ImportForm: TImportForm
       end
       object delimiterEdit: TEdit
         Left = 214
-        Height = 24
+        Height = 23
         Top = 3
         Width = 40
         TabOrder = 1
@@ -139,9 +139,9 @@ object ImportForm: TImportForm
     end
   end
   object Button1: TButton
-    Left = 160
+    Left = 32
     Height = 25
-    Top = 256
+    Top = 152
     Width = 75
     Caption = 'Ok'
     ModalResult = 1
@@ -149,9 +149,9 @@ object ImportForm: TImportForm
     TabOrder = 1
   end
   object Button2: TButton
-    Left = 272
+    Left = 120
     Height = 25
-    Top = 256
+    Top = 152
     Width = 75
     Caption = 'Cancel'
     ModalResult = 2
@@ -159,7 +159,7 @@ object ImportForm: TImportForm
   end
   object OpenDialog1: TOpenDialog
     Filter = 'QES Files (*.qes)|*.qes'
-    left = 432
-    top = 160
+    left = 424
+    top = 96
   end
 end
