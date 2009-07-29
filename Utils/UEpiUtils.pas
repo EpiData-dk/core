@@ -151,8 +151,6 @@ function IsInteger(const Value: string): boolean;
 var
   V, Code: integer;
 begin
-  result := false;
-  if Length(Value) > 4 then exit;
   Val(Value, V, Code);
   Result := (Code = 0);
 end;
@@ -163,8 +161,6 @@ var
   V: Extended;
   TmpStr: String;
 begin
-  result := false;
-  if Length(Value) > 10 then exit;
   TmpStr := StringReplace(Value, ',', '.', [rfReplaceAll]);
   Val(TmpStr, V, Code);
   Result := (Code = 0);

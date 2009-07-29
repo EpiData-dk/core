@@ -8,15 +8,23 @@ uses
   LResources,
   SysUtils, Variants, Classes, Controls, Forms,
   Dialogs, StdCtrls, Buttons, ExtCtrls, ComCtrls, UEpiDataFile, Grids,
-  UDataFileTypes, Graphics;
+  UDataFileTypes, Graphics, Menus, ActnList;
 
 type
 
   { TMainForm }
 
   TMainForm = class(TForm)
+    acQuit: TAction;
+    acSettings: TAction;
+    ActionList1: TActionList;
     clipBrdChkBox: TCheckBox;
     expclipBrdChkBox: TCheckBox;
+    MainMenu1: TMainMenu;
+    FileMenu: TMenuItem;
+    SettingsMenu: TMenuItem;
+    QuitMenu: TMenuItem;
+    EditMenu: TMenuItem;
     Panel1: TPanel;
     edInputFile: TLabeledEdit;
     SpeedButton1: TSpeedButton;
@@ -61,6 +69,8 @@ type
     Button6: TButton;
     Button7: TButton;
     filetypeCombo: TComboBox;
+    procedure acQuitExecute(Sender: TObject);
+    procedure acSettingsExecute(Sender: TObject);
     procedure clipBrdChkBoxChange(Sender: TObject);
     procedure expclipBrdChkBoxChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -95,7 +105,8 @@ implementation
 
 uses
   Math, UPWform, UEpiUtils, UCheckFileIO,
-  UEpiDataGlobals, UImportExport, ucommon, UEpiLog;
+  UEpiDataGlobals, UImportExport, ucommon, UEpiLog,
+  Settings;
 
 var
   Df: TEpiDataFile = nil;
@@ -108,7 +119,6 @@ var
   Stream: TStream;
   ChkIO:  TCheckFileIO;
   Lst: TStrings;
-  Res: Boolean;
   TmpStr: String;
 begin
 
@@ -166,6 +176,18 @@ procedure TMainForm.clipBrdChkBoxChange(Sender: TObject);
 begin
   edInputFile.Enabled := not clipBrdChkBox.Checked;
   SpeedButton1.Enabled := edInputFile.Enabled;
+end;
+
+procedure TMainForm.acQuitExecute(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TMainForm.acSettingsExecute(Sender: TObject);
+begin
+  if Assigned(SettingsForm) then FreeAndNil(SettingsForm);
+  SettingsForm := TSettingsForm.Create(self);
+  SettingsForm.ShowModal;
 end;
 
 procedure TMainForm.expclipBrdChkBoxChange(Sender: TObject);

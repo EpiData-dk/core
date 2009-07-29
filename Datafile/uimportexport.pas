@@ -322,7 +322,7 @@ begin
   TmpField := nil;
   try
     tabcount:=0;   semicoloncount:=0; commacount:=0;   spacecount:=0;
-    LineCount := Math.Min(10, Lines.Count);
+    LineCount := Math.Min(NumGuessLines, Lines.Count);
     w := 0;
     for i := 0 to LineCount - 1 do
     begin
@@ -413,21 +413,47 @@ begin
         FieldType := FtList[i-1];
         FieldName := 'V' + IntToStr(i);
         FieldNo   := i;
-        case FieldType of
-          ftInteger:
-            FieldLength := 4;
-          ftFloat:
-            begin
-              FieldLength := 14;
-              NumDecimals := 6;
-            end;
-          ftDate, ftEuroDate, ftYMDDate:
-            FieldLength := 10;
-          ftAlfa:
-            FieldLength := 42;
-        end;
+        FieldLength := 0;
+        NumDecimals := 0;
       end;
       DataFile.AddField(TmpField);
+    end;
+
+    // Guess field lengths
+    // Skip first line since it may contain headings/field names.
+    for i := 1 to LineCount - 1 do
+    begin
+      TmpStr := Lines[i];
+      if Trim(TmpStr) = '' then continue;
+
+      SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+
+      for j := 0 to FieldStrings.Count -1 do
+      with DataFile.DataFields[j] do
+      begin
+        TmpStr := FieldStrings[j];
+        if (TmpStr = '.') or (Trim(TmpStr) = '') then continue;
+        case FieldType of
+          ftBoolean:
+            FieldLength := 1;
+          ftInteger:
+            begin
+              if Length(TmpStr) > MaxIntegerLength then
+                FieldType := ftFloat;
+              FieldLength := Max(FieldLength, Length(TmpStr));
+            end;
+          ftFloat:
+            begin
+              FieldLength := Max(FieldLength, Length(TmpStr));
+              if (StrCountChars(Tmpstr, CommaChars) > 0) then
+                NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+            end;
+          ftAlfa:
+            FieldLength := Max(FieldLength, Length(TmpStr));
+          ftDate, ftEuroDate, ftYMDDate:
+            FieldLength := 10;
+        end;
+      end;
     end;
 
     // Guess field names (and variable labels).
@@ -709,7 +735,7 @@ begin
       TmpField.NumDecimals := 0;
       case TypeList[i] of
         ByteConst: TmpField.FieldLength := 2;
-        IntConst:  TmpField.FieldLength := 4;
+        IntConst:  TmpField.FieldLength := MaxIntegerLength;
         LongConst: TmpField.FieldLength := 10;
         FloatConst,
         DoubleConst:

@@ -5,7 +5,7 @@ unit UEpiDataGlobals;
 interface
 
 uses
-  UDataFileTypes, Graphics;
+  UDataFileTypes, Graphics, sysutils;
   
 type
   TCharSet = Set of Char;
@@ -23,9 +23,12 @@ CONST
   EOLchars:        array[0..2] of char = '!'#13#10;
   DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
 
-  MaxRecLineLength=78;    
-  MaxFieldNameLen: Byte = 10;
-  MaxIndices=3;
+  NumGuessLines         = 1000;
+  MaxRecLineLength      = 78;
+  MaxFieldNameLen       = 10;
+  MaxIndices            = 3;
+  MaxIntegerLength      = 4;
+
   ChkColorNames:   ARRAY[0..17] OF string =
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',
                      'GREEN', 'LIME', 'LTGRAY', 'MAROON', 'NAVY', 'OLIVE',
@@ -63,6 +66,9 @@ var
   IntegerChars:    TCharSet;
   FloatChars:      TCharSet;
 
+  EpiInternalFormatSettings: TFormatSettings;
+  EpiExternalFormatSettings: TFormatSettings;
+
   {$I ErrorCodes.inc}
 
 implementation
@@ -97,7 +103,10 @@ begin
   DateChars    := NumChars + DateSeparators;
   IntegerChars := NumChars + SignChars;
   FloatChars   := IntegerChars + CommaChars;
-  //
+
+  // Format setting.
+  EpiInternalFormatSettings := DefaultFormatSettings;
+  EpiExternalFormatSettings := DefaultFormatSettings;
 
   Initialized := true;
 end;

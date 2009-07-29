@@ -1542,7 +1542,7 @@ BEGIN
               Result := ReportError(Lang(22776, 'Error in Fieldtype. Use # and maximum one . to define numeric'));
               Exit;
             END ELSE BEGIN
-              IF (n > 0) OR (Length(CurCommand) > 4) THEN
+              IF (n > 0) OR (Length(CurCommand) > MaxIntegerLength) THEN
                 TChkDefine(TmpChkCmd).FieldType := ftFloat
               ELSE
                 TChkDefine(TmpChkCmd).FieldType := ftInteger;
