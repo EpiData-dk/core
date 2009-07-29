@@ -14,7 +14,7 @@
       <UseAppBundle Value="False"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="3"/>
+      <ActiveEditorIndexAtStart Value="2"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -56,8 +56,8 @@
         <Filename Value="..\Datafile\uqeshandler.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UQesHandler"/>
-        <CursorPos X="16" Y="46"/>
-        <TopLine Value="23"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="1"/>
         <UsageCount Value="217"/>
       </Unit1>
       <Unit2>
@@ -150,8 +150,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="54" Y="24"/>
-        <TopLine Value="1"/>
+        <CursorPos X="47" Y="168"/>
+        <TopLine Value="144"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -273,8 +273,8 @@
         <Filename Value="..\Utils\uepidataglobals.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataGlobals"/>
-        <CursorPos X="3" Y="50"/>
-        <TopLine Value="42"/>
+        <CursorPos X="1" Y="70"/>
+        <TopLine Value="21"/>
         <EditorIndex Value="3"/>
         <UsageCount Value="224"/>
         <Loaded Value="True"/>
@@ -410,7 +410,7 @@
         <UnitName Value="uimportform"/>
         <CursorPos X="1" Y="65"/>
         <TopLine Value="54"/>
-        <UsageCount Value="153"/>
+        <UsageCount Value="154"/>
       </Unit47>
       <Unit48>
         <Filename Value="..\..\..\localtest\ImportUnit.pas"/>
@@ -655,6 +655,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)\"/>
+      <Libraries Value="\home\torsten\FreePascal\fpspreadsheet\lib\x86_64-linux\"/>
       <OtherUnitFiles Value="..\Datafile\;..\Encryption\;..\Utils\"/>
       <SrcPath Value="\usr\share\src\fpc-2.3.1\fpc\;\usr\share\src\fpc-2.3.1\fpc\rtl\"/>
     </SearchPaths>
