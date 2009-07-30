@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 480
+  Left = 228
   Height = 647
-  Top = 212
+  Top = 215
   Width = 881
   ActiveControl = Panel1
   Caption = 'Core Test Project'
-  ClientHeight = 622
+  ClientHeight = 625
   ClientWidth = 881
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
@@ -262,7 +262,7 @@ object MainForm: TMainForm
   end
   object PageControl1: TPageControl
     Left = 0
-    Height = 390
+    Height = 393
     Top = 232
     Width = 881
     ActivePage = TabSheet5
@@ -271,11 +271,11 @@ object MainForm: TMainForm
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'
-      ClientHeight = 412
+      ClientHeight = 361
       ClientWidth = 875
       object Memo1: TMemo
         Left = 0
-        Height = 412
+        Height = 361
         Top = 0
         Width = 875
         Align = alClient
@@ -291,12 +291,12 @@ object MainForm: TMainForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Documentation:'
-      ClientHeight = 412
+      ClientHeight = 361
       ClientWidth = 875
       ImageIndex = 1
       object Memo2: TMemo
         Left = 0
-        Height = 412
+        Height = 361
         Top = 0
         Width = 875
         Align = alClient
@@ -310,24 +310,24 @@ object MainForm: TMainForm
     end
     object TabSheet4: TTabSheet
       Caption = 'ChkFiles'
-      ClientHeight = 412
+      ClientHeight = 361
       ClientWidth = 875
       ImageIndex = 2
       object Splitter1: TSplitter
         Left = 433
-        Height = 412
+        Height = 361
         Top = 0
         Width = 5
         Beveled = True
       end
       object Panel3: TPanel
         Left = 0
-        Height = 412
+        Height = 361
         Top = 0
         Width = 433
         Align = alLeft
         BevelOuter = bvNone
-        ClientHeight = 412
+        ClientHeight = 361
         ClientWidth = 433
         TabOrder = 0
         object Panel5: TPanel
@@ -357,7 +357,7 @@ object MainForm: TMainForm
         end
         object orgChkMemo: TMemo
           Left = 0
-          Height = 371
+          Height = 320
           Top = 41
           Width = 433
           Align = alClient
@@ -371,12 +371,12 @@ object MainForm: TMainForm
       end
       object Panel4: TPanel
         Left = 438
-        Height = 412
+        Height = 361
         Top = 0
         Width = 437
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 412
+        ClientHeight = 361
         ClientWidth = 437
         TabOrder = 1
         object Panel6: TPanel
@@ -404,7 +404,7 @@ object MainForm: TMainForm
         end
         object parsedChkMemo: TMemo
           Left = 0
-          Height = 371
+          Height = 320
           Top = 41
           Width = 437
           Align = alClient
@@ -419,12 +419,12 @@ object MainForm: TMainForm
     end
     object TabSheet3: TTabSheet
       Caption = 'Data'
-      ClientHeight = 412
+      ClientHeight = 361
       ClientWidth = 875
       ImageIndex = 2
       object sg: TStringGrid
         Left = 0
-        Height = 371
+        Height = 320
         Top = 41
         Width = 875
         Align = alClient
@@ -471,12 +471,12 @@ object MainForm: TMainForm
     end
     object TabSheet5: TTabSheet
       Caption = 'Log:'
-      ClientHeight = 355
+      ClientHeight = 361
       ClientWidth = 875
       ImageIndex = 4
       object Memo3: TMemo
         Left = 0
-        Height = 314
+        Height = 320
         Top = 41
         Width = 875
         Align = alClient
@@ -536,12 +536,14 @@ object MainForm: TMainForm
       Caption = 'File'
       object QuitMenu: TMenuItem
         Action = acQuit
+        OnClick = acQuitExecute
       end
     end
     object EditMenu: TMenuItem
       Caption = 'Tools'
       object SettingsMenu: TMenuItem
         Action = acSettings
+        OnClick = acSettingsExecute
       end
     end
   end

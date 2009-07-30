@@ -10,6 +10,13 @@ uses
 type
   TCharSet = Set of Char;
 
+  TEpiDateFormat = (eDMY, eMDY, eYMD);
+  TEpiSettings = record
+    DateSeparator: Char;
+    DecimalSepator: Char;
+    DateFormat: TEpiDateFormat;
+  end;
+
 CONST
   CoreVersion = 1;
 
@@ -66,8 +73,14 @@ var
   IntegerChars:    TCharSet;
   FloatChars:      TCharSet;
 
-  EpiInternalFormatSettings: TFormatSettings;
-  EpiExternalFormatSettings: TFormatSettings;
+  EpiExternalFormatSettings: TEpiSettings;
+
+const
+  EpiInternalFormatSettings: TEpiSettings = (
+    DateSeparator:  '/';
+    DecimalSepator: '.';
+    DateFormat:     eDMY;
+  );
 
   {$I ErrorCodes.inc}
 
@@ -105,8 +118,7 @@ begin
   FloatChars   := IntegerChars + CommaChars;
 
   // Format setting.
-  EpiInternalFormatSettings := DefaultFormatSettings;
-  EpiExternalFormatSettings := DefaultFormatSettings;
+  EpiExternalFormatSettings := EpiInternalFormatSettings;
 
   Initialized := true;
 end;

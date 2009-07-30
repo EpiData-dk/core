@@ -170,20 +170,22 @@ type
     FQuestion:     string;
     FVariableLabel: string;
     FCheckField:   TEpiCheckField;
-    function       GetFieldTypeName(): string;
-    function       GetData(): string;
+    function       GetAsFmtData: string;
+    function       GetFieldTypeName: string;
+    function       GetData: string;
     procedure      SetData(aData: string);
-    function       GetValueLabel(): TValueLabelSet;
+    function       GetValueLabel: TValueLabelSet;
     function       GetValue: string;
     procedure      SetValue(const Value: string);
   protected
 
   public
-    constructor Create(); virtual;
-    destructor  Destroy(); override;
-    procedure   Reset();
+    constructor Create; virtual;
+    destructor  Destroy; override;
+    procedure   Reset;
     procedure   Clone(Var Dest: TEpiField);
     property    AsData:      string read GetData write SetData;
+    property    AsFmtData:   string read GetAsFmtData;
     property    AsValue:     string read GetValue write SetValue;
     property    FieldNo:     Cardinal read FFieldNo write FFieldNo;
     property    DisplayChar: Char read FDisplayChar write FDisplayChar;
@@ -545,7 +547,7 @@ end;
 
 { TEpiField }
 
-function TEpiField.GetFieldTypeName(): string;
+function TEpiField.GetFieldTypeName: string;
 begin
   if Assigned(Owner) then
     result := FieldTypeToFieldTypeName(FieldType, FOwner.FDataFile.OnTranslate)
@@ -553,7 +555,21 @@ begin
     result := FieldTypeToFieldTypeName(FieldType, nil);
 end;
 
-function TEpiField.GetData(): string;
+function TEpiField.GetAsFmtData: string;
+begin
+  case FieldType of
+    ftDate, ftEuroDate, ftYMDDate:
+      Result := StringReplace(AsData, EpiInternalFormatSettings.DateSeparator,
+        EpiExternalFormatSettings.DateSeparator, [rfReplaceAll]);
+    ftFloat:
+      result := StringReplace(AsData, EpiInternalFormatSettings.DecimalSepator,
+        EpiExternalFormatSettings.DecimalSepator, [rfReplaceAll]);
+  else
+    result := AsData;
+  end;
+end;
+
+function TEpiField.GetData: string;
 begin
   Result := Trim(FData);
 end;
@@ -563,16 +579,16 @@ begin
   FData := aData;
 end;
 
-function TEpiField.GetValueLabel(): TValueLabelSet;
+function TEpiField.GetValueLabel: TValueLabelSet;
 begin
   result := nil;
   if Assigned(CheckField) then
     result := CheckField.ValueLabel;
 end;
 
-constructor TEpiField.Create();
+constructor TEpiField.Create;
 begin
-  Reset();
+  Reset;
 end;
 
 destructor TEpiField.Destroy;

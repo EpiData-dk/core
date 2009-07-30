@@ -31,6 +31,7 @@ type
     ExportSettings:  PEpiExportSettings;
     FieldSeparator:  Char;
     DateSeparator:   Char;
+    DecimalSeparator:Char;
     QuoteChar:       Char;
     FixedFormat:     Boolean;
     WriteFieldNames: Boolean;
@@ -74,6 +75,7 @@ const
     ExportSettings:  @ExportAll;
     FieldSeparator:  #9;
     DateSeparator:   '-';
+    DecimalSeparator:'.';
     QuoteChar:       '"';
     FixedFormat:     false;
     WriteFieldNames: true;
@@ -533,6 +535,7 @@ var
   ByteChar, IntChar, LongChar,
   FloatChar, DoubleChar: Char;
   MissingBaseNum: Cardinal;
+  DecS: Char;
 
   function ReadSingleMissing(var MisVal: string): Single;
   var
@@ -900,6 +903,7 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
+    DecS := EpiInternalFormatSettings.DecimalSepator;
     TRY
       FOR CurRec := 1 TO nObs DO
       BEGIN
@@ -954,11 +958,13 @@ begin
                     StrBuf := ''
                   else begin
                     TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)] :=
-                      DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + '.' + DupeString(StrBuf, TmpField.NumDecimals);
+                      DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.NumDecimals);
                     StrBuf := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
                   end;
-                end else
-                  Str(TmpFlt : TmpField.FieldLength : TmpField.NumDecimals, StrBuf)
+                end else begin
+                  StrBuf := FloatToStr(TmpFlt);
+                  IsFloat(StrBuf);
+                end;
               End;
           else
             // This is a string field.
@@ -1074,6 +1080,7 @@ var
   TmpInt: LongInt;
   CurField: Integer;
   C: Char;
+  Ds: Char;
 BEGIN
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportDBase', 2, 'Filename = ' + aFilename);
@@ -1184,6 +1191,7 @@ BEGIN
     Save(FileName);
 
     {Read data}
+    Ds := EpiInternalFormatSettings.DateSeparator;
     DataStream.Position := HSize;
     FOR CurRec := 1 TO NObs DO
     BEGIN
@@ -1208,7 +1216,7 @@ BEGIN
           CASE FieldType OF
             ftDate:
               begin
-                TmpStr := Copy(TmpStr, 5, 2) + '/' + Copy(TmpStr, 7, 2) + '/' + Copy(TmpStr, 1, 4);
+                TmpStr := Copy(TmpStr, 5, 2) + Ds + Copy(TmpStr, 7, 2) + Ds + Copy(TmpStr, 1, 4);
                 EpiIsDate(TmpStr, ftDate);
               end;
             ftInteger:
@@ -1707,10 +1715,9 @@ begin
           TmpStr := AsData;
 
           // StrToFloat expects decimal separator to be in current locale.
-          // It is always stored as "." in EpiData.
-          // Placed here so it down't interfere with missingvalues.
+          // Placed here so it doesn't interfere with missingvalues.
           IF FieldType = ftFloat THEN
-            TmpStr := StringReplace(TmpStr, '.', DecimalSeparator, []);
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator, DecimalSeparator, []);
 
           IF trim(TmpStr)='' THEN
             TmpStr := '..';
@@ -2009,6 +2016,7 @@ var
   i: Integer;
   FieldSep: Char;
   DateSep: Char;
+  DecSep:  Char;
   QuoteCh: Char;
   TmpStr: String;
   NObs: LongInt;
@@ -2032,6 +2040,7 @@ begin
 
     FieldSep := ExpSettings^.FieldSeparator;
     DateSep  := ExpSettings^.DateSeparator;
+    DecSep   := ExpSettings^.DecimalSeparator;
     QuoteCh  := ExpSettings^.QuoteChar;
 
     if ExpSettings^.WriteFieldNames then
@@ -2059,10 +2068,21 @@ begin
        for i := 0 to NumDataFields - 1 do
        begin
         TmpStr := DataFields[i].AsData;
+
         if ExpSettings^.FixedFormat then
           TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
-        if DataFields[i].FieldType in [ftAlfa, ftUpperAlfa, ftCrypt, ftSoundex] then
-          TmpStr := AnsiQuotedStr(TmpStr, QuoteCh);
+
+        case DataFields[i].FieldType of
+          ftDate, ftEuroDate, ftYMDDate:
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DateSeparator,
+                        DateSep, [rfReplaceAll]);
+          ftFloat:
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator,
+                        DecSep, [rfReplaceAll]);
+          ftAlfa, ftUpperAlfa, ftCrypt, ftSoundex:
+            TmpStr := AnsiQuotedStr(TmpStr, QuoteCh);
+        end;
+
         TmpStr := TmpStr + FieldSep;
         DataStream.Write(TmpStr[1], Length(TmpStr));
        end;

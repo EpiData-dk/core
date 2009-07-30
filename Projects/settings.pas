@@ -16,7 +16,7 @@ type
     cancelBut: TButton;
     applyBut: TButton;
     okBut: TButton;
-    ComboBox1: TComboBox;
+    dateFmtCombo: TComboBox;
     decCombo: TComboBox;
     dateCombo: TComboBox;
     decEdit: TEdit;
@@ -24,7 +24,11 @@ type
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
+    procedure applyButClick(Sender: TObject);
+    procedure dateFmtComboChange(Sender: TObject);
     procedure decComboChange(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure okButClick(Sender: TObject);
   private
     { private declarations }
   public
@@ -35,6 +39,9 @@ var
   SettingsForm: TSettingsForm;
 
 implementation
+
+uses
+  UEpiDataGlobals;
 
 { TSettingsForm }
 
@@ -47,9 +54,59 @@ begin
     edit := decEdit;
     if Sender = dateCombo then
       edit := dateEdit;
-
     edit.Visible := (Items[ItemIndex] = 'Other');
   end;
+  applyBut.Enabled := true;
+end;
+
+procedure TSettingsForm.applyButClick(Sender: TObject);
+begin
+  EpiExternalFormatSettings.DecimalSepator :=
+    BoolToStr(decCombo.ItemIndex = decCombo.Items.Count - 1 ,
+      decEdit.Text, decCombo.Items[decCombo.ItemIndex])[1];
+  EpiExternalFormatSettings.DateSeparator :=
+    BoolToStr(dateCombo.ItemIndex = dateCombo.Items.Count - 1 ,
+      dateEdit.Text, dateCombo.Items[dateCombo.ItemIndex])[1];
+  EpiExternalFormatSettings.DateFormat :=
+    TEpiDateFormat(dateFmtCombo.ItemIndex);
+  applyBut.Enabled := false;
+end;
+
+procedure TSettingsForm.dateFmtComboChange(Sender: TObject);
+begin
+  applyBut.Enabled := true;
+end;
+
+procedure TSettingsForm.FormCreate(Sender: TObject);
+var
+  i: LongInt;
+begin
+  i := decCombo.Items.IndexOf(EpiExternalFormatSettings.DecimalSepator);
+  if i = -1 then
+  begin
+    decCombo.ItemIndex := decCombo.Items.Count - 1;
+    decComboChange(decCombo);
+    decEdit.Text := EpiExternalFormatSettings.DecimalSepator;
+  end else
+    decCombo.ItemIndex := i;
+
+  i := dateCombo.Items.IndexOf(EpiExternalFormatSettings.DateSeparator);
+  if i = -1 then
+  begin
+    dateCombo.ItemIndex := dateCombo.Items.Count - 1;
+    decComboChange(dateCombo);
+    dateEdit.Text := EpiExternalFormatSettings.DateSeparator;
+  end else
+    dateCombo.ItemIndex := i;
+
+  dateFmtCombo.ItemIndex := Ord(EpiExternalFormatSettings.DateFormat);
+
+  applyBut.Enabled := false;
+end;
+
+procedure TSettingsForm.okButClick(Sender: TObject);
+begin
+  applyButClick(self);
 end;
 
 initialization

@@ -14,7 +14,7 @@ object ImportForm: TImportForm
     Top = 8
     Width = 600
     Caption = 'Import format'
-    ClientHeight = 165
+    ClientHeight = 168
     ClientWidth = 596
     TabOrder = 0
     object openBtn: TSpeedButton
@@ -44,7 +44,7 @@ object ImportForm: TImportForm
       Left = 14
       Height = 22
       Top = 7
-      Width = 64
+      Width = 59
       Caption = 'Guess'
       Checked = True
       OnChange = guessRadioChange
@@ -55,7 +55,7 @@ object ImportForm: TImportForm
       Left = 14
       Height = 22
       Top = 39
-      Width = 107
+      Width = 91
       Caption = 'Fixed format'
       Enabled = False
       OnChange = guessRadioChange
@@ -66,7 +66,7 @@ object ImportForm: TImportForm
       Left = 14
       Height = 22
       Top = 71
-      Width = 140
+      Width = 116
       Caption = 'Delimited format:'
       OnChange = guessRadioChange
       TabOrder = 2
@@ -80,9 +80,9 @@ object ImportForm: TImportForm
       EditLabel.AnchorSideLeft.Control = qesEdit
       EditLabel.AnchorSideBottom.Control = qesEdit
       EditLabel.Left = 166
-      EditLabel.Height = 18
-      EditLabel.Top = 17
-      EditLabel.Width = 58
+      EditLabel.Height = 15
+      EditLabel.Top = 20
+      EditLabel.Width = 52
       EditLabel.Caption = 'QES File:'
       EditLabel.ParentColor = False
       Font.Height = -11
@@ -102,15 +102,15 @@ object ImportForm: TImportForm
       Visible = False
       object Label1: TLabel
         Left = 14
-        Height = 18
+        Height = 15
         Top = 8
-        Width = 66
+        Width = 53
         Caption = 'Delimiter:'
         ParentColor = False
       end
       object delimiterCombo: TComboBox
         Left = 94
-        Height = 31
+        Height = 28
         Top = 3
         Width = 100
         Font.Height = -13
@@ -130,7 +130,7 @@ object ImportForm: TImportForm
       end
       object delimiterEdit: TEdit
         Left = 214
-        Height = 27
+        Height = 24
         Top = 3
         Width = 40
         TabOrder = 1

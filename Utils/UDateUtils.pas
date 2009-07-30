@@ -149,14 +149,17 @@ begin
 end;
 
 Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;
+var
+  Ds: Char;
 BEGIN
+  Ds := EpiInternalFormatSettings.DateSeparator;
   Case Ft of
     ftEuroDate, ftEuroToday:
-      Result := FormatDateTime('dd"' + DateSeparator + '"mm"' + DateSeparator + '"yyyy', aDate);
+      Result := FormatDateTime('dd"' + Ds + '"mm"' + Ds + '"yyyy', aDate);
     ftYMDDate, ftYMDtoday:
-      Result := FormatDateTime('yyyy"' + DateSeparator + '"mm"' + DateSeparator + '"dd', aDate);
+      Result := FormatDateTime('yyyy"' + Ds + '"mm"' + Ds + '"dd', aDate);
   ELSE
-    Result := FormatDateTime('mm"' + DateSeparator + '"dd"' + DateSeparator + '"yyyy', aDate);
+    Result := FormatDateTime('mm"' + Ds + '"dd"' + Ds + '"yyyy', aDate);
   end;
 END;
 

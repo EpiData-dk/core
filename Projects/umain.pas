@@ -121,7 +121,6 @@ var
   Lst: TStrings;
   TmpStr: String;
 begin
-
   if (not clipBrdChkBox.Checked) and (Trim(edInputFile.Text) = '') then exit;
 
   try
@@ -245,7 +244,7 @@ begin
         if ShowAsLabels then
           sg.Cells[PostInc(i), row] := df[col].AsValue
         else
-          sg.Cells[PostInc(i), row] := df[col].AsData;
+          sg.Cells[PostInc(i), row] := df[col].AsFmtData;
       end;
     end;
   end;

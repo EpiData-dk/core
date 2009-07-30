@@ -32,7 +32,7 @@ type
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
   function IsInteger(const Value: string): boolean;
-  function IsFloat(const Value: string): boolean;
+  function IsFloat(var Value: string): boolean;
   function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
 
   // Custom operators.
@@ -155,14 +155,13 @@ begin
   Result := (Code = 0);
 end;
 
-function IsFloat(const Value: string): boolean;
+function IsFloat(var Value: string): boolean;
 var
   Code: integer;
   V: Extended;
-  TmpStr: String;
 begin
-  TmpStr := StringReplace(Value, ',', '.', [rfReplaceAll]);
-  Val(TmpStr, V, Code);
+  Value := StringReplace(Value, ',', EpiInternalFormatSettings.DecimalSepator, [rfReplaceAll]);
+  Val(Value, V, Code);
   Result := (Code = 0);
 end;
 
