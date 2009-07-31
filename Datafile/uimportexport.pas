@@ -1321,7 +1321,7 @@ begin
     for i := StrToInt(BoolToStr(skipfirstline, '1', '0')) to ImportLines.Count -1 do
     begin
       if Trim(ImportLines[i]) = '' then continue;
-      SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+      SplitString(SysToUTF8(ImportLines[i]), FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
 
       if FieldLines.Count > NumDataFields then
       begin

@@ -149,8 +149,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="26" Y="462"/>
-        <TopLine Value="443"/>
+        <CursorPos X="44" Y="1324"/>
+        <TopLine Value="1335"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -701,66 +701,66 @@
         <UsageCount Value="10"/>
       </Unit93>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="30" HistoryIndex="28">
       <Position1>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="336" Column="1" TopLine="317"/>
+        <Caret Line="330" Column="1" TopLine="311"/>
       </Position1>
       <Position2>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="328" Column="1" TopLine="309"/>
+        <Caret Line="331" Column="1" TopLine="312"/>
       </Position2>
       <Position3>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="330" Column="1" TopLine="311"/>
+        <Caret Line="332" Column="1" TopLine="313"/>
       </Position3>
       <Position4>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="331" Column="1" TopLine="312"/>
+        <Caret Line="333" Column="1" TopLine="314"/>
       </Position4>
       <Position5>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="332" Column="1" TopLine="313"/>
+        <Caret Line="334" Column="1" TopLine="315"/>
       </Position5>
       <Position6>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="333" Column="1" TopLine="314"/>
+        <Caret Line="335" Column="1" TopLine="316"/>
       </Position6>
       <Position7>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="334" Column="1" TopLine="315"/>
+        <Caret Line="336" Column="1" TopLine="317"/>
       </Position7>
       <Position8>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="335" Column="1" TopLine="316"/>
+        <Caret Line="328" Column="1" TopLine="309"/>
       </Position8>
       <Position9>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="336" Column="1" TopLine="317"/>
+        <Caret Line="330" Column="1" TopLine="311"/>
       </Position9>
       <Position10>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="328" Column="1" TopLine="309"/>
+        <Caret Line="331" Column="1" TopLine="312"/>
       </Position10>
       <Position11>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="330" Column="1" TopLine="311"/>
+        <Caret Line="332" Column="1" TopLine="313"/>
       </Position11>
       <Position12>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="331" Column="1" TopLine="312"/>
+        <Caret Line="333" Column="1" TopLine="314"/>
       </Position12>
       <Position13>
-        <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="332" Column="1" TopLine="313"/>
+        <Filename Value="..\Utils\UStringUtils.pas"/>
+        <Caret Line="100" Column="1" TopLine="81"/>
       </Position13>
       <Position14>
-        <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="333" Column="1" TopLine="314"/>
+        <Filename Value="..\Utils\UStringUtils.pas"/>
+        <Caret Line="101" Column="1" TopLine="82"/>
       </Position14>
       <Position15>
         <Filename Value="..\Utils\UStringUtils.pas"/>
-        <Caret Line="100" Column="1" TopLine="81"/>
+        <Caret Line="102" Column="1" TopLine="83"/>
       </Position15>
       <Position16>
         <Filename Value="..\Utils\UStringUtils.pas"/>
@@ -784,43 +784,43 @@
       </Position20>
       <Position21>
         <Filename Value="..\Utils\UStringUtils.pas"/>
-        <Caret Line="102" Column="1" TopLine="83"/>
+        <Caret Line="103" Column="1" TopLine="84"/>
       </Position21>
       <Position22>
-        <Filename Value="..\Utils\UStringUtils.pas"/>
-        <Caret Line="101" Column="1" TopLine="82"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="334" Column="1" TopLine="315"/>
       </Position22>
       <Position23>
-        <Filename Value="..\Utils\UStringUtils.pas"/>
-        <Caret Line="103" Column="1" TopLine="84"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="335" Column="1" TopLine="316"/>
       </Position23>
       <Position24>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="334" Column="1" TopLine="315"/>
+        <Caret Line="336" Column="1" TopLine="317"/>
       </Position24>
       <Position25>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="335" Column="1" TopLine="316"/>
+        <Caret Line="328" Column="1" TopLine="309"/>
       </Position25>
       <Position26>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="336" Column="1" TopLine="317"/>
+        <Caret Line="330" Column="1" TopLine="311"/>
       </Position26>
       <Position27>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="328" Column="1" TopLine="309"/>
+        <Caret Line="462" Column="37" TopLine="455"/>
       </Position27>
       <Position28>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="330" Column="1" TopLine="311"/>
+        <Caret Line="318" Column="1" TopLine="299"/>
       </Position28>
       <Position29>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="462" Column="37" TopLine="455"/>
+        <Caret Line="1314" Column="21" TopLine="1291"/>
       </Position29>
       <Position30>
         <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="318" Column="1" TopLine="299"/>
+        <Caret Line="144" Column="19" TopLine="125"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>
