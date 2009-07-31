@@ -327,7 +327,7 @@ begin
     w := 0;
     for i := 0 to LineCount - 1 do
     begin
-      TmpStr := TrimRight(UTF8Encode(Lines[i]));
+      TmpStr := TrimRight(SysToUTF8(Lines[i]));
       if Trim(TmpStr) = '' then continue;
       Inc(w);
       inc(tabcount, StrCountChars(TmpStr, [#9]));
@@ -344,7 +344,7 @@ begin
     { Look for field separator char }
     for i :=0 to LineCount - 1 do
     begin
-      TmpStr := TrimRight(Lines[i]);
+      TmpStr := TrimRight(SysToUTF8(Lines[i]));
       if trim(TmpStr)='' then continue;
 
       if (istab) then
@@ -392,7 +392,7 @@ begin
     SetLength(FtList, FieldCount);
     for i := 1 to LineCount - 1 do
     begin
-      TmpStr := Lines[i];
+      TmpStr := SysToUTF8(Lines[i]);
       if Trim(TmpStr) = '' then continue;
 
       SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
@@ -459,7 +459,7 @@ begin
 
     // Guess field names (and variable labels).
     FieldNameInRow1 := false;
-    SplitString(Lines[0], FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+    SplitString(SysToUTF8(Lines[0]), FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
     for i := 0 to FieldStrings.Count - 1 do
     begin
       TmpStr := FieldStrings[i];
