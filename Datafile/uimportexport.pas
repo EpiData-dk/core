@@ -315,7 +315,6 @@ var
   FieldNameInRow1: Boolean;
   ok: Boolean;
 begin
-  // TODO -o Torsten: GuessTxtFile
   result := false;
   SkipFirstLine := false;
 
@@ -328,7 +327,7 @@ begin
     w := 0;
     for i := 0 to LineCount - 1 do
     begin
-      TmpStr := TrimRight(Lines[i]);
+      TmpStr := TrimRight(UTF8Encode(Lines[i]));
       if Trim(TmpStr) = '' then continue;
       Inc(w);
       inc(tabcount, StrCountChars(TmpStr, [#9]));
@@ -393,7 +392,7 @@ begin
     SetLength(FtList, FieldCount);
     for i := 1 to LineCount - 1 do
     begin
-      TmpStr := UTF8Encode(Lines[i]);
+      TmpStr := Lines[i];
       if Trim(TmpStr) = '' then continue;
 
       SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
@@ -1288,7 +1287,7 @@ begin
     begin
       if Clipboard.HasFormat(CF_Text) then
       begin
-        TmpStr := Clipboard.AsText;
+        TmpStr := UTF8Encode(Clipboard.AsText);
         TmpStr := StringReplace(TmpStr, #13#10, #1, [rfReplaceAll]);
         ImportLines.Delimiter := #1;
         ImportLines.StrictDelimiter := true;

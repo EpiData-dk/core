@@ -41,7 +41,7 @@ var
 implementation
 
 uses
-  UEpiDataGlobals;
+  UEpiDataGlobals, UEpiUtils;
 
 { TSettingsForm }
 
