@@ -67,8 +67,6 @@ begin
   EpiExternalFormatSettings.DateSeparator :=
     BoolToStr(dateCombo.ItemIndex = dateCombo.Items.Count - 1 ,
       dateEdit.Text, dateCombo.Items[dateCombo.ItemIndex])[1];
-  EpiExternalFormatSettings.DateFormat :=
-    TEpiDateFormat(dateFmtCombo.ItemIndex);
   applyBut.Enabled := false;
 end;
 
@@ -98,8 +96,6 @@ begin
     dateEdit.Text := EpiExternalFormatSettings.DateSeparator;
   end else
     dateCombo.ItemIndex := i;
-
-  dateFmtCombo.ItemIndex := Ord(EpiExternalFormatSettings.DateFormat);
 
   applyBut.Enabled := false;
 end;

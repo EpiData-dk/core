@@ -151,9 +151,11 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="43" Y="2076"/>
-        <TopLine Value="157"/>
+        <CursorPos X="21" Y="1315"/>
+        <TopLine Value="1296"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="217"/>
+        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\Datafile\UValueLabels.pas"/>
@@ -192,8 +194,8 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDateUtils"/>
         <CursorPos X="1" Y="170"/>
-        <TopLine Value="166"/>
-        <EditorIndex Value="5"/>
+        <TopLine Value="163"/>
+        <EditorIndex Value="9"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit17>
@@ -223,9 +225,9 @@
         <Filename Value="..\Utils\UStringUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UStringUtils"/>
-        <CursorPos X="42" Y="18"/>
-        <TopLine Value="1"/>
-        <EditorIndex Value="4"/>
+        <CursorPos X="3" Y="100"/>
+        <TopLine Value="96"/>
+        <EditorIndex Value="8"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit21>
@@ -270,9 +272,9 @@
         <Filename Value="..\Utils\uepidataglobals.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataGlobals"/>
-        <CursorPos X="5" Y="17"/>
-        <TopLine Value="1"/>
-        <EditorIndex Value="3"/>
+        <CursorPos X="1" Y="80"/>
+        <TopLine Value="52"/>
+        <EditorIndex Value="7"/>
         <UsageCount Value="224"/>
         <Loaded Value="True"/>
       </Unit27>
@@ -407,7 +409,7 @@
         <UnitName Value="uimportform"/>
         <CursorPos X="71" Y="72"/>
         <TopLine Value="53"/>
-        <UsageCount Value="168"/>
+        <UsageCount Value="171"/>
       </Unit47>
       <Unit48>
         <Filename Value="..\..\..\localtest\ImportUnit.pas"/>
@@ -465,15 +467,19 @@
       </Unit55>
       <Unit56>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\classesh.inc"/>
-        <CursorPos X="14" Y="555"/>
-        <TopLine Value="536"/>
+        <CursorPos X="15" Y="532"/>
+        <TopLine Value="513"/>
+        <EditorIndex Value="3"/>
         <UsageCount Value="17"/>
+        <Loaded Value="True"/>
       </Unit56>
       <Unit57>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\streams.inc"/>
-        <CursorPos X="18" Y="672"/>
-        <TopLine Value="656"/>
+        <CursorPos X="17" Y="452"/>
+        <TopLine Value="445"/>
+        <EditorIndex Value="4"/>
         <UsageCount Value="16"/>
+        <Loaded Value="True"/>
       </Unit57>
       <Unit58>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\inc\system.inc"/>
@@ -484,9 +490,11 @@
       <Unit59>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\unix\sysutils.pp"/>
         <UnitName Value="sysutils"/>
-        <CursorPos X="3" Y="343"/>
-        <TopLine Value="340"/>
-        <UsageCount Value="9"/>
+        <CursorPos X="63" Y="408"/>
+        <TopLine Value="408"/>
+        <EditorIndex Value="6"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
       </Unit59>
       <Unit60>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\sysinth.inc"/>
@@ -534,8 +542,8 @@
       </Unit66>
       <Unit67>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\stringl.inc"/>
-        <CursorPos X="3" Y="684"/>
-        <TopLine Value="682"/>
+        <CursorPos X="10" Y="474"/>
+        <TopLine Value="479"/>
         <UsageCount Value="10"/>
       </Unit67>
       <Unit68>
@@ -609,9 +617,11 @@
       </Unit78>
       <Unit79>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\filutilh.inc"/>
-        <CursorPos X="10" Y="86"/>
-        <TopLine Value="62"/>
-        <UsageCount Value="9"/>
+        <CursorPos X="10" Y="74"/>
+        <TopLine Value="55"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
       </Unit79>
       <Unit80>
         <Filename Value="..\..\..\..\..\..\usr\local\share\lazarus\lcl\include\lclintf.inc"/>
@@ -651,11 +661,9 @@
         <ComponentName Value="SettingsForm"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Settings"/>
-        <CursorPos X="29" Y="104"/>
-        <TopLine Value="75"/>
-        <EditorIndex Value="2"/>
-        <UsageCount Value="28"/>
-        <Loaded Value="True"/>
+        <CursorPos X="1" Y="70"/>
+        <TopLine Value="56"/>
+        <UsageCount Value="31"/>
       </Unit85>
       <Unit86>
         <Filename Value="settings.lrs"/>
@@ -695,11 +703,39 @@
         <UsageCount Value="10"/>
       </Unit91>
     </Units>
-    <JumpHistory Count="1" HistoryIndex="0">
+    <JumpHistory Count="8" HistoryIndex="5">
       <Position1>
         <Filename Value="umain.pas"/>
         <Caret Line="165" Column="9" TopLine="139"/>
       </Position1>
+      <Position2>
+        <Filename Value="..\Utils\uepidataglobals.pas"/>
+        <Caret Line="16" Column="1" TopLine="1"/>
+      </Position2>
+      <Position3>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1298" Column="26" TopLine="1272"/>
+      </Position3>
+      <Position4>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1284" Column="25" TopLine="1272"/>
+      </Position4>
+      <Position5>
+        <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\classesh.inc"/>
+        <Caret Line="604" Column="28" TopLine="597"/>
+      </Position5>
+      <Position6>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="1315" Column="21" TopLine="1296"/>
+      </Position6>
+      <Position7>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="353" Column="25" TopLine="338"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\Utils\UStringUtils.pas"/>
+        <Caret Line="100" Column="3" TopLine="96"/>
+      </Position8>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

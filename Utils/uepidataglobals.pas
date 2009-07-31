@@ -10,11 +10,9 @@ uses
 type
   TCharSet = Set of Char;
 
-  TEpiDateFormat = (eDMY, eMDY, eYMD);
   TEpiSettings = record
     DateSeparator: Char;
     DecimalSepator: Char;
-    DateFormat: TEpiDateFormat;
   end;
 
 CONST
@@ -79,7 +77,6 @@ const
   EpiInternalFormatSettings: TEpiSettings = (
     DateSeparator:  '/';
     DecimalSepator: '.';
-    DateFormat:     eDMY;
   );
 
   {$I ErrorCodes.inc}

@@ -393,7 +393,7 @@ begin
     SetLength(FtList, FieldCount);
     for i := 1 to LineCount - 1 do
     begin
-      TmpStr := Lines[i];
+      TmpStr := UTF8Encode(Lines[i]);
       if Trim(TmpStr) = '' then continue;
 
       SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
