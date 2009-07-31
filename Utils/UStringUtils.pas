@@ -98,8 +98,18 @@ var
   i: integer;
 begin
   result := 0;
-  for i := 1 to Length(Source) do
-    if Source[i] in FindChars then inc(result);
+  i := 1;
+  while i < Length(Source) do
+  begin
+    if Source[i] in FindChars then
+      inc(result);
+    // TODO : Change to variable quote.
+    if Source[i] = '"' then
+    begin
+      repeat inc(i) until (i >= Length(Source)) or (Source[i] = '"');
+    end;
+    inc(i);
+  end;
 end;
 
 function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
