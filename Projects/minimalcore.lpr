@@ -11,6 +11,7 @@ uses
   Interfaces, // this includes the LCL widgetset
   Forms
   { you can add units after this }, LResources,
+  cwstring,
   {$IFDEF EPIWARNING}
   UWarning,
   Controls,

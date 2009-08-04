@@ -50,43 +50,12 @@ type
 
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
-
-{$IFNDEF FPC}
-type
-  DWORDLONG = Int64;
-
-  PMemoryStatusEx = ^TMemoryStatusEx;
-  _MEMORYSTATUSEX = record
-    dwLength:                DWORD;
-    dwMemoryLoad:            DWORD;
-    ullTotalPhys:            DWORDLONG;
-    ullAvailPhys:            DWORDLONG;
-    ullTotalPageFile:        DWORDLONG;
-    ullAvailPageFile:        DWORDLONG;
-    ullTotalVirtual:         DWORDLONG;
-    ullAvailVirtual:         DWORDLONG;
-    ullAvailExtendedVirtual: DWORDLONG
-  end;
-  {$EXTERNALSYM _MEMORYSTATUSEX}
-  TMemoryStatusEx = _MEMORYSTATUSEX;
-  MEMORYSTATUSEx = _MEMORYSTATUSEX;
-  {$EXTERNALSYM MEMORYSTATUSEX}
-
-
-  procedure GlobalMemoryStatusEx(var lpBuffer: TMemoryStatusEx); stdcall;
-  {$EXTERNALSYM GlobalMemoryStatusEx}
-{$ENDIF}
-  
 implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
   UDateUtils, Math;
 
-{$IFNDEF FPC}
-procedure GlobalMemoryStatusEx; external kernel32 name 'GlobalMemoryStatusEx';
-{$ENDIf}
-  
 function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
 var
   i: integer;
@@ -147,6 +116,10 @@ begin
   end;
 end;
 
+{$IFOPT R+}
+{$DEFINE EPI_R_DEFINED}
+{$ENDIF}
+{$R-}
 function IsInteger(const Value: string): boolean;
 var
   V, Code: integer;
@@ -164,6 +137,10 @@ begin
   Val(Value, V, Code);
   Result := (Code = 0);
 end;
+{$IFDEF EPI_R_DEFINED}
+{$UNDEF EPI_R_DEFINED}
+{$R+}
+{$ENDIF}
 
 // FindFieldType:
 //  - Tries to find the field type based on the following precedence: (lowest first)
@@ -191,30 +168,6 @@ begin
   Inc(I, N);
 end;
 
-{$IFNDEF FPC}
-procedure GetBuildInfo(var PrgInfo: TPrgVersionInfo);
-var
-  VerInfoSize:  DWORD;
-  VerInfo:      Pointer;
-  VerValueSize: DWORD;
-  VerValue:     PVSFixedFileInfo;
-  Dummy:        DWORD;
-begin
-  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
-  GetMem(VerInfo, VerInfoSize);
-  GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
-  VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize);
-  with VerValue^ do
-  begin
-    PrgInfo.Major   := dwFileVersionMS shr 16;
-    PrgInfo.Minor   := dwFileVersionMS and $FFFF;
-    PrgInfo.Release := dwFileVersionLS shr 16;
-    PrgInfo.Build   := dwFileVersionLS and $FFFF;
-  end;
-  FreeMem(VerInfo, VerInfoSize);
-end;
-{$ENDIF FPC}
-
 function BoolStrToInt(const AValue: string): integer;
 begin
   Result := 0;
@@ -241,13 +194,7 @@ end;
 
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var
-  {$IFNDEF LINUX}
-  {$IFNDEF FPC}
-  Ms: TMemoryStatus;
-  MsEx: TMemoryStatusEx;
-  Ovi: TOSVersionInfo;
-  {$ENDIF FPC}
-  {$ELSE LINUX}
+  {$IFDEF LINUX}
   PInfo: PSysInfo;
   Info: TSysInfo;
   UName: UtsName;
@@ -279,32 +226,6 @@ begin
   CSI.PrgVersion.Release := 1;
   CSI.PrgVersion.Build   := 94;
 
-
-
-{  {$ELSE}
-  {$IFNDEF FPC}
-  GetBuildInfo(CSI.PrgVersion);
-  Ovi.dwOSVersionInfoSize := SizeOf(TOSVersionInfo);
-  GetVersionEx(Ovi);
-
-  CSI.OSName         := 'Windows';
-  CSI.OSMajorVersion := Ovi.dwMajorVersion;
-  CSI.OSMinorVersion := Ovi.dwMinorVersion;
-
-  if (Ovi.dwMajorVersion < 5) or (Ovi.dwPlatformId <> VER_PLATFORM_WIN32_NT) then
-  begin
-    Ms.dwLength := SizeOf(TMemoryStatus);
-    GlobalMemoryStatus(Ms);
-    CSI.MemSize := Ms.dwTotalPhys;
-    CSI.MemUsage := Ms.dwMemoryLoad;
-  end else begin
-    MsEx.dwLength := SizeOf(TMemoryStatusEx);
-    GlobalMemoryStatusEx(MsEx);
-    CSI.MemSize := MsEx.ullTotalPhys;
-    CSI.MemUsage := MsEx.dwMemoryLoad;
-  end;
-  {$ENDIF}
-  {$ENDIF}             }
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!
   CSI.CoreRevision := 0;

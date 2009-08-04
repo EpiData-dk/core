@@ -243,6 +243,7 @@ begin
     Result := Result + Src[i];
     Inc(i);
   end;
+//  Result := EpiUnknownStrToUTF8(Result);
 end;
 
 procedure TEpiImportExport.WriteBuf(Buf: Array of Byte; Count: Integer);
@@ -327,7 +328,7 @@ begin
     w := 0;
     for i := 0 to LineCount - 1 do
     begin
-      TmpStr := TrimRight(SysToUTF8(Lines[i]));
+      TmpStr := TrimRight(Lines[i]);
       if Trim(TmpStr) = '' then continue;
       Inc(w);
       inc(tabcount, StrCountChars(TmpStr, [#9]));
@@ -344,7 +345,7 @@ begin
     { Look for field separator char }
     for i :=0 to LineCount - 1 do
     begin
-      TmpStr := TrimRight(SysToUTF8(Lines[i]));
+      TmpStr := TrimRight(Lines[i]);
       if trim(TmpStr)='' then continue;
 
       if (istab) then
@@ -392,7 +393,7 @@ begin
     SetLength(FtList, FieldCount);
     for i := 1 to LineCount - 1 do
     begin
-      TmpStr := SysToUTF8(Lines[i]);
+      TmpStr := Lines[i];
       if Trim(TmpStr) = '' then continue;
 
       SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
@@ -459,7 +460,7 @@ begin
 
     // Guess field names (and variable labels).
     FieldNameInRow1 := false;
-    SplitString(SysToUTF8(Lines[0]), FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+    SplitString(Lines[0], FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
     for i := 0 to FieldStrings.Count - 1 do
     begin
       TmpStr := FieldStrings[i];
@@ -521,7 +522,7 @@ var
   TypeList,
   CharBuf: Array of Char;
   NVar, NObs, CurRec, CurField,
-  I, J, TmpInt: integer;
+  Sum, I, J, TmpInt: integer;
   TmpFlt: Double;
   TmpField: TEpiField;
   StrBuf: string;
@@ -710,6 +711,7 @@ begin
     SetLength(CharBuf, FieldNameLength * NVar);
     DataStream.Read(CharBuf[0], FieldNameLength * NVar);
 
+    Sum := 0;
     FOR i := 0 TO NVar - 1 DO
     BEGIN
       TmpField := TEpiField.Create();
@@ -772,6 +774,9 @@ begin
         INC(J);
       until not FieldExists(StrBuf);
       TmpField.FieldName := Trim(StrBuf);
+
+//      WriteLn(Format('Length %d of Field: %s', [TmpField.FieldLength, TmpField.FieldName]));
+      Inc(Sum, TmpField.FieldLength);
 
       AddField(TmpField);
     END;
@@ -970,7 +975,12 @@ begin
             SetLength(CharBuf, TmpField.FieldLength div 2);
             FillChar(CharBuf[0], Length(CharBuf), 0);
             DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
-            StrBuf := SysToUTF8(String(CharBuf));
+            // Hack - for some reason an empty PChar strings are not correctly assing the empty string.
+            // => garbage is be stored in StrBuf!
+            if CharBuf[0] = #0 then
+              StrBuf := ''
+            else
+              StrBuf := EpiUnknownStrToUTF8(String(CharBuf));
           end;
 
           IF (StrBuf <> '') AND (TmpField.Fieldtype in DateFieldTypes) THEN
@@ -1249,7 +1259,7 @@ function TEpiImportExport.ImportTXT(const aFilename: string;
 var
   QESHandler: TQesHandler;
   ImportLines: TStrings;
-  TmpStr: String;
+  TmpStr, EncStr: String;
   FieldLines: TStringList;
   i: Integer;
   j: Integer;
@@ -1287,14 +1297,16 @@ begin
     begin
       if Clipboard.HasFormat(CF_Text) then
       begin
-        TmpStr := UTF8Encode(Clipboard.AsText);
+        TmpStr := EpiUnknownStrToUTF8(Clipboard.AsText);
         TmpStr := StringReplace(TmpStr, #13#10, #1, [rfReplaceAll]);
         ImportLines.Delimiter := #1;
         ImportLines.StrictDelimiter := true;
         ImportLines.DelimitedText := TmpStr;
       end;
-    end else
+    end else begin
       ImportLines.LoadFromFile(aFileName);
+      EpiUnknownStringsToUTF8(ImportLines);
+    end;
 
     if ImportLines.Count = 0 then
     begin
@@ -1321,7 +1333,7 @@ begin
     for i := StrToInt(BoolToStr(skipfirstline, '1', '0')) to ImportLines.Count -1 do
     begin
       if Trim(ImportLines[i]) = '' then continue;
-      SplitString(SysToUTF8(ImportLines[i]), FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+      SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
 
       if FieldLines.Count > NumDataFields then
       begin
@@ -1333,6 +1345,7 @@ begin
       for j := 0 to FieldLines.Count -1 do
       begin
         TmpStr   := FieldLines[j];
+        if TmpStr = '.' then TmpStr := '';
         TmpField := DataFields[j];
         case TmpField.FieldType of
           ftInteger, ftIDNUM:
@@ -1356,7 +1369,7 @@ begin
           ftYMDDate,ftYMDToday,ftEuroToday:
             ok := EpiIsDate(TmpStr, TmpField.FieldType);
         end;
-        if not ok then
+        if (not ok) and (TmpStr <> '') then
         begin
           ErrorCode := EPI_IMPORT_FAILED;
           ErrorText := Format(Lang(0, 'Error in line %d') + #13#10 +
@@ -1546,11 +1559,11 @@ begin
         CASE FieldType OF
           ftInteger, ftIDNUM:
             BEGIN
-              IF FieldLength < 3 THEN
+              IF FieldLength <= 2 THEN
                 TmpChar := ByteChar
-              ELSE IF FieldLength < 5 THEN
+              ELSE IF FieldLength <= MaxIntegerLength THEN
                 TmpChar := IntChar
-              ELSE IF FieldLength < 10 THEN
+              ELSE IF FieldLength <= 9 THEN
                 TmpChar := LongChar
               ELSE IF FieldLength >= 10 THEN
                 TmpChar := DoubleChar;  //&&

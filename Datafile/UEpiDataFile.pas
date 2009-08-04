@@ -1445,6 +1445,7 @@ procedure TEpiDataFile.Write(RecNumber: Integer = NewRecord);
 var
   Z, I: Integer;
   S, EncData: string;
+  T: String;
 
 begin
   // Sanity checks:
@@ -1454,8 +1455,10 @@ begin
   if EOFMarker then Z := 1 else Z := 0;
 
   if RecNumber = NewRecord then
+  begin
+    RecNumber := ((FDataStream.Size - Z) - FOffSet) div FFullrecLength + 1;
     FDataStream.Position := FDataStream.Size - Z
-  else
+  end else
     FDataStream.Position := FOffset + ((RecNumber - 1) * FFullRecLength);
 
   // TODO -O Torsten : Index on new record?.
@@ -1470,11 +1473,20 @@ begin
       FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
       EncData := B64Encode(EncData);
       FCrypter.Reset;
-      S := S + Format('%-*s', [FieldLength, EncData])
+      T := Format('%-*s', [FieldLength, EncData])
     end else if FieldType in [ftAlfa, ftUpperAlfa] then
-      S := S + Format('%-*s', [FieldLength, AsData])
+      T := Format('%-*s', [FieldLength, AsData])
     else
-      S := S + Format('%*s', [FieldLength, AsData]);
+      T := Format('%*s', [FieldLength, AsData]);
+
+    S := S + T;
+    if FieldLength <> Length(T) then
+    begin
+      ErrorCode := EPI_WRITE_ERROR;
+      ErrorText := Format(Lang(0, 'FieldLength (%d) does not fit length of data (%d). Field: %s. Record no: %d'),
+        [FieldLength, Length(T), FieldName, RecNumber]);
+      Abort;
+    end;
   end;
   Z := Length(S);
   if Z + 3 > MaxRecLineLength then

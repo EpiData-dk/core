@@ -79,10 +79,8 @@ begin
       if impform.ShowModal = mrCancel then exit;
       Result := Importer.ImportTXT(FileName, Df, impform.ImportSetting);
       FreeAndNil(impform);
-      WriteLn('impform');
     end;
     FreeAndNil(Importer);
-      WriteLn('Importer');
   end else begin
     Df := TEpiDataFile.Create(LoadOptions);
     Df.OnProgress := ShowProgress;

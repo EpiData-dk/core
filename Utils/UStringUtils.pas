@@ -25,11 +25,17 @@ type
   function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
   function StripWordsFromString(Const Source: string; StripWords: array of string): string;
 
+  // Conversion routines regarding UTF-8 etc.
+  function EpiUnknownStrToUTF8(const Source: string): string;
+  procedure EpiUnknownStringsToUTF8(Source: TStrings);
+
+
 implementation
 
 uses
-  Math,
+  Math, LConvEncoding,
   StrUtils;
+
 { TString }
 
 constructor TString.Create(const AStr: string) ;
@@ -124,7 +130,7 @@ begin
   // We may have reached the end.
   if PB^ = #0 then exit;
   PE := PB;
-  // Skip until end.
+  // Skip until end or EndChar.
   while not (PE^ in [#0, EndChar]) do PE := PE + 1;
   // If end is reached here, there were no termination to "between" section.
   if PE^= #0 then exit;
@@ -140,6 +146,24 @@ begin
   Result := Source;
   for i := 0 to NumWords -1 do
     Result := StringReplace(Result, StripWords[i], '', [rfIgnoreCase, rfReplaceAll]);
+end;
+
+function EpiUnknownStrToUTF8(const Source: string): string; overload;
+var
+  EncStr: String;
+begin
+  Result := '';
+  if Trim(Source) = '' then Exit;
+  EncStr := GuessEncoding(Source);
+  Result := ConvertEncoding(Source, EncStr, 'utf8');
+end;
+
+procedure EpiUnknownStringsToUTF8(Source: TStrings);
+var
+  i: Integer;
+begin
+  for i := 0 to Source.Count -1 do
+    Source[i] := EpiUnknownStrToUTF8(Source[i]);
 end;
        
 end.

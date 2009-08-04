@@ -217,7 +217,7 @@ begin
   if (not assigned(Df)) then exit;
 
   sg.ColCount := Df.NumDataFields + 1;
-  sg.RowCount := Df.NumRecords + 1;
+  sg.RowCount := Max(Df.NumRecords + 1, 1);
 
   if sg.ColCount > 1 then
     sg.FixedCols := 1;

@@ -28,11 +28,11 @@ CONST
   EOLchars:        array[0..2] of char = '!'#13#10;
   DaysInMonth:     ARRAY[1..12] OF BYTE = (31,29,31,30,31,30,31,31,30,31,30,31);
 
-  NumGuessLines         = 1000;
+  NumGuessLines         = 3000;
   MaxRecLineLength      = 78;
   MaxFieldNameLen       = 10;
   MaxIndices            = 3;
-  MaxIntegerLength      = 4;
+  MaxIntegerLength      = 5;
 
   ChkColorNames:   ARRAY[0..17] OF string =
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',
