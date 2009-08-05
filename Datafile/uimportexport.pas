@@ -459,12 +459,21 @@ begin
     end;
 
     // Guess field names (and variable labels).
+    // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
+    // - previously did not succeed. Make type = ftAlfa and Length = 1;
     FieldNameInRow1 := false;
     SplitString(Lines[0], FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
     for i := 0 to FieldStrings.Count - 1 do
     begin
       TmpStr := FieldStrings[i];
       TmpField := DataFile.DataFields[i];
+
+      if (TmpField.FieldLength = 0) and (TmpField.FieldType = ftInteger) then
+      begin
+        TmpField.FieldType := ftAlfa;
+        TmpField.FieldLength := 1;
+      end;
+
       case TmpField.FieldType of
         ftInteger, ftIDNUM:
           ok := IsInteger(TmpStr);
@@ -1816,8 +1825,8 @@ begin
       END;  //for CurObs
     EXCEPT
       ErrorCode := EPI_EXPORT_FAILED;
-      ErrorText := Format(Lang(22304, 'Error occured during export of record #%d'), [CurRec]);
-      EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 223042);
+      ErrorText := Format(Lang(22304, 'Error occured during export of record #%d, FieldNo: %d'), [CurRec, CurField]);
+      EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 22304);
       Exit;
     END;  //try..Except
 

@@ -2,7 +2,15 @@ program minimalcore;
 
 {$mode objfpc}{$H+}
 
-{.$DEFINE EPIWARNING}
+{$DEFINE EPI_DEBUG}
+
+{$IFDEF EPI_DEBUG}
+
+{$ELSE}
+  {$DEFINE EPIWARNING}
+{$ENDIF EPI_DEBUG}
+
+
 
 uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
@@ -11,15 +19,15 @@ uses
   Interfaces, // this includes the LCL widgetset
   Forms
   { you can add units after this }, LResources,
-  cwstring,
+  {$IFDEF UNIX}cwstring,{$ENDIF}
   {$IFDEF EPIWARNING}
   UWarning,
   Controls,
   {$ENDIF EPIWARNING}
   UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO, UCheckFileTypes,
-  UDataFileTypes, UEpiDataFile, uimportexport, UValueLabels, Base64, DCPcrypt,
+  UDataFileTypes, UEpiDataFile, UValueLabels, Base64, DCPcrypt,
   Rijndael, SHA1, UDateUtils, UEpiUtils, UStringUtils, UUtilTypes, UEpiLog,
-  uepidataglobals, UQesHandler, uimportform, Settings;
+  uepidataglobals, UQesHandler, UImportExport, uimportform, Settings;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 

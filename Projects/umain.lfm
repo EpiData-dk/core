@@ -1,11 +1,11 @@
 object MainForm: TMainForm
-  Left = 526
+  Left = 321
   Height = 647
-  Top = 283
+  Top = 254
   Width = 881
   ActiveControl = Panel1
   Caption = 'Core Test Project'
-  ClientHeight = 622
+  ClientHeight = 625
   ClientWidth = 881
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
@@ -133,7 +133,7 @@ object MainForm: TMainForm
     object CheckBox1: TCheckBox
       Left = 131
       Height = 22
-      Top = 88
+      Top = 83
       Width = 97
       Caption = 'Read CHK file'
       Checked = True
@@ -166,9 +166,9 @@ object MainForm: TMainForm
       TabOrder = 5
     end
     object CheckBox2: TCheckBox
-      Left = 555
+      Left = 552
       Height = 22
-      Top = 88
+      Top = 83
       Width = 98
       Caption = 'Write CHK file'
       Checked = True
@@ -262,7 +262,7 @@ object MainForm: TMainForm
   end
   object PageControl1: TPageControl
     Left = 0
-    Height = 414
+    Height = 417
     Top = 208
     Width = 881
     ActivePage = TabSheet5
@@ -271,11 +271,11 @@ object MainForm: TMainForm
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'
-      ClientHeight = 379
+      ClientHeight = 382
       ClientWidth = 875
       object Memo1: TMemo
         Left = 0
-        Height = 379
+        Height = 382
         Top = 0
         Width = 875
         Align = alClient
@@ -291,12 +291,12 @@ object MainForm: TMainForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Documentation:'
-      ClientHeight = 379
+      ClientHeight = 382
       ClientWidth = 875
       ImageIndex = 1
       object Memo2: TMemo
         Left = 0
-        Height = 379
+        Height = 382
         Top = 0
         Width = 875
         Align = alClient
@@ -310,24 +310,24 @@ object MainForm: TMainForm
     end
     object TabSheet4: TTabSheet
       Caption = 'ChkFiles'
-      ClientHeight = 379
+      ClientHeight = 382
       ClientWidth = 875
       ImageIndex = 2
       object Splitter1: TSplitter
         Left = 433
-        Height = 379
+        Height = 382
         Top = 0
         Width = 5
         Beveled = True
       end
       object Panel3: TPanel
         Left = 0
-        Height = 379
+        Height = 382
         Top = 0
         Width = 433
         Align = alLeft
         BevelOuter = bvNone
-        ClientHeight = 379
+        ClientHeight = 382
         ClientWidth = 433
         TabOrder = 0
         object Panel5: TPanel
@@ -357,7 +357,7 @@ object MainForm: TMainForm
         end
         object orgChkMemo: TMemo
           Left = 0
-          Height = 338
+          Height = 341
           Top = 41
           Width = 433
           Align = alClient
@@ -371,12 +371,12 @@ object MainForm: TMainForm
       end
       object Panel4: TPanel
         Left = 438
-        Height = 379
+        Height = 382
         Top = 0
         Width = 437
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 379
+        ClientHeight = 382
         ClientWidth = 437
         TabOrder = 1
         object Panel6: TPanel
@@ -404,7 +404,7 @@ object MainForm: TMainForm
         end
         object parsedChkMemo: TMemo
           Left = 0
-          Height = 338
+          Height = 341
           Top = 41
           Width = 437
           Align = alClient
@@ -419,12 +419,12 @@ object MainForm: TMainForm
     end
     object TabSheet3: TTabSheet
       Caption = 'Data'
-      ClientHeight = 379
+      ClientHeight = 382
       ClientWidth = 875
       ImageIndex = 2
       object sg: TStringGrid
         Left = 0
-        Height = 338
+        Height = 341
         Top = 41
         Width = 875
         Align = alClient
@@ -471,12 +471,12 @@ object MainForm: TMainForm
     end
     object TabSheet5: TTabSheet
       Caption = 'Log:'
-      ClientHeight = 379
+      ClientHeight = 385
       ClientWidth = 875
       ImageIndex = 4
       object Memo3: TMemo
         Left = 0
-        Height = 338
+        Height = 344
         Top = 41
         Width = 875
         Align = alClient
@@ -526,8 +526,8 @@ object MainForm: TMainForm
   end
   object SaveDialog1: TSaveDialog
     FilterIndex = 0
-    left = 731
-    top = 48
+    left = 752
+    top = 40
   end
   object MainMenu1: TMainMenu
     left = 355

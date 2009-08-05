@@ -135,6 +135,8 @@ var
 begin
   Value := StringReplace(Value, ',', EpiInternalFormatSettings.DecimalSepator, [rfReplaceAll]);
   Val(Value, V, Code);
+  if Value[Length(Value)] = EpiInternalFormatSettings.DecimalSepator then
+    Code := Length(Value);
   Result := (Code = 0);
 end;
 {$IFDEF EPI_R_DEFINED}
@@ -148,6 +150,8 @@ end;
 
 function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
 begin
+  if Trim(Value) = '' then exit(PrevFt);
+
   if (PrevFT = ftInteger)                                 and IsInteger(Value)             then result :=ftInteger
   else if (PrevFT in [ftInteger, ftFloat])                and IsFloat(Value)               then result :=ftFloat
   else if (PrevFT in [ftInteger, ftFloat, ftDate])        and EpiIsDate(Value, ftDate)     then result := ftDate

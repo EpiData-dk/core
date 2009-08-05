@@ -366,14 +366,16 @@ begin
   else
     Ext := '';
 
-  Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edInputFile.Text), Ext);
+  Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edOutputFile.Text), Ext);
   EpiLogger.Add('Saving file to: ' + ext, 2);
   SaveDialog1.FileName := ext;
+  {$IFNDEF EPI_DEBUG}
   if fileexists(ext) then
   begin
     EpiLogger.Add('Cannot overwrite existing file: ' + ext, 2);
-//    Exit;
+    Exit;
   end;
+  {$ENDIF EPI_DEBUG}
 
   if stataCombo.Visible then
   begin
