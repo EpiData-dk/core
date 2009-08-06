@@ -157,6 +157,7 @@ type
     function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile;
                     ExpSettings: PEpiTxtExportSettings): Boolean;
     function      ExportXLS(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportXPT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
@@ -2124,6 +2125,76 @@ end;
 function TEpiImportExport.ExportXLS(const aFilename: string;
   const DataFile: TEpiDataFile): Boolean;
 begin
+
+end;
+
+function TEpiImportExport.ExportXPT(const aFilename: string;
+  const DataFile: TEpiDataFile): Boolean;
+begin
+  // Export to SAS Xport Format.
+
+  {  Fields become:
+    == short -> 2 bytes
+    == long  -> 4 bytes
+    struct NAMESTR {
+      short   ntype;              /* VARIABLE TYPE: 1=NUMERIC, 2=CHAR    */
+      short   nhfun;              /* HASH OF NNAME (always 0)            */
+        = 0;
+      short   nlng;               /* LENGTH OF VARIABLE IN OBSERVATION   */
+      short   nvar0;              /* VARNUM                              */
+        = TEpiField.FieldNo;
+      char8   nname;              /* NAME OF VARIABLE                    */
+        = TEpiField.FieldName (chopped and uniqued to length 8)
+      char40  nlabel;             /* LABEL OF VARIABLE                   */
+        = TEpiField.VariableLabel;
+
+      char8   nform;              /* NAME OF FORMAT                      */
+      short   nfl;                /* FORMAT FIELD LENGTH OR 0            */
+      short   nfd;                /* FORMAT NUMBER OF DECIMALS           */
+      short   nfj;                /* 0=LEFT JUSTIFICATION, 1=RIGHT JUST  */
+        = 0;  (*We always want to use Left Adjustment!*)
+      char    nfill[2];           /* (UNUSED, FOR ALIGNMENT AND FUTURE)  */
+        = #0#0;
+      char8   niform;             /* NAME OF INPUT FORMAT                */
+        = #0#0#0#0#0#0#0#0;
+      short   nifl;               /* INFORMAT LENGTH ATTRIBUTE           */
+        = 0;
+      short   nifd;               /* INFORMAT NUMBER OF DECIMALS         */
+        = 0;
+      long    npos;               /* POSITION OF VALUE IN OBSERVATION    */
+        = Sum of nlng until this Field!
+      char    rest[52];           /* remaining fields are irrelevant     */
+        = #0 * 52;
+      };
+
+    Conversions:
+      ftAlfa, ftSoundex, ftUpperAlfa, ftCrypt, ftBoolean = (
+        ntype  = 2,
+        nlng   = TEpiField.FieldLength,
+        nform  = #0#0#0#0#0#0#0#0,
+        nlf    = 0,
+        nfd    = 0
+      )
+
+      DateFieldTypes = (
+        ntype  = 1,
+        nlng   = 8,
+        nform  =
+          ftDate, ftToday:         MMDDYY
+          ftEuroDate, ftEuroToday: DDMMYY
+          ftYMDDate, ftYMDToday:   YYMMDD,
+        nlf    = 10,
+        nfd    = 0,
+      )
+
+      ftInteger, ftFloat, ftIDNum = (
+        nTyp   = 1,
+        nlng   = 8,
+        nform  = ???? TODO!
+        nlf    = TEpiField.FieldLength
+        nfd    = TEpiField.NumDecimals
+      )
+  }
 
 end;
 
