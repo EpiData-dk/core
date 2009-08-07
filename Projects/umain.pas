@@ -319,12 +319,12 @@ begin
   cbDebug.Items.Add('4 - Very Verbose');
 
   // add instructions
-  Memo1.Lines.Add('Purpose of this application: Test core module for reading and saving data');
-  Memo1.Lines.Add('Do NOT use this as a conversion tool - except for test situations');
-  Memo1.Lines.Add('');
-  Memo1.Lines.Add('Report any problems and discuss on the EpiData list');
-  Memo1.Lines.Add('Use: Find files with the dialogs and click read - save or close');
-  Memo1.Lines.Add('The log contains calls to the core module depending on log level specified');
+  Memo3.Lines.Add('Purpose of this application: Test core module for reading and saving data');
+  Memo3.Lines.Add('Do NOT use this as a conversion tool - except for test situations');
+  Memo3.Lines.Add('');
+  Memo3.Lines.Add('Report any problems and discuss on the EpiData list');
+  Memo3.Lines.Add('Use: Find files with the dialogs and click read - save or close');
+  Memo3.Lines.Add('The log contains calls to the core module depending on log level specified');
 end;
 
 procedure TMainForm.Button2Click(Sender: TObject);
