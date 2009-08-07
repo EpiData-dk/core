@@ -721,7 +721,7 @@ begin
     SetLength(CharBuf, FieldNameLength * NVar);
     DataStream.Read(CharBuf[0], FieldNameLength * NVar);
 
-    Sum := 0;
+//    Sum := 0;
     FOR i := 0 TO NVar - 1 DO
     BEGIN
       TmpField := TEpiField.Create();
@@ -786,7 +786,7 @@ begin
       TmpField.FieldName := Trim(StrBuf);
 
 //      WriteLn(Format('Length %d of Field: %s', [TmpField.FieldLength, TmpField.FieldName]));
-      Inc(Sum, TmpField.FieldLength);
+//      Inc(Sum, TmpField.FieldLength);
 
       AddField(TmpField);
     END;
@@ -982,7 +982,9 @@ begin
               End;
           else
             // This is a string field.
-            SetLength(CharBuf, TmpField.FieldLength div 2);
+            // +1 Because we need a termination character in case all bytes in field
+            // are used for text.
+            SetLength(CharBuf, (TmpField.FieldLength div 2) + 1);
             FillChar(CharBuf[0], Length(CharBuf), 0);
             DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
             // Hack - for some reason an empty PChar strings are not correctly assing the empty string.
