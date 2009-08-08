@@ -325,6 +325,7 @@ begin
   Memo3.Lines.Add('Report any problems and discuss on the EpiData list');
   Memo3.Lines.Add('Use: Find files with the dialogs and click read - save or close');
   Memo3.Lines.Add('The log contains calls to the core module depending on log level specified');
+  Memo3.Lines.Add('============================================================================');
 end;
 
 procedure TMainForm.Button2Click(Sender: TObject);
@@ -343,9 +344,21 @@ begin
 end;
 
 procedure TMainForm.SpeedButton2Click(Sender: TObject);
+var
+   Ext: String;
 begin
   if SaveDialog1.Execute then
+    begin
     edOutputFile.Text := SaveDialog1.FileName;
+    case FileTypeCombo.ItemIndex of
+       0: Ext := '.rec';
+       1: Ext := '.dta';
+       2: Ext := '.dbf';
+       3: Ext := '.csv';
+       4: Ext := '.xls';
+    end;
+    edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
+    end;
 end;
 
 procedure TMainForm.saveBtnClick(Sender: TObject);
@@ -367,7 +380,7 @@ begin
     Ext := '';
 
   Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edOutputFile.Text), Ext);
-  EpiLogger.Add('Saving file to: ' + ext, 2);
+  EpiLogger.Add(('Saving file to: ' + BoolToStr(expclipBrdChkBox.Checked, 'Clipboard',Ext)), 1);
   SaveDialog1.FileName := ext;
   {$IFNDEF EPI_DEBUG}
   if fileexists(ext) then
