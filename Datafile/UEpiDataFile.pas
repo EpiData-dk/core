@@ -310,6 +310,8 @@ type
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
+       SetAllMissing: boolean = true); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -352,7 +354,7 @@ type
 
   { TEpiStringField }
   // Handles following field types:
-  // ftAlfa, ftUpperAlfa, ftSoundex, ftCrypt
+  // ftString, ftUpperAlfa, ftSoundex, ftCrypt
   TEpiStringField = class(TEpiField)
   private
     FData: array of string;
@@ -795,6 +797,12 @@ end;
 constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true);
 begin
   Reset();
+  Capacity := ASize;
+
+  if not SetAllMissing then exit;
+
+  for i := 1 to Size do
+    IsMissing[i] := true;
 end;
 
 constructor TEpiField.Create;
@@ -1192,10 +1200,10 @@ begin
         // This is not a data field, but a question field.
         if FieldLength = 0 then FieldType := ftQuestion;
 
-        // Unsupported field are automatically converted to string (ftAlfa) fields.
+        // Unsupported field are automatically converted to string (ftString) fields.
         if (not (FieldType in SupportedFieldTypes)) or
            ((fieldtype in DateFieldTypes) and (FieldLength < 10)) then
-          FieldType := ftAlfa;
+          FieldType := ftString;
 
         // Encrypted field store length in field color property.
         if FieldType = ftCrypt then
@@ -1684,7 +1692,7 @@ begin
       EncData := B64Encode(EncData);
       FCrypter.Reset;
       S := S + Format('%-*s', [FieldLength, EncData])
-    end else if FieldType in [ftAlfa, ftUpperAlfa] then
+    end else if FieldType in [ftString, ftUpperAlfa] then
       S := S + Format('%-*s', [FieldLength, AsString[RecNumber]])
     else
       S := S + Format('%*s', [FieldLength, AsString[RecNumber]]);
@@ -1969,7 +1977,8 @@ end;
 constructor TEpiIntField.Create(ASize: Cardinal; AFieldType: TFieldType;
   SetAllMissing: boolean);
 begin
-  if not (AFieldType in DateFieldTypes ;
+  if not (AFieldType in IntFieldTypes) then
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
   inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
@@ -2122,6 +2131,14 @@ end;
 class function TEpiFloatField.DefaultMissing: EpiFloat;
 begin
   result := NA_FLOAT;
+end;
+
+constructor TEpiFloatField.Create(ASize: Cardinal; AFieldType: TFieldType;
+  SetAllMissing: boolean);
+begin
+  if not (AFieldType in FloatFieldTypes) then
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+  inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
 destructor TEpiFloatField.Destroy;

@@ -18,7 +18,8 @@ type
   EpiVariant   = Variant;
 
   TFieldNaming = (fnFirstWord, fnAuto); 
-  TFieldType   = (ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftCheckBox,
+
+  TFieldType   = (ftInteger, ftString, ftDate, ftUpperAlfa, ftCheckBox,
                   ftBoolean, ftFloat, ftPhoneNum, ftTime, ftLocalNum,
                   ftToday, ftEuroDate, ftIDNUM, ftRes4, ftRes5,
                   ftQuestion, ftEuroToday, ftSoundex, ftCrypt, ftYMDDate,

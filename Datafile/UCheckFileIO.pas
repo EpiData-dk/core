@@ -1549,7 +1549,7 @@ BEGIN
                 TChkDefine(TmpChkCmd).NumDecimals := 0;
             END;
           END  //if numeric
-          ELSE IF CurCommand[1] = '_' THEN TChkDefine(TmpChkCmd).FieldType := ftAlfa
+          ELSE IF CurCommand[1] = '_' THEN TChkDefine(TmpChkCmd).FieldType := ftString
           ELSE IF CurCommand = '<MM/DD/YYYY>' THEN TChkDefine(TmpChkCmd).FieldType := ftDate
           ELSE IF Copy(CurCommand, 1, 2) = '<A' THEN
             BEGIN
@@ -1636,11 +1636,11 @@ BEGIN
             FDf.CheckFile.GlobalDefaultVal := CurCommand;
             for n:=0 TO FDf.NumFields - 1 DO
             BEGIN
-              IF (FDf[n].FieldType in [ftInteger, ftAlfa, ftUpperAlfa, ftFloat, ftCrypt]) THEN
+              IF (FDf[n].FieldType in [ftInteger, ftString, ftUpperAlfa, ftFloat, ftCrypt]) THEN
               BEGIN
                 IF (TmpStr = 'ALL') THEN FDf[n].CheckField.HasGlobalDefaultVal:=true
                 ELSE
-                  IF (FDf[n].Fieldtype in [ftAlfa, ftUpperAlfa, ftCrypt]) AND
+                  IF (FDf[n].Fieldtype in [ftString, ftUpperAlfa, ftCrypt]) AND
                      ((TmpStr='ALLSTRINGS') OR (TmpStr='ALLSTRING')) THEN FDf[n].CheckField.HasGlobalDefaultVal:=true
                 ELSE
                   IF (FDf[n].Fieldtype in [ftInteger, ftFloat]) AND
@@ -2652,7 +2652,7 @@ BEGIN
         BEGIN
           CASE TChkDefine(cmd).FieldType OF
             ftInteger:   S := DupeString('#', TChkDefine(cmd).Length);
-            ftAlfa:      S := DupeString('_', TChkDefine(cmd).Length);
+            ftString:      S := DupeString('_', TChkDefine(cmd).Length);
             ftDate:      S := '<MM/DD/YYYY>';
             ftYMDDate:   S := '<YYYY/MM/DD>';          //&&
             ftUpperAlfa: S := '<A' + DupeString('A', TChkDefine(cmd).Length-1) + '>';

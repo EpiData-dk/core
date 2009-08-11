@@ -54,7 +54,7 @@ CONST
                     'Today (ymd)');
 
   SupportedFieldTypes:
-    TFieldTypes = [ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
+    TFieldTypes = [ftInteger, ftString, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
                    ftToday, ftEuroDate, ftIDNUM, ftQuestion, ftEuroToday,
                    ftSoundex, ftCrypt, ftYMDDate, ftYMDToday];
 
@@ -72,7 +72,7 @@ CONST
     TFieldTypes = [ftBoolean];
 
   StringFieldTypes:
-    TFieldTypes = [ftAlfa, ftUpperAlfa, ftSoundex, ftCrypt];
+    TFieldTypes = [ftString, ftUpperAlfa, ftSoundex, ftCrypt];
 
 
   {$I ErrorCodes.inc}
