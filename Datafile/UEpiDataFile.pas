@@ -151,7 +151,6 @@ type
 
   TEpiField = class(TObject)
   private
-//    FData:         array of string;
     FOwner:        TEpiFields;
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
@@ -243,7 +242,7 @@ type
 
   { TEpiIntField }
   // Handles following field types:
-  // ftInteger (FieldLength <= 4), ftIDNum,
+  // ftInteger, ftIDNum,
   TEpiIntField = class(TEpiField)
   private
     FData: array of EpiInteger;
@@ -282,7 +281,7 @@ type
 
   { TEpiFloatField }
   // Handles following field types:
-  // ftFloat, ftInteger (FieldLength > 4).
+  // ftFloat
   TEpiFloatField = class(TEpiField)
   private
     FData: Array of EpiFloat;
@@ -347,6 +346,8 @@ type
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
+       SetAllMissing: boolean = true); override;
     destructor Destroy; override;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
@@ -382,12 +383,14 @@ type
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
+       SetAllMissing: boolean = true); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
   end;
 
-  { TEpiDataField }
+  { TEpiDateField }
   // Handles following field types:
   // ftDate, ftToday, ftEuroDate, ftEuroToday, ftYMDDate, ftYMDToday
   TEpiDateField = class(TEpiField)
@@ -417,6 +420,8 @@ type
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
+       SetAllMissing: boolean = true); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -795,6 +800,8 @@ begin
 end;
 
 constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true);
+var
+  i: Integer;
 begin
   Reset();
   Capacity := ASize;
@@ -815,7 +822,24 @@ class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal;
 begin
   // Todo -o Torsten : Finish coding CREATEFIELD.
   case aFieldType of
-    ftInteger: Result := TEpiIntField.Create(aSize, aFieldType, SetAllMissing);
+    ftInteger, ftIDNum:
+      Result := TEpiIntField.Create(aSize, aFieldType, SetAllMissing);
+
+    ftDate, ftToday, ftEuroDate,
+    ftEuroToday, ftYMDDate,ftYMDToday:
+      Result := TEpiDateField.Create(aSize, aFieldType, SetAllMissing);
+
+    ftFloat:
+      Result := TEpiFloatField.Create(aSize, aFieldType, SetAllMissing);
+
+    ftBoolean:
+      Result := TEpiBoolField.Create(aSize, aFieldType, SetAllMissing);
+
+    ftString, ftUpperAlfa, ftSoundex, ftCrypt:
+      Result := TEpiStringField.Create(aSize, aFieldType, SetAllMissing);
+
+    ftQuestion:
+      Result := TEpiField.Create(aSize, aFieldType, SetAllMissing);
   else
     // TODO -o Torsten : Exception should happen;
     exit;
@@ -1062,8 +1086,9 @@ var
   CurrentLine: Integer;
 
   // Field lines:
+  TmpFieldType: TFieldType;
   TmpFieldChar, Dummy: Char;
-  TmpFieldType,
+  TmpFieldTypeInt,
   TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
   TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
   TmpName: string[10];
@@ -1157,11 +1182,32 @@ begin
         Exit;
       end;
 
-      EField := TEpiField.Create();
       ReadLn(TxtFile,
              TmpFieldChar, TmpName, TmpQuestX, TmpQuestY,
-             TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldType, TmpLength,
+             TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldTypeInt, TmpLength,
              TmpFieldColor, dummy, TmpQuestion);
+
+      // Field types.
+      if TmpFieldTypeInt >= 100 then
+        // Type > 100 => float field
+        TmpFieldType := ftFloat;
+      else begin
+        // Normal field type recognition.
+        TmpFieldType := ftInteger;
+        WHILE TmpFieldTypeInt > ORD(TmpFieldType) DO
+          TmpFieldType := Succ(TmpFieldType);
+      end;
+
+      // This is not a data field, but a question field.
+      if FieldLength = 0 then TmpFieldType := ftQuestion;
+
+      // Unsupported field are automatically converted to string (ftString) fields.
+      if (not (TmpFieldType in SupportedFieldTypes)) or
+         ((TmpFieldType in DateFieldTypes) and (FieldLength < 10)) then
+        FieldType := ftString;
+
+      EField := TEpiField.CreateField(TmpFieldType);
+
       with EField do
       begin
         FieldNo     := CurrentLine - 1;
@@ -1182,28 +1228,6 @@ begin
           INC(FieldNumberCounter);
         until not Fields.FieldExists(TmpName);
         FieldName := Trim(TmpName);
-
-        // Field types.
-        if TmpFieldType >= 100 then
-        begin
-          // Type > 100 => float field
-          NumDecimals := TmpFieldType-100;
-          Fieldtype := ftFloat;
-        end else begin
-          // Normal field type recognition.
-          FieldType := ftInteger;
-          NumDecimals := 0;
-          WHILE TmpFieldType > ORD(FieldType) DO
-            FieldType := Succ(FieldType);
-        end;
-
-        // This is not a data field, but a question field.
-        if FieldLength = 0 then FieldType := ftQuestion;
-
-        // Unsupported field are automatically converted to string (ftString) fields.
-        if (not (FieldType in SupportedFieldTypes)) or
-           ((fieldtype in DateFieldTypes) and (FieldLength < 10)) then
-          FieldType := ftString;
 
         // Encrypted field store length in field color property.
         if FieldType = ftCrypt then
@@ -2293,6 +2317,14 @@ begin
   Result := NA_BOOL;
 end;
 
+constructor TEpiBoolField.Create(ASize: Cardinal; AFieldType: TFieldType;
+  SetAllMissing: boolean);
+begin
+  if not (AFieldType in BoolFieldTypes) then
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+  inherited Create(ASize, AFieldType, SetAllMissing);
+end;
+
 destructor TEpiBoolField.Destroy;
 begin
   inherited Destroy;
@@ -2417,6 +2449,14 @@ end;
 class function TEpiStringField.DefaultMissing: EpiString;
 begin
   result := NA_STRING;
+end;
+
+constructor TEpiStringField.Create(ASize: Cardinal; AFieldType: TFieldType;
+  SetAllMissing: boolean);
+begin
+  if not (AFieldType in StringFieldTypes) then
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+  inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
 function TEpiStringField.Compare(i, j: integer): integer;
@@ -2554,6 +2594,14 @@ end;
 class function TEpiDateField.DefaultMissing: EpiDate;
 begin
   result := NA_DATE;
+end;
+
+constructor TEpiDateField.Create(ASize: Cardinal; AFieldType: TFieldType;
+  SetAllMissing: boolean);
+begin
+  if not (AFieldType in DateFieldTypes) then
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+  inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
 function TEpiDateField.Compare(i, j: integer): integer;

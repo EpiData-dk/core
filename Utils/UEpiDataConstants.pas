@@ -66,7 +66,7 @@ CONST
     TFieldTypes = [ftInteger, ftIDNUM];
 
   FloatFieldTypes:
-    TFieldTypes = [ftFloat, ftInteger];
+    TFieldTypes = [ftFloat];
 
   BoolFieldTypes:
     TFieldTypes = [ftBoolean];
