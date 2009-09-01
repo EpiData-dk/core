@@ -110,7 +110,9 @@ begin
     else if S = '.DBF' then
       result := Exporter.ExportDBase(FileName, Df)
     else if (S = '.CSV') or (Trim(FileName) = '') then
-      result := Exporter.ExportTXT(FileName, Df, @ExportTxtStandard);
+      result := Exporter.ExportTXT(FileName, Df, @ExportTxtStandard)
+    else if (S = '.XLS') or (S = '.ODS') then
+      result := Exporter.ExportSpreadSheet(FileName, Df, PEpiSpreadSheetSettings(ExportSettings));
     FreeAndNil(Exporter);
     Exit;
   end;

@@ -5,7 +5,7 @@ unit UImportExport;
 interface
 
 uses
-  Classes, SysUtils, UEpiDataFile, UDataFileTypes, UEpiLog;
+  Classes, SysUtils, UEpiDataFile, UDataFileTypes, UEpiLog, fpspreadsheet;
 
 type
 
@@ -37,6 +37,13 @@ type
     WriteFieldNames: Boolean;
   end;
   PEpiTxtExportSettings = ^TEpiTxtExportSettings;
+
+  TEpiSpreadSheetSettings = record
+    ExportSettings:    PEpiExportSettings;
+    SpreadSheetFormat: TsSpreadsheetFormat;
+    WriteFieldNames:   Boolean;
+  end;
+  PEpiSpreadSheetSettings = ^TEpiSpreadSheetSettings;
 
 const
 
@@ -79,6 +86,24 @@ const
     QuoteChar:       '"';
     FixedFormat:     false;
     WriteFieldNames: true;
+  );
+
+  ExportExcel5: TEpiSpreadSheetSettings = (
+    ExportSettings:    @ExportAll;
+    SpreadSheetFormat: sfExcel5;
+    WriteFieldNames:   true;
+  );
+
+  ExportExcel8: TEpiSpreadSheetSettings = (
+    ExportSettings:    @ExportAll;
+    SpreadSheetFormat: sfExcel8;
+    WriteFieldNames:   true;
+  );
+
+  ExportOpenDocument: TEpiSpreadSheetSettings = (
+    ExportSettings:    @ExportAll;
+    SpreadSheetFormat: sfOpenDocument;
+    WriteFieldNames:   true;
   );
 
 type
@@ -150,13 +175,14 @@ type
     function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
                             TxtImpSetting: PEpiTxtImportSettings): Boolean;
-    function      ImportXLS(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ImportSpreadSheet(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
                               ExpSetting: PEpiStataExportSettings): Boolean;
     function      ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile;
                     ExpSettings: PEpiTxtExportSettings): Boolean;
-    function      ExportXLS(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportSpreadSheet(Const aFilename: string; Const DataFile: TEpiDataFile;
+                    ExpSettings: PEpiSpreadSheetSettings): Boolean;
     function      ExportXPT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
@@ -168,7 +194,8 @@ implementation
 
 uses
   UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
-  FileUtil, UQesHandler, Clipbrd, UStringUtils;
+  FileUtil, UQesHandler, Clipbrd, UStringUtils,
+  fpsallformats;
 
   { TEpiImportExport }
 
@@ -1409,10 +1436,10 @@ begin
   end;
 end;
 
-function TEpiImportExport.ImportXLS(const aFilename: string;
+function TEpiImportExport.ImportSpreadSheet(const aFilename: string;
   var DataFile: TEpiDataFile): Boolean;
 begin
-
+  Raise Exception.Create('Import Spreadsheet not implemented');
 end;
 
 function TEpiImportExport.ExportStata(const aFilename: string;
@@ -2124,10 +2151,84 @@ begin
   end;
 end;
 
-function TEpiImportExport.ExportXLS(const aFilename: string;
-  const DataFile: TEpiDataFile): Boolean;
+function TEpiImportExport.ExportSpreadSheet(const aFilename: string;
+  const DataFile: TEpiDataFile; ExpSettings: PEpiSpreadSheetSettings): Boolean;
+var
+  i: Integer;
+  WorkBook: TsWorkbook;
+  WorkSheet: TsWorksheet;
+  NObs: LongInt;
+  CurRec: Integer;
+  Offset: Integer;
+  TmpStr: String;
+  ACell: PCell;
 begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ExportSpreadSheet', 2, 'Filename = ' + aFilename);
+  Result := false;
 
+  // Sanity checks:
+  if not Assigned(DataFile) then Exit;
+  if Trim(aFilename) = '' then Exit;
+
+  with DataFile do
+  try
+    UpdateProgress(0, Lang(0, 'Writing header information'));
+
+    WorkBook := TsWorkbook.Create;
+    WorkSheet := WorkBook.AddWorksheet(Lang(0, 'Page 1'));
+
+    { Write FieldNames }
+    Offset := 0;
+    if ExpSettings^.WriteFieldNames then
+    begin
+      Offset := 1;
+      for i := 0 to NumDataFields - 1 do
+        WorkSheet.WriteUTF8Text(0, i, DataFields[i].FieldName);
+    end;
+
+    { Write Data }
+    NObs := NumRecords;
+    for CurRec := 1 to NObs do
+    begin
+      UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
+      Read(CurRec);
+
+      for i := 0 to NumDataFields - 1 do
+      begin
+        ACell := GetMem(SizeOf(TCell));
+        FillChar(ACell^, SizeOf(TCell), #0);
+        ACell^.Col := i;
+        ACell^.Row := CurRec - 1 + OffSet;
+
+        TmpStr := DataFields[i].AsData;
+        case DataFields[i].FieldType of
+          ftDate, ftEuroDate, ftYMDDate,
+          ftToday, ftEuroToday, ftYMDToday:
+            begin
+              ACell^.UTF8StringValue := 'Date not supported';
+              ACell^.ContentType := cctUTF8String;
+            end;
+          ftFloat, ftInteger, ftIDNUM:
+            if Trim(TmpStr) = '' then
+              continue
+            else begin
+              ACell^.NumberValue := StrToFloat(TmpStr);
+              ACell^.ContentType := cctNumber;
+            end
+        else
+          ACell^.UTF8StringValue := TmpStr;
+          ACell^.ContentType := cctUTF8String;
+        end;
+        WorkSheet.FCells.Add(ACell);
+      end;
+    end;
+
+    WorkBook.WriteToFile(aFilename, ExpSettings^.SpreadSheetFormat);
+    result := true;
+  finally
+    if Assigned(WorkBook) then FreeAndNil(WorkBook);
+  end;
 end;
 
 function TEpiImportExport.ExportXPT(const aFilename: string;

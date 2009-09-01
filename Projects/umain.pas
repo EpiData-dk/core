@@ -31,6 +31,7 @@ type
     readBtn: TButton;
     OpenDialog1: TOpenDialog;
     PageControl1: TPageControl;
+    excelCombo: TComboBox;
     TabSheet1: TTabSheet;
     Memo1: TMemo;
     TabSheet2: TTabSheet;
@@ -94,6 +95,7 @@ type
     procedure GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: string);
     procedure ShowDebug(Sender: TObject; Msg: string);
     procedure SetButtons(DatafileIsOpen: Boolean);
+    function  UpdateExtension(Index: integer): string;
   public
     { Public declarations }
   end;
@@ -304,6 +306,20 @@ begin
     Caption := Caption + ': ' + Df.FileName;
 end;
 
+function TMainForm.UpdateExtension(Index: integer): string;
+begin
+  case Index of
+     0: Result := '.rec';
+     1: Result := '.dta';
+     2: Result := '.dbf';
+     3: Result := '.csv';
+     4: Result := '.xls';
+     5: Result := '.ods';
+  else
+    Result := '.rec';
+  end;
+end;
+
 procedure TMainForm.FormShow(Sender: TObject);
 begin
   EpiLogger.DebugLevel := cbDebug.ItemIndex;
@@ -350,32 +366,20 @@ begin
   if SaveDialog1.Execute then
     begin
     edOutputFile.Text := SaveDialog1.FileName;
-    case FileTypeCombo.ItemIndex of
-       0: Ext := '.rec';
-       1: Ext := '.dta';
-       2: Ext := '.dbf';
-       3: Ext := '.csv';
-       4: Ext := '.xls';
-    end;
+    Ext := UpdateExtension(FileTypeCombo.ItemIndex);
     edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
     end;
 end;
 
 procedure TMainForm.saveBtnClick(Sender: TObject);
 var
-  PExpSettings: PEpiStataExportSettings;
+  PExpSettings: Pointer;
   Ext: string;
 begin
   if (not expclipBrdChkBox.Checked) and (Trim(edOutputFile.Text) = '') then exit;
 
   if (not expclipBrdChkBox.Checked) then
-    case filetypeCombo.ItemIndex of
-      0: Ext := '.rec';
-      1: Ext := '.dta';
-      2: Ext := '.dbf';
-      3: Ext := '.csv';
-      4: Ext := '.xls';
-    end
+    Ext := UpdateExtension(FileTypeCombo.ItemIndex)
   else
     Ext := '';
 
@@ -402,8 +406,19 @@ begin
     end;
   end;
 
-  if filetypeCombo.ItemIndex < 4 then
+  if excelCombo.Visible then
   begin
+    if excelCombo.ItemIndex = 0 then
+      PExpSettings := @ExportExcel5
+    else
+      PExpSettings := @ExportExcel8;
+  end;
+
+  if filetypeCombo.ItemIndex = 5 then
+    PExpSettings := @ExportOpenDocument;
+
+{  if filetypeCombo.ItemIndex < 4 then
+  begin           }
     if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
     begin
       EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
@@ -412,8 +427,8 @@ begin
       Memo1.Lines.Clear;
       Memo1.Lines.Add(Df.ErrorText);
     end;
-  end else
-    EpiLogger.Add('File type not yet implemented', 2);
+{  end else
+    EpiLogger.Add('File type not yet implemented', 2);    }
 end;
 
 procedure TMainForm.closeBtnClick(Sender: TObject);
@@ -455,18 +470,14 @@ procedure TMainForm.filetypeComboChange(Sender: TObject);
 var ext : string;
 begin
   stataCombo.Hide;
+  excelCombo.Hide;
   CheckBox2.Checked := false;
   case TComboBox(Sender).ItemIndex of
     0: CheckBox2.Checked := true;
-    1: stataCombo.Show;
+    1: StataCombo.Show;
+    4: excelCombo.Show;
   end;
-  case TComboBox(Sender).ItemIndex of
-    0: Ext := '.rec';
-    1: Ext := '.dta';
-    2: Ext := '.dbf';
-    3: Ext := '.csv';
-    4: Ext := '.xls';
-  end;
+  Ext := UpdateExtension(TComboBox(Sender).ItemIndex);
   EpiLogger.Add('Filetype chosen: ' + ext, 2);
   edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
 end;
