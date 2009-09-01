@@ -2220,7 +2220,7 @@ begin
           ACell^.UTF8StringValue := TmpStr;
           ACell^.ContentType := cctUTF8String;
         end;
-        WorkSheet.FCells.Add(ACell);
+        WorkSheet.Cells.Add(ACell);
       end;
     end;
 
