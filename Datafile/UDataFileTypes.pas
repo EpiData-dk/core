@@ -27,7 +27,7 @@ type
   TEpiDataFileOption    = (eoInMemory, eoIgnoreChecks, eoIgnoreRelates, eoIgnoreIndex);
   TEpiDataFileOptions   = set of TEpiDataFileOption;
 
-  TDataFileType         = (dftEpiData, dftStata, dftCSV);
+  TDataFileType         = (dftEpiData, dftStata, dftCSV, dftDBase);
 
   TByteOrder            = (boLittleEndian, boBigEndian);
   TStringMode           = (smUTF8, smAnsi);

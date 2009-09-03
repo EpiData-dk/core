@@ -1142,7 +1142,7 @@ BEGIN
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftStata;
+    OrgDataType := dftDBase;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
@@ -1325,7 +1325,7 @@ begin
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftStata;
+    OrgDataType := dftCSV;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Initializing'));
 
@@ -1438,8 +1438,205 @@ end;
 
 function TEpiImportExport.ImportSpreadSheet(const aFilename: string;
   var DataFile: TEpiDataFile): Boolean;
+var
+  WorkBook: TsWorkbook;
+  WorkSheet: TsWorksheet;
+  ColEnd: LongWord;
+  RowEnd: LongWord;
+  i, j: Integer;
+  ColStart: LongWord;
+  RowStart: LongWord;
+  FtList: array of TFieldType;
+  LineCount: LongWord;
+  FieldCount: Integer;
+  ACell: PCell;
+  TmpStr: String;
+  FieldNameInRow1: Boolean;
+  TmpField: TEpiField;
 begin
-  Raise Exception.Create('Import Spreadsheet not implemented');
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ImportSpreadSheet', 2, 'Filename = ' + aFilename);
+  result := false;
+
+  if Assigned(DataFile) then
+    DataFile.Reset()
+  else
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+
+  With DataFile do
+  TRY
+    UpdateProgress(0, Lang(0, 'Reading header information'));
+
+    WorkBook := TsWorkbook.Create;
+
+    // TODO : Implement other spreadsheet formats.
+    WorkBook.ReadFromFile(aFilename, sfOpenDocument);
+    WorkSheet := WorkBook.GetFirstWorksheet;
+
+    ColEnd := WorkSheet.GetLastColNumber;
+    RowEnd := WorkSheet.GetLastRowNumber;
+
+    ColStart := ColEnd;
+    RowStart := RowEnd;
+
+    for i := 0 to RowEnd do
+    begin
+      for j := 0 to ColEnd do
+      begin
+        if Assigned(WorkSheet.GetCell(i, j)) then
+        begin
+          ColStart := j;
+          RowStart := i;
+          Break;
+        end;
+      end;
+    end;
+
+    LineCount := Math.Min(NumGuessLines, ColEnd);
+    FieldCount := ColEnd - ColStart + 1;
+    SetLength(FtList, FieldCount);
+    // Skip first line since it may contain headings/field names.
+    for i := RowStart + 1 to LineCount do
+    begin
+      for j := ColStart to ColEnd do
+      begin
+        ACell := WorkSheet.FindCell(i, j);
+        // TODO : Detect dates?
+        case ACell^.ContentType of
+          cctEmpty:
+            Continue;
+          cctFormula, cctRPNFormula:
+            begin
+              ErrorCode := EPI_IMPORT_FAILED;
+              ErrorText := Lang(0, 'Cannot import from formulas in spreadsheets');
+              Exit;
+            end;
+          cctNumber:
+            Begin
+              TmpStr := FloatToStr(ACell^.NumberValue);
+              FtList[j - ColStart] := FindFieldType(TmpStr, FtList[j - ColStart]);
+            end;
+          cctUTF8String:
+            begin
+              TmpStr := ACell^.UTF8StringValue;
+              FtList[j - ColStart] := FindFieldType(TmpStr, FtList[j - ColStart]);
+            end;
+        end;
+      end;
+    end;
+
+    // Create Fields.
+    for i := 1 to FieldCount do
+    begin
+      TmpField := TEpiField.Create;
+      with TmpField do
+      begin
+        FieldType := FtList[i-1];
+        FieldName := 'V' + IntToStr(i);
+        FieldNo   := i;
+        FieldLength := 0;
+        NumDecimals := 0;
+      end;
+      AddField(TmpField);
+    end;
+
+    // Guess field lengths
+    for j := ColStart to ColEnd do
+    begin
+      with DataFields[j - ColStart] do
+      begin
+        // Set Length of field once - skip to next field
+        if FieldType = ftBoolean then
+        begin
+          FieldLength := 1;
+          Continue;
+        end;
+        if FieldType in DateFieldTypes then
+        begin
+          FieldLength := 10;
+          Continue;
+        end;
+
+        // Skip first line since it may contain headings/field names.
+        for i := RowStart + 1 to LineCount do
+        begin
+          ACell := WorkSheet.GetCell(i, j);
+          case ACell^.ContentType of
+            cctNumber : TmpStr := FloatToStr(ACell^.NumberValue);
+            cctUTF8String: TmpStr := ACell^.UTF8StringValue;
+          end;
+
+          case FieldType of
+            ftInteger:
+              begin
+                if Length(TmpStr) > MaxIntegerLength then
+                  FieldType := ftFloat;
+                FieldLength := Max(FieldLength, Length(TmpStr));
+              end;
+            ftFloat:
+              begin
+                FieldLength := Max(FieldLength, Length(TmpStr));
+                if (StrCountChars(Tmpstr, CommaChars) > 0) then
+                  NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+              end;
+            ftAlfa:
+              FieldLength := Max(FieldLength, Length(TmpStr));
+          end;
+        end;
+      end;
+    end;
+
+    // Guess field names (and variable labels).
+    // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
+    // - previously did not succeed. Make type = ftAlfa and Length = 1;
+    FieldNameInRow1 := false;
+    for i := ColStart to ColEnd do
+    begin
+      ACell := WorkSheet.GetCell(RowStart, i);
+      TmpField := DataFile.DataFields[i - ColStart];
+
+      if (ACell^.ContentType = cctUTF8String) and
+         (TmpField.FieldType <> ftAlfa) then
+        FieldNameInRow1 := true;;
+    end;
+
+    if FieldNameInRow1 then
+    begin
+      for i := ColStart to ColEnd do
+      begin
+        ACell := WorkSheet.GetCell(RowStart, i);
+        DataFile.DataFields[i-colstart].FieldName := ACell^.UTF8StringValue;
+        DataFile.DataFields[i].VariableLabel := ACell^.UTF8StringValue;
+      end;
+    end;
+
+    Save('');
+    { ====================
+      Start reading data
+      ==================== }
+
+    for i := RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0'))) to RowEnd do
+    begin
+      for j := ColStart to ColEnd do
+      with  DataFields[j - ColStart] do
+      begin
+        ACell := WorkSheet.GetCell(i, j);
+
+        case FieldType of
+          ftInteger, ftFloat:
+            AsData := FloatToStr(ACell^.NumberValue);
+          ftDate, ftEuroDate, ftYMDDate:
+            Raise Exception.Create('Dates not handled in spreadsheet, yet.');
+          ftAlfa:
+            AsData := ACell^.UTF8StringValue;
+        end;
+      end;
+      Write();
+    end;
+  finally
+    if Assigned(WorkBook) then FreeAndNil(WorkBook);
+    EpiLogger.DecIndent();
+  end;
 end;
 
 function TEpiImportExport.ExportStata(const aFilename: string;
@@ -2227,6 +2424,7 @@ begin
     WorkBook.WriteToFile(aFilename, ExpSettings^.SpreadSheetFormat);
     result := true;
   finally
+    EpiLogger.DecIndent();
     if Assigned(WorkBook) then FreeAndNil(WorkBook);
   end;
 end;

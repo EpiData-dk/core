@@ -375,6 +375,7 @@ procedure TMainForm.saveBtnClick(Sender: TObject);
 var
   PExpSettings: Pointer;
   Ext: string;
+  TS: TTimeStamp;
 begin
   if (not expclipBrdChkBox.Checked) and (Trim(edOutputFile.Text) = '') then exit;
 
@@ -419,6 +420,7 @@ begin
 
 {  if filetypeCombo.ItemIndex < 4 then
   begin           }
+  TS := DateTimeToTimeStamp(Now);
     if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
     begin
       EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
@@ -426,6 +428,8 @@ begin
       PageControl1.ActivePage := TabSheet5;
       Memo1.Lines.Clear;
       Memo1.Lines.Add(Df.ErrorText);
+    end else begin
+      EpiLogger.Add(Format('Save completed successfully in: %d ms.', [DateTimeToTimeStamp(Now).Time - TS.Time]), 1);
     end;
 {  end else
     EpiLogger.Add('File type not yet implemented', 2);    }
