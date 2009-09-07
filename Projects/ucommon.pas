@@ -24,11 +24,12 @@ uses
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
-  aDialog.Filter := 'Supported data files|*.rec;*.dta;*.txt;*.csv;*.dbf|'
+  aDialog.Filter := 'Supported data files|*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
                   + 'EpiData data file (*.rec)|*.rec|'
                   + 'Stata file (*.dta)|*.dta|'
                   + 'Text file (*.txt,*.csv)|*.txt|'
                   + 'dBase file (*.dbf)|*.dbf|'
+                  + 'Open Document Spreadsheep (*.ods)|*.ods|'
                   + 'All files (*.*)|*.*';
   aDialog.FilterIndex := 0;
 end;
@@ -73,6 +74,8 @@ begin
       Result := Importer.ImportStata(FileName, Df)
     else if S = '.DBF' then
       Result := Importer.ImportDBase(FileName, Df)
+    else if S = '.ODS' then
+      Result := Importer.ImportSpreadSheet(FileName, Df)
     else if (S = '.TXT') or (S = '.CSV') or (S='') then
     begin
       impform := TImportForm.Create(nil);

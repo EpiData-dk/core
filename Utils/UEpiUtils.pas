@@ -54,7 +54,10 @@ implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
-  UDateUtils, Math;
+  UDateUtils, Math
+  {$IFDEF MSWINDOWS}
+  ,Windows
+  {$ENDIF};
 
 function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
 var
@@ -202,14 +205,10 @@ var
   PInfo: PSysInfo;
   Info: TSysInfo;
   UName: UtsName;
-//  ResHandle: TFPResourceHandle;
-//  ResMan: TResourceManager;
   {$ENDIF LINUX}
   Dummy: integer;
 begin
   {$IFDEF LINUX}
-//  GetResourceManager(ResMan);
-//  FindResource(ResMan.HINSTANCEFunc(), RT_VERSION, RT_VERSION);
   FpUname(UName);
   CSI.OSName := string(UName.Sysname);
   PInfo := new(PSysInfo);
@@ -227,8 +226,8 @@ begin
 
   CSI.PrgVersion.Major   := 0;
   CSI.PrgVersion.Minor   := 1;
-  CSI.PrgVersion.Release := 1;
-  CSI.PrgVersion.Build   := 94;
+  CSI.PrgVersion.Release := 12;
+  CSI.PrgVersion.Build   := 95;
 
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!

@@ -1453,6 +1453,7 @@ var
   TmpStr: String;
   FieldNameInRow1: Boolean;
   TmpField: TEpiField;
+  Stop: Boolean;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportSpreadSheet', 2, 'Filename = ' + aFilename);
@@ -1465,7 +1466,7 @@ begin
 
   With DataFile do
   TRY
-    UpdateProgress(0, Lang(0, 'Reading header information'));
+    UpdateProgress(0, Lang(0, 'Unpacking spreadsheet'));
 
     WorkBook := TsWorkbook.Create;
 
@@ -1478,29 +1479,38 @@ begin
 
     ColStart := ColEnd;
     RowStart := RowEnd;
+    Stop := False;
 
     for i := 0 to RowEnd do
     begin
       for j := 0 to ColEnd do
       begin
-        if Assigned(WorkSheet.GetCell(i, j)) then
+        if Assigned(WorkSheet.FindCell(i, j)) then
         begin
           ColStart := j;
           RowStart := i;
-          Break;
+          Stop := true;
         end;
+        if stop then break;
       end;
+      if stop then break;
     end;
 
-    LineCount := Math.Min(NumGuessLines, ColEnd);
+    LineCount := Math.Min(NumGuessLines, RowEnd);
     FieldCount := ColEnd - ColStart + 1;
     SetLength(FtList, FieldCount);
+
     // Skip first line since it may contain headings/field names.
     for i := RowStart + 1 to LineCount do
     begin
+      UpdateProgress(Trunc(100 * (i / LineCount)), Lang(0, 'Guessing field information'));
       for j := ColStart to ColEnd do
       begin
         ACell := WorkSheet.FindCell(i, j);
+
+        // ACell = nil is considered missing.
+        if not Assigned(ACell) then continue;
+
         // TODO : Detect dates?
         case ACell^.ContentType of
           cctEmpty:
@@ -1525,6 +1535,7 @@ begin
       end;
     end;
 
+    UpdateProgress(0, Lang(0, 'Guessing field information'));
     // Create Fields.
     for i := 1 to FieldCount do
     begin
@@ -1593,9 +1604,15 @@ begin
     for i := ColStart to ColEnd do
     begin
       ACell := WorkSheet.GetCell(RowStart, i);
-      TmpField := DataFile.DataFields[i - ColStart];
 
-      if (ACell^.ContentType = cctUTF8String) and
+      if not Assigned(ACell) then Continue;
+      case ACell^.ContentType of
+        cctNumber: TmpStr := FloatToStr(ACell^.NumberValue);
+        cctUTF8String: TmpStr := ACell^.UTF8StringValue;
+      end;
+
+      TmpField := DataFile.DataFields[i - ColStart];
+      if (FindFieldType(TmpStr) = ftAlfa) and
          (TmpField.FieldType <> ftAlfa) then
         FieldNameInRow1 := true;;
     end;
@@ -1617,6 +1634,7 @@ begin
 
     for i := RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0'))) to RowEnd do
     begin
+      UpdateProgress(Trunc((I / RowEnd) * 100), Lang(0, 'Importing records...'));
       for j := ColStart to ColEnd do
       with  DataFields[j - ColStart] do
       begin
@@ -1626,13 +1644,18 @@ begin
           ftInteger, ftFloat:
             AsData := FloatToStr(ACell^.NumberValue);
           ftDate, ftEuroDate, ftYMDDate:
-            Raise Exception.Create('Dates not handled in spreadsheet, yet.');
+            Begin
+              TmpStr := ACell^.UTF8StringValue;
+              EpiIsDate(TmpStr, FieldType);
+              AsData := TmpStr;
+            end;
           ftAlfa:
             AsData := ACell^.UTF8StringValue;
         end;
       end;
       Write();
     end;
+    UpdateProgress(100, Lang(0, 'Complete.'));
   finally
     if Assigned(WorkBook) then FreeAndNil(WorkBook);
     EpiLogger.DecIndent();
@@ -2400,12 +2423,12 @@ begin
 
         TmpStr := DataFields[i].AsData;
         case DataFields[i].FieldType of
-          ftDate, ftEuroDate, ftYMDDate,
+{          ftDate, ftEuroDate, ftYMDDate,
           ftToday, ftEuroToday, ftYMDToday:
             begin
               ACell^.UTF8StringValue := 'Date not supported';
               ACell^.ContentType := cctUTF8String;
-            end;
+            end; }
           ftFloat, ftInteger, ftIDNUM:
             if Trim(TmpStr) = '' then
               continue

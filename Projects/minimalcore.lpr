@@ -2,7 +2,7 @@ program minimalcore;
 
 {$mode objfpc}{$H+}
 
-{$DEFINE EPI_DEBUG}
+{.$DEFINE EPI_DEBUG}
 
 {$IFDEF EPI_DEBUG}
 
