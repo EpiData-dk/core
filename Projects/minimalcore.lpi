@@ -13,7 +13,7 @@
       <Title Value="EpiData Software Core Test Project"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="3"/>
+      <ActiveEditorIndexAtStart Value="2"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -48,8 +48,8 @@
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="minimalcore"/>
-        <CursorPos X="85" Y="27"/>
-        <TopLine Value="1"/>
+        <CursorPos X="36" Y="18"/>
+        <TopLine Value="13"/>
         <EditorIndex Value="0"/>
         <UsageCount Value="203"/>
         <Loaded Value="True"/>
@@ -79,7 +79,7 @@
         <UnitName Value="UMain"/>
         <CursorPos X="1" Y="327"/>
         <TopLine Value="303"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit3>
@@ -152,13 +152,15 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="43" Y="2426"/>
-        <TopLine Value="2400"/>
+        <CursorPos X="1" Y="1"/>
+        <TopLine Value="112"/>
+        <EditorIndex Value="1"/>
         <UsageCount Value="217"/>
         <Bookmarks Count="2">
           <Item0 X="3" Y="1641" ID="1"/>
           <Item1 X="3" Y="1384" ID="2"/>
         </Bookmarks>
+        <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\Datafile\UValueLabels.pas"/>
@@ -196,7 +198,7 @@
         <Filename Value="..\Utils\UDateUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDateUtils"/>
-        <CursorPos X="1" Y="1"/>
+        <CursorPos X="44" Y="9"/>
         <TopLine Value="1"/>
         <EditorIndex Value="5"/>
         <UsageCount Value="217"/>
@@ -220,8 +222,8 @@
         <Filename Value="..\Utils\UEpiUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiUtils"/>
-        <CursorPos X="3" Y="230"/>
-        <TopLine Value="211"/>
+        <CursorPos X="23" Y="230"/>
+        <TopLine Value="226"/>
         <EditorIndex Value="4"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -248,7 +250,7 @@
         <UnitName Value="UEpiLog"/>
         <CursorPos X="60" Y="101"/>
         <TopLine Value="76"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="3"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
       </Unit23>
@@ -377,8 +379,8 @@
       <Unit41>
         <Filename Value="..\..\..\..\FreePascal\fpspreadsheet\fpsopendocument.pas"/>
         <UnitName Value="fpsopendocument"/>
-        <CursorPos X="20" Y="203"/>
-        <TopLine Value="177"/>
+        <CursorPos X="36" Y="8"/>
+        <TopLine Value="1"/>
         <UsageCount Value="10"/>
       </Unit41>
       <Unit42>
@@ -494,206 +496,224 @@
         <UsageCount Value="6"/>
       </Unit57>
       <Unit58>
-        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win32\windows.pp"/>
+        <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win32\windows.pp"/>
         <UnitName Value="windows"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
         <UsageCount Value="7"/>
       </Unit58>
       <Unit59>
-        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\wininc\base.inc"/>
+        <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\wininc\base.inc"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="88"/>
         <UsageCount Value="7"/>
       </Unit59>
       <Unit60>
-        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\wininc\struct.inc"/>
+        <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\wininc\struct.inc"/>
         <CursorPos X="6" Y="601"/>
         <TopLine Value="577"/>
         <UsageCount Value="7"/>
       </Unit60>
       <Unit61>
-        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\wininc\redef.inc"/>
+        <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\win\wininc\redef.inc"/>
         <CursorPos X="11" Y="656"/>
         <TopLine Value="632"/>
         <UsageCount Value="7"/>
       </Unit61>
       <Unit62>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\redef.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\redef.inc"/>
         <CursorPos X="11" Y="656"/>
         <TopLine Value="632"/>
         <UsageCount Value="27"/>
       </Unit62>
       <Unit63>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\struct.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\struct.inc"/>
         <CursorPos X="29" Y="4196"/>
         <TopLine Value="4170"/>
         <UsageCount Value="27"/>
       </Unit63>
       <Unit64>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\sysosh.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\sysosh.inc"/>
         <CursorPos X="18" Y="20"/>
         <TopLine Value="14"/>
         <UsageCount Value="27"/>
       </Unit64>
       <Unit65>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\objpas\objpas.pp"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\objpas\objpas.pp"/>
         <UnitName Value="objpas"/>
         <CursorPos X="29" Y="28"/>
         <TopLine Value="7"/>
         <UsageCount Value="27"/>
       </Unit65>
       <Unit66>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\inc\systemh.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\inc\systemh.inc"/>
         <CursorPos X="3" Y="88"/>
         <TopLine Value="64"/>
         <UsageCount Value="27"/>
       </Unit66>
       <Unit67>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\base.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\base.inc"/>
         <CursorPos X="6" Y="71"/>
         <TopLine Value="59"/>
         <UsageCount Value="27"/>
       </Unit67>
       <Unit68>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win32\windows.pp"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win32\windows.pp"/>
         <UnitName Value="windows"/>
         <CursorPos X="8" Y="45"/>
         <TopLine Value="20"/>
         <UsageCount Value="27"/>
       </Unit68>
       <Unit69>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\ascdef.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\ascdef.inc"/>
         <CursorPos X="1" Y="508"/>
         <TopLine Value="460"/>
         <UsageCount Value="7"/>
       </Unit69>
       <Unit70>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\defines.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\defines.inc"/>
         <CursorPos X="1" Y="5660"/>
         <TopLine Value="5634"/>
         <UsageCount Value="10"/>
       </Unit70>
       <Unit71>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\func.inc"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\func.inc"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
         <UsageCount Value="10"/>
       </Unit71>
       <Unit72>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpspreadsheet\fpspreadsheet.pas"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpspreadsheet\fpspreadsheet.pas"/>
         <UnitName Value="fpspreadsheet"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="79"/>
         <UsageCount Value="10"/>
       </Unit72>
       <Unit73>
-        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpspreadsheet\fpsopendocument.pas"/>
+        <Filename Value="..\..\..\..\..\..\FreePascal\fpspreadsheet\fpsopendocument.pas"/>
         <UnitName Value="fpsopendocument"/>
         <CursorPos X="68" Y="202"/>
         <TopLine Value="183"/>
-        <EditorIndex Value="3"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit73>
     </Units>
-    <JumpHistory Count="24" HistoryIndex="23">
+    <JumpHistory Count="29" HistoryIndex="28">
       <Position1>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="98" Column="1" TopLine="74"/>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="231" Column="22" TopLine="215"/>
       </Position1>
       <Position2>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="99" Column="1" TopLine="75"/>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="245" Column="15" TopLine="215"/>
       </Position2>
       <Position3>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="231" Column="22" TopLine="215"/>
+        <Caret Line="246" Column="15" TopLine="215"/>
       </Position3>
       <Position4>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="245" Column="15" TopLine="215"/>
+        <Caret Line="242" Column="19" TopLine="212"/>
       </Position4>
       <Position5>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="246" Column="15" TopLine="215"/>
+        <Caret Line="242" Column="19" TopLine="212"/>
       </Position5>
       <Position6>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="73" Column="1" TopLine="108"/>
+        <Caret Line="8" Column="22" TopLine="1"/>
       </Position6>
       <Position7>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="242" Column="19" TopLine="212"/>
+        <Caret Line="60" Column="19" TopLine="40"/>
       </Position7>
       <Position8>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="242" Column="19" TopLine="212"/>
+        <Caret Line="79" Column="10" TopLine="55"/>
       </Position8>
       <Position9>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="8" Column="22" TopLine="1"/>
+        <Caret Line="61" Column="20" TopLine="37"/>
       </Position9>
       <Position10>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="60" Column="19" TopLine="40"/>
+        <Caret Line="79" Column="74" TopLine="55"/>
       </Position10>
       <Position11>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="79" Column="10" TopLine="55"/>
+        <Caret Line="74" Column="111" TopLine="50"/>
       </Position11>
       <Position12>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="61" Column="20" TopLine="37"/>
+        <Caret Line="76" Column="19" TopLine="50"/>
       </Position12>
       <Position13>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="79" Column="74" TopLine="55"/>
+        <Caret Line="244" Column="23" TopLine="214"/>
       </Position13>
       <Position14>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="74" Column="111" TopLine="50"/>
+        <Caret Line="244" Column="21" TopLine="214"/>
       </Position14>
       <Position15>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="76" Column="19" TopLine="50"/>
+        <Caret Line="229" Column="23" TopLine="214"/>
       </Position15>
       <Position16>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="244" Column="23" TopLine="214"/>
+        <Caret Line="72" Column="39" TopLine="39"/>
       </Position16>
       <Position17>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="31" Column="80" TopLine="34"/>
+        <Caret Line="244" Column="15" TopLine="214"/>
       </Position17>
       <Position18>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="244" Column="21" TopLine="214"/>
+        <Caret Line="63" Column="22" TopLine="51"/>
       </Position18>
       <Position19>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="229" Column="23" TopLine="214"/>
+        <Caret Line="65" Column="21" TopLine="51"/>
       </Position19>
       <Position20>
-        <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="72" Column="39" TopLine="39"/>
+        <Filename Value="..\Utils\UDateUtils.pas"/>
+        <Caret Line="9" Column="44" TopLine="1"/>
       </Position20>
       <Position21>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="244" Column="15" TopLine="214"/>
+        <Caret Line="231" Column="16" TopLine="216"/>
       </Position21>
       <Position22>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="63" Column="22" TopLine="51"/>
+        <Caret Line="242" Column="5" TopLine="205"/>
       </Position22>
       <Position23>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
-        <Caret Line="65" Column="21" TopLine="51"/>
+        <Caret Line="230" Column="18" TopLine="221"/>
       </Position23>
       <Position24>
-        <Filename Value="..\Utils\UDateUtils.pas"/>
-        <Caret Line="9" Column="44" TopLine="1"/>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position24>
+      <Position25>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="229" Column="1" TopLine="224"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="230" Column="3" TopLine="225"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\Utils\UEpiUtils.pas"/>
+        <Caret Line="230" Column="14" TopLine="226"/>
+      </Position28>
+      <Position29>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="2408" Column="27" TopLine="2385"/>
+      </Position29>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

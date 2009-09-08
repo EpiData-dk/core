@@ -227,6 +227,9 @@ var
   {$ENDIF WINDOWS}
   Dummy: integer;
 begin
+  CSI.OSName := 'Mac';
+  CSI.MemSize := 0;
+  CSI.MemUsage := 0;
   {$IFDEF LINUX}
   FpUname(UName);
   CSI.OSName := string(UName.Sysname);
@@ -257,3 +260,4 @@ begin
 end;
 
 end.
+
