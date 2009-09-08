@@ -54,10 +54,25 @@ implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
-  UDateUtils, Math
-  {$IFDEF MSWINDOWS}
-  ,Windows
-  {$ENDIF};
+  UDateUtils, Math;
+
+{$IFDEF MSWINDOWS}
+type
+  MEMORYSTATUSEX = record
+    dwLength :     Cardinal;
+    dwMemoryLoad : Cardinal;
+    ullTotalPhys : UInt64;
+    ullAvailPhys : UInt64;
+    ullTotalPageFile : UInt64;
+    ullAvailPageFile : UInt64;
+    ullTotalVirtual : UInt64;
+    ullAvailVirtual : UInt64;
+    ullAvailExtendedVirtual: UInt64;
+  end;
+
+  procedure GlobalMemoryStatusEx(var Buffer: MEMORYSTATUSEX); stdcall; external 'kernel32' name 'GlobalMemoryStatusEx';
+{$ENDIF}
+
 
 function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
 var
@@ -199,6 +214,7 @@ begin
   result := (encodedlength div 4) * 3;
 end;
 
+
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var
   {$IFDEF LINUX}
@@ -206,6 +222,9 @@ var
   Info: TSysInfo;
   UName: UtsName;
   {$ENDIF LINUX}
+  {$IFDEF WINDOWS}
+  WinMem: MEMORYSTATUSEX;
+  {$ENDIF WINDOWS}
   Dummy: integer;
 begin
   {$IFDEF LINUX}
@@ -216,11 +235,14 @@ begin
   Info := PInfo^;
   CSI.MemSize := (Info.totalram * Info.mem_unit);
   CSI.MemUsage := Floor(100 * (Info.totalram - (Info.freeram)) / Info.totalram);
-  {$ELSE}
+  {$ENDIF LINUX}
+  {$IFDEF WINDOWS}
+  WinMem.dwLength := SizeOf(WinMem);
+  GlobalMemoryStatusEx(WinMem);
   CSI.OSName := 'Windows';
-  CSI.MemSize := 0;
-  CSI.MemUsage := 0;
-  {$ENDIF}
+  CSI.MemSize := WinMem.ullTotalPhys;
+  CSI.MemUsage := WinMem.dwMemoryLoad;
+  {$ENDIF WINDOWS}
   CSI.OSMajorVersion := 0;
   CSI.OSMinorVersion := 0;
 
