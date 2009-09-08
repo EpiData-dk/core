@@ -531,7 +531,7 @@ begin
     begin
       for i := 0 to FieldStrings.Count - 1 do
       begin
-        DataFile.DataFields[i].FieldName := FieldStrings[i];
+        DataFile.DataFields[i].FieldName := DataFile.CreateUniqueFieldName(FieldStrings[i]);
         DataFile.DataFields[i].VariableLabel := FieldStrings[i];
       end;
       SkipFirstLine := true;
