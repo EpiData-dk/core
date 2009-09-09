@@ -5,49 +5,143 @@ unit UImportExport;
 interface
 
 uses
-  Classes, SysUtils, UEpiDataFile, UDataFileTypes, UEpiLog;
+  Classes, SysUtils, UEpiDataFile, UDataFileTypes, UEpiLog, fpspreadsheet;
 
 type
 
   // Export record:
-  // - FileVersion:     Used in Stata and DBase file to name specific version of file.
   // - Start/EndRecord: Interger to name starting and ending record to export.
   //                    To include all use 1 as starting record and -1 as ending record.
   //                    Out of bounds is checked. Negative interval is ignored (=> no data exported)
   TEpiExportSettings = record
-    FileVersion: Integer;
     StartRecord: Integer;
     EndRecord:   Integer;
   end;
   PEpiExportSettings = ^TEpiExportSettings;
 
+  // Stata export
+  // - FileVersion:     Used to name specific version of file.
+  TEpiStataExportSettings = record
+    ExportSettings:  PEpiExportSettings;
+    FileVersion: Integer;
+  end;
+  PEpiStataExportSettings = ^TEpiStataExportSettings;
+
+  TEpiTxtExportSettings = record
+    ExportSettings:  PEpiExportSettings;
+    FieldSeparator:  Char;
+    DateSeparator:   Char;
+    DecimalSeparator:Char;
+    QuoteChar:       Char;
+    FixedFormat:     Boolean;
+    WriteFieldNames: Boolean;
+  end;
+  PEpiTxtExportSettings = ^TEpiTxtExportSettings;
+
+  TEpiSpreadSheetSettings = record
+    ExportSettings:    PEpiExportSettings;
+    SpreadSheetFormat: TsSpreadsheetFormat;
+    WriteFieldNames:   Boolean;
+  end;
+  PEpiSpreadSheetSettings = ^TEpiSpreadSheetSettings;
+
 const
+
+  ExportAll : TEpiExportSettings = (
+    StartRecord:  1;
+    EndRecord:    -1
+  );
 
   //  Stata Version 4    = $69;
   //  Stata Version 6    = $6C;
   //  Stata Version 7    = $6E;
   //  Stata Version 8+9  = $71;
   //  Stata Version 10   = $72;
-  ExportStata4_5: TEpiExportSettings =
-                    (FileVersion:  $69;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata6:   TEpiExportSettings =
-                    (FileVersion:  $6C;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata7:   TEpiExportSettings =
-                    (FileVersion:  $6E;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata8_9: TEpiExportSettings =
-                    (FileVersion:  $71;
-                     StartRecord:  1;
-                     EndRecord:    -1);
-  ExportStata10:  TEpiExportSettings =
-                    (FileVersion:  $72;
-                     StartRecord:  1;
-                     EndRecord:    -1);
+  ExportStata4_5: TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $69
+  );
+  ExportStata6:   TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $6C
+  );
+  ExportStata7:   TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $6E
+  );
+  ExportStata8_9: TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $71
+  );
+  ExportStata10:  TEpiStataExportSettings = (
+    ExportSettings: @ExportAll;
+    FileVersion:    $72
+  );
+
+  ExportTxtStandard: TEpiTxtExportSettings = (
+    ExportSettings:  @ExportAll;
+    FieldSeparator:  #9;
+    DateSeparator:   '-';
+    DecimalSeparator:'.';
+    QuoteChar:       '"';
+    FixedFormat:     false;
+    WriteFieldNames: true;
+  );
+
+  ExportExcel5: TEpiSpreadSheetSettings = (
+    ExportSettings:    @ExportAll;
+    SpreadSheetFormat: sfExcel5;
+    WriteFieldNames:   true;
+  );
+
+  ExportExcel8: TEpiSpreadSheetSettings = (
+    ExportSettings:    @ExportAll;
+    SpreadSheetFormat: sfExcel8;
+    WriteFieldNames:   true;
+  );
+
+  ExportOpenDocument: TEpiSpreadSheetSettings = (
+    ExportSettings:    @ExportAll;
+    SpreadSheetFormat: sfOpenDocument;
+    WriteFieldNames:   true;
+  );
+
+type
+  // Import records:
+  //
+  TEpiImportSettings = record
+    ForceFileVersion: Integer;
+    StartRecord:      Integer;
+    EndRecord:        Integer;
+  end;
+  PEpiImportSettings = ^TEpiImportSettings;
+
+  TEpiTxtImportSettings = record
+    ImportSettings: PEpiImportSettings;
+    QESFileName:    string;
+    UseQESFile:     boolean;
+    FieldSeparator: Char;
+    DateSeparator:  Char;
+    QuoteChar:      Char;
+    FixedFormat:    Boolean;
+  end;
+  PEpiTxtImportSettings = ^TEpiTxtImportSettings;
+
+const
+  ImportAll: TEpiImportSettings =
+   (ForceFileVersion: -1;
+    StartRecord:      1;
+    EndRecord:        -1);
+
+  ImportTxtGuess: TEpiTxtImportSettings = (
+    ImportSettings: @ImportAll;
+    QESFileName:    '';
+    UseQESFile:     false;
+    FieldSeparator: #0;
+    DateSeparator:  #0;
+    QuoteChar:      '"';
+    FixedFormat:    false;
+    );
 
 type
 
@@ -72,18 +166,24 @@ type
     procedure     WriteSingle(Val: Single);
     procedure     WriteDouble(Val: Double);
     procedure     WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
+    function      GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
+                    TxtImpSetting: PEpiTxtImportSettings; var SkipFirstLine: boolean): boolean;
   public
     constructor   Create;
     destructor    Destroy; override;
     function      ImportStata(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
-    function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
-    function      ImportXLS(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
+                            TxtImpSetting: PEpiTxtImportSettings): Boolean;
+    function      ImportSpreadSheet(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
-                              ExpSetting: PEpiExportSettings): Boolean;
+                              ExpSetting: PEpiStataExportSettings): Boolean;
     function      ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
-    function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
-    function      ExportXLS(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    function      ExportTXT(Const aFilename: string; Const DataFile: TEpiDataFile;
+                    ExpSettings: PEpiTxtExportSettings): Boolean;
+    function      ExportSpreadSheet(Const aFilename: string; Const DataFile: TEpiDataFile;
+                    ExpSettings: PEpiSpreadSheetSettings): Boolean;
+    function      ExportXPT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
@@ -93,7 +193,9 @@ type
 implementation
 
 uses
-  UValueLabels, UEpiDataConstants, UEpiUtils, Math, StrUtils, UDateUtils, FileUtil;
+  UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
+  FileUtil, UQesHandler, Clipbrd, UStringUtils,
+  fpsallformats;
 
   { TEpiImportExport }
 
@@ -169,6 +271,7 @@ begin
     Result := Result + Src[i];
     Inc(i);
   end;
+//  Result := EpiUnknownStrToUTF8(Result);
 end;
 
 procedure TEpiImportExport.WriteBuf(Buf: Array of Byte; Count: Integer);
@@ -225,6 +328,220 @@ begin
   StrDispose(StrBuf);
 end;
 
+function TEpiImportExport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
+  TxtImpSetting: PEpiTxtImportSettings; var SkipFirstLine: boolean): boolean;
+var
+  tabcount, semicoloncount, commacount,
+  spacecount: Integer;
+  istab, issemi, iscomma, isspace: Boolean;
+  i, LineCount, FieldCount, w: Integer;
+  TmpStr: string;
+  TmpField: TEpiField;
+  FtList: array of TFieldType;
+  FieldStrings: TStrings;
+  j: Integer;
+  TmpFT: TFieldType;
+  FieldNameInRow1: Boolean;
+  ok: Boolean;
+begin
+  result := false;
+  SkipFirstLine := false;
+
+
+  FieldStrings := nil;
+  TmpField := nil;
+  try
+    tabcount:=0;   semicoloncount:=0; commacount:=0;   spacecount:=0;
+    LineCount := Math.Min(NumGuessLines, Lines.Count);
+    w := 0;
+    for i := 0 to LineCount - 1 do
+    begin
+      TmpStr := TrimRight(Lines[i]);
+      if Trim(TmpStr) = '' then continue;
+      Inc(w);
+      inc(tabcount, StrCountChars(TmpStr, [#9]));
+      inc(semicoloncount, StrCountChars(TmpStr, [';']));
+      inc(commacount, StrCountChars(TmpStr, [',']));
+      inc(spacecount, StrCountChars(TmpStr, [' ']));
+    end;
+    tabcount := Round(tabcount / w);
+    semicoloncount := Round(semicoloncount / w);
+    commacount := Round(commacount / w);
+    spacecount := Round(spacecount / w);
+
+    istab:=true;   issemi:=true; iscomma:=true;   isspace:=true;
+    { Look for field separator char }
+    for i :=0 to LineCount - 1 do
+    begin
+      TmpStr := TrimRight(Lines[i]);
+      if trim(TmpStr)='' then continue;
+
+      if (istab) then
+      begin
+        w := StrCountChars(TmpStr, [#9]);
+        if w = 0 then istab := false;
+        if w > tabcount then istab := false;
+      end;
+
+      if (issemi) then
+      begin
+        w := StrCountChars(TmpStr, [';']);
+        if w = 0 then issemi := false;
+        if w > semicoloncount then issemi := false;
+      end;
+
+      if (iscomma) then
+      begin
+        w := StrCountChars(TmpStr, [',']);
+        if w = 0 then iscomma := false;
+        if w > commacount then iscomma := false;
+      end;
+
+      if (isspace) then
+      begin
+        w := StrCountChars(TmpStr, [' ']);
+        if w = 0 then isspace := false;
+        if w > spacecount then isspace := false;
+      end;
+    end; //for
+
+    { Priority: tab, semicolon, comma, space    }
+    if istab        then begin TxtImpSetting^.FieldSeparator := #9;  FieldCount := tabcount + 1;       end
+    else if issemi  then begin TxtImpSetting^.FieldSeparator := ';'; FieldCount := semicoloncount + 1; end
+    else if iscomma then begin TxtImpSetting^.FieldSeparator := ','; FieldCount := commacount + 1;     end
+    else if isspace then begin TxtImpSetting^.FieldSeparator := ' '; FieldCount := spacecount + 1;     end
+    else begin
+      DataFile.ErrorCode := EPI_IMPORT_FAILED;
+      DataFile.ErrorText := Lang(0, 'Illegal formal of textfile. Fieldseparator not found.');
+      Exit;
+    end;
+
+    // Guess field type.
+    // Skip first line since it may contain headings/field names.
+    SetLength(FtList, FieldCount);
+    for i := 1 to LineCount - 1 do
+    begin
+      TmpStr := Lines[i];
+      if Trim(TmpStr) = '' then continue;
+
+      SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+
+      for j := 0 to FieldStrings.Count -1 do
+      begin
+        TmpStr := FieldStrings[j];
+        if TmpStr = '.' then continue;
+        FtList[j] := FindFieldType(TmpStr, FtList[j]);
+      end;
+    end;
+
+    // Create Fields.
+    for i := 1 to FieldCount do
+    begin
+      TmpField := TEpiField.Create;
+      with TmpField do
+      begin
+        FieldType := FtList[i-1];
+        FieldName := 'V' + IntToStr(i);
+        FieldNo   := i;
+        FieldLength := 0;
+        NumDecimals := 0;
+      end;
+      DataFile.AddField(TmpField);
+    end;
+
+    // Guess field lengths
+    // Skip first line since it may contain headings/field names.
+    for i := 1 to LineCount - 1 do
+    begin
+      TmpStr := Lines[i];
+      if Trim(TmpStr) = '' then continue;
+
+      SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+
+      for j := 0 to FieldStrings.Count -1 do
+      with DataFile.DataFields[j] do
+      begin
+        TmpStr := FieldStrings[j];
+        if (TmpStr = '.') or (Trim(TmpStr) = '') then continue;
+        case FieldType of
+          ftBoolean:
+            FieldLength := 1;
+          ftInteger:
+            begin
+              if Length(TmpStr) > MaxIntegerLength then
+                FieldType := ftFloat;
+              FieldLength := Max(FieldLength, Length(TmpStr));
+            end;
+          ftFloat:
+            begin
+              FieldLength := Max(FieldLength, Length(TmpStr));
+              if (StrCountChars(Tmpstr, CommaChars) > 0) then
+                NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+            end;
+          ftAlfa:
+            FieldLength := Max(FieldLength, Length(TmpStr));
+          ftDate, ftEuroDate, ftYMDDate:
+            FieldLength := 10;
+        end;
+      end;
+    end;
+
+    // Guess field names (and variable labels).
+    // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
+    // - previously did not succeed. Make type = ftAlfa and Length = 1;
+    FieldNameInRow1 := false;
+    SplitString(Lines[0], FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+    for i := 0 to FieldStrings.Count - 1 do
+    begin
+      TmpStr := FieldStrings[i];
+      TmpField := DataFile.DataFields[i];
+
+      if (TmpField.FieldLength = 0) and (TmpField.FieldType = ftInteger) then
+      begin
+        TmpField.FieldType := ftAlfa;
+        TmpField.FieldLength := 1;
+      end;
+
+      case TmpField.FieldType of
+        ftInteger, ftIDNUM:
+          ok := IsInteger(TmpStr);
+        ftAlfa,ftUpperAlfa,
+        ftSoundex,ftCrypt:
+          ok := True;
+        ftBoolean:
+          BEGIN
+            Ok := true;
+            TmpStr := AnsiUpperCase(Trim(TmpStr));
+            IF (Length(TmpStr) >= 1) and
+               (TmpStr[1] in BooleanYesChars) THEN
+              TmpStr := 'Y'
+            else
+              TmpStr := 'N';
+          END;
+        ftFloat:
+          ok := IsFloat(TmpStr);
+        ftDate,ftEuroDate,ftToday,
+        ftYMDDate,ftYMDToday,ftEuroToday:
+          ok := EpiIsDate(TmpStr, TmpField.FieldType);
+      end;
+      if (not ok) and (FindFieldType(TmpStr, ftInteger) = ftAlfa) then
+        FieldNameInRow1 := true;
+    end;
+    if FieldNameInRow1 then
+    begin
+      for i := 0 to FieldStrings.Count - 1 do
+      begin
+        DataFile.DataFields[i].FieldName := DataFile.CreateUniqueFieldName(FieldStrings[i]);
+        DataFile.DataFields[i].VariableLabel := FieldStrings[i];
+      end;
+      SkipFirstLine := true;
+    end;
+    result := true;
+  finally
+    if Assigned(FieldStrings) then FreeAndNil(FieldStrings);
+  end;
+end;
+
 constructor TEpiImportExport.Create;
 begin
 
@@ -242,7 +559,7 @@ var
   TypeList,
   CharBuf: Array of Char;
   NVar, NObs, CurRec, CurField,
-  I, J, TmpInt: integer;
+  Sum, I, J, TmpInt: integer;
   TmpFlt: Double;
   TmpField: TEpiField;
   StrBuf: string;
@@ -255,6 +572,7 @@ var
   ByteChar, IntChar, LongChar,
   FloatChar, DoubleChar: Char;
   MissingBaseNum: Cardinal;
+  DecS: Char;
 
   function ReadSingleMissing(var MisVal: string): Single;
   var
@@ -431,6 +749,7 @@ begin
     SetLength(CharBuf, FieldNameLength * NVar);
     DataStream.Read(CharBuf[0], FieldNameLength * NVar);
 
+//    Sum := 0;
     FOR i := 0 TO NVar - 1 DO
     BEGIN
       TmpField := TEpiField.Create();
@@ -458,7 +777,7 @@ begin
       TmpField.NumDecimals := 0;
       case TypeList[i] of
         ByteConst: TmpField.FieldLength := 2;
-        IntConst:  TmpField.FieldLength := 4;
+        IntConst:  TmpField.FieldLength := MaxIntegerLength;
         LongConst: TmpField.FieldLength := 10;
         FloatConst,
         DoubleConst:
@@ -493,6 +812,9 @@ begin
         INC(J);
       until not FieldExists(StrBuf);
       TmpField.FieldName := Trim(StrBuf);
+
+//      WriteLn(Format('Length %d of Field: %s', [TmpField.FieldLength, TmpField.FieldName]));
+//      Inc(Sum, TmpField.FieldLength);
 
       AddField(TmpField);
     END;
@@ -624,6 +946,7 @@ begin
     //          STATA DATA
     // ********************************
     // TODO -o Torsten : Redesign reding of data into correct TEpiField-types.
+    DecS := EpiInternalFormatSettings.DecimalSepator;
     TRY
       FOR CurRec := 1 TO nObs DO
       BEGIN
@@ -678,25 +1001,33 @@ begin
                     StrBuf := ''
                   else begin
                     TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)] :=
-                      DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + '.' + DupeString(StrBuf, TmpField.NumDecimals);
+                      DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.NumDecimals);
                     StrBuf := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
                   end;
-                end else
-                  Str(TmpFlt : TmpField.FieldLength : TmpField.NumDecimals, StrBuf)
+                end else begin
+                  StrBuf := FloatToStr(TmpFlt);
+                  IsFloat(StrBuf);
+                end;
               End;
           else
             // This is a string field.
-            SetLength(CharBuf, TmpField.FieldLength div 2);
+            // +1 Because we need a termination character in case all bytes in field
+            // are used for text.
+            SetLength(CharBuf, (TmpField.FieldLength div 2) + 1);
             FillChar(CharBuf[0], Length(CharBuf), 0);
             DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
-            StrBuf := SysToUTF8(String(CharBuf));
+            // Hack - for some reason an empty PChar strings are not correctly assing the empty string.
+            // => garbage is be stored in StrBuf!
+            if CharBuf[0] = #0 then
+              StrBuf := ''
+            else
+              StrBuf := EpiUnknownStrToUTF8(String(CharBuf));
           end;
 
           IF (StrBuf <> '') AND (TmpField.Fieldtype in DateFieldTypes) THEN
           BEGIN
-            TmpFlt := StrToFloat(StrBuf) + 21916;  {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
-            // TODO -O Torsten : Handle dates in Stata.
-//              s:=mibDateToStr(tmpDate,EField.Fieldtype);
+            {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
+            StrBuf := EpiDateTimeToStr(StrToFloat(StrBuf) + 21916, TmpField.FieldType);
           END;  //if date variable
           TmpField.AsString[CurRec] := StrBuf;
         END;  //for CurField
@@ -799,6 +1130,7 @@ var
   TmpInt: LongInt;
   CurField: Integer;
   C: Char;
+  Ds: Char;
 BEGIN
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportDBase', 2, 'Filename = ' + aFilename);
@@ -812,7 +1144,7 @@ BEGIN
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftStata;
+    OrgDataType := dftDBase;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
@@ -910,6 +1242,7 @@ BEGIN
 
     {Read data}
     // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
+    Ds := EpiInternalFormatSettings.DateSeparator;
     DataStream.Position := HSize;
     FOR CurRec := 1 TO NObs DO
     BEGIN
@@ -934,7 +1267,7 @@ BEGIN
           CASE FieldType OF
             ftDate:
               begin
-                TmpStr := Copy(TmpStr, 5, 2) + '/' + Copy(TmpStr, 7, 2) + '/' + Copy(TmpStr, 1, 4);
+                TmpStr := Copy(TmpStr, 5, 2) + Ds + Copy(TmpStr, 7, 2) + Ds + Copy(TmpStr, 1, 4);
                 EpiIsDate(TmpStr, ftDate);
               end;
             ftInteger:
@@ -964,11 +1297,169 @@ BEGIN
 END;   //ImportDBaseFile
 
 function TEpiImportExport.ImportTXT(const aFilename: string;
-  var DataFile: TEpiDataFile): Boolean;
-
+  var DataFile: TEpiDataFile; TxtImpSetting: PEpiTxtImportSettings): Boolean;
+var
+  QESHandler: TQesHandler;
+  ImportLines: TStrings;
+  TmpStr, EncStr: String;
+  FieldLines: TStringList;
+  i: Integer;
+  j: Integer;
+  TmpField: TEpiField;
+  skipfirstline, ok: Boolean;
 begin
-{  EpiLogger.IncIndent;
-  EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + aFilename);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
+  result := false;
+
+  if Assigned(DataFile) then
+    DataFile.Reset()
+  else
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+
+  if (TxtImpSetting = nil) then
+    TxtImpSetting := @ImportTxtGuess;
+
+  QESHandler := nil;
+  ImportLines := nil;
+  FieldLines := nil;
+
+  // IMPORT.
+  With DataFile do
+  TRY
+    FieldNaming := fnAuto;
+    OrgDataType := dftCSV;
+    FileName := aFilename;
+    UpdateProgress(0, Lang(0, 'Initializing'));
+
+    ImportLines := TStringList.Create;
+
+    // Importing from ClipBoard?
+    if aFilename = '' then
+    begin
+      if Clipboard.HasFormat(CF_Text) then
+      begin
+        TmpStr := EpiUnknownStrToUTF8(Clipboard.AsText);
+        TmpStr := StringReplace(TmpStr, #13#10, #1, [rfReplaceAll]);
+        ImportLines.Delimiter := #1;
+        ImportLines.StrictDelimiter := true;
+        ImportLines.DelimitedText := TmpStr;
+      end;
+    end else begin
+      ImportLines.LoadFromFile(aFileName);
+      EpiUnknownStringsToUTF8(ImportLines);
+    end;
+
+    if ImportLines.Count = 0 then
+    begin
+      ErrorCode := EPI_IMPORT_FAILED;
+      ErrorText := Lang(0, 'ClipBoard or File contains no data.');
+      Exit;
+    end;
+
+    if TxtImpSetting^.UseQESFile then
+    begin
+      QESHandler := TQesHandler.Create;
+      skipfirstline := true;
+      if Not QESHandler.QesToDatafile(TxtImpSetting^.QESFileName, DataFile) then
+        Exit;
+    end else begin
+      // Guess structure based on content.
+      if not GuessTxtFile(DataFile, ImportLines, TxtImpSetting, skipfirstline) then
+        Exit;
+    end;
+
+    DataFile.Save('');
+
+    FieldLines := TStringList.Create;
+    for i := StrToInt(BoolToStr(skipfirstline, '1', '0')) to ImportLines.Count -1 do
+    begin
+      if Trim(ImportLines[i]) = '' then continue;
+      SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+
+      if FieldLines.Count > NumDataFields then
+      begin
+        ErrorCode := EPI_IMPORT_FAILED;
+        ErrorText := Format(Lang(0, 'Error in line %d. To many delimiters - found %d, should be %d'), [i + 1, FieldLines.Count - 1, NumDataFields - 1]);
+        Exit;
+      end;
+
+      for j := 0 to FieldLines.Count -1 do
+      begin
+        TmpStr   := FieldLines[j];
+        if TmpStr = '.' then TmpStr := '';
+        TmpField := DataFields[j];
+        case TmpField.FieldType of
+          ftInteger, ftIDNUM:
+            ok := IsInteger(TmpStr);
+          ftAlfa,ftUpperAlfa,
+          ftSoundex,ftCrypt:
+            ok := True;
+          ftBoolean:
+            BEGIN
+              Ok := true;
+              TmpStr := AnsiUpperCase(Trim(TmpStr));
+              IF (Length(TmpStr) >= 1) and
+                 (TmpStr[1] in BooleanYesChars) THEN
+                TmpStr := 'Y'
+              else
+                TmpStr := 'N';
+            END;
+          ftFloat:
+            ok := IsFloat(TmpStr);
+          ftDate,ftEuroDate,ftToday,
+          ftYMDDate,ftYMDToday,ftEuroToday:
+            ok := EpiIsDate(TmpStr, TmpField.FieldType);
+        end;
+        if (not ok) and (TmpStr <> '') then
+        begin
+          ErrorCode := EPI_IMPORT_FAILED;
+          ErrorText := Format(Lang(0, 'Error in line %d') + #13#10 +
+             Lang(23958, 'Data (''%s'') is not compliant with the fieldtype of field %s (%s).'),
+            [i + 1, TmpStr, TmpField.FieldName, FieldTypeToFieldTypeName(TmpField.FieldType, OnTranslate)]);
+          Exit;
+        end;
+        IF Length(TmpStr) > TmpField.FieldLength THEN
+        BEGIN
+          ErrorCode := EPI_IMPORT_FAILED;
+          ErrorText := Format(Lang(0, 'Error in line %d') + #13#10 +
+             Lang(23960, 'Data (''%s'') too wide to fit in the field %s'),
+            [i + 1, TmpStr, TmpField.FieldName]);
+          Exit;
+        END;
+        TmpField.AsData := TmpStr;
+      end;
+      Write();
+    end;
+  finally
+    if Assigned(QESHandler) then FreeAndNil(QESHandler);
+    if Assigned(ImportLines) then FreeAndNil(ImportLines);
+    if Assigned(FieldLines) then FreeAndNil(FieldLines);
+    EpiLogger.DecIndent;
+  end;
+end;
+
+function TEpiImportExport.ImportSpreadSheet(const aFilename: string;
+  var DataFile: TEpiDataFile): Boolean;
+var
+  WorkBook: TsWorkbook;
+  WorkSheet: TsWorksheet;
+  ColEnd: LongWord;
+  RowEnd: LongWord;
+  i, j: Integer;
+  ColStart: LongWord;
+  RowStart: LongWord;
+  FtList: array of TFieldType;
+  LineCount: LongWord;
+  FieldCount: Integer;
+  ACell: PCell;
+  TmpStr: String;
+  FieldNameInRow1: Boolean;
+  TmpField: TEpiField;
+  Stop: Boolean;
+begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ImportSpreadSheet', 2, 'Filename = ' + aFilename);
   result := false;
 
   if Assigned(DataFile) then
@@ -978,23 +1469,204 @@ begin
 
   With DataFile do
   TRY
-    FieldNaming := fnAuto;
-    OrgDataType := dftStata;
-    FileName := aFilename;
-    UpdateProgress(0, Lang(0, 'Reading header information'));
+    UpdateProgress(0, Lang(0, 'Unpacking spreadsheet'));
 
-    DataStream := TFileStream.Create(aFileName, fmOpenRead);   }
+    WorkBook := TsWorkbook.Create;
 
-end;
+    // TODO : Implement other spreadsheet formats.
+    WorkBook.ReadFromFile(aFilename, sfOpenDocument);
+    WorkSheet := WorkBook.GetFirstWorksheet;
 
-function TEpiImportExport.ImportXLS(const aFilename: string;
-  var DataFile: TEpiDataFile): Boolean;
-begin
+    ColEnd := WorkSheet.GetLastColNumber;
+    RowEnd := WorkSheet.GetLastRowNumber;
 
+    ColStart := ColEnd;
+    RowStart := RowEnd;
+    Stop := False;
+
+    for i := 0 to RowEnd do
+    begin
+      for j := 0 to ColEnd do
+      begin
+        if Assigned(WorkSheet.FindCell(i, j)) then
+        begin
+          ColStart := j;
+          RowStart := i;
+          Stop := true;
+        end;
+        if stop then break;
+      end;
+      if stop then break;
+    end;
+
+    LineCount := Math.Min(NumGuessLines, RowEnd);
+    FieldCount := ColEnd - ColStart + 1;
+    SetLength(FtList, FieldCount);
+
+    // Skip first line since it may contain headings/field names.
+    for i := RowStart + 1 to LineCount do
+    begin
+      UpdateProgress(Trunc(100 * (i / LineCount)), Lang(0, 'Guessing field information'));
+      for j := ColStart to ColEnd do
+      begin
+        ACell := WorkSheet.FindCell(i, j);
+
+        // ACell = nil is considered missing.
+        if not Assigned(ACell) then continue;
+
+        // TODO : Detect dates?
+        case ACell^.ContentType of
+          cctEmpty:
+            Continue;
+          cctFormula, cctRPNFormula:
+            begin
+              ErrorCode := EPI_IMPORT_FAILED;
+              ErrorText := Lang(0, 'Cannot import from formulas in spreadsheets');
+              Exit;
+            end;
+          cctNumber:
+            Begin
+              TmpStr := FloatToStr(ACell^.NumberValue);
+              FtList[j - ColStart] := FindFieldType(TmpStr, FtList[j - ColStart]);
+            end;
+          cctUTF8String:
+            begin
+              TmpStr := ACell^.UTF8StringValue;
+              FtList[j - ColStart] := FindFieldType(TmpStr, FtList[j - ColStart]);
+            end;
+        end;
+      end;
+    end;
+
+    UpdateProgress(0, Lang(0, 'Guessing field information'));
+    // Create Fields.
+    for i := 1 to FieldCount do
+    begin
+      TmpField := TEpiField.Create;
+      with TmpField do
+      begin
+        FieldType := FtList[i-1];
+        FieldName := 'V' + IntToStr(i);
+        FieldNo   := i;
+        FieldLength := 0;
+        NumDecimals := 0;
+      end;
+      AddField(TmpField);
+    end;
+
+    // Guess field lengths
+    for j := ColStart to ColEnd do
+    begin
+      with DataFields[j - ColStart] do
+      begin
+        // Set Length of field once - skip to next field
+        if FieldType = ftBoolean then
+        begin
+          FieldLength := 1;
+          Continue;
+        end;
+        if FieldType in DateFieldTypes then
+        begin
+          FieldLength := 10;
+          Continue;
+        end;
+
+        // Skip first line since it may contain headings/field names.
+        for i := RowStart + 1 to LineCount do
+        begin
+          ACell := WorkSheet.GetCell(i, j);
+          case ACell^.ContentType of
+            cctNumber : TmpStr := FloatToStr(ACell^.NumberValue);
+            cctUTF8String: TmpStr := ACell^.UTF8StringValue;
+          end;
+
+          case FieldType of
+            ftInteger:
+              begin
+                if Length(TmpStr) > MaxIntegerLength then
+                  FieldType := ftFloat;
+                FieldLength := Max(FieldLength, Length(TmpStr));
+              end;
+            ftFloat:
+              begin
+                FieldLength := Max(FieldLength, Length(TmpStr));
+                if (StrCountChars(Tmpstr, CommaChars) > 0) then
+                  NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+              end;
+            ftAlfa:
+              FieldLength := Max(FieldLength, Length(TmpStr));
+          end;
+        end;
+      end;
+    end;
+
+    // Guess field names (and variable labels).
+    // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
+    // - previously did not succeed. Make type = ftAlfa and Length = 1;
+    FieldNameInRow1 := false;
+    for i := ColStart to ColEnd do
+    begin
+      ACell := WorkSheet.GetCell(RowStart, i);
+
+      if not Assigned(ACell) then Continue;
+      case ACell^.ContentType of
+        cctNumber: TmpStr := FloatToStr(ACell^.NumberValue);
+        cctUTF8String: TmpStr := ACell^.UTF8StringValue;
+      end;
+
+      TmpField := DataFile.DataFields[i - ColStart];
+      if (FindFieldType(TmpStr) = ftAlfa) and
+         (TmpField.FieldType <> ftAlfa) then
+        FieldNameInRow1 := true;;
+    end;
+
+    if FieldNameInRow1 then
+    begin
+      for i := ColStart to ColEnd do
+      begin
+        ACell := WorkSheet.GetCell(RowStart, i);
+        DataFile.DataFields[i-colstart].FieldName := ACell^.UTF8StringValue;
+        DataFile.DataFields[i].VariableLabel := ACell^.UTF8StringValue;
+      end;
+    end;
+
+    Save('');
+    { ====================
+      Start reading data
+      ==================== }
+
+    for i := RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0'))) to RowEnd do
+    begin
+      UpdateProgress(Trunc((I / RowEnd) * 100), Lang(0, 'Importing records...'));
+      for j := ColStart to ColEnd do
+      with  DataFields[j - ColStart] do
+      begin
+        ACell := WorkSheet.GetCell(i, j);
+
+        case FieldType of
+          ftInteger, ftFloat:
+            AsData := FloatToStr(ACell^.NumberValue);
+          ftDate, ftEuroDate, ftYMDDate:
+            Begin
+              TmpStr := ACell^.UTF8StringValue;
+              EpiIsDate(TmpStr, FieldType);
+              AsData := TmpStr;
+            end;
+          ftAlfa:
+            AsData := ACell^.UTF8StringValue;
+        end;
+      end;
+      Write();
+    end;
+    UpdateProgress(100, Lang(0, 'Complete.'));
+  finally
+    if Assigned(WorkBook) then FreeAndNil(WorkBook);
+    EpiLogger.DecIndent();
+  end;
 end;
 
 function TEpiImportExport.ExportStata(const aFilename: string;
-  const DataFile: TEpiDataFile; ExpSetting: PEpiExportSettings): Boolean;
+  const DataFile: TEpiDataFile; ExpSetting: PEpiStataExportSettings): Boolean;
 var
   ValBuf,
   ByteBuf: Array of Byte;
@@ -1150,11 +1822,11 @@ begin
         CASE FieldType OF
           ftInteger, ftIDNUM:
             BEGIN
-              IF FieldLength < 3 THEN
+              IF FieldLength <= 2 THEN
                 TmpChar := ByteChar
-              ELSE IF FieldLength < 5 THEN
+              ELSE IF FieldLength <= MaxIntegerLength THEN
                 TmpChar := IntChar
-              ELSE IF FieldLength < 10 THEN
+              ELSE IF FieldLength <= 9 THEN
                 TmpChar := LongChar
               ELSE IF FieldLength >= 10 THEN
                 TmpChar := DoubleChar;  //&&
@@ -1319,10 +1991,9 @@ begin
           TmpStr := AsString[CurRec];
 
           // StrToFloat expects decimal separator to be in current locale.
-          // It is always stored as "." in EpiData.
-          // Placed here so it down't interfere with missingvalues.
+          // Placed here so it doesn't interfere with missingvalues.
           IF FieldType = ftFloat THEN
-            TmpStr := StringReplace(TmpStr, '.', DecimalSeparator, []);
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator, DecimalSeparator, []);
 
           IF trim(TmpStr)='' THEN
             TmpStr := '..';
@@ -1378,6 +2049,8 @@ begin
                     {Date is converted from Delphi's 30/12-1899 base
                      to Stata's 1/1-1960 base by substracting 21916 days}
                     TmpInt := Round(EpiDateToDateTime(TmpStr, FieldType, FieldLength) - 21916)
+                  else if FieldType = ftBoolean then
+                    TmpInt := BoolStrToInt(TmpStr)
                   else
                     TmpInt := StrToInt(TmpStr);
                 end;
@@ -1400,14 +2073,15 @@ begin
               EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 22306);
               Exit;
             end;
+            if TmpStr = '..' then TmpStr := '';
             WriteString(TmpStr, FieldLength);
           end;
         END;  //for CurVar
       END;  //for CurObs
     EXCEPT
       ErrorCode := EPI_EXPORT_FAILED;
-      ErrorText := Format(Lang(22304, 'Error occured during export of record #%d'), [CurRec]);
-      EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 223042);
+      ErrorText := Format(Lang(22304, 'Error occured during export of record #%d, FieldNo: %d'), [CurRec, CurField]);
+      EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 22304);
       Exit;
     END;  //try..Except
 
@@ -1589,7 +2263,15 @@ begin
               WriteString(Trim(TmpStr), FieldLength, False);
             ftDate, ftToday, ftEuroDate,
             ftEuroToday,ftYMDDate,ftYMDToday:
-              WriteString(FormatDateTime('yyyymmdd', EpiDateToDateTime(TmpStr, FieldType, FieldLength)), 8, False);
+              begin
+                if Trim(TmpStr) ='' then
+                begin
+                  ErrorCode := EPI_EXPORT_FAILED;
+                  ErrorText := Format(Lang(22306, 'Illegal date found in record # %d, field %s'), [CurRec, FieldName]);
+                  Exit;
+                end;
+                WriteString(FormatDateTime('yyyymmdd', EpiDateToDateTime(TmpStr, FieldType, FieldLength)), 8, False);
+              end;
           END;   //Case
         END;  //with CurField
       END;  //for CurRec
@@ -1604,17 +2286,246 @@ begin
     EpiLogger.DecIndent;
     if Assigned(DataStream) then FreeAndNil(DataStream);
   end;
-END;   //procedure ExportToDBASEIII
+END;
 
 function TEpiImportExport.ExportTXT(const aFilename: string;
-  const DataFile: TEpiDataFile): Boolean;
+  const DataFile: TEpiDataFile; ExpSettings: PEpiTxtExportSettings): Boolean;
+var
+  i: Integer;
+  FieldSep: Char;
+  DateSep: Char;
+  DecSep:  Char;
+  QuoteCh: Char;
+  TmpStr: String;
+  NObs: LongInt;
+  CurRec: Integer;
 begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ExportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
+  Result := false;
 
+  // Sanity checks:
+  if not Assigned(DataFile) then Exit;
+
+  with DataFile do
+  try
+    UpdateProgress(0, Lang(0, 'Writing header information'));
+
+    if aFilename = '' then
+      DataStream := TMemoryStream.Create
+    else
+      DataStream := TFileStream.Create(aFileName, fmCreate);
+
+    FieldSep := ExpSettings^.FieldSeparator;
+    DateSep  := ExpSettings^.DateSeparator;
+    DecSep   := ExpSettings^.DecimalSeparator;
+    QuoteCh  := ExpSettings^.QuoteChar;
+
+    if ExpSettings^.WriteFieldNames then
+    begin
+      for i := 0 to NumDataFields - 1do
+      begin
+        TmpStr := DataFields[i].FieldName;
+        if ExpSettings^.FixedFormat then
+          TmpStr := Format('%-*s', [MaxFieldNameLen, TmpStr]);
+        TmpStr := TmpStr + FieldSep;
+        DataStream.Write(TmpStr[1], Length(TmpStr));
+      end;
+      DataStream.Seek(-1, soCurrent);
+      TmpStr := #13#10;
+      DataStream.Write(TmpStr[1], 2);
+    end;
+
+    { Write Data }
+    NObs := NumRecords;
+    for CurRec := 1 to NObs do
+    begin
+       UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
+       Read(CurRec);
+
+       for i := 0 to NumDataFields - 1 do
+       begin
+        TmpStr := DataFields[i].AsData;
+
+        if ExpSettings^.FixedFormat then
+          TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
+
+        case DataFields[i].FieldType of
+          ftDate, ftEuroDate, ftYMDDate:
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DateSeparator,
+                        DateSep, [rfReplaceAll]);
+          ftFloat:
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator,
+                        DecSep, [rfReplaceAll]);
+          ftAlfa, ftUpperAlfa, ftCrypt, ftSoundex:
+            TmpStr := AnsiQuotedStr(TmpStr, QuoteCh);
+        end;
+
+        TmpStr := TmpStr + FieldSep;
+        DataStream.Write(TmpStr[1], Length(TmpStr));
+       end;
+      DataStream.Seek(-1, soCurrent);
+      TmpStr := #13#10;
+      DataStream.Write(TmpStr[1], 2);
+    end;
+
+    if DataStream is TMemoryStream then
+      Clipboard.SetFormat(CF_Text, DataStream);
+
+    result := true;
+  finally
+    EpiLogger.DecIndent;
+  end;
 end;
 
-function TEpiImportExport.ExportXLS(const aFilename: string;
+function TEpiImportExport.ExportSpreadSheet(const aFilename: string;
+  const DataFile: TEpiDataFile; ExpSettings: PEpiSpreadSheetSettings): Boolean;
+var
+  i: Integer;
+  WorkBook: TsWorkbook;
+  WorkSheet: TsWorksheet;
+  NObs: LongInt;
+  CurRec: Integer;
+  Offset: Integer;
+  TmpStr: String;
+  ACell: PCell;
+begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ExportSpreadSheet', 2, 'Filename = ' + aFilename);
+  Result := false;
+
+  // Sanity checks:
+  if not Assigned(DataFile) then Exit;
+  if Trim(aFilename) = '' then Exit;
+
+  with DataFile do
+  try
+    UpdateProgress(0, Lang(0, 'Writing header information'));
+
+    WorkBook := TsWorkbook.Create;
+    WorkSheet := WorkBook.AddWorksheet(Lang(0, 'Page 1'));
+
+    { Write FieldNames }
+    Offset := 0;
+    if ExpSettings^.WriteFieldNames then
+    begin
+      Offset := 1;
+      for i := 0 to NumDataFields - 1 do
+        WorkSheet.WriteUTF8Text(0, i, DataFields[i].FieldName);
+    end;
+
+    { Write Data }
+    NObs := NumRecords;
+    for CurRec := 1 to NObs do
+    begin
+      UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
+      Read(CurRec);
+
+      for i := 0 to NumDataFields - 1 do
+      begin
+        ACell := GetMem(SizeOf(TCell));
+        FillChar(ACell^, SizeOf(TCell), #0);
+        ACell^.Col := i;
+        ACell^.Row := CurRec - 1 + OffSet;
+
+        TmpStr := DataFields[i].AsData;
+        case DataFields[i].FieldType of
+{          ftDate, ftEuroDate, ftYMDDate,
+          ftToday, ftEuroToday, ftYMDToday:
+            begin
+              ACell^.UTF8StringValue := 'Date not supported';
+              ACell^.ContentType := cctUTF8String;
+            end; }
+          ftFloat, ftInteger, ftIDNUM:
+            if Trim(TmpStr) = '' then
+              continue
+            else begin
+              ACell^.NumberValue := StrToFloat(TmpStr);
+              ACell^.ContentType := cctNumber;
+            end
+        else
+          ACell^.UTF8StringValue := TmpStr;
+          ACell^.ContentType := cctUTF8String;
+        end;
+        WorkSheet.Cells.Add(ACell);
+      end;
+    end;
+
+    WorkBook.WriteToFile(aFilename, ExpSettings^.SpreadSheetFormat);
+    result := true;
+  finally
+    EpiLogger.DecIndent();
+    if Assigned(WorkBook) then FreeAndNil(WorkBook);
+  end;
+end;
+
+function TEpiImportExport.ExportXPT(const aFilename: string;
   const DataFile: TEpiDataFile): Boolean;
 begin
+  // Export to SAS Xport Format.
+
+  {  Fields become:
+    == short -> 2 bytes
+    == long  -> 4 bytes
+    struct NAMESTR {
+      short   ntype;              /* VARIABLE TYPE: 1=NUMERIC, 2=CHAR    */
+      short   nhfun;              /* HASH OF NNAME (always 0)            */
+        = 0;
+      short   nlng;               /* LENGTH OF VARIABLE IN OBSERVATION   */
+      short   nvar0;              /* VARNUM                              */
+        = TEpiField.FieldNo;
+      char8   nname;              /* NAME OF VARIABLE                    */
+        = TEpiField.FieldName (chopped and uniqued to length 8)
+      char40  nlabel;             /* LABEL OF VARIABLE                   */
+        = TEpiField.VariableLabel;
+
+      char8   nform;              /* NAME OF FORMAT                      */
+      short   nfl;                /* FORMAT FIELD LENGTH OR 0            */
+      short   nfd;                /* FORMAT NUMBER OF DECIMALS           */
+      short   nfj;                /* 0=LEFT JUSTIFICATION, 1=RIGHT JUST  */
+        = 0;  (*We always want to use Left Adjustment!*)
+      char    nfill[2];           /* (UNUSED, FOR ALIGNMENT AND FUTURE)  */
+        = #0#0;
+      char8   niform;             /* NAME OF INPUT FORMAT                */
+        = #0#0#0#0#0#0#0#0;
+      short   nifl;               /* INFORMAT LENGTH ATTRIBUTE           */
+        = 0;
+      short   nifd;               /* INFORMAT NUMBER OF DECIMALS         */
+        = 0;
+      long    npos;               /* POSITION OF VALUE IN OBSERVATION    */
+        = Sum of nlng until this Field!
+      char    rest[52];           /* remaining fields are irrelevant     */
+        = #0 * 52;
+      };
+
+    Conversions:
+      ftAlfa, ftSoundex, ftUpperAlfa, ftCrypt, ftBoolean = (
+        ntype  = 2,
+        nlng   = TEpiField.FieldLength,
+        nform  = #0#0#0#0#0#0#0#0,
+        nlf    = 0,
+        nfd    = 0
+      )
+
+      DateFieldTypes = (
+        ntype  = 1,
+        nlng   = 8,
+        nform  =
+          ftDate, ftToday:         MMDDYY
+          ftEuroDate, ftEuroToday: DDMMYY
+          ftYMDDate, ftYMDToday:   YYMMDD,
+        nlf    = 10,
+        nfd    = 0,
+      )
+
+      ftInteger, ftFloat, ftIDNum = (
+        nTyp   = 1,
+        nlng   = 8,
+        nform  = ???? TODO!
+        nlf    = TEpiField.FieldLength
+        nfd    = TEpiField.NumDecimals
+      )
+  }
 
 end;
 

@@ -6,21 +6,32 @@ interface
 
 uses
   LResources,
-  Messages, SysUtils, Variants, Classes, Controls, Forms,
+  SysUtils, Variants, Classes, Controls, Forms,
   Dialogs, StdCtrls, Buttons, ExtCtrls, ComCtrls, UEpiDataFile, Grids,
-  UDataFileTypes, Graphics, FileCtrl;
+  UDataFileTypes, Graphics, Menus, ActnList;
 
 type
 
   { TMainForm }
 
   TMainForm = class(TForm)
+    acQuit: TAction;
+    acSettings: TAction;
+    ActionList1: TActionList;
+    clipBrdChkBox: TCheckBox;
+    expclipBrdChkBox: TCheckBox;
+    MainMenu1: TMainMenu;
+    FileMenu: TMenuItem;
+    SettingsMenu: TMenuItem;
+    QuitMenu: TMenuItem;
+    EditMenu: TMenuItem;
     Panel1: TPanel;
     edInputFile: TLabeledEdit;
     SpeedButton1: TSpeedButton;
     readBtn: TButton;
     OpenDialog1: TOpenDialog;
     PageControl1: TPageControl;
+    excelCombo: TComboBox;
     TabSheet1: TTabSheet;
     Memo1: TMemo;
     TabSheet2: TTabSheet;
@@ -59,6 +70,10 @@ type
     Button6: TButton;
     Button7: TButton;
     filetypeCombo: TComboBox;
+    procedure acQuitExecute(Sender: TObject);
+    procedure acSettingsExecute(Sender: TObject);
+    procedure clipBrdChkBoxChange(Sender: TObject);
+    procedure expclipBrdChkBoxChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure readBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
@@ -80,6 +95,7 @@ type
     procedure GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: string);
     procedure ShowDebug(Sender: TObject; Msg: string);
     procedure SetButtons(DatafileIsOpen: Boolean);
+    function  UpdateExtension(Index: integer): string;
   public
     { Public declarations }
   end;
@@ -90,8 +106,9 @@ var
 implementation
 
 uses
-  Math, UValueLabels, UStringUtils, StrUtils, UPWform, UEpiUtils, UCheckFileIO,
-  UEpiDataConstants, UImportExport, ucommon, UEpiLog;
+  Math, UPWform, UEpiUtils, UCheckFileIO,
+  UEpiDataGlobals, UImportExport, ucommon, UEpiLog,
+  Settings;
 
 var
   Df: TEpiDataFile = nil;
@@ -104,47 +121,87 @@ var
   Stream: TStream;
   ChkIO:  TCheckFileIO;
   Lst: TStrings;
+  TmpStr: String;
 begin
-  if Trim(edInputFile.Text) = '' then exit;
+  if (not clipBrdChkBox.Checked) and (Trim(edInputFile.Text) = '') then exit;
 
-  Sg.ColCount := 2;
-  Sg.RowCount := 2;
-  Memo1.Lines.Clear;
-  Memo2.Lines.Clear;
-  orgChkMemo.Clear;
-  parsedChkMemo.Clear;
+  try
+    Sg.ColCount := 2;
+    Sg.RowCount := 2;
+    Memo1.Lines.Clear;
+    Memo2.Lines.Clear;
+    orgChkMemo.Clear;
+    parsedChkMemo.Clear;
 
-  pgLabel.Caption := '';
+    pgLabel.Caption := '';
+    ChkIO := nil;
+    Stream := nil;
+    Lst := nil;
 
-  LoadDataFile(Df, edInputFile.Text, not CheckBox1.Checked, @ShowProgress, @GetPassword);
+    TmpStr := BoolToStr(clipBrdChkBox.Checked, '', edInputFile.Text);
+    LoadDataFile(Df, TmpStr, not CheckBox1.Checked, @ShowProgress, @GetPassword);
 
-  Lst := TinyDocumentation(Df);
-  Memo1.Lines.AddStrings(Lst);
-  FreeAndNil(Lst);
-  Lst := DocumentDataFile(Df);
-  Memo2.Lines.AddStrings(Lst);
-  FreeAndNil(Lst);
+    if not Assigned(Df) then
+    begin
+      EpiLogger.Add('No Datafile Defined, this is probably because importform was canceled.', 1);
+      Memo1.Lines.Clear;
+      Memo1.Lines.Add('No Datafile Defined.');
+      Exit
+    end;
 
-  if FileExists(ChangeFileExt(Df.FileName, '.chk')) then
-    orgChkMemo.Lines.LoadFromFile(ChangeFileExt(Df.FileName, '.chk'));
+    Lst := TinyDocumentation(Df);
+    Memo1.Lines.AddStrings(Lst);
+    FreeAndNil(Lst);
+    Lst := DocumentDataFile(Df);
+    Memo2.Lines.AddStrings(Lst);
+    FreeAndNil(Lst);
 
-  Stream := TMemoryStream.Create();
-  ChkIO := TCheckFileIO.Create();
-  ChkIO.WriteCheckToStream(Stream, Df);
-  parsedChkMemo.Lines.LoadFromStream(Stream);
+    if FileExists(ChangeFileExt(Df.FileName, '.chk')) then
+      orgChkMemo.Lines.LoadFromFile(ChangeFileExt(Df.FileName, '.chk'));
 
-  LoadData(false);
+    Stream := TMemoryStream.Create();
+    ChkIO := TCheckFileIO.Create();
+    ChkIO.WriteCheckToStream(Stream, Df);
+    parsedChkMemo.Lines.LoadFromStream(Stream);
 
-  SetButtons(True);
+    LoadData(false);
 
-  FreeAndNil(ChkIO);
-  FreeAndNil(Stream);
+    SetButtons(True);
+  finally
+    if Assigned(ChkIO) then FreeAndNil(ChkIO);
+    if Assigned(Stream) then FreeAndNil(Stream);
+  end;
+end;
+
+procedure TMainForm.clipBrdChkBoxChange(Sender: TObject);
+begin
+  edInputFile.Enabled := not clipBrdChkBox.Checked;
+  SpeedButton1.Enabled := edInputFile.Enabled;
+end;
+
+procedure TMainForm.acQuitExecute(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TMainForm.acSettingsExecute(Sender: TObject);
+begin
+  if Assigned(SettingsForm) then FreeAndNil(SettingsForm);
+  SettingsForm := TSettingsForm.Create(self);
+  SettingsForm.ShowModal;
+end;
+
+procedure TMainForm.expclipBrdChkBoxChange(Sender: TObject);
+begin
+  edOutputFile.Enabled := not expclipBrdChkBox.Checked;
+  SpeedButton2.Enabled := edOutputFile.Enabled;
 end;
 
 procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   if Assigned(Df) then FreeAndNil(Df);
   TEpiLog.DestroyInstance;
+  CloseAction := caFree;
 end;
 
 procedure TMainForm.SpeedButton1Click(Sender: TObject);
@@ -162,7 +219,7 @@ begin
   if (not assigned(Df)) then exit;
 
   sg.ColCount := Df.NumDataFields + 1;
-  sg.RowCount := Df.NumRecords + 1;
+  sg.RowCount := Max(Df.NumRecords + 1, 1);
 
   if sg.ColCount > 1 then
     sg.FixedCols := 1;
@@ -239,11 +296,27 @@ begin
   closeBtn.Enabled := DatafileIsOpen;
   saveBtn.Enabled := DatafileIsOpen;
   SpeedButton2.Enabled := DatafileIsOpen;
+  expclipBrdChkBox.Enabled := DatafileIsOpen;
   filetypeCombo.Enabled := DatafileIsOpen;
+
 
   Caption := FrmCaption;
   if DatafileIsOpen then
     Caption := Caption + ': ' + Df.FileName;
+end;
+
+function TMainForm.UpdateExtension(Index: integer): string;
+begin
+  case Index of
+     0: Result := '.rec';
+     1: Result := '.dta';
+     2: Result := '.dbf';
+     3: Result := '.csv';
+     4: Result := '.xls';
+     5: Result := '.ods';
+  else
+    Result := '.rec';
+  end;
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);
@@ -261,12 +334,13 @@ begin
   cbDebug.Items.Add('4 - Very Verbose');
 
   // add instructions
-  Memo1.Lines.Add('Purpose of this application: Test core module for reading and saving data');
-  Memo1.Lines.Add('Do NOT use this as a conversion tool - except for test situations');
-  Memo1.Lines.Add(' ');
-  Memo1.Lines.Add('Report any problems and discuss on the EpiData list');
-  Memo1.Lines.Add('Use: Find files with the dialogs and click read - save or close');
-  Memo1.Lines.Add('The log contains calls to the core module depending on log level specified');
+  Memo3.Lines.Add('Purpose of this application: Test core module for reading and saving data');
+  Memo3.Lines.Add('Do NOT use this as a conversion tool - except for test situations');
+  Memo3.Lines.Add('');
+  Memo3.Lines.Add('Report any problems and discuss on the EpiData list');
+  Memo3.Lines.Add('Use: Find files with the dialogs and click read - save or close');
+  Memo3.Lines.Add('The log contains calls to the core module depending on log level specified');
+  Memo3.Lines.Add('============================================================================');
 end;
 
 procedure TMainForm.Button2Click(Sender: TObject);
@@ -285,34 +359,40 @@ begin
 end;
 
 procedure TMainForm.SpeedButton2Click(Sender: TObject);
+var
+   Ext: String;
 begin
   if SaveDialog1.Execute then
+    begin
     edOutputFile.Text := SaveDialog1.FileName;
+    Ext := UpdateExtension(FileTypeCombo.ItemIndex);
+    edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
+    end;
 end;
 
 procedure TMainForm.saveBtnClick(Sender: TObject);
 var
-  PExpSettings: PEpiExportSettings;
+  PExpSettings: Pointer;
   Ext: string;
+  TS: TTimeStamp;
 begin
-  if Trim(edOutputFile.Text) = '' then exit;
+  if (not expclipBrdChkBox.Checked) and (Trim(edOutputFile.Text) = '') then exit;
 
-  case filetypeCombo.ItemIndex of
-    0: Ext := '.rec';
-    1: Ext := '.dta';
-    2: Ext := '.dbf';
-    3: Ext := '.csv';
-    4: Ext := '.xls';
-  end;
+  if (not expclipBrdChkBox.Checked) then
+    Ext := UpdateExtension(FileTypeCombo.ItemIndex)
+  else
+    Ext := '';
 
-  Ext := ChangeFileExt(edOutputFile.Text, Ext);
-  EpiLogger.Add('Saving file to: ' + ext, 2);
+  Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edOutputFile.Text), Ext);
+  EpiLogger.Add(('Saving file to: ' + BoolToStr(expclipBrdChkBox.Checked, 'Clipboard',Ext)), 1);
   SaveDialog1.FileName := ext;
+  {$IFNDEF EPI_DEBUG}
   if fileexists(ext) then
   begin
     EpiLogger.Add('Cannot overwrite existing file: ' + ext, 2);
-//    Exit;
+    Exit;
   end;
+  {$ENDIF EPI_DEBUG}
 
   if stataCombo.Visible then
   begin
@@ -326,10 +406,32 @@ begin
     end;
   end;
 
-  if filetypeCombo.ItemIndex < 3 then
-    SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings)
-  else
-    EpiLogger.Add('File type not yet implemented', 2);
+  if excelCombo.Visible then
+  begin
+    if excelCombo.ItemIndex = 0 then
+      PExpSettings := @ExportExcel5
+    else
+      PExpSettings := @ExportExcel8;
+  end;
+
+  if filetypeCombo.ItemIndex = 5 then
+    PExpSettings := @ExportOpenDocument;
+
+{  if filetypeCombo.ItemIndex < 4 then
+  begin           }
+  TS := DateTimeToTimeStamp(Now);
+    if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
+    begin
+      EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
+      EpiLogger.Add('Please see "File Info:" tab-page for details.', 1);
+      PageControl1.ActivePage := TabSheet5;
+      Memo1.Lines.Clear;
+      Memo1.Lines.Add(Df.ErrorText);
+    end else begin
+      EpiLogger.Add(Format('Save completed successfully in: %d ms.', [DateTimeToTimeStamp(Now).Time - TS.Time]), 1);
+    end;
+{  end else
+    EpiLogger.Add('File type not yet implemented', 2);    }
 end;
 
 procedure TMainForm.closeBtnClick(Sender: TObject);
@@ -371,18 +473,14 @@ procedure TMainForm.filetypeComboChange(Sender: TObject);
 var ext : string;
 begin
   stataCombo.Hide;
+  excelCombo.Hide;
   CheckBox2.Checked := false;
   case TComboBox(Sender).ItemIndex of
     0: CheckBox2.Checked := true;
-    1: stataCombo.Show;
+    1: StataCombo.Show;
+    4: excelCombo.Show;
   end;
-  case TComboBox(Sender).ItemIndex of
-    0: Ext := '.rec';
-    1: Ext := '.dta';
-    2: Ext := '.dbf';
-    3: Ext := '.csv';
-    4: Ext := '.xls';
-  end;
+  Ext := UpdateExtension(TComboBox(Sender).ItemIndex);
   EpiLogger.Add('Filetype chosen: ' + ext, 2);
   edOutputFile.Text := ChangeFileExt(edOutputFile.Text, Ext);
 end;

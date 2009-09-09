@@ -5,7 +5,7 @@ unit UCommon;
 interface
 
 uses
-  Classes, Dialogs, UEpidataFile, UDataFileTypes, UImportExport;
+  Classes, Dialogs, UEpiDataFile, UDataFileTypes, UImportExport;
 
   function  TinyDocumentation(Df: TEpiDatafile): TStrings;
   function  DocumentDataFile(Df: TEpiDatafile): TStrings;
@@ -13,28 +13,23 @@ uses
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent): boolean;
   function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
-                         ExportSettings: PEpiExportSettings): boolean;
-  function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
+                         ExportSettings: Pointer): boolean;
   procedure SetFilter(aDialog: TOpenDialog);
 
 implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataConstants, UEpiUtils;
-
-function  GetParsedCheckFile(Df: TEpiDatafile): TStrings;
-begin
-
-end;
+  UEpiDataGlobals, uimportform, Controls;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
-  aDialog.Filter := 'Supported data files (*.rec,*.dta,*.dbf)|*.rec;*.dta;*.dbf|'
+  aDialog.Filter := 'Supported data files|*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
                   + 'EpiData data file (*.rec)|*.rec|'
                   + 'Stata file (*.dta)|*.dta|'
-//                  + 'Text file (*.txt)|*.txt|'
+                  + 'Text file (*.txt,*.csv)|*.txt|'
                   + 'dBase file (*.dbf)|*.dbf|'
+                  + 'Open Document Spreadsheep (*.ods)|*.ods|'
                   + 'All files (*.*)|*.*';
   aDialog.FilterIndex := 0;
 end;
@@ -62,6 +57,7 @@ var
   LoadOptions: TEpiDataFileOptions;
   Importer: TEpiImportExport;
   S: string;
+  impform: TImportForm;
 begin
   if Assigned(Df) then FreeAndNil(Df);
 
@@ -73,11 +69,20 @@ begin
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
-    S := AnsiUpperCase(ExtractFileExt(FileName));
+    S := Trim(AnsiUpperCase(ExtractFileExt(FileName)));
     if S = '.DTA' then
       Result := Importer.ImportStata(FileName, Df)
     else if S = '.DBF' then
-      Result := Importer.ImportDBase(FileName, Df);
+      Result := Importer.ImportDBase(FileName, Df)
+    else if S = '.ODS' then
+      Result := Importer.ImportSpreadSheet(FileName, Df)
+    else if (S = '.TXT') or (S = '.CSV') or (S='') then
+    begin
+      impform := TImportForm.Create(nil);
+      if impform.ShowModal = mrCancel then exit;
+      Result := Importer.ImportTXT(FileName, Df, impform.ImportSetting);
+      FreeAndNil(impform);
+    end;
     FreeAndNil(Importer);
   end else begin
     Df := TEpiDataFile.Create(LoadOptions);
@@ -89,7 +94,7 @@ end;
 
 function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                        ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
-                       ExportSettings: PEpiExportSettings): boolean;
+                       ExportSettings: Pointer): boolean;
 var
   OutDf: TEpiDataFile;
   I, J: Integer;
@@ -98,16 +103,19 @@ var
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
 begin
-
   if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
   begin
     Exporter := TEpiImportExport.Create();
     Exporter.OnProgress := ShowProgress;
     S := AnsiUpperCase(ExtractFileExt(FileName));
     if S = '.DTA' then
-      Exporter.ExportStata(FileName, Df, ExportSettings)
+      result:= Exporter.ExportStata(FileName, Df, PEpiStataExportSettings(ExportSettings))
     else if S = '.DBF' then
-      Exporter.ExportDBase(FileName, Df);
+      result := Exporter.ExportDBase(FileName, Df)
+    else if (S = '.CSV') or (Trim(FileName) = '') then
+      result := Exporter.ExportTXT(FileName, Df, @ExportTxtStandard)
+    else if (S = '.XLS') or (S = '.ODS') then
+      result := Exporter.ExportSpreadSheet(FileName, Df, PEpiSpreadSheetSettings(ExportSettings));
     FreeAndNil(Exporter);
     Exit;
   end;
@@ -143,9 +151,6 @@ begin
 end;
 
 function  DocumentDataFile(Df: TEpiDatafile): TStrings;
-type
-TCharSet=Set of Char;
-
 var
   res: TStringList;
   FileSiz:LongInt;
@@ -193,9 +198,10 @@ begin
     res.Append('');
 
     {Write datafile information}
-    tmpstr := FitLength('Last revision:',23)+
-      FormatDateTime('d. mmm yyyy t',
-      FileDateToDateTime(FileAge(epd.Filename)));
+    if Trim(epd.FileName) <> '' then
+      tmpstr := FitLength('Last revision:',23)+
+        FormatDateTime('d. mmm yyyy t',
+        FileDateToDateTime(FileAge(epd.Filename)));
     res.Append(tmpstr);
     res.Append(FitLength('Number of fields:',23)+IntToStr(epd.NumFields));
     tmpStr:=FitLength('Number of records:',23);

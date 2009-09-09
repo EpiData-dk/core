@@ -22,18 +22,21 @@ type
     LabelNo:      integer;
     Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     function      Lang(LangCode: Integer; Const LangText: string): string;
+    function      ExtractFieldName(const AText: string): string;
+    function      NumValidChars(Const AText: string): integer;
   protected
+    function      makeField(Ft: TFieldType; PosStart, PosEnd: Integer): TEpiField;
     function      makeLabel(LineNum: Integer): TEpiField;
     function      makeNumField(StartPos: Integer): TEpiField;
     function      makeTxtField(StartPos: Integer): TEpiField;
     function      makeOtherField(StartPos: Integer): TEpiField;
-    function      makeBoolField(StartPos: Integer): TEpiField;
-    function      makeUpperAlfa(StartPos: Integer): TEpiField;
-    function      makeIdNum(StartPos: Integer): TEpiField;
-    function      makeDate(StartPos: Integer): TEpiField;
-    function      makeToday(StartPos: Integer):TEpiField;
-    function      makeSoundex(StartPos: Integer): TEpiField;
-    function      makeCrypt(StartPos: Integer): TEpiField;
+    function      makeBoolField(StartPos, EndPos: Integer): TEpiField;
+    function      makeUpperAlfa(StartPos, EndPos: Integer): TEpiField;
+    function      makeIdNum(StartPos, EndPos: Integer): TEpiField;
+    function      makeDate(StartPos, EndPos: Integer; Ft: TFieldType): TEpiField;
+    function      makeToday(StartPos, EndPos: Integer):TEpiField;
+    function      makeSoundex(StartPos, EndPos: Integer): TEpiField;
+    function      makeCrypt(StartPos, EndPos: Integer): TEpiField;
     property      CurX: integer read FCurX write FCurX;
     property      Df: TEpiDataFile read FDf write FDf;
   public
@@ -50,7 +53,7 @@ type
 implementation
 
 uses
-  UEpiLog, Math, UEpiDataConstants, FileUtil, UEpiUtils;
+  UEpiLog, Math, UEpiDataGlobals, FileUtil, UEpiUtils, UStringUtils;
 
 { TQesHandler }
 
@@ -69,6 +72,84 @@ begin
   Result := LangText;
   IF Assigned(FOnTranslate) THEN
     Result := FOnTranslate(langcode, Result)
+end;
+
+function TQesHandler.ExtractFieldName(const AText: string): string;
+var
+  i: Integer;
+  TmpStr: String;
+begin
+  IF AText = '' THEN Result := ' ';
+
+  if Df.FieldNaming = fnAuto then
+    // EpiInfo fieldnaming style.
+    Result := FirstWord(AText, MaxFieldNameLen)
+  else  IF Pos('{', Result) > 0 THEN
+    // Explicit force fieldname by using { and }.
+    Result := ExtractStrBetween(AText, '{', '}')
+  else begin
+    // Normal guessing based on text.
+
+    TmpStr := StripWordsFromString(AText, CommonWords);
+    if (NumValidChars(TmpStr) = 0) and (Df.QuestFields.Count > 0) then
+      // Guess no good - try to find a name in prev. non-label field
+      Result := StripWordsFromString(Df.QuestFields[Df.QuestFields.Count-1].Question, CommonWords)
+    else begin
+      //Construct name from question
+      i := 0;
+      while (i < Length(TmpStr)) and (i < MaxFieldNameLen) do
+      begin
+        if TmpStr[i] in AlfaNumChars then
+          Result := Result + TmpStr[i];
+      end;
+    end;
+  end;
+
+  // Sanity checks.
+  if not CheckVariableName(Result, AlfaNumChars) then
+    Result := 'FIELD1';
+  if (Length(Result) > 0) and (Result[1] in NumChars) then
+    Result := 'N' + Result;
+  if Length(Result) > MaxFieldNameLen then
+    Result := Copy(Result, 1, MaxFieldNameLen);
+  Result := Df.CreateUniqueFieldName(Result);
+end;
+
+function TQesHandler.NumValidChars(const AText: string): integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 1 to Length(AText) do
+    if AText[i] in AlfaNumChars then
+      Inc(result);
+end;
+
+function TQesHandler.makeField(Ft: TFieldType; PosStart, PosEnd: Integer): TEpiField;
+var
+  Tmpstr: String;
+begin
+  result := TEpiField.Create;
+  With result do
+  begin
+    FieldType     := Ft;
+    FieldName     := ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
+    FieldLength   := PosEnd - PosStart + 1;
+    // TODO: QuestX of Y!
+    QuestX        := 0;
+    QuestY        := 0;
+    FieldX        := 0;
+    FieldY        := 0;
+    Question      := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
+    Question      := StringReplace(Question, '}', '', [rfIgnoreCase, rfReplaceAll]);
+    VariableLabel := trim(Question);
+    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
+    begin
+      Tmpstr := FirstWord(VariableLabel, Length(VariableLabel));
+      VariableLabel := Copy(VariableLabel, Length(TmpStr) + 1, Length(VariableLabel));
+    end;
+  end;
+  Delete(CurLine, 1, PosEnd);
 end;
 
 function TQesHandler.makeLabel(LineNum: Integer): TEpiField;
@@ -93,9 +174,13 @@ function TQesHandler.makeNumField(StartPos: Integer): TEpiField;
 VAR
   I:Integer;
   St, En: Integer;
+  NumStr: String;
+  Tmpstr: String;
 BEGIN
+  result := nil;
+
   St := StartPos;
-  WHILE (CurLine[StartPos] in ['#', ',', '.'])  AND (StartPos <= Length(CurLine)) DO
+  WHILE (StartPos <= Length(CurLine)) and (CurLine[StartPos] in ['#', ',', '.']) DO
     INC(StartPos);
   En := StartPos - 1;
 
@@ -109,151 +194,164 @@ BEGIN
     Exit;
   END;
 
-(*  Indhold:=COPY(L,FeltStart,FeltSlut-Feltstart+1);
-  AntalKomma:=0;
-  //Check if number is decimalnumber
-  FOR tt:=1 TO Length(Indhold) DO
-    IF (Indhold[tt]='.') OR (Indhold[tt]=',') THEN INC(AntalKomma);
-  IF (AntalKomma>1) OR (Indhold[Length(Indhold)]='.') OR (Indhold[Length(Indhold)]='.') THEN
-    BEGIN
-      {$IFNDEF epidat}
-      MidLin.Append(Format(Lang(20422),[LinNum+1]));    //'Error in floating point field in line %d:'
-      {$ELSE}
-      MidLin.Append(Format('Error in floating point field in line %d:',[LinNum+1]));
-      {$ENDIF}
-      MidLin.Append(Lin[LinNum]);
-      MidLin.Append(' ');
-      CreateIndtastningsFormError:=TRUE;
-      Delete(L,1,FeltSlut);
-      INC(CurX,FeltSlut);
-    END
-  ELSE
-    BEGIN
-      INC(FeltNr);
-      FeltNavn:=GetFieldName(COPY(L,1,FeltStart-1));
-      New(eField);
-      ResetField(eField);
-      AntalDecimaler:=0;
-      IF AntalKomma=1 THEN
-        BEGIN
-          AntalDecimaler:=Length(Indhold)-Pos('.',Indhold);
-          IF Pos('.',Indhold)=0 THEN
-            AntalDecimaler:=Length(Indhold)-Pos(',',Indhold);
-        END;
-      WITH eField^ DO
-        BEGIN
-          FName:=FeltNavn;
-          FLength:=FeltSlut-FeltStart+1;
-          FNumDecimals:=AntalDecimaler;
-          IF (AntalKomma=1) OR (FLength>9) THEN Felttype:=ftFloat
-          ELSE Felttype:=ftInteger;
-          IF FeltStart>1 THEN    //is there question before the field?
-            BEGIN
-              FQuestTop:=CurTop+2;
-              FQuestLeft:=CurLeft;
-              FQuestion:=RemoveCurly(COPY(L,1,FeltStart-1));
-              FOriginalQuest:=FQuestion;
-              TabsInNextField:=0;
-              WHILE FQuestion[Length(FQuestion)]='@' DO
-                BEGIN
-                  INC(TabsInNextField);
-                  FQuestion:=COPY(FQuestion,1,Length(FQuestion)-1);
-                END;  //While
-              FVariableLabel:=trim(FQuestion);
-              IF (NOT df^.EpiInfoFieldNaming) AND (trim(FQuestion)<>'') THEN
-                BEGIN
-                  s:=FirstWord(FVariableLabel);
-                  Delete(FVariableLabel,Pos(s,FVariableLabel),Length(s));
-                  FVariableLabel:=trim(FVariableLabel);
-                  IF df^.UpdateFieldnameInQuestion THEN
-                    BEGIN
-                      s:=trim(FirstWord(FQuestion));
-                      tt:=Pos(s,FQuestion);
-                      Delete(FQuestion,tt,Length(s));
-                      Insert(trim(FName),FQuestion,tt);
-                      s:=trim(FirstWord(FOriginalQuest));
-                      tt:=Pos(s,FOriginalQuest);
-                      Delete(FOriginalQuest,tt,Length(s));
-                      Insert(trim(FName),FOriginalQuest,tt);
-                    END;
-                END;
-              FQuestY:=LinNum+1;
-              FQuestX:=CurX;
-              INC(CurX,Length(FOriginalQuest));  // tidligere FQuestion
-              {$IFNDEF epidat}
-              ObjHeight:=MainForm.Canvas.TextHeight(FQuestion);
-              ObjWidth:=MainForm.Canvas.TextWidth(FQuestion);
-              {$ENDIF}
-              INC(CurLeft,ObjWidth);
-              IF ObjHeight>Tallest THEN Tallest:=ObjHeight;
-            END;   //if label before field
-          FLength:=FeltSlut-FeltStart+1;
-          {$IFNDEF epidat}
-          FFieldWidth:=(MainForm.Canvas.TextWidth('9')*(FLength+2))+6;
-          {$ENDIF}
-          FFieldTop:=CurTop;
-          IF TabsInNextField>0 THEN
-            BEGIN
-              CurLeft:=((Curleft DIV EvenTabValue)+
-                    TabsInNextField)*EvenTabValue;
-              TabsInNextField:=0;
-            END;
-          FFieldLeft:=CurLeft;
-          FFieldY:=LinNum+1;
-          FFieldX:=CurX;
-          FFieldText:='';
-          INC(CurLeft,FFieldWidth);
-          t:=FLength;
-        END;   //with eField do
-      df^.FieldList.Add(eField);
-      Delete(L,1,FeltSlut);
-      INC(CurX,t);
-    END;  //if AntalKomma>1 *)
+  NumStr := Copy(CurLine, St, En - St + 1);
+
+  if (StrCountChars(NumStr, ['.', ',']) > 1) or (NumStr[Length(NumStr)] in ['.', ',']) then
+  begin
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20422, 'Error in floating point field in line %d:'), [0]);
+    Delete(CurLine, 1, En);
+    Exit;
+  end;
+
+  Result := makeField(ftInteger, St, En);
+  if (StrCountChars(NumStr, ['.', ',']) > 0) then
+  begin
+    Tmpstr      := BoolToStr(Pos('.', NumStr) > 0, '.', ',');
+    Result.NumDecimals := Length(NumStr) - Pos(TmpStr, NumStr);
+    Result.FieldType := ftFloat;
+  end;
 end;
 
 function TQesHandler.makeTxtField(StartPos: Integer): TEpiField;
+var
+  St, En: Integer;
 begin
+  St := StartPos;
 
+  WHILE (StartPos <= Length(CurLine)) and (CurLine[StartPos] in ['_']) DO
+    INC(StartPos);
+  En := StartPos - 1;
+
+  if (En - St) + 1 > 80 then
+  begin
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20424, 'Text field in line %d exceeds maximum length of 80 characters:'), [0]);
+    Delete(CurLine, 1, En);
+    Exit;
+  end;
+
+  result := makeField(ftAlfa, St, En);
 end;
 
 function TQesHandler.makeOtherField(StartPos: Integer): TEpiField;
+var
+  St, En: LongInt;
+  FieldCode: String;
 begin
+  St := StartPos;
+  En := Pos('>', CurLine);
 
+  if En < St then
+  begin
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20432, 'A <...> field without closing-bracket in line %d:'), [0]);
+    Exit;
+  end;
+
+  FieldCode := AnsiUpperCase(Copy(CurLine, St, En - St + 1));
+
+  IF (FieldCode='<Y>')              THEN result := makeBoolField(St, En);
+  IF COPY(FieldCode,1,2)='<A'       THEN result := makeUpperAlfa(St, En);
+  IF COPY(FieldCode,1,6)='<IDNUM'   THEN result := makeIdNum(St, En);
+  IF (COPY(FieldCode,1,6)='<MM/DD') Then result := makeDate(St, En, ftDate);
+  If (COPY(FieldCode,1,6)='<DD/MM') Then result := makeDate(St, En, ftEuroDate);
+  If (FieldCode='<YYYY/MM/DD>')     THEN result := makeDate(St, En, ftYMDDate);
+  IF COPY(FieldCode,1,6)='<TODAY'   THEN result := makeToday(St, En);
+  IF COPY(FieldCode,1,2)='<S'       THEN result := makeSoundex(St, En);
+  IF COPY(FieldCode,1,2)='<E'       THEN result := makeCrypt(St, En);  //&&
+  IF FieldCode <> 'Done' THEN
+  BEGIN
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20434, 'Unknown code found in line %d:'), [0]);
+    Delete(CurLine, 1, En);
+    Exit;
+  END;   //if CodeFound not Done
 end;
 
-function TQesHandler.makeBoolField(StartPos: Integer): TEpiField;
+function TQesHandler.makeBoolField(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftBoolean, StartPos, EndPos);
+  Result.FieldLength := 1;
 end;
 
-function TQesHandler.makeUpperAlfa(StartPos: Integer): TEpiField;
+function TQesHandler.makeUpperAlfa(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftUpperAlfa, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 80 then
+  begin
+    Result.FieldLength := 80;
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20428, 'Upper-case text field in line %d exceeds maximum length of 80 characters:'),[0]);
+  end;
 end;
 
-function TQesHandler.makeIdNum(StartPos: Integer): TEpiField;
+function TQesHandler.makeIdNum(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftIDNUM, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 18 then
+  begin
+    Result.FieldLength := 18;
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20430, 'IDNUM field in line %d exceeds maximum length of 18 characters:'),[0]);
+  end;
 end;
 
-function TQesHandler.makeDate(StartPos: Integer): TEpiField;
+function TQesHandler.makeDate(StartPos, EndPos: Integer; Ft: TFieldType): TEpiField;
 begin
-
+  Result := makeField(Ft, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 10 then
+    Result.FieldLength := 10;
 end;
 
-function TQesHandler.makeToday(StartPos: Integer): TEpiField;
+function TQesHandler.makeToday(StartPos, EndPos: Integer): TEpiField;
+var
+  TempCode: String;
+  Ft: TFieldType;
+  FLength: Integer;
 begin
-
+  TempCode := Copy(CurLine, StartPos, EndPos - StartPos);
+  FLength := 0;
+  IF TempCode = '<TODAY-DMY>'  THEN BEGIN Ft := ftEuroToday; FLength:=10; END;
+  IF TempCode = '<TODAY-MDY>'  THEN BEGIN Ft := ftToday;     FLength:=10; END;
+  IF TempCode = '<TODAY-YMD>'  THEN BEGIN Ft := ftYMDToday;  FLength:=10; END;
+  IF TempCode = '<TODAY>'      THEN BEGIN Ft := ftToday;     FLength:=5;  END;
+  IF TempCode = '<TODAY/YY>'   THEN BEGIN Ft := ftToday;     FLength:=8;  END;
+  IF TempCode = '<TODAY/YYYY>' THEN BEGIN Ft := ftToday;     FLength:=10; END;
+  IF FLength = 0               THEN BEGIN Ft := ftEuroToday; FLength:=10; END;
+  Result := makeField(Ft, StartPos, EndPos);
+  Result.FieldLength := FLength;
 end;
 
-function TQesHandler.makeSoundex(StartPos: Integer): TEpiField;
+function TQesHandler.makeSoundex(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftSoundex, StartPos, EndPos);
+  Result.FieldLength := Result.FieldLength - 2;
+  if Result.FieldLength > 80 then
+    Result.FieldLength := 80;
 end;
 
-function TQesHandler.makeCrypt(StartPos: Integer): TEpiField;
+function TQesHandler.makeCrypt(StartPos, EndPos: Integer): TEpiField;
 begin
-
+  Result := makeField(ftCrypt, StartPos, EndPos);
+  Result.CryptLength := Result.FieldLength - 2;
+  Result.FieldLength := GetEncodedLength(Result.CryptLength);
+  if Result.CryptLength > 60 then
+  begin
+    Result.FieldLength := 60;
+    Df.ErrorCode := EPI_QES_FAILED;
+    // TODO -o Torsten : LineNum
+    Df.ErrorText := Format(Lang(20429, 'Encrypt field in line %d exceeds maximum length of 60 characters:'),[0]);
+  end;
 end;
 
 constructor TQesHandler.Create;
@@ -315,7 +413,7 @@ begin
       WHILE Length(CurLine)>0 DO
       BEGIN
         //Check which code is first in the line
-        FirstPos := MaxInt;
+        FirstPos := -MaxInt;
         N := pos('#', CurLine);
         IF (N > 0) Then FirstPos := Max(N, FirstPos);
         N := pos('_', CurLine);
@@ -335,12 +433,6 @@ begin
         Df.AddField(TmpField);
         IF trim(CurLine) = '' THEN CurLine := '';
       END;  //while
-(*      CurTop:=CurTop+(Tallest DIV 2);
-      CASE LineHeight OF
-        0: CurTop:=CurTop+Tallest;              //lineheight=1
-        1: CurTop:=CurTop+((Tallest*3) DIV 2);  //Lineheight=1½
-        2: CurTop:=CurTop+Tallest+Tallest;      //LineHeight=2
-      END; *)
     END;  //for LinNum
     IF Df.NumDataFields = 0 THEN
     BEGIN
@@ -348,7 +440,7 @@ begin
       Df.ErrorCode := EPI_QES_NO_FIELDS;
       Exit;
     end;
-
+    Result := true;
   finally
     EpiLogger.DecIndent;
     DataFile := Df;
@@ -360,6 +452,7 @@ function TQesHandler.QesToDatafile(const aFilename: string; var DataFile: TEpiDa
 var
   aLines: TStringList;
 begin
+  result := false;
   aLines := TStringList.Create;
   try
     aLines.LoadFromFile(aFilename);

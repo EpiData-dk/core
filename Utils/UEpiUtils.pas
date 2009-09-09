@@ -5,7 +5,7 @@ unit UEpiUtils;
 interface
 
 USES
-  SysUtils, UEpiDataConstants, UDataFileTypes, UEpiDataFile;
+  SysUtils, UEpiDataGlobals, UDataFileTypes;
 
 type
   TPrgVersionInfo = record
@@ -27,56 +27,53 @@ type
     CoreRevision:   Cardinal;   // Subversion revision.
   end;
 
-  // Checks validity of variable name.  
+  // Validity checks!
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
+  function IsInteger(const Value: string): boolean;
+  function IsFloat(var Value: string): boolean;
+  function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
 
-  function IsInteger(Value: string): boolean;
-  function IsFloat(Value: string): boolean;
-
+  // Custom operators.
   function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
   function PostInc(Var I: Integer; Const N: Integer = 1): Integer;
 
+  // Misc. conversion.
+  function BoolStrToInt(Const AValue: string): integer;
+  {$IFNDEF VER2_3}
+  function BoolToStr(B: Boolean;const TrueS,FalseS:string): string; inline; overload;
+  {$ENDIF}
+
+  function GetEncodedLength(decodedlength: byte): byte;
+  function GetDecodedLength(encodedlength: byte): byte;
+
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
-
-{$IFNDEF FPC}
-type
-  DWORDLONG = Int64;
-
-  PMemoryStatusEx = ^TMemoryStatusEx;
-  _MEMORYSTATUSEX = record
-    dwLength:                DWORD;
-    dwMemoryLoad:            DWORD;
-    ullTotalPhys:            DWORDLONG;
-    ullAvailPhys:            DWORDLONG;
-    ullTotalPageFile:        DWORDLONG;
-    ullAvailPageFile:        DWORDLONG;
-    ullTotalVirtual:         DWORDLONG;
-    ullAvailVirtual:         DWORDLONG;
-    ullAvailExtendedVirtual: DWORDLONG
-  end;
-  {$EXTERNALSYM _MEMORYSTATUSEX}
-  TMemoryStatusEx = _MEMORYSTATUSEX;
-  MEMORYSTATUSEx = _MEMORYSTATUSEX;
-  {$EXTERNALSYM MEMORYSTATUSEX}
-
-
-  procedure GlobalMemoryStatusEx(var lpBuffer: TMemoryStatusEx); stdcall;
-  {$EXTERNALSYM GlobalMemoryStatusEx}
-{$ENDIF}
-  
 implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
   UDateUtils, Math;
 
-{$IFNDEF FPC}
-procedure GlobalMemoryStatusEx; external kernel32 name 'GlobalMemoryStatusEx';
-{$ENDIf}
-  
+{$IFDEF MSWINDOWS}
+type
+  MEMORYSTATUSEX = record
+    dwLength :     Cardinal;
+    dwMemoryLoad : Cardinal;
+    ullTotalPhys : UInt64;
+    ullAvailPhys : UInt64;
+    ullTotalPageFile : UInt64;
+    ullAvailPageFile : UInt64;
+    ullTotalVirtual : UInt64;
+    ullAvailVirtual : UInt64;
+    ullAvailExtendedVirtual: UInt64;
+  end;
+
+  procedure GlobalMemoryStatusEx(var Buffer: MEMORYSTATUSEX); stdcall; external 'kernel32' name 'GlobalMemoryStatusEx';
+{$ENDIF}
+
+
 function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
 var
   i: integer;
@@ -137,7 +134,11 @@ begin
   end;
 end;
 
-function IsInteger(Value: string): boolean;
+{$IFOPT R+}
+{$DEFINE EPI_R_DEFINED}
+{$ENDIF}
+{$R-}
+function IsInteger(const Value: string): boolean;
 var
   V, Code: integer;
 begin
@@ -145,13 +146,36 @@ begin
   Result := (Code = 0);
 end;
 
-function IsFloat(Value: string): boolean;
+function IsFloat(var Value: string): boolean;
 var
   Code: integer;
   V: Extended;
 begin
+  Value := StringReplace(Value, ',', EpiInternalFormatSettings.DecimalSepator, [rfReplaceAll]);
   Val(Value, V, Code);
+  if Value[Length(Value)] = EpiInternalFormatSettings.DecimalSepator then
+    Code := Length(Value);
   Result := (Code = 0);
+end;
+{$IFDEF EPI_R_DEFINED}
+{$UNDEF EPI_R_DEFINED}
+{$R+}
+{$ENDIF}
+
+// FindFieldType:
+//  - Tries to find the field type based on the following precedence: (lowest first)
+//  - Interger, Float, Date(MDY, DMY, YMD), String.
+
+function FindFieldType(var Value: String; const PrevFT: TFieldType = ftInteger): TFieldType;
+begin
+  if Trim(Value) = '' then exit(PrevFt);
+
+  if (PrevFT = ftInteger)                                 and IsInteger(Value)             then result :=ftInteger
+  else if (PrevFT in [ftInteger, ftFloat])                and IsFloat(Value)               then result :=ftFloat
+  else if (PrevFT in [ftInteger, ftFloat, ftDate])        and EpiIsDate(Value, ftDate)     then result := ftDate
+  else if ((PrevFT <> ftString) and (PrevFT <= ftEuroDate)) and EpiIsDate(Value, ftEuroDate) then result := ftEuroDate
+  else if ((PrevFT <> ftString) and (PrevFT <= ftYMDDate))  and EpiIsDate(Value, ftYMDDate)  then result := ftYMDDate
+  else result := ftString;
 end;
 
 function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
@@ -166,50 +190,47 @@ begin
   Inc(I, N);
 end;
 
-{$IFNDEF FPC}
-procedure GetBuildInfo(var PrgInfo: TPrgVersionInfo);
-var
-  VerInfoSize:  DWORD;
-  VerInfo:      Pointer;
-  VerValueSize: DWORD;
-  VerValue:     PVSFixedFileInfo;
-  Dummy:        DWORD;
+function BoolStrToInt(const AValue: string): integer;
 begin
-  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
-  GetMem(VerInfo, VerInfoSize);
-  GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
-  VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize);
-  with VerValue^ do
-  begin
-    PrgInfo.Major   := dwFileVersionMS shr 16;
-    PrgInfo.Minor   := dwFileVersionMS and $FFFF;
-    PrgInfo.Release := dwFileVersionLS shr 16;
-    PrgInfo.Build   := dwFileVersionLS and $FFFF;
-  end;
-  FreeMem(VerInfo, VerInfoSize);
+  Result := 0;
+  if Length(AValue) = 0 then exit;
+  Result := Integer(AValue[1] in BooleanYesChars);
 end;
-{$ENDIF FPC}
+
+{$IFNDEF VER2_3}
+function BoolToStr(B: boolean; const TrueS, FalseS: string): string;
+begin
+  if B then Result:=TrueS else BoolToStr:=FalseS;
+end;
+{$ENDIF}
+
+function GetEncodedLength(decodedlength: byte): byte;
+begin
+  result := (decodedlength div 3) * 4;
+end;
+
+function GetDecodedLength(encodedlength: byte): byte;
+begin
+  result := (encodedlength div 4) * 3;
+end;
+
 
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var
-  {$IFNDEF LINUX}
-  {$IFNDEF FPC}
-  Ms: TMemoryStatus;
-  MsEx: TMemoryStatusEx;
-  Ovi: TOSVersionInfo;
-  {$ENDIF FPC}
-  {$ELSE LINUX}
+  {$IFDEF LINUX}
   PInfo: PSysInfo;
   Info: TSysInfo;
   UName: UtsName;
-//  ResHandle: TFPResourceHandle;
-//  ResMan: TResourceManager;
   {$ENDIF LINUX}
+  {$IFDEF WINDOWS}
+  WinMem: MEMORYSTATUSEX;
+  {$ENDIF WINDOWS}
   Dummy: integer;
 begin
+  CSI.OSName := 'Mac';
+  CSI.MemSize := 0;
+  CSI.MemUsage := 0;
   {$IFDEF LINUX}
-//  GetResourceManager(ResMan);
-//  FindResource(ResMan.HINSTANCEFunc(), RT_VERSION, RT_VERSION);
   FpUname(UName);
   CSI.OSName := string(UName.Sysname);
   PInfo := new(PSysInfo);
@@ -217,48 +238,26 @@ begin
   Info := PInfo^;
   CSI.MemSize := (Info.totalram * Info.mem_unit);
   CSI.MemUsage := Floor(100 * (Info.totalram - (Info.freeram)) / Info.totalram);
-  {$ELSE}
+  {$ENDIF LINUX}
+  {$IFDEF WINDOWS}
+  WinMem.dwLength := SizeOf(WinMem);
+  GlobalMemoryStatusEx(WinMem);
   CSI.OSName := 'Windows';
-  CSI.MemSize := 0;
-  CSI.MemUsage := 0;
-  {$ENDIF}
+  CSI.MemSize := WinMem.ullTotalPhys;
+  CSI.MemUsage := WinMem.dwMemoryLoad;
+  {$ENDIF WINDOWS}
   CSI.OSMajorVersion := 0;
   CSI.OSMinorVersion := 0;
 
   CSI.PrgVersion.Major   := 0;
   CSI.PrgVersion.Minor   := 1;
-  CSI.PrgVersion.Release := 1;
-  CSI.PrgVersion.Build   := 94;
+  CSI.PrgVersion.Release := 12;
+  CSI.PrgVersion.Build   := 95;
 
-
-
-{  {$ELSE}
-  {$IFNDEF FPC}
-  GetBuildInfo(CSI.PrgVersion);
-  Ovi.dwOSVersionInfoSize := SizeOf(TOSVersionInfo);
-  GetVersionEx(Ovi);
-
-  CSI.OSName         := 'Windows';
-  CSI.OSMajorVersion := Ovi.dwMajorVersion;
-  CSI.OSMinorVersion := Ovi.dwMinorVersion;
-
-  if (Ovi.dwMajorVersion < 5) or (Ovi.dwPlatformId <> VER_PLATFORM_WIN32_NT) then
-  begin
-    Ms.dwLength := SizeOf(TMemoryStatus);
-    GlobalMemoryStatus(Ms);
-    CSI.MemSize := Ms.dwTotalPhys;
-    CSI.MemUsage := Ms.dwMemoryLoad;
-  end else begin
-    MsEx.dwLength := SizeOf(TMemoryStatusEx);
-    GlobalMemoryStatusEx(MsEx);
-    CSI.MemSize := MsEx.ullTotalPhys;
-    CSI.MemUsage := MsEx.dwMemoryLoad;
-  end;
-  {$ENDIF}
-  {$ENDIF}             }
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!
   CSI.CoreRevision := 0;
 end;
 
 end.
+

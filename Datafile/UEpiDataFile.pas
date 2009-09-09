@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, UValueLabels, Rijndael, UCheckFileCmds, UEpiLog,
-  UCheckFileTypes, Graphics, UDataFileTypes, UEpiDataConstants;
+  UCheckFileTypes, Graphics, UDataFileTypes, UEpiDataGlobals;
 
 type
 
@@ -172,6 +172,9 @@ type
     FVariableLabel: string;
     FCheckField:   TEpiCheckField;
     function       GetValueLabel: TValueLabelSet;
+    function       GetAsFmtData: string;
+    function       GetData: string;
+    procedure      SetData(aData: string);
   protected
     function GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
     function GetAsDate(const index: Integer): EpiDate; virtual; abstract;
@@ -200,13 +203,11 @@ type
       SetAllMissing: boolean = true): TEpiField;
     procedure   Reset();
     procedure   Clone(Var Dest: TEpiField);
-    // New Additions to branch version.
+    property    AsData:      string read GetData write SetData;
+    property    AsFmtData:   string read GetAsFmtData;
     procedure Exchange(i,j: integer); virtual; abstract;
     function Compare(i,j: integer): integer; virtual; abstract;
     procedure NewRecords(ACount: Integer = 1); virtual;
-    // ================================
-//    property    Data[Index: integer]:  string read GetData write SetData;
-//    property    Value[Index: integer]: string read GetValue write SetValue;
     property    FieldNo:     Cardinal read FFieldNo write FFieldNo;
     property    DisplayChar: Char read FDisplayChar write FDisplayChar;
     property    FieldName:   string read FFieldName write FFieldName;
@@ -502,33 +503,34 @@ type
     FRecordState:  TRecordState;
     FCurRecord:    Integer;
     FOrgDataType:  TDataFileType;
-    function       GetField(Index: integer): TEpiField;
-    function       GetValueLabels(): TValueLabelSets;
-    function       GetIndexFile(): TEpiIndexFile;
-    procedure      InternalReset();
+    function GetField(Index: integer): TEpiField;
+    function GetIndexFile: TEpiIndexFile;
+    function GetValueLabels: TValueLabelSets;
+    procedure  InternalReset;
   protected
-    function   InternalOpen(): boolean;
-    function   InternalSave(): boolean;
+    function   InternalOpen: boolean;
+    function   InternalSave: boolean;
     function   Lang(LangCode: Integer; Const LangText: string): string;
     function   RequestPassword(Const EncryptedString: string): boolean;
     Function   UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     Function   TextPos(var F: Textfile): Cardinal;
-    function   GetNumFields(): Cardinal;
-    function   GetNumDataFields(): Cardinal;
-    function   GetNumRecords(): Integer;
-    function   GetEOFMarker(): Boolean;
+    function   GetNumFields: Cardinal;
+    function   GetNumDataFields: Cardinal;
+    function   GetNumRecords: Integer;
+    function   GetEOFMarker: Boolean;
   public
     constructor Create(aOptions: TEpiDataFileOptions = []); virtual;
-    destructor Destroy(); override;
+    destructor Destroy; override;
     function   Open(Const aFileName: string): boolean;
     function   Save(Const aFileName: string): boolean;
     procedure  SaveMemToFile(Const aFileName: string);
     procedure  Read(RecNumber: Integer);
     procedure  Write(RecNumber: Integer = NewRecord);
-    procedure  Reset();
+    procedure  Reset;
     function   FieldByName(Const aFieldName: string): TEpiField;
     function   FieldExists(Const aFieldName: string): boolean;
     procedure  AddField(AField: TEpiField);
+    function   CreateUniqueFieldName(Const AText: string): string;
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
     property   DataFields:  TEpiFields read FDataFields;
@@ -781,6 +783,26 @@ begin
     result := CheckField.ValueLabel;
 end;
 
+function TEpiField.GetAsFmtData: string;
+begin
+  case FieldType of
+    ftDate, ftEuroDate, ftYMDDate:
+      Result := StringReplace(AsData, EpiInternalFormatSettings.DateSeparator,
+        EpiExternalFormatSettings.DateSeparator, [rfReplaceAll]);
+    ftFloat:
+      result := StringReplace(AsData, EpiInternalFormatSettings.DecimalSepator,
+        EpiExternalFormatSettings.DecimalSepator, [rfReplaceAll]);
+  else
+    result := AsData;
+  end;
+end;
+
+function TEpiField.GetData: string;
+begin
+  // TODO : Implement CurRec on fields.
+  Result := Trim(AsString[0]);
+end;
+
 function TEpiField.GetSize: Integer;
 begin
   result := FSize;
@@ -803,7 +825,7 @@ constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMiss
 var
   i: Integer;
 begin
-  Reset();
+  Reset;
   Capacity := ASize;
 
   if not SetAllMissing then exit;
@@ -1027,23 +1049,26 @@ begin
   result := Fields[Index];
 end;
 
-function TEpiDataFile.GetValueLabels(): TValueLabelSets;
-begin
-  result := nil;
-  if Assigned(CheckFile) then
-    Result := CheckFile.ValueLabels;
-end;
 
-function TEpiDataFile.GetIndexFile(): TEpiIndexFile;
+function TEpiDataFile.GetIndexFile: TEpiIndexFile;
 begin
   if not Assigned(FIndexFile) then
     FIndexFile := TEpiIndexFile.Create(ChangeFileExt(FileName, '.EIX'));
   result := FIndexFile;
 end;
 
-procedure TEpiDataFile.InternalReset();
+function TEpiDataFile.GetValueLabels: TValueLabelSets;
 begin
-  if Assigned(FDataStream) then FreeAndNil(FDataStream);
+  result := nil;
+  if Assigned(CheckFile) then
+    Result := CheckFile.ValueLabels;
+end;
+
+
+
+procedure TEpiDataFile.InternalReset;
+begin
+  if Assigned(FDataStream) then FDataStream.Size := 0;
   if Assigned(FFields) then FreeAndNil(FFields);
   if Assigned(FDataFields) then FreeAndNil(FDataFields);
   if Assigned(FQuestFields) then FreeAndNil(FQuestFields);
@@ -1070,7 +1095,7 @@ begin
   FOrgDataType    := dftEpiData;
 end;
 
-function TEpiDataFile.InternalOpen(): boolean;
+function TEpiDataFile.InternalOpen: boolean;
 var
   // Misc:
   TempInt, I: integer;
@@ -1190,7 +1215,7 @@ begin
       // Field types.
       if TmpFieldTypeInt >= 100 then
         // Type > 100 => float field
-        TmpFieldType := ftFloat;
+        TmpFieldType := ftFloat
       else begin
         // Normal field type recognition.
         TmpFieldType := ftInteger;
@@ -1295,7 +1320,7 @@ begin
   end;
 end;
 
-function TEpiDataFile.InternalSave(): boolean;
+function TEpiDataFile.InternalSave: boolean;
 var
   Crypt: boolean;
   i: integer;
@@ -1489,17 +1514,17 @@ begin
   end;
 end;
 
-function TEpiDataFile.GetNumFields(): Cardinal;
+function TEpiDataFile.GetNumFields: Cardinal;
 begin
   result := Fields.Count;
 end;
 
-function TEpiDataFile.GetNumDataFields(): Cardinal;
+function TEpiDataFile.GetNumDataFields: Cardinal;
 begin
   result := DataFields.Count;
 end;
 
-function TEpiDataFile.GetNumRecords(): Integer;
+function TEpiDataFile.GetNumRecords: Integer;
 var
   buf: Array[0..1] of Char;
   TmpPos: Cardinal;
@@ -1525,7 +1550,7 @@ BEGIN
     Result := Result div FFullRecLength;
 end;
 
-function TEpiDataFile.GetEOFMarker(): Boolean;
+function TEpiDataFile.GetEOFMarker: Boolean;
 var
   TmpPos: cardinal;
   Buf: Char;
@@ -1560,13 +1585,14 @@ begin
   end;
 end;
 
-destructor TEpiDataFile.Destroy();
+destructor TEpiDataFile.Destroy;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Destroy', 2, 'Filename = ' + FileName);
   try
     InternalReset();
-    inherited Destroy();
+    if Assigned(FDataStream) then FreeAndNil(FDataStream);
+    inherited Destroy;
   finally
     EpiLogger.DecIndent;
   end;
@@ -1689,6 +1715,7 @@ procedure TEpiDataFile.Write(RecNumber: Integer = NewRecord);
 var
   Z, I: Integer;
   S, EncData: string;
+  T: String;
 
 begin
   // Sanity checks:
@@ -1699,7 +1726,7 @@ begin
 
   if RecNumber = NewRecord then
   begin
-    RecNumber := NumRecords + 1;
+    RecNumber := ((FDataStream.Size - Z) - FOffSet) div FFullrecLength + 1;
     FDataStream.Position := FDataStream.Size - Z
   end else
     FDataStream.Position := FOffset + ((RecNumber - 1) * FFullRecLength);
@@ -1715,11 +1742,20 @@ begin
       FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
       EncData := B64Encode(EncData);
       FCrypter.Reset;
-      S := S + Format('%-*s', [FieldLength, EncData])
+      T := Format('%-*s', [FieldLength, EncData])
     end else if FieldType in [ftString, ftUpperAlfa] then
       S := S + Format('%-*s', [FieldLength, AsString[RecNumber]])
     else
       S := S + Format('%*s', [FieldLength, AsString[RecNumber]]);
+
+    S := S + T;
+    if FieldLength <> Length(T) then
+    begin
+      ErrorCode := EPI_WRITE_ERROR;
+      ErrorText := Format(Lang(0, 'FieldLength (%d) does not fit length of data (%d). Field: %s. Record no: %d'),
+        [FieldLength, Length(T), FieldName, RecNumber]);
+      Abort;
+    end;
   end;
   Z := Length(S);
   if Z + 3 > MaxRecLineLength then
@@ -1737,7 +1773,7 @@ begin
   FCurRecord := RecNumber;
 end;
 
-procedure TEpiDataFile.Reset();
+procedure TEpiDataFile.Reset;
 begin
   InternalReset();
 
@@ -1775,6 +1811,25 @@ begin
        AField.ValueLabelSet then
       exit;
     ValueLabels.AddValueLabelSet(AField.ValueLabelSet);
+  end;
+end;
+
+function TEpiDataFile.CreateUniqueFieldName(const AText: string): string;
+var
+  Number: Integer;
+begin
+  result := AText;
+
+  // If fieldname is unique, do nothing.
+  Number := 0;
+  while FieldExists(result) do
+  begin
+    // not unique, find a new.
+    if Length(Result) = MaxFieldNameLen then
+      Result := Copy(Result, 1, MaxFieldNameLen - Length(IntToStr(Number))) + IntToStr(Number)
+    else
+      Result := Result + IntToStr(Number);
+    Inc(Number);
   end;
 end;
 

@@ -5,7 +5,7 @@ unit UDateUtils;
 interface
 
 uses
-  SysUtils, UDataFileTypes, UEpiDataConstants;
+  SysUtils, UDataFileTypes, UEpiDataGlobals;
 
   function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
   Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;
@@ -24,12 +24,14 @@ var
   Year, Month, Day, m2, d2: word;
   tmpDate: TDateTime;
 begin
-  Result := true;
-  TmpS := Value;
+  result := false;
+  if Length(Value) > 10 then exit;
 
-  IF Trim(TmpS) = '' THEN
+  Result := true;
+  IF Trim(Value) = '' THEN
     Exit;
 
+  TmpS := Value;
   TmpS := StringReplace(TmpS, '-', DateSeparator, [rfReplaceAll]);
   TmpS := StringReplace(TmpS, '/', DateSeparator, [rfReplaceAll]);
   TmpS := StringReplace(TmpS, ':', DateSeparator, [rfReplaceAll]);
@@ -147,14 +149,17 @@ begin
 end;
 
 Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;
+var
+  Ds: Char;
 BEGIN
+  Ds := EpiInternalFormatSettings.DateSeparator;
   Case Ft of
     ftEuroDate, ftEuroToday:
-      Result := FormatDateTime('dd"' + DateSeparator + '"mm"' + DateSeparator + '"yyyy', aDate);
+      Result := FormatDateTime('dd"' + Ds + '"mm"' + Ds + '"yyyy', aDate);
     ftYMDDate, ftYMDtoday:
-      Result := FormatDateTime('yyyy"' + DateSeparator + '"mm"' + DateSeparator + '"dd', aDate);
+      Result := FormatDateTime('yyyy"' + Ds + '"mm"' + Ds + '"dd', aDate);
   ELSE
-    Result := FormatDateTime('mm"' + DateSeparator + '"dd"' + DateSeparator + '"yyyy', aDate);
+    Result := FormatDateTime('mm"' + Ds + '"dd"' + Ds + '"yyyy', aDate);
   end;
 END;
 
