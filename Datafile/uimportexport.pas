@@ -437,10 +437,9 @@ begin
     // Create Fields.
     for i := 1 to FieldCount do
     begin
-      TmpField := TEpiField.Create;
+      TmpField := TEpiField.CreateField(FtList[i-1]);
       with TmpField do
       begin
-        FieldType := FtList[i-1];
         FieldName := 'V' + IntToStr(i);
         FieldNo   := i;
         FieldLength := 0;
@@ -467,18 +466,14 @@ begin
           ftBoolean:
             FieldLength := 1;
           ftInteger:
-            begin
-              if Length(TmpStr) > MaxIntegerLength then
-                FieldType := ftFloat;
-              FieldLength := Max(FieldLength, Length(TmpStr));
-            end;
+            FieldLength := Max(FieldLength, Length(TmpStr));
           ftFloat:
             begin
               FieldLength := Max(FieldLength, Length(TmpStr));
               if (StrCountChars(Tmpstr, CommaChars) > 0) then
                 NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
             end;
-          ftAlfa:
+          ftString:
             FieldLength := Max(FieldLength, Length(TmpStr));
           ftDate, ftEuroDate, ftYMDDate:
             FieldLength := 10;

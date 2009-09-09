@@ -803,6 +803,12 @@ begin
   Result := Trim(AsString[0]);
 end;
 
+procedure TEpiField.SetData(aData: string);
+begin
+  // TODO : Implement CurRec on fields.
+  AsString[0] := aData;
+end;
+
 function TEpiField.GetSize: Integer;
 begin
   result := FSize;
@@ -1224,12 +1230,12 @@ begin
       end;
 
       // This is not a data field, but a question field.
-      if FieldLength = 0 then TmpFieldType := ftQuestion;
+      if TmpLength = 0 then TmpFieldType := ftQuestion;
 
       // Unsupported field are automatically converted to string (ftString) fields.
       if (not (TmpFieldType in SupportedFieldTypes)) or
-         ((TmpFieldType in DateFieldTypes) and (FieldLength < 10)) then
-        FieldType := ftString;
+         ((TmpFieldType in DateFieldTypes) and (TmpLength < 10)) then
+        TmpFieldType := ftString;
 
       EField := TEpiField.CreateField(TmpFieldType);
 
@@ -2057,7 +2063,7 @@ constructor TEpiIntField.Create(ASize: Cardinal; AFieldType: TFieldType;
   SetAllMissing: boolean);
 begin
   if not (AFieldType in IntFieldTypes) then
-    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
   inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
@@ -2216,7 +2222,7 @@ constructor TEpiFloatField.Create(ASize: Cardinal; AFieldType: TFieldType;
   SetAllMissing: boolean);
 begin
   if not (AFieldType in FloatFieldTypes) then
-    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
   inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
@@ -2376,7 +2382,7 @@ constructor TEpiBoolField.Create(ASize: Cardinal; AFieldType: TFieldType;
   SetAllMissing: boolean);
 begin
   if not (AFieldType in BoolFieldTypes) then
-    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
   inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
@@ -2510,7 +2516,7 @@ constructor TEpiStringField.Create(ASize: Cardinal; AFieldType: TFieldType;
   SetAllMissing: boolean);
 begin
   if not (AFieldType in StringFieldTypes) then
-    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
   inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 
@@ -2655,7 +2661,7 @@ constructor TEpiDateField.Create(ASize: Cardinal; AFieldType: TFieldType;
   SetAllMissing: boolean);
 begin
   if not (AFieldType in DateFieldTypes) then
-    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType)]);
+    Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
   inherited Create(ASize, AFieldType, SetAllMissing);
 end;
 

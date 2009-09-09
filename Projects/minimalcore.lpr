@@ -13,11 +13,9 @@ program minimalcore;
 
 
 uses
-  {$IFDEF UNIX}
-  cwstring,
   {$IFDEF UseCThreads}
   cthreads,
-  {$ENDIF}{$ENDIF}
+  {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms
   { you can add units after this }, LResources,
