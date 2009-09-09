@@ -16,7 +16,7 @@ type
   end;
 
 CONST
-  CoreVersion = 1;
+  CoreVersion = 2;
 
   NewRecord = -1;
   NumChars:        TCharSet = ['0'..'9'];
@@ -58,6 +58,19 @@ CONST
   DateFieldTypes:
     TFieldTypes = [ftDate, ftToday, ftEuroDate, ftEuroToday,
                    ftYMDDate,ftYMDToday];
+
+  IntFieldTypes:
+    TFieldTypes = [ftInteger, ftIDNUM];
+
+  FloatFieldTypes:
+    TFieldTypes = [ftFloat];
+
+  BoolFieldTypes:
+    TFieldTypes = [ftBoolean];
+
+  StringFieldTypes:
+    TFieldTypes = [ftString, ftUpperAlfa, ftSoundex, ftCrypt];
+				   
 
 var
   // CommonWords: List of common english word that is used to strip
