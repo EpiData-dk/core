@@ -439,6 +439,7 @@ type
     function    GetCount(): Cardinal;
   protected
     procedure   Add(aField: TEpiField);
+    procedure   Delete(aField: TEpiField);
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
     destructor  Destroy(); override;
@@ -530,6 +531,7 @@ type
     function   FieldByName(Const aFieldName: string): TEpiField;
     function   FieldExists(Const aFieldName: string): boolean;
     procedure  AddField(AField: TEpiField);
+    procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);
     function   CreateUniqueFieldName(Const AText: string): string;
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
@@ -1047,6 +1049,19 @@ begin
   FList.Add(aField);
 end;
 
+procedure TEpiFields.Delete(aField: TEpiField);
+var
+  Idx: Integer;
+begin
+  Idx := FList.IndexOf(aField);
+  FList.Delete(Idx);
+
+  if Owned then
+  begin
+    aField.FOwner := nil;
+    aField.FDataFile := nil;
+  end;
+end;
 
 { TEpiDataFile }
 
@@ -1818,6 +1833,20 @@ begin
       exit;
     ValueLabels.AddValueLabelSet(AField.ValueLabelSet);
   end;
+end;
+
+procedure TEpiDataFile.RemoveField(var AField: TEpiField; DoDestroy: boolean);
+begin
+  if not Assigned(AField) then exit;
+
+  if AField.FieldType = ftQuestion then
+    QuestFields.Delete(AField)
+  else
+    DataFields.Delete(AField);
+
+  Fields.Delete(AField);
+  if DoDestroy then
+    FreeAndNil(AField);
 end;
 
 function TEpiDataFile.CreateUniqueFieldName(const AText: string): string;
