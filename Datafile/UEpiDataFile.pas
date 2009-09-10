@@ -181,7 +181,7 @@ type
     function GetAsFloat(const index: Integer): EpiFloat; virtual; abstract;
     function GetAsInteger(const index: Integer): EpiInteger; virtual; abstract;
     function GetAsString(const index: Integer): EpiString; virtual; abstract;
-    function GetAsValue(const index: Integer): string; virtual;
+    function GetAsValueLabel(const index: Integer): string; virtual;
     function GetCapacity: Integer; virtual; abstract;
     function GetIsMissing(const index: Integer): boolean; virtual; abstract;
     function GetIsMissingValue(const index: Integer): boolean; virtual; abstract;
@@ -235,7 +235,7 @@ type
 //    property AsTime[const index: Integer]: EpiTime read GetAsTime write SetAsTime;
 //    property AsDateTime[const index: Integer]: EpiDateTime read GetAsDateTime write SetAsDateTime;
     property  AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
-    property  AsValue[const index: Integer]: string read GetAsValue;
+    property  AsValueLabel[const index: Integer]: string read GetAsValueLabel;
   end;
 
   { TEpiIntField }
@@ -747,11 +747,11 @@ begin
     result := CheckField.ValueLabel;
 end;
 
-function TEpiField.GetAsValue(const index: Integer): string;
+function TEpiField.GetAsValueLabel(const index: Integer): string;
 begin
   result := AsString[Index];
   if Assigned(ValueLabelSet) then
-    result := ValueLabelSet.Value[AsString[Index]];
+    result := ValueLabelSet.ValueLabel[AsString[Index]];
 end;
 
 {function TEpiField.GetAsFmtData: string;

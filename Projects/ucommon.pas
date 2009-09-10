@@ -65,12 +65,14 @@ begin
   If IgnoreChecks then
     Include(LoadOptions, eoIgnoreChecks);
 
-  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
+  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECX' then
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
     S := Trim(AnsiUpperCase(ExtractFileExt(FileName)));
-    if S = '.DTA' then
+    if S = '.REC' then
+      Result := Importer.ImportRec(FileName, Df)
+    else if S = '.DTA' then
       Result := Importer.ImportStata(FileName, Df)
     else if S = '.DBF' then
       Result := Importer.ImportDBase(FileName, Df)

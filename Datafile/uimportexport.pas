@@ -554,7 +554,7 @@ end;
 
 function TEpiImportExport.ImportRec(const aFileName: string;
   var DataFile: TEpiDatafile): boolean;
-{var
+var
   // Misc:
   TempInt, I: integer;
   TxtFile: TextFile;
@@ -575,13 +575,11 @@ function TEpiImportExport.ImportRec(const aFileName: string;
   TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
   TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
   TmpName: string[10];
-  TmpQuestion, TmpStr: string;  }
+  TmpQuestion, TmpStr: string;
 begin
-{  EpiLogger.IncIndent;
-  EpiLogger.Add(ClassName, 'InternalOpen', 3);
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ImportRec', 2, 'Filename = ' + aFilename);
   result := false;
-
-  OrgDataType := dftEpiData;
 
   AssignFile(TxtFile, Filename);
   {$I-}
@@ -600,22 +598,6 @@ begin
     // --- Read "First Line" header ---
     ReadLn(TxtFile, TxtLine);
 
-    // - Version number
-    FFileVersion := 0;
-    TempInt := Pos('~VQ:', AnsiUpperCase(TxtLine));
-    if TempInt > 0 then
-    begin
-      Val(Copy(TxtLine, TempInt + 5, Pos(':VQ~', AnsiUpperCase(TxtLine))), FFileVersion, ValCode);
-      if ValCode > 0 then
-      begin
-        FErrorText := Format(Lang(0, 'File version information invalid %s'), [Filename]);
-        FErrorCode := EPI_FILE_VERSION_ERROR;
-        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
-        CloseFile(TxtFile);
-        Exit;
-      end;
-    end;
-
     // - Password
     TempInt := Pos('~KQ:', AnsiUpperCase(TxtLine));
     if TempInt > 0 then
@@ -632,7 +614,7 @@ begin
 
     // - FileLabel
     if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
-      FFileLabel := Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine));
+      FFileLabel :=  EpiUnknownStrToUTF8(Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine)));
 
     // - Autonaming or Firstword
     if Pos(' VLAB', TxtLine) > 0 then
@@ -655,7 +637,7 @@ begin
     // Read field defining header lines.
     for CurrentLine := 1 to HeaderLineCount do
     begin
-      EpiLogger.Add(ClassName, 'InternalOpen', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
+      EpiLogger.Add(ClassName, 'ImportRec', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
       if UpdateProgress((CurrentLine*100) DIV HeaderLineCount, lang(0,'Opening data file'))=prCancel then
       begin
         FErrorText := Lang(0, 'Cancelled by user');
@@ -702,7 +684,7 @@ begin
         FieldY      := TmpFieldY;
         FieldLength := TmpLength;
         FieldColor  := TmpFieldColor;
-        Question    := StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]);
+        Question    := EpiUnknownStrToUTF8(StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]));
 
         // Ensure valid variable name.
         if not CheckVariableName(TmpName, AlfaNumChars + [' ']) then

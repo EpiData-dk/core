@@ -242,7 +242,7 @@ begin
       if df[col].Fieldtype <> ftQuestion then
       begin
         if ShowAsLabels then
-          sg.Cells[PostInc(i), row] := df[col].AsValue[row]
+          sg.Cells[PostInc(i), row] := df[col].AsValueLabel[row]
         else
           sg.Cells[PostInc(i), row] := df[col].AsString[row];
       end;
