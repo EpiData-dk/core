@@ -986,7 +986,7 @@ BEGIN
     LocalCheck.ShowValueLabel := True;
     
   TRY
-    ComLegDf := TEpiDataFile.Create([eoInMemory, eoIgnoreRelates]);
+    ComLegDf := TEpiDataFile.Create([eoIgnoreRelates]);
     ComLegDF.OnPassword := FDf.OnPassword;
     IF NOT ComLegDf.Open(TmpStr) THEN
     begin
@@ -994,7 +994,7 @@ BEGIN
       Exit;
     end;
 
-    IF ComLegDf.NumRecords = 0 THEN
+    IF ComLegDf.Size = 0 THEN
     BEGIN
       Result := ReportError(Format(Lang(22334,'Datafile %s does not contain any records'), [TmpStr]));
       Exit;
@@ -1040,7 +1040,7 @@ BEGIN
     ValueField := ComLegDf.IndexFile.IndexFields[1];
     TextField  := ComLegDf.IndexFile.Indexfields[2];
 
-    FOR i := 1 TO ComLegDf.NumRecords DO
+    FOR i := 1 TO ComLegDf.Size DO
       LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsString[i], 1, 30), Copy(TextField.AsString[i], 1, 80));
 
     FDf.ValueLabels.AddValueLabelSet(LocalValueLabel);

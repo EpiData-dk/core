@@ -20,7 +20,7 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataGlobals, uimportform, Controls;
+  UEpiDataGlobals, uimportform, Controls, UEpiUtils;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
@@ -48,7 +48,7 @@ begin
 
   Result.Add('Num fields = ' + inttostr(Df.NumFields));
   Result.Add('Num data fields = ' + inttostr(Df.NumDataFields));
-  Result.Add('Num records = ' + inttostr(Df.NumRecords));
+  Result.Add('Num records = ' + inttostr(Df.Size));
 end;
 
 function  LoadDataFile(var Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
@@ -61,7 +61,7 @@ var
 begin
   if Assigned(Df) then FreeAndNil(Df);
 
-  LoadOptions := [eoInMemory];
+  LoadOptions := [];
   If IgnoreChecks then
     Include(LoadOptions, eoIgnoreChecks);
 
@@ -131,7 +131,7 @@ begin
 
   for i := 0 to Df.NumFields - 1 do
   begin
-    TmpField := TEpiField.Create();
+    TmpField := TEpiField.CreateField(Df[i].FieldType, Df[i].Size);
     TmpField.DataFile := OutDf;
     Df[i].Clone(TmpField);
     OutDf.AddField(TmpField);
@@ -139,13 +139,11 @@ begin
 
   OutDf.Save(FileName);
 
-  for I := 1 to Df.NumRecords do
+  for I := 1 to Df.Size do
   begin
-    ShowProgress(nil, (I * 100) DIV Df.NumRecords, 'Saving Records');
-    Df.Read(I);
+    ShowProgress(nil, (I * 100) DIV Df.Size, 'Saving Records');
     for J := 0 to Df.NumFields - 1 do
       OutDf[J].AsString[i] := Df[J].AsString[i];
-    OutDf.Write();
   end;
   FreeAndNil(OutDf);
 end;
@@ -205,9 +203,9 @@ begin
     res.Append(tmpstr);
     res.Append(FitLength('Number of fields:',23)+IntToStr(epd.NumFields));
     tmpStr:=FitLength('Number of records:',23);
-    IF epd.NumRecords=-1
+    IF epd.Size=-1
     THEN tmpStr:=tmpStr+'Error in datafile. Number of records cannot be counted.'
-    ELSE tmpStr:=tmpStr+IntToStr(epd.NumRecords);
+    ELSE tmpStr:=tmpStr+IntToStr(epd.Size);
     res.Append(tmpStr);
     tmpStr:=FitLength('Checks applied: ',23);
     IF (epd.CheckFile.HasCheckFile) and (not epd.CheckFile.ErrorInFile) THEN

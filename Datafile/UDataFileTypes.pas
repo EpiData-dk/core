@@ -37,7 +37,7 @@ type
   TProgressResult       = (prNormal, prCancel);
   TProgressEvent        = function(Sender: TObject; Percent: Cardinal; Msg: string): TProgressResult of object;
 
-  TEpiDataFileOption    = (eoInMemory, eoIgnoreChecks, eoIgnoreRelates, eoIgnoreIndex);
+  TEpiDataFileOption    = (eoIgnoreChecks, eoIgnoreRelates, eoIgnoreIndex);
   TEpiDataFileOptions   = set of TEpiDataFileOption;
 
   TDataFileType         = (dftEpiData, dftStata, dftCSV, dftDBase);

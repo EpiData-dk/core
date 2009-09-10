@@ -395,7 +395,7 @@ begin
 
   // TODO -o Torsten : Sanity checks!
   if not Assigned(Df) then
-    Df := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory])
+    Df := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates])
   else
     Df.Reset;
 

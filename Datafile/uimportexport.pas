@@ -171,11 +171,13 @@ type
   public
     constructor   Create;
     destructor    Destroy; override;
+    function      ImportRec(Const aFileName: string; var DataFile: TEpiDatafile): boolean;
     function      ImportStata(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
                             TxtImpSetting: PEpiTxtImportSettings): Boolean;
     function      ImportSpreadSheet(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ExportRec(Const aFilename: string; Const DataFile: TEpiDataFile): boolean;
     function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
                               ExpSetting: PEpiStataExportSettings): Boolean;
     function      ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
@@ -550,6 +552,243 @@ begin
   if Assigned(DataStream) then FreeAndNil(DataStream);
 end;
 
+function TEpiImportExport.ImportRec(const aFileName: string;
+  var DataFile: TEpiDatafile): boolean;
+{var
+  // Misc:
+  TempInt, I: integer;
+  TxtFile: TextFile;
+  EField: TEpiField;
+  FieldNumberCounter: cardinal;
+  ChkIO: TCheckFileIO;
+
+  // Reading the textfile:
+  TxtLine: string;
+  HeaderLineCount: Integer;
+  ValCode: Integer;
+  CurrentLine: Integer;
+
+  // Field lines:
+  TmpFieldType: TFieldType;
+  TmpFieldChar, Dummy: Char;
+  TmpFieldTypeInt,
+  TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
+  TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
+  TmpName: string[10];
+  TmpQuestion, TmpStr: string;  }
+begin
+{  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'InternalOpen', 3);
+  result := false;
+
+  OrgDataType := dftEpiData;
+
+  AssignFile(TxtFile, Filename);
+  {$I-}
+  System.Reset(TxtFile);
+  {$I+}
+  if IOResult() > 0 then
+  begin
+    FErrorText := Format(Lang(20108,'Data file %s could not be opened.'),[Filename]) + #13 +
+                         Lang(20208,'Please check if the file is in use and that the file name is legal.');
+    FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+    EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20108);
+    Exit;
+  end;
+
+  try
+    // --- Read "First Line" header ---
+    ReadLn(TxtFile, TxtLine);
+
+    // - Version number
+    FFileVersion := 0;
+    TempInt := Pos('~VQ:', AnsiUpperCase(TxtLine));
+    if TempInt > 0 then
+    begin
+      Val(Copy(TxtLine, TempInt + 5, Pos(':VQ~', AnsiUpperCase(TxtLine))), FFileVersion, ValCode);
+      if ValCode > 0 then
+      begin
+        FErrorText := Format(Lang(0, 'File version information invalid %s'), [Filename]);
+        FErrorCode := EPI_FILE_VERSION_ERROR;
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+        CloseFile(TxtFile);
+        Exit;
+      end;
+    end;
+
+    // - Password
+    TempInt := Pos('~KQ:', AnsiUpperCase(TxtLine));
+    if TempInt > 0 then
+    begin
+      if not RequestPassword(Copy(TxtLine, TempInt + 4, Pos(':KQ~', AnsiUpperCase(TxtLine)) - (TempInt + 4))) then
+      begin
+        FErrorText := Lang(9020, 'Incorrect password entered');
+        FErrorcode := EPI_INVALID_PASSWORD;
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+        CloseFile(TxtFile);
+        Exit;
+      end;
+    end;
+
+    // - FileLabel
+    if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
+      FFileLabel := Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine));
+
+    // - Autonaming or Firstword
+    if Pos(' VLAB', TxtLine) > 0 then
+      FFieldNaming := fnFirstWord
+    else
+      FFieldNaming := fnAuto;
+
+    // - Header lines:
+    Val(Copy(TxtLine, 1, Pos(' ', TxtLine)-1), HeaderLineCount, ValCode);
+    if ValCode > 0 then
+    begin
+      FErrorText := Format(Lang(20112, 'Incorrect format of datafile %s'), [Filename]);
+      FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20112);
+      CloseFile(TxtFile);
+      Exit;
+    end;
+
+    FieldNumberCounter := 1;
+    // Read field defining header lines.
+    for CurrentLine := 1 to HeaderLineCount do
+    begin
+      EpiLogger.Add(ClassName, 'InternalOpen', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
+      if UpdateProgress((CurrentLine*100) DIV HeaderLineCount, lang(0,'Opening data file'))=prCancel then
+      begin
+        FErrorText := Lang(0, 'Cancelled by user');
+        FErrorcode := EPI_USERCANCELLED;
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+        CloseFile(TxtFile);
+        Exit;
+      end;
+
+      ReadLn(TxtFile,
+             TmpFieldChar, TmpName, TmpQuestX, TmpQuestY,
+             TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldTypeInt, TmpLength,
+             TmpFieldColor, dummy, TmpQuestion);
+
+      // Field types.
+      if TmpFieldTypeInt >= 100 then
+        // Type > 100 => float field
+        TmpFieldType := ftFloat
+      else begin
+        // Normal field type recognition.
+        TmpFieldType := ftInteger;
+        WHILE TmpFieldTypeInt > ORD(TmpFieldType) DO
+          TmpFieldType := Succ(TmpFieldType);
+      end;
+
+      // This is not a data field, but a question field.
+      if TmpLength = 0 then TmpFieldType := ftQuestion;
+
+      // Unsupported field are automatically converted to string (ftString) fields.
+      if (not (TmpFieldType in SupportedFieldTypes)) or
+         ((TmpFieldType in DateFieldTypes) and (TmpLength < 10)) then
+        TmpFieldType := ftString;
+
+      EField := TEpiField.CreateField(TmpFieldType);
+
+      with EField do
+      begin
+        FieldNo     := CurrentLine - 1;
+        DisplayChar := TmpFieldChar;
+        QuestX      := TmpQuestX;
+        QuestY      := TmpQuestY;
+        QuestColor  := TmpQuestColor;
+        FieldX      := TmpFieldX;
+        FieldY      := TmpFieldY;
+        FieldLength := TmpLength;
+        FieldColor  := TmpFieldColor;
+        Question    := StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]);
+
+        // Ensure valid variable name.
+        if not CheckVariableName(TmpName, AlfaNumChars + [' ']) then
+        repeat
+          TmpName := 'V '+ IntToStr(FieldNumberCounter);
+          INC(FieldNumberCounter);
+        until not Fields.FieldExists(TmpName);
+        FieldName := Trim(TmpName);
+
+        // Encrypted field store length in field color property.
+        if FieldType = ftCrypt then
+        begin
+          if FieldColor > 111 then
+            CryptLength := FieldColor-111
+          else
+            CryptLength := FieldColor;
+        end;
+
+        // Variable label handling.
+        VariableLabel := Trim(Question);
+        if (FieldNaming = fnFirstWord) and (trim(VariableLabel) <> '') THEN
+        begin
+          TmpStr := FirstWord(VariableLabel, MaxFieldNameLen);
+          Delete(FVariableLabel, Pos(TmpStr, VariableLabel), System.Length(TmpStr));
+          VariableLabel := trim(VariableLabel);
+        END;
+        IF FieldName <> TmpName THEN VariableLabel := TmpName + ' ' + VariableLabel;
+
+        // Summerize field findings.
+        FRecLength := FRecLength + FieldLength;
+      end;  // With EField
+      AddField(EField);
+    end; // For CurrentLine
+    FFullrecLength := FRecLength + (((FRecLength - 1) DIV MaxRecLineLength) + 1) * 3;
+    FOffSet := TextPos(TxtFile);
+    FDataStream.Position := FOffset;
+    CloseFile(TxtFile);
+
+    TempInt := NumRecords;
+    if TempInt = -1 then
+    begin
+      FErrorText := Format(Lang(20118, 'Error in datafile %s.~~One or more records are corrupted.'), [Filename]);
+      FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20118);
+      Exit;
+    end;
+
+    // Read data into fields.
+    // TODO : When skipping testing device a new reding mechanism base on Read() procedure.
+    for i := 0 to NumDataFields - 1 do
+      DataFields[i].Size := TempInt;
+
+    for i := 1 to TempInt do
+    begin
+      Read(i);
+    end;
+
+    result := true;
+
+    if not (eoIgnoreChecks in FOptions) then
+    begin
+      try
+        try
+          ChkIO := TCheckFileIO.Create();
+          ChkIO.OnTranslate := Self.OnTranslate;
+          result := ChkIO.ReadCheckFile(ChangeFileExt(FileName, '.chk'), Self);
+          if not Result then
+          begin
+            ErrorCode := EPI_CHECKFILE_ERROR;
+            for i := 0 to ChkIO.ErrorLines.Count -1 do
+              ErrorText := ErrorText + #13#10 + ChkIO.ErrorLines[i];
+            EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+          end;
+        except
+          ErrorCode := EPI_CHECKFILE_ERROR;
+          result := false;
+        end;
+      finally
+        FreeAndNil(ChkIO);
+      end
+    end;
+  finally
+    EpiLogger.DecIndent;
+  end;     }
+end;
+
 function TEpiImportExport.ImportStata(const aFilename: string;
   var DataFile: TEpiDataFile): Boolean;
 var
@@ -628,12 +867,11 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates]);
 
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftStata;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
@@ -727,6 +965,7 @@ begin
 
     // nobs (number of obs)
     NObs := ReadInts(4);
+    Size := NObs;
 
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
@@ -765,9 +1004,9 @@ begin
       if TypeList[i] = DoubleChar then TypeList[i] := DoubleConst;
 
 
-      IF (TypeList[i] in [IntConst, LongConst, FloatConst, DoubleConst]) THEN
+      IF (TypeList[i] in [FloatConst, DoubleConst]) THEN
         TmpFieldType := ftFloat
-      ELSE IF Char(TypeList[i]) = ByteConst THEN
+      ELSE IF (TypeList[i] in [ByteConst, IntConst, LongConst]) THEN
         TmpFieldType := ftInteger
       ELSE
       BEGIN
@@ -841,8 +1080,8 @@ begin
       // - typelist
       TmpField.NumDecimals := 0;
       case TypeList[i] of
-        ByteConst: TmpField.FieldLength := 2;
-        IntConst:  TmpField.FieldLength := MaxIntegerLength;
+        ByteConst: TmpField.FieldLength := 3;
+        IntConst:  TmpField.FieldLength := 5;
         LongConst: TmpField.FieldLength := 10;
         FloatConst,
         DoubleConst:
@@ -934,12 +1173,10 @@ begin
     // Commit field info to REC-file
     // structure.
     // ********************************
-    Save(FileName);
 
     // ********************************
     //          STATA DATA
     // ********************************
-    // TODO -o Torsten : Redesign reding of data into correct TEpiField-types.
     DecS := EpiInternalFormatSettings.DecimalSepator;
     TRY
       FOR CurRec := 1 TO nObs DO
@@ -947,7 +1184,7 @@ begin
         UpdateProgress(Trunc(100 * CurRec/nObs), Lang(0, 'Reading data'));
         FOR CurField := 0 TO NumFields-1 DO
         BEGIN
-          TmpField := Fields[Curfield];
+          TmpField := DataFields[Curfield];
           Case TypeList[CurField] of
             ByteConst,
             IntConst,
@@ -975,12 +1212,12 @@ begin
                   if (I >= (J - 25)) and (I <= (J - 23)) then
                   begin
                     // Write all 9's, 8's or 7's as missing value.
-                    StrBuf := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
-                    TmpField.CheckField.MissingValues[I - (J - 25)] := StrBuf;
+                    TmpField.AsString[CurRec] := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
+                    TmpField.CheckField.MissingValues[I - (J - 25)] := TmpField.AsString[CurRec];
                   end else
-                    StrBuf := '';
+                    TmpField.IsMissing[CurRec] := true;
                 end else
-                  StrBuf := IntToStr(I);
+                  TmpField.AsInteger[CurRec] := I;
               end;
             FloatConst,
             DoubleConst:
@@ -996,18 +1233,20 @@ begin
                   else begin
                     TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)] :=
                       DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.NumDecimals);
-                    StrBuf := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
+                    TmpField.AsString[CurRec] := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
                   end;
                 end else begin
-                  StrBuf := FloatToStr(TmpFlt);
-                  IsFloat(StrBuf);
+                  {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
+                  if TmpField.FieldType in DateFieldTypes then
+                    TmpFlt := TmpFlt + 21916;
+                  TmpField.AsFloat[CurRec] := TmpFlt;
                 end;
               End;
           else
             // This is a string field.
             // +1 Because we need a termination character in case all bytes in field
             // are used for text.
-            SetLength(CharBuf, (TmpField.FieldLength div 2) + 1);
+            SetLength(CharBuf, TmpField.FieldLength + 1);
             FillChar(CharBuf[0], Length(CharBuf), 0);
             DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
             // Hack - for some reason an empty PChar strings are not correctly assing the empty string.
@@ -1016,16 +1255,9 @@ begin
               StrBuf := ''
             else
               StrBuf := EpiUnknownStrToUTF8(String(CharBuf));
+            TmpField.AsString[CurRec] := StrBuf;
           end;
-
-          IF (StrBuf <> '') AND (TmpField.Fieldtype in DateFieldTypes) THEN
-          BEGIN
-            {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
-            StrBuf := EpiDateTimeToStr(StrToFloat(StrBuf) + 21916, TmpField.FieldType);
-          END;  //if date variable
-          TmpField.AsString[CurRec] := StrBuf;
         END;  //for CurField
-        Write();
       END;  //for CurRec
     EXCEPT
       ErrorText := Lang(23934, 'Error reading data from Stata-file');
@@ -1133,12 +1365,11 @@ BEGIN
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates]);
 
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftDBase;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
@@ -1243,9 +1474,9 @@ BEGIN
       UpdateProgress((CurRec * 100) DIV NObs, 'Reading records');
 
       TmpInt := ReadInts(1);
-      RecordState := rsNormal;
+{      RecordState := rsNormal;
       if TmpInt = $2A then
-        RecordState := rsDeleted;
+        RecordState := rsDeleted;}
 
       FOR CurField := 0 TO DataFields.Count - 1 DO
       with DataFields[CurField] do
@@ -1281,7 +1512,6 @@ BEGIN
         END;  //if s<>''
         AsString[CurRec] := Trim(TmpStr);
       END;  //for CurField
-      Write();
     END;  //for CurRec
     Result := true;
   FINALLY
@@ -1309,7 +1539,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates]);
 
   if (TxtImpSetting = nil) then
     TxtImpSetting := @ImportTxtGuess;
@@ -1322,7 +1552,6 @@ begin
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftCSV;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Initializing'));
 
@@ -1421,9 +1650,8 @@ begin
             [i + 1, TmpStr, TmpField.FieldName]);
           Exit;
         END;
-        TmpField.AsData := TmpStr;
+        TmpField.AsString[i] := TmpStr;
       end;
-      Write();
     end;
   finally
     if Assigned(QESHandler) then FreeAndNil(QESHandler);
@@ -1459,7 +1687,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates]);
 
   With DataFile do
   TRY
@@ -1634,24 +1862,170 @@ begin
 
         case FieldType of
           ftInteger, ftFloat:
-            AsData := FloatToStr(ACell^.NumberValue);
+            AsFloat[i - RowStart] := ACell^.NumberValue;
           ftDate, ftEuroDate, ftYMDDate:
             Begin
               TmpStr := ACell^.UTF8StringValue;
               EpiIsDate(TmpStr, FieldType);
-              AsData := TmpStr;
+              AsString[i - RowStart] := TmpStr;
             end;
           ftString:
-            AsData := ACell^.UTF8StringValue;
+            AsString[i - RowStart] := ACell^.UTF8StringValue;
         end;
       end;
-      Write();
     end;
     UpdateProgress(100, Lang(0, 'Complete.'));
   finally
     if Assigned(WorkBook) then FreeAndNil(WorkBook);
     EpiLogger.DecIndent();
   end;
+end;
+
+function TEpiImportExport.ExportRec(const aFilename: string;
+  const DataFile: TEpiDataFile): boolean;
+{var
+  Crypt: boolean;
+  i: integer;
+  S, EncData: string;
+  Stream: TFileStream;
+  ChkIO: TCheckFileIO; }
+begin
+{
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'InternalSave', 3);
+  result := false;
+
+  IF Fields.Count = 0 THEN
+  BEGIN
+    Raise Exception.Create('No fields defined');
+    Exit;
+  END;
+
+  Stream := nil;
+  ChkIO := nil;
+
+  try
+    // - Encryption required:
+    Crypt := false;
+    for i := 0 to Fields.Count -1 do
+      if Fields[i].FieldType = ftCrypt then
+        Crypt := true;
+
+    IF Crypt and (Password = '') THEN
+    BEGIN
+      if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
+      if Password = '' then
+        raise Exception.Create('A password is needed for data files with encrypted fields');
+      FCrypter.InitStr(Password);
+    END;
+
+    // - Header lines (and colour):
+    S := IntToStr(NumFields) + ' 1 ';
+
+    // - Autonaming or Firstword
+    IF FieldNaming = fnFirstWord THEN
+      S := S + 'VLAB ';
+
+    // - Password
+    IF Password <> '' THEN
+    begin
+      EncData := Trim(Password);
+      FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
+      EncData := B64Encode(EncData);
+      FCrypter.Reset;
+      S := S + '~KQ:' + EncData + ':KQ~ ';
+    end;
+
+    // TODO : Version
+{    S := S + '~VQ:' + IntToStr(FileVersion) + ':VQ~ ';   }
+
+    // - FileLabel
+    IF Trim(FileLabel) <> '' THEN
+      S := S + 'Filelabel: ' + FileLabel;
+
+    S := S + #13#10;
+    FDataStream.Write(S[1], Length(S));
+    FOffset := Length(S);
+
+    //TODO: Validate QuestX, QuestY, FieldX, fieldY
+    FOR i := 0 TO NumFields - 1 DO
+    WITH Fields[i] DO
+    BEGIN
+      EpiLogger.Add(Classname, 'InternalSave', 3, 'Writing heading no. ' + IntToStr(i+1));
+      // - Fieldchar
+      IF (FieldType = ftInteger) OR (FieldType = ftFloat) OR
+         (FieldType = ftIDNUM) THEN
+        s := '#'
+      ELSE
+        s := '_';
+      s := s + Format('%-10s', [FieldName]);  //Name of field (left justified)
+      s := s + ' ';                           //Space required for some unknown reason
+      s := s + Format('%4d', [QuestX]);       //Question X-position
+      s := s + Format('%4d', [QuestY]);       //Question Y-position
+      s := s + Format('%4s', ['30']);         //Question colorcode
+      s := s + Format('%4d', [FieldX]);       //Entry X-position
+      s := s + Format('%4d', [FieldY]);       //Entry Y-position
+
+      //Write FieldType
+      // 0 = Question without entryfield, i.e. text only
+      // 100+Number of decimals = Floating point number
+      // For all other: use the fieldtype-code (fieldtype)
+      IF FieldType = ftQuestion THEN
+        s := s + Format('%4s', ['0'])
+      ELSE IF (FieldType = ftFloat) AND (NumDecimals>0) THEN
+        s := s + Format('%4d', [100 + NumDecimals])
+      ELSE
+        s := s + Format('%4d', [ORD(fieldtype)]);
+
+      //Write length of field - use 0 for text only
+      IF FieldType = ftQuestion THEN
+        s := s + Format('%4s', ['0'])
+      ELSE BEGIN
+        s := s + Format('%4d', [FieldLength]);
+        FRecLength := FRecLength + FieldLength;
+      END;
+
+      //write entry colorcode - special use in encrypted fields (holds entrylength of field)
+      IF FieldType <> ftCrypt THEN
+        s := s + Format('%4s', ['112'])
+      ELSE
+        IF CryptLength < 15 THEN
+          s := s + Format('%4d', [111 + CryptLength])
+        ELSE
+          s := s + Format('%4d', [CryptLength]);
+
+      s := s + ' ';                      //Another unnescessary blank
+      if Question = '' then
+        Question := VariableLabel;
+      s := s + Question;
+
+      s := s + #13#10;
+      FDataStream.Write(S[1], Length(S));
+      FOffset := FOffset + Length(S);
+    END; // End With Field...
+
+    FFullrecLength := FRecLength + (((FRecLength - 1) DIV MaxRecLineLength) + 1) * 3;
+    FCurRecord := NewRecord;
+
+    if not (eoIgnoreChecks in FOptions) then
+    begin
+      CheckFile.FileName := ChangeFileExt(FileName, '.chk');
+      Stream := TFileStream.Create(CheckFile.FileName, fmCreate);
+      ChkIO := TCheckFileIO.Create();
+      ChkIO.WriteCheckToStream(Stream, Self);
+      if Stream.Size = 0 then
+      begin
+        FreeAndNil(Stream);
+        DeleteFile(CheckFile.FileName);
+        CheckFile.FileName := '';
+      end;
+    end;
+  finally
+    EpiLogger.DecIndent;
+    if Assigned(Stream) then FreeAndNil(Stream);
+    if Assigned(ChkIO) then FreeAndNil(ChkIO);
+  end;
+}
 end;
 
 function TEpiImportExport.ExportStata(const aFilename: string;
@@ -1768,7 +2142,7 @@ begin
       FmtLength := 49;
 
     NVar := NumDataFields;
-    NObs := NumRecords;
+    NObs := Size;
 
     // ********************************
     //           STATA HEADER
@@ -1972,7 +2346,6 @@ begin
       FOR CurRec := 1 TO NObs DO
       BEGIN
         UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-        Read(CurRec);
 
         FOR CurField := 0 TO NVar - 1 DO
         With DataFields[CurField] do
@@ -2189,7 +2562,7 @@ begin
     WriteInts(eYear, 1);                             //header offset 1 - year of last update
     WriteInts(eMonth, 1);                            //header offset 2 - month of last update
     WriteInts(eDay, 1);                              //header offset 3 - date of last update
-    WriteInts(NumRecords, 4);                        //header offset 4 - Number of records
+    WriteInts(Size, 4);                        //header offset 4 - Number of records
     WriteInts(32 + (DataFields.Count * 32) + 1, 2);  //header offset 8 - Header size in bytes
     WriteInts(dbRecLength + 1, 2);                   //header offset 10 - Record size in bytes
 
@@ -2229,16 +2602,15 @@ begin
 
     {write records}
     // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
-    NObs := NumRecords;
+    NObs := Size;
     TRY
       FOR CurRec := 1 TO NObs DO
       BEGIN
         UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-        Read(CurRec);
 
-        IF RecordState = rsDeleted THEN
+{        IF RecordState = rsDeleted THEN
           WriteInts($2A, 1)
-        ELSE
+        ELSE                 }
           WriteInts($20, 1);
 
         FOR CurField := 0 TO DataFields.Count - 1 DO
@@ -2326,15 +2698,14 @@ begin
     end;
 
     { Write Data }
-    NObs := NumRecords;
+    NObs := Size;
     for CurRec := 1 to NObs do
     begin
        UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-       Read(CurRec);
 
        for i := 0 to NumDataFields - 1 do
        begin
-        TmpStr := DataFields[i].AsData;
+        TmpStr := DataFields[i].AsString[CurRec];
 
         if ExpSettings^.FixedFormat then
           TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
@@ -2404,11 +2775,10 @@ begin
     end;
 
     { Write Data }
-    NObs := NumRecords;
+    NObs := Size;
     for CurRec := 1 to NObs do
     begin
       UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-      Read(CurRec);
 
       for i := 0 to NumDataFields - 1 do
       begin
@@ -2417,7 +2787,7 @@ begin
         ACell^.Col := i;
         ACell^.Row := CurRec - 1 + OffSet;
 
-        TmpStr := DataFields[i].AsData;
+        TmpStr := DataFields[i].AsString[CurRec];
         case DataFields[i].FieldType of
 {          ftDate, ftEuroDate, ftYMDDate,
           ftToday, ftEuroToday, ftYMDToday:

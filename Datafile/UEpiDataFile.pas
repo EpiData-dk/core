@@ -172,15 +172,16 @@ type
     FVariableLabel: string;
     FCheckField:   TEpiCheckField;
     function       GetValueLabel: TValueLabelSet;
-    function       GetAsFmtData: string;
-    function       GetData: string;
-    procedure      SetData(aData: string);
+//    function       GetAsFmtData: string;
   protected
+    FCurrentData: String;
+    FChanged: Boolean;
     function GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
     function GetAsDate(const index: Integer): EpiDate; virtual; abstract;
     function GetAsFloat(const index: Integer): EpiFloat; virtual; abstract;
     function GetAsInteger(const index: Integer): EpiInteger; virtual; abstract;
     function GetAsString(const index: Integer): EpiString; virtual; abstract;
+    function GetAsValue(const index: Integer): string; virtual;
     function GetCapacity: Integer; virtual; abstract;
     function GetIsMissing(const index: Integer): boolean; virtual; abstract;
     function GetIsMissingValue(const index: Integer): boolean; virtual; abstract;
@@ -194,51 +195,47 @@ type
     procedure SetCapacity(AValue: Integer); virtual; abstract;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); virtual; abstract;
     procedure SetSize(const AValue: Integer); virtual;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true); virtual;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
     property Capacity: Integer read GetCapacity write SetCapacity;
   public
-    constructor Create;
     destructor  Destroy; override;
-    class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0;
-      SetAllMissing: boolean = true): TEpiField;
+    class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0): TEpiField;
     procedure   Reset();
     procedure   Clone(Var Dest: TEpiField);
-    property    AsData:      string read GetData write SetData;
-    property    AsFmtData:   string read GetAsFmtData;
+//    property    AsFmtData:   string read GetAsFmtData;
     procedure Exchange(i,j: integer); virtual; abstract;
-    function Compare(i,j: integer): integer; virtual; abstract;
+    function  Compare(i,j: integer): integer; virtual; abstract;
     procedure NewRecords(ACount: Integer = 1); virtual;
-    property    FieldNo:     Cardinal read FFieldNo write FFieldNo;
-    property    DisplayChar: Char read FDisplayChar write FDisplayChar;
-    property    FieldName:   string read FFieldName write FFieldName;
-    property    QuestX:      Cardinal read FQuestX write FQuestX;
-    property    QuestY:      Cardinal read FQuestY write FQuestY;
-    property    QuestColor:  Cardinal read FQuestColor write FQuestColor;
-    property    FieldX:      Cardinal read FFieldX write FFieldX;
-    property    FieldY:      Cardinal read FFieldY write FFieldY;
-    property    FieldColor:  Cardinal read FFieldColor write FFieldColor;
-    property    FieldType:   TFieldType read FFieldType; // write FFieldType;
-//    property    FieldTypeName: string read GetFieldTypeName;
-    property    FieldLength: Cardinal read FFieldLength write FFieldLength;
-    property    CryptLength: Cardinal read FCryptLength write FCryptLength;
-    property    NumDecimals: Cardinal read FNumDecimals write FNumDecimals;
-    property    Question:    string read FQuestion write FQuestion;
-    property    VariableLabel: string read FVariableLabel write FVariableLabel;
-    property    CheckField:  TEpiCheckField read FCheckField write FCheckField;
-    property    ValueLabelSet: TValueLabelSet read GetValueLabel;
-    property    Owner:       TEpiFields read FOwner;
-    property    DataFile:    TEpiDataFile read FDataFile write FDataFile;
-    // New Additions to branch version.
-    property Size: Integer read GetSize write SetSize;
-    property IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
-    property IsMissingValue[const index: Integer]: boolean read GetIsMissingValue;
-    property AsBoolean[const index: Integer]: EpiBool read GetAsBoolean write SetAsBoolean;
-    property AsInteger[const index: Integer]: EpiInteger read GetAsInteger write SetAsInteger; default;
-    property AsFloat[const index: Integer]: EpiFloat read GetAsFloat write SetAsFloat;
-    property AsDate[const index: Integer]: EpiDate read GetAsDate write SetAsDate;
+    property  FieldNo:     Cardinal read FFieldNo write FFieldNo;
+    property  DisplayChar: Char read FDisplayChar write FDisplayChar;
+    property  FieldName:   string read FFieldName write FFieldName;
+    property  QuestX:      Cardinal read FQuestX write FQuestX;
+    property  QuestY:      Cardinal read FQuestY write FQuestY;
+    property  QuestColor:  Cardinal read FQuestColor write FQuestColor;
+    property  FieldX:      Cardinal read FFieldX write FFieldX;
+    property  FieldY:      Cardinal read FFieldY write FFieldY;
+    property  FieldColor:  Cardinal read FFieldColor write FFieldColor;
+    property  FieldType:   TFieldType read FFieldType;
+    property  FieldLength: Cardinal read FFieldLength write FFieldLength;
+    property  CryptLength: Cardinal read FCryptLength write FCryptLength;
+    property  NumDecimals: Cardinal read FNumDecimals write FNumDecimals;
+    property  Question:    string read FQuestion write FQuestion;
+    property  VariableLabel: string read FVariableLabel write FVariableLabel;
+    property  CheckField:  TEpiCheckField read FCheckField write FCheckField;
+    property  ValueLabelSet: TValueLabelSet read GetValueLabel;
+    property  Owner:       TEpiFields read FOwner;
+    property  DataFile:    TEpiDataFile read FDataFile write FDataFile;
+    property  Size: Integer read GetSize write SetSize;
+    property  IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
+    property  IsMissingValue[const index: Integer]: boolean read GetIsMissingValue;
+    property  AsBoolean[const index: Integer]: EpiBool read GetAsBoolean write SetAsBoolean;
+    property  AsInteger[const index: Integer]: EpiInteger read GetAsInteger write SetAsInteger; default;
+    property  AsFloat[const index: Integer]: EpiFloat read GetAsFloat write SetAsFloat;
+    property  AsDate[const index: Integer]: EpiDate read GetAsDate write SetAsDate;
 //    property AsTime[const index: Integer]: EpiTime read GetAsTime write SetAsTime;
 //    property AsDateTime[const index: Integer]: EpiDateTime read GetAsDateTime write SetAsDateTime;
-    property AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
+    property  AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
+    property  AsValue[const index: Integer]: string read GetAsValue;
   end;
 
   { TEpiIntField }
@@ -256,23 +253,17 @@ type
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool);
-      override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat);
-      override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger);
-      override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString);
-      override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
     procedure SetCapacity(AValue: Integer); override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean);
-      override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
-       SetAllMissing: boolean = true); override;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -296,22 +287,17 @@ type
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool);
-      override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat);
-      override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger);
-      override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString);
-      override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean);
-      override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
-       SetAllMissing: boolean = true); override;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -333,22 +319,17 @@ type
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool);
-      override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat);
-      override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger);
-      override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString);
-      override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean);
-      override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
-       SetAllMissing: boolean = true); override;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); override;
     destructor Destroy; override;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
@@ -370,22 +351,17 @@ type
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool);
-      override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat);
-      override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger);
-      override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString);
-      override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean);
-      override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
-       SetAllMissing: boolean = true); override;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -407,22 +383,17 @@ type
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool);
-      override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat);
-      override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger);
-      override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString);
-      override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean);
-      override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType;
-       SetAllMissing: boolean = true); override;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); override;
     function Compare(i, j: integer): integer; override;
     destructor Destroy; override;
     procedure Exchange(i, j: integer); override;
@@ -480,13 +451,12 @@ type
   { TEpiDataFile }
   TEpiDataFile = class(TObject)
   private
-    FFileName:     string;                  // .REC filename.
-    FDataStream:   TStream;                 // Stream (memory or file) reading .REC file.
+    FFileName:     string;                  // Physical datafile name.
     FFileLabel:    string;                  // Label of datafile.
     FFields:       TEpiFields;              // Container for all associated fields. (Owned)
     FDataFields:   TEpiFields;              // - holds list of data fields only. (Not Owned)
     FQuestFields:  TEpiFields;              // - holds list of question fields only. (Not Owned. FieldType = ftQuestion)
-    FPassword:     string;                  // Datafile password (~kq:....:kq~)
+    FPassword:     string;                  // Datafile password
     FFieldNaming:  TFieldNaming;            // Datafile fieldnaming convention - Firstword or Auto.
     FCheckFile:    TEpiCheckFile;           // Container for global/datafile level information of the .CHK file.
     FOptions:      TEpiDataFileOptions;     // Options set by Open(...)
@@ -498,16 +468,13 @@ type
     FErrorCode:    Cardinal;
     FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
-    FRecLength:    Cardinal;
-    FFullrecLength: Cardinal;
-    FOffset:       Cardinal;
-    FRecordState:  TRecordState;
-    FCurRecord:    Integer;
-    FOrgDataType:  TDataFileType;
-    function GetField(Index: integer): TEpiField;
-    function GetIndexFile: TEpiIndexFile;
-    function GetValueLabels: TValueLabelSets;
+    FRecordStatus: TEpiField;
+    function   GetField(Index: integer): TEpiField;
+    function   GetIndexFile: TEpiIndexFile;
+    function   GetSize: Integer;
+    function   GetValueLabels: TValueLabelSets;
     procedure  InternalReset;
+    procedure  SetSize(const AValue: Integer);
   protected
     function   InternalOpen: boolean;
     function   InternalSave: boolean;
@@ -517,16 +484,14 @@ type
     Function   TextPos(var F: Textfile): Cardinal;
     function   GetNumFields: Cardinal;
     function   GetNumDataFields: Cardinal;
-    function   GetNumRecords: Integer;
-    function   GetEOFMarker: Boolean;
   public
     constructor Create(aOptions: TEpiDataFileOptions = []); virtual;
     destructor Destroy; override;
     function   Open(Const aFileName: string): boolean;
     function   Save(Const aFileName: string): boolean;
-    procedure  SaveMemToFile(Const aFileName: string);
-    procedure  Read(RecNumber: Integer);
-    procedure  Write(RecNumber: Integer = NewRecord);
+//    procedure  SaveMemToFile(Const aFileName: string);
+//    procedure  Read(RecNumber: Integer);
+//    procedure  Write(RecNumber: Integer = NewRecord);
     procedure  Reset;
     function   FieldByName(Const aFieldName: string): TEpiField;
     function   FieldExists(Const aFieldName: string): boolean;
@@ -548,15 +513,12 @@ type
     property   FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
     Property   NumFields:   Cardinal read GetNumFields;
     Property   NumDataFields: Cardinal read GetNumDataFields;
-    Property   NumRecords:  Integer read GetNumRecords;
-    Property   EOFMarker:   Boolean read GetEOFMarker;
+    Property   Size:        Integer read GetSize write SetSize;
     Property   CheckFile:   TEpiCheckFile read FCheckFile;
     Property   IndexFile:   TEpiIndexFile read GetIndexFile;
     Property   ErrorCode:   Cardinal read FErrorCode write FErrorCode;
     Property   ErrorText:   string read FErrorText write FErrorText;
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
-    Property   RecordState: TRecordState read FRecordState write FRecordState;
-    Property   OrgDataType: TDataFileType read FOrgDataType write FOrgDataType;
   end;
 
 implementation
@@ -785,7 +747,14 @@ begin
     result := CheckField.ValueLabel;
 end;
 
-function TEpiField.GetAsFmtData: string;
+function TEpiField.GetAsValue(const index: Integer): string;
+begin
+  result := AsString[Index];
+  if Assigned(ValueLabelSet) then
+    result := ValueLabelSet.Value[AsString[Index]];
+end;
+
+{function TEpiField.GetAsFmtData: string;
 begin
   case FieldType of
     ftDate, ftEuroDate, ftYMDDate:
@@ -797,19 +766,7 @@ begin
   else
     result := AsData;
   end;
-end;
-
-function TEpiField.GetData: string;
-begin
-  // TODO : Implement CurRec on fields.
-  Result := Trim(AsString[0]);
-end;
-
-procedure TEpiField.SetData(aData: string);
-begin
-  // TODO : Implement CurRec on fields.
-  AsString[0] := aData;
-end;
+end;}
 
 function TEpiField.GetSize: Integer;
 begin
@@ -829,50 +786,37 @@ begin
   FSize := AValue;
 end;
 
-constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType; SetAllMissing: boolean = true);
+constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType);
 var
   i: Integer;
 begin
   Reset;
   Capacity := ASize;
-
-  if not SetAllMissing then exit;
-
-  for i := 1 to Size do
-    IsMissing[i] := true;
 end;
 
-constructor TEpiField.Create;
+class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal): TEpiField;
 begin
-  Reset();
-end;
-
-class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal;
-  SetAllMissing: boolean = true): TEpiField;
-begin
-  // Todo -o Torsten : Finish coding CREATEFIELD.
   case aFieldType of
     ftInteger, ftIDNum:
-      Result := TEpiIntField.Create(aSize, aFieldType, SetAllMissing);
+      Result := TEpiIntField.Create(aSize, aFieldType);
 
     ftDate, ftToday, ftEuroDate,
     ftEuroToday, ftYMDDate,ftYMDToday:
-      Result := TEpiDateField.Create(aSize, aFieldType, SetAllMissing);
+      Result := TEpiDateField.Create(aSize, aFieldType);
 
     ftFloat:
-      Result := TEpiFloatField.Create(aSize, aFieldType, SetAllMissing);
+      Result := TEpiFloatField.Create(aSize, aFieldType);
 
     ftBoolean:
-      Result := TEpiBoolField.Create(aSize, aFieldType, SetAllMissing);
+      Result := TEpiBoolField.Create(aSize, aFieldType);
 
     ftString, ftUpperAlfa, ftSoundex, ftCrypt:
-      Result := TEpiStringField.Create(aSize, aFieldType, SetAllMissing);
+      Result := TEpiStringField.Create(aSize, aFieldType);
 
     ftQuestion:
-      Result := TEpiField.Create(aSize, aFieldType, SetAllMissing);
+      Result := TEpiField.Create(0, aFieldType);
   else
-    // TODO -o Torsten : Exception should happen;
-    exit;
+    raise Exception.Create(Format('Invalid fieldtype: %s', [FieldTypeToFieldTypeName(aFieldType, nil)]));
   end;
 end;
 
@@ -895,7 +839,7 @@ var
   Ptr: Pointer;
 begin
   if not Assigned(Dest) then
-    Dest := TEpiField.Create();
+    Dest := TEpiField.CreateField(FieldType, Size);
 
   // Reset all values... but retain Datafile linkage.
   Ptr := Dest.DataFile;
@@ -1078,6 +1022,11 @@ begin
   result := FIndexFile;
 end;
 
+function TEpiDataFile.GetSize: Integer;
+begin
+  result := FRecordStatus.Size;
+end;
+
 function TEpiDataFile.GetValueLabels: TValueLabelSets;
 begin
   result := nil;
@@ -1089,13 +1038,13 @@ end;
 
 procedure TEpiDataFile.InternalReset;
 begin
-  if Assigned(FDataStream) then FDataStream.Size := 0;
   if Assigned(FFields) then FreeAndNil(FFields);
   if Assigned(FDataFields) then FreeAndNil(FDataFields);
   if Assigned(FQuestFields) then FreeAndNil(FQuestFields);
   if Assigned(FCheckFile) then FreeAndNil(FCheckFile);
   if Assigned(FIndexFile) then FreeAndNil(FIndexFile);
   if Assigned(FCrypter) then FreeAndNil(FCrypter);
+  if Assigned(FRecordStatus) then FreeAndNil(FRecordStatus);
 
   FFileName       := '';
   FFileLabel      := '';
@@ -1108,381 +1057,25 @@ begin
   FErrorText      := '';
   FErrorCode      := 0;
   FFileVersion    := 0;
-  FRecLength      := 0;
-  FFullrecLength  := 0;
-  FOffset         := 0;
-  FRecordState    := rsNormal;
-  FCurRecord      := NewRecord;
-  FOrgDataType    := dftEpiData;
+end;
+
+procedure TEpiDataFile.SetSize(const AValue: Integer);
+var
+  i, aSize: Integer;
+begin
+  for i := 0 to DataFields.Count - 1 do
+    DataFields[i].Size := AValue;
+
+  aSize := FRecordStatus.Size;
+  FRecordStatus.Size := AValue;
 end;
 
 function TEpiDataFile.InternalOpen: boolean;
-var
-  // Misc:
-  TempInt, I: integer;
-  TxtFile: TextFile;
-  EField: TEpiField;
-  FieldNumberCounter: cardinal;
-  ChkIO: TCheckFileIO;
-
-  // Reading the textfile:
-  TxtLine: string;
-  HeaderLineCount: Integer;
-  ValCode: Integer;
-  CurrentLine: Integer;
-
-  // Field lines:
-  TmpFieldType: TFieldType;
-  TmpFieldChar, Dummy: Char;
-  TmpFieldTypeInt,
-  TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
-  TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
-  TmpName: string[10];
-  TmpQuestion, TmpStr: string;
 begin
-  EpiLogger.IncIndent;
-  EpiLogger.Add(ClassName, 'InternalOpen', 3);
-  result := false;
-
-  OrgDataType := dftEpiData;
-
-  AssignFile(TxtFile, Filename);
-  {$I-}
-  System.Reset(TxtFile);
-  {$I+}
-  if IOResult() > 0 then
-  begin
-    FErrorText := Format(Lang(20108,'Data file %s could not be opened.'),[Filename]) + #13 +
-                         Lang(20208,'Please check if the file is in use and that the file name is legal.');
-    FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-    EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20108);
-    Exit;
-  end;
-
-  try
-    // --- Read "First Line" header ---
-    ReadLn(TxtFile, TxtLine);
-
-    // - Version number
-    FFileVersion := 0;
-    TempInt := Pos('~VQ:', AnsiUpperCase(TxtLine));
-    if TempInt > 0 then
-    begin
-      Val(Copy(TxtLine, TempInt + 5, Pos(':VQ~', AnsiUpperCase(TxtLine))), FFileVersion, ValCode);
-      if ValCode > 0 then
-      begin
-        FErrorText := Format(Lang(0, 'File version information invalid %s'), [Filename]);
-        FErrorCode := EPI_FILE_VERSION_ERROR;
-        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
-        CloseFile(TxtFile);
-        Exit;
-      end;
-    end;
-
-    // - Password
-    TempInt := Pos('~KQ:', AnsiUpperCase(TxtLine));
-    if TempInt > 0 then
-    begin
-      if not RequestPassword(Copy(TxtLine, TempInt + 4, Pos(':KQ~', AnsiUpperCase(TxtLine)) - (TempInt + 4))) then
-      begin
-        FErrorText := Lang(9020, 'Incorrect password entered');
-        FErrorcode := EPI_INVALID_PASSWORD;
-        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
-        CloseFile(TxtFile);
-        Exit;
-      end;
-    end;
-
-    // - FileLabel
-    if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
-      FFileLabel := Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine));
-
-    // - Autonaming or Firstword
-    if Pos(' VLAB', TxtLine) > 0 then
-      FFieldNaming := fnFirstWord
-    else
-      FFieldNaming := fnAuto;
-
-    // - Header lines:
-    Val(Copy(TxtLine, 1, Pos(' ', TxtLine)-1), HeaderLineCount, ValCode);
-    if ValCode > 0 then
-    begin
-      FErrorText := Format(Lang(20112, 'Incorrect format of datafile %s'), [Filename]);
-      FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20112);
-      CloseFile(TxtFile);
-      Exit;
-    end;
-
-    FieldNumberCounter := 1;
-    // Read field defining header lines.
-    for CurrentLine := 1 to HeaderLineCount do
-    begin
-      EpiLogger.Add(ClassName, 'InternalOpen', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
-      if UpdateProgress((CurrentLine*100) DIV HeaderLineCount, lang(0,'Opening data file'))=prCancel then
-      begin
-        FErrorText := Lang(0, 'Cancelled by user');
-        FErrorcode := EPI_USERCANCELLED;
-        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
-        CloseFile(TxtFile);
-        Exit;
-      end;
-
-      ReadLn(TxtFile,
-             TmpFieldChar, TmpName, TmpQuestX, TmpQuestY,
-             TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldTypeInt, TmpLength,
-             TmpFieldColor, dummy, TmpQuestion);
-
-      // Field types.
-      if TmpFieldTypeInt >= 100 then
-        // Type > 100 => float field
-        TmpFieldType := ftFloat
-      else begin
-        // Normal field type recognition.
-        TmpFieldType := ftInteger;
-        WHILE TmpFieldTypeInt > ORD(TmpFieldType) DO
-          TmpFieldType := Succ(TmpFieldType);
-      end;
-
-      // This is not a data field, but a question field.
-      if TmpLength = 0 then TmpFieldType := ftQuestion;
-
-      // Unsupported field are automatically converted to string (ftString) fields.
-      if (not (TmpFieldType in SupportedFieldTypes)) or
-         ((TmpFieldType in DateFieldTypes) and (TmpLength < 10)) then
-        TmpFieldType := ftString;
-
-      EField := TEpiField.CreateField(TmpFieldType);
-
-      with EField do
-      begin
-        FieldNo     := CurrentLine - 1;
-        DisplayChar := TmpFieldChar;
-        QuestX      := TmpQuestX;
-        QuestY      := TmpQuestY;
-        QuestColor  := TmpQuestColor;
-        FieldX      := TmpFieldX;
-        FieldY      := TmpFieldY;
-        FieldLength := TmpLength;
-        FieldColor  := TmpFieldColor;
-        Question    := StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]);
-
-        // Ensure valid variable name.
-        if not CheckVariableName(TmpName, AlfaNumChars + [' ']) then
-        repeat
-          TmpName := 'V '+ IntToStr(FieldNumberCounter);
-          INC(FieldNumberCounter);
-        until not Fields.FieldExists(TmpName);
-        FieldName := Trim(TmpName);
-
-        // Encrypted field store length in field color property.
-        if FieldType = ftCrypt then
-        begin
-          if FieldColor > 111 then
-            CryptLength := FieldColor-111
-          else
-            CryptLength := FieldColor;
-        end;
-
-        // Variable label handling.
-        VariableLabel := Trim(Question);
-        if (FieldNaming = fnFirstWord) and (trim(VariableLabel) <> '') THEN
-        begin
-          TmpStr := FirstWord(VariableLabel, MaxFieldNameLen);
-          Delete(FVariableLabel, Pos(TmpStr, VariableLabel), System.Length(TmpStr));
-          VariableLabel := trim(VariableLabel);
-        END;
-        IF FieldName <> TmpName THEN VariableLabel := TmpName + ' ' + VariableLabel;
-
-        // Summerize field findings.
-        FRecLength := FRecLength + FieldLength;
-      end;  // With EField
-      AddField(EField);
-    end; // For CurrentLine
-    FFullrecLength := FRecLength + (((FRecLength - 1) DIV MaxRecLineLength) + 1) * 3;
-    FOffSet := TextPos(TxtFile);
-    FDataStream.Position := FOffset;
-    CloseFile(TxtFile); 
-
-    if NumRecords = -1 then
-    begin
-      FErrorText := Format(Lang(20118, 'Error in datafile %s.~~One or more records are corrupted.'), [Filename]);
-      FErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 20118);
-      Exit;
-    end;
-
-    result := true;
-
-    if not (eoIgnoreChecks in FOptions) then
-    begin
-      try
-        try
-          ChkIO := TCheckFileIO.Create();
-          ChkIO.OnTranslate := Self.OnTranslate;
-          result := ChkIO.ReadCheckFile(ChangeFileExt(FileName, '.chk'), Self);
-          if not Result then
-          begin
-            ErrorCode := EPI_CHECKFILE_ERROR;
-            for i := 0 to ChkIO.ErrorLines.Count -1 do
-              ErrorText := ErrorText + #13#10 + ChkIO.ErrorLines[i];
-            EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
-          end;
-        except
-          ErrorCode := EPI_CHECKFILE_ERROR;
-          result := false;
-        end;
-      finally
-        FreeAndNil(ChkIO);
-      end
-    end;
-  finally
-    EpiLogger.DecIndent;
-  end;
 end;
 
 function TEpiDataFile.InternalSave: boolean;
-var
-  Crypt: boolean;
-  i: integer;
-  S, EncData: string;
-  Stream: TFileStream;
-  ChkIO: TCheckFileIO;
 begin
-  EpiLogger.IncIndent;
-  EpiLogger.Add(Classname, 'InternalSave', 3);
-  result := false;
-
-  IF Fields.Count = 0 THEN
-  BEGIN
-    Raise Exception.Create('No fields defined');
-    Exit;
-  END;
-
-  Stream := nil;
-  ChkIO := nil;
-
-  try
-    // - Encryption required:
-    Crypt := false;
-    for i := 0 to Fields.Count -1 do
-      if Fields[i].FieldType = ftCrypt then
-        Crypt := true;
-
-    IF Crypt and (Password = '') THEN
-    BEGIN
-      if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
-      if Password = '' then
-        raise Exception.Create('A password is needed for data files with encrypted fields');
-      FCrypter.InitStr(Password);  
-    END;
-
-    // - Header lines (and colour):
-    S := IntToStr(NumFields) + ' 1 ';
-
-    // - Autonaming or Firstword
-    IF FieldNaming = fnFirstWord THEN
-      S := S + 'VLAB ';
-
-    // - Password
-    IF Password <> '' THEN
-    begin
-      EncData := Trim(Password);
-      FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-      EncData := B64Encode(EncData);
-      FCrypter.Reset;
-      S := S + '~KQ:' + EncData + ':KQ~ ';
-    end;
-
-    // TODO : Version
-{    S := S + '~VQ:' + IntToStr(FileVersion) + ':VQ~ ';   }
-
-    // - FileLabel
-    IF Trim(FileLabel) <> '' THEN
-      S := S + 'Filelabel: ' + FileLabel;
-
-    S := S + #13#10;
-    FDataStream.Write(S[1], Length(S));
-    FOffset := Length(S);
-
-    //TODO: Validate QuestX, QuestY, FieldX, fieldY
-    FOR i := 0 TO NumFields - 1 DO
-    WITH Fields[i] DO
-    BEGIN
-      EpiLogger.Add(Classname, 'InternalSave', 3, 'Writing heading no. ' + IntToStr(i+1));
-      // - Fieldchar
-      IF (FieldType = ftInteger) OR (FieldType = ftFloat) OR
-         (FieldType = ftIDNUM) THEN
-        s := '#'
-      ELSE
-        s := '_';
-      s := s + Format('%-10s', [FieldName]);  //Name of field (left justified)
-      s := s + ' ';                           //Space required for some unknown reason
-      s := s + Format('%4d', [QuestX]);       //Question X-position
-      s := s + Format('%4d', [QuestY]);       //Question Y-position
-      s := s + Format('%4s', ['30']);         //Question colorcode
-      s := s + Format('%4d', [FieldX]);       //Entry X-position
-      s := s + Format('%4d', [FieldY]);       //Entry Y-position
-
-      //Write FieldType
-      // 0 = Question without entryfield, i.e. text only
-      // 100+Number of decimals = Floating point number
-      // For all other: use the fieldtype-code (fieldtype)
-      IF FieldType = ftQuestion THEN
-        s := s + Format('%4s', ['0'])
-      ELSE IF (FieldType = ftFloat) AND (NumDecimals>0) THEN
-        s := s + Format('%4d', [100 + NumDecimals])
-      ELSE
-        s := s + Format('%4d', [ORD(fieldtype)]);
-
-      //Write length of field - use 0 for text only
-      IF FieldType = ftQuestion THEN
-        s := s + Format('%4s', ['0'])
-      ELSE BEGIN
-        s := s + Format('%4d', [FieldLength]);
-        FRecLength := FRecLength + FieldLength;
-      END;
-
-      //write entry colorcode - special use in encrypted fields (holds entrylength of field)
-      IF FieldType <> ftCrypt THEN
-        s := s + Format('%4s', ['112'])
-      ELSE
-        IF CryptLength < 15 THEN
-          s := s + Format('%4d', [111 + CryptLength])
-        ELSE
-          s := s + Format('%4d', [CryptLength]);
-
-      s := s + ' ';                      //Another unnescessary blank
-      if Question = '' then
-        Question := VariableLabel;
-      s := s + Question;
-
-      s := s + #13#10;
-      FDataStream.Write(S[1], Length(S));
-      FOffset := FOffset + Length(S);
-    END; // End With Field...
-
-    FFullrecLength := FRecLength + (((FRecLength - 1) DIV MaxRecLineLength) + 1) * 3;
-    FCurRecord := NewRecord;
-
-    if not (eoIgnoreChecks in FOptions) then
-    begin
-      CheckFile.FileName := ChangeFileExt(FileName, '.chk');
-      Stream := TFileStream.Create(CheckFile.FileName, fmCreate);
-      ChkIO := TCheckFileIO.Create();
-      ChkIO.WriteCheckToStream(Stream, Self);
-      if Stream.Size = 0 then
-      begin
-        FreeAndNil(Stream);
-        DeleteFile(CheckFile.FileName);
-        CheckFile.FileName := '';
-      end;
-    end;
-  finally
-    EpiLogger.DecIndent;
-    if Assigned(Stream) then FreeAndNil(Stream);
-    if Assigned(ChkIO) then FreeAndNil(ChkIO);
-  end;
 end;
 
 function TEpiDataFile.Lang(LangCode: Integer; Const LangText: string): string;
@@ -1545,47 +1138,6 @@ begin
   result := DataFields.Count;
 end;
 
-function TEpiDataFile.GetNumRecords: Integer;
-var
-  buf: Array[0..1] of Char;
-  TmpPos: Cardinal;
-BEGIN
-  Result := 0;
-  if FDataStream.Size = FOffset then exit;
-
-  TmpPos := FDataStream.Position;
-  if EOFMarker then
-    FDataStream.Position := FDataStream.Size - 3
-  else
-    FDataStream.Position := FDataStream.Size - 2;
-  FDataStream.ReadBuffer(buf, 2);
-  FDataStream.Position := TmpPos;
-
-  Result := FDataStream.Size - FOffset;
-  if (Buf[0] <> #13) or (Buf[1] <> #10) then inc(Result, 2);
-  if EOFMarker then Dec(Result);
-
-  if (Result mod FFullRecLength) <> 0 then
-    Result := -1
-  else
-    Result := Result div FFullRecLength;
-end;
-
-function TEpiDataFile.GetEOFMarker: Boolean;
-var
-  TmpPos: cardinal;
-  Buf: Char;
-begin
-  if not Assigned(FDataStream) then exit;
-
-  TmpPos := FDataStream.Position;
-  FDataStream.Position := FDataStream.Size - 1;
-  FDataStream.ReadBuffer(Buf, 1);
-  FDataStream.Position := TmpPos;
-
-  result := (Buf = #26);
-end;
-
 constructor TEpiDataFile.Create(aOptions: TEpiDataFileOptions);
 var
   p: pointer;
@@ -1594,13 +1146,10 @@ begin
   EpiLogger.Add(ClassName, 'Create', 3);
   try
     Reset();
-
     FOptions := aOptions;
-
-    if eoInMemory in Options then
-      FDataStream := TMemoryStream.Create();
-
     FFieldNaming := fnFirstWord;
+
+    FRecordStatus := TEpiIntField.Create(0, ftInteger);
   finally
     EpiLogger.DecIndent;
   end;
@@ -1612,7 +1161,7 @@ begin
   EpiLogger.Add(ClassName, 'Destroy', 2, 'Filename = ' + FileName);
   try
     InternalReset();
-    if Assigned(FDataStream) then FreeAndNil(FDataStream);
+
     inherited Destroy;
   finally
     EpiLogger.DecIndent;
@@ -1628,11 +1177,6 @@ begin
   EpiLogger.Add(Classname, 'Open', 2, 'Filename = "' + aFilename + '"');
   try
     FFileName := aFileName;
-
-    if eoInMemory in Options then
-      TMemoryStream(FDataStream).LoadFromFile(FileName)
-    else
-      FDataStream := TFileStream.Create(FileName, fmOpenReadWrite or fmShareDenyWrite);
 
     Ext := ExtractFileExt(FileName);
     if AnsiUpperCase(Ext) = '.REC' then
@@ -1657,15 +1201,13 @@ begin
   try
     FFileName := aFileName;
 
-    if (Trim(FileName) <> '') and (not (eoInMemory in Options)) then
-      FDataStream := TFileStream.Create(FileName, fmCreate);
-
     Result := InternalSave();
   finally
     EpiLogger.DecIndent;
   end;
 end;
 
+{
 procedure TEpiDataFile.SaveMemToFile(Const aFileName: string);
 begin
   if Trim(aFileName) = '' then exit;
@@ -1765,9 +1307,9 @@ begin
       FCrypter.Reset;
       T := Format('%-*s', [FieldLength, EncData])
     end else if FieldType in [ftString, ftUpperAlfa] then
-      S := S + Format('%-*s', [FieldLength, AsString[RecNumber]])
+      T := Format('%-*s', [FieldLength, AsString[RecNumber]])
     else
-      S := S + Format('%*s', [FieldLength, AsString[RecNumber]]);
+      T := Format('%*s', [FieldLength, AsString[RecNumber]]);
 
     S := S + T;
     if FieldLength <> Length(T) then
@@ -1792,7 +1334,7 @@ begin
   FDataStream.Write(S[1], Length(S));
 
   FCurRecord := RecNumber;
-end;
+end; }
 
 procedure TEpiDataFile.Reset;
 begin
@@ -2088,12 +1630,11 @@ begin
   result := NA_INT;
 end;
 
-constructor TEpiIntField.Create(ASize: Cardinal; AFieldType: TFieldType;
-  SetAllMissing: boolean);
+constructor TEpiIntField.Create(ASize: Cardinal; AFieldType: TFieldType);
 begin
   if not (AFieldType in IntFieldTypes) then
     Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
-  inherited Create(ASize, AFieldType, SetAllMissing);
+  inherited Create(ASize, AFieldType);
 end;
 
 function TEpiIntField.Compare(i, j: integer): integer;
@@ -2159,7 +1700,7 @@ end;
 
 function TEpiFloatField.GetCapacity: Integer;
 begin
-  // TODO : Implement TEpiFloatField.GetCapacity
+  result := Length(FData);
 end;
 
 function TEpiFloatField.GetIsMissing(const index: Integer): boolean;
@@ -2225,6 +1766,13 @@ begin
   AsFloat[index] := DefaultMissing;
 end;
 
+procedure TEpiFloatField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
+
 class function TEpiFloatField.CheckMissing(AValue: EpiFloat): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -2247,12 +1795,11 @@ begin
   result := NA_FLOAT;
 end;
 
-constructor TEpiFloatField.Create(ASize: Cardinal; AFieldType: TFieldType;
-  SetAllMissing: boolean);
+constructor TEpiFloatField.Create(ASize: Cardinal; AFieldType: TFieldType);
 begin
   if not (AFieldType in FloatFieldTypes) then
     Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
-  inherited Create(ASize, AFieldType, SetAllMissing);
+  inherited Create(ASize, AFieldType);
 end;
 
 destructor TEpiFloatField.Destroy;
@@ -2324,7 +1871,7 @@ end;
 
 function TEpiBoolField.GetCapacity: Integer;
 begin
-  // TODO : Implement TEpiBoolField.GetCapacity
+  result := Length(FData);
 end;
 
 function TEpiBoolField.GetIsMissing(const index: Integer): boolean;
@@ -2397,6 +1944,13 @@ begin
   AsBoolean[index] := DefaultMissing;
 end;
 
+procedure TEpiBoolField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
+
 class function TEpiBoolField.CheckMissing(AValue: EpiBool): boolean;
 begin
   Result := AValue = DefaultMissing;
@@ -2407,12 +1961,11 @@ begin
   Result := NA_BOOL;
 end;
 
-constructor TEpiBoolField.Create(ASize: Cardinal; AFieldType: TFieldType;
-  SetAllMissing: boolean);
+constructor TEpiBoolField.Create(ASize: Cardinal; AFieldType: TFieldType);
 begin
   if not (AFieldType in BoolFieldTypes) then
     Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
-  inherited Create(ASize, AFieldType, SetAllMissing);
+  inherited Create(ASize, AFieldType);
 end;
 
 destructor TEpiBoolField.Destroy;
@@ -2463,7 +2016,7 @@ end;
 
 function TEpiStringField.GetCapacity: Integer;
 begin
-  // TODO : Implement TEpiStringField.GetCapacity
+  result := Length(FData);
 end;
 
 function TEpiStringField.GetIsMissing(const index: Integer): boolean;
@@ -2531,6 +2084,13 @@ begin
   AsString[index] := DefaultMissing;
 end;
 
+procedure TEpiStringField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
+
 class function TEpiStringField.CheckMissing(AValue: EpiString): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -2541,12 +2101,11 @@ begin
   result := NA_STRING;
 end;
 
-constructor TEpiStringField.Create(ASize: Cardinal; AFieldType: TFieldType;
-  SetAllMissing: boolean);
+constructor TEpiStringField.Create(ASize: Cardinal; AFieldType: TFieldType);
 begin
   if not (AFieldType in StringFieldTypes) then
     Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
-  inherited Create(ASize, AFieldType, SetAllMissing);
+  inherited Create(ASize, AFieldType);
 end;
 
 function TEpiStringField.Compare(i, j: integer): integer;
@@ -2611,7 +2170,7 @@ end;
 
 function TEpiDateField.GetCapacity: Integer;
 begin
-  // TODO : Implement TEpiDateField.GetCapacity
+  result := Length(FData);
 end;
 
 function TEpiDateField.GetIsMissing(const index: Integer): boolean;
@@ -2676,6 +2235,13 @@ begin
   AsDate[index] := DefaultMissing;
 end;
 
+procedure TEpiDateField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
+
 class function TEpiDateField.CheckMissing(AValue: EpiDate): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -2686,12 +2252,11 @@ begin
   result := NA_DATE;
 end;
 
-constructor TEpiDateField.Create(ASize: Cardinal; AFieldType: TFieldType;
-  SetAllMissing: boolean);
+constructor TEpiDateField.Create(ASize: Cardinal; AFieldType: TFieldType);
 begin
   if not (AFieldType in DateFieldTypes) then
     Raise Exception.Create(Format('Cannot create %s. Wrong fieldtype: %d', [ClassName, FieldTypeToFieldTypeName(AFieldType, nil)]));
-  inherited Create(ASize, AFieldType, SetAllMissing);
+  inherited Create(ASize, AFieldType);
 end;
 
 function TEpiDateField.Compare(i, j: integer): integer;
