@@ -341,15 +341,6 @@ end;
 function TQesHandler.makeCrypt(StartPos, EndPos: Integer): TEpiField;
 begin
   Result := makeField(ftCrypt, StartPos, EndPos);
-  Result.CryptLength := Result.FieldLength - 2;
-  Result.FieldLength := GetEncodedLength(Result.CryptLength);
-  if Result.CryptLength > 60 then
-  begin
-    Result.FieldLength := 60;
-    Df.ErrorCode := EPI_QES_FAILED;
-    // TODO -o Torsten : LineNum
-    Df.ErrorText := Format(Lang(20429, 'Encrypt field in line %d exceeds maximum length of 60 characters:'),[0]);
-  end;
 end;
 
 constructor TQesHandler.Create;
@@ -395,7 +386,7 @@ begin
 
   // TODO -o Torsten : Sanity checks!
   if not Assigned(Df) then
-    Df := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates])
+    Df := TEpiDataFile.Create()
   else
     Df.Reset;
 

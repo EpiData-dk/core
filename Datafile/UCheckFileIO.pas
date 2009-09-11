@@ -986,9 +986,9 @@ BEGIN
     LocalCheck.ShowValueLabel := True;
     
   TRY
-    ComLegDf := TEpiDataFile.Create([eoIgnoreRelates]);
+    ComLegDf := TEpiDataFile.Create(0);
     ComLegDF.OnPassword := FDf.OnPassword;
-    IF NOT ComLegDf.Open(TmpStr) THEN
+    IF NOT ComLegDf.Open(TmpStr, [eoIgnoreRelates]) THEN
     begin
       Result := ReportError(Format(Lang(20108,'Datafile %s could not be opened'), [TmpStr]));
       Exit;

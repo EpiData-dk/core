@@ -65,14 +65,12 @@ begin
   If IgnoreChecks then
     Include(LoadOptions, eoIgnoreChecks);
 
-  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECX' then
+  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
     S := Trim(AnsiUpperCase(ExtractFileExt(FileName)));
-    if S = '.REC' then
-      Result := Importer.ImportRec(FileName, Df)
-    else if S = '.DTA' then
+    if S = '.DTA' then
       Result := Importer.ImportStata(FileName, Df)
     else if S = '.DBF' then
       Result := Importer.ImportDBase(FileName, Df)
@@ -87,10 +85,10 @@ begin
     end;
     FreeAndNil(Importer);
   end else begin
-    Df := TEpiDataFile.Create(LoadOptions);
+    Df := TEpiDataFile.Create();
     Df.OnProgress := ShowProgress;
     Df.OnPassword := GetPassword;
-    Result := Df.Open(FileName);
+    Result := Df.Open(FileName, LoadOptions);
   end;
 end;
 
@@ -126,7 +124,7 @@ begin
   If IgnoreChecks then
     Include(SaveOptions, eoIgnoreChecks);
 
-  OutDf := TEpiDataFile.Create(SaveOptions);
+  OutDf := TEpiDataFile.Create(Df.Size);
   OutDf.OnPassword   := GetPassword;
   OutDf.Filelabel    := Df.FileLabel;
   OutDf.ValueLabels.Assign(Df.ValueLabels);
@@ -139,14 +137,13 @@ begin
     OutDf.AddField(TmpField);
   end;
 
-  OutDf.Save(FileName);
-
   for I := 1 to Df.Size do
   begin
     ShowProgress(nil, (I * 100) DIV Df.Size, 'Saving Records');
     for J := 0 to Df.NumFields - 1 do
       OutDf[J].AsString[i] := Df[J].AsString[i];
   end;
+  OutDf.Save(FileName);
   FreeAndNil(OutDf);
 end;
 
@@ -402,7 +399,7 @@ NUM Name       Variable label        Type            Width  Checks              
             tmpWidth:=IntToStr(epd[nN].FieldLength);
             IF (epd[nN].Fieldtype=ftFloat) AND (epd[nN].NumDecimals>0)
             THEN tmpWidth:=tmpWidth+':'+IntToStr(epd[nN].NumDecimals);
-            IF epd[nN].Fieldtype=ftCrypt THEN tmpWidth:=IntToStr(epd[nN].CryptLength);
+//            IF epd[nN].Fieldtype=ftCrypt THEN tmpWidth:=IntToStr(epd[nN].CryptLength);
             {Write first line}
             IF UsesValueLabels
             THEN res.Append(Format('%3d %-10s %-20s  %-15s %-5s  %-20s  %-20s',
