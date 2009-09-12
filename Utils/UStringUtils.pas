@@ -28,13 +28,14 @@ type
   // Conversion routines regarding UTF-8 etc.
   function EpiUnknownStrToUTF8(const Source: string): string;
   procedure EpiUnknownStringsToUTF8(Source: TStrings);
+  function EpiUtf8ToAnsi(Const Source: string): string;
 
 
 implementation
 
 uses
   Math, LConvEncoding,
-  StrUtils;
+  StrUtils,cwstring;
 
 { TString }
 
@@ -164,6 +165,15 @@ var
 begin
   for i := 0 to Source.Count -1 do
     Source[i] := EpiUnknownStrToUTF8(Source[i]);
+end;
+
+function EpiUtf8ToAnsi(const Source: string): string;
+begin
+  {$IFDEF MSWINDOWS}
+  result := UTF8ToSys(Source);
+  {$ELSE}
+  result := UTF8ToISO_8859_1(Source);
+  {$ENDIF}
 end;
        
 end.

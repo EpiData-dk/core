@@ -1413,7 +1413,7 @@ begin
         s := '#'
       ELSE
         s := '_';
-      s := s + Format('%-10s', [FieldName]);  //Name of field (left justified)
+      s := s + Format('%-10s', [Utf8ToAnsi(FieldName)]);  //Name of field (left justified)
       s := s + ' ';                           //Space required for some unknown reason
       s := s + Format('%4d', [QuestX]);       //Question X-position
       s := s + Format('%4d', [QuestY]);       //Question Y-position
