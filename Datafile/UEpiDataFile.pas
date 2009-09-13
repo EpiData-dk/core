@@ -1451,7 +1451,7 @@ begin
       s := s + ' ';                      //Another unnescessary blank
       if Question = '' then
         Question := VariableLabel;
-      s := s + Question;
+      s := s + Utf8ToAnsi(Question);
 
       s := s + #13#10;
       Stream.Write(S[1], Length(S));

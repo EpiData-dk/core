@@ -35,7 +35,7 @@ implementation
 
 uses
   Math, LConvEncoding,
-  StrUtils,cwstring;
+  StrUtils;
 
 { TString }
 
@@ -170,7 +170,7 @@ end;
 function EpiUtf8ToAnsi(const Source: string): string;
 begin
   {$IFDEF MSWINDOWS}
-  result := UTF8ToSys(Source);
+//  result := UTF8ToSys(Source);
   {$ELSE}
   result := UTF8ToISO_8859_1(Source);
   {$ENDIF}
