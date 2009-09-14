@@ -864,6 +864,23 @@ begin
   Dest.FQuestion    := FQuestion;
   Dest.FVariableLabel := FVariableLabel;
 
+  with Self do
+    EpiLogger.Add(ClassName, 'Clone(Org)', 4, Format(
+      'Disp: %s, Name: %s, QX: %d, QY: %d, QC: %d, FX: %d, FY: %d, FC: %d, ' +
+      'FT: %s, Len: %d, Dec: %d, Qst: %s, Lbl: %s',
+      [DisplayChar, FieldName, QuestX, QuestY, QuestColor, FieldX, FieldY,
+       FieldColor, FieldTypeToFieldTypeName(FieldType, nil), FieldLength, NumDecimals,
+       Question, VariableLabel]
+    ));
+  with Dest do
+    EpiLogger.Add(ClassName, 'Clone(Dest)', 4, Format(
+      'Disp: %s, Name: %s, QX: %d, QY: %d, QC: %d, FX: %d, FY: %d, FC: %d, ' +
+      'FT: %s, Len: %d, Dec: %d, Qst: %s, Lbl: %s',
+      [DisplayChar, FieldName, QuestX, QuestY, QuestColor, FieldX, FieldY,
+       FieldColor, FieldTypeToFieldTypeName(FieldType, nil), FieldLength, NumDecimals,
+       Question, VariableLabel]
+    ));
+
   // Copy CheckFile if present:
   TmpCheckField := nil;
   if Assigned(CheckField) then
@@ -1212,6 +1229,9 @@ begin
         FieldX      := TmpFieldX;
         FieldY      := TmpFieldY;
         FieldLength := TmpLength;
+        NumDecimals := 0;
+        if TmpFieldTypeInt >= 100 then
+          NumDecimals := TmpFieldTypeInt - 100;
         FieldColor  := TmpFieldColor;
         Question    := EpiUnknownStrToUTF8(StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]));
 
@@ -1398,7 +1418,7 @@ begin
 
     // - FileLabel
     IF Trim(FileLabel) <> '' THEN
-      S := S + 'Filelabel: ' + Utf8ToAnsi(FileLabel);
+      S := S + 'Filelabel: ' + EpiUtf8ToAnsi(FileLabel);
 
     S := S + #13#10;
     Stream.Write(S[1], Length(S));
@@ -1406,14 +1426,15 @@ begin
     FOR i := 0 TO NumFields - 1 DO
     WITH Fields[i] DO
     BEGIN
-      EpiLogger.Add(Classname, 'InternalSave', 3, 'Writing heading no. ' + IntToStr(i+1));
+      EpiLogger.Add(TEpiDataFile.Classname, 'InternalSaveOld', 3, 'Writing heading no. ' + IntToStr(i+1));
+
       // - Fieldchar
       IF (FieldType = ftInteger) OR (FieldType = ftFloat) OR
          (FieldType = ftIDNUM) THEN
         s := '#'
       ELSE
         s := '_';
-      s := s + Format('%-10s', [Utf8ToAnsi(FieldName)]);  //Name of field (left justified)
+      s := s + Format('%-10s', [FieldName]);  //Name of field (left justified)
       s := s + ' ';                           //Space required for some unknown reason
       s := s + Format('%4d', [QuestX]);       //Question X-position
       s := s + Format('%4d', [QuestY]);       //Question Y-position
@@ -1427,8 +1448,10 @@ begin
       // For all other: use the fieldtype-code (fieldtype)
       IF FieldType = ftQuestion THEN
         s := s + Format('%4s', ['0'])
-      ELSE IF (FieldType = ftFloat) AND (NumDecimals>0) THEN
+      ELSE IF (FieldType = ftFloat) AND (NumDecimals > 0) THEN
         s := s + Format('%4d', [100 + NumDecimals])
+      ELSE if (FieldType = ftInteger) and (FieldLength > MaxIntegerLength) then
+        S := S + Format('%4d', [ORD(ftFloat)])
       ELSE
         s := s + Format('%4d', [ORD(fieldtype)]);
 
@@ -1451,9 +1474,9 @@ begin
       s := s + ' ';                      //Another unnescessary blank
       if Question = '' then
         Question := VariableLabel;
-      s := s + Utf8ToAnsi(Question);
+      s := s + Question;
 
-      s := s + #13#10;
+      s := EpiUtf8ToAnsi(s) + #13#10;
       Stream.Write(S[1], Length(S));
     END; // End With Field...
 
@@ -1464,16 +1487,18 @@ begin
       with DataFields[i] do begin
         if FieldType = ftCrypt then
         begin
-          EncData := UTF8ToAnsi(Trim(AsString[CurRec]));
+          EncData := EpiUtf8ToAnsi(Trim(AsString[CurRec]));
           FCrypter.InitStr(Password);
           FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
           EncData := B64Encode(EncData);
           FCrypter.Reset;
           T := Format('%-*s', [FieldLength, EncData])
         end else if FieldType in [ftString, ftUpperAlfa] then
-          T := Format('%-*s', [FieldLength, UTF8ToAnsi(AsString[CurRec])])
+          T := Format('%-*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])])
+        else if FieldType = ftFloat then
+          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])
         else
-          T := Format('%*s', [FieldLength, UTF8ToAnsi(AsString[CurRec])]);
+          T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
 
         S := S + T;
         if FieldLength <> Length(T) then
@@ -1489,6 +1514,7 @@ begin
         for I := (Z div MaxRecLineLength) downto 1 do
           Insert(EOLchars, S, (MaxRecLineLength * I) + 1);
 
+      // TODO : Record state.
 {      case RecordState of
         rsNormal:  } S := S + EOLchars;
 {        rsDeleted:  S := S + '?' + #13#10;

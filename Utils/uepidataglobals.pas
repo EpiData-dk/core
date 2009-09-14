@@ -44,8 +44,8 @@ CONST
                      clPurple, clRed, clSilver, clTeal, clWhite, clYellow);
                      
   FieldTypeNames: Array[0..20] of string =
-                   ('Numeric', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
-                    'Boolean', 'Numeric', 'Phonenumber', 'Time', 'Local phonenumber',
+                   ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
+                    'Boolean', 'Floating', 'Phonenumber', 'Time', 'Local phonenumber',
                     'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Question',
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');

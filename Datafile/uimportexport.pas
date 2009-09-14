@@ -152,7 +152,6 @@ type
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
-    FStringMode:  TStringMode;
     DataStream:   TStream;
     function      Lang(LangCode: Integer; Const LangText: string): string;
     Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
@@ -187,7 +186,6 @@ type
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
-    property      StringMode: TStringMode read FStringMode;
   end;
 
 implementation
@@ -271,7 +269,7 @@ begin
     Result := Result + Src[i];
     Inc(i);
   end;
-//  Result := EpiUnknownStrToUTF8(Result);
+  Result := EpiUnknownStrToUTF8(Result);
 end;
 
 procedure TEpiImportExport.WriteBuf(Buf: Array of Byte; Count: Integer);
@@ -323,7 +321,7 @@ begin
   z := 0;
   if Terminate then z := 0 else z := 1;
   StrBuf := StrAlloc(Count + z);
-  StrPLCopy(PChar(@StrBuf[0]), Str, Count - 1 + z);
+  StrPLCopy(PChar(@StrBuf[0]), EpiUtf8ToAnsi(Str), Count - 1 + z);
   DataStream.Write(StrBuf[0], Count);
   StrDispose(StrBuf);
 end;
@@ -637,7 +635,6 @@ begin
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
     DataStream := TFileStream.Create(aFileName, fmOpenRead);
-    FStringMode := smAnsi;
 
     // ********************************
     //           STATA HEADER
@@ -705,7 +702,7 @@ begin
     if ByteBuf[1] = 1 then
       FByteOrder := boBigEndian;
 
-    // filetype: NumBuff[2] (always 1)   -  nummbuf[3] not used.
+    // filetype: NumBuff[2] (always 1)   -  NumBuff[3] not used.
     IF ByteBuf[2]<>1 THEN
     BEGIN
       ErrorText := Lang(23980, 'Incorrect format of stata-file');
@@ -731,7 +728,7 @@ begin
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
     DataStream.Read(CharBuf[0], FileLabelLength);
-    FileLabel := string(CharBuf);
+    FileLabel := EpiUnknownStrToUTF8(string(CharBuf));
 
     // time_stamp \0 terminated (not used in epidata)
     DataStream.Read(CharBuf[0], 18);
@@ -861,6 +858,7 @@ begin
       // - varlist
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
       j := 1;
+      // TODO -o Torsten : Remove restriction since we now allow all characters in fieldnames.
       if (not CheckVariableName(StrBuf, AlfaNumChars)) or (FieldExists(StrBuf)) then
       repeat
         StrBuf := 'V '+ IntToStr(J);
@@ -929,11 +927,6 @@ begin
       IF (ByteBuf[0] > 0) OR (I > 0) THEN
         DataStream.Seek(I, soCurrent);
     UNTIL (DataStream.Position >= DataStream.Size-1) OR ((I=0) AND (ByteBuf[0]=0));
-
-    // ********************************
-    // Commit field info to REC-file
-    // structure.
-    // ********************************
 
     // ********************************
     //          STATA DATA
@@ -1009,7 +1002,7 @@ begin
             // are used for text.
             SetLength(CharBuf, TmpField.FieldLength + 1);
             FillChar(CharBuf[0], Length(CharBuf), 0);
-            DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
+            DataStream.Read(CharBuf[0], TmpField.FieldLength);
             // Hack - for some reason an empty PChar strings are not correctly assing the empty string.
             // => garbage is be stored in StrBuf!
             if CharBuf[0] = #0 then
@@ -1050,7 +1043,7 @@ begin
               EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), string(CharBuf));
+            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(string(CharBuf)));
           END;  //for n
         END;  //if not end of DataStream
         //if stataversion 4
@@ -1061,7 +1054,7 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          TmpValSet := ValueLabels.ValueLabelSetByName(string(PChar(@CharBuf[0])));  // Get ValueLabelSet
+          TmpValSet := ValueLabels.ValueLabelSetByName(EpiUnknownStrToUTF8(string(PChar(@CharBuf[0]))));  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(4);                                               // Number of entries in label
@@ -1078,7 +1071,7 @@ begin
             CurRec := Integer(ByteBuf[I * 4]);                            // CurRec holds offset value into Txt[]
             TmpInt := Integer(ValBuf[I * 4]);                             // TmpInt holds actual value for value label
 
-            if (TmpInt >= $7FFFFFE5) then                                 //ignore valuelabels
+            if (TmpInt >= $7FFFFFE5) then                                 // ignore valuelabels
               Continue;
 
             if Trim(TmpValSet.ValueLabel[IntToStr(TmpInt)]) <> '' then
@@ -1088,8 +1081,8 @@ begin
               EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt),
-              StringFromBuffer(PChar(@CharBuf[CurRec]), 32000));
+            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(
+              StringFromBuffer(PChar(@CharBuf[CurRec]), 32000)));
           END;  //for i
         END;  //while
       END;  //if stataversion 6, 7 or 8
@@ -1151,14 +1144,15 @@ BEGIN
     END;
 
     NObs := ReadInts(4);
+    Size := NObs;
     HSize := ReadInts(2);
     RSize := ReadInts(2);
 
     DataStream.Seek(32, soBeginning);
 
     {Read field descriptors}
-    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.SetLength(CharBuf, 12);
-{    SetLength(ByteBuf, 20);
+    SetLength(CharBuf, 12);
+    SetLength(ByteBuf, 20);
     While True do
     begin
       SetLength(FieldLengths, DataFields.Count + 1);
@@ -1166,44 +1160,36 @@ BEGIN
       IF Ord(CharBuf[0]) = $0D THEN
         Break;
 
-      TmpField := TEpiField.Create();
       TmpStr := Trim(StringFromBuffer(PChar(@CharBuf[0]), 11));
 
-      J := 1;
-      if (not CheckVariableName(TmpStr, AlfaNumChars)) or (FieldExists(TmpStr)) then
-      repeat
-        TmpStr := 'V '+ IntToStr(J);
-        INC(J);
-      until not FieldExists(TmpStr);
-      TmpField.FieldName := TmpStr;
       DataStream.Read(ByteBuf[0], 20);
 
       FieldLengths[High(FieldLengths)] := ByteBuf[4];
       Case CharBuf[11] of
         'C':
           Begin
-            TmpField.FieldType   := ftAlfa;
+            TmpField := TEpiField.CreateField(ftString, nObs);
             TmpField.FieldLength := ByteBuf[4];
           End;
         'D':
           Begin
-            TmpField.FieldType   := ftDate;
+            TmpField := TEpiField.CreateField(ftDate, nObs);
             TmpField.FieldLength := 10;
           End;
-        'F', 'N':
+        'F':
           Begin
-            IF (ByteBuf[5] = 0) AND (ByteBuf[4] < 5) THEN
-              TmpField.FieldType := ftInteger
-            ELSE
-              TmpField.FieldType := ftFloat;
-            IF ByteBuf[4] > 16 THEN
-              ByteBuf[4] := 16;
+            TmpField := TEpiField.CreateField(ftFloat, nObs);
             TmpField.FieldLength := ByteBuf[4];
             TmpField.NumDecimals := ByteBuf[5];
+          end;
+        'N':
+          Begin
+            TmpField := TEpiField.CreateField(ftInteger, nObs);
+            TmpField.FieldLength := ByteBuf[4];
           End;
         'L':
           Begin
-            TmpField.FieldType   := ftBoolean;
+            TmpField := TEpiField.CreateField(ftBoolean, nObs);
             TmpField.FieldLength := ByteBuf[4];
           End;
       else
@@ -1212,6 +1198,14 @@ BEGIN
         EpiLogger.AddError(Classname, 'ImportDBase', ErrorText, 0);
         Exit;
       end;
+
+      J := 1;
+      if (not CheckVariableName(TmpStr, AlfaNumChars)) or (FieldExists(TmpStr)) then
+      repeat
+        TmpStr := 'V '+ IntToStr(J);
+        INC(J);
+      until not FieldExists(TmpStr);
+      TmpField.FieldName := TmpStr;
 
       WITH TmpField DO
         BEGIN
@@ -1222,12 +1216,9 @@ BEGIN
           FieldY        := QuestY;
         END;  //with
       AddField(TmpField);
-    end;               }
-
-    Save(FileName);
+    end;
 
     {Read data}
-    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     Ds := EpiInternalFormatSettings.DateSeparator;
     DataStream.Position := HSize;
     FOR CurRec := 1 TO NObs DO
@@ -1499,7 +1490,8 @@ begin
         // ACell = nil is considered missing.
         if not Assigned(ACell) then continue;
 
-        // TODO : Detect dates?
+        // Dates are currently (locally) hacked in FPSPreadSheets to strings
+        // and guessed in FindFieldType.
         case ACell^.ContentType of
           cctEmpty:
             Continue;
@@ -1791,7 +1783,6 @@ begin
     //         STATA DESCRIBTORS
     // ********************************
     // - typlist: the variable's types
-    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     SetLength(TypeList, NVar);
     SetLength(ByteBuf, NVar);
     FOR i := 0 to NVar - 1 DO
@@ -1923,8 +1914,7 @@ begin
           WritenValueLabels.Add(TmpStr);
 
         // Only for interger fields.
-        // TODO -o Torsten: Change with new REC-format when integer field can have more > 4 characters.
-        if not ((FieldType = ftInteger) or ((FieldType = ftFloat) and (NumDecimals = 0))) then
+        if not (FieldType = ftInteger) then
           TmpStr := '';
 
         TmpStr := UniqueValueLabelName(TmpStr, FieldNameLength);
@@ -2082,7 +2072,7 @@ begin
         END;  //for j
       END;
     END ELSE BEGIN
-      //write value labels in Stata ver. 6 format
+      //write value labels in Stata ver. 6+ format
       SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
       FOR I := 0 TO WritenValueLabels.Count - 1 DO
       BEGIN
@@ -2098,7 +2088,7 @@ begin
           Move(CurRec, ByteBuf[J * 4], 4);
           TmpInt := StrToInt(VLblSet.Values[J]);
           Move(TmpInt, ValBuf[J * 4], 4);
-          TmpStr := VLblSet.Labels[J];
+          TmpStr := EpiUtf8ToAnsi(VLblSet.Labels[J]);
           Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
           Inc(CurRec, Length(TmpStr) + 1);
         end;
@@ -2187,7 +2177,6 @@ begin
     DataStream.Write(ByteBuf[0], 20);                //header offset 12 - 20 x unused bytes
 
     {Write field descriptions}
-    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     SetLength(ByteBuf, 14);
     FillChar(ByteBuf[0], 14, 0);
     ByteBuf[5] := 1;
@@ -2199,7 +2188,7 @@ begin
       CASE FieldType of                                             // Field type   (Byte  11)
         ftInteger, ftIDNUM, ftFloat:         WriteString('N', 1, False);
         ftSoundex,
-        ftString,ftUpperAlfa,ftCrypt:          WriteString('C', 1, False);
+        ftString,ftUpperAlfa,ftCrypt:        WriteString('C', 1, False);
         ftDate,ftToday,ftYMDDate,ftYMDToday,
         ftEuroDate,ftEuroToday:              WriteString('D', 1, False);
         ftBoolean:                           WriteString('L', 1, False);
@@ -2217,7 +2206,6 @@ begin
     WriteInts($0D, 1);   //write Header Terminator
 
     {write records}
-    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
     NObs := Size;
     TRY
       FOR CurRec := 1 TO NObs DO
@@ -2278,7 +2266,7 @@ var
   CurRec: Integer;
 begin
   EpiLogger.IncIndent;
-  EpiLogger.Add(ClassName, 'ExportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
+  EpiLogger.Add(ClassName, 'ExportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) <> '', aFileName, 'ClipBoard'));
   Result := false;
 
   // Sanity checks:

@@ -43,7 +43,6 @@ type
   TDataFileType         = (dftEpiData, dftStata, dftCSV, dftDBase);
 
   TByteOrder            = (boLittleEndian, boBigEndian);
-  TStringMode           = (smUTF8, smAnsi);
 
 implementation
 
