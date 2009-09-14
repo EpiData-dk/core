@@ -1479,7 +1479,7 @@ begin
       s := EpiUtf8ToAnsi(s) + #13#10;
       Stream.Write(S[1], Length(S));
     END; // End With Field...
-
+  EpiLogger.Add('Size: ' + IntToStr(Size), 4);
     for CurRec := 1 to Size do
     begin
       S := '';
@@ -1501,13 +1501,13 @@ begin
           T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
 
         S := S + T;
-        if FieldLength <> Length(T) then
+{        if FieldLength <> Length(T) then
         begin
           ErrorCode := EPI_WRITE_ERROR;
           ErrorText := Format(Lang(0, 'FieldLength (%d) does not fit length of data (%d). Field: %s. Record no: %d'),
             [FieldLength, Length(T), FieldName, CurRec]);
           Abort;
-        end;
+        end;}
       end;
       Z := Length(S);
       if Z + 3 > MaxRecLineLength then
@@ -2033,6 +2033,7 @@ begin
     result := TEpiStringField.DefaultMissing
   else
     result := FloatToStr(AsFloat[Index]);
+  EpiLogger.Add(ClassName, 'AsString', 4, Format('Index: %d, Value: %f, Result: %s', [Index, AsFloat[index], result]));
 end;
 
 function TEpiFloatField.GetCapacity: Integer;
@@ -2090,11 +2091,14 @@ end;
 
 procedure TEpiFloatField.SetAsString(const index: Integer;
   const AValue: EpiString);
+var
+  Fmt: TFormatSettings;
 begin
+  Fmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSepator;
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
   else
-    AsFloat[Index] := StrToFloatDef(AValue, DefaultMissing);
+    AsFloat[Index] := StrToFloatDef(AValue, DefaultMissing, Fmt);
 end;
 
 procedure TEpiFloatField.SetIsMissing(const index: Integer;

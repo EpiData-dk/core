@@ -1363,6 +1363,7 @@ begin
       for j := 0 to FieldLines.Count -1 do
       begin
         TmpStr   := FieldLines[j];
+        EpiLogger.Add('TmpStr before: ' + TmpStr, 3);
         if TmpStr = '.' then TmpStr := '';
         TmpField := DataFields[j];
         case TmpField.FieldType of
@@ -1387,6 +1388,7 @@ begin
           ftYMDDate,ftYMDToday,ftEuroToday:
             ok := EpiIsDate(TmpStr, TmpField.FieldType);
         end;
+        EpiLogger.Add('TmpStr AFTER: ' + TmpStr, 3);
         if (not ok) and (TmpStr <> '') then
         begin
           ErrorCode := EPI_IMPORT_FAILED;

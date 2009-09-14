@@ -18,16 +18,16 @@ type
     FIndentLevel: integer;  
     FDebugEvent: TEpiLogEvent;
     procedure SetDebugLevel(Level: word);
-    function AddIndent(): string;
+    function AddIndent: string;
   protected
     constructor Create(DebugLevel: word);
-    destructor Destroy(); override;
+    destructor Destroy; override;
   public
-    class function GetInstance(): TEpiLog;
-    class procedure DestroyInstance();
-    procedure IncIndent();
-    procedure DecIndent();
-    procedure Reset();
+    class function GetInstance: TEpiLog;
+    class procedure DestroyInstance;
+    procedure IncIndent;
+    procedure DecIndent;
+    procedure Reset;
     procedure Add(Msg: string; DebugLevel: Word); overload;
     procedure Add(aClassName, aMethodName: string; DebugLevel: Word; Msg: string = ''); overload;
     procedure AddError(aClassName, aMethodName: string; Msg: string; LangCode: Integer = 0);
@@ -37,7 +37,7 @@ type
     property  OnDebugEvent: TEpiLogEvent read FDebugEvent write FDebugEvent;
   end;
 
-function EpiLogger(): TEpiLog;
+function EpiLogger: TEpiLog;
 
 implementation
 
@@ -47,9 +47,9 @@ var
   ODebug: TEpiLog = nil;
 
 const
-  MaxLevel: word = 3;
+  MaxLevel: word = 4;
 
-function EpiLogger(): TEpiLog;
+function EpiLogger: TEpiLog;
 begin
   Result := TEpiLog.GetInstance;
 end;
@@ -61,27 +61,27 @@ begin
   fData := TStringList.Create();
 end;
 
-destructor TEpiLog.Destroy();
+destructor TEpiLog.Destroy;
 begin
   if Assigned(fData) then FreeAndNil(fData);
 end;
 
-function TEpiLog.AddIndent(): string;
+function TEpiLog.AddIndent: string;
 begin
   Result := DupeString('  ', fIndentLevel);
 end;
 
-procedure TEpiLog.IncIndent();
+procedure TEpiLog.IncIndent;
 begin
   inc(fIndentLevel);
 end;
 
-procedure TEpiLog.DecIndent();
+procedure TEpiLog.DecIndent;
 begin
   Dec(fIndentLevel);
 end;
 
-procedure TEpiLog.Reset();
+procedure TEpiLog.Reset;
 var
   S: string;
   Csi: TCoreSystemInformation;
