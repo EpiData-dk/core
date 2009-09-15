@@ -1225,10 +1225,8 @@ BEGIN
     BEGIN
       UpdateProgress((CurRec * 100) DIV NObs, 'Reading records');
 
-      TmpInt := ReadInts(1);
-{      RecordState := rsNormal;
-      if TmpInt = $2A then
-        RecordState := rsDeleted;}
+      if ReadInts(1) = $2A then
+        Deleted[CurRec] := true;
 
       FOR CurField := 0 TO DataFields.Count - 1 DO
       with DataFields[CurField] do
@@ -2215,9 +2213,9 @@ begin
       BEGIN
         UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
 
-{        IF RecordState = rsDeleted THEN
+        IF Deleted[CurRec] THEN
           WriteInts($2A, 1)
-        ELSE                 }
+        ELSE
           WriteInts($20, 1);
 
         FOR CurField := 0 TO DataFields.Count - 1 DO

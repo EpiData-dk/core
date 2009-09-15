@@ -469,17 +469,21 @@ type
     FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
     FRecordStatus: TEpiField;
+    function   GetDeleted(Index: integer): boolean;
     function   GetField(Index: integer): TEpiField;
     function   GetIndexFile: TEpiIndexFile;
     function   GetSize: Integer;
     function   GetValueLabels: TValueLabelSets;
+    function   GetVerified(Index: integer): boolean;
     procedure  InternalReset;
+    procedure  SetDeleted(Index: integer; const AValue: boolean);
     procedure  SetSize(const AValue: Integer);
+    procedure  SetVerified(Index: integer; const AValue: boolean);
   protected
     function   InternalOpen: boolean;
     function   InternalOpenOld: boolean;
     function   InternalSave: boolean;
-    function   InternalSaveOld(const aFileName: string): boolean;
+    function   InternalSaveOld: boolean;
     function   Lang(LangCode: Integer; Const LangText: string): string;
     Function   UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     Function   TextPos(var F: Textfile): Cardinal;
@@ -505,6 +509,8 @@ type
     property   DataFields:  TEpiFields read FDataFields;
     property   QuestFields: TEpiFields read FQuestFields;
     property   ValueLabels: TValueLabelSets read GetValueLabels;
+    property   Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
+    property   Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
@@ -527,7 +533,7 @@ implementation
 
 uses
   SysUtils, UStringUtils, Base64, UEpiUtils,
-  StrUtils, UCheckFileIO, Math, UDateUtils;
+  StrUtils, UCheckFileIO, Math, UDateUtils, DOM, XMLRead, XMLWrite;
 
 const
   NA_INT       = MaxInt;
@@ -1040,6 +1046,10 @@ begin
   result := Fields[Index];
 end;
 
+function TEpiDataFile.GetDeleted(Index: integer): boolean;
+begin
+  result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
+end;
 
 function TEpiDataFile.GetIndexFile: TEpiIndexFile;
 begin
@@ -1060,7 +1070,10 @@ begin
     Result := CheckFile.ValueLabels;
 end;
 
-
+function TEpiDataFile.GetVerified(Index: integer): boolean;
+begin
+  result := FRecordStatus.AsInteger[index] = Ord(rsVerified);
+end;
 
 procedure TEpiDataFile.InternalReset;
 begin
@@ -1085,19 +1098,46 @@ begin
   FFileVersion    := 0;
 end;
 
+procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
+begin
+  if AValue then
+    FRecordStatus.AsInteger[Index] := ord(rsDeleted)
+  else
+    FRecordStatus.AsInteger[Index] := ord(rsNormal);
+end;
+
 procedure TEpiDataFile.SetSize(const AValue: Integer);
 var
-  i, aSize: Integer;
+  i: Integer;
 begin
   for i := 0 to DataFields.Count - 1 do
     DataFields[i].Size := AValue;
 
-  aSize := FRecordStatus.Size;
   FRecordStatus.Size := AValue;
 end;
 
-function TEpiDataFile.InternalOpen: boolean;
+procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);
 begin
+  if AValue then
+    FRecordStatus.AsInteger[Index] := ord(rsVerified)
+  else
+    FRecordStatus.AsInteger[Index] := ord(rsNormal);
+end;
+
+function TEpiDataFile.InternalOpen: boolean;
+var
+  RecXml: TXMLDocument;
+begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'InternalOpen', 2, 'Filename = ' + Filename);
+  result := false;
+
+  try
+    ReadXMLFile(RecXml, FileName);
+
+  finally
+    EpiLogger.DecIndent;
+  end;
 end;
 
 function TEpiDataFile.InternalOpenOld: boolean;
@@ -1311,12 +1351,11 @@ begin
         raise Exception.Create('Error reading record');
       end;
 
-      // TODO : Handle deleted/verified
-{      StrBuf := CharBuf[High(CharBuf) - 2];
+      StrBuf := CharBuf[High(CharBuf) - 2];
       if StrBuf = '?' then
-        RecordState := rsDeleted
+        Deleted[CurRec] := true
       else if StrBuf = '^' then
-        RecordState := rsVerified;  }
+        Verified[CurRec] := true;
 
       StrBuf := StringReplace(string(CharBuf), EOLChars, '', [rfReplaceAll]);
       BufPos := 1;
@@ -1364,10 +1403,47 @@ begin
 end;
 
 function TEpiDataFile.InternalSave: boolean;
+var
+  RecXml: TXMLDocument;
+  RecNode: TDOMElement;
+  SectionNode: TDOMElement;
 begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'InternalSaveOld', 3);
+  result := false;
+
+  try
+    RecXml := TXMLDocument.Create;
+
+    // **********************
+    // Global <REC> structure
+    // **********************
+    RecNode := RecXml.CreateElement('REC');
+    RecXml.AppendChild(RecNode);
+    RecNode := RecXml.DocumentElement;
+
+    // **********************
+    // <SETTINGS> Section
+    // **********************
+    SectionNode := RecXml.CreateElement('SETTINGS');
+    RecNode.AppendChild(SectionNode);
+
+    // **********************
+    // <FIELDS> Section
+    // **********************
+
+    // **********************
+    // <RECORDS> Section
+    // **********************
+
+
+    WriteXMLFile(RecXml, FileName);
+  finally
+    EpiLogger.DecIndent;
+  end;
 end;
 
-function TEpiDataFile.InternalSaveOld(const aFileName: string): boolean;
+function TEpiDataFile.InternalSaveOld: boolean;
 var
   Crypt: boolean;
   i: integer;
@@ -1388,7 +1464,7 @@ begin
     Exit;
   END;
 
-  Stream := TFileStream.Create(aFileName, fmCreate);
+  Stream := TFileStream.Create(FileName, fmCreate);
   ChkIO := nil;
 
   try
@@ -1507,27 +1583,19 @@ begin
           T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])
         else
           T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
-
         S := S + T;
-{        if FieldLength <> Length(T) then
-        begin
-          ErrorCode := EPI_WRITE_ERROR;
-          ErrorText := Format(Lang(0, 'FieldLength (%d) does not fit length of data (%d). Field: %s. Record no: %d'),
-            [FieldLength, Length(T), FieldName, CurRec]);
-          Abort;
-        end;}
       end;
       Z := Length(S);
       if Z + 3 > MaxRecLineLength then
         for I := (Z div MaxRecLineLength) downto 1 do
           Insert(EOLchars, S, (MaxRecLineLength * I) + 1);
 
-      // TODO : Record state.
-{      case RecordState of
-        rsNormal:  } S := S + EOLchars;
-{        rsDeleted:  S := S + '?' + #13#10;
-        rsVerified: S := S + '^' + #13#10;
-      end;   }
+      if Deleted[CurRec] then
+        S := S + '?' + #13#10
+      else if Verified[CurRec] then
+        S := S + '^' + #13#10
+      else
+        S := S + EOLchars;
 
       Stream.Write(S[1], Length(S));
     end;
@@ -1676,7 +1744,7 @@ begin
     FFileName := aFileName;
     FOptions := aOptions;
 
-    Result := InternalSaveOld(aFileName);
+    Result := InternalSaveOld;
   finally
     EpiLogger.DecIndent;
   end;
