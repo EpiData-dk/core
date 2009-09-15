@@ -1443,9 +1443,9 @@ begin
       ElemNode := RecXml.CreateElement('FIELD');
       ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
       ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
-      ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
-      ElemNode.SetAttribute('DECIMALS', IntToStr(NumDecimals));
-      ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
+      ElemNode.SetAttribute('LEN', IntToStr(FieldLength));
+      ElemNode.SetAttribute('DEC', IntToStr(NumDecimals));
+      ElemNode.SetAttribute('LBL', UTF8Decode(VariableLabel));
       SectionNode.AppendChild(ElemNode);
     end;
     RecNode.AppendChild(SectionNode);
@@ -1457,7 +1457,7 @@ begin
     RecNode.AppendChild(SectionNode);
     for CurRec := 1 to Size do
     begin
-      ElemNode := RecXml.CreateElement('RECORD');
+      ElemNode := RecXml.CreateElement('R');
       for CurField := 0 to Fields.Count - 1 do
       begin
         if Fields[CurField].FieldType = ftQuestion then
