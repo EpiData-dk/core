@@ -313,6 +313,7 @@ begin
      3: Result := '.csv';
      4: Result := '.xls';
      5: Result := '.ods';
+     6: Result := '.recxml';
   else
     Result := '.rec';
   end;

@@ -103,7 +103,8 @@ var
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
 begin
-  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
+  if (AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC') and
+     (AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECXML') then
   begin
     Exporter := TEpiImportExport.Create();
     Exporter.OnProgress := ShowProgress;

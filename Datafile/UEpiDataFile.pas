@@ -1407,6 +1407,10 @@ var
   RecXml: TXMLDocument;
   RecNode: TDOMElement;
   SectionNode: TDOMElement;
+  CurField: Integer;
+  ElemNode: TDOMElement;
+  CurRec: Integer;
+  TmpStr: WideString;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
@@ -1431,11 +1435,39 @@ begin
     // **********************
     // <FIELDS> Section
     // **********************
+    SectionNode := RecXml.CreateElement('FIELDS');
+    for CurField := 0 to Fields.Count - 1 do
+    with Fields[CurField] do
+    begin
+      // Create <FIELD ... /> lines
+      ElemNode := RecXml.CreateElement('FIELD');
+      ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
+      ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
+      ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
+      ElemNode.SetAttribute('DECIMALS', IntToStr(NumDecimals));
+      ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
+      SectionNode.AppendChild(ElemNode);
+    end;
+    RecNode.AppendChild(SectionNode);
 
     // **********************
     // <RECORDS> Section
     // **********************
+    SectionNode := RecXml.CreateElement('RECORDS');
+    RecNode.AppendChild(SectionNode);
+    for CurRec := 1 to Size do
+    begin
+      ElemNode := RecXml.CreateElement('RECORD');
+      for CurField := 0 to Fields.Count - 1 do
+      begin
+        if Fields[CurField].FieldType = ftQuestion then
+          continue;
 
+        TmpStr := Trim(UTF8Decode(Fields[CurField].AsString[CurRec]));
+        ElemNode.SetAttribute('F'+IntToStr(CurField), TmpStr);
+      end;
+      SectionNode.AppendChild(ElemNode);
+    end;
 
     WriteXMLFile(RecXml, FileName);
   finally
@@ -1744,7 +1776,10 @@ begin
     FFileName := aFileName;
     FOptions := aOptions;
 
-    Result := InternalSaveOld;
+    if AnsiUpperCase(ExtractFileExt(FileName)) = '.RECXML' then
+      result := InternalSave
+    else
+      Result := InternalSaveOld;
   finally
     EpiLogger.DecIndent;
   end;
