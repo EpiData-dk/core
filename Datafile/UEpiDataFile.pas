@@ -176,6 +176,7 @@ type
   protected
     FCurrentData: String;
     FChanged: Boolean;
+    procedure CheckIndex(Const index: integer); virtual;
     function GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
     function GetAsDate(const index: Integer): EpiDate; virtual; abstract;
     function GetAsFloat(const index: Integer): EpiFloat; virtual; abstract;
@@ -746,6 +747,12 @@ begin
   result := nil;
   if Assigned(CheckField) then
     result := CheckField.ValueLabel;
+end;
+
+procedure TEpiField.CheckIndex(const index: integer);
+begin
+  if (Index < 1) or (Index > Size) then
+    Raise Exception.CreateFmt('Index out of bounds: %d', [Index]);
 end;
 
 function TEpiField.GetAsValueLabel(const index: Integer): string;
@@ -1434,7 +1441,8 @@ begin
         s := '#'
       ELSE
         s := '_';
-      s := s + Format('%-10s', [FieldName]);  //Name of field (left justified)
+      // Since format is not UTF8, length will be f*cked
+      s := s + Format('%-10s', [EpiUtf8ToAnsi(FieldName)]);  //Name of field (left justified)
       s := s + ' ';                           //Space required for some unknown reason
       s := s + Format('%4d', [QuestX]);       //Question X-position
       s := s + Format('%4d', [QuestY]);       //Question Y-position
@@ -1474,12 +1482,12 @@ begin
       s := s + ' ';                      //Another unnescessary blank
       if Question = '' then
         Question := VariableLabel;
-      s := s + Question;
+      s := s + EpiUtf8ToAnsi(Question);
 
-      s := EpiUtf8ToAnsi(s) + #13#10;
+      s := s + #13#10;
       Stream.Write(S[1], Length(S));
     END; // End With Field...
-  EpiLogger.Add('Size: ' + IntToStr(Size), 4);
+    EpiLogger.Add('Size: ' + IntToStr(Size), 4);
     for CurRec := 1 to Size do
     begin
       S := '';
@@ -1526,6 +1534,7 @@ begin
 
     if not (eoIgnoreChecks in FOptions) then
     begin
+      if Assigned(Stream) then FreeAndNil(Stream);
       CheckFile.FileName := ChangeFileExt(FileName, '.chk');
       Stream := TFileStream.Create(CheckFile.FileName, fmCreate);
       ChkIO := TCheckFileIO.Create();
@@ -1876,6 +1885,7 @@ end;
 
 function TEpiIntField.GetAsInteger(const index: Integer): EpiInteger;
 begin
+  CheckIndex(Index);
   result := FData[Index - 1];
 end;
 
@@ -1932,6 +1942,7 @@ end;
 procedure TEpiIntField.SetAsInteger(const index: Integer;
   const AValue: EpiInteger);
 begin
+  CheckIndex(Index);
   FData[Index - 1] := AValue;
 end;
 
@@ -2016,6 +2027,7 @@ end;
 
 function TEpiFloatField.GetAsFloat(const index: Integer): EpiFloat;
 begin
+  CheckIndex(Index);
   Result := FData[index - 1];
 end;
 
@@ -2033,7 +2045,6 @@ begin
     result := TEpiStringField.DefaultMissing
   else
     result := FloatToStr(AsFloat[Index]);
-  EpiLogger.Add(ClassName, 'AsString', 4, Format('Index: %d, Value: %f, Result: %s', [Index, AsFloat[index], result]));
 end;
 
 function TEpiFloatField.GetCapacity: Integer;
@@ -2077,6 +2088,7 @@ end;
 procedure TEpiFloatField.SetAsFloat(const index: Integer; const AValue: EpiFloat
   );
 begin
+  CheckIndex(Index);
   FData[index - 1] := AValue;
 end;
 
@@ -2093,12 +2105,14 @@ procedure TEpiFloatField.SetAsString(const index: Integer;
   const AValue: EpiString);
 var
   Fmt: TFormatSettings;
+  TmpStr: String;
 begin
   Fmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSepator;
+  TmpStr := StringReplace(AValue, ',', EpiInternalFormatSettings.DecimalSepator, [rfReplaceAll]);
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
   else
-    AsFloat[Index] := StrToFloatDef(AValue, DefaultMissing, Fmt);
+    AsFloat[Index] := StrToFloatDef(TmpStr, DefaultMissing, Fmt);
 end;
 
 procedure TEpiFloatField.SetIsMissing(const index: Integer;
@@ -2175,6 +2189,7 @@ end;
 
 function TEpiBoolField.GetAsBoolean(const index: Integer): EpiBool;
 begin
+  CheckIndex(Index);
   result := FData[index - 1];
 end;
 
@@ -2233,6 +2248,7 @@ end;
 procedure TEpiBoolField.SetAsBoolean(const index: Integer; const AValue: EpiBool
   );
 begin
+  CheckIndex(Index);
   FData[index - 1] := AValue;
 end;
 
@@ -2352,6 +2368,7 @@ end;
 
 function TEpiStringField.GetAsString(const index: Integer): EpiString;
 begin
+  CheckIndex(Index);
   result := FData[index - 1];
 end;
 
@@ -2416,6 +2433,7 @@ end;
 procedure TEpiStringField.SetAsString(const index: Integer;
   const AValue: EpiString);
 begin
+  CheckIndex(Index);
   FData[index -1] := AValue;
 end;
 
@@ -2482,6 +2500,7 @@ end;
 
 function TEpiDateField.GetAsDate(const index: Integer): EpiDate;
 begin
+  CheckIndex(Index);
   result := FData[index - 1];
 end;
 
@@ -2540,6 +2559,7 @@ end;
 
 procedure TEpiDateField.SetAsDate(const index: Integer; const AValue: EpiDate);
 begin
+  CheckIndex(Index);
   FData[index - 1] := AValue;
 end;
 

@@ -1950,6 +1950,7 @@ begin
     //          STATA DATA
     // ********************************
     // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
+    //    ie. use AsFloat, AsDate, AsString.... etc.
     TRY
       FOR CurRec := 1 TO NObs DO
       BEGIN
@@ -2044,7 +2045,7 @@ begin
               Exit;
             end;
             if TmpStr = '..' then TmpStr := '';
-            WriteString(TmpStr, FieldLength);
+            WriteString(TmpStr, FieldLength, False);
           end;
         END;  //for CurVar
       END;  //for CurObs

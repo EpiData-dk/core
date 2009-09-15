@@ -13,7 +13,7 @@
       <Title Value="EpiData Software Core Test Project"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="7"/>
+      <ActiveEditorIndexAtStart Value="2"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
@@ -43,7 +43,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="96">
+    <Units Count="97">
       <Unit0>
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -58,7 +58,7 @@
         <UnitName Value="UQesHandler"/>
         <CursorPos X="32" Y="389"/>
         <TopLine Value="367"/>
-        <EditorIndex Value="10"/>
+        <EditorIndex Value="11"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit1>
@@ -66,8 +66,8 @@
         <Filename Value="ucommon.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCommon"/>
-        <CursorPos X="44" Y="189"/>
-        <TopLine Value="176"/>
+        <CursorPos X="10" Y="146"/>
+        <TopLine Value="120"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -119,7 +119,7 @@
         <UnitName Value="UCheckFileIO"/>
         <CursorPos X="26" Y="975"/>
         <TopLine Value="967"/>
-        <EditorIndex Value="9"/>
+        <EditorIndex Value="10"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit7>
@@ -136,7 +136,7 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="UDataFileTypes"/>
         <CursorPos X="1" Y="46"/>
-        <TopLine Value="4"/>
+        <TopLine Value="1"/>
         <EditorIndex Value="3"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -145,9 +145,9 @@
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataFile"/>
-        <CursorPos X="47" Y="1518"/>
-        <TopLine Value="1493"/>
-        <EditorIndex Value="7"/>
+        <CursorPos X="16" Y="482"/>
+        <TopLine Value="458"/>
+        <EditorIndex Value="8"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit10>
@@ -158,8 +158,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="21" Y="1386"/>
-        <TopLine Value="1361"/>
+        <CursorPos X="41" Y="351"/>
+        <TopLine Value="307"/>
         <EditorIndex Value="2"/>
         <UsageCount Value="217"/>
         <Bookmarks Count="2">
@@ -238,8 +238,8 @@
         <Filename Value="..\Utils\UStringUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UStringUtils"/>
-        <CursorPos X="3" Y="172"/>
-        <TopLine Value="137"/>
+        <CursorPos X="1" Y="177"/>
+        <TopLine Value="131"/>
         <EditorIndex Value="6"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -258,7 +258,7 @@
         <UnitName Value="UEpiLog"/>
         <CursorPos X="23" Y="21"/>
         <TopLine Value="3"/>
-        <EditorIndex Value="8"/>
+        <EditorIndex Value="9"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
       </Unit23>
@@ -739,128 +739,132 @@
         <TopLine Value="45"/>
         <UsageCount Value="10"/>
       </Unit95>
+      <Unit96>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <CursorPos X="1" Y="83"/>
+        <TopLine Value="59"/>
+        <EditorIndex Value="7"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit96>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="29" HistoryIndex="28">
       <Position1>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="104" Column="1" TopLine="81"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1469" Column="1" TopLine="1445"/>
       </Position1>
       <Position2>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="103" Column="1" TopLine="80"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1473" Column="1" TopLine="1449"/>
       </Position2>
       <Position3>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="110" Column="1" TopLine="87"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1474" Column="1" TopLine="1450"/>
       </Position3>
       <Position4>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="876" Column="46" TopLine="848"/>
+        <Caret Line="1481" Column="1" TopLine="1457"/>
       </Position4>
       <Position5>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="116" Column="1" TopLine="93"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1482" Column="1" TopLine="1458"/>
       </Position5>
       <Position6>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1370" Column="1" TopLine="1347"/>
+        <Caret Line="1483" Column="1" TopLine="1459"/>
       </Position6>
       <Position7>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="204" Column="5" TopLine="181"/>
+        <Caret Line="1484" Column="1" TopLine="1460"/>
       </Position7>
       <Position8>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="207" Column="5" TopLine="184"/>
+        <Caret Line="1486" Column="1" TopLine="1462"/>
       </Position8>
       <Position9>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="865" Column="43" TopLine="837"/>
+        <Caret Line="1487" Column="1" TopLine="1463"/>
       </Position9>
       <Position10>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1241" Column="75" TopLine="1213"/>
+        <Caret Line="1434" Column="1" TopLine="1410"/>
       </Position10>
       <Position11>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1202" Column="1" TopLine="1179"/>
+        <Caret Line="1436" Column="1" TopLine="1412"/>
       </Position11>
       <Position12>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1507" Column="94" TopLine="1474"/>
+        <Caret Line="1439" Column="1" TopLine="1415"/>
       </Position12>
       <Position13>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1451" Column="58" TopLine="1428"/>
+        <Caret Line="1440" Column="1" TopLine="1416"/>
       </Position13>
       <Position14>
-        <Filename Value="ucommon.pas"/>
-        <Caret Line="201" Column="44" TopLine="176"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1443" Column="1" TopLine="1419"/>
       </Position14>
       <Position15>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1490" Column="29" TopLine="1456"/>
+        <Caret Line="1444" Column="1" TopLine="1420"/>
       </Position15>
       <Position16>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="481" Column="16" TopLine="460"/>
+        <Caret Line="1445" Column="1" TopLine="1421"/>
       </Position16>
       <Position17>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="868" Column="11" TopLine="837"/>
+        <Caret Line="1478" Column="72" TopLine="1449"/>
       </Position17>
       <Position18>
-        <Filename Value="umain.pas"/>
-        <Caret Line="422" Column="18" TopLine="397"/>
+        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
+        <Caret Line="1445" Column="1" TopLine="1421"/>
       </Position18>
       <Position19>
-        <Filename Value="umain.pas"/>
-        <Caret Line="167" Column="11" TopLine="135"/>
+        <Filename Value="..\Utils\UStringUtils.pas"/>
+        <Caret Line="171" Column="1" TopLine="131"/>
       </Position19>
       <Position20>
-        <Filename Value="umain.pas"/>
-        <Caret Line="247" Column="52" TopLine="214"/>
+        <Filename Value="..\Utils\UStringUtils.pas"/>
+        <Caret Line="173" Column="1" TopLine="131"/>
       </Position20>
       <Position21>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="236" Column="15" TopLine="215"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="78" Column="1" TopLine="54"/>
       </Position21>
       <Position22>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="2098" Column="28" TopLine="2092"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="79" Column="1" TopLine="55"/>
       </Position22>
       <Position23>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="28" Column="24" TopLine="7"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="37" Column="1" TopLine="13"/>
       </Position23>
       <Position24>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="29" Column="24" TopLine="7"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="38" Column="1" TopLine="14"/>
       </Position24>
       <Position25>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="30" Column="20" TopLine="8"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="61" Column="1" TopLine="37"/>
       </Position25>
       <Position26>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="24" Column="23" TopLine="9"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="80" Column="1" TopLine="56"/>
       </Position26>
       <Position27>
-        <Filename Value="..\Utils\UEpiLog.pas"/>
-        <Caret Line="21" Column="23" TopLine="3"/>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\lazarus\lcl\include\fileutil.inc"/>
+        <Caret Line="83" Column="1" TopLine="59"/>
       </Position27>
       <Position28>
-        <Filename Value="..\Datafile\uimportexport.pas"/>
-        <Caret Line="1386" Column="21" TopLine="1361"/>
+        <Filename Value="..\Utils\UStringUtils.pas"/>
+        <Caret Line="177" Column="1" TopLine="131"/>
       </Position28>
       <Position29>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="2105" Column="76" TopLine="2092"/>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="2047" Column="18" TopLine="2012"/>
       </Position29>
-      <Position30>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1482" Column="15" TopLine="1462"/>
-      </Position30>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>
@@ -895,11 +899,15 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <BreakPoints Count="1">
+    <BreakPoints Count="2">
       <Item1>
         <Source Value="..\Datafile\uimportexport.pas"/>
         <Line Value="1464"/>
       </Item1>
+      <Item2>
+        <Source Value="..\Datafile\UEpiDataFile.pas"/>
+        <Line Value="1391"/>
+      </Item2>
     </BreakPoints>
     <Watches Count="2">
       <Item1>
