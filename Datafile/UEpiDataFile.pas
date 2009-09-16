@@ -46,14 +46,14 @@ type
     FFieldComments:    TStrings;
     function           GetMissingValue(Index: integer): string;
     procedure          SetMissingValue(Index: integer; Value: string);
-    function           GetAutoSearch(): Boolean;
-    procedure          InternalReset();
+    function           GetAutoSearch: Boolean;
+    procedure          InternalReset;
   protected
 
   public
-    Constructor Create();
-    Destructor  Destroy(); override;
-    procedure   Reset();
+    Constructor Create;
+    Destructor  Destroy; override;
+    procedure   Reset;
     procedure   Clone(Var Dest: TEpiCheckField);
     Property    ValueLabel:   TValueLabelSet read FValueLabel write FValueLabel;
     Property    ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
@@ -113,13 +113,13 @@ type
     FDefines:              TEpiFields;       
     function    GetGlobMissing(Index: Integer): string;
     procedure   SetGlobMissing(Index: Integer; const Value: string);
-    procedure   InternalReset();
+    procedure   InternalReset;
   protected
 
   public
-    Constructor Create();
-    Destructor  Destroy(); override;
-    procedure   Reset();
+    Constructor Create;
+    Destructor  Destroy; override;
+    procedure   Reset;
     function    DefineExists(Const aName: string): Boolean;
     function    DefineByName(Const aName: string): TEpiField;
     procedure   AddDefine(Field: TEpiField);
@@ -176,7 +176,9 @@ type
   protected
     FCurrentData: String;
     FChanged: Boolean;
+    constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
     procedure CheckIndex(Const index: integer); virtual;
+    procedure AssignData(Const Source: TEpiField); virtual; abstract;
     function GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
     function GetAsDate(const index: Integer): EpiDate; virtual; abstract;
     function GetAsFloat(const index: Integer): EpiFloat; virtual; abstract;
@@ -196,13 +198,12 @@ type
     procedure SetCapacity(AValue: Integer); virtual; abstract;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); virtual; abstract;
     procedure SetSize(const AValue: Integer); virtual;
-    constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
     property Capacity: Integer read GetCapacity write SetCapacity;
   public
     destructor  Destroy; override;
     class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0): TEpiField;
-    procedure   Reset();
-    procedure   Clone(Var Dest: TEpiField);
+    procedure   Reset;
+    procedure   Clone(Var Dest: TEpiField; SetAllMissing: boolean = true);
 //    property    AsFmtData:   string read GetAsFmtData;
     procedure Exchange(i,j: integer); virtual; abstract;
     function  Compare(i,j: integer): integer; virtual; abstract;
@@ -294,6 +295,7 @@ type
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    procedure AssignData(const Source: TEpiField); override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
@@ -559,12 +561,12 @@ begin
   FMissingValues[Index] := Value; 
 end;
 
-function TEpiCheckField.GetAutoSearch(): Boolean;
+function TEpiCheckField.GetAutoSearch: Boolean;
 begin
   Result := AutoFields <> '';
 end;
 
-procedure TEpiCheckField.InternalReset();
+procedure TEpiCheckField.InternalReset;
 begin
   if Assigned(FBeforeCmds)    then FreeAndNil(FBeforeCmds);
   if Assigned(FAfterCmds)     then FreeAndNil(FAfterCmds);
@@ -597,7 +599,7 @@ end;
 
 constructor TEpiCheckField.Create;
 begin
-  Reset();
+  Reset;
 end;
 
 destructor TEpiCheckField.Destroy;
@@ -654,13 +656,13 @@ begin
     Dest.FMissingValues[i] := FMissingValues[i];
 end;
 
-procedure TEpiCheckField.Reset();
+procedure TEpiCheckField.Reset;
 begin
-  InternalReset();
+  InternalReset;
 
   FBeforeCmds := TChkCommands.Create;
   FAfterCmds  := TChkCommands.Create;
-  FFieldComments := TStringList.Create();
+  FFieldComments := TStringList.Create;
 end;
 
 { TEpiCheckFile }
@@ -682,11 +684,11 @@ begin
   end
 end;
 
-procedure TEpiCheckFile.Reset();
+procedure TEpiCheckFile.Reset;
 begin
-  InternalReset();
+  InternalReset;
 
-  FValueLabelSets := TValueLabelSets.Create();
+  FValueLabelSets := TValueLabelSets.Create;
   FBackupList     := TStringList.Create;
   FTopComments    := TStringList.Create;
   FDefines        := TEpiFields.Create(nil);
@@ -719,7 +721,7 @@ begin
   FGlobalMissingValues[Index] := Value;
 end;
 
-procedure TEpiCheckFile.InternalReset();
+procedure TEpiCheckFile.InternalReset;
 begin
   if Assigned(FValueLabelSets)   then FreeAndNil(FValueLabelSets);
   if Assigned(FTopComments)      then FreeAndNil(FTopComments);
@@ -847,7 +849,7 @@ begin
   end;
 end;
 
-procedure TEpiField.Clone(var Dest: TEpiField);
+procedure TEpiField.Clone(var Dest: TEpiField; SetAllMissing: boolean = true);
 var
   TmpCheckField: TEpiCheckField;
   I: Integer;  
@@ -877,28 +879,15 @@ begin
   Dest.FQuestion    := FQuestion;
   Dest.FVariableLabel := FVariableLabel;
 
-  with Self do
-    EpiLogger.Add(ClassName, 'Clone(Org)', 4, Format(
-      'Disp: %s, Name: %s, QX: %d, QY: %d, QC: %d, FX: %d, FY: %d, FC: %d, ' +
-      'FT: %s, Len: %d, Dec: %d, Qst: %s, Lbl: %s',
-      [DisplayChar, FieldName, QuestX, QuestY, QuestColor, FieldX, FieldY,
-       FieldColor, FieldTypeToFieldTypeName(FieldType, nil), FieldLength, NumDecimals,
-       Question, VariableLabel]
-    ));
-  with Dest do
-    EpiLogger.Add(ClassName, 'Clone(Dest)', 4, Format(
-      'Disp: %s, Name: %s, QX: %d, QY: %d, QC: %d, FX: %d, FY: %d, FC: %d, ' +
-      'FT: %s, Len: %d, Dec: %d, Qst: %s, Lbl: %s',
-      [DisplayChar, FieldName, QuestX, QuestY, QuestColor, FieldX, FieldY,
-       FieldColor, FieldTypeToFieldTypeName(FieldType, nil), FieldLength, NumDecimals,
-       Question, VariableLabel]
-    ));
-
   // Copy CheckFile if present:
   TmpCheckField := nil;
   if Assigned(CheckField) then
     CheckField.Clone(TmpCheckField);
   Dest.CheckField := TmpCheckField;
+
+  // Assign data
+  if not SetAllMissing then
+    Dest.AssignData(Self);
 
   // Set Valuelabels here since CheckField does not have Owner info.
   // Scenarios:
@@ -939,7 +928,7 @@ begin
   Size := Size + ACount;
 end;
 
-procedure TEpiField.Reset();
+procedure TEpiField.Reset;
 begin
   if Assigned(FCheckField) then FreeAndNil(FCheckField);
 
@@ -954,7 +943,6 @@ begin
   FFieldX        := 0;
   FFieldY        := 0;
   FFieldColor    := 0;
-//  FFieldType     := ftInteger;
   FFieldLength   := 0;
   FCryptLength   := 0;
   FNumDecimals   := 0;
@@ -1127,6 +1115,15 @@ end;
 function TEpiDataFile.InternalOpen: boolean;
 var
   RecXml: TXMLDocument;
+  RootNode: TDOMElement;
+  ElemNode: TDOMElement;
+  SectionNode: TDOMNode;
+  TmpStr: String;
+  TmpFieldType: TFieldType;
+  TmpField: TEpiField;
+  CurRec: Integer;
+  i: Integer;
+  Idx: LongInt;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'InternalOpen', 2, 'Filename = ' + Filename);
@@ -1135,8 +1132,76 @@ begin
   try
     ReadXMLFile(RecXml, FileName);
 
+    // **********************
+    // Global <EPIDATA> structure
+    // **********************
+    RootNode := RecXml.DocumentElement;
+
+    // **********************
+    // <SETTINGS> Section
+    // **********************
+    SectionNode := RootNode.FindNode('SETTINGS');
+    // Filelabel
+    ElemNode := TDOMElement(SectionNode.FindNode('FILELABEL'));
+    if Assigned(ElemNode) then
+      FileLabel := UTF8Encode(ElemNode.TextContent);
+    // Version
+    ElemNode := TDOMElement(SectionNode.FindNode('VERSION'));
+    if Assigned(ElemNode) then
+      FileVersion := StrToInt(ElemNode.TextContent);
+    // Password
+    ElemNode := TDOMElement(SectionNode.FindNode('PASSWORD'));
+    if Assigned(ElemNode) then
+    begin
+      TmpStr := UTF8Encode(ElemNode.TextContent);
+      if not RequestPassword(TmpStr) then
+      begin
+        ErrorText := Lang(9020, 'Incorrect password entered');
+        Errorcode := EPI_INVALID_PASSWORD;
+        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+        Exit;
+      end;
+    end;
+
+    // **********************
+    // <FIELDS> Section
+    // **********************
+    SectionNode := RootNode.FindNode('FIELDS');
+    ElemNode := TDOMElement(SectionNode.FindNode('FIELD'));
+    while Assigned(ElemNode) do
+    begin
+      // Create field from <FIELD ... /> lines
+      TmpFieldType := TFieldType(StrToInt(ElemNode.GetAttribute('TYPE')));
+      TmpField := TEpiField.CreateField(TmpFieldType, 0);
+      TmpField.FieldName     := UTF8Encode(ElemNode.GetAttribute('NAME'));
+      TmpField.FieldLength   := StrToInt(ElemNode.GetAttribute('LENGTH'));
+      TmpField.NumDecimals   := StrToInt(ElemNode.GetAttribute('DEC'));
+      TmpField.VariableLabel := UTF8Encode(ElemNode.GetAttribute('LABEL'));
+      AddField(TmpField);
+      ElemNode := TDOMElement(ElemNode.NextSibling);
+    end;
+
+    // **********************
+    // <RECORDS> Section
+    // **********************
+    CurRec := 1;
+    SectionNode := RootNode.FindNode('RECORDS');
+    Size := SectionNode.ChildNodes.Count;
+    ElemNode := TDOMElement(SectionNode.FindNode('REC'));
+    while Assigned(ElemNode) do
+    begin
+      for i := 0 to ElemNode.Attributes.Length - 1 do
+      begin
+        // 10 should be enough - fieldcount > 5 digits is not likely.
+        Idx := StrToInt(Copy(ElemNode.Attributes[i].NodeName, 2, 5));
+        Field[Idx].AsString[CurRec] := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+      end;
+      inc(CurRec);
+      ElemNode := TDOMElement(ElemNode.NextSibling);
+    end;
   finally
     EpiLogger.DecIndent;
+    if Assigned(RecXml) then FreeAndNil(RecXml);
   end;
 end;
 
@@ -1405,12 +1470,24 @@ end;
 function TEpiDataFile.InternalSave: boolean;
 var
   RecXml: TXMLDocument;
-  RecNode: TDOMElement;
+  RootNode: TDOMElement;
   SectionNode: TDOMElement;
   CurField: Integer;
   ElemNode: TDOMElement;
   CurRec: Integer;
   TmpStr: WideString;
+
+  function RequirePassword: boolean;
+  var
+    i: Integer;
+  begin
+    result := true;
+    for i := 0 to DataFields.Count -1 do
+      if DataFields[i].FieldType = ftCrypt then
+        Exit;
+    result := false;
+  end;
+
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
@@ -1420,18 +1497,36 @@ begin
     RecXml := TXMLDocument.Create;
 
     // **********************
-    // Global <REC> structure
+    // Global <EPIDATA> structure
     // **********************
-    RecNode := RecXml.CreateElement('REC');
-    RecXml.AppendChild(RecNode);
-    RecNode := RecXml.DocumentElement;
+    RootNode := RecXml.CreateElement('EPIDATA');
+    RecXml.AppendChild(RootNode);
+    RootNode := RecXml.DocumentElement;
 
     // **********************
     // <SETTINGS> Section
     // **********************
     SectionNode := RecXml.CreateElement('SETTINGS');
-    RecNode.AppendChild(SectionNode);
-
+    // File label.
+    ElemNode := RecXml.CreateElement('FILELABEL');
+    ElemNode.AppendChild(RecXml.CreateTextNode(UTF8Decode(FileLabel)));
+    SectionNode.AppendChild(ElemNode);
+    // Version
+    ElemNode := RecXml.CreateElement('VERSION');
+    ElemNode.AppendChild(RecXml.CreateTextNode(IntToStr(FileVersion)));
+    SectionNode.AppendChild(ElemNode);
+    // Password
+    if RequirePassword then
+    begin
+      ElemNode := RecXml.CreateElement('PASSWORD');
+      TmpStr := Trim(Password);
+      FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
+      TmpStr := B64Encode(TmpStr);
+      FCrypter.Reset;
+      ElemNode.AppendChild(RecXml.CreateTextNode(TmpStr));
+      SectionNode.AppendChild(ElemNode);
+    end;
+    RootNode.AppendChild(SectionNode);
     // **********************
     // <FIELDS> Section
     // **********************
@@ -1443,21 +1538,21 @@ begin
       ElemNode := RecXml.CreateElement('FIELD');
       ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
       ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
-      ElemNode.SetAttribute('LEN', IntToStr(FieldLength));
+      ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
       ElemNode.SetAttribute('DEC', IntToStr(NumDecimals));
-      ElemNode.SetAttribute('LBL', UTF8Decode(VariableLabel));
+      ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
       SectionNode.AppendChild(ElemNode);
     end;
-    RecNode.AppendChild(SectionNode);
+    RootNode.AppendChild(SectionNode);
 
     // **********************
     // <RECORDS> Section
     // **********************
     SectionNode := RecXml.CreateElement('RECORDS');
-    RecNode.AppendChild(SectionNode);
+    RootNode.AppendChild(SectionNode);
     for CurRec := 1 to Size do
     begin
-      ElemNode := RecXml.CreateElement('R');
+      ElemNode := RecXml.CreateElement('REC');
       for CurField := 0 to Fields.Count - 1 do
       begin
         if Fields[CurField].FieldType = ftQuestion then
@@ -1611,8 +1706,8 @@ begin
           T := Format('%-*s', [FieldLength, EncData])
         end else if FieldType in [ftString, ftUpperAlfa] then
           T := Format('%-*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])])
-        else if FieldType = ftFloat then
-          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])
+{        else if FieldType = ftFloat then
+          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])}
         else
           T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
         S := S + T;
@@ -1754,7 +1849,9 @@ begin
 
     Ext := ExtractFileExt(FileName);
     if AnsiUpperCase(Ext) = '.REC' then
-      result := InternalOpenOld()
+      result := InternalOpenOld
+    else if AnsiUpperCase(Ext) = '.RECXML' then
+      result := InternalOpen
     else begin
       FErrorText := Format(Lang(0, 'Unsupported file type for direct reading: %s'), [Ext]);
       FErrorCode := EPI_OPEN_FILE_ERROR;
@@ -2229,6 +2326,20 @@ begin
   if AValue = Capacity then exit;
   SetLength(FData, AValue);
   FCapacity := AValue;
+end;
+
+procedure TEpiFloatField.AssignData(const Source: TEpiField);
+var
+  i: Integer;
+begin
+  if Source is TEpiFloatField then
+    // Easy moving data - just copy the entire memory block.
+    Move(TEpiFloatField(Source).FData, FData, Size * SizeOf(EpiFloat))
+  else begin
+    // ugly way - no AsValue yet.
+    for i := 1 to Size do
+      AsString[i] := Source.AsString[i];
+  end;
 end;
 
 class function TEpiFloatField.CheckMissing(AValue: EpiFloat): boolean;

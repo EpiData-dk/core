@@ -24,7 +24,8 @@ uses
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
-  aDialog.Filter := 'Supported data files|*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
+  aDialog.Filter := 'Supported data files|*.recxml;*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
+                  + 'EpiData XML Data file (*.recxml)|*.recxml|'
                   + 'EpiData data file (*.rec)|*.rec|'
                   + 'Stata file (*.dta)|*.dta|'
                   + 'Text file (*.txt,*.csv)|*.txt|'
@@ -65,7 +66,8 @@ begin
   If IgnoreChecks then
     Include(LoadOptions, eoIgnoreChecks);
 
-  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
+  if (AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC') and
+     (AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECXML') then
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
@@ -133,17 +135,10 @@ begin
   for i := 0 to Df.NumFields - 1 do
   begin
     TmpField := TEpiField.CreateField(Df[i].FieldType, Df[i].Size);
-    TmpField.DataFile := OutDf;
-    Df[i].Clone(TmpField);
     OutDf.AddField(TmpField);
+    Df[i].Clone(TmpField);
   end;
 
-  for I := 1 to Df.Size do
-  begin
-    ShowProgress(nil, (I * 100) DIV Df.Size, 'Saving Records');
-    for J := 0 to Df.NumFields - 1 do
-      OutDf[J].AsString[i] := Df[J].AsString[i];
-  end;
   OutDf.Save(FileName);
   FreeAndNil(OutDf);
 end;
