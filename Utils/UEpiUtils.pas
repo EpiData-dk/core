@@ -250,9 +250,9 @@ begin
   CSI.OSMinorVersion := 0;
 
   CSI.PrgVersion.Major   := 0;
-  CSI.PrgVersion.Minor   := 1;
-  CSI.PrgVersion.Release := 12;
-  CSI.PrgVersion.Build   := 95;
+  CSI.PrgVersion.Minor   := 2;
+  CSI.PrgVersion.Release := 0;
+  CSI.PrgVersion.Build   := 96;
 
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!

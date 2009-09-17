@@ -1597,6 +1597,7 @@ var
   CurRec: Integer;
   T: String;
   Z: Integer;
+  Fmt: TFormatSettings;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
@@ -1610,6 +1611,7 @@ begin
 
   Stream := TFileStream.Create(FileName, fmCreate);
   ChkIO := nil;
+  Fmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSepator;
 
   try
     // - Encryption required:
@@ -1707,7 +1709,10 @@ begin
       s := s + #13#10;
       Stream.Write(S[1], Length(S));
     END; // End With Field...
-    EpiLogger.Add('Size: ' + IntToStr(Size), 4);
+
+    // ******************
+    //    Write Data
+    // ******************
     for CurRec := 1 to Size do
     begin
       S := '';
@@ -1726,7 +1731,7 @@ begin
         end else if FieldType in [ftString, ftUpperAlfa] then
           T := Format('%-*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])])
         else if FieldType = ftFloat then
-          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])
+          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]], Fmt)
         else
           T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
         S := S + T;
