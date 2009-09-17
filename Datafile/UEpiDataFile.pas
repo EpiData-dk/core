@@ -184,6 +184,7 @@ type
     function GetAsFloat(const index: Integer): EpiFloat; virtual; abstract;
     function GetAsInteger(const index: Integer): EpiInteger; virtual; abstract;
     function GetAsString(const index: Integer): EpiString; virtual; abstract;
+    function GetAsValue(const index: Integer): EpiVariant; virtual; abstract;
     function GetAsValueLabel(const index: Integer): string; virtual;
     function GetCapacity: Integer; virtual; abstract;
     function GetIsMissing(const index: Integer): boolean; virtual; abstract;
@@ -195,15 +196,16 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); virtual; abstract;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); virtual; abstract;
     procedure SetAsString(const index: Integer; const AValue: EpiString); virtual; abstract;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); virtual; abstract;
     procedure SetCapacity(AValue: Integer); virtual; abstract;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); virtual; abstract;
     procedure SetSize(const AValue: Integer); virtual;
     property Capacity: Integer read GetCapacity write SetCapacity;
   public
-    destructor  Destroy; override;
     class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0): TEpiField;
-    procedure   Reset;
-    procedure   Clone(Var Dest: TEpiField; SetAllMissing: boolean = true);
+    destructor  Destroy; override;
+    procedure Reset;
+    function Clone(DstDataFile: TEpiDataFile = nil; CloneData: boolean = true): TEpiField;
 //    property    AsFmtData:   string read GetAsFmtData;
     procedure Exchange(i,j: integer); virtual; abstract;
     function  Compare(i,j: integer): integer; virtual; abstract;
@@ -236,6 +238,7 @@ type
 //    property AsTime[const index: Integer]: EpiTime read GetAsTime write SetAsTime;
 //    property AsDateTime[const index: Integer]: EpiDateTime read GetAsDateTime write SetAsDateTime;
     property  AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
+    property  AsValue[const index: Integer]: EpiVariant read GetAsValue write SetAsValue;
     property  AsValueLabel[const index: Integer]: string read GetAsValueLabel;
   end;
 
@@ -246,11 +249,13 @@ type
   private
     FData: array of EpiInteger;
   protected
+    procedure AssignData(const Source: TEpiField); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsFloat(const index: Integer): EpiFloat; override;
     function GetAsInteger(const index: Integer): EpiInteger; override;
     function GetAsString(const index: Integer): EpiString; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
@@ -259,6 +264,7 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
   public
@@ -279,11 +285,13 @@ type
   private
     FData: Array of EpiFloat;
   protected
+    procedure AssignData(const Source: TEpiField); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsFloat(const index: Integer): EpiFloat; override;
     function GetAsInteger(const index: Integer): EpiInteger; override;
     function GetAsString(const index: Integer): EpiString; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
@@ -293,9 +301,9 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
-    procedure AssignData(const Source: TEpiField); override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
@@ -312,11 +320,13 @@ type
   private
     FData: array of EpiBool;
   protected
+    procedure AssignData(const Source: TEpiField); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsFloat(const index: Integer): EpiFloat; override;
     function GetAsInteger(const index: Integer): EpiInteger; override;
     function GetAsString(const index: Integer): EpiString; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
@@ -326,6 +336,7 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
   public
@@ -344,11 +355,13 @@ type
   private
     FData: array of string;
   protected
+    procedure AssignData(const Source: TEpiField); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsFloat(const index: Integer): EpiFloat; override;
     function GetAsInteger(const index: Integer): EpiInteger; override;
     function GetAsString(const index: Integer): EpiString; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
@@ -358,6 +371,7 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
   public
@@ -376,11 +390,13 @@ type
   private
      FData: array of EpiDate;
   protected
+    procedure AssignData(const Source: TEpiField); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsFloat(const index: Integer): EpiFloat; override;
     function GetAsInteger(const index: Integer): EpiInteger; override;
     function GetAsString(const index: Integer): EpiString; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
     function GetIsMissingValue(const index: Integer): boolean; override;
@@ -390,6 +406,7 @@ type
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
   public
@@ -849,74 +866,69 @@ begin
   end;
 end;
 
-procedure TEpiField.Clone(var Dest: TEpiField; SetAllMissing: boolean = true);
+function TEpiField.Clone(DstDataFile: TEpiDataFile = nil; CloneData: boolean = true): TEpiField;
 var
   TmpCheckField: TEpiCheckField;
   I: Integer;  
   Ptr: Pointer;
 begin
-  if not Assigned(Dest) then
-    Dest := TEpiField.CreateField(FieldType, Size);
-
-  // Reset all values... but retain Datafile linkage.
-  Ptr := Dest.DataFile;
-  Dest.Reset();
-  Dest.DataFile := TEpiDataFile(Ptr);
+  Result := TEpiField.CreateField(FieldType, Size);
+  Result.DataFile := DstDataFile;
 
   // Copy Field related values:
-  Dest.FDisplayChar := FDisplayChar;
-  Dest.FFieldName   := FFieldName;
-  Dest.FQuestX      := FQuestX;
-  Dest.FQuestY      := FQuestY;
-  Dest.FQuestColor  := FQuestColor;
-  Dest.FFieldX      := FFieldX;     
-  Dest.FFieldY      := FFieldY;
-  Dest.FFieldColor  := FFieldColor;
-  Dest.FFieldType   := FFieldType;
-  Dest.FFieldLength := FFieldLength;
-  Dest.FCryptLength := FCryptLength;
-  Dest.FNumDecimals := FNumDecimals;
-  Dest.FQuestion    := FQuestion;
-  Dest.FVariableLabel := FVariableLabel;
+  Result.FDisplayChar := FDisplayChar;
+  Result.FFieldName   := FFieldName;
+  Result.FQuestX      := FQuestX;
+  Result.FQuestY      := FQuestY;
+  Result.FQuestColor  := FQuestColor;
+  Result.FFieldX      := FFieldX;
+  Result.FFieldY      := FFieldY;
+  Result.FFieldColor  := FFieldColor;
+  Result.FFieldType   := FFieldType;
+  Result.FFieldLength := FFieldLength;
+  Result.FCryptLength := FCryptLength;
+  Result.FNumDecimals := FNumDecimals;
+  Result.FQuestion    := FQuestion;
+  Result.FVariableLabel := FVariableLabel;
 
   // Copy CheckFile if present:
   TmpCheckField := nil;
   if Assigned(CheckField) then
     CheckField.Clone(TmpCheckField);
-  Dest.CheckField := TmpCheckField;
+  Result.CheckField := TmpCheckField;
 
   // Assign data
-  if not SetAllMissing then
-    Dest.AssignData(Self);
+  if CloneData then
+    Result.AssignData(Self);
 
   // Set Valuelabels here since CheckField does not have Owner info.
   // Scenarios:
-  // - 1: Dest field has a link to a Datafile. Then any potential valuelabels should be found
-  //      through Dest.Datafile's valuelabelsets.
-  // - 2: Dest has NO Datafile. This could be a temporary clone, etc.
-  //      Copy the Valuelabelset, assign it to Dest field (and posibly also create
+  // - 1: Result field has a link to a Datafile. Then any potential valuelabels should be found
+  //      through Result.Datafile's valuelabelsets.
+  // - 2: Result has NO Datafile. This could be a temporary clone, etc.
+  //      Copy the Valuelabelset, assign it to Result field (and posibly also create
   //      the CheckField) and let and TEpiDataFile.AddField handle Valuelabels.
   //      This will reset label type (to vltLocal), since at present it is not known
   //      how the valuelabelset is related to anything else...
   if Assigned(ValueLabelSet) then
   begin
-    if Assigned(Dest.DataFile) then
+    if Assigned(Result.DataFile) then
     begin
-      Dest.CheckField.FValueLabel := Dest.DataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
+      Result.CheckField.FValueLabel := Result.DataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
     end else begin
-      If not Assigned(Dest.CheckField) then
-        Dest.CheckField := TEpiCheckField.Create();
-      ValueLabelSet.Clone(Dest.CheckField.FValueLabel);
-      Dest.ValueLabelSet.LabelType := vltLocal;
+      If not Assigned(Result.CheckField) then
+        Result.CheckField := TEpiCheckField.Create();
+      ValueLabelSet.Clone(Result.CheckField.FValueLabel);
+      Result.ValueLabelSet.LabelType := vltLocal;
     end;
   end;
 
   // Index?
   I := Owner.FDataFile.IndexFile.IndexNoByName(FieldName);
-  if (I > 0) and (Assigned(Dest.Owner)) then
+  if (I > 0) and (Assigned(Result.Owner)) then
   begin
-   Dest.Owner.FDataFile.IndexFile.IndexFields[I] := Dest;
-   Dest.Owner.FDataFile.IndexFile.IndexUnique[I] := Owner.FDataFile.IndexFile.IndexUnique[I];
+   Result.Owner.FDataFile.IndexFile.IndexFields[I] := Result;
+   Result.Owner.FDataFile.IndexFile.IndexUnique[I] := Owner.FDataFile.IndexFile.IndexUnique[I];
   end;
 end;
 
@@ -1493,7 +1505,9 @@ begin
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
   result := false;
 
+  // TODO : Rewrite to own XML writing function?
   try
+    UpdateProgress(0, Lang(0, 'Constructing header.'));
     RecXml := TXMLDocument.Create;
 
     // **********************
@@ -1552,6 +1566,7 @@ begin
     RootNode.AppendChild(SectionNode);
     for CurRec := 1 to Size do
     begin
+      UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
       ElemNode := RecXml.CreateElement('REC');
       for CurField := 0 to Fields.Count - 1 do
       begin
@@ -1564,7 +1579,9 @@ begin
       SectionNode.AppendChild(ElemNode);
     end;
 
+    UpdateProgress(0, Lang(0, 'Writing to disk.'));
     WriteXMLFile(RecXml, FileName);
+    UpdateProgress(100, Lang(0, 'Complete.'));
   finally
     EpiLogger.DecIndent;
   end;
@@ -1696,7 +1713,9 @@ begin
       S := '';
       for i := 0 TO DataFields.Count - 1 DO
       with DataFields[i] do begin
-        if FieldType = ftCrypt then
+        if IsMissing[CurRec] then
+          T := DupeString(' ', FieldLength)
+        else if FieldType = ftCrypt then
         begin
           EncData := EpiUtf8ToAnsi(Trim(AsString[CurRec]));
           FCrypter.InitStr(Password);
@@ -1706,8 +1725,8 @@ begin
           T := Format('%-*s', [FieldLength, EncData])
         end else if FieldType in [ftString, ftUpperAlfa] then
           T := Format('%-*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])])
-{        else if FieldType = ftFloat then
-          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])}
+        else if FieldType = ftFloat then
+          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]])
         else
           T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
         S := S + T;
@@ -2057,6 +2076,18 @@ end;
 
 { TEpiIntField }
 
+procedure TEpiIntField.AssignData(const Source: TEpiField);
+var
+  i: Integer;
+begin
+  if Source is TEpiIntField then
+    Move(TEpiIntField(Source).FData[0], FData[0], Size * SizeOf(EpiInteger))
+  else begin
+    for i := 1 to Size do
+      AsValue[i] := Source.AsValue[i];
+  end;
+end;
+
 function TEpiIntField.GetAsBoolean(const index: Integer): EpiBool;
 begin
   if IsMissing[Index] then
@@ -2095,6 +2126,11 @@ begin
     result := TEpiStringField.DefaultMissing
   else
     result := IntToStr(AsInteger[Index]);
+end;
+
+function TEpiIntField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  result := AsInteger[index];
 end;
 
 function TEpiIntField.GetCapacity: Integer;
@@ -2153,6 +2189,12 @@ begin
     IsMissing[Index] := true
   else
     AsInteger[index] := StrToIntDef(AValue, DefaultMissing);
+end;
+
+procedure TEpiIntField.SetAsValue(const index: Integer; const AValue: EpiVariant
+  );
+begin
+  AsInteger[index] := AValue;
 end;
 
 procedure TEpiIntField.SetCapacity(AValue: Integer);
@@ -2247,6 +2289,11 @@ begin
     result := FloatToStr(AsFloat[Index]);
 end;
 
+function TEpiFloatField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  result := AsFloat[index];
+end;
+
 function TEpiFloatField.GetCapacity: Integer;
 begin
   result := Length(FData);
@@ -2315,6 +2362,12 @@ begin
     AsFloat[Index] := StrToFloatDef(TmpStr, DefaultMissing, Fmt);
 end;
 
+procedure TEpiFloatField.SetAsValue(const index: Integer;
+  const AValue: EpiVariant);
+begin
+  AsFloat[index] := AValue;
+end;
+
 procedure TEpiFloatField.SetIsMissing(const index: Integer;
   const AValue: boolean);
 begin
@@ -2333,12 +2386,10 @@ var
   i: Integer;
 begin
   if Source is TEpiFloatField then
-    // Easy moving data - just copy the entire memory block.
-    Move(TEpiFloatField(Source).FData, FData, Size * SizeOf(EpiFloat))
+    Move(TEpiFloatField(Source).FData[0], FData[0], Size * SizeOf(EpiFloat))
   else begin
-    // ugly way - no AsValue yet.
     for i := 1 to Size do
-      AsString[i] := Source.AsString[i];
+      AsValue[i] := Source.AsValue[i];
   end;
 end;
 
@@ -2401,6 +2452,18 @@ begin
   AsBoolean[j] := TmpBool;
 end;
 
+procedure TEpiBoolField.AssignData(const Source: TEpiField);
+var
+  i: Integer;
+begin
+  if Source is TEpiBoolField then
+    Move(TEpiBoolField(Source).FData[0], FData[0], Size * SizeOf(EpiBool))
+  else begin
+    for i := 1 to Size do
+      AsValue[i] := Source.AsValue[i];
+  end;
+end;
+
 function TEpiBoolField.GetAsBoolean(const index: Integer): EpiBool;
 begin
   CheckIndex(Index);
@@ -2437,6 +2500,11 @@ begin
     result := TEpiStringField.DefaultMissing
   else     // TODO: translation of boolean characters.
     result := BoolToStr(AsBoolean[index] = 0, 'Y', 'N')
+end;
+
+function TEpiBoolField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  result := AsBoolean[index];
 end;
 
 function TEpiBoolField.GetCapacity: Integer;
@@ -2509,6 +2577,12 @@ begin
     AsFloat[Index] := 0;
 end;
 
+procedure TEpiBoolField.SetAsValue(const index: Integer;
+  const AValue: EpiVariant);
+begin
+  AsBoolean[index] := AValue;
+end;
+
 procedure TEpiBoolField.SetIsMissing(const index: Integer; const AValue: boolean
   );
 begin
@@ -2545,6 +2619,16 @@ begin
 end;
 
 { TEpiStringField }
+
+procedure TEpiStringField.AssignData(const Source: TEpiField);
+var
+  i: Integer;
+begin
+  // Copying strings not recommended, as they are ref-counted.
+  // Just use normal assignment.
+  for i := 1 to Size do
+    AsString[i] := Source.AsString[i];
+end;
 
 function TEpiStringField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -2584,6 +2668,11 @@ function TEpiStringField.GetAsString(const index: Integer): EpiString;
 begin
   CheckIndex(Index);
   result := FData[index - 1];
+end;
+
+function TEpiStringField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  result := AsString[index];
 end;
 
 function TEpiStringField.GetCapacity: Integer;
@@ -2651,6 +2740,12 @@ begin
   FData[index -1] := AValue;
 end;
 
+procedure TEpiStringField.SetAsValue(const index: Integer;
+  const AValue: EpiVariant);
+begin
+  AsString[index] := AValue;
+end;
+
 procedure TEpiStringField.SetIsMissing(const index: Integer;
   const AValue: boolean);
 begin
@@ -2702,6 +2797,18 @@ end;
 
 { TEpiDateField }
 
+procedure TEpiDateField.AssignData(const Source: TEpiField);
+var
+  i: Integer;
+begin
+  if Source is TEpiDateField then
+    Move(TEpiDateField(Source).FData[0], FData[0], Size * SizeOf(EpiDate))
+  else begin
+    for i := 1 to Size do
+      AsValue[i] := Source.AsValue[i];
+  end;
+end;
+
 function TEpiDateField.GetAsBoolean(const index: Integer): EpiBool;
 begin
   if IsMissing[Index] then
@@ -2740,6 +2847,11 @@ begin
     result := TEpiStringField.DefaultMissing
   else
     result := EpiDateTimeToStr(AsDate[index], FieldType);
+end;
+
+function TEpiDateField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  result := AsDate[index];
 end;
 
 function TEpiDateField.GetCapacity: Integer;
@@ -2802,6 +2914,12 @@ begin
     IsMissing[Index] := true
   else                   // TODO : Date conversion routine.
     AsDate[index] := Trunc(EpiDateToDateTime(AValue, FieldType, Length(AValue)));
+end;
+
+procedure TEpiDateField.SetAsValue(const index: Integer;
+  const AValue: EpiVariant);
+begin
+  AsDate[index] := AValue;
 end;
 
 procedure TEpiDateField.SetIsMissing(const index: Integer; const AValue: boolean

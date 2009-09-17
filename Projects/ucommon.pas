@@ -128,17 +128,16 @@ begin
     Include(SaveOptions, eoIgnoreChecks);
 
   OutDf := TEpiDataFile.Create(Df.Size);
+  OutDf.OnProgress   := ShowProgress;
   OutDf.OnPassword   := GetPassword;
   OutDf.Filelabel    := Df.FileLabel;
   OutDf.ValueLabels.Assign(Df.ValueLabels);
 
   for i := 0 to Df.NumFields - 1 do
   begin
-    TmpField := TEpiField.CreateField(Df[i].FieldType, Df[i].Size);
+    TmpField := Df[i].Clone(OutDf);
     OutDf.AddField(TmpField);
-    Df[i].Clone(TmpField);
   end;
-
   OutDf.Save(FileName);
   FreeAndNil(OutDf);
 end;
