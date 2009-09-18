@@ -1,5 +1,6 @@
 unit UImportExport;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -439,9 +440,8 @@ begin
       with TmpField do
       begin
         FieldName := 'V' + IntToStr(i);
-        FieldNo   := i;
         FieldLength := 0;
-        NumDecimals := 0;
+        FieldDecimals := 0;
       end;
       DataFile.AddField(TmpField);
     end;
@@ -469,7 +469,7 @@ begin
             begin
               FieldLength := Max(FieldLength, Length(TmpStr));
               if (StrCountChars(Tmpstr, CommaChars) > 0) then
-                NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+                FieldDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
             end;
           ftString:
             FieldLength := Max(FieldLength, Length(TmpStr));
@@ -491,11 +491,12 @@ begin
 
       if (TmpField.FieldLength = 0) and (TmpField.FieldType = ftInteger) then
       begin
+        // TODO : Fix so that previous field is removed!!!
+        Raise Exception.Create('INCORRECTLY IMPLEMENTED. PLEASE NOTIFY EPIDATA.');
         TmpField := TEpiField.CreateField(ftString);
-        TmpField.FieldNo := DataFile.DataFields[i].FieldNo;
         TmpField.FieldLength := 1;
         TmpField.FieldName := DataFile.DataFields[i].FieldName;
-        TmpField.NumDecimals := DataFile.DataFields[i].NumDecimals;
+        TmpField.FieldDecimals := DataFile.DataFields[i].FieldDecimals;
       end;
 
       case TmpField.FieldType of
@@ -823,10 +824,8 @@ begin
       TmpField := TEpiField.CreateField(TmpFieldType, NObs);
       WITH TmpField DO
       BEGIN
-        FieldNo       := i;
-        Question      := '';
         FieldLength   := 0;
-        NumDecimals   := 0;
+        FieldDecimals := 0;
         VariableLabel := '';
         FieldX        := 0;
         FieldY        := i;
@@ -836,7 +835,7 @@ begin
       END;
 
       // - typelist
-      TmpField.NumDecimals := 0;
+      TmpField.FieldDecimals := 0;
       case TypeList[i] of
         ByteConst: TmpField.FieldLength := 3;
         IntConst:  TmpField.FieldLength := 5;
@@ -845,7 +844,7 @@ begin
         DoubleConst:
           Begin
             TmpField.FieldLength := 18;
-            TmpField.NumDecimals := 4;
+            TmpField.FieldDecimals := 4;
           End;
       else
         TmpField.FieldLength := Ord(TypeList[i]) - StrBaseNum;
@@ -856,16 +855,8 @@ begin
         TmpField.FieldLength := 10;
 
       // - varlist
-      StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
-      j := 1;
-      // TODO -o Torsten : Remove restriction since we now allow all characters in fieldnames.
-      if (not CheckVariableName(StrBuf, AlfaNumChars)) or (FieldExists(StrBuf)) then
-      repeat
-        StrBuf := 'V '+ IntToStr(J);
-        INC(J);
-      until not FieldExists(StrBuf);
-      TmpField.FieldName := Trim(StrBuf);
-
+      StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);
+      TmpField.FieldName := Trim(CreateUniqueFieldName(StrBuf));
       AddField(TmpField);
     END;
 
@@ -909,7 +900,6 @@ begin
     FOR i := 0 TO nVar-1 DO
     BEGIN
       TmpField          := Fields[i];
-      TmpField.Question := Format('%-10s %' + IntToStr(J) + 's', [TmpField.FieldName, TmpField.VariableLabel]);
       TmpField.FieldX   := 10 + 1 + J + 2;
     END;
 
@@ -986,7 +976,7 @@ begin
                     StrBuf := ''
                   else begin
                     TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)] :=
-                      DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.NumDecimals);
+                      DupeString(StrBuf, TmpField.FieldLength - (TmpField.FieldDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.FieldDecimals);
                     TmpField.AsString[CurRec] := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
                   end;
                 end else begin
@@ -1180,7 +1170,7 @@ BEGIN
           Begin
             TmpField := TEpiField.CreateField(ftFloat, nObs);
             TmpField.FieldLength := ByteBuf[4];
-            TmpField.NumDecimals := ByteBuf[5];
+            TmpField.FieldDecimals := ByteBuf[5];
           end;
         'N':
           Begin
@@ -1199,22 +1189,15 @@ BEGIN
         Exit;
       end;
 
-      J := 1;
-      if (not CheckVariableName(TmpStr, AlfaNumChars)) or (FieldExists(TmpStr)) then
-      repeat
-        TmpStr := 'V '+ IntToStr(J);
-        INC(J);
-      until not FieldExists(TmpStr);
-      TmpField.FieldName := TmpStr;
+      TmpField.FieldName := CreateUniqueFieldName(TmpStr);
 
       WITH TmpField DO
-        BEGIN
-          Question      := TmpStr;
-          QuestX        := 1;
-          QuestY        := Fields.Count + 1;
-          FieldX        := 12;
-          FieldY        := QuestY;
-        END;  //with
+      BEGIN
+        QuestX        := 1;
+        QuestY        := Fields.Count + 1;
+        FieldX        := 12;
+        FieldY        := QuestY;
+      END;  //with
       AddField(TmpField);
     end;
 
@@ -1523,9 +1506,8 @@ begin
       with TmpField do
       begin
         FieldName := 'V' + IntToStr(i);
-        FieldNo   := i;
         FieldLength := 0;
-        NumDecimals := 0;
+        FieldDecimals := 0;
       end;
       AddField(TmpField);
     end;
@@ -1563,7 +1545,7 @@ begin
               begin
                 FieldLength := Max(FieldLength, Length(TmpStr));
                 if (StrCountChars(Tmpstr, CommaChars) > 0) then
-                  NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+                  FieldDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
               end;
             ftString:
               FieldLength := Max(FieldLength, Length(TmpStr));
@@ -1820,7 +1802,7 @@ begin
             END;
           ftFloat:
             BEGIN
-              IF NumDecimals = 0 THEN
+              IF FieldDecimals = 0 THEN
               BEGIN
                 IF FieldLength < 3 THEN TmpChar := ByteChar
                 ELSE IF FieldLength < 5 THEN TmpChar := IntChar
@@ -1872,7 +1854,7 @@ begin
         ftInteger, ftIDNUM:
           TmpStr := '%' + IntToStr(FieldLength) + '.0f';
         ftFloat:
-          TmpStr := '%' + IntToStr(FieldLength) + '.' + IntToStr(NumDecimals) + 'f';
+          TmpStr := '%' + IntToStr(FieldLength) + '.' + IntToStr(FieldDecimals) + 'f';
         ftBoolean:
           TmpStr := '%1.0f';
         ftString, ftUpperAlfa, ftCrypt:
@@ -1947,7 +1929,7 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
-    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
+    // TODO -O Torsten : Redesign to use correct decendant of TEpiField.
     //    ie. use AsFloat, AsDate, AsString.... etc.
     TRY
       FOR CurRec := 1 TO NObs DO
@@ -1969,7 +1951,7 @@ begin
 
           // Specific missing values
           IF (FileVersion >= $71) AND (FieldType in [ftInteger, ftIDNUM, ftFloat]) AND
-             (NumDecimals = 0) AND (FieldLength < 10) THEN
+             (FieldDecimals = 0) AND (FieldLength < 10) THEN
           BEGIN
             if Assigned(CheckField) then
             begin
@@ -2129,6 +2111,7 @@ var
   eYear, eMonth, eDay: Word;
   ByteBuf: Array of byte;
   TmpStr: string;
+  FieldNames: TStrings;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ExportDBase', 2, 'Filename = ' + aFilename);
@@ -2143,6 +2126,7 @@ begin
   with DataFile do
   try
     UpdateProgress(0, Lang(0, 'Writing header information'));
+    FieldNames := TStringList.Create;
 
     DataStream := TFileStream.Create(aFileName, fmCreate);
 
@@ -2184,8 +2168,8 @@ begin
     FOR i := 0 TO DataFields.Count - 1 DO
     WITH DataFields[i] DO
     BEGIN
-      // TODO -o Torsten : Check for too long field names.
-      WriteString(FieldName, 11);                                  // Field name   (Bytes 0  - 10)
+      TmpStr := CreateUniqueAnsiVariableName(FieldName, 11, FieldNames);
+      WriteString(TmpStr, 11);                                  // Field name   (Bytes 0  - 10)
       CASE FieldType of                                             // Field type   (Byte  11)
         ftInteger, ftIDNUM, ftFloat:         WriteString('N', 1, False);
         ftSoundex,
@@ -2201,7 +2185,7 @@ begin
         WriteInts(8, 1)                                            // -- all dates are length 8 in dBase
       ELSE
         WriteInts(FieldLength, 1);
-      WriteInts(NumDecimals, 1);                                   // Decimal cnt. (Byte 17)
+      WriteInts(FieldDecimals, 1);                                   // Decimal cnt. (Byte 17)
       DataStream.Write(ByteBuf[0], 14);                            // Reserveds... (Bytes 17 - 31, Byte 23 must be == 1)   
     END;  //for
     WriteInts($0D, 1);   //write Header Terminator
@@ -2487,7 +2471,7 @@ begin
         nlng   = 8,
         nform  = ???? TODO!
         nlf    = TEpiField.FieldLength
-        nfd    = TEpiField.NumDecimals
+        nfd    = TEpiField.FieldDecimals
       )
   }
 

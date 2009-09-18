@@ -1,5 +1,6 @@
 unit UWarning;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

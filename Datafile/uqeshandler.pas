@@ -1,5 +1,6 @@
 unit UQesHandler;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -93,7 +94,7 @@ begin
     TmpStr := StripWordsFromString(AText, CommonWords);
     if (NumValidChars(TmpStr) = 0) and (Df.QuestFields.Count > 0) then
       // Guess no good - try to find a name in prev. non-label field
-      Result := StripWordsFromString(Df.QuestFields[Df.QuestFields.Count-1].Question, CommonWords)
+      Result := StripWordsFromString(Df.QuestFields[Df.QuestFields.Count-1].VariableLabel, CommonWords)
     else begin
       //Construct name from question
       i := 0;
@@ -139,14 +140,13 @@ begin
     QuestY        := 0;
     FieldX        := 0;
     FieldY        := 0;
-    Question      := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
-    Question      := StringReplace(Question, '}', '', [rfIgnoreCase, rfReplaceAll]);
-    VariableLabel := trim(Question);
-    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
+    VariableLabel := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
+    VariableLabel := Trim(StringReplace(VariableLabel, '}', '', [rfIgnoreCase, rfReplaceAll]));
+{    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
     begin
       Tmpstr := FirstWord(VariableLabel, Length(VariableLabel));
       VariableLabel := Copy(VariableLabel, Length(TmpStr) + 1, Length(VariableLabel));
-    end;
+    end;  }
   end;
   Delete(CurLine, 1, PosEnd);
 end;
@@ -162,7 +162,7 @@ begin
   BEGIN
     FieldName    := fName;
     FieldLength  := 0;
-    Question     := CurLine;
+    VariableLabel := CurLine;
     QuestX       := CurX;
     QuestY       := LineNum;
   END;
@@ -207,7 +207,7 @@ BEGIN
   begin
     Result := makeField(ftFloat, St, En);
     Tmpstr := BoolToStr(Pos('.', NumStr) > 0, '.', ',');
-    Result.NumDecimals := Length(NumStr) - Pos(TmpStr, NumStr);
+    Result.FieldDecimals := Length(NumStr) - Pos(TmpStr, NumStr);
   end else
     Result := makeField(ftInteger, St, En);
 end;

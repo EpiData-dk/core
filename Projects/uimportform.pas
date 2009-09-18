@@ -1,5 +1,6 @@
 unit uimportform;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

@@ -1,5 +1,6 @@
 unit UCommon;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -392,8 +393,8 @@ NUM Name       Variable label        Type            Width  Checks              
               END;
             tmpType:=FieldTypeToFieldTypeName(epd[nN].FieldType, nil);
             tmpWidth:=IntToStr(epd[nN].FieldLength);
-            IF (epd[nN].Fieldtype=ftFloat) AND (epd[nN].NumDecimals>0)
-            THEN tmpWidth:=tmpWidth+':'+IntToStr(epd[nN].NumDecimals);
+            IF (epd[nN].Fieldtype=ftFloat) AND (epd[nN].FieldDecimals>0)
+            THEN tmpWidth:=tmpWidth+':'+IntToStr(epd[nN].FieldDecimals);
 //            IF epd[nN].Fieldtype=ftCrypt THEN tmpWidth:=IntToStr(epd[nN].CryptLength);
             {Write first line}
             IF UsesValueLabels

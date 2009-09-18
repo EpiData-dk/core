@@ -13,12 +13,12 @@ object formPW: TformPW
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   Position = poMainFormCenter
-  LCLVersion = '0.9.27'
+  LCLVersion = '0.9.29'
   object Label1: TLabel
     Left = 32
     Height = 14
     Top = 56
-    Width = 74
+    Width = 86
     Caption = 'Enter password'
     ParentColor = False
   end
@@ -26,7 +26,7 @@ object formPW: TformPW
     Left = 32
     Height = 14
     Top = 88
-    Width = 84
+    Width = 96
     Caption = 'Repeat password'
     ParentColor = False
   end
@@ -34,7 +34,7 @@ object formPW: TformPW
     Left = 32
     Height = 14
     Top = 16
-    Width = 43
+    Width = 50
     Caption = 'Filename'
     ParentColor = False
   end

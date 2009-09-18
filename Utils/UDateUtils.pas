@@ -1,5 +1,6 @@
 unit UDateUtils;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -42,20 +43,20 @@ begin
     IF (Ft=ftYMDDate) OR (Ft=ftYMDToday) THEN  //&&
     BEGIN
       qq:=pos(DateSeparator, tmpS);
-      tmpS[qq]:='¤';
+      tmpS[qq]:='!';
       IF pos(DateSeparator, tmpS)>0 THEN
       BEGIN
         //string has two slashes meaning year is included
-        eYearStr:=Copy(tmpS,1,pos('¤',tmpS)-1);
-        Delete(tmpS,1,pos('¤',tmpS));    //deletes year and separator
+        eYearStr:=Copy(tmpS,1,pos('!',tmpS)-1);
+        Delete(tmpS,1,pos('!',tmpS));    //deletes year and separator
         eMonthStr:=copy(tmpS,1,pos(DateSeparator,tmpS)-1);
         Delete(tmpS,1,pos(DateSeparator,tmpS));   //deletes month and second separator
         eDayStr:=tmpS;
       END ELSE BEGIN
         //string has one slash meaning year is not included
         eYearStr:='';
-        eMonthStr:=copy(tmpS,1,pos('¤',tmpS)-1);
-        Delete(tmpS,1,pos('¤',tmpS));  //deletes month and separator
+        eMonthStr:=copy(tmpS,1,pos('!',tmpS)-1);
+        Delete(tmpS,1,pos('!',tmpS));  //deletes month and separator
         eDayStr:=tmpS;
       END;
       //if ftYMDDate

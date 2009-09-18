@@ -1,5 +1,6 @@
 unit UEpiLog;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

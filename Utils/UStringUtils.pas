@@ -1,5 +1,6 @@
 unit UStringUtils;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

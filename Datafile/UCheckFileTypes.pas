@@ -1,15 +1,19 @@
 unit UCheckFileTypes;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
+
+uses
+  UEpiDataGlobals;
 
 type
 
   TBeepTypes = (btWarning,btConfirmation,btStandard);
   TFieldScope = (scNone, scLocal, scGlobal, scCumulative);
   TLeaveStyles = (lsEnter,lsBrowse,lsJumpFirst,lsJumpLast,lsChangeRec,lsNone);
-  TMissingValues = Array[0..2] of string;   //Holds missing values for fields
+  TMissingValues = Array[0..MaxDefinedMissingValues] of string;   //Holds missing values for fields
 
   TChkCmdType = (cmdIF, cmdHelp, cmdHide, cmdUnhide, cmdClear, cmdGoTo, cmdComLegal,
                  cmdExit, cmdDefine, cmdAutosave, cmdConfirm, cmdTypeString,

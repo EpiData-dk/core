@@ -1,5 +1,6 @@
 unit UCheckFileCmds;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

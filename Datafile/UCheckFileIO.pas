@@ -1,5 +1,6 @@
 unit UCheckFileIO;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -1597,7 +1598,7 @@ BEGIN
             BEGIN
               IF NOT ((TChkDefine(TmpChkCmd).FieldType = TmpField.Fieldtype) AND
                       (TChkDefine(TmpChkCmd).Length = TmpField.FieldLength) AND
-                      (TChkDefine(TmpChkCmd).NumDecimals = TmpField.NumDecimals)) THEN
+                      (TChkDefine(TmpChkCmd).NumDecimals = TmpField.FieldDecimals)) THEN
               BEGIN
                 Result := ReportError(Lang(22773,'A global DEFINE with same fieldname but different Fieldtype or length is allready defined'));
                 Exit;
@@ -1608,7 +1609,7 @@ BEGIN
             TmpField := TEpiField.CreateField(TChkDefine(TmpChkCmd).FieldType, 1);
           TmpField.FieldName   := TChkDefine(TmpChkCmd).FieldName;
           TmpField.FieldLength := TChkDefine(TmpChkCmd).Length;
-          TmpField.NumDecimals := TChkDefine(TmpChkCmd).NumDecimals;
+          TmpField.FieldDecimals := TChkDefine(TmpChkCmd).NumDecimals;
           TmpField.IsMissing[1] := true;
           TmpField.CheckField  := TEpiCheckField.Create();
           TmpField.CheckField.FieldScope := TChkDefine(TmpChkCmd).Scope;
@@ -1680,7 +1681,7 @@ BEGIN
                   Exit;
                 END;
 
-                FOR i := FDf.FieldByName(TmpStr).FieldNo TO FDf.FieldByName(CurCommand).FieldNo DO
+                FOR i := FDf.FieldIndex(TmpStr) TO FDf.FieldIndex(CurCommand) DO
                 BEGIN
                   TmpField := FDf[i];
                   IF (TmpField.FieldType <> ftQuestion) THEN
@@ -1775,7 +1776,7 @@ BEGIN
                   Exit;
                 END;
 
-                FOR i := FDf.FieldByName(TmpStr).FieldNo TO FDf.FieldByName(CurCommand).FieldNo DO
+                FOR i := FDf.FieldIndex(TmpStr) TO FDf.FieldIndex(CurCommand) DO
                 BEGIN
                   TmpField := FDf[i];
                   IF (TmpField.FieldType <> ftQuestion) THEN

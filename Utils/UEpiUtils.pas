@@ -1,11 +1,12 @@
 unit UEpiUtils;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
 
 USES
-  SysUtils, UEpiDataGlobals, UDataFileTypes;
+  SysUtils, UEpiDataGlobals, UDataFileTypes, Classes;
 
 type
   TPrgVersionInfo = record
@@ -29,6 +30,8 @@ type
 
   // Validity checks!
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
+  function CreateUniqueAnsiVariableName(Const Varname: string; MaxLength: integer;
+    CompareList: TStrings = nil): String;
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
   function IsInteger(const Value: string): boolean;
@@ -54,7 +57,7 @@ implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
-  UDateUtils, Math;
+  UDateUtils, Math, UStringUtils;
 
 {$IFDEF MSWINDOWS}
 type
@@ -82,6 +85,30 @@ begin
   for i := 1 to Length(VarName) do
     if not (Varname[i] in ValidChars) THEN exit;
   result := true;
+end;
+
+function CreateUniqueAnsiVariableName(const Varname: string;
+  MaxLength: integer; CompareList: TStrings): String;
+var
+  TmpStr: String;
+  Number: Integer;
+begin
+  TmpStr := EpiUtf8ToAnsi(Varname);
+
+  if Length(TmpStr) > MaxLength then
+    TmpStr := Copy(TmpStr, 1, MaxLength);
+
+  if Assigned(CompareList) then
+  begin
+    Number := 1;
+    while (CompareList.IndexOf(TmpStr) <> -1) and (not CheckVariableName(TmpStr, AlfaNumChars + ['_'])) do
+    begin
+      TmpStr := 'V' + IntToStr(Number);
+      Inc(Number)
+    end;
+    CompareList.Add(TmpStr);
+  end else if (not CheckVariableName(TmpStr, AlfaNumChars + ['_'])) then
+    TmpStr := 'V1';
 end;
 
 function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;

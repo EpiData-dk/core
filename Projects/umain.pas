@@ -1,5 +1,6 @@
 unit UMain;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

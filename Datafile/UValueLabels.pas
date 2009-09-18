@@ -1,5 +1,6 @@
 unit UValueLabels;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface

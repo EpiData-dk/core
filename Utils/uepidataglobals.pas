@@ -1,5 +1,6 @@
 unit UEpiDataGlobals;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -33,6 +34,7 @@ CONST
   MaxFieldNameLen       = 10;
   MaxIndices            = 3;
   MaxIntegerLength      = 5;
+  MaxDefinedMissingValues = 2;
 
   ChkColorNames:   ARRAY[0..17] OF string =
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',

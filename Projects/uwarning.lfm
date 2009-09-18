@@ -10,12 +10,12 @@ object WarningForm: TWarningForm
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Position = poScreenCenter
-  LCLVersion = '0.9.27'
+  LCLVersion = '0.9.29'
   object Label1: TLabel
     Left = 154
-    Height = 38
+    Height = 39
     Top = 40
-    Width = 165
+    Width = 177
     Caption = 'WARNING'
     Font.Color = clRed
     Font.Height = -32
@@ -26,9 +26,9 @@ object WarningForm: TWarningForm
   end
   object Label2: TLabel
     Left = 53
-    Height = 17
+    Height = 18
     Top = 88
-    Width = 385
+    Width = 430
     Caption = 'Application for testing of EpiData Software Core module'
     Font.Color = clBlue
     Font.Height = -13
@@ -39,9 +39,9 @@ object WarningForm: TWarningForm
   end
   object Label3: TLabel
     Left = 78
-    Height = 17
+    Height = 18
     Top = 160
-    Width = 312
+    Width = 352
     Caption = 'Press OK to accept that this is only for testing'
     Font.Color = clRed
     Font.Height = -13
@@ -52,9 +52,9 @@ object WarningForm: TWarningForm
   end
   object Label4: TLabel
     Left = 48
-    Height = 17
+    Height = 18
     Top = 120
-    Width = 388
+    Width = 431
     Caption = 'Data quality problems can Occur. Use only for test of core module'
     Font.Color = clRed
     Font.Height = -13

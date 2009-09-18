@@ -1,5 +1,6 @@
 unit UEpiDataFile;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -155,20 +156,14 @@ type
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
     FSize:         Integer;
-    FFieldNo:      Cardinal;        
-    FDisplayChar:  Char;
     FFieldName:    string;
     FQuestX:       Cardinal;
     FQuestY:       Cardinal;
-    FQuestColor:   Cardinal;
     FFieldX:       Cardinal;
     FFieldY:       Cardinal;
-    FFieldColor:   Cardinal;
     FFieldType:    TFieldType;
     FFieldLength:  Cardinal;
-    FCryptLength:  Cardinal;
-    FNumDecimals:  Cardinal;
-    FQuestion:     string;
+    FFieldDecimals:  Cardinal;
     FVariableLabel: string;
     FCheckField:   TEpiCheckField;
     function       GetValueLabel: TValueLabelSet;
@@ -210,19 +205,14 @@ type
     procedure Exchange(i,j: integer); virtual; abstract;
     function  Compare(i,j: integer): integer; virtual; abstract;
     procedure NewRecords(ACount: Integer = 1); virtual;
-    property  FieldNo:     Cardinal read FFieldNo write FFieldNo;
-    property  DisplayChar: Char read FDisplayChar write FDisplayChar;
     property  FieldName:   string read FFieldName write FFieldName;
     property  QuestX:      Cardinal read FQuestX write FQuestX;
     property  QuestY:      Cardinal read FQuestY write FQuestY;
-    property  QuestColor:  Cardinal read FQuestColor write FQuestColor;
     property  FieldX:      Cardinal read FFieldX write FFieldX;
     property  FieldY:      Cardinal read FFieldY write FFieldY;
-    property  FieldColor:  Cardinal read FFieldColor write FFieldColor;
     property  FieldType:   TFieldType read FFieldType;
     property  FieldLength: Cardinal read FFieldLength write FFieldLength;
-    property  NumDecimals: Cardinal read FNumDecimals write FNumDecimals;
-    property  Question:    string read FQuestion write FQuestion;
+    property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
     property  CheckField:  TEpiCheckField read FCheckField write FCheckField;
     property  ValueLabelSet: TValueLabelSet read GetValueLabel;
@@ -426,15 +416,16 @@ type
     FDataFile:  TEpiDataFile;
     FList:      TList;
     function    GetField(Index: Integer): TEpiField;
-    function    GetCount(): Cardinal;
+    function    GetCount: Cardinal;
   protected
     procedure   Add(aField: TEpiField);
     procedure   Delete(aField: TEpiField);
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
-    destructor  Destroy(); override;
+    destructor  Destroy; override;
     function    FieldByName(Const aFieldName: string): TEpiField;
     function    FieldExists(Const aFieldName: string): boolean;
+    function    IndexOf(Const aFieldName: string): integer;
     Property    Field[Index: integer]: TEpiField read GetField; default;
     Property    Count: Cardinal read GetCount;
     Property    Owned: Boolean read FOwned write FOwned;
@@ -451,13 +442,13 @@ type
     procedure        SetIndexField(Index: Integer; aField: TEpiField);         
     function         GetIndexUnique(Index: integer): Boolean;
     procedure        SetIndexUnique(Index: Integer; aUnique: Boolean);         
-    function         GetIndexCount(): Integer;
-    procedure        InternalReset();
+    function         GetIndexCount: Integer;
+    procedure        InternalReset;
   protected
   public
     constructor Create(Const aFileName: string);
     destructor  Destroy; override;
-    procedure   Reset();
+    procedure   Reset;
     function    IndexNoByName(Const Name: string): Integer;
     function    IndexFieldByName(Const Name: string): TEpiField;
     function    IndexExists(Const Name: string): Boolean;
@@ -514,15 +505,14 @@ type
     function   RequestPassword(Const EncryptedString: string): boolean;
     function   Open(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
     function   Save(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
-//    procedure  SaveMemToFile(Const aFileName: string);
-//    procedure  Read(RecNumber: Integer);
-//    procedure  Write(RecNumber: Integer = NewRecord);
     procedure  Reset;
     function   FieldByName(Const aFieldName: string): TEpiField;
     function   FieldExists(Const aFieldName: string): boolean;
+    function   FieldIndex(Const aFieldName: string): Integer;
     procedure  AddField(AField: TEpiField);
     procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);
     function   CreateUniqueFieldName(Const AText: string): string;
+    procedure  NewRecords(ACount: Integer = 1); virtual;
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
     property   DataFields:  TEpiFields read FDataFields;
@@ -589,6 +579,7 @@ begin
   if Assigned(FAfterCmds)     then FreeAndNil(FAfterCmds);
   if Assigned(FFieldComments) then FreeAndNil(FFieldComments);
 
+  // TODO : FMissingValues must be reset.
   FMustEntert        := false;
   FNoEnter           := false;
   FTopOfScreen       := false;
@@ -639,7 +630,7 @@ begin
   if Not Assigned(Dest) then
     Dest := TEpiCheckField.Create();
 
-  Dest.Reset();
+  Dest.Reset;
   
   Dest.FMustEntert        := FMustEntert;
   Dest.FNoEnter           := FNoEnter;
@@ -876,19 +867,19 @@ begin
   Result.DataFile := DstDataFile;
 
   // Copy Field related values:
-  Result.FDisplayChar := FDisplayChar;
+//  Result.FDisplayChar := FDisplayChar;
   Result.FFieldName   := FFieldName;
   Result.FQuestX      := FQuestX;
   Result.FQuestY      := FQuestY;
-  Result.FQuestColor  := FQuestColor;
+//  Result.FQuestColor  := FQuestColor;
   Result.FFieldX      := FFieldX;
   Result.FFieldY      := FFieldY;
-  Result.FFieldColor  := FFieldColor;
+//  Result.FFieldColor  := FFieldColor;
   Result.FFieldType   := FFieldType;
   Result.FFieldLength := FFieldLength;
-  Result.FCryptLength := FCryptLength;
-  Result.FNumDecimals := FNumDecimals;
-  Result.FQuestion    := FQuestion;
+//  Result.FCryptLength := FCryptLength;
+  Result.FFieldDecimals := FFieldDecimals;
+//  Result.FQuestion    := FQuestion;
   Result.FVariableLabel := FVariableLabel;
 
   // Copy CheckFile if present:
@@ -932,7 +923,7 @@ begin
   end;
 end;
 
-procedure TEpiField.NewRecords(ACount: Integer);
+procedure TEpiField.NewRecords(ACount: Integer = 1);
 begin
   if ACount <= 0 then exit;
   if (Size + ACount) > Capacity then
@@ -946,19 +937,13 @@ begin
 
   FOwner         := nil;
   FDataFile      := nil;
-  FFieldNo       := 0;
-  FDisplayChar   := '_';
   FFieldName     := '';
   FQuestX        := 0;
   FQuestY        := 0;
-  FQuestColor    := 0;
   FFieldX        := 0;
   FFieldY        := 0;
-  FFieldColor    := 0;
   FFieldLength   := 0;
-  FCryptLength   := 0;
-  FNumDecimals   := 0;
-  FQuestion      := '';
+  FFieldDecimals   := 0;
   FVariableLabel := '';
 end;
 
@@ -969,7 +954,7 @@ begin
   result := TEpiField(FList[Index]);
 end;
 
-function TEpiFields.GetCount(): Cardinal;
+function TEpiFields.GetCount: Cardinal;
 begin
   result := FList.Count
 end;
@@ -999,20 +984,30 @@ end;
 
 function TEpiFields.FieldByName(Const aFieldName: string): TEpiField;
 var
-  i: integer;
+  i: LongInt;
 begin
-  result := nil;
-  for i := 0 to FList.Count - 1 do
-    if AnsiCompareText(TEpiField(FList[i]).FieldName, aFieldName) = 0 then
-    begin
-      result := TEpiField(FList[i]);
-      exit;
-    end
+  Result := nil;
+  i := IndexOf(aFieldName);
+  if i >= 0 then
+    Result := TEpiField(FList[i]);
 end;
 
 function TEpiFields.FieldExists(Const aFieldName: string): boolean;
 begin
   result := Assigned(FieldByName(aFieldName)); 
+end;
+
+function TEpiFields.IndexOf(const aFieldName: string): integer;
+var
+  i: Integer;
+begin
+  result := -1;
+  for i := 0 to FList.Count - 1 do
+    if AnsiCompareText(TEpiField(FList[i]).FieldName, aFieldName) = 0 then
+    begin
+      result := i;
+      exit;
+    end
 end;
 
 procedure TEpiFields.Add(aField: TEpiField);
@@ -1187,7 +1182,7 @@ begin
       TmpField := TEpiField.CreateField(TmpFieldType, 0);
       TmpField.FieldName     := UTF8Encode(ElemNode.GetAttribute('NAME'));
       TmpField.FieldLength   := StrToInt(ElemNode.GetAttribute('LENGTH'));
-      TmpField.NumDecimals   := StrToInt(ElemNode.GetAttribute('DEC'));
+      TmpField.FieldDecimals   := StrToInt(ElemNode.GetAttribute('DEC'));
       TmpField.VariableLabel := UTF8Encode(ElemNode.GetAttribute('LABEL'));
       AddField(TmpField);
       ElemNode := TDOMElement(ElemNode.NextSibling);
@@ -1345,37 +1340,20 @@ begin
 
       with EField do
       begin
-        FieldNo     := CurrentLine - 1;
-        DisplayChar := TmpFieldChar;
         QuestX      := TmpQuestX;
         QuestY      := TmpQuestY;
-        QuestColor  := TmpQuestColor;
         FieldX      := TmpFieldX;
         FieldY      := TmpFieldY;
         FieldLength := TmpLength;
-        NumDecimals := 0;
+        FieldDecimals := 0;
         if TmpFieldTypeInt >= 100 then
-          NumDecimals := TmpFieldTypeInt - 100;
-        FieldColor  := TmpFieldColor;
-        Question    := EpiUnknownStrToUTF8(StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]));
+          FieldDecimals := TmpFieldTypeInt - 100;
+        VariableLabel := EpiUnknownStrToUTF8(StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]));
 
         // Ensure valid variable name.
-        if not CheckVariableName(TmpName, AlfaNumChars + [' ']) then
-        repeat
-          TmpName := 'V '+ IntToStr(FieldNumberCounter);
-          INC(FieldNumberCounter);
-        until not Fields.FieldExists(TmpName);
-        FieldName := Trim(TmpName);
-
-        // Variable label handling.
-        VariableLabel := Trim(Question);
-        if (FieldNaming = fnFirstWord) and (trim(VariableLabel) <> '') THEN
-        begin
-          TmpStr := FirstWord(VariableLabel, MaxFieldNameLen);
-          Delete(FVariableLabel, Pos(TmpStr, VariableLabel), System.Length(TmpStr));
-          VariableLabel := trim(VariableLabel);
-        END;
-        IF FieldName <> TmpName THEN VariableLabel := TmpName + ' ' + VariableLabel;
+        FieldName := Trim(CreateUniqueFieldName(TmpName));
+        IF FieldName <> TmpName THEN
+          VariableLabel := TmpName + ' ' + VariableLabel;
 
         // Summerize field findings.
         TotFieldLength := TotFieldLength + FieldLength;
@@ -1507,185 +1485,84 @@ begin
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
   result := false;
 
-  // TODO : Rewrite to own XML writing function?
-  if not (eoIgnoreChecks in Options) then
-  begin
-    try
-      UpdateProgress(0, Lang(0, 'Constructing header.'));
-      RecXml := TXMLDocument.Create;
+  try
+    UpdateProgress(0, Lang(0, 'Constructing header.'));
+    RecXml := TXMLDocument.Create;
 
-      // **********************
-      // Global <EPIDATA> structure
-      // **********************
-      RootNode := RecXml.CreateElement('EPIDATA');
-      RecXml.AppendChild(RootNode);
-      RootNode := RecXml.DocumentElement;
+    // **********************
+    // Global <EPIDATA> structure
+    // **********************
+    RootNode := RecXml.CreateElement('EPIDATA');
+    RecXml.AppendChild(RootNode);
+    RootNode := RecXml.DocumentElement;
 
-      // **********************
-      // <SETTINGS> Section
-      // **********************
-      SectionNode := RecXml.CreateElement('SETTINGS');
-      // File label.
-      ElemNode := RecXml.CreateElement('FILELABEL');
-      ElemNode.AppendChild(RecXml.CreateTextNode(UTF8Decode(FileLabel)));
+    // **********************
+    // <SETTINGS> Section
+    // **********************
+    SectionNode := RecXml.CreateElement('SETTINGS');
+    // File label.
+    ElemNode := RecXml.CreateElement('FILELABEL');
+    ElemNode.AppendChild(RecXml.CreateTextNode(UTF8Decode(FileLabel)));
+    SectionNode.AppendChild(ElemNode);
+    // Version
+    ElemNode := RecXml.CreateElement('VERSION');
+    ElemNode.AppendChild(RecXml.CreateTextNode(IntToStr(FileVersion)));
+    SectionNode.AppendChild(ElemNode);
+    // Password
+    if RequirePassword then
+    begin
+      ElemNode := RecXml.CreateElement('PASSWORD');
+      TmpStr := Trim(Password);
+      FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
+      TmpStr := B64Encode(TmpStr);
+      FCrypter.Reset;
+      ElemNode.AppendChild(RecXml.CreateTextNode(TmpStr));
       SectionNode.AppendChild(ElemNode);
-      // Version
-      ElemNode := RecXml.CreateElement('VERSION');
-      ElemNode.AppendChild(RecXml.CreateTextNode(IntToStr(FileVersion)));
+    end;
+    RootNode.AppendChild(SectionNode);
+    // **********************
+    // <FIELDS> Section
+    // **********************
+    SectionNode := RecXml.CreateElement('FIELDS');
+    for CurField := 0 to Fields.Count - 1 do
+    with Fields[CurField] do
+    begin
+      // Create <FIELD ... /> lines
+      ElemNode := RecXml.CreateElement('FIELD');
+      ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
+      ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
+      ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
+      ElemNode.SetAttribute('DEC', IntToStr(FieldDecimals));
+      ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
       SectionNode.AppendChild(ElemNode);
-      // Password
-      if RequirePassword then
-      begin
-        ElemNode := RecXml.CreateElement('PASSWORD');
-        TmpStr := Trim(Password);
-        FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
-        TmpStr := B64Encode(TmpStr);
-        FCrypter.Reset;
-        ElemNode.AppendChild(RecXml.CreateTextNode(TmpStr));
-        SectionNode.AppendChild(ElemNode);
-      end;
-      RootNode.AppendChild(SectionNode);
-      // **********************
-      // <FIELDS> Section
-      // **********************
-      SectionNode := RecXml.CreateElement('FIELDS');
-      for CurField := 0 to Fields.Count - 1 do
-      with Fields[CurField] do
-      begin
-        // Create <FIELD ... /> lines
-        ElemNode := RecXml.CreateElement('FIELD');
-        ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
-        ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
-        ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
-        ElemNode.SetAttribute('DEC', IntToStr(NumDecimals));
-        ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
-        SectionNode.AppendChild(ElemNode);
-      end;
-      RootNode.AppendChild(SectionNode);
-
-      // **********************
-      // <RECORDS> Section
-      // **********************
-      SectionNode := RecXml.CreateElement('RECORDS');
-      RootNode.AppendChild(SectionNode);
-      for CurRec := 1 to Size do
-      begin
-        UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
-        ElemNode := RecXml.CreateElement('REC');
-        for CurField := 0 to Fields.Count - 1 do
-        begin
-          if Fields[CurField].FieldType = ftQuestion then
-            continue;
-
-          WTmpStr := Trim(UTF8Decode(Fields[CurField].AsString[CurRec]));
-          ElemNode.SetAttribute('F'+IntToStr(CurField), WTmpStr);
-        end;
-        SectionNode.AppendChild(ElemNode);
-      end;
-
-      UpdateProgress(0, Lang(0, 'Writing to disk.'));
-      WriteXMLFile(RecXml, FileName);
-      UpdateProgress(100, Lang(0, 'Complete.'));
-    finally
-      EpiLogger.DecIndent;
     end;
-  end else begin
-    try
-      UpdateProgress(0, Lang(0, 'Constructing header.'));
-      DataStream := TFileStream.Create(FileName, fmCreate);
+    RootNode.AppendChild(SectionNode);
 
-      // Xml info line
-      DataStream.WriteAnsiString('<?xml version="1.0"?>' + LineEnding);
-
-      // **********************
-      // Start global <EPIDATA> structure
-      // **********************
-      DataStream.WriteAnsiString('<EPIDATA>' + LineEnding);
-
-      // **********************
-      // Start <SETTINGS> Section
-      // **********************
-      DataStream.WriteAnsiString('  <SETTINGS>' + LineEnding);
-      // File label.
-      DataStream.WriteAnsiString('    <FILELABEL>');
-      TmpStr := FileLabel;
-      DataStream.Write(TmpStr[1], Length(TmpStr));
-      DataStream.WriteAnsiString('</FILELABEL>' + LineEnding);
-      // Version
-      DataStream.WriteAnsiString('    <VERSION>');
-      TmpStr := IntToStr(FileVersion);
-      DataStream.Write(TmpStr[1], Length(TmpStr));
-      DataStream.WriteAnsiString('</VERSION>' + LineEnding);
-      // Password
-      if RequirePassword then
-      begin
-        DataStream.WriteAnsiString('    <PASSWORD>');
-        TmpStr := Trim(Password);
-        FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
-        TmpStr := B64Encode(TmpStr);
-        FCrypter.Reset;
-        DataStream.Write(TmpStr[1], Length(TmpStr));
-        DataStream.WriteAnsiString('</PASSWORD>' + LineEnding);
-      end;
-      DataStream.WriteAnsiString('  </SETTINGS>' + LineEnding);
-
-      // **********************
-      // <FIELDS> Section
-      // **********************
-      DataStream.WriteAnsiString('  <FIELDS>' + LineEnding);
+    // **********************
+    // <RECORDS> Section
+    // **********************
+    SectionNode := RecXml.CreateElement('RECORDS');
+    RootNode.AppendChild(SectionNode);
+    for CurRec := 1 to Size do
+    begin
+      UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
+      ElemNode := RecXml.CreateElement('REC');
       for CurField := 0 to Fields.Count - 1 do
-      with Fields[CurField] do
       begin
-        // Create <FIELD ... /> lines
-        DataStream.WriteAnsiString('    <FIELD ');
-        DataStream.WriteAnsiString('NAME="');
-        TmpStr := FieldName;
-        DataStream.Write(TmpStr[1], Length(TmpStr));
-        DataStream.WriteAnsiString('" TYPE="');
-        TmpStr := IntToStr(Ord(FieldType));
-        DataStream.Write(TmpStr[10], Length(TmpStr));
-        DataStream.WriteAnsiString('" LENGTH="');
-        TmpStr := IntToStr(FieldLength);
-        DataStream.Write(TmpStr[1], Length(TmpStr));
-        DataStream.WriteAnsiString('" DEC="');
-        TmpStr := IntToStr(NumDecimals);
-        DataStream.Write(TmpStr[1], Length(TmpStr));
-        DataStream.WriteAnsiString('" LABEL="');
-        TmpStr := VariableLabel;
-        DataStream.Write(TmpStr[1], Length(TmpStr));
-        DataStream.WriteAnsiString('"/>' + LineEnding);
+        if Fields[CurField].FieldType = ftQuestion then
+          continue;
+
+        WTmpStr := Trim(UTF8Decode(Fields[CurField].AsString[CurRec]));
+        ElemNode.SetAttribute('F'+IntToStr(CurField), WTmpStr);
       end;
-      DataStream.WriteAnsiString('  </FIELDS>' + LineEnding);
-
-      // **********************
-      // <RECORDS> Section
-      // **********************
-      DataStream.WriteAnsiString('  <RECORDS>' + LineEnding);
-      for CurRec := 1 to Size do
-      begin
-        UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
-        DataStream.WriteAnsiString('    <REC');
-        for CurField := 0 to Fields.Count - 1 do
-        begin
-          if Fields[CurField].FieldType = ftQuestion then
-            continue;
-
-          TmpStr := ' F' + IntToStr(CurField) + '"' + Trim(Fields[CurField].AsString[CurRec]) + '"';
-          DataStream.Write(TmpStr[1], Length(TmpStr));
-        end;
-        DataStream.WriteAnsiString('/>');
-      end;
-
-      UpdateProgress(0, Lang(0, 'Writing to disk.'));
-
-      // **********************
-      // End global <EPIDATA> structure
-      // **********************
-      DataStream.WriteAnsiString('</EPIDATA>' + LineEnding);
-      UpdateProgress(100, Lang(0, 'Complete.'));
-    finally
-      EpiLogger.DecIndent;
+      SectionNode.AppendChild(ElemNode);
     end;
+
+    UpdateProgress(0, Lang(0, 'Writing to disk.'));
+    WriteXMLFile(RecXml, FileName);
+    UpdateProgress(100, Lang(0, 'Complete.'));
+  finally
+    EpiLogger.DecIndent;
   end;
 end;
 
@@ -1700,6 +1577,8 @@ var
   T: String;
   Z: Integer;
   Fmt: TFormatSettings;
+  TmpStr: String;
+  FieldNames: TStrings;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
@@ -1716,6 +1595,8 @@ begin
   Fmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSepator;
 
   try
+    FieldNames := TStringList.Create;
+
     // - Encryption required:
     Crypt := false;
     for i := 0 to Fields.Count -1 do
@@ -1765,8 +1646,10 @@ begin
         s := '#'
       ELSE
         s := '_';
-      // Since format is not UTF8, length will be f*cked
-      s := s + Format('%-10s', [EpiUtf8ToAnsi(FieldName)]);  //Name of field (left justified)
+
+      // Since format is not UTF8 add EpiUtf8ToAnsi here else length will be f*cked
+      TmpStr := CreateUniqueAnsiVariableName(FieldName, MaxFieldNameLen, FieldNames);
+      s := s + Format('%-10s', [TmpStr]);     //Name of field (left justified)
       s := s + ' ';                           //Space required for some unknown reason
       s := s + Format('%4d', [QuestX]);       //Question X-position
       s := s + Format('%4d', [QuestY]);       //Question Y-position
@@ -1780,8 +1663,8 @@ begin
       // For all other: use the fieldtype-code (fieldtype)
       IF FieldType = ftQuestion THEN
         s := s + Format('%4s', ['0'])
-      ELSE IF (FieldType = ftFloat) AND (NumDecimals > 0) THEN
-        s := s + Format('%4d', [100 + NumDecimals])
+      ELSE IF (FieldType = ftFloat) AND (FieldDecimals > 0) THEN
+        s := s + Format('%4d', [100 + FieldDecimals])
       ELSE if (FieldType = ftInteger) and (FieldLength > MaxIntegerLength) then
         S := S + Format('%4d', [ORD(ftFloat)])
       ELSE
@@ -1804,9 +1687,7 @@ begin
           s := s + Format('%4d', [FieldLength]);
 
       s := s + ' ';                      //Another unnescessary blank
-      if Question = '' then
-        Question := VariableLabel;
-      s := s + EpiUtf8ToAnsi(Question);
+      s := s + EpiUtf8ToAnsi(VariableLabel);
 
       s := s + #13#10;
       Stream.Write(S[1], Length(S));
@@ -1833,7 +1714,7 @@ begin
         end else if FieldType in [ftString, ftUpperAlfa] then
           T := Format('%-*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])])
         else if FieldType = ftFloat then
-          T := Format('%*.*f', [FieldLength, NumDecimals, AsFloat[CurRec]], Fmt)
+          T := Format('%*.*f', [FieldLength, FieldDecimals, AsFloat[CurRec]], Fmt)
         else
           T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
         S := S + T;
@@ -2030,6 +1911,11 @@ begin
   result := Fields.FieldExists(aFieldName);
 end;
 
+function TEpiDataFile.FieldIndex(const aFieldName: string): Integer;
+begin
+  result := Fields.IndexOf(aFieldName);
+end;
+
 procedure TEpiDataFile.AddField(AField: TEpiField);
 begin
   Fields.Add(AField);
@@ -2066,20 +1952,28 @@ end;
 function TEpiDataFile.CreateUniqueFieldName(const AText: string): string;
 var
   Number: Integer;
+  TmpStr: String;
 begin
-  result := AText;
+  TmpStr := AText;
+  Result := AText;
 
   // If fieldname is unique, do nothing.
-  Number := 0;
+  Number := 1;
   while FieldExists(result) do
   begin
     // not unique, find a new.
-    if Length(Result) = MaxFieldNameLen then
-      Result := Copy(Result, 1, MaxFieldNameLen - Length(IntToStr(Number))) + IntToStr(Number)
-    else
-      Result := Result + IntToStr(Number);
+    Result := TmpStr + IntToStr(Number);
     Inc(Number);
   end;
+end;
+
+procedure TEpiDataFile.NewRecords(ACount: Integer);
+var
+  i: Integer;
+begin
+  FRecordStatus.NewRecords(ACount);
+  for i := 0 to DataFields.Count - 1 do
+    DataFields[i].NewRecords(ACount);
 end;
 
 { TEpiIndexFile }
@@ -2116,7 +2010,7 @@ begin
 end;
 
 
-function TEpiIndexFile.GetIndexCount(): Integer;
+function TEpiIndexFile.GetIndexCount: Integer;
 var
   i: integer;
 begin
@@ -2125,7 +2019,7 @@ begin
     if Assigned(IndexFields[i]) then Inc(Result);
 end;
 
-procedure TEpiIndexFile.InternalReset();
+procedure TEpiIndexFile.InternalReset;
 begin
   if Assigned(FIndexFields) then FreeAndNil(FIndexFields);
   FFileName := '';
@@ -2134,21 +2028,21 @@ end;
 
 constructor TEpiIndexFile.Create(const aFileName: string);
 begin
-  Reset();
+  Reset;
   FFileName := aFileName;
 end;
 
 destructor TEpiIndexFile.Destroy;
 begin
-  InternalReset();
+  InternalReset;
   inherited;
 end;
 
-procedure TEpiIndexFile.Reset();
+procedure TEpiIndexFile.Reset;
 var
   i: integer;
 begin
-  InternalReset();
+  InternalReset;
   FIndexFields := TList.Create;
   for i := 1 to MaxIndices do
     FIndexFields.Add(nil);
@@ -2251,8 +2145,24 @@ begin
 end;
 
 function TEpiIntField.GetIsMissingValue(const index: Integer): boolean;
+var
+  i: Integer;
+  TmpInt: LongInt;
 begin
-  // TODO : TEpiIntField.GetIsMissingValue
+  Result := false;
+  if IsMissing[Index] then exit;
+  if not Assigned(CheckField) then exit;
+
+  for i := 0 to MaxDefinedMissingValues do
+  begin
+    if CheckField.MissingValues[i] = '' then exit;
+    TmpInt := StrToInt(CheckField.MissingValues[i]);
+    if TmpInt = AsInteger[Index] then
+    begin
+      Result := true;
+      Exit;
+    end;
+  end;
 end;
 
 procedure TEpiIntField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -2279,7 +2189,7 @@ begin
     IsMissing[Index] := true
   else
   // TODO : Rounding function.
-    AsInteger[Index] := Trunc(AValue);
+    AsInteger[Index] := trunc(AValue);
 end;
 
 procedure TEpiIntField.SetAsInteger(const index: Integer;
@@ -2412,8 +2322,24 @@ begin
 end;
 
 function TEpiFloatField.GetIsMissingValue(const index: Integer): boolean;
+var
+  i: Integer;
+  TmpFlt: Extended;
 begin
-  // TODO : Implement TEpiFloatField.GetIsMissingValue
+  Result := false;
+  if IsMissing[Index] then exit;
+  if not Assigned(CheckField) then exit;
+
+  for i := 0 to MaxDefinedMissingValues do
+  begin
+    if CheckField.MissingValues[i] = '' then exit;
+    TmpFlt := StrToFloat(CheckField.MissingValues[i]);
+    if TmpFlt = AsFloat[Index] then
+    begin
+      Result := true;
+      Exit;
+    end;
+  end;
 end;
 
 function TEpiFloatField.GetSize: Integer;
@@ -2625,8 +2551,24 @@ begin
 end;
 
 function TEpiBoolField.GetIsMissingValue(const index: Integer): boolean;
+var
+  i: Integer;
+  TmpBool: LongInt;
 begin
-  // TODO : Implement TEpiBoolField.GetIsMissingValue
+  Result := false;
+  if IsMissing[Index] then exit;
+  if not Assigned(CheckField) then exit;
+
+  for i := 0 to MaxDefinedMissingValues do
+  begin
+    if CheckField.MissingValues[i] = '' then exit;
+    TmpBool := StrToInt(CheckField.MissingValues[i]);
+    if EpiBool(TmpBool) = AsBoolean[Index] then
+    begin
+      Result := true;
+      Exit;
+    end;
+  end;
 end;
 
 function TEpiBoolField.GetSize: Integer;
@@ -2793,8 +2735,22 @@ begin
 end;
 
 function TEpiStringField.GetIsMissingValue(const index: Integer): boolean;
+var
+  i: Integer;
 begin
-  // TODO : Implement TEpiStringField.GetIsMissingValue
+  Result := false;
+  if IsMissing[Index] then exit;
+  if not Assigned(CheckField) then exit;
+
+  for i := 0 to MaxDefinedMissingValues do
+  begin
+    if CheckField.MissingValues[i] = '' then exit;
+    if CheckField.MissingValues[i] = AsString[Index] then
+    begin
+      Result := true;
+      Exit;
+    end;
+  end;
 end;
 
 function TEpiStringField.GetSize: Integer;
@@ -2972,8 +2928,24 @@ begin
 end;
 
 function TEpiDateField.GetIsMissingValue(const index: Integer): boolean;
+var
+  i: Integer;
+  TmpInt: LongInt;
 begin
-  // TODO : Implement TEpiDateField.GetIsMissingValue
+  Result := false;
+  if IsMissing[Index] then exit;
+  if not Assigned(CheckField) then exit;
+
+  for i := 0 to MaxDefinedMissingValues do
+  begin
+    if CheckField.MissingValues[i] = '' then exit;
+    TmpInt := StrToInt(CheckField.MissingValues[i]);
+    if TmpInt = AsInteger[Index] then
+    begin
+      Result := true;
+      Exit;
+    end;
+  end;
 end;
 
 function TEpiDateField.GetSize: Integer;
