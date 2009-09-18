@@ -138,7 +138,7 @@ begin
     TmpField := Df[i].Clone(OutDf);
     OutDf.AddField(TmpField);
   end;
-  OutDf.Save(FileName);
+  OutDf.Save(FileName, SaveOptions);
   FreeAndNil(OutDf);
 end;
 
