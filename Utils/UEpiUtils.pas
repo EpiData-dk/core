@@ -29,7 +29,7 @@ type
 
   // Validity checks!
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
-  function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
+  function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
   function IsInteger(const Value: string): boolean;
   function IsFloat(var Value: string): boolean;
@@ -84,7 +84,7 @@ begin
   result := true;
 end;
 
-function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): widestring;
+function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
 var
   i: integer;
 begin
@@ -173,9 +173,9 @@ begin
   if (PrevFT = ftInteger)                                 and IsInteger(Value)             then result :=ftInteger
   else if (PrevFT in [ftInteger, ftFloat])                and IsFloat(Value)               then result :=ftFloat
   else if (PrevFT in [ftInteger, ftFloat, ftDate])        and EpiIsDate(Value, ftDate)     then result := ftDate
-  else if ((PrevFT <> ftAlfa) and (PrevFT <= ftEuroDate)) and EpiIsDate(Value, ftEuroDate) then result := ftEuroDate
-  else if ((PrevFT <> ftAlfa) and (PrevFT <= ftYMDDate))  and EpiIsDate(Value, ftYMDDate)  then result := ftYMDDate
-  else result := ftAlfa;
+  else if ((PrevFT <> ftString) and (PrevFT <= ftEuroDate)) and EpiIsDate(Value, ftEuroDate) then result := ftEuroDate
+  else if ((PrevFT <> ftString) and (PrevFT <= ftYMDDate))  and EpiIsDate(Value, ftYMDDate)  then result := ftYMDDate
+  else result := ftString;
 end;
 
 function PreInc(Var I: Integer; Const N: Integer = 1): Integer;
@@ -250,9 +250,9 @@ begin
   CSI.OSMinorVersion := 0;
 
   CSI.PrgVersion.Major   := 0;
-  CSI.PrgVersion.Minor   := 1;
-  CSI.PrgVersion.Release := 12;
-  CSI.PrgVersion.Build   := 95;
+  CSI.PrgVersion.Minor   := 2;
+  CSI.PrgVersion.Release := 0;
+  CSI.PrgVersion.Build   := 96;
 
   CSI.CoreVersion := CoreVersion;
   // TODO -o Torsten : Get Subversion revision!

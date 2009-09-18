@@ -219,7 +219,7 @@ begin
   if (not assigned(Df)) then exit;
 
   sg.ColCount := Df.NumDataFields + 1;
-  sg.RowCount := Max(Df.NumRecords + 1, 1);
+  sg.RowCount := Max(Df.Size + 1, 1);
 
   if sg.ColCount > 1 then
     sg.FixedCols := 1;
@@ -232,11 +232,9 @@ begin
     if df[col].Fieldtype <> ftQuestion then
       sg.Cells[PostInc(i), 0] := df[col].FieldName;
 
-  numrecs := df.NumRecords;
+  numrecs := df.Size;
   for row := 1 to numrecs do
   begin
-    df.Read(row);
-    ShowProgress(nil, Floor((row/numrecs)*100), 'Reading records');
     sg.Cells[0, row] := inttostr(row);
     i := 1;
     for col := 0 to df.NumFields - 1 do
@@ -244,9 +242,9 @@ begin
       if df[col].Fieldtype <> ftQuestion then
       begin
         if ShowAsLabels then
-          sg.Cells[PostInc(i), row] := df[col].AsValue
+          sg.Cells[PostInc(i), row] := df[col].AsValueLabel[row]
         else
-          sg.Cells[PostInc(i), row] := df[col].AsFmtData;
+          sg.Cells[PostInc(i), row] := df[col].AsString[row];
       end;
     end;
   end;
@@ -315,6 +313,7 @@ begin
      3: Result := '.csv';
      4: Result := '.xls';
      5: Result := '.ods';
+     6: Result := '.recxml';
   else
     Result := '.rec';
   end;
@@ -391,7 +390,7 @@ begin
   if fileexists(ext) then
   begin
     EpiLogger.Add('Cannot overwrite existing file: ' + ext, 2);
-    Exit;
+   // Exit;
   end;
   {$ENDIF EPI_DEBUG}
 

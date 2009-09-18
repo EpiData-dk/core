@@ -129,10 +129,9 @@ function TQesHandler.makeField(Ft: TFieldType; PosStart, PosEnd: Integer): TEpiF
 var
   Tmpstr: String;
 begin
-  result := TEpiField.Create;
+  result := TEpiField.CreateField(Ft, 0);
   With result do
   begin
-    FieldType     := Ft;
     FieldName     := ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
     FieldLength   := PosEnd - PosStart + 1;
     // TODO: QuestX of Y!
@@ -158,11 +157,10 @@ var
 begin
   FName := Format('Label%d', [PostInc(LabelNo)]);
 
-  Result := TEpiField.Create();
+  Result := TEpiField.CreateField(ftQuestion, 0);
   WITH Result DO
   BEGIN
     FieldName    := fName;
-    FieldType    := ftQuestion;
     FieldLength  := 0;
     Question     := CurLine;
     QuestX       := CurX;
@@ -205,13 +203,13 @@ BEGIN
     Exit;
   end;
 
-  Result := makeField(ftInteger, St, En);
   if (StrCountChars(NumStr, ['.', ',']) > 0) then
   begin
-    Tmpstr      := BoolToStr(Pos('.', NumStr) > 0, '.', ',');
+    Result := makeField(ftFloat, St, En);
+    Tmpstr := BoolToStr(Pos('.', NumStr) > 0, '.', ',');
     Result.NumDecimals := Length(NumStr) - Pos(TmpStr, NumStr);
-    Result.FieldType := ftFloat;
-  end;
+  end else
+    Result := makeField(ftInteger, St, En);
 end;
 
 function TQesHandler.makeTxtField(StartPos: Integer): TEpiField;
@@ -233,7 +231,7 @@ begin
     Exit;
   end;
 
-  result := makeField(ftAlfa, St, En);
+  result := makeField(ftString, St, En);
 end;
 
 function TQesHandler.makeOtherField(StartPos: Integer): TEpiField;
@@ -343,15 +341,6 @@ end;
 function TQesHandler.makeCrypt(StartPos, EndPos: Integer): TEpiField;
 begin
   Result := makeField(ftCrypt, StartPos, EndPos);
-  Result.CryptLength := Result.FieldLength - 2;
-  Result.FieldLength := GetEncodedLength(Result.CryptLength);
-  if Result.CryptLength > 60 then
-  begin
-    Result.FieldLength := 60;
-    Df.ErrorCode := EPI_QES_FAILED;
-    // TODO -o Torsten : LineNum
-    Df.ErrorText := Format(Lang(20429, 'Encrypt field in line %d exceeds maximum length of 60 characters:'),[0]);
-  end;
 end;
 
 constructor TQesHandler.Create;
@@ -397,7 +386,7 @@ begin
 
   // TODO -o Torsten : Sanity checks!
   if not Assigned(Df) then
-    Df := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory])
+    Df := TEpiDataFile.Create()
   else
     Df.Reset;
 

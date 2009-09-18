@@ -705,7 +705,7 @@ constructor TChkDefine.Create;
 begin
   inherited Create;
   FFieldName := '';
-  FFieldType := ftAlfa;
+  FFieldType := ftString;
   FLength := 0;
   FNumDecimals := 0;
   FScope := scNone;

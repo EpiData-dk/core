@@ -2,7 +2,7 @@ program minimalcore;
 
 {$mode objfpc}{$H+}
 
-{.$DEFINE EPI_DEBUG}
+{$DEFINE EPI_DEBUG}
 
 {$IFDEF EPI_DEBUG}
 
@@ -13,9 +13,9 @@ program minimalcore;
 
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
+  {$IFDEF UseCThreads}
   cthreads,
-  {$ENDIF}{$ENDIF}
+  {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms
   { you can add units after this }, LResources,

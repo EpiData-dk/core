@@ -16,7 +16,7 @@ type
   end;
 
 CONST
-  CoreVersion = 1;
+  CoreVersion = 2;
 
   NewRecord = -1;
   NumChars:        TCharSet = ['0'..'9'];
@@ -44,20 +44,33 @@ CONST
                      clPurple, clRed, clSilver, clTeal, clWhite, clYellow);
                      
   FieldTypeNames: Array[0..20] of string =
-                   ('Numeric', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
-                    'Boolean', 'Numeric', 'Phonenumber', 'Time', 'Local phonenumber',
+                   ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
+                    'Boolean', 'Floating', 'Phonenumber', 'Time', 'Local phonenumber',
                     'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Question',
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');
 
   SupportedFieldTypes:
-    TFieldTypes = [ftInteger, ftAlfa, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
+    TFieldTypes = [ftInteger, ftString, ftDate, ftUpperAlfa, ftBoolean, ftFloat,
                    ftToday, ftEuroDate, ftIDNUM, ftQuestion, ftEuroToday,
                    ftSoundex, ftCrypt, ftYMDDate, ftYMDToday];
 
   DateFieldTypes:
     TFieldTypes = [ftDate, ftToday, ftEuroDate, ftEuroToday,
                    ftYMDDate,ftYMDToday];
+
+  IntFieldTypes:
+    TFieldTypes = [ftInteger, ftIDNUM];
+
+  FloatFieldTypes:
+    TFieldTypes = [ftFloat];
+
+  BoolFieldTypes:
+    TFieldTypes = [ftBoolean];
+
+  StringFieldTypes:
+    TFieldTypes = [ftString, ftUpperAlfa, ftSoundex, ftCrypt];
+				   
 
 var
   // CommonWords: List of common english word that is used to strip

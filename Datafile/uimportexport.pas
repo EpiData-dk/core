@@ -152,7 +152,6 @@ type
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
-    FStringMode:  TStringMode;
     DataStream:   TStream;
     function      Lang(LangCode: Integer; Const LangText: string): string;
     Function      UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
@@ -187,7 +186,6 @@ type
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
-    property      StringMode: TStringMode read FStringMode;
   end;
 
 implementation
@@ -195,7 +193,7 @@ implementation
 uses
   UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
   FileUtil, UQesHandler, Clipbrd, UStringUtils,
-  fpsallformats;
+  fpsallformats, UCheckFileIO;
 
   { TEpiImportExport }
 
@@ -271,7 +269,7 @@ begin
     Result := Result + Src[i];
     Inc(i);
   end;
-//  Result := EpiUnknownStrToUTF8(Result);
+  Result := EpiUnknownStrToUTF8(Result);
 end;
 
 procedure TEpiImportExport.WriteBuf(Buf: Array of Byte; Count: Integer);
@@ -323,7 +321,7 @@ begin
   z := 0;
   if Terminate then z := 0 else z := 1;
   StrBuf := StrAlloc(Count + z);
-  StrPLCopy(PChar(@StrBuf[0]), Str, Count - 1 + z);
+  StrPLCopy(PChar(@StrBuf[0]), EpiUtf8ToAnsi(Str), Count - 1 + z);
   DataStream.Write(StrBuf[0], Count);
   StrDispose(StrBuf);
 end;
@@ -437,10 +435,9 @@ begin
     // Create Fields.
     for i := 1 to FieldCount do
     begin
-      TmpField := TEpiField.Create;
+      TmpField := TEpiField.CreateField(FtList[i-1]);
       with TmpField do
       begin
-        FieldType := FtList[i-1];
         FieldName := 'V' + IntToStr(i);
         FieldNo   := i;
         FieldLength := 0;
@@ -467,18 +464,14 @@ begin
           ftBoolean:
             FieldLength := 1;
           ftInteger:
-            begin
-              if Length(TmpStr) > MaxIntegerLength then
-                FieldType := ftFloat;
-              FieldLength := Max(FieldLength, Length(TmpStr));
-            end;
+            FieldLength := Max(FieldLength, Length(TmpStr));
           ftFloat:
             begin
               FieldLength := Max(FieldLength, Length(TmpStr));
               if (StrCountChars(Tmpstr, CommaChars) > 0) then
                 NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
             end;
-          ftAlfa:
+          ftString:
             FieldLength := Max(FieldLength, Length(TmpStr));
           ftDate, ftEuroDate, ftYMDDate:
             FieldLength := 10;
@@ -498,14 +491,17 @@ begin
 
       if (TmpField.FieldLength = 0) and (TmpField.FieldType = ftInteger) then
       begin
-        TmpField.FieldType := ftAlfa;
+        TmpField := TEpiField.CreateField(ftString);
+        TmpField.FieldNo := DataFile.DataFields[i].FieldNo;
         TmpField.FieldLength := 1;
+        TmpField.FieldName := DataFile.DataFields[i].FieldName;
+        TmpField.NumDecimals := DataFile.DataFields[i].NumDecimals;
       end;
 
       case TmpField.FieldType of
         ftInteger, ftIDNUM:
           ok := IsInteger(TmpStr);
-        ftAlfa,ftUpperAlfa,
+        ftString,ftUpperAlfa,
         ftSoundex,ftCrypt:
           ok := True;
         ftBoolean:
@@ -524,7 +520,7 @@ begin
         ftYMDDate,ftYMDToday,ftEuroToday:
           ok := EpiIsDate(TmpStr, TmpField.FieldType);
       end;
-      if (not ok) and (FindFieldType(TmpStr, ftInteger) = ftAlfa) then
+      if (not ok) and (FindFieldType(TmpStr, ftInteger) = ftString) then
         FieldNameInRow1 := true;
     end;
     if FieldNameInRow1 then
@@ -573,6 +569,7 @@ var
   FloatChar, DoubleChar: Char;
   MissingBaseNum: Cardinal;
   DecS: Char;
+  TmpFieldType: TFieldType;
 
   function ReadSingleMissing(var MisVal: string): Single;
   var
@@ -629,17 +626,15 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create(0);
 
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftStata;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
     DataStream := TFileStream.Create(aFileName, fmOpenRead);
-    FStringMode := smAnsi;
 
     // ********************************
     //           STATA HEADER
@@ -707,7 +702,7 @@ begin
     if ByteBuf[1] = 1 then
       FByteOrder := boBigEndian;
 
-    // filetype: NumBuff[2] (always 1)   -  nummbuf[3] not used.
+    // filetype: NumBuff[2] (always 1)   -  NumBuff[3] not used.
     IF ByteBuf[2]<>1 THEN
     BEGIN
       ErrorText := Lang(23980, 'Incorrect format of stata-file');
@@ -728,11 +723,12 @@ begin
 
     // nobs (number of obs)
     NObs := ReadInts(4);
+    Size := NObs;
 
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
     DataStream.Read(CharBuf[0], FileLabelLength);
-    FileLabel := string(CharBuf);
+    FileLabel := EpiUnknownStrToUTF8(string(CharBuf));
 
     // time_stamp \0 terminated (not used in epidata)
     DataStream.Read(CharBuf[0], 18);
@@ -741,30 +737,23 @@ begin
     //         STATA DESCRIBTORS
     // ********************************
     // - typlist: the variable's types
-    // - varlist: variable names
     SetLength(TypeList, NVar);
     DataStream.Read(TypeList[0], nVar);
 
+    // - varlist: variable names
     SetLength(CharBuf, FieldNameLength * NVar);
     DataStream.Read(CharBuf[0], FieldNameLength * NVar);
 
-//    Sum := 0;
+    // - Skip reading sorting list
+    DataStream.Seek(2 * (NVar + 1), soCurrent);
+
+    // - Fmtlist: list of formats of the variables
+    //            only relevant for dates.
+    SetLength(ByteBuf, FmtLength * NVar);
+    DataStream.Read(ByteBuf[0], FmtLength * NVar);
+
     FOR i := 0 TO NVar - 1 DO
     BEGIN
-      TmpField := TEpiField.Create();
-      WITH TmpField DO
-      BEGIN
-        Question      := '';
-        FieldLength   := 0;
-        NumDecimals   := 0;
-        VariableLabel := '';
-        FieldX        := 0;
-        FieldY        := i;
-        QuestX        := 1;
-        QuestY        := i;
-        FieldName     := '';
-      END;
-
       // Update typelist to consts...
       if TypeList[i] = ByteChar then   TypeList[i] := ByteConst;
       if TypeList[i] = IntChar then    TypeList[i] := IntConst;
@@ -772,24 +761,11 @@ begin
       if TypeList[i] = FloatChar then  TypeList[i] := FloatConst;
       if TypeList[i] = DoubleChar then TypeList[i] := DoubleConst;
 
-      // - typelist
-      TmpField.NumDecimals := 0;
-      case TypeList[i] of
-        ByteConst: TmpField.FieldLength := 2;
-        IntConst:  TmpField.FieldLength := MaxIntegerLength;
-        LongConst: TmpField.FieldLength := 10;
-        FloatConst,
-        DoubleConst:
-          Begin
-            TmpField.FieldLength := 18;
-            TmpField.NumDecimals := 4;
-          End;
-      end;
 
-      IF (TypeList[i] in [IntConst, LongConst, FloatConst, DoubleConst]) THEN
-        TmpField.FieldType := ftFloat
-      ELSE IF Char(TypeList[i]) = ByteConst THEN
-        TmpField.FieldType := ftInteger
+      IF (TypeList[i] in [FloatConst, DoubleConst]) THEN
+        TmpFieldType := ftFloat
+      ELSE IF (TypeList[i] in [ByteConst, IntConst, LongConst]) THEN
+        TmpFieldType := ftInteger
       ELSE
       BEGIN
         if (Ord(TypeList[i]) - StrBaseNum) < 0 then
@@ -799,39 +775,11 @@ begin
           EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23984);
           Exit;
         END;
-        TmpField.FieldType := ftAlfa;
-        TmpField.FieldLength := (Ord(TypeList[i]) - StrBaseNum) * 2;
+        TmpFieldType := ftString;
       END;
-      // - varlist
-      StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
-      j := 1;
-      if (not CheckVariableName(StrBuf, AlfaNumChars)) or (FieldExists(StrBuf)) then
-      repeat
-        StrBuf := 'V '+ IntToStr(J);
-        INC(J);
-      until not FieldExists(StrBuf);
-      TmpField.FieldName := Trim(StrBuf);
-
-//      WriteLn(Format('Length %d of Field: %s', [TmpField.FieldLength, TmpField.FieldName]));
-//      Inc(Sum, TmpField.FieldLength);
-
-      AddField(TmpField);
-    END;
-
-    // - Skip reading sorting list
-    DataStream.Seek(2 * (NVar + 1), soCurrent);
-
-    // - Fmtlist: list of formats of the variables
-    //            only relevant for dates.
-    SetLength(CharBuf, FmtLength * NVar);
-    DataStream.Read(CharBuf[0], FmtLength * NVar);
-    FOR i := 0 TO NVar - 1 DO
-    BEGIN
-      TmpField := Fields[i];
-      StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FmtLength]), FmtLength));
 
       {Handle formats...}
-      StrBuf := trim(AnsiUpperCase(StrBuf));
+      StrBuf := Trim(AnsiUpperCase(StringFromBuffer(PChar(@ByteBuf[i * FmtLength]), FmtLength)));
       if not (StrBuf[1] = '%') then
       BEGIN
         ErrorText := Format(Lang(23986, 'Unknown format specified for variable %s'), [TmpField.FieldName]);
@@ -852,20 +800,18 @@ begin
           'T',
           'D':
             Begin
-              TmpField.FieldType   := ftEuroDate;
-              TmpField.FieldLength := 10;
+              TmpFieldType := ftEuroDate;
               // Detailed format.
               if Length(StrBuf) > (2+j) then
               begin
                 if (Pos('D', StrBuf) > Pos('M', StrBuf)) or
                    (Pos('D', StrBuf) > Pos('N', StrBuf)) or
                    (Pos('D', StrBuf) > Pos('L', StrBuf)) then
-                  TmpField.FieldType := ftDate;
+                  TmpFieldType := ftDate;
               end;
             End;
           // Number
-          '0'..'9':
-            Continue;
+          '0'..'9': ;
         else
           ErrorText := Format(Lang(23986, 'Unknown format specified for variable %s'), [TmpField.FieldName]);
           ErrorCode := EPI_NOT_VALID_STATA_FILE;
@@ -873,8 +819,55 @@ begin
           Exit;
         end;
       end;
-    end;
 
+      TmpField := TEpiField.CreateField(TmpFieldType, NObs);
+      WITH TmpField DO
+      BEGIN
+        FieldNo       := i;
+        Question      := '';
+        FieldLength   := 0;
+        NumDecimals   := 0;
+        VariableLabel := '';
+        FieldX        := 0;
+        FieldY        := i;
+        QuestX        := i;
+        QuestY        := i;
+        FieldName     := '';
+      END;
+
+      // - typelist
+      TmpField.NumDecimals := 0;
+      case TypeList[i] of
+        ByteConst: TmpField.FieldLength := 3;
+        IntConst:  TmpField.FieldLength := 5;
+        LongConst: TmpField.FieldLength := 10;
+        FloatConst,
+        DoubleConst:
+          Begin
+            TmpField.FieldLength := 18;
+            TmpField.NumDecimals := 4;
+          End;
+      else
+        TmpField.FieldLength := Ord(TypeList[i]) - StrBaseNum;
+      end;
+
+      // Dates:
+      if TmpField.FieldType in DateFieldTypes then
+        TmpField.FieldLength := 10;
+
+      // - varlist
+      StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
+      j := 1;
+      // TODO -o Torsten : Remove restriction since we now allow all characters in fieldnames.
+      if (not CheckVariableName(StrBuf, AlfaNumChars)) or (FieldExists(StrBuf)) then
+      repeat
+        StrBuf := 'V '+ IntToStr(J);
+        INC(J);
+      until not FieldExists(StrBuf);
+      TmpField.FieldName := Trim(StrBuf);
+
+      AddField(TmpField);
+    END;
 
     // - lbllist: names af value label
     SetLength(CharBuf, FieldNameLength * NVar);
@@ -936,12 +929,6 @@ begin
     UNTIL (DataStream.Position >= DataStream.Size-1) OR ((I=0) AND (ByteBuf[0]=0));
 
     // ********************************
-    // Commit field info to REC-file
-    // structure.
-    // ********************************
-    Save(FileName);
-
-    // ********************************
     //          STATA DATA
     // ********************************
     DecS := EpiInternalFormatSettings.DecimalSepator;
@@ -951,7 +938,7 @@ begin
         UpdateProgress(Trunc(100 * CurRec/nObs), Lang(0, 'Reading data'));
         FOR CurField := 0 TO NumFields-1 DO
         BEGIN
-          TmpField := Fields[Curfield];
+          TmpField := DataFields[Curfield];
           Case TypeList[CurField] of
             ByteConst,
             IntConst,
@@ -979,12 +966,12 @@ begin
                   if (I >= (J - 25)) and (I <= (J - 23)) then
                   begin
                     // Write all 9's, 8's or 7's as missing value.
-                    StrBuf := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
-                    TmpField.CheckField.MissingValues[I - (J - 25)] := StrBuf;
+                    TmpField.AsString[CurRec] := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
+                    TmpField.CheckField.MissingValues[I - (J - 25)] := TmpField.AsString[CurRec];
                   end else
-                    StrBuf := '';
+                    TmpField.IsMissing[CurRec] := true;
                 end else
-                  StrBuf := IntToStr(I);
+                  TmpField.AsInteger[CurRec] := I;
               end;
             FloatConst,
             DoubleConst:
@@ -1000,36 +987,31 @@ begin
                   else begin
                     TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)] :=
                       DupeString(StrBuf, TmpField.FieldLength - (TmpField.NumDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.NumDecimals);
-                    StrBuf := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
+                    TmpField.AsString[CurRec] := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
                   end;
                 end else begin
-                  StrBuf := FloatToStr(TmpFlt);
-                  IsFloat(StrBuf);
+                  {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
+                  if TmpField.FieldType in DateFieldTypes then
+                    TmpFlt := TmpFlt + 21916;
+                  TmpField.AsFloat[CurRec] := TmpFlt;
                 end;
               End;
           else
             // This is a string field.
             // +1 Because we need a termination character in case all bytes in field
             // are used for text.
-            SetLength(CharBuf, (TmpField.FieldLength div 2) + 1);
+            SetLength(CharBuf, TmpField.FieldLength + 1);
             FillChar(CharBuf[0], Length(CharBuf), 0);
-            DataStream.Read(CharBuf[0], TmpField.FieldLength div 2);
+            DataStream.Read(CharBuf[0], TmpField.FieldLength);
             // Hack - for some reason an empty PChar strings are not correctly assing the empty string.
             // => garbage is be stored in StrBuf!
             if CharBuf[0] = #0 then
               StrBuf := ''
             else
               StrBuf := EpiUnknownStrToUTF8(String(CharBuf));
+            TmpField.AsString[CurRec] := StrBuf;
           end;
-
-          IF (StrBuf <> '') AND (TmpField.Fieldtype in DateFieldTypes) THEN
-          BEGIN
-            {Date is converted from Stata's 1/1-1960 base to Delphi's 30/12-1899 base}
-            StrBuf := EpiDateTimeToStr(StrToFloat(StrBuf) + 21916, TmpField.FieldType);
-          END;  //if date variable
-          TmpField.AsData := StrBuf;
         END;  //for CurField
-        Write();
       END;  //for CurRec
     EXCEPT
       ErrorText := Lang(23934, 'Error reading data from Stata-file');
@@ -1061,7 +1043,7 @@ begin
               EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), string(CharBuf));
+            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(string(CharBuf)));
           END;  //for n
         END;  //if not end of DataStream
         //if stataversion 4
@@ -1072,7 +1054,7 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          TmpValSet := ValueLabels.ValueLabelSetByName(string(PChar(@CharBuf[0])));  // Get ValueLabelSet
+          TmpValSet := ValueLabels.ValueLabelSetByName(EpiUnknownStrToUTF8(string(PChar(@CharBuf[0]))));  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(4);                                               // Number of entries in label
@@ -1089,7 +1071,7 @@ begin
             CurRec := Integer(ByteBuf[I * 4]);                            // CurRec holds offset value into Txt[]
             TmpInt := Integer(ValBuf[I * 4]);                             // TmpInt holds actual value for value label
 
-            if (TmpInt >= $7FFFFFE5) then                                 //ignore valuelabels
+            if (TmpInt >= $7FFFFFE5) then                                 // ignore valuelabels
               Continue;
 
             if Trim(TmpValSet.ValueLabel[IntToStr(TmpInt)]) <> '' then
@@ -1099,8 +1081,8 @@ begin
               EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
             END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt),
-              StringFromBuffer(PChar(@CharBuf[CurRec]), 32000));
+            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(
+              StringFromBuffer(PChar(@CharBuf[CurRec]), 32000)));
           END;  //for i
         END;  //while
       END;  //if stataversion 6, 7 or 8
@@ -1137,12 +1119,11 @@ BEGIN
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create(0);
 
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftDBase;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
 
@@ -1163,6 +1144,7 @@ BEGIN
     END;
 
     NObs := ReadInts(4);
+    Size := NObs;
     HSize := ReadInts(2);
     RSize := ReadInts(2);
 
@@ -1178,44 +1160,36 @@ BEGIN
       IF Ord(CharBuf[0]) = $0D THEN
         Break;
 
-      TmpField := TEpiField.Create();
       TmpStr := Trim(StringFromBuffer(PChar(@CharBuf[0]), 11));
 
-      J := 1;
-      if (not CheckVariableName(TmpStr, AlfaNumChars)) or (FieldExists(TmpStr)) then
-      repeat
-        TmpStr := 'V '+ IntToStr(J);
-        INC(J);
-      until not FieldExists(TmpStr);
-      TmpField.FieldName := TmpStr;
       DataStream.Read(ByteBuf[0], 20);
 
       FieldLengths[High(FieldLengths)] := ByteBuf[4];
       Case CharBuf[11] of
         'C':
           Begin
-            TmpField.FieldType   := ftAlfa;
+            TmpField := TEpiField.CreateField(ftString, nObs);
             TmpField.FieldLength := ByteBuf[4];
           End;
         'D':
           Begin
-            TmpField.FieldType   := ftDate;
+            TmpField := TEpiField.CreateField(ftDate, nObs);
             TmpField.FieldLength := 10;
           End;
-        'F', 'N':
+        'F':
           Begin
-            IF (ByteBuf[5] = 0) AND (ByteBuf[4] < 5) THEN
-              TmpField.FieldType := ftInteger
-            ELSE
-              TmpField.FieldType := ftFloat;
-            IF ByteBuf[4] > 16 THEN
-              ByteBuf[4] := 16;
+            TmpField := TEpiField.CreateField(ftFloat, nObs);
             TmpField.FieldLength := ByteBuf[4];
             TmpField.NumDecimals := ByteBuf[5];
+          end;
+        'N':
+          Begin
+            TmpField := TEpiField.CreateField(ftInteger, nObs);
+            TmpField.FieldLength := ByteBuf[4];
           End;
         'L':
           Begin
-            TmpField.FieldType   := ftBoolean;
+            TmpField := TEpiField.CreateField(ftBoolean, nObs);
             TmpField.FieldLength := ByteBuf[4];
           End;
       else
@@ -1224,6 +1198,14 @@ BEGIN
         EpiLogger.AddError(Classname, 'ImportDBase', ErrorText, 0);
         Exit;
       end;
+
+      J := 1;
+      if (not CheckVariableName(TmpStr, AlfaNumChars)) or (FieldExists(TmpStr)) then
+      repeat
+        TmpStr := 'V '+ IntToStr(J);
+        INC(J);
+      until not FieldExists(TmpStr);
+      TmpField.FieldName := TmpStr;
 
       WITH TmpField DO
         BEGIN
@@ -1236,8 +1218,6 @@ BEGIN
       AddField(TmpField);
     end;
 
-    Save(FileName);
-
     {Read data}
     Ds := EpiInternalFormatSettings.DateSeparator;
     DataStream.Position := HSize;
@@ -1245,10 +1225,8 @@ BEGIN
     BEGIN
       UpdateProgress((CurRec * 100) DIV NObs, 'Reading records');
 
-      TmpInt := ReadInts(1);
-      RecordState := rsNormal;
-      if TmpInt = $2A then
-        RecordState := rsDeleted;
+      if ReadInts(1) = $2A then
+        Deleted[CurRec] := true;
 
       FOR CurField := 0 TO DataFields.Count - 1 DO
       with DataFields[CurField] do
@@ -1282,9 +1260,8 @@ BEGIN
               END;  //case ftBoolean
           END;  //case
         END;  //if s<>''
-        AsData := Trim(TmpStr);
+        AsString[CurRec] := Trim(TmpStr);
       END;  //for CurField
-      Write();
     END;  //for CurRec
     Result := true;
   FINALLY
@@ -1304,6 +1281,7 @@ var
   j: Integer;
   TmpField: TEpiField;
   skipfirstline, ok: Boolean;
+  lStart: LongInt;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
@@ -1312,7 +1290,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create();
 
   if (TxtImpSetting = nil) then
     TxtImpSetting := @ImportTxtGuess;
@@ -1325,7 +1303,6 @@ begin
   With DataFile do
   TRY
     FieldNaming := fnAuto;
-    OrgDataType := dftCSV;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Initializing'));
 
@@ -1366,10 +1343,10 @@ begin
         Exit;
     end;
 
-    DataFile.Save('');
-
     FieldLines := TStringList.Create;
-    for i := StrToInt(BoolToStr(skipfirstline, '1', '0')) to ImportLines.Count -1 do
+    lStart := StrToInt(BoolToStr(skipfirstline, '1', '0'));
+    Size := ImportLines.Count - lStart;
+    for i := lStart to ImportLines.Count -1 do
     begin
       if Trim(ImportLines[i]) = '' then continue;
       SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
@@ -1384,12 +1361,13 @@ begin
       for j := 0 to FieldLines.Count -1 do
       begin
         TmpStr   := FieldLines[j];
+        EpiLogger.Add('TmpStr before: ' + TmpStr, 3);
         if TmpStr = '.' then TmpStr := '';
         TmpField := DataFields[j];
         case TmpField.FieldType of
           ftInteger, ftIDNUM:
             ok := IsInteger(TmpStr);
-          ftAlfa,ftUpperAlfa,
+          ftString,ftUpperAlfa,
           ftSoundex,ftCrypt:
             ok := True;
           ftBoolean:
@@ -1408,6 +1386,7 @@ begin
           ftYMDDate,ftYMDToday,ftEuroToday:
             ok := EpiIsDate(TmpStr, TmpField.FieldType);
         end;
+        EpiLogger.Add('TmpStr AFTER: ' + TmpStr, 3);
         if (not ok) and (TmpStr <> '') then
         begin
           ErrorCode := EPI_IMPORT_FAILED;
@@ -1424,9 +1403,8 @@ begin
             [i + 1, TmpStr, TmpField.FieldName]);
           Exit;
         END;
-        TmpField.AsData := TmpStr;
+        TmpField.AsString[i + 1 - lStart] := TmpStr;
       end;
-      Write();
     end;
   finally
     if Assigned(QESHandler) then FreeAndNil(QESHandler);
@@ -1462,7 +1440,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create([eoIgnoreChecks, eoIgnoreIndex, eoIgnoreRelates, eoInMemory]);
+    DataFile := TEpiDataFile.Create();
 
   With DataFile do
   TRY
@@ -1497,6 +1475,7 @@ begin
     end;
 
     LineCount := Math.Min(NumGuessLines, RowEnd);
+    Size := RowEnd - RowStart + 1;
     FieldCount := ColEnd - ColStart + 1;
     SetLength(FtList, FieldCount);
 
@@ -1511,7 +1490,8 @@ begin
         // ACell = nil is considered missing.
         if not Assigned(ACell) then continue;
 
-        // TODO : Detect dates?
+        // Dates are currently (locally) hacked in FPSPreadSheets to strings
+        // and guessed in FindFieldType.
         case ACell^.ContentType of
           cctEmpty:
             Continue;
@@ -1539,10 +1519,9 @@ begin
     // Create Fields.
     for i := 1 to FieldCount do
     begin
-      TmpField := TEpiField.Create;
+      TmpField := TEpiField.CreateField(FtList[i-1], RowEnd - RowStart + 1);
       with TmpField do
       begin
-        FieldType := FtList[i-1];
         FieldName := 'V' + IntToStr(i);
         FieldNo   := i;
         FieldLength := 0;
@@ -1579,18 +1558,14 @@ begin
 
           case FieldType of
             ftInteger:
-              begin
-                if Length(TmpStr) > MaxIntegerLength then
-                  FieldType := ftFloat;
-                FieldLength := Max(FieldLength, Length(TmpStr));
-              end;
+              FieldLength := Max(FieldLength, Length(TmpStr));
             ftFloat:
               begin
                 FieldLength := Max(FieldLength, Length(TmpStr));
                 if (StrCountChars(Tmpstr, CommaChars) > 0) then
                   NumDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
               end;
-            ftAlfa:
+            ftString:
               FieldLength := Max(FieldLength, Length(TmpStr));
           end;
         end;
@@ -1612,8 +1587,8 @@ begin
       end;
 
       TmpField := DataFile.DataFields[i - ColStart];
-      if (FindFieldType(TmpStr) = ftAlfa) and
-         (TmpField.FieldType <> ftAlfa) then
+      if (FindFieldType(TmpStr) = ftString) and
+         (TmpField.FieldType <> ftString) then
         FieldNameInRow1 := true;;
     end;
 
@@ -1627,10 +1602,10 @@ begin
       end;
     end;
 
-    Save('');
     { ====================
       Start reading data
       ==================== }
+    Size := RowEnd - (RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0')))) + 1;
 
     for i := RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0'))) to RowEnd do
     begin
@@ -1642,18 +1617,17 @@ begin
 
         case FieldType of
           ftInteger, ftFloat:
-            AsData := FloatToStr(ACell^.NumberValue);
+            AsFloat[i - RowStart] := ACell^.NumberValue;
           ftDate, ftEuroDate, ftYMDDate:
             Begin
               TmpStr := ACell^.UTF8StringValue;
               EpiIsDate(TmpStr, FieldType);
-              AsData := TmpStr;
+              AsString[i - RowStart] := TmpStr;
             end;
-          ftAlfa:
-            AsData := ACell^.UTF8StringValue;
+          ftString:
+            AsString[i - RowStart] := ACell^.UTF8StringValue;
         end;
       end;
-      Write();
     end;
     UpdateProgress(100, Lang(0, 'Complete.'));
   finally
@@ -1776,7 +1750,7 @@ begin
       FmtLength := 49;
 
     NVar := NumDataFields;
-    NObs := NumRecords;
+    NObs := Size;
 
     // ********************************
     //           STATA HEADER
@@ -1827,7 +1801,7 @@ begin
               ELSE IF FieldLength >= 10 THEN
                 TmpChar := DoubleChar;  //&&
             END;
-          ftAlfa, ftUpperAlfa, ftCrypt:
+          ftString, ftUpperAlfa, ftCrypt:
             IF FieldLength > 80 THEN
               TmpChar := Chr(207)
             ELSE
@@ -1901,7 +1875,7 @@ begin
           TmpStr := '%' + IntToStr(FieldLength) + '.' + IntToStr(NumDecimals) + 'f';
         ftBoolean:
           TmpStr := '%1.0f';
-        ftAlfa, ftUpperAlfa, ftCrypt:
+        ftString, ftUpperAlfa, ftCrypt:
           TmpStr := '%' + IntToStr(FieldLength) + 's';
         ftSoundex:
           TmpStr := '%5s';
@@ -1940,8 +1914,7 @@ begin
           WritenValueLabels.Add(TmpStr);
 
         // Only for interger fields.
-        // TODO -o Torsten: Change with new REC-format when integer field can have more > 4 characters.
-        if not ((FieldType = ftInteger) or ((FieldType = ftFloat) and (NumDecimals = 0))) then
+        if not (FieldType = ftInteger) then
           TmpStr := '';
 
         TmpStr := UniqueValueLabelName(TmpStr, FieldNameLength);
@@ -1974,16 +1947,17 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
+    // TODO -o Torsten : Redesign to use correct decendant of TEpiField.
+    //    ie. use AsFloat, AsDate, AsString.... etc.
     TRY
       FOR CurRec := 1 TO NObs DO
       BEGIN
         UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-        Read(CurRec);
 
         FOR CurField := 0 TO NVar - 1 DO
         With DataFields[CurField] do
         BEGIN
-          TmpStr := AsData;
+          TmpStr := AsString[CurRec];
 
           // StrToFloat expects decimal separator to be in current locale.
           // Placed here so it doesn't interfere with missingvalues.
@@ -2069,7 +2043,7 @@ begin
               Exit;
             end;
             if TmpStr = '..' then TmpStr := '';
-            WriteString(TmpStr, FieldLength);
+            WriteString(TmpStr, FieldLength, False);
           end;
         END;  //for CurVar
       END;  //for CurObs
@@ -2099,7 +2073,7 @@ begin
         END;  //for j
       END;
     END ELSE BEGIN
-      //write value labels in Stata ver. 6 format
+      //write value labels in Stata ver. 6+ format
       SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
       FOR I := 0 TO WritenValueLabels.Count - 1 DO
       BEGIN
@@ -2115,7 +2089,7 @@ begin
           Move(CurRec, ByteBuf[J * 4], 4);
           TmpInt := StrToInt(VLblSet.Values[J]);
           Move(TmpInt, ValBuf[J * 4], 4);
-          TmpStr := VLblSet.Labels[J];
+          TmpStr := EpiUtf8ToAnsi(VLblSet.Labels[J]);
           Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
           Inc(CurRec, Length(TmpStr) + 1);
         end;
@@ -2195,7 +2169,7 @@ begin
     WriteInts(eYear, 1);                             //header offset 1 - year of last update
     WriteInts(eMonth, 1);                            //header offset 2 - month of last update
     WriteInts(eDay, 1);                              //header offset 3 - date of last update
-    WriteInts(NumRecords, 4);                        //header offset 4 - Number of records
+    WriteInts(Size, 4);                        //header offset 4 - Number of records
     WriteInts(32 + (DataFields.Count * 32) + 1, 2);  //header offset 8 - Header size in bytes
     WriteInts(dbRecLength + 1, 2);                   //header offset 10 - Record size in bytes
 
@@ -2215,7 +2189,7 @@ begin
       CASE FieldType of                                             // Field type   (Byte  11)
         ftInteger, ftIDNUM, ftFloat:         WriteString('N', 1, False);
         ftSoundex,
-        ftAlfa,ftUpperAlfa,ftCrypt:          WriteString('C', 1, False);
+        ftString,ftUpperAlfa,ftCrypt:        WriteString('C', 1, False);
         ftDate,ftToday,ftYMDDate,ftYMDToday,
         ftEuroDate,ftEuroToday:              WriteString('D', 1, False);
         ftBoolean:                           WriteString('L', 1, False);
@@ -2233,14 +2207,13 @@ begin
     WriteInts($0D, 1);   //write Header Terminator
 
     {write records}
-    NObs := NumRecords;
+    NObs := Size;
     TRY
       FOR CurRec := 1 TO NObs DO
       BEGIN
         UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-        Read(CurRec);
 
-        IF RecordState = rsDeleted THEN
+        IF Deleted[CurRec] THEN
           WriteInts($2A, 1)
         ELSE
           WriteInts($20, 1);
@@ -2248,9 +2221,9 @@ begin
         FOR CurField := 0 TO DataFields.Count - 1 DO
         WITH DataFields[CurField] DO
         BEGIN
-          TmpStr := AsData;
+          TmpStr := AsString[CurRec];
           CASE FieldType of
-            ftAlfa, ftUpperAlfa, ftCrypt,
+            ftString, ftUpperAlfa, ftCrypt,
             ftBoolean, ftSoundex,
             ftInteger, ftIDNUM, ftFloat:
               WriteString(Trim(TmpStr), FieldLength, False);
@@ -2294,7 +2267,7 @@ var
   CurRec: Integer;
 begin
   EpiLogger.IncIndent;
-  EpiLogger.Add(ClassName, 'ExportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) = '', aFileName, 'ClipBoard'));
+  EpiLogger.Add(ClassName, 'ExportTXT', 2, 'Filename = ' + BoolToStr(Trim(aFilename) <> '', aFileName, 'ClipBoard'));
   Result := false;
 
   // Sanity checks:
@@ -2330,15 +2303,14 @@ begin
     end;
 
     { Write Data }
-    NObs := NumRecords;
+    NObs := Size;
     for CurRec := 1 to NObs do
     begin
        UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-       Read(CurRec);
 
        for i := 0 to NumDataFields - 1 do
        begin
-        TmpStr := DataFields[i].AsData;
+        TmpStr := DataFields[i].AsString[CurRec];
 
         if ExpSettings^.FixedFormat then
           TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
@@ -2350,7 +2322,7 @@ begin
           ftFloat:
             TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator,
                         DecSep, [rfReplaceAll]);
-          ftAlfa, ftUpperAlfa, ftCrypt, ftSoundex:
+          ftString, ftUpperAlfa, ftCrypt, ftSoundex:
             TmpStr := AnsiQuotedStr(TmpStr, QuoteCh);
         end;
 
@@ -2408,11 +2380,10 @@ begin
     end;
 
     { Write Data }
-    NObs := NumRecords;
+    NObs := Size;
     for CurRec := 1 to NObs do
     begin
       UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
-      Read(CurRec);
 
       for i := 0 to NumDataFields - 1 do
       begin
@@ -2421,7 +2392,7 @@ begin
         ACell^.Col := i;
         ACell^.Row := CurRec - 1 + OffSet;
 
-        TmpStr := DataFields[i].AsData;
+        TmpStr := DataFields[i].AsString[CurRec];
         case DataFields[i].FieldType of
 {          ftDate, ftEuroDate, ftYMDDate,
           ftToday, ftEuroToday, ftYMDToday:

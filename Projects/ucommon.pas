@@ -20,11 +20,12 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataGlobals, uimportform, Controls;
+  UEpiDataGlobals, uimportform, Controls, UEpiUtils;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
-  aDialog.Filter := 'Supported data files|*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
+  aDialog.Filter := 'Supported data files|*.recxml;*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
+                  + 'EpiData XML Data file (*.recxml)|*.recxml|'
                   + 'EpiData data file (*.rec)|*.rec|'
                   + 'Stata file (*.dta)|*.dta|'
                   + 'Text file (*.txt,*.csv)|*.txt|'
@@ -48,7 +49,7 @@ begin
 
   Result.Add('Num fields = ' + inttostr(Df.NumFields));
   Result.Add('Num data fields = ' + inttostr(Df.NumDataFields));
-  Result.Add('Num records = ' + inttostr(Df.NumRecords));
+  Result.Add('Num records = ' + inttostr(Df.Size));
 end;
 
 function  LoadDataFile(var Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
@@ -61,11 +62,12 @@ var
 begin
   if Assigned(Df) then FreeAndNil(Df);
 
-  LoadOptions := [eoInMemory];
+  LoadOptions := [];
   If IgnoreChecks then
     Include(LoadOptions, eoIgnoreChecks);
 
-  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
+  if (AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC') and
+     (AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECXML') then
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
@@ -85,10 +87,10 @@ begin
     end;
     FreeAndNil(Importer);
   end else begin
-    Df := TEpiDataFile.Create(LoadOptions);
+    Df := TEpiDataFile.Create();
     Df.OnProgress := ShowProgress;
     Df.OnPassword := GetPassword;
-    Result := Df.Open(FileName);
+    Result := Df.Open(FileName, LoadOptions);
   end;
 end;
 
@@ -103,7 +105,8 @@ var
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
 begin
-  if AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC' then
+  if (AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC') and
+     (AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECXML') then
   begin
     Exporter := TEpiImportExport.Create();
     Exporter.OnProgress := ShowProgress;
@@ -124,29 +127,18 @@ begin
   If IgnoreChecks then
     Include(SaveOptions, eoIgnoreChecks);
 
-  OutDf := TEpiDataFile.Create(SaveOptions);
+  OutDf := TEpiDataFile.Create(Df.Size);
+  OutDf.OnProgress   := ShowProgress;
   OutDf.OnPassword   := GetPassword;
   OutDf.Filelabel    := Df.FileLabel;
   OutDf.ValueLabels.Assign(Df.ValueLabels);
 
   for i := 0 to Df.NumFields - 1 do
   begin
-    TmpField := TEpiField.Create();
-    TmpField.DataFile := OutDf;
-    Df[i].Clone(TmpField);
+    TmpField := Df[i].Clone(OutDf);
     OutDf.AddField(TmpField);
   end;
-
-  OutDf.Save(FileName);
-
-  for I := 1 to Df.NumRecords do
-  begin
-    ShowProgress(nil, (I * 100) DIV Df.NumRecords, 'Saving Records');
-    Df.Read(I);
-    for J := 0 to Df.NumFields - 1 do
-      OutDf[J].AsData := Df[J].AsData;
-    OutDf.Write();
-  end;
+  OutDf.Save(FileName, SaveOptions);
   FreeAndNil(OutDf);
 end;
 
@@ -193,8 +185,8 @@ begin
     res.Append('');
     TMPSTR := epd.Filename;
     res.Append(Format('DATAFILE: %s',[tmpstr]));
-    TMPSTR := epd.Filelabel;
-    res.append('Filelabel: ' + epd.Filelabel);
+(*    TMPSTR := Utf8ToAnsi(epd.Filelabel);
+    res.append('Filelabel: ' + TMPSTR);
     res.Append('');
 
     {Write datafile information}
@@ -202,12 +194,12 @@ begin
       tmpstr := FitLength('Last revision:',23)+
         FormatDateTime('d. mmm yyyy t',
         FileDateToDateTime(FileAge(epd.Filename)));
-    res.Append(tmpstr);
+    res.Append(tmpstr);    *)
     res.Append(FitLength('Number of fields:',23)+IntToStr(epd.NumFields));
     tmpStr:=FitLength('Number of records:',23);
-    IF epd.NumRecords=-1
+    IF epd.Size=-1
     THEN tmpStr:=tmpStr+'Error in datafile. Number of records cannot be counted.'
-    ELSE tmpStr:=tmpStr+IntToStr(epd.NumRecords);
+    ELSE tmpStr:=tmpStr+IntToStr(epd.Size);
     res.Append(tmpStr);
     tmpStr:=FitLength('Checks applied: ',23);
     IF (epd.CheckFile.HasCheckFile) and (not epd.CheckFile.ErrorInFile) THEN
@@ -398,11 +390,11 @@ NUM Name       Variable label        Type            Width  Checks              
                 IF (nN2<aValueLabelSet.count) AND (nN2=25)
                 THEN ValLabelStr[25]:='...';
               END;
-            tmpType:=epd[nN].FieldtypeName;
+            tmpType:=FieldTypeToFieldTypeName(epd[nN].FieldType, nil);
             tmpWidth:=IntToStr(epd[nN].FieldLength);
             IF (epd[nN].Fieldtype=ftFloat) AND (epd[nN].NumDecimals>0)
             THEN tmpWidth:=tmpWidth+':'+IntToStr(epd[nN].NumDecimals);
-            IF epd[nN].Fieldtype=ftCrypt THEN tmpWidth:=IntToStr(epd[nN].CryptLength);
+//            IF epd[nN].Fieldtype=ftCrypt THEN tmpWidth:=IntToStr(epd[nN].CryptLength);
             {Write first line}
             IF UsesValueLabels
             THEN res.Append(Format('%3d %-10s %-20s  %-15s %-5s  %-20s  %-20s',

@@ -986,15 +986,15 @@ BEGIN
     LocalCheck.ShowValueLabel := True;
     
   TRY
-    ComLegDf := TEpiDataFile.Create([eoInMemory, eoIgnoreRelates]);
+    ComLegDf := TEpiDataFile.Create(0);
     ComLegDF.OnPassword := FDf.OnPassword;
-    IF NOT ComLegDf.Open(TmpStr) THEN
+    IF NOT ComLegDf.Open(TmpStr, [eoIgnoreRelates]) THEN
     begin
       Result := ReportError(Format(Lang(20108,'Datafile %s could not be opened'), [TmpStr]));
       Exit;
     end;
 
-    IF ComLegDf.NumRecords = 0 THEN
+    IF ComLegDf.Size = 0 THEN
     BEGIN
       Result := ReportError(Format(Lang(22334,'Datafile %s does not contain any records'), [TmpStr]));
       Exit;
@@ -1028,11 +1028,10 @@ BEGIN
     End;
 
     // Todo -o Torsten: Index
-{    IF (ComLegDf.IndexCount < 2) THEN
+    IF (ComLegDf.IndexFile.IndexCount < 2) THEN
     BEGIN
       Result := ReportError(Format(Lang(22832, 'Datafile %s must contain two KEY-fields'), [ComLegDf.Filename]));
-      Result:=NIL;
-    END    }
+    END;
 
     LocalValueLabel := TValueLabelSet.Create;
     LocalValueLabel.Name := CurCommand;
@@ -1041,11 +1040,9 @@ BEGIN
     ValueField := ComLegDf.IndexFile.IndexFields[1];
     TextField  := ComLegDf.IndexFile.Indexfields[2];
 
-    FOR i := 1 TO ComLegDf.NumRecords DO
-    BEGIN
-      ComLegDf.Read(i);
-      LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsData, 1, 30), Copy(TextField.AsData, 1, 80));
-    END;
+    FOR i := 1 TO ComLegDf.Size DO
+      LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsString[i], 1, 30), Copy(TextField.AsString[i], 1, 80));
+
     FDf.ValueLabels.AddValueLabelSet(LocalValueLabel);
 
     LocalCheck.ValueLabel := LocalValueLabel;
@@ -1552,7 +1549,7 @@ BEGIN
                 TChkDefine(TmpChkCmd).NumDecimals := 0;
             END;
           END  //if numeric
-          ELSE IF CurCommand[1] = '_' THEN TChkDefine(TmpChkCmd).FieldType := ftAlfa
+          ELSE IF CurCommand[1] = '_' THEN TChkDefine(TmpChkCmd).FieldType := ftString
           ELSE IF CurCommand = '<MM/DD/YYYY>' THEN TChkDefine(TmpChkCmd).FieldType := ftDate
           ELSE IF Copy(CurCommand, 1, 2) = '<A' THEN
             BEGIN
@@ -1608,12 +1605,11 @@ BEGIN
             END;
           END;
           IF not Assigned(TmpField) THEN
-            TmpField := TEpiField.Create();
+            TmpField := TEpiField.CreateField(TChkDefine(TmpChkCmd).FieldType, 1);
           TmpField.FieldName   := TChkDefine(TmpChkCmd).FieldName;
-          TmpField.Fieldtype   := TChkDefine(TmpChkCmd).FieldType;
           TmpField.FieldLength := TChkDefine(TmpChkCmd).Length;
           TmpField.NumDecimals := TChkDefine(TmpChkCmd).NumDecimals;
-          TmpField.AsData      := '';
+          TmpField.IsMissing[1] := true;
           TmpField.CheckField  := TEpiCheckField.Create();
           TmpField.CheckField.FieldScope := TChkDefine(TmpChkCmd).Scope;
 
@@ -1640,11 +1636,11 @@ BEGIN
             FDf.CheckFile.GlobalDefaultVal := CurCommand;
             for n:=0 TO FDf.NumFields - 1 DO
             BEGIN
-              IF (FDf[n].FieldType in [ftInteger, ftAlfa, ftUpperAlfa, ftFloat, ftCrypt]) THEN
+              IF (FDf[n].FieldType in [ftInteger, ftString, ftUpperAlfa, ftFloat, ftCrypt]) THEN
               BEGIN
                 IF (TmpStr = 'ALL') THEN FDf[n].CheckField.HasGlobalDefaultVal:=true
                 ELSE
-                  IF (FDf[n].Fieldtype in [ftAlfa, ftUpperAlfa, ftCrypt]) AND
+                  IF (FDf[n].Fieldtype in [ftString, ftUpperAlfa, ftCrypt]) AND
                      ((TmpStr='ALLSTRINGS') OR (TmpStr='ALLSTRING')) THEN FDf[n].CheckField.HasGlobalDefaultVal:=true
                 ELSE
                   IF (FDf[n].Fieldtype in [ftInteger, ftFloat]) AND
@@ -2656,7 +2652,7 @@ BEGIN
         BEGIN
           CASE TChkDefine(cmd).FieldType OF
             ftInteger:   S := DupeString('#', TChkDefine(cmd).Length);
-            ftAlfa:      S := DupeString('_', TChkDefine(cmd).Length);
+            ftString:      S := DupeString('_', TChkDefine(cmd).Length);
             ftDate:      S := '<MM/DD/YYYY>';
             ftYMDDate:   S := '<YYYY/MM/DD>';          //&&
             ftUpperAlfa: S := '<A' + DupeString('A', TChkDefine(cmd).Length-1) + '>';
