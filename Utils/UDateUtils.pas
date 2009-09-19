@@ -169,7 +169,7 @@ var
   eDay,eMonth,eYear: Word;
 BEGIN
   // TODO : Incomplete conversion of string-to-date. Overlap with IsDate!?!?
-//  DecodeDate(Date, eYear, eMonth, eDay);
+  //  DecodeDate(Date, eYear, eMonth, eDay);
   Case Len OF
     8:  IF StrToInt(Copy(Str, 7, 2)) < 50 THEN
           eYear := 2000 + StrToInt(Copy(Str, 7, 2))

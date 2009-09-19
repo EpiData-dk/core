@@ -714,13 +714,6 @@ begin
 
     // nvars (number of vars)
     nVar := ReadInts(2);
-    IF nVar>800 THEN
-    BEGIN
-      ErrorText := Format(Lang(23982, 'The stata-file contains %d variables.~A maximum of 800 variables can be imported.'), [nVar]);
-      ErrorCode := EPI_TOO_MANY_VARIABLES;
-      EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23982);
-      Exit;
-    END;
 
     // nobs (number of obs)
     NObs := ReadInts(4);
@@ -729,7 +722,7 @@ begin
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
     DataStream.Read(CharBuf[0], FileLabelLength);
-    FileLabel := EpiUnknownStrToUTF8(string(CharBuf));
+    FileLabel := StringFromBuffer(PChar(@CharBuf[0]), FileLabelLength);
 
     // time_stamp \0 terminated (not used in epidata)
     DataStream.Read(CharBuf[0], 18);
@@ -857,6 +850,7 @@ begin
       // - varlist
       StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);
       TmpField.FieldName := Trim(CreateUniqueFieldName(StrBuf));
+
       AddField(TmpField);
     END;
 
@@ -998,7 +992,7 @@ begin
             if CharBuf[0] = #0 then
               StrBuf := ''
             else
-              StrBuf := EpiUnknownStrToUTF8(String(CharBuf));
+              StrBuf := StringFromBuffer(PChar(@CharBuf[0]), Length(CharBuf));
             TmpField.AsString[CurRec] := StrBuf;
           end;
         END;  //for CurField
