@@ -1511,6 +1511,7 @@ begin
     // Password
     if RequirePassword then
     begin
+      // TODO : What about UTF-8 encoding??
       ElemNode := RecXml.CreateElement('PASSWORD');
       TmpStr := Trim(Password);
       FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
@@ -1552,17 +1553,17 @@ begin
         if Fields[CurField].FieldType = ftQuestion then
           continue;
 
-        WTmpStr := Trim(UTF8Decode(Fields[CurField].AsString[CurRec]));
-        ElemNode.SetAttribute('F'+IntToStr(CurField), WTmpStr);
+        ElemNode.SetAttribute('F'+IntToStr(CurField + 1), UTF8Decode(Fields[CurField].AsString[CurRec]));
       end;
       SectionNode.AppendChild(ElemNode);
     end;
 
-    UpdateProgress(0, Lang(0, 'Writing to disk.'));
+    UpdateProgress(100, Lang(0, 'Writing to disk.'));
     WriteXMLFile(RecXml, FileName);
     UpdateProgress(100, Lang(0, 'Complete.'));
   finally
     EpiLogger.DecIndent;
+    if Assigned(RecXml) then FreeAndNil(RecXml);
   end;
 end;
 

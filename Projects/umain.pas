@@ -254,18 +254,22 @@ end;
 function TMainForm.ShowProgress(Sender: TObject; Percent: Cardinal; Msg: string): TProgressResult;
 begin
   if (not pgBar.Visible) then pgBar.Visible := true;
-  pgBar.Position := Percent;
   result := prNormal;
 
-  // Refreshing the whole form in Lazarus causes a significant slowdown.
-  // In D7 refreshing the Progressbar cause graphical fuck-ups in the progressbar.
-  if Msg <> pgLabel.Caption then
-  begin
+  if Percent = 0 then
     pgLabel.Caption := Msg;
-  //  pgLabel.Refresh;
+
+  if Percent <> pgBar.Position then
+  begin
+    pgBar.Position := Percent;
+
+    if Msg <> pgLabel.Caption then
+    begin
+      pgLabel.Caption := Msg;
+    //  pgLabel.Refresh;
+    end;
+    Application.ProcessMessages;
   end;
-//  pgBar.Refresh;
-  Application.ProcessMessages;
 end;
 
 procedure TMainForm.GetPassword(Sender: TObject; ReqT: TRequestPasswordType; var password: string);
