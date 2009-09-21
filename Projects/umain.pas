@@ -256,7 +256,7 @@ begin
   if (not pgBar.Visible) then pgBar.Visible := true;
   result := prNormal;
 
-  if Percent = 0 then
+  if Percent in [0, 100] then
     pgLabel.Caption := Msg;
 
   if Percent <> pgBar.Position then

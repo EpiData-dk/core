@@ -1253,7 +1253,7 @@ var
   QESHandler: TQesHandler;
   ImportLines: TStrings;
   TmpStr, EncStr: String;
-  FieldLines: TStringList;
+  FieldLines: TStrings;
   i: Integer;
   j: Integer;
   TmpField: TEpiField;

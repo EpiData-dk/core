@@ -1468,6 +1468,9 @@ var
   TmpStr: String;
   WTmpStr: WideString;
   DataStream: TFileStream;
+  RecordNode: TDOMElement;
+  EncData: String;
+  S: String;
 
   function RequirePassword: boolean;
   var
@@ -1480,90 +1483,205 @@ var
     result := false;
   end;
 
+  function StringToXml(Const Src: String): string;
+  var
+    i: Integer;
+  begin
+    for i := 1 to Length(Src) do
+    begin
+      case Src[i] of
+        '&':
+          Result := Result  + '&amp;';
+        '"':
+          Result := Result  + '&qout;';
+        '<':
+          Result := Result  + '&lt;';
+        '>':
+          Result := Result  + '&gt;';
+      else
+        Result := Result  + Src[i];
+      end;
+    end;
+  end;
+
 begin
   EpiLogger.IncIndent;
-  EpiLogger.Add(Classname, 'InternalSaveOld', 3);
+  EpiLogger.Add(Classname, 'InternalSave', 3);
   result := false;
+  DataStream := nil;
+  RecXml := nil;
 
-  try
-    UpdateProgress(0, Lang(0, 'Constructing header.'));
-    RecXml := TXMLDocument.Create;
+  if eoIgnoreChecks in Options then
+  begin
+    try
+      UpdateProgress(0, Lang(0, 'Constructing header.'));
+      RecXml := TXMLDocument.Create;
 
-    // **********************
-    // Global <EPIDATA> structure
-    // **********************
-    RootNode := RecXml.CreateElement('EPIDATA');
-    RecXml.AppendChild(RootNode);
-    RootNode := RecXml.DocumentElement;
+      // **********************
+      // Global <EPIDATA> structure
+      // **********************
+      RootNode := RecXml.CreateElement('EPIDATA');
+      RecXml.AppendChild(RootNode);
+      RootNode := RecXml.DocumentElement;
 
-    // **********************
-    // <SETTINGS> Section
-    // **********************
-    SectionNode := RecXml.CreateElement('SETTINGS');
-    // File label.
-    ElemNode := RecXml.CreateElement('FILELABEL');
-    ElemNode.AppendChild(RecXml.CreateTextNode(UTF8Decode(FileLabel)));
-    SectionNode.AppendChild(ElemNode);
-    // Version
-    ElemNode := RecXml.CreateElement('VERSION');
-    ElemNode.AppendChild(RecXml.CreateTextNode(IntToStr(FileVersion)));
-    SectionNode.AppendChild(ElemNode);
-    // Password
-    if RequirePassword then
-    begin
-      // TODO : What about UTF-8 encoding??
-      ElemNode := RecXml.CreateElement('PASSWORD');
-      TmpStr := Trim(Password);
-      FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
-      TmpStr := B64Encode(TmpStr);
-      FCrypter.Reset;
-      ElemNode.AppendChild(RecXml.CreateTextNode(TmpStr));
+      // **********************
+      // <SETTINGS> Section
+      // **********************
+      SectionNode := RecXml.CreateElement('SETTINGS');
+      // File label.
+      ElemNode := RecXml.CreateElement('FILELABEL');
+      ElemNode.AppendChild(RecXml.CreateTextNode(UTF8Decode(FileLabel)));
       SectionNode.AppendChild(ElemNode);
-    end;
-    RootNode.AppendChild(SectionNode);
-    // **********************
-    // <FIELDS> Section
-    // **********************
-    SectionNode := RecXml.CreateElement('FIELDS');
-    for CurField := 0 to Fields.Count - 1 do
-    with Fields[CurField] do
-    begin
-      // Create <FIELD ... /> lines
-      ElemNode := RecXml.CreateElement('FIELD');
-      ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
-      ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
-      ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
-      ElemNode.SetAttribute('DEC', IntToStr(FieldDecimals));
-      ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
+      // Version
+      ElemNode := RecXml.CreateElement('VERSION');
+      ElemNode.AppendChild(RecXml.CreateTextNode(IntToStr(FileVersion)));
       SectionNode.AppendChild(ElemNode);
-    end;
-    RootNode.AppendChild(SectionNode);
-
-    // **********************
-    // <RECORDS> Section
-    // **********************
-    SectionNode := RecXml.CreateElement('RECORDS');
-    RootNode.AppendChild(SectionNode);
-    for CurRec := 1 to Size do
-    begin
-      UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
-      ElemNode := RecXml.CreateElement('REC');
-      for CurField := 0 to Fields.Count - 1 do
+      // Password
+      if RequirePassword then
       begin
-        if Fields[CurField].FieldType = ftQuestion then
-          continue;
-
-        ElemNode.SetAttribute('F'+IntToStr(CurField + 1), UTF8Decode(Fields[CurField].AsString[CurRec]));
+        // TODO : What about UTF-8 encoding??
+        ElemNode := RecXml.CreateElement('PASSWORD');
+        TmpStr := Trim(Password);
+        FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
+        TmpStr := B64Encode(TmpStr);
+        FCrypter.Reset;
+        ElemNode.AppendChild(RecXml.CreateTextNode(TmpStr));
+        SectionNode.AppendChild(ElemNode);
       end;
-      SectionNode.AppendChild(ElemNode);
-    end;
+      RootNode.AppendChild(SectionNode);
+      // **********************
+      // <FIELDS> Section
+      // **********************
+      SectionNode := RecXml.CreateElement('FIELDS');
+      for CurField := 0 to Fields.Count - 1 do
+      with Fields[CurField] do
+      begin
+        // Create <FIELD ... /> lines
+        ElemNode := RecXml.CreateElement('FIELD');
+        ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
+        ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
+        ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
+        ElemNode.SetAttribute('DEC', IntToStr(FieldDecimals));
+        ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
+        SectionNode.AppendChild(ElemNode);
+      end;
+      RootNode.AppendChild(SectionNode);
 
-    UpdateProgress(100, Lang(0, 'Writing to disk.'));
-    WriteXMLFile(RecXml, FileName);
-    UpdateProgress(100, Lang(0, 'Complete.'));
-  finally
-    EpiLogger.DecIndent;
-    if Assigned(RecXml) then FreeAndNil(RecXml);
+      // **********************
+      // <RECORDS> Section
+      // **********************
+      SectionNode := RecXml.CreateElement('RECORDS');
+      RootNode.AppendChild(SectionNode);
+      for CurRec := 1 to Size do
+      begin
+        UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
+        ElemNode := RecXml.CreateElement('REC');
+        for CurField := 0 to Fields.Count - 1 do
+        begin
+          if Fields[CurField].FieldType = ftQuestion then
+            continue;
+
+          ElemNode.SetAttribute('F'+IntToStr(CurField + 1), UTF8Decode(Fields[CurField].AsString[CurRec]));
+        end;
+        SectionNode.AppendChild(ElemNode);
+      end;
+      UpdateProgress(100, Lang(0, 'Writing to disk.'));
+      WriteXMLFile(RecXml, FileName);
+      UpdateProgress(100, Lang(0, 'Complete.'));
+      Result := true;
+    finally
+      EpiLogger.DecIndent;
+      if Assigned(RecXml) then FreeAndNil(RecXml);
+    end;
+  end else begin
+    try
+      DataStream := TFileStream.Create(FileName, fmCreate);
+      UpdateProgress(0, Lang(0, 'Writing header (2).'));
+
+      // **********************
+      // Global <EPIDATA> structure
+      // **********************
+      TmpStr := '<?xml version="1.0"?>' + LineEnding +
+        '<EPIDATA>' + LineEnding;
+
+      // **********************
+      // <SETTINGS> Section
+      // **********************
+      TmpStr := TmpStr +
+        '  <SETTINGS>' + LineEnding +
+        '    <FILELABEL>' + FileLabel + '</FILELABEL>' + LineEnding +
+        '    <VERSION>' + IntToStr(FileVersion) + '</VERSION>' + LineEnding;
+      if RequirePassword then
+      begin
+        // TODO : What about UTF-8 encoding??
+        ElemNode := RecXml.CreateElement('PASSWORD');
+        EncData := Trim(Password);
+        FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
+        EncData := B64Encode(EncData);
+        FCrypter.Reset;
+        TmpStr := TmpStr +
+          '    <PASSWORD>' + EncData + '</PASSWORD>' + LineEnding;
+      end;
+      TmpStr := TmpStr +
+        '  </SETTINGS>' + LineEnding;
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+
+      // **********************
+      // <FIELDS> Section
+      // **********************
+      TmpStr := '  <FIELDS>' + LineEnding;
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+      for CurField := 0 to Fields.Count - 1 do
+      with Fields[CurField] do
+      begin
+        TmpStr := '    <FIELD ';
+        TmpStr := TmpStr + 'NAME="' + FieldName;
+        TmpStr := TmpStr + '" TYPE="' + IntToStr(Ord(FieldType));
+        TmpStr := TmpStr + '" LENGTH="' + IntToStr(FieldLength);
+        TmpStr := TmpStr + '" DEC="' + IntToStr(FieldDecimals);
+        TmpStr := TmpStr + '" LABEL="' + VariableLabel;
+        TmpStr := TmpStr + '"/>"' + LineEnding;
+        DataStream.Write(TmpStr[1], Length(TmpStr));
+      end;
+      TmpStr := '  </FIELDS>' + LineEnding;
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+
+      // **********************
+      // <RECORDS> Section
+      // **********************
+      TmpStr := '  <RECORDS>' + LineEnding;
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+      for CurRec := 1 to Size do
+      begin
+        UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Writing records (2).'));
+        TmpStr := '    <REC';
+        for CurField := 0 to Fields.Count - 1 do
+        with Fields[CurField] do
+        begin
+          S := ' F' + IntToStr(CurField + 1) + '="';
+          Case FieldType of
+            ftQuestion:
+              Continue;
+            ftString:
+              S := S + StringToXml(AsString[CurRec]);
+          else
+            S := S + AsString[CurRec];
+          end;
+          TmpStr := TmpStr + S + '"';
+        end;
+        TmpStr := TmpStr + '/>' + LineEnding;
+        DataStream.Write(TmpStr[1], Length(TmpStr));
+      end;
+      TmpStr := '  </RECORDS>' + LineEnding;
+      TmpStr := TmpStr +
+        '</EPIDATA>';
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+      UpdateProgress(100, Lang(0, 'Complete (2).'));
+      Result := true;
+    finally
+      EpiLogger.DecIndent;
+      if Assigned(DataStream) then FreeAndNil(DataStream);
+    end;
   end;
 end;
 
