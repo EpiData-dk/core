@@ -915,7 +915,7 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
-    DecS := EpiInternalFormatSettings.DecimalSepator;
+    DecS := EpiInternalFormatSettings.DecimalSeparator;
     TRY
       FOR CurRec := 1 TO nObs DO
       BEGIN
@@ -949,6 +949,7 @@ begin
                 Begin
                   if (I >= (J - 25)) and (I <= (J - 23)) then
                   begin
+                    // TODO : New method for missing values when TMissingValues is implemented.
                     // Write all 9's, 8's or 7's as missing value.
                     TmpField.AsString[CurRec] := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
                     TmpField.CheckField.MissingValues[I - (J - 25)] := TmpField.AsString[CurRec];
@@ -1938,7 +1939,7 @@ begin
           // StrToFloat expects decimal separator to be in current locale.
           // Placed here so it doesn't interfere with missingvalues.
           IF FieldType = ftFloat THEN
-            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator, DecimalSeparator, []);
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSeparator, DecimalSeparator, []);
 
           IF trim(TmpStr)='' THEN
             TmpStr := '..';
@@ -2293,12 +2294,13 @@ begin
         if ExpSettings^.FixedFormat then
           TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
 
+        // TODO : Redesign using AsString, AsData... etc.
         case DataFields[i].FieldType of
           ftDate, ftEuroDate, ftYMDDate:
             TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DateSeparator,
                         DateSep, [rfReplaceAll]);
           ftFloat:
-            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSepator,
+            TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DecimalSeparator,
                         DecSep, [rfReplaceAll]);
           ftString, ftUpperAlfa, ftCrypt, ftSoundex:
             TmpStr := AnsiQuotedStr(TmpStr, QuoteCh);

@@ -62,7 +62,7 @@ end;
 
 procedure TSettingsForm.applyButClick(Sender: TObject);
 begin
-  EpiExternalFormatSettings.DecimalSepator :=
+  EpiExternalFormatSettings.DecimalSeparator :=
     BoolToStr(decCombo.ItemIndex = decCombo.Items.Count - 1 ,
       decEdit.Text, decCombo.Items[decCombo.ItemIndex])[1];
   EpiExternalFormatSettings.DateSeparator :=
@@ -80,12 +80,12 @@ procedure TSettingsForm.FormCreate(Sender: TObject);
 var
   i: LongInt;
 begin
-  i := decCombo.Items.IndexOf(EpiExternalFormatSettings.DecimalSepator);
+  i := decCombo.Items.IndexOf(EpiExternalFormatSettings.DecimalSeparator);
   if i = -1 then
   begin
     decCombo.ItemIndex := decCombo.Items.Count - 1;
     decComboChange(decCombo);
-    decEdit.Text := EpiExternalFormatSettings.DecimalSepator;
+    decEdit.Text := EpiExternalFormatSettings.DecimalSeparator;
   end else
     decCombo.ItemIndex := i;
 

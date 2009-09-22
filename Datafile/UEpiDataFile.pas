@@ -152,6 +152,7 @@ type
 
   TEpiField = class(TObject)
   private
+    FMissingValuesSet: TObject;
     FOwner:        TEpiFields;
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
@@ -216,6 +217,8 @@ type
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
     property  CheckField:  TEpiCheckField read FCheckField write FCheckField;
     property  ValueLabelSet: TValueLabelSet read GetValueLabel;
+    // TODO : TMissingValuesSet
+    property  MissingValuesSet: TObject read FMissingValuesSet;
     property  Owner:       TEpiFields read FOwner;
     property  DataFile:    TEpiDataFile read FDataFile write FDataFile;
     property  Size: Integer read GetSize write SetSize;
@@ -462,7 +465,9 @@ type
   TEpiDataFile = class(TObject)
   private
     FFileName:     string;                  // Physical datafile name.
-    FFileLabel:    string;                  // Label of datafile.
+    FFileLabel:    string;                  // Label of datafile. (METADATA)
+    FMissingValues: TObject;
+    FStudy:        string;                  // Study information (METADATA)
     FFields:       TEpiFields;              // Container for all associated fields. (Owned)
     FDataFields:   TEpiFields;              // - holds list of data fields only. (Not Owned)
     FQuestFields:  TEpiFields;              // - holds list of question fields only. (Not Owned. FieldType = ftQuestion)
@@ -518,6 +523,8 @@ type
     property   DataFields:  TEpiFields read FDataFields;
     property   QuestFields: TEpiFields read FQuestFields;
     property   ValueLabels: TValueLabelSets read GetValueLabels;
+    // TODO : TMissingValueSets;
+    property   MissingValues: TObject read FMissingValues;
     property   Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
     property   Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
@@ -526,6 +533,7 @@ type
     property   Options:     TEpiDataFileOptions read FOptions;
     property   FileName:    string read FFileName write FFileName;
     property   FileLabel:   string read FFileLabel write FFileLabel;
+    property   Study:       string read FStudy write FStudy;
     property   Password:    string read FPassword write FPassword;
     property   FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
     Property   NumFields:   Cardinal read GetNumFields;
@@ -1199,7 +1207,7 @@ begin
     begin
       for i := 0 to ElemNode.Attributes.Length - 1 do
       begin
-        // 10 should be enough - fieldcount > 5 digits is not likely.
+        // 5 should be enough - fieldcount > 5 digits is not likely.
         Idx := StrToInt(Copy(ElemNode.Attributes[i].NodeName, 2, 5));
         Field[Idx].AsString[CurRec] := UTF8Encode(ElemNode.Attributes[i].NodeValue);
       end;
@@ -1459,18 +1467,13 @@ end;
 
 function TEpiDataFile.InternalSave: boolean;
 var
-  RecXml: TXMLDocument;
-  RootNode: TDOMElement;
-  SectionNode: TDOMElement;
   CurField: Integer;
-  ElemNode: TDOMElement;
   CurRec: Integer;
   TmpStr: String;
-  WTmpStr: WideString;
   DataStream: TFileStream;
-  RecordNode: TDOMElement;
   EncData: String;
-  S: String;
+  j: Integer;
+  i: Integer;
 
   function RequirePassword: boolean;
   var
@@ -1509,179 +1512,152 @@ begin
   EpiLogger.Add(Classname, 'InternalSave', 3);
   result := false;
   DataStream := nil;
-  RecXml := nil;
 
-  if eoIgnoreChecks in Options then
-  begin
-    try
-      UpdateProgress(0, Lang(0, 'Constructing header.'));
-      RecXml := TXMLDocument.Create;
+  try
+    DataStream := TFileStream.Create(FileName, fmCreate);
+    UpdateProgress(0, Lang(0, 'Writing header.'));
 
-      // **********************
-      // Global <EPIDATA> structure
-      // **********************
-      RootNode := RecXml.CreateElement('EPIDATA');
-      RecXml.AppendChild(RootNode);
-      RootNode := RecXml.DocumentElement;
+    // **********************
+    // Global <EPIDATA> structure
+    // **********************
+    TmpStr := '<?xml version="1.0"?>' + LineEnding +
+      '<EPIDATA>' + LineEnding;
 
-      // **********************
-      // <SETTINGS> Section
-      // **********************
-      SectionNode := RecXml.CreateElement('SETTINGS');
-      // File label.
-      ElemNode := RecXml.CreateElement('FILELABEL');
-      ElemNode.AppendChild(RecXml.CreateTextNode(UTF8Decode(FileLabel)));
-      SectionNode.AppendChild(ElemNode);
-      // Version
-      ElemNode := RecXml.CreateElement('VERSION');
-      ElemNode.AppendChild(RecXml.CreateTextNode(IntToStr(FileVersion)));
-      SectionNode.AppendChild(ElemNode);
-      // Password
-      if RequirePassword then
-      begin
-        // TODO : What about UTF-8 encoding??
-        ElemNode := RecXml.CreateElement('PASSWORD');
-        TmpStr := Trim(Password);
-        FCrypter.EncryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
-        TmpStr := B64Encode(TmpStr);
-        FCrypter.Reset;
-        ElemNode.AppendChild(RecXml.CreateTextNode(TmpStr));
-        SectionNode.AppendChild(ElemNode);
-      end;
-      RootNode.AppendChild(SectionNode);
-      // **********************
-      // <FIELDS> Section
-      // **********************
-      SectionNode := RecXml.CreateElement('FIELDS');
-      for CurField := 0 to Fields.Count - 1 do
-      with Fields[CurField] do
-      begin
-        // Create <FIELD ... /> lines
-        ElemNode := RecXml.CreateElement('FIELD');
-        ElemNode.SetAttribute('NAME', UTF8Decode(FieldName));
-        ElemNode.SetAttribute('TYPE', IntToStr(Ord(FieldType)));
-        ElemNode.SetAttribute('LENGTH', IntToStr(FieldLength));
-        ElemNode.SetAttribute('DEC', IntToStr(FieldDecimals));
-        ElemNode.SetAttribute('LABEL', UTF8Decode(VariableLabel));
-        SectionNode.AppendChild(ElemNode);
-      end;
-      RootNode.AppendChild(SectionNode);
-
-      // **********************
-      // <RECORDS> Section
-      // **********************
-      SectionNode := RecXml.CreateElement('RECORDS');
-      RootNode.AppendChild(SectionNode);
-      for CurRec := 1 to Size do
-      begin
-        UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Constructing records.'));
-        ElemNode := RecXml.CreateElement('REC');
-        for CurField := 0 to Fields.Count - 1 do
-        begin
-          if Fields[CurField].FieldType = ftQuestion then
-            continue;
-
-          ElemNode.SetAttribute('F'+IntToStr(CurField + 1), UTF8Decode(Fields[CurField].AsString[CurRec]));
-        end;
-        SectionNode.AppendChild(ElemNode);
-      end;
-      UpdateProgress(100, Lang(0, 'Writing to disk.'));
-      WriteXMLFile(RecXml, FileName);
-      UpdateProgress(100, Lang(0, 'Complete.'));
-      Result := true;
-    finally
-      EpiLogger.DecIndent;
-      if Assigned(RecXml) then FreeAndNil(RecXml);
-    end;
-  end else begin
-    try
-      DataStream := TFileStream.Create(FileName, fmCreate);
-      UpdateProgress(0, Lang(0, 'Writing header (2).'));
-
-      // **********************
-      // Global <EPIDATA> structure
-      // **********************
-      TmpStr := '<?xml version="1.0"?>' + LineEnding +
-        '<EPIDATA>' + LineEnding;
-
-      // **********************
-      // <SETTINGS> Section
-      // **********************
+    // **********************
+    // <SETTINGS> Section
+    // **********************
+    TmpStr := TmpStr +
+      '  <SETTINGS>' + LineEnding +
+      '    <VERSION>' + IntToStr(FileVersion) + '</VERSION>' + LineEnding +
+      '    <DATESEP>' + EpiInternalFormatSettings.DateSeparator + '</DATESEP>' + LineEnding +
+      '    <DECIMALSEP>' + EpiInternalFormatSettings.DecimalSeparator + '</DECIMALSEP>' + LineEnding;
+    if RequirePassword then
+    begin
+      // TODO : What about UTF-8 encoding??
+      EncData := Trim(Password);
+      FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
+      EncData := B64Encode(EncData);
+      FCrypter.Reset;
       TmpStr := TmpStr +
-        '  <SETTINGS>' + LineEnding +
-        '    <FILELABEL>' + FileLabel + '</FILELABEL>' + LineEnding +
-        '    <VERSION>' + IntToStr(FileVersion) + '</VERSION>' + LineEnding;
-      if RequirePassword then
+        '    <PASSWORD>' + EncData + '</PASSWORD>' + LineEnding;
+    end;
+    TmpStr := TmpStr +
+      '  </SETTINGS>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+
+    // **********************
+    // <METADATA> Section
+    // **********************
+    TmpStr :=
+      '  <METADATA>' + LineEnding +
+      '    <FILELABEL>' + StringToXml(FileLabel) + '</FILELABEL>' + LineEnding +
+      '    <STUDY>' + StringToXml(Study) + '</STUDY>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+    if Assigned(ValueLabels) then
+    with ValueLabels do
+    begin
+      TmpStr := '    <LABELS>' + LineEnding;
+      for i := 0 to Count - 1 do
+      with Items[i] do
       begin
-        // TODO : What about UTF-8 encoding??
-        ElemNode := RecXml.CreateElement('PASSWORD');
-        EncData := Trim(Password);
-        FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-        EncData := B64Encode(EncData);
-        FCrypter.Reset;
         TmpStr := TmpStr +
-          '    <PASSWORD>' + EncData + '</PASSWORD>' + LineEnding;
+          '      <LABEL name="' + StringToXml(Name) + '"';
+        case LabelType of
+          vltFile:
+            TmpStr := TmpStr + ' external="' + StringToXml(Name) + '"/>' + LineEnding;
+          vltGlobal,
+          vltLocal:
+            Begin
+              // TODO : Types on valuelabels.
+              TmpStr := TmpStr + ' type="0">' + LineEnding;
+              for j := 0 to Count - 1 do
+                TmpStr := TmpStr  +
+                  '        <VALUES value="' + Values[j] + '" label="' + Labels[j] + '"' + LineEnding;
+            end;
+        end;
+        TmpStr := TmpStr +
+          '      </LABEL>';
       end;
-      TmpStr := TmpStr +
-        '  </SETTINGS>' + LineEnding;
+      TmpStr := '    </LABELS>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
+    end;
+    if Assigned(MissingValues) then
+    begin
+      // TODO : MissingValues...
+    end;
+    // TODO : <USERDEFINED>
 
-      // **********************
-      // <FIELDS> Section
-      // **********************
-      TmpStr := '  <FIELDS>' + LineEnding;
+    TmpStr :=
+      '  </METADATA>' + LineEnding;
+
+    // **********************
+    // <FIELDS> Section
+    // **********************
+    TmpStr := '  <FIELDS>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+    for CurField := 0 to Fields.Count - 1 do
+    with Fields[CurField] do
+    begin
+      TmpStr := '    <FIELD ';
+      TmpStr := TmpStr + 'NAME="' + StringToXml(FieldName);
+      TmpStr := TmpStr + '" TYPE="' + IntToStr(Ord(FieldType));
+      TmpStr := TmpStr + '" LENGTH="' + IntToStr(FieldLength);
+      TmpStr := TmpStr + '" DEC="' + IntToStr(FieldDecimals);
+      if Assigned(ValueLabelSet) then
+        TmpStr := TmpStr  + '" VLABEL="' + ValueLabelSet.Name;
+      // TODO : TMissingValuesSet
+      if Assigned(MissingValuesSet) then
+        TmpStr := TmpStr  + '" VLABEL="' + MissingValuesSet.ClassName;
+      if Trim(VariableLabel) <> '' then
+        TmpStr := TmpStr + '" LABEL="' + StringToXml(VariableLabel);
+      TmpStr := TmpStr + '"/>"' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
+    end;
+    TmpStr := '  </FIELDS>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+
+    // **********************
+    // <RECORDS> Section
+    // **********************
+    TmpStr := '  <RECORDS>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+    for CurRec := 1 to Size do
+    begin
+      UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Writing records.'));
+      TmpStr := '    <REC';
       for CurField := 0 to Fields.Count - 1 do
       with Fields[CurField] do
       begin
-        TmpStr := '    <FIELD ';
-        TmpStr := TmpStr + 'NAME="' + FieldName;
-        TmpStr := TmpStr + '" TYPE="' + IntToStr(Ord(FieldType));
-        TmpStr := TmpStr + '" LENGTH="' + IntToStr(FieldLength);
-        TmpStr := TmpStr + '" DEC="' + IntToStr(FieldDecimals);
-        TmpStr := TmpStr + '" LABEL="' + VariableLabel;
-        TmpStr := TmpStr + '"/>"' + LineEnding;
-        DataStream.Write(TmpStr[1], Length(TmpStr));
-      end;
-      TmpStr := '  </FIELDS>' + LineEnding;
-      DataStream.Write(TmpStr[1], Length(TmpStr));
-
-      // **********************
-      // <RECORDS> Section
-      // **********************
-      TmpStr := '  <RECORDS>' + LineEnding;
-      DataStream.Write(TmpStr[1], Length(TmpStr));
-      for CurRec := 1 to Size do
-      begin
-        UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Writing records (2).'));
-        TmpStr := '    <REC';
-        for CurField := 0 to Fields.Count - 1 do
-        with Fields[CurField] do
-        begin
-          S := ' F' + IntToStr(CurField + 1) + '="';
-          Case FieldType of
-            ftQuestion:
-              Continue;
-            ftString:
-              S := S + StringToXml(AsString[CurRec]);
-          else
-            S := S + AsString[CurRec];
-          end;
-          TmpStr := TmpStr + S + '"';
+        EncData := ' F' + IntToStr(CurField + 1) + '="';
+        Case FieldType of
+          ftQuestion:
+            Continue;
+          ftString:
+            EncData := EncData + StringToXml(AsString[CurRec]);
+        else
+          EncData := EncData + AsString[CurRec];
         end;
-        TmpStr := TmpStr + '/>' + LineEnding;
-        DataStream.Write(TmpStr[1], Length(TmpStr));
+        TmpStr := TmpStr + EncData + '"';
       end;
-      TmpStr := '  </RECORDS>' + LineEnding;
-      TmpStr := TmpStr +
-        '</EPIDATA>';
+      TmpStr := TmpStr + ' ST="';
+      if Verified[CurRec] then
+        TmpStr := TmpStr + '2'
+      else if Deleted[CurRec] then
+        TmpStr := TmpStr + '1'
+      else
+        TmpStr := TmpStr + '0';
+      TmpStr := TmpStr + '"/>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
-      UpdateProgress(100, Lang(0, 'Complete (2).'));
-      Result := true;
-    finally
-      EpiLogger.DecIndent;
-      if Assigned(DataStream) then FreeAndNil(DataStream);
     end;
+    TmpStr := '  </RECORDS>' + LineEnding;
+    TmpStr := TmpStr +
+      '</EPIDATA>';
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+    UpdateProgress(100, Lang(0, 'Complete.'));
+    Result := true;
+  finally
+    EpiLogger.DecIndent;
+    if Assigned(DataStream) then FreeAndNil(DataStream);
   end;
 end;
 
@@ -1695,9 +1671,9 @@ var
   CurRec: Integer;
   T: String;
   Z: Integer;
-  Fmt: TFormatSettings;
   TmpStr: String;
   FieldNames: TStrings;
+  Fmt: TFormatSettings;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSaveOld', 3);
@@ -1711,10 +1687,10 @@ begin
 
   Stream := TFileStream.Create(FileName, fmCreate);
   ChkIO := nil;
-  Fmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSepator;
 
   try
     FieldNames := TStringList.Create;
+    Fmt.DecimalSeparator := '.';
 
     // - Encryption required:
     Crypt := false;
@@ -2503,15 +2479,13 @@ end;
 procedure TEpiFloatField.SetAsString(const index: Integer;
   const AValue: EpiString);
 var
-  Fmt: TFormatSettings;
   TmpStr: String;
 begin
-  Fmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSepator;
-  TmpStr := StringReplace(AValue, ',', EpiInternalFormatSettings.DecimalSepator, [rfReplaceAll]);
+  TmpStr := StringReplace(AValue, ',', EpiInternalFormatSettings.DecimalSeparator, [rfReplaceAll]);
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
   else
-    AsFloat[Index] := StrToFloatDef(TmpStr, DefaultMissing, Fmt);
+    AsFloat[Index] := StrToFloatDef(TmpStr, DefaultMissing, EpiInternalFormatSettings);
 end;
 
 procedure TEpiFloatField.SetAsValue(const index: Integer;

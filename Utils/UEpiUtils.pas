@@ -178,9 +178,9 @@ var
   Code: integer;
   V: Extended;
 begin
-  Value := StringReplace(Value, ',', EpiInternalFormatSettings.DecimalSepator, [rfReplaceAll]);
+  Value := StringReplace(Value, ',', EpiInternalFormatSettings.DecimalSeparator, [rfReplaceAll]);
   Val(Value, V, Code);
-  if Value[Length(Value)] = EpiInternalFormatSettings.DecimalSepator then
+  if Value[Length(Value)] = EpiInternalFormatSettings.DecimalSeparator then
     Code := Length(Value);
   Result := (Code = 0);
 end;

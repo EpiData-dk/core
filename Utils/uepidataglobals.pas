@@ -11,11 +11,6 @@ uses
 type
   TCharSet = Set of Char;
 
-  TEpiSettings = record
-    DateSeparator: Char;
-    DecimalSepator: Char;
-  end;
-
 CONST
   CoreVersion = 2;
 
@@ -85,15 +80,8 @@ var
   DateChars:       TCharSet;
   IntegerChars:    TCharSet;
   FloatChars:      TCharSet;
-
-  EpiExternalFormatSettings: TEpiSettings;
-
-const
-  EpiInternalFormatSettings: TEpiSettings = (
-    DateSeparator:  '/';
-    DecimalSepator: '.';
-  );
-
+  EpiInternalFormatSettings: TFormatSettings;
+  EpiExternalFormatSettings: TFormatSettings;
   {$I ErrorCodes.inc}
 
 implementation
@@ -130,6 +118,10 @@ begin
   FloatChars   := IntegerChars + CommaChars;
 
   // Format setting.
+  EpiInternalFormatSettings.ThousandSeparator := '.';
+  EpiInternalFormatSettings.DecimalSeparator  := ',';
+  EpiInternalFormatSettings.DateSeparator     := '/';
+  EpiInternalFormatSettings.TimeSeparator     := ':';
   EpiExternalFormatSettings := EpiInternalFormatSettings;
 
   Initialized := true;
