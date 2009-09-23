@@ -6,21 +6,24 @@ unit UValueLabels;
 interface
 
 uses
-  Classes;
+  Classes, UDataFileTypes;
   
 type
+  // vlsLocal retained for compatability with old .REC/.CHK format.
+  TValueLabelSetScope = (vlsGlobal, vlsLocal, vlsFile);
 
-  TValueLabelSetType = (vltGlobal, vltLocal, vltFile);
+  { TValueLabelSet }
 
   TValueLabelSet = class(TObject)
   private
     FData:     TStringList;
     FName:     string;
-    FLabelType: TValueLabelSetType;
+    FLabelScope: TValueLabelSetScope;
+    FLabelType: TFieldType;
     function   GetValue(const aLabel: string): string;
-    procedure  SetValue(const aLabel: string; const aValue: string);
+    procedure  SetValue(const aLabel, aValue: string);
     function   GetLabel(const aValue: string): string;
-    procedure  SetLabel(const aValue: string; const aLabel: string);
+    procedure  SetLabel(const aValue, aLabel: string);
     function   GetCount:integer;
     function   GetValues(index:integer):string;
     procedure  SetValues(index:integer;value:string);
@@ -31,14 +34,15 @@ type
     destructor  Destroy; override;
     procedure   AddValueLabelPair(const aValue, aLabel: string);
     procedure   Clone(var Dest: TValueLabelSet);
-    procedure   Clear();
+    procedure   Clear;
     property    Name: string read FName write FName;
     property    Value[const aLabel: string]: string read GetValue write SetValue;
     property    ValueLabel[const aValue: string]: string read GetLabel write SetLabel;
     property    Count: Integer read GetCount;
     property    Values[index:integer]:string read GetValues write SetValues;
     property    Labels[index:integer]:string read GetLabels write SetLabels;
-    property    LabelType: TValueLabelSetType read FLabelType write FLabelType;
+    property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
+    property    LabelType: TFieldType read FLabelType write FLabelType;
   end;
 
   TValueLabelSets = class(TObject)
@@ -189,7 +193,7 @@ begin
 
   Dest.Clear;
   Dest.Name := Name;
-  Dest.LabelType := LabelType;
+  Dest.LabelScope := LabelScope;
   for i := 0 to FData.Count -1 do
     Dest.AddValueLabelPair(FData[i], TString(FData.Objects[i]).Str);
 end;
@@ -197,6 +201,7 @@ end;
 constructor TValueLabelSet.Create;
 begin
   FName := '';
+  LabelType := ftInteger;
   FData := TStringList.create;
   FData.Sorted := true;
   FData.CaseSensitive := false;

@@ -10,11 +10,14 @@ uses
 
 type
 
+  { TString }
+
   TString = class(TObject)
   private
     fStr: string;
   public
-    constructor Create(const AStr: string) ;
+    constructor Create(const AStr: string);
+    destructor Destroy; override;
     property Str: string read FStr write FStr;
   end;
 
@@ -44,6 +47,12 @@ constructor TString.Create(const AStr: string) ;
 begin
    inherited Create;
    FStr := AStr;
+end;
+
+destructor TString.Destroy;
+begin
+  fStr := '';
+  inherited Destroy;
 end;
 
 

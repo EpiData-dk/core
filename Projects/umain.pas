@@ -264,10 +264,7 @@ begin
     pgBar.Position := Percent;
 
     if Msg <> pgLabel.Caption then
-    begin
       pgLabel.Caption := Msg;
-    //  pgLabel.Refresh;
-    end;
     Application.ProcessMessages;
   end;
 end;

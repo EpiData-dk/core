@@ -164,7 +164,7 @@ type
     FFieldY:       Cardinal;
     FFieldType:    TFieldType;
     FFieldLength:  Cardinal;
-    FFieldDecimals:  Cardinal;
+    FFieldDecimals: Cardinal;
     FVariableLabel: string;
     FCheckField:   TEpiCheckField;
     function       GetValueLabel: TValueLabelSet;
@@ -907,7 +907,7 @@ begin
   // - 2: Result has NO Datafile. This could be a temporary clone, etc.
   //      Copy the Valuelabelset, assign it to Result field (and posibly also create
   //      the CheckField) and let and TEpiDataFile.AddField handle Valuelabels.
-  //      This will reset label type (to vltLocal), since at present it is not known
+  //      This will reset label type (to vlsLocal), since at present it is not known
   //      how the valuelabelset is related to anything else...
   if Assigned(ValueLabelSet) then
   begin
@@ -918,7 +918,7 @@ begin
       If not Assigned(Result.CheckField) then
         Result.CheckField := TEpiCheckField.Create();
       ValueLabelSet.Clone(Result.CheckField.FValueLabel);
-      Result.ValueLabelSet.LabelType := vltLocal;
+      Result.ValueLabelSet.LabelScope := vlsLocal;
     end;
   end;
 
@@ -953,6 +953,8 @@ begin
   FFieldLength   := 0;
   FFieldDecimals   := 0;
   FVariableLabel := '';
+  // TODO : Remove when TMissingValueSet is done.
+  FMissingValuesSet := nil;
 end;
 
 { TEpiFields }
@@ -1243,7 +1245,7 @@ var
   TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
   TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
   TmpName: string[10];
-  TmpQuestion, TmpStr: string;
+  TmpLabel, TmpStr: string;
   CurRec: Integer;
   StrBuf: String;
   DataStream: TMemoryStream;
@@ -1323,7 +1325,7 @@ begin
       ReadLn(TxtFile,
              TmpFieldChar, TmpName, TmpQuestX, TmpQuestY,
              TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldTypeInt, TmpLength,
-             TmpFieldColor, dummy, TmpQuestion);
+             TmpFieldColor, dummy, TmpLabel);
 
       // Field types.
       if TmpFieldTypeInt >= 100 then
@@ -1345,6 +1347,9 @@ begin
         TmpFieldType := ftString;
 
       EField := TEpiField.CreateField(TmpFieldType);
+      // Trim text information.
+      TmpName := Trim(TmpName);
+      TmpLabel := Trim(TmpLabel);
 
       with EField do
       begin
@@ -1356,10 +1361,14 @@ begin
         FieldDecimals := 0;
         if TmpFieldTypeInt >= 100 then
           FieldDecimals := TmpFieldTypeInt - 100;
-        VariableLabel := EpiUnknownStrToUTF8(StringReplace(TmpQuestion, '_', '-', [rfReplaceAll]));
+        VariableLabel := EpiUnknownStrToUTF8(StringReplace(TmpLabel, '_', '-', [rfReplaceAll]));
 
+        // In old style .REC files, first word in label is the name of the field. Remove it.
+        if Pos(TmpName, VariableLabel) > 0 then
+          VariableLabel := Trim(Copy(VariableLabel, Length(TmpName)+1, Length(VariableLabel)));
         // Ensure valid variable name.
         FieldName := Trim(CreateUniqueFieldName(TmpName));
+        // If the field name was invalid (not very likely) use it in variable label.
         IF FieldName <> TmpName THEN
           VariableLabel := TmpName + ' ' + VariableLabel;
 
@@ -1530,7 +1539,8 @@ begin
       '  <SETTINGS>' + LineEnding +
       '    <VERSION>' + IntToStr(FileVersion) + '</VERSION>' + LineEnding +
       '    <DATESEP>' + EpiInternalFormatSettings.DateSeparator + '</DATESEP>' + LineEnding +
-      '    <DECIMALSEP>' + EpiInternalFormatSettings.DecimalSeparator + '</DECIMALSEP>' + LineEnding;
+      '    <DECIMALSEP>' + EpiInternalFormatSettings.DecimalSeparator + '</DECIMALSEP>' + LineEnding +
+      '    <MISSINGMARK>' + TEpiStringField.DefaultMissing + '</MISSINGMARK>' + LineEnding;
     if RequirePassword then
     begin
       // TODO : What about UTF-8 encoding??
@@ -1549,8 +1559,12 @@ begin
     // <METADATA> Section
     // **********************
     TmpStr :=
-      '  <METADATA>' + LineEnding +
-      '    <FILELABEL>' + StringToXml(FileLabel) + '</FILELABEL>' + LineEnding +
+      '  <METADATA>' + LineEnding;
+    if FileLabel <> '' then
+      TmpStr := TmpStr +
+      '    <FILELABEL>' + StringToXml(FileLabel) + '</FILELABEL>' + LineEnding;
+    if Study <> '' then
+      TmpStr := TmpStr +
       '    <STUDY>' + StringToXml(Study) + '</STUDY>' + LineEnding;
     DataStream.Write(TmpStr[1], Length(TmpStr));
     if Assigned(ValueLabels) then
@@ -1561,24 +1575,26 @@ begin
       with Items[i] do
       begin
         TmpStr := TmpStr +
-          '      <LABEL name="' + StringToXml(Name) + '"';
-        case LabelType of
-          vltFile:
-            TmpStr := TmpStr + ' external="' + StringToXml(Name) + '"/>' + LineEnding;
-          vltGlobal,
-          vltLocal:
+          '      <LABEL NAME="' + StringToXml(Name) + '"';
+        case LabelScope of
+          vlsFile:
+            TmpStr := TmpStr + ' EXTERNAL="' + StringToXml(Name) + '"/>' + LineEnding;
+          vlsGlobal,
+          vlsLocal:
             Begin
-              // TODO : Types on valuelabels.
-              TmpStr := TmpStr + ' type="0">' + LineEnding;
+              TmpStr := TmpStr + ' TYPE="' + IntToStr(Ord(LabelType)) + '">' + LineEnding;
               for j := 0 to Count - 1 do
+              begin
                 TmpStr := TmpStr  +
-                  '        <VALUES value="' + Values[j] + '" label="' + Labels[j] + '"' + LineEnding;
+                  '        <SET VALUE="' + Values[j] + '" LABEL="' + Labels[j] + '"/>' + LineEnding;
+
+              end;
             end;
         end;
         TmpStr := TmpStr +
-          '      </LABEL>';
+          '      </LABEL>' + LineEnding;
       end;
-      TmpStr := '    </LABELS>' + LineEnding;
+      TmpStr := TmpStr + '    </LABELS>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     if Assigned(MissingValues) then
@@ -1586,9 +1602,10 @@ begin
       // TODO : MissingValues...
     end;
     // TODO : <USERDEFINED>
-
     TmpStr :=
       '  </METADATA>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+
 
     // **********************
     // <FIELDS> Section

@@ -318,7 +318,7 @@ BEGIN
       n := 0;
       for i := 0 to FDf.ValueLabels.Count -1 do
       begin
-        if FDf.ValueLabels[i].LabelType = vltGlobal then
+        if FDf.ValueLabels[i].LabelScope = vlsGlobal then
         begin
           LabelToText(FDf.ValueLabels[i]);
           Inc(n);
@@ -480,7 +480,7 @@ function TCheckFileIO.RetrieveFieldBlock(CurField: TEpiField): boolean;
 VAR
 {  n:Integer;
   tmpBool: boolean;
-  ValueLabelType: TValueLabelSetType;
+  ValueLabelType: TValueLabelSetScope;
   ValueLabelUse:  string;
   ValueLabelShow: Boolean;
   tmpCommands: TChkCommands;    }
@@ -812,17 +812,17 @@ BEGIN
        2  ...
      END
      Name in ValueLabels has a $ in the end
-     ValueLabelType=vltLocal
+     ValueLabelType=vlsLocal
 
   2. COMMENT LEGAL USE labelname
-     ValueLabelType=vltGlobal
+     ValueLabelType=vlsGlobal
 
   3. COMMENT LEGAL USE fieldname
-     ValueLabelType=vltLocal
+     ValueLabelType=vlsLocal
      Current field (or command) has ValueLabelIsFieldRef = true
 
   4. COMMENT LEGAL datafilename
-     ValueLabelType=vltFile
+     ValueLabelType=vlsFile
 
   }
   Result := true;
@@ -843,7 +843,8 @@ BEGIN
     IF CurCommand = 'SHOW' THEN LocalCheck.ShowValueLabel := True;
 
     LocalValueLabel := TValueLabelSet.Create;
-    LocalValueLabel.LabelType := vltLocal;
+    LocalValueLabel.LabelScope := vlsLocal;
+    LocalValueLabel.LabelType := CurField.FieldType;
 
     While True do
     Begin
@@ -950,13 +951,13 @@ BEGIN
        LocalCheck.ShowValueLabel := True;
 
     // Check is labels are compatible with current field
+    if not (LocalValueLabel.LabelType = CurField.FieldType) Then
+      Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
     I := 0;
     While Result and (i < LocalValueLabel.Count) do
     begin
       if Length(LocalValueLabel.Values[i]) > CurField.FieldLength then
         Result := ReportError(Lang(22852, 'Value is too wide for field'));
-      if (not IsCompliant(LocalValueLabel.Values[i], CurField.FieldType)) Then
-        Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
       inc(i);
     end;
 
@@ -1034,13 +1035,15 @@ BEGIN
       Result := ReportError(Format(Lang(22832, 'Datafile %s must contain two KEY-fields'), [ComLegDf.Filename]));
     END;
 
-    LocalValueLabel := TValueLabelSet.Create;
-    LocalValueLabel.Name := CurCommand;
-    LocalValueLabel.LabelType := vltFile;
-
     ValueField := ComLegDf.IndexFile.IndexFields[1];
     TextField  := ComLegDf.IndexFile.Indexfields[2];
 
+    LocalValueLabel := TValueLabelSet.Create;
+    LocalValueLabel.Name := CurCommand;
+    LocalValueLabel.LabelScope := vlsFile;
+    LocalValueLabel.LabelType := ValueField.FieldType;
+
+    // TODO : Optimize - do not use COPY!
     FOR i := 1 TO ComLegDf.Size DO
       LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsString[i], 1, 30), Copy(TextField.AsString[i], 1, 80));
 
@@ -2297,7 +2300,7 @@ BEGIN
 
   aValueLabelSet := TValueLabelSet.create;
   aValueLabelSet.Name := trim(CurCommand);
-  aValueLabelSet.LabelType := vltGlobal;
+  aValueLabelSet.LabelScope := vlsGlobal;
 
   While True do
   Begin
@@ -2346,6 +2349,8 @@ BEGIN
     IF Length(CurCommand) > 80 THEN
       CurCommand := Copy(CurCommand, 1, 80);
     CurCommand := StringReplace(CurCommand, '"', '', [rfReplaceAll]);
+
+    aValueLabelSet.LabelType := FindFieldType(TmpStr, aValueLabelSet.LabelType);
 
     aValueLabelSet.AddValueLabelPair(TmpStr, CurCommand);
   End;
@@ -2427,7 +2432,7 @@ BEGIN
 
   if (not assigned(aValueLabelSet)) then exit;
 
-  if aValueLabelSet.LabelType = vltGlobal then
+  if aValueLabelSet.LabelScope = vlsGlobal then
     AddToCheckLines('LABEL ' + aValueLabelSet.Name);
 
 //  IF s[Length(s)]='¤' THEN s:=Copy(s,1,Length(s)-1);
@@ -2455,7 +2460,7 @@ BEGIN
     AddToCheckLines(S);
   END;  //for
   Dec(FIndentLvl);
-  if aValueLabelSet.LabelType = vltGlobal then
+  if aValueLabelSet.LabelScope = vlsGlobal then
     AddToCheckLines('END');
 end;
 
@@ -2464,7 +2469,7 @@ function TCheckFileIO.AddCommandList(CmdList: TChkCommands): Boolean;
 VAR
   i, j, n: integer;
   s: string;
-  LocalVltType: TValueLabelSetType;
+  LocalVltType: TValueLabelSetScope;
   Cmd: TChkCommand;
 BEGIN
   // Sanity check;
@@ -2615,11 +2620,11 @@ BEGIN
         BEGIN
           IF Assigned(TChkComLegal(cmd).ValueLabel) THEN
           BEGIN
-            LocalVltType := TChkComLegal(cmd).ValueLabel.LabelType;
-            if (LocalVltType = vltLocal) and (TChkComLegal(cmd).ValueLabelIsFieldRef) then
-             LocalVltType := vltGlobal;
+            LocalVltType := TChkComLegal(cmd).ValueLabel.LabelScope;
+            if (LocalVltType = vlsLocal) and (TChkComLegal(cmd).ValueLabelIsFieldRef) then
+             LocalVltType := vlsGlobal;
             case LocalVltType of
-              vltLocal:
+              vlsLocal:
                 begin
                   S := 'COMMENT LEGAL';
                   if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
@@ -2628,10 +2633,10 @@ BEGIN
                   LabelToText(TChkComLegal(cmd).ValueLabel);
                   Dec(FIndentLvl);
                 end;
-              vltGlobal, vltFile:
+              vlsGlobal, vlsFile:
                 begin
                   S := 'COMMENT LEGAL ';
-                  if TChkComLegal(cmd).ValueLabel.LabelType <> vltFile then
+                  if TChkComLegal(cmd).ValueLabel.LabelScope <> vlsFile then
                     S := S + 'USE ';
                   S := S + TChkComLegal(cmd).ValueLabelName;
                   if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
@@ -2731,7 +2736,7 @@ Procedure TCheckFileIO.FieldBlockToStrings(aField: TEpiField);
 VAR
   S: string;
   TmpList: TStrings;
-  LocalVltType: TValueLabelSetType;
+  LocalVltType: TValueLabelSetScope;
   I: Integer;
 BEGIN
   TmpList := nil;
@@ -2812,12 +2817,12 @@ BEGIN
       {Write Comment Legal}
       IF Assigned(ValueLabel) THEN
       BEGIN
-        LocalVltType := ValueLabel.LabelType;
+        LocalVltType := ValueLabel.LabelScope;
         S := 'COMMENT LEGAL ';
-        if (LocalVltType = vltLocal) and (ValueLabelIsFieldRef) then
-          LocalVltType := vltGlobal;
+        if (LocalVltType = vlsLocal) and (ValueLabelIsFieldRef) then
+          LocalVltType := vlsGlobal;
         case LocalVltType of
-          vltLocal:
+          vlsLocal:
             begin
               if ShowValueLabel then S := S + 'SHOW';
               AddToCheckLines(S);
@@ -2826,9 +2831,9 @@ BEGIN
               Dec(FIndentLvl);
               AddToCheckLines('END');
             end;
-          vltGlobal, vltFile:
+          vlsGlobal, vlsFile:
             begin
-              if ValueLabel.LabelType <> vltFile then
+              if ValueLabel.LabelScope <> vlsFile then
                 S := S + 'USE ';
               S := S + ValueLabel.Name;
               if ShowValueLabel then S := S + ' SHOW';
