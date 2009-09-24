@@ -1,7 +1,7 @@
 object SettingsForm: TSettingsForm
-  Left = 578
+  Left = 988
   Height = 201
-  Top = 372
+  Top = 440
   Width = 349
   Caption = 'SettingsForm'
   ClientHeight = 201

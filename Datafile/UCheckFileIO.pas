@@ -842,9 +842,8 @@ BEGIN
     // 1. scenario: COMMENT LEGAL...END Structure
     IF CurCommand = 'SHOW' THEN LocalCheck.ShowValueLabel := True;
 
-    LocalValueLabel := TValueLabelSet.Create;
+    LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
     LocalValueLabel.LabelScope := vlsLocal;
-    LocalValueLabel.LabelType := CurField.FieldType;
 
     While True do
     Begin
@@ -953,13 +952,6 @@ BEGIN
     // Check is labels are compatible with current field
     if not (LocalValueLabel.LabelType = CurField.FieldType) Then
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
-    I := 0;
-    While Result and (i < LocalValueLabel.Count) do
-    begin
-      if Length(LocalValueLabel.Values[i]) > CurField.FieldLength then
-        Result := ReportError(Lang(22852, 'Value is too wide for field'));
-      inc(i);
-    end;
 
     LocalCheck.ValueLabel := LocalValueLabel;
     Exit;
@@ -1038,14 +1030,12 @@ BEGIN
     ValueField := ComLegDf.IndexFile.IndexFields[1];
     TextField  := ComLegDf.IndexFile.Indexfields[2];
 
-    LocalValueLabel := TValueLabelSet.Create;
+    LocalValueLabel := TValueLabelSet.Create(ValueField.FieldType);
     LocalValueLabel.Name := CurCommand;
     LocalValueLabel.LabelScope := vlsFile;
-    LocalValueLabel.LabelType := ValueField.FieldType;
 
-    // TODO : Optimize - do not use COPY!
     FOR i := 1 TO ComLegDf.Size DO
-      LocalValueLabel.AddValueLabelPair(Copy(ValueField.AsString[i], 1, 30), Copy(TextField.AsString[i], 1, 80));
+      LocalValueLabel.AddValueLabelPair(ValueField.AsValue[i], TextField.AsString[i]);
 
     FDf.ValueLabels.AddValueLabelSet(LocalValueLabel);
 
@@ -2298,7 +2288,7 @@ BEGIN
     Exit;
   end;
 
-  aValueLabelSet := TValueLabelSet.create;
+  aValueLabelSet := TValueLabelSet.Create;
   aValueLabelSet.Name := trim(CurCommand);
   aValueLabelSet.LabelScope := vlsGlobal;
 
@@ -2351,7 +2341,7 @@ BEGIN
     CurCommand := StringReplace(CurCommand, '"', '', [rfReplaceAll]);
 
     aValueLabelSet.LabelType := FindFieldType(TmpStr, aValueLabelSet.LabelType);
-
+    // TODO : Change TmpStr to correct type of variant (now it's string.)
     aValueLabelSet.AddValueLabelPair(TmpStr, CurCommand);
   End;
   FDf.ValueLabels.AddValueLabelSet(aValueLabelSet);
@@ -2426,7 +2416,6 @@ function TCheckFileIO.LabelToText(aValueLabelSet: TValueLabelSet): boolean;
 var
   s: string;
   i: integer;
-  
 BEGIN
   result := false;
 
@@ -2435,28 +2424,20 @@ BEGIN
   if aValueLabelSet.LabelScope = vlsGlobal then
     AddToCheckLines('LABEL ' + aValueLabelSet.Name);
 
-//  IF s[Length(s)]='¤' THEN s:=Copy(s,1,Length(s)-1);
-
   Inc(FIndentLvl);
-  for i := 0 to aValueLabelSet.count - 1 do
+  for i := 0 to aValueLabelSet.Count - 1do
+  with aValueLabelSet do
   BEGIN
-    IF aValueLabelSet.Values[i][1] = '*' THEN
-    BEGIN
-      AddToCheckLines(aValueLabelSet.Values[i] + aValueLabelSet.Labels[i]);
-      Continue;
-    END;
-
     S := '';
-    if Pos(' ', aValueLabelSet.Values[i]) > 0 then
-      S := S + '"' + aValueLabelSet.Values[i] + '"'
+    if Pos(' ', Values[i]) > 0 then
+      S := S + '"' + Values[i] + '"'
     else
-      S := S + aValueLabelSet.Values[i];
+      S := S + Values[i];
 
-    if Pos(' ', aValueLabelSet.Labels[i]) > 0 then
-      S := S + '  "' + aValueLabelSet.Labels[i] + '"'
+    if Pos(' ', Labels[i]) > 0 then
+      S := S + '  "' + Labels[i] + '"'
     else
-      S := S + '  ' + aValueLabelSet.Labels[i];
-
+      S := S + '  ' + Labels[i];
     AddToCheckLines(S);
   END;  //for
   Dec(FIndentLvl);

@@ -6,7 +6,7 @@ unit UValueLabels;
 interface
 
 uses
-  Classes, UDataFileTypes;
+  Classes, UDataFileTypes, AVL_Tree, Variants;
   
 type
   // vlsLocal retained for compatability with old .REC/.CHK format.
@@ -16,33 +16,43 @@ type
 
   TValueLabelSet = class(TObject)
   private
-    FData:     TStringList;
+    FData:     TAVLTree;
     FName:     string;
     FLabelScope: TValueLabelSetScope;
     FLabelType: TFieldType;
-    function   GetValue(const aLabel: string): string;
-    procedure  SetValue(const aLabel, aValue: string);
-    function   GetLabel(const aValue: string): string;
-    procedure  SetLabel(const aValue, aLabel: string);
-    function   GetCount:integer;
-    function   GetValues(index:integer):string;
-    procedure  SetValues(index:integer;value:string);
-    function   GetLabels(index:integer):string;
-    procedure  SetLabels(index:integer; alabel:string);
+    FCurrentIndex: Integer;
+    FCurrentNode: TAVLTreeNode;
+    function GetCount: integer;
+    function FindValuePair(Const Value: Variant): Pointer;
+    function GetLabels(const Index: Integer): string;
+    function GetMissingValue(const aValue: Variant): boolean;
+    function GetMissingValues(const Index: Integer): boolean;
+    function GetValueLabel(const aValue: Variant): string;
+    function GetValues(const Index: Integer): Variant;
+    procedure SetLabelType(const AValue: TFieldType); inline;
+    procedure SetMissingValue(const aValue: Variant; const AMissing: boolean);
+    procedure SetValueLabel(const aValue: Variant; const ALabel: string); inline;
+    // For traversion the tree of nodes using "random access" method.
+    procedure PositionNode(Const Index: integer);
+    function GetCurrentValueLabelPair: Pointer; inline;
   public
-    constructor Create;
+    constructor Create(aLabelType: TFieldType = ftInteger);
     destructor  Destroy; override;
-    procedure   AddValueLabelPair(const aValue, aLabel: string);
+    procedure   AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
     procedure   Clone(var Dest: TValueLabelSet);
     procedure   Clear;
     property    Name: string read FName write FName;
-    property    Value[const aLabel: string]: string read GetValue write SetValue;
-    property    ValueLabel[const aValue: string]: string read GetLabel write SetLabel;
+    property    ValueLabel[Const aValue: Variant]: string read GetValueLabel write SetValueLabel;
+    property    MissingValue[Const aValue: Variant]: boolean read GetMissingValue write SetMissingValue;
+    // Should only be used to read and traverse the tree.
+    property    Values[Const Index: Integer]: Variant read GetValues;
+    // Should only be used to read and traverse the tree.
+    property    Labels[Const Index: Integer]: string read GetLabels;
+    // Should only be used to read and traverse the tree.
+    property    MissingValues[Const Index: Integer]: boolean read GetMissingValues;
     property    Count: Integer read GetCount;
-    property    Values[index:integer]:string read GetValues write SetValues;
-    property    Labels[index:integer]:string read GetLabels write SetLabels;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
-    property    LabelType: TFieldType read FLabelType write FLabelType;
+    property    LabelType: TFieldType read FLabelType write SetLabelType;
   end;
 
   TValueLabelSets = class(TObject)
@@ -51,9 +61,9 @@ type
     function GetCount:integer;
     function GetItem(index:integer):TValueLabelSet;
   public
-    constructor Create();
-    destructor  Destroy(); override;
-    procedure   Clear();
+    constructor Create;
+    destructor  Destroy; override;
+    procedure   Clear;
     procedure   Clone(var dest: TValueLabelSets);
     procedure   Assign(Const Src: TValueLabelSets);
     function    ValueLabelSetByName(Const aName: string): TValueLabelSet;
@@ -67,6 +77,14 @@ implementation
 
 uses
   SysUtils, UStringUtils;
+
+type
+  TValuePair = record
+    FValue: Variant;
+    FLabel: String;
+    FMissing: Boolean;
+  end;
+  PValuePair = ^TValuePair;
 
 { TValueLabelSets }
 
@@ -105,7 +123,7 @@ begin
   Dest.Clear;
   for i := 0 to FList.Count - 1 do
   begin
-    tmp := TValueLabelSet.Create;
+    Tmp := nil;
     TValueLabelSet(FList.Objects[i]).Clone(tmp);
     Dest.AddValueLabelSet(tmp);
   end;
@@ -165,46 +183,211 @@ end;
 
 { TValueLabelSet }
 
-procedure TValueLabelSet.AddValueLabelPair(const aValue, aLabel: string);
+procedure TValueLabelSet.AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
 var
-  idx: integer;
+  NValuePair: PValuePair;
 begin
-  if FData.Find(aValue, idx) then
-    TString(FData.Objects[idx]).Str := aLabel
-  else
-    FData.AddObject(aValue, TString.Create(aLabel));
+  NValuePair := FindValuePair(aValue);
+  if Assigned(NValuePair) then
+  begin
+    NValuePair^.FLabel := aLabel;
+    NValuePair^.FMissing := aMissing;
+  end else begin
+    NValuePair := New(PValuePair);
+    NValuePair^.FValue := aValue;
+    NValuePair^.FLabel := aLabel;
+    NValuePair^.FMissing := aMissing;
+    FData.Add(NValuePair);
+  end;
 end;
 
 procedure TValueLabelSet.Clear;
 var
-  i: integer;
+  AVLNode: TAVLTreeNode;
+  aValuePair: PValuePair;
 begin
+  FCurrentIndex := -1;
   FName:='';
-  for i := 0 to FData.Count - 1 do
-    TString(FData.Objects[i]).Destroy;
+  FCurrentNode := nil;
+  AVLNode := FData.FindLowest;
+  while Assigned(AVLNode) do
+  with PValuePair(AVLNode.Data)^ do
+  begin
+    // Nil strings to decrease ref. count.
+    FLabel := '';
+    FValue := nil;
+    AVLNode := FData.FindSuccessor(AVLNode);
+  end;
+  FData.Clear;
 end;
+
 
 procedure TValueLabelSet.Clone(var Dest: TValueLabelSet);
 var
-  i: integer;
+  OldValuePair, NewValuePair: PValuePair;
+  AVLNode: TAVLTreeNode;
 begin
   if not Assigned(Dest) then
-    Dest := TValueLabelSet.Create();
+    Dest := TValueLabelSet.Create(LabelType);
 
   Dest.Clear;
   Dest.Name := Name;
   Dest.LabelScope := LabelScope;
-  for i := 0 to FData.Count -1 do
-    Dest.AddValueLabelPair(FData[i], TString(FData.Objects[i]).Str);
+  AVLNode := FData.FindLowest;
+  while Assigned(AVLNode) do
+  begin
+    // Use simple copy records since using AddValueLabelPair require
+    // a lookup in AVL tree for each insert (timeconsuming for large valuelabelsets).
+    OldValuePair := PValuePair(AVLNode.Data);
+    NewValuePair := New(PValuePair);
+    NewValuePair^.FValue := OldValuePair^.FValue;
+    NewValuePair^.FLabel := OldValuePair^.FLabel;
+    NewValuePair^.FMissing := OldValuePair^.FMissing;
+    Dest.FData.Add(NewValuePair);
+    AVLNode := FData.FindSuccessor(AVLNode);
+  end;
 end;
 
-constructor TValueLabelSet.Create;
+function NumberCompare(Item1, Item2: Pointer): Integer;
+var
+  V: Variant;
+begin
+  V := PValuePair(Item1)^.FValue - PValuePair(Item2)^.FValue;
+  if V > 0 then
+    result := 1
+  else if V < 0 then
+    result := -1
+  else
+    result := 0;
+end;
+
+function StringCompare(Item1, Item2: Pointer): Integer;
+begin
+  Result := strcomp(PChar(VarToStr(PValuePair(Item1)^.FValue)), PChar(VarToStr(PValuePair(Item2)^.FValue)));
+end;
+
+function TValueLabelSet.GetCount: integer;
+begin
+  result := FData.Count;
+end;
+
+function TValueLabelSet.FindValuePair(const Value: Variant): Pointer;
+var
+  LValuePair: TValuePair;
+  AVLNode: TAVLTreeNode;
+begin
+  Result := nil;
+  LValuePair.FValue := Value;
+  AVLNode := FData.Find(@LValuePair);
+  if Assigned(AVLNode) then
+    Result := AVLNode.Data;
+end;
+
+function TValueLabelSet.GetLabels(const Index: Integer): string;
+begin
+  PositionNode(Index);
+  result := PValuePair(GetCurrentValueLabelPair)^.FLabel;
+end;
+
+function TValueLabelSet.GetMissingValue(const aValue: Variant): boolean;
+var
+  AValuePair: PValuePair;
+begin
+  Result := False;
+  AValuePair := PValuePair(FindValuePair(aValue));
+  if Assigned(AValuePair) then
+    Result := AValuePair^.FMissing;
+end;
+
+function TValueLabelSet.GetMissingValues(const Index: Integer): boolean;
+begin
+  PositionNode(Index);
+  result := PValuePair(GetCurrentValueLabelPair)^.FMissing;
+end;
+
+function TValueLabelSet.GetValueLabel(const aValue: Variant): string;
+var
+  AValuePair: PValuePair;
+begin
+  Result := AValue;
+  AValuePair := PValuePair(FindValuePair(aValue));
+  if Assigned(AValuePair) then
+    Result := AValuePair^.FLabel;
+end;
+
+function TValueLabelSet.GetValues(const Index: Integer): Variant;
+begin
+  PositionNode(Index);
+  result := PValuePair(GetCurrentValueLabelPair)^.FValue;
+end;
+
+procedure TValueLabelSet.SetLabelType(const AValue: TFieldType);
+begin
+  if AValue = FLabelType then exit;
+  FLabelType := AValue;
+  if LabelType = ftString then
+    FData.OnCompare := @StringCompare
+  else
+    FData.OnCompare := @NumberCompare;
+end;
+
+procedure TValueLabelSet.SetMissingValue(const aValue: Variant;
+  const AMissing: boolean);
+var
+  AValuePair: PValuePair;
+begin
+  AValuePair := FindValuePair(aValue);
+  if Assigned(AValuePair) then
+    AValuePair^.FMissing := AValue;
+end;
+
+procedure TValueLabelSet.SetValueLabel(const aValue: Variant;
+  const ALabel: string);
+var
+  AValuePair: PValuePair;
+begin
+  AValuePair := PValuePair(FindValuePair(aValue));
+  if Assigned(AValuePair) then
+    AValuePair^.FLabel := ALabel;
+end;
+
+procedure TValueLabelSet.PositionNode(const Index: integer);
+var
+  i: Integer;
+begin
+  if (Index < 0) or (Index > FData.Count - 1) then
+    Raise Exception.CreateFmt('TValueLabelSet: Index out of bounds %d', [Index]);
+
+  if Index = FCurrentIndex then exit;
+
+  // TODO : Enhance method to run both ways and start from the nearest end point.
+  if Index = 0 then
+    FCurrentNode := FData.FindLowest
+  else
+    for i := 1 to Index - FCurrentIndex do
+      FCurrentNode := FData.FindSuccessor(FCurrentNode);
+  FCurrentIndex := Index;
+end;
+
+function TValueLabelSet.GetCurrentValueLabelPair: Pointer;
+begin
+  Result := nil;
+  if Assigned(FCurrentNode) then
+    Result := PValuePair(FCurrentNode.Data);
+end;
+
+constructor TValueLabelSet.Create(aLabelType: TFieldType);
+var
+  Cmp: TListSortCompare;
 begin
   FName := '';
-  LabelType := ftInteger;
-  FData := TStringList.create;
-  FData.Sorted := true;
-  FData.CaseSensitive := false;
+  FCurrentNode := nil;
+  FCurrentIndex := -1;
+  LabelType := aLabelType;
+  if LabelType = ftString then
+    FData := TAVLTree.Create(@StringCompare)
+  else
+    FData := TAVLTree.Create(@NumberCompare);
 end;
 
 destructor TValueLabelSet.Destroy;
@@ -212,74 +395,6 @@ begin
   Clear;
   FreeAndNil(FData);
   inherited;
-end;
-
-function TValueLabelSet.GetLabel(const aValue: string): string;
-var
-  idx: integer;
-begin
-  result := '';
-  if FData.Find(aValue, idx) then
-    result := TString(FData.Objects[idx]).Str;
-end;
-
-function TValueLabelSet.GetValue(const aLabel: string): string;
-var
-  i: integer;
-begin
-  result := '';
-  for i := 0 to FData.Count - 1 do
-    if AnsiCompareText(TString(FData.Objects[i]).Str, aLabel) <> 0 then
-    begin
-      result := FData[i];
-      break;
-    end;
-end;
-
-procedure TValueLabelSet.SetLabel(const aValue, aLabel: string);
-var
-  idx: integer;
-begin
-  if not FData.Find(aValue, idx) then
-    Raise Exception.Create('Value not found');
-  TString(FData.Objects[idx]).Str := aLabel;
-end;
-
-procedure TValueLabelSet.SetValue(const aLabel, aValue: string);
-var
-  i: integer;
-begin
-  for i := 0 to FData.Count - 1 do
-    if AnsiCompareText(TString(FData.Objects[i]).Str, aLabel) <> 0 then
-    begin
-      FData[i] := aValue;
-      break;
-    end;
-end;
-
-function TValueLabelSet.GetCount:integer;
-begin
-  result := FData.Count;
-end;
-
-function TValueLabelSet.GetValues(index:integer):string;
-begin
-  if index < FData.Count then result:=FData[index] else result:='';
-end;
-
-procedure TValueLabelSet.SetValues(index:integer; value:string);
-begin
-  if index<FData.Count then FData[index]:=value;
-end;
-
-function TValueLabelSet.GetLabels(index:integer):string;
-begin
-  if index<FData.Count then result:=TString(FData.Objects[index]).Str else result:='';
-end;
-
-procedure TValueLabelSet.SetLabels(index:integer; alabel:string);
-begin
-  if index<FData.Count then TString(FData.Objects[index]).Str := aLabel;
 end;
 
 end.

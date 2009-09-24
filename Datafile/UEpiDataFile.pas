@@ -1583,11 +1583,14 @@ begin
           vlsLocal:
             Begin
               TmpStr := TmpStr + ' TYPE="' + IntToStr(Ord(LabelType)) + '">' + LineEnding;
-              for j := 0 to Count - 1 do
+              for j := 0 to Count do;
               begin
                 TmpStr := TmpStr  +
-                  '        <SET VALUE="' + Values[j] + '" LABEL="' + Labels[j] + '"/>' + LineEnding;
-
+                  '        <SET VALUE="' + Values[i] + '" LABEL="' + Labels[i] + '"';
+                if MissingValues[i] then
+                  TmpStr := TmpStr  + ' MISSING';
+                TmpStr := TmpStr  +
+                  '/>' + LineEnding;
               end;
             end;
         end;
