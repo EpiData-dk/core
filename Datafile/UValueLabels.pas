@@ -229,7 +229,7 @@ begin
   begin
     // Nil strings to decrease ref. count.
     FLabel := '';
-    FValue := nil;
+    VarClear(FValue);
     AVLNode := FData.FindSuccessor(AVLNode);
   end;
   FData.Clear;
