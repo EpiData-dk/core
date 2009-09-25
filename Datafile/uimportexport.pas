@@ -866,6 +866,7 @@ begin
         TmpField.CheckField := TEpiCheckField.Create();
         TmpField.CheckField.ValueLabel := TValueLabelSet.Create;
         TmpField.ValueLabelSet.Name := StrBuf;
+        TmpField.ValueLabelSet.LabelScope := vlsGlobal;
         ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
       END;
     END;  //for i
@@ -1039,7 +1040,7 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          TmpValSet := ValueLabels.ValueLabelSetByName(EpiUnknownStrToUTF8(string(PChar(@CharBuf[0]))));  // Get ValueLabelSet
+          TmpValSet := ValueLabels.ValueLabelSetByName(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(4);                                               // Number of entries in label
@@ -1059,15 +1060,7 @@ begin
             if (TmpInt >= $7FFFFFE5) then                                 // ignore valuelabels
               Continue;
 
-            if Trim(TmpValSet.ValueLabel[IntToStr(TmpInt)]) <> '' then
-            BEGIN
-              ErrorText := Lang(23936, 'Duplicate value label name found');
-              ErrorCode := EPI_FAILED;
-              EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
-              Exit;
-            END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(
-              StringFromBuffer(PChar(@CharBuf[CurRec]), 32000)));
+            TmpValSet.AddValueLabelPair(TmpInt, StringFromBuffer(PChar(@CharBuf[CurRec]), 32000));
           END;  //for i
         END;  //while
       END;  //if stataversion 6, 7 or 8

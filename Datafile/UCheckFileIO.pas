@@ -651,9 +651,16 @@ VAR
   s: string;
   i: integer;
   LocalCheck: TEpiCheckField;
+  LocalValueLabel: TValueLabelSet;
 BEGIN
   Result := true;
   LocalCheck := CurField.CheckField;
+  LocalValueLabel := CurField.ValueLabelSet;
+  if not Assigned(CurField.ValueLabelSet) then
+  begin
+    LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
+    LocalValueLabel.LabelScope := vlsLocal;
+  end;
 
   //Syntax:  MISSINGVALUE x [x [x]]  where x is str10
   for i := 0 to 2 do
@@ -666,7 +673,9 @@ BEGIN
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
 
     if Result then
-      LocalCheck.MissingValues[i] := s;
+      LocalValueLabel.AddValueLabelPair(S, '', True);
+
+//      LocalCheck.MissingValues[i] := s;
   end;
 END;
 

@@ -152,7 +152,6 @@ type
 
   TEpiField = class(TObject)
   private
-    FMissingValuesSet: TObject;
     FOwner:        TEpiFields;
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
@@ -217,8 +216,6 @@ type
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
     property  CheckField:  TEpiCheckField read FCheckField write FCheckField;
     property  ValueLabelSet: TValueLabelSet read GetValueLabel;
-    // TODO : TMissingValuesSet
-    property  MissingValuesSet: TObject read FMissingValuesSet;
     property  Owner:       TEpiFields read FOwner;
     property  DataFile:    TEpiDataFile read FDataFile write FDataFile;
     property  Size: Integer read GetSize write SetSize;
@@ -782,6 +779,7 @@ end;
 function TEpiField.GetAsValueLabel(const index: Integer): string;
 begin
   result := AsString[Index];
+  if IsMissing[index] then exit;
   if Assigned(ValueLabelSet) then
     result := ValueLabelSet.ValueLabel[AsString[Index]];
 end;
@@ -953,8 +951,6 @@ begin
   FFieldLength   := 0;
   FFieldDecimals   := 0;
   FVariableLabel := '';
-  // TODO : Remove when TMissingValueSet is done.
-  FMissingValuesSet := nil;
 end;
 
 { TEpiFields }
@@ -1583,12 +1579,14 @@ begin
           vlsLocal:
             Begin
               TmpStr := TmpStr + ' TYPE="' + IntToStr(Ord(LabelType)) + '">' + LineEnding;
-              for j := 0 to Count do;
+              for j := 0 to Count - 1 do
               begin
                 TmpStr := TmpStr  +
-                  '        <SET VALUE="' + Values[i] + '" LABEL="' + Labels[i] + '"';
-                if MissingValues[i] then
-                  TmpStr := TmpStr  + ' MISSING';
+                  '        <SET VALUE="' + Values[j] + '"';
+                if Labels[j] <> '' then
+                  TmpStr := TmpStr  + ' LABEL="' + Labels[j] + '"';
+                if MissingValues[j] then
+                  TmpStr := TmpStr  + ' MISSING="1"';
                 TmpStr := TmpStr  +
                   '/>' + LineEnding;
               end;
@@ -1599,10 +1597,6 @@ begin
       end;
       TmpStr := TmpStr + '    </LABELS>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
-    end;
-    if Assigned(MissingValues) then
-    begin
-      // TODO : MissingValues...
     end;
     // TODO : <USERDEFINED>
     TmpStr :=
@@ -1625,9 +1619,6 @@ begin
       TmpStr := TmpStr + '" DEC="' + IntToStr(FieldDecimals);
       if Assigned(ValueLabelSet) then
         TmpStr := TmpStr  + '" VLABEL="' + ValueLabelSet.Name;
-      // TODO : TMissingValuesSet
-      if Assigned(MissingValuesSet) then
-        TmpStr := TmpStr  + '" VLABEL="' + MissingValuesSet.ClassName;
       if Trim(VariableLabel) <> '' then
         TmpStr := TmpStr + '" LABEL="' + StringToXml(VariableLabel);
       TmpStr := TmpStr + '"/>"' + LineEnding;

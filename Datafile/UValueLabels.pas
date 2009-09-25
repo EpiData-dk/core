@@ -190,8 +190,22 @@ begin
   NValuePair := FindValuePair(aValue);
   if Assigned(NValuePair) then
   begin
-    NValuePair^.FLabel := aLabel;
-    NValuePair^.FMissing := aMissing;
+    // This handles old .REC/.CHK style missing values.
+    // Since AddValueLabelPair is used in CheckFileIO to insert missingvalue, we may
+    // overwrite previous defined valuelabel or missing.
+    if ((NValuePair^.FLabel <> '') and aMissing) then
+      // Val. lab. exists and we are inserting missing.
+      // keep label - update missing.
+      NValuePair^.FMissing := aMissing
+    else if (NValuePair^.FMissing and (aLabel <> '')) then
+      // Missing exists and we are inserting val. lab.
+      // keep missing - update label
+      NValuePair^.FLabel := aLabel
+    else begin
+      // Normal update of situation.
+      NValuePair^.FLabel := aLabel;
+      NValuePair^.FMissing := aMissing;
+    end;
   end else begin
     NValuePair := New(PValuePair);
     NValuePair^.FValue := aValue;

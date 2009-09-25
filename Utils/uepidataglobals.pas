@@ -118,8 +118,8 @@ begin
   FloatChars   := IntegerChars + CommaChars;
 
   // Format setting.
-  EpiInternalFormatSettings.ThousandSeparator := '.';
-  EpiInternalFormatSettings.DecimalSeparator  := ',';
+  EpiInternalFormatSettings.ThousandSeparator := ',';
+  EpiInternalFormatSettings.DecimalSeparator  := '.';
   EpiInternalFormatSettings.DateSeparator     := '/';
   EpiInternalFormatSettings.TimeSeparator     := ':';
   EpiExternalFormatSettings := EpiInternalFormatSettings;

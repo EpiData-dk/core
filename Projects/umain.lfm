@@ -1,9 +1,9 @@
 object MainForm: TMainForm
-  Left = 327
+  Left = 599
   Height = 649
-  Top = 239
+  Top = 311
   Width = 881
-  ActiveControl = Panel1
+  ActiveControl = Panel2
   Caption = 'Core Test Project'
   ClientHeight = 624
   ClientWidth = 881
@@ -281,9 +281,9 @@ object MainForm: TMainForm
     Height = 416
     Top = 208
     Width = 881
-    ActivePage = TabSheet5
+    ActivePage = TabSheet3
     Align = alClient
-    TabIndex = 4
+    TabIndex = 3
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'File Info:'

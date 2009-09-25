@@ -160,10 +160,10 @@ begin
     if FileExists(ChangeFileExt(Df.FileName, '.chk')) then
       orgChkMemo.Lines.LoadFromFile(ChangeFileExt(Df.FileName, '.chk'));
 
-    Stream := TMemoryStream.Create();
-    ChkIO := TCheckFileIO.Create();
-    ChkIO.WriteCheckToStream(Stream, Df);
-    parsedChkMemo.Lines.LoadFromStream(Stream);
+//    Stream := TMemoryStream.Create();
+//    ChkIO := TCheckFileIO.Create();
+//    ChkIO.WriteCheckToStream(Stream, Df);
+//    parsedChkMemo.Lines.LoadFromStream(Stream);
 
     LoadData(false);
 
@@ -228,25 +228,21 @@ begin
     sg.FixedRows := 1;
 
   //Make col-headings
-  i := 1;
-  for col:=0 to df.NumFields-1 do
-    if df[col].Fieldtype <> ftQuestion then
-      sg.Cells[PostInc(i), 0] := df[col].FieldName;
+  for col := 0 to df.NumDataFields - 1 do
+    sg.Cells[col+1, 0] := df[col].FieldName;
 
   numrecs := df.Size;
   for row := 1 to numrecs do
   begin
     sg.Cells[0, row] := inttostr(row);
-    i := 1;
-    for col := 0 to df.NumFields - 1 do
+    for col := 0 to df.NumDataFields - 1 do
     begin
-      if df[col].Fieldtype <> ftQuestion then
-      begin
-        if ShowAsLabels then
-          sg.Cells[PostInc(i), row] := df[col].AsValueLabel[row]
-        else
-          sg.Cells[PostInc(i), row] := df[col].AsString[row];
-      end;
+      if (row = 8) and (col = 8) then
+        sg.Cells[col + 1, row] := df[col].AsValueLabel[row];
+      if ShowAsLabels then
+        sg.Cells[col + 1, row] := df[col].AsValueLabel[row]
+      else
+        sg.Cells[col + 1, row] := df[col].AsString[row];
     end;
   end;
 end;
