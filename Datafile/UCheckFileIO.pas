@@ -659,13 +659,19 @@ BEGIN
   if not Assigned(CurField.ValueLabelSet) then
   begin
     LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
+    LocalValueLabel.Name := CurField.FieldName + '_lbl';
     LocalValueLabel.LabelScope := vlsLocal;
+    LocalCheck.ValueLabel := LocalValueLabel;
+    CurField.DataFile.ValueLabels.AddValueLabelSet(LocalValueLabel);
   end;
 
   //Syntax:  MISSINGVALUE x [x [x]]  where x is str10
   for i := 0 to 2 do
   begin
     s := FParser.GetToken(nwSameLine);
+
+    if S = '' then continue;
+
     IF (Length(s) > CurField.FieldLength) then
       Result := ReportError(Lang(22852, 'Value is too wide for field'));
 
@@ -674,8 +680,6 @@ BEGIN
 
     if Result then
       LocalValueLabel.AddValueLabelPair(S, '', True);
-
-//      LocalCheck.MissingValues[i] := s;
   end;
 END;
 
@@ -961,6 +965,16 @@ BEGIN
     // Check is labels are compatible with current field
     if not (LocalValueLabel.LabelType = CurField.FieldType) Then
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
+
+    // Check that if ValueLabel existed beforehand is is considered to be missingvalues.
+    if Assigned(LocalCheck.ValueLabel) then
+    with LocalCheck.ValueLabel do
+    begin
+      for i := 0 to Count -1 do
+        LocalValueLabel.AddValueLabelPair(Values[i], Labels[i], MissingValues[i]);
+
+      CurField.DataFile.ValueLabels.DeleteValueLabelSet(Name);
+    end;
 
     LocalCheck.ValueLabel := LocalValueLabel;
     Exit;
