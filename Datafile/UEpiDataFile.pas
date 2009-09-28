@@ -1137,6 +1137,13 @@ var
   CurRec: Integer;
   i: Integer;
   Idx: LongInt;
+  LocalFmt: TFormatSettings;
+  MissingStr: String;
+  SubSectionNode: TDOMNode;
+  LocalValueLabel: TValueLabelSet;
+  LocalDf: TEpiDataFile;
+  ValueField: TEpiField;
+  TextField: TEpiField;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'InternalOpen', 2, 'Filename = ' + Filename);
@@ -1154,25 +1161,132 @@ begin
     // <SETTINGS> Section
     // **********************
     SectionNode := RootNode.FindNode('SETTINGS');
-    // Filelabel
-    ElemNode := TDOMElement(SectionNode.FindNode('FILELABEL'));
-    if Assigned(ElemNode) then
-      FileLabel := UTF8Encode(ElemNode.TextContent);
-    // Version
+    if not Assigned(ElemNode) then
+    begin
+      ErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+      ErrorText := Format(Lang(0, 'SETTINGS Section missing in file: %s'), [FileName]);
+      Exit;
+    end;
+
+    // Version: so far we only got ver. 2
     ElemNode := TDOMElement(SectionNode.FindNode('VERSION'));
+    if not Assigned(ElemNode) then
+    begin
+      ErrorCode := EPI_FILE_VERSION_ERROR;
+      ErrorText := Format(Lang(0, 'No format version specified for file: %s'), [FileName]);
+      Exit;
+    end;
+
+    // Date Separator
+    ElemNode := TDOMElement(SectionNode.FindNode('DATESEP'));
     if Assigned(ElemNode) then
-      FileVersion := StrToInt(ElemNode.TextContent);
+      LocalFmt.DateSeparator := UTF8Encode(ElemNode.TextContent)[1]
+    else
+      LocalFmt.DateSeparator := EpiInternalFormatSettings.DateSeparator;
+
+    // Decimal Separator
+    ElemNode := TDOMElement(SectionNode.FindNode('DECIMALSEP'));
+    if Assigned(ElemNode) then
+      LocalFmt.DecimalSeparator := UTF8Encode(ElemNode.TextContent)[1]
+    else
+      LocalFmt.DecimalSeparator := EpiInternalFormatSettings.DecimalSeparator;
+
+    // Missing mark
+    ElemNode := TDOMElement(SectionNode.FindNode('DECIMALSEP'));
+    if Assigned(ElemNode) then
+      MissingStr := UTF8Encode(ElemNode.TextContent)
+    else
+      MissingStr := TEpiStringField.DefaultMissing;
+
     // Password
     ElemNode := TDOMElement(SectionNode.FindNode('PASSWORD'));
-    if Assigned(ElemNode) then
+    if Assigned(ElemNode) and (not RequestPassword(UTF8Encode(ElemNode.TextContent))) then
     begin
-      TmpStr := UTF8Encode(ElemNode.TextContent);
-      if not RequestPassword(TmpStr) then
+      ErrorText := Lang(9020, 'Incorrect password entered');
+      ErrorCode := EPI_INVALID_PASSWORD;
+      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+      Exit;
+    end;
+
+    // **********************
+    // <METADATA> Section
+    // **********************
+    SectionNode := RootNode.FindNode('METADATA');
+    if Assigned(SectionNode) then
+    begin
+      // Filelabel
+      ElemNode := TDOMElement(SectionNode.FindNode('FILELABEL'));
+      if Assigned(ElemNode) then
+        FileLabel := UTF8Encode(ElemNode.TextContent);
+
+      // Study
+      ElemNode := TDOMElement(SectionNode.FindNode('STUDY'));
+      if Assigned(ElemNode) then
+        Study := UTF8Encode(ElemNode.TextContent);
+
+      ElemNode := TDOMElement(SectionNode.FindNode('STUDY'));
+      if Assigned(ElemNode) then
+        Study := UTF8Encode(ElemNode.TextContent);
+
+      SubSectionNode := SectionNode.FindNode('LABELS');
+      if Assigned(SubSectionNode) then
       begin
-        ErrorText := Lang(9020, 'Incorrect password entered');
-        Errorcode := EPI_INVALID_PASSWORD;
-        EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
-        Exit;
+        ElemNode := TDOMElement(SubSectionNode.FirstChild);
+        while Assigned(ElemNode) do
+        begin
+          if UTF8Encode(ElemNode.NodeName) <> 'LABEL' then
+          begin
+            ErrorText := Format(Lang(0, 'Unknown TAG placed in LABELS section: %s'), [UTF8Encode(ElemNode.NodeName)]);
+            ErrorCode := EPI_XML_UNKNOWN_TAG;
+            EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+            Exit;
+          end;
+
+          LocalValueLabel := TValueLabelSet.Create(TFieldType(StrToInt(UTF8Encode(ElemNode.GetAttribute('TYPE')))));
+          LocalValueLabel.Name := UTF8Encode(ElemNode.GetAttribute('NAME'));
+          TmpStr := UTF8Encode(ElemNode.GetAttribute('EXTERNAL'));
+          if TmpStr <> '' then
+          begin
+            // EXTERNAL Value labels...
+            // ------------------------
+            LocalDf := TEpiDataFile.Create();
+            LocalDf.OnPassword := OnPassword;
+            if not LocalDf.Open(TmpStr, [eoIgnoreRelates]) then
+            begin
+              ErrorText := Format(Lang(0,'Datafile %s could not be opened'), [TmpStr]);
+              ErrorCode := EPI_DATAFILE_NOT_OPEN;
+              EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+              Exit;
+            end;
+            if LocalDf.Size = 0 then
+            begin
+              ErrorText := Format(Lang(0,'Datafile %s does not contain any records'), [TmpStr]);
+              ErrorCode := EPI_DATAFILE_NOT_OPEN;
+              EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+              Exit;
+            end;
+
+            if LocalDf.IndexFile.IndexCount < 2 then
+            begin
+              ErrorText := Format(Lang(0,'Datafile %s must contain two KEY-fields'), [TmpStr]);
+              ErrorCode := EPI_DATAFILE_NOT_OPEN;
+              EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+              Exit;
+            end;
+            ValueField := LocalDf.IndexFile.IndexFields[1];
+            TextField := LocalDf.IndexFile.IndexFields[1];
+
+            for i := 1 to LocalDf.Size do
+              LocalValueLabel.AddValueLabelPair(ValueField.AsValue[i], TextField.AsString[i]);
+
+            ValueLabels.AddValueLabelSet(LocalValueLabel);
+            FreeAndNil(LocalDf);
+          end else begin
+            // LOCAL Value labels...
+            // ------------------------
+
+          end;
+        end;
       end;
     end;
 
