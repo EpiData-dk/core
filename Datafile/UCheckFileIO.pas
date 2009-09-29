@@ -650,18 +650,16 @@ function TCheckFileIO.RetrieveMissingValues(CurField: TEpiField): boolean;
 VAR
   s: string;
   i: integer;
-  LocalCheck: TEpiCheckField;
   LocalValueLabel: TValueLabelSet;
 BEGIN
   Result := true;
-  LocalCheck := CurField.CheckField;
   LocalValueLabel := CurField.ValueLabelSet;
   if not Assigned(CurField.ValueLabelSet) then
   begin
     LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
     LocalValueLabel.Name := CurField.FieldName + '_lbl';
     LocalValueLabel.LabelScope := vlsLocal;
-    LocalCheck.ValueLabel := LocalValueLabel;
+    CurField.ValueLabelSet := LocalValueLabel;
     CurField.DataFile.ValueLabels.AddValueLabelSet(LocalValueLabel);
   end;
 
@@ -840,7 +838,7 @@ BEGIN
   }
   Result := true;
 
-  LocalCheck := CurField.CheckField;
+//  LocalCheck := CurField.CheckField;
 
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF CurCommand <> 'LEGAL' THEN
@@ -921,7 +919,7 @@ BEGIN
 
     IF Result THEN
     BEGIN
-      TmpStr := AnsiLowerCase(Lang(22736, 'labels in field') + ' ' + CurField.FieldName);
+      TmpStr := CurField.FieldName + '_lbl';
       if Assigned(FDf.ValueLabels.ValueLabelSetByName(TmpStr)) then
         FDf.ValueLabels.DeleteValueLabelSet(TmpStr);
       LocalValueLabel.Name := TmpStr;
@@ -929,7 +927,7 @@ BEGIN
     END ELSE
       FreeAndNil(LocalValueLabel);
 
-    LocalCheck.ValueLabel := LocalValueLabel;  
+    CurField.ValueLabelSet := LocalValueLabel;
     Exit;
     //if COMMENT LEGAL...END Structure
   END;
@@ -967,8 +965,8 @@ BEGIN
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
 
     // Check that if ValueLabel existed beforehand is is considered to be missingvalues.
-    if Assigned(LocalCheck.ValueLabel) then
-    with LocalCheck.ValueLabel do
+    if Assigned(CurField.ValueLabelSet) then
+    with CurField.ValueLabelSet do
     begin
       for i := 0 to Count -1 do
         LocalValueLabel.AddValueLabelPair(Values[i], Labels[i], MissingValues[i]);
@@ -976,7 +974,7 @@ BEGIN
       CurField.DataFile.ValueLabels.DeleteValueLabelSet(Name);
     end;
 
-    LocalCheck.ValueLabel := LocalValueLabel;
+    CurField.ValueLabelSet := LocalValueLabel;
     Exit;
     //the word USE was found
   END;
@@ -1040,7 +1038,7 @@ BEGIN
     // Labels already loaded:
     IF (assigned(LocalValueLabel)) THEN
     Begin
-      LocalCheck.ValueLabel := LocalValueLabel;
+      CurField.ValueLabelSet := LocalValueLabel;
       Exit;
     End;
 
@@ -1062,7 +1060,7 @@ BEGIN
 
     FDf.ValueLabels.AddValueLabelSet(LocalValueLabel);
 
-    LocalCheck.ValueLabel := LocalValueLabel;
+    CurField.ValueLabelSet := LocalValueLabel;
 
     FreeAndNil(ComLegDf);
   EXCEPT
@@ -1327,6 +1325,7 @@ VAR
   Dummy: Boolean;
   N, I, J: Integer;
   TmpColor: TColor;
+  TmpValueLabel: TValueLabelSet;
 BEGIN
   {Legal commands are
     IF <boolean expr.> THEN  <cmds> [ELSE <cmds>] ENDIF
@@ -1496,7 +1495,7 @@ BEGIN
           if Result then
           begin
             TChkComLegal(TmpChkCmd).ShowList       := TmpField.CheckField.ShowValueLabel;
-            TChkComLegal(TmpChkCmd).ValueLabelIsFieldRef := TmpField.CheckField.ValueLabelIsFieldRef;
+            TChkComLegal(TmpChkCmd).ValueLabelIsFieldRef := TmpField.ValueLabelIsFieldRef;
             TChkComLegal(TmpChkCmd).ValueLabel     := TmpField.ValueLabelSet;
           end;
           FreeAndNil(TmpField);
@@ -1776,7 +1775,13 @@ BEGIN
             for i := TmpList.Count - (1 + N) to TmpList.Count - 1 do
               ValList.Add(TmpList[i]);
 
-            FOR n := 0 TO TmpList.Count-2 DO
+            TmpValueLabel := TValueLabelSet.Create;
+            TmpValueLabel.Name := '__missingall' + IntToStr(Random(1000));
+            for i := 0 to ValList.Count - 1 do
+              TmpValueLabel.AddValueLabelPair(StrToInt(ValList[i]), '', True);
+            FDf.ValueLabels.AddValueLabelSet(TmpValueLabel);
+
+            FOR n := 0 TO TmpList.Count-(ValList.Count + 1) DO
             BEGIN
               //Traverse the list of fields
               IF pos('-', TmpList[n]) > 0 THEN   //is element a field-interval?
@@ -1796,8 +1801,14 @@ BEGIN
                 BEGIN
                   TmpField := FDf[i];
                   IF (TmpField.FieldType <> ftQuestion) THEN
-                    for j := 0 to ValList.Count-1 do
-                      TmpField.CheckField.MissingValues[j] := ValList[j];
+                  begin
+                    if Assigned(TmpField.ValueLabelSet) then
+                    begin
+                      for j := 0 to TmpValueLabel.Count - 1 do
+                        TmpField.ValueLabelSet.AddValueLabelPair(TmpValueLabel.Values[0], '', true);
+                    end else
+                      TmpField.ValueLabelSet := TmpValueLabel;
+                  end;
                 END;  //for
                 //if interval
               END ELSE BEGIN
@@ -1807,10 +1818,15 @@ BEGIN
                   Result := ReportError(Lang(22708, 'Unknown field name') + ' ' + TmpList[n]);
                   Exit;
                 END;
-                TmpField := FDf[i];
                 IF (TmpField.FieldType <> ftQuestion) THEN
-                  for j := 0 to ValList.Count-1 do
-                    TmpField.CheckField.MissingValues[j] := ValList[j];
+                begin
+                  if Assigned(TmpField.ValueLabelSet) then
+                  begin
+                    for j := 0 to TmpValueLabel.Count - 1 do
+                      TmpField.ValueLabelSet.AddValueLabelPair(TmpValueLabel.Values[0], '', true);
+                  end else
+                    TmpField.ValueLabelSet := TmpValueLabel;
+                end;
               end;
             END;  //for
           FINALLY
@@ -2819,11 +2835,11 @@ BEGIN
       END;
 
       {Write Comment Legal}
-      IF Assigned(ValueLabel) THEN
+      IF Assigned(aField.ValueLabelSet) THEN
       BEGIN
-        LocalVltType := ValueLabel.LabelScope;
+        LocalVltType := aField.ValueLabelSet.LabelScope;
         S := 'COMMENT LEGAL ';
-        if (LocalVltType = vlsLocal) and (ValueLabelIsFieldRef) then
+        if (LocalVltType = vlsLocal) and (aField.ValueLabelIsFieldRef) then
           LocalVltType := vlsGlobal;
         case LocalVltType of
           vlsLocal:
@@ -2831,15 +2847,15 @@ BEGIN
               if ShowValueLabel then S := S + 'SHOW';
               AddToCheckLines(S);
               Inc(FIndentLvl);
-              LabelToText(ValueLabel);
+              LabelToText(aField.ValueLabelSet);
               Dec(FIndentLvl);
               AddToCheckLines('END');
             end;
           vlsGlobal, vlsFile:
             begin
-              if ValueLabel.LabelScope <> vlsFile then
+              if aField.ValueLabelSet.LabelScope <> vlsFile then
                 S := S + 'USE ';
-              S := S + ValueLabel.Name;
+              S := S + aField.ValueLabelSet.Name;
               if ShowValueLabel then S := S + ' SHOW';
               AddToCheckLines(S);
             end;
@@ -2875,14 +2891,14 @@ BEGIN
       IF Confirm THEN
         AddToCheckLines('CONFIRMFIELD');
 
-      {Write Missingvalues}
-      IF MissingValues[0]<>'' THEN
+      {TODO : Write Missingvalues}
+(*      IF MissingValues[0]<>'' THEN
       Begin
         S := MissingValues[0];
         IF MissingValues[1] <> '' THEN S := S + ' ' + MissingValues[1];
         IF MissingValues[2] <> '' THEN S := S + ' ' + MissingValues[2];
         AddToCheckLines('MISSINGVALUE ' + S);
-      end;
+      end; *)
 
       Case TypeType of
         {Write TYPE STATUSBAR}

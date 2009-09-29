@@ -864,7 +864,7 @@ begin
       IF StrBuf <> '' THEN
       BEGIN
         TmpField.CheckField := TEpiCheckField.Create();
-        TmpField.CheckField.ValueLabel := TValueLabelSet.Create;
+        TmpField.ValueLabelSet := TValueLabelSet.Create;
         TmpField.ValueLabelSet.Name := StrBuf;
         TmpField.ValueLabelSet.LabelScope := vlsGlobal;
         ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
@@ -950,10 +950,16 @@ begin
                 Begin
                   if (I >= (J - 25)) and (I <= (J - 23)) then
                   begin
-                    // TODO : New method for missing values when TMissingValues is implemented.
                     // Write all 9's, 8's or 7's as missing value.
                     TmpField.AsString[CurRec] := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
-                    TmpField.CheckField.MissingValues[I - (J - 25)] := TmpField.AsString[CurRec];
+                    if not Assigned(TmpField.ValueLabelSet) then
+                    begin
+                      TmpField.ValueLabelSet := TValueLabelSet.Create;
+                      TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
+                      ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
+                    end;
+                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsInteger[CurRec], '', True);
+//                    TmpField.CheckField.MissingValues[] := TmpField.AsString[CurRec];
                   end else
                     TmpField.IsMissing[CurRec] := true;
                 end else
@@ -971,9 +977,16 @@ begin
                   if StrBuf = '-' then
                     StrBuf := ''
                   else begin
-                    TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)] :=
+                    TmpField.AsString[CurRec] :=
                       DupeString(StrBuf, TmpField.FieldLength - (TmpField.FieldDecimals + 1)) + DecS + DupeString(StrBuf, TmpField.FieldDecimals);
-                    TmpField.AsString[CurRec] := TmpField.CheckField.MissingValues[9 - StrToInt(StrBuf)];
+
+                    if not Assigned(TmpField.ValueLabelSet) then
+                    begin
+                      TmpField.ValueLabelSet := TValueLabelSet.Create;
+                      TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
+                      ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
+                    end;
+                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsFloat[CurRec], '', True);
                   end;
                 end else begin
                   {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
@@ -1938,6 +1951,8 @@ begin
             TmpStr := '..';
 
           // Specific missing values
+          // TODO : MissingValues (STATA)
+          {
           IF (FileVersion >= $71) AND (FieldType in [ftInteger, ftIDNUM, ftFloat]) AND
              (FieldDecimals = 0) AND (FieldLength < 10) THEN
           BEGIN
@@ -1950,7 +1965,7 @@ begin
             IF TmpStr = CheckFile.GlobalMissingVal[0] THEN TmpStr := '.a';
             IF TmpStr = CheckFile.GlobalMissingVal[1] THEN TmpStr := '.b';
             IF TmpStr = CheckFile.GlobalMissingVal[2] THEN TmpStr := '.c';
-          END;
+          END;     }
 
           Case TypeList[CurField] of
             ByteConst,

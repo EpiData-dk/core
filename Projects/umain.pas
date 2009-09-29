@@ -237,8 +237,6 @@ begin
     sg.Cells[0, row] := inttostr(row);
     for col := 0 to df.NumDataFields - 1 do
     begin
-      if (row = 8) and (col = 8) then
-        sg.Cells[col + 1, row] := df[col].AsValueLabel[row];
       if ShowAsLabels then
         sg.Cells[col + 1, row] := df[col].AsValueLabel[row]
       else

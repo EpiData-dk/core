@@ -30,13 +30,11 @@ type
     FMin:              string;
     FMax:              string;
     FLegal:            string;
-    FMissingValues:    TMissingValues;
     FDefaultValue:     string;
     FAutoFields:       string;
     FAutoList:         Boolean;
     FJumps:            string;
     FJumpResetChar:    Char;
-    FValueLabel:       TValueLabelSet;
     FShowValueLabel:   Boolean;
     FValueLabelIsFieldRef: Boolean;
     FTypeType:         TTypeType;
@@ -45,8 +43,6 @@ type
     FHasGlobalDefaultVal: Boolean;
     FFieldScope:       TFieldScope;
     FFieldComments:    TStrings;
-    function           GetMissingValue(Index: integer): string;
-    procedure          SetMissingValue(Index: integer; Value: string);
     function           GetAutoSearch: Boolean;
     procedure          InternalReset;
   protected
@@ -56,8 +52,6 @@ type
     Destructor  Destroy; override;
     procedure   Reset;
     procedure   Clone(Var Dest: TEpiCheckField);
-    Property    ValueLabel:   TValueLabelSet read FValueLabel write FValueLabel;
-    Property    ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
     property    MustEnter:    boolean read FMustEntert write FMustEntert;
     property    NoEnter:      boolean read FNoEnter write FNoEnter;
     property    TopOfScreen:  Boolean read FTopOfScreen write FTopOfScreen;
@@ -69,7 +63,6 @@ type
     property    Min:          string read FMin write FMin;
     property    Max:          string read FMax write FMax;
     property    Legal:        string read FLegal write FLegal;
-    property    MissingValues[Index: integer]: string read GetMissingValue write SetMissingValue;
     property    DefaultValue: string read FDefaultValue write FDefaultValue;
     property    AutoFields:   string read FAutoFields write FAutoFields;
     property    AutoSearch:   Boolean read GetAutoSearch;
@@ -89,7 +82,6 @@ type
 
   TEpiCheckFile = class(TObject)
   private
-    FValueLabelSets:       TValueLabelSets;
     FTopComments:          TStringList;       //Commentlines in the top of the checkfile
     FBeforeFileCmds:       TChkCommands;      //Commands to be run when file is opened
     FAfterFileCmds:        TChkCommands;      //Commands to be run when file is closed
@@ -124,7 +116,6 @@ type
     function    DefineExists(Const aName: string): Boolean;
     function    DefineByName(Const aName: string): TEpiField;
     procedure   AddDefine(Field: TEpiField);
-    Property    ValueLabels:      TValueLabelSets read FValueLabelSets;
     Property    BeforeFileCmds:   TChkCommands read FBeforeFileCmds write FBeforeFileCmds;        //Commands to be run when file is opened
     Property    AfterFileCmds:    TChkCommands read FAfterFileCmds write FAfterFileCmds;          //Commands to be run when file is closed
     Property    BeforeRecordCmds: TChkCommands read FBeforeRecordCmds write FBeforeRecordCmds;    //Commands to be run before current record changes
@@ -164,9 +155,10 @@ type
     FFieldType:    TFieldType;
     FFieldLength:  Cardinal;
     FFieldDecimals: Cardinal;
+    FValueLabelIsFieldRef: Boolean;
     FVariableLabel: string;
-    FCheckField:   TEpiCheckField;
-    function       GetValueLabel: TValueLabelSet;
+    FCheckField:    TEpiCheckField;
+    FValueLabelSet: TValueLabelSet;
 //    function       GetAsFmtData: string;
   protected
     FCurrentData: String;
@@ -183,7 +175,7 @@ type
     function GetAsValueLabel(const index: Integer): string; virtual;
     function GetCapacity: Integer; virtual; abstract;
     function GetIsMissing(const index: Integer): boolean; virtual; abstract;
-    function GetIsMissingValue(const index: Integer): boolean; virtual; abstract;
+    function GetIsMissingValue(const index: Integer): boolean; virtual;
     function GetSize: Integer; virtual;
     procedure Grow; virtual;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); virtual; abstract;
@@ -215,7 +207,8 @@ type
     property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
     property  CheckField:  TEpiCheckField read FCheckField write FCheckField;
-    property  ValueLabelSet: TValueLabelSet read GetValueLabel;
+    property  ValueLabelSet: TValueLabelSet read FValueLabelSet write FValueLabelSet;
+    Property  ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
     property  Owner:       TEpiFields read FOwner;
     property  DataFile:    TEpiDataFile read FDataFile write FDataFile;
     property  Size: Integer read GetSize write SetSize;
@@ -248,7 +241,6 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
-    function GetIsMissingValue(const index: Integer): boolean; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
@@ -284,7 +276,6 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
-    function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
@@ -319,7 +310,6 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
-    function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
@@ -354,7 +344,6 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
-    function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
@@ -389,7 +378,6 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
-    function GetIsMissingValue(const index: Integer): boolean; override;
     function GetSize: Integer; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
@@ -463,8 +451,8 @@ type
   private
     FFileName:     string;                  // Physical datafile name.
     FFileLabel:    string;                  // Label of datafile. (METADATA)
-    FMissingValues: TObject;
     FStudy:        string;                  // Study information (METADATA)
+    FValueLabels:  TValueLabelSets;         // Valuelabels (METADATA)
     FFields:       TEpiFields;              // Container for all associated fields. (Owned)
     FDataFields:   TEpiFields;              // - holds list of data fields only. (Not Owned)
     FQuestFields:  TEpiFields;              // - holds list of question fields only. (Not Owned. FieldType = ftQuestion)
@@ -485,7 +473,6 @@ type
     function   GetField(Index: integer): TEpiField;
     function   GetIndexFile: TEpiIndexFile;
     function   GetSize: Integer;
-    function   GetValueLabels: TValueLabelSets;
     function   GetVerified(Index: integer): boolean;
     procedure  InternalReset;
     procedure  SetDeleted(Index: integer; const AValue: boolean);
@@ -519,9 +506,7 @@ type
     property   Fields:      TEpiFields read FFields;
     property   DataFields:  TEpiFields read FDataFields;
     property   QuestFields: TEpiFields read FQuestFields;
-    property   ValueLabels: TValueLabelSets read GetValueLabels;
-    // TODO : TMissingValueSets;
-    property   MissingValues: TObject read FMissingValues;
+    property   ValueLabels: TValueLabelSets read FValueLabels write FValueLabels;
     property   Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
     property   Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
@@ -563,16 +548,6 @@ const
 
 { TEpiCheckField }
 
-function TEpiCheckField.GetMissingValue(Index: integer): string;
-begin
-  Result := FMissingValues[Index];
-end;
-
-procedure TEpiCheckField.SetMissingValue(Index: integer; Value: string);
-begin
-  FMissingValues[Index] := Value; 
-end;
-
 function TEpiCheckField.GetAutoSearch: Boolean;
 begin
   Result := AutoFields <> '';
@@ -599,8 +574,6 @@ begin
   FAutoList          := false;
   FJumps             := '';
   FJumpResetChar     := #32;
-  // Destruction is ALWAYS HANDLED BY TEpiCheckFile!!!
-  FValueLabel        := nil;
   FShowValueLabel    := false;
   FValueLabelIsFieldRef  := false;
   FTypeType           := ttNone;
@@ -665,8 +638,6 @@ begin
   FAfterCmds.Clone(TmpCmd);
 
   Dest.FFieldComments.Assign(FFieldComments);
-  for i := 0 to 2 do
-    Dest.FMissingValues[i] := FMissingValues[i];
 end;
 
 procedure TEpiCheckField.Reset;
@@ -701,7 +672,6 @@ procedure TEpiCheckFile.Reset;
 begin
   InternalReset;
 
-  FValueLabelSets := TValueLabelSets.Create;
   FBackupList     := TStringList.Create;
   FTopComments    := TStringList.Create;
   FDefines        := TEpiFields.Create(nil);
@@ -736,7 +706,6 @@ end;
 
 procedure TEpiCheckFile.InternalReset;
 begin
-  if Assigned(FValueLabelSets)   then FreeAndNil(FValueLabelSets);
   if Assigned(FTopComments)      then FreeAndNil(FTopComments);
   if Assigned(FBeforeFileCmds)   then FreeAndNil(FBeforeFileCmds);
   if Assigned(FAfterFileCmds)    then FreeAndNil(FAfterFileCmds);
@@ -763,13 +732,6 @@ end;
 
 { TEpiField }
 
-function TEpiField.GetValueLabel: TValueLabelSet;
-begin
-  result := nil;
-  if Assigned(CheckField) then
-    result := CheckField.ValueLabel;
-end;
-
 procedure TEpiField.CheckIndex(const index: integer);
 begin
   if (Index < 1) or (Index > Size) then
@@ -782,6 +744,15 @@ begin
   if IsMissing[index] then exit;
   if Assigned(ValueLabelSet) then
     result := ValueLabelSet.ValueLabel[AsString[Index]];
+end;
+
+function TEpiField.GetIsMissingValue(const index: Integer): boolean;
+begin
+  result := false;
+  if not Assigned(ValueLabelSet) then
+    exit
+  else
+    result := ValueLabelSet.MissingValue[AsValue[Index]];
 end;
 
 {function TEpiField.GetAsFmtData: string;
@@ -898,24 +869,21 @@ begin
   if CloneData then
     Result.AssignData(Self);
 
-  // Set Valuelabels here since CheckField does not have Owner info.
   // Scenarios:
   // - 1: Result field has a link to a Datafile. Then any potential valuelabels should be found
   //      through Result.Datafile's valuelabelsets.
   // - 2: Result has NO Datafile. This could be a temporary clone, etc.
-  //      Copy the Valuelabelset, assign it to Result field (and posibly also create
-  //      the CheckField) and let and TEpiDataFile.AddField handle Valuelabels.
+  //      Copy the Valuelabelset, assign it to Result field and let
+  //      TEpiDataFile.AddField handle Valuelabels.
   //      This will reset label type (to vlsLocal), since at present it is not known
   //      how the valuelabelset is related to anything else...
   if Assigned(ValueLabelSet) then
   begin
     if Assigned(Result.DataFile) then
     begin
-      Result.CheckField.FValueLabel := Result.DataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
+      Result.ValueLabelSet := Result.DataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
     end else begin
-      If not Assigned(Result.CheckField) then
-        Result.CheckField := TEpiCheckField.Create();
-      ValueLabelSet.Clone(Result.CheckField.FValueLabel);
+      ValueLabelSet.Clone(Result.FValueLabelSet);
       Result.ValueLabelSet.LabelScope := vlsLocal;
     end;
   end;
@@ -943,6 +911,7 @@ begin
 
   FOwner         := nil;
   FDataFile      := nil;
+  FValueLabelSet := nil;
   FFieldName     := '';
   FQuestX        := 0;
   FQuestY        := 0;
@@ -1064,13 +1033,6 @@ begin
   result := FRecordStatus.Size;
 end;
 
-function TEpiDataFile.GetValueLabels: TValueLabelSets;
-begin
-  result := nil;
-  if Assigned(CheckFile) then
-    Result := CheckFile.ValueLabels;
-end;
-
 function TEpiDataFile.GetVerified(Index: integer): boolean;
 begin
   result := FRecordStatus.AsInteger[index] = Ord(rsVerified);
@@ -1085,6 +1047,7 @@ begin
   if Assigned(FIndexFile) then FreeAndNil(FIndexFile);
   if Assigned(FCrypter) then FreeAndNil(FCrypter);
   if Assigned(FRecordStatus) then FreeAndNil(FRecordStatus);
+  if Assigned(FValueLabels) then FreeAndNil(FValueLabels);
 
   FFileName       := '';
   FFileLabel      := '';
@@ -1130,6 +1093,7 @@ var
   RecXml: TXMLDocument;
   RootNode: TDOMElement;
   ElemNode: TDOMElement;
+  PairNode: TDOMElement;
   SectionNode: TDOMNode;
   TmpStr: String;
   TmpFieldType: TFieldType;
@@ -1144,6 +1108,15 @@ var
   LocalDf: TEpiDataFile;
   ValueField: TEpiField;
   TextField: TEpiField;
+  Val: Variant;
+
+  procedure ReportError(ErrCode: Integer; LangCode: integer; Msg: String; Args: array of const);
+  begin
+    ErrorCode := ErrCode;
+    ErrorText := Format(Lang(LangCode, Msg), Args);
+    EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, LangCode);
+  end;
+
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'InternalOpen', 2, 'Filename = ' + Filename);
@@ -1163,8 +1136,8 @@ begin
     SectionNode := RootNode.FindNode('SETTINGS');
     if not Assigned(ElemNode) then
     begin
-      ErrorCode := EPI_DATAFILE_FORMAT_ERROR;
-      ErrorText := Format(Lang(0, 'SETTINGS Section missing in file: %s'), [FileName]);
+      ReportError(EPI_DATAFILE_FORMAT_ERROR, 0,
+        'SETTINGS Section missing in file: %s', [FileName]);
       Exit;
     end;
 
@@ -1172,8 +1145,8 @@ begin
     ElemNode := TDOMElement(SectionNode.FindNode('VERSION'));
     if not Assigned(ElemNode) then
     begin
-      ErrorCode := EPI_FILE_VERSION_ERROR;
-      ErrorText := Format(Lang(0, 'No format version specified for file: %s'), [FileName]);
+      ReportError(EPI_FILE_VERSION_ERROR, 0,
+        'No format version specified for file: %s', [FileName]);
       Exit;
     end;
 
@@ -1202,9 +1175,8 @@ begin
     ElemNode := TDOMElement(SectionNode.FindNode('PASSWORD'));
     if Assigned(ElemNode) and (not RequestPassword(UTF8Encode(ElemNode.TextContent))) then
     begin
-      ErrorText := Lang(9020, 'Incorrect password entered');
-      ErrorCode := EPI_INVALID_PASSWORD;
-      EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+      ReportError(EPI_INVALID_PASSWORD, 9020,
+        'Incorrect password entered', []);
       Exit;
     end;
 
@@ -1236,14 +1208,29 @@ begin
         begin
           if UTF8Encode(ElemNode.NodeName) <> 'LABEL' then
           begin
-            ErrorText := Format(Lang(0, 'Unknown TAG placed in LABELS section: %s'), [UTF8Encode(ElemNode.NodeName)]);
-            ErrorCode := EPI_XML_UNKNOWN_TAG;
-            EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 9020);
+            ReportError(EPI_XML_UNKNOWN_TAG, 0,
+              'Unknown TAG placed in LABELS section: %s', [UTF8Encode(ElemNode.NodeName)]);
             Exit;
           end;
 
-          LocalValueLabel := TValueLabelSet.Create(TFieldType(StrToInt(UTF8Encode(ElemNode.GetAttribute('TYPE')))));
-          LocalValueLabel.Name := UTF8Encode(ElemNode.GetAttribute('NAME'));
+          TmpStr := UTF8Encode(ElemNode.GetAttribute('TYPE'));
+          if TmpStr = '' then
+          begin
+            ReportError(EPI_XML_TAG_MISSING, 0,
+              'Valuelabel type not specified.', []);
+            Exit;
+          end;
+          LocalValueLabel := TValueLabelSet.Create(TFieldType(StrToInt(TmpStr)));
+
+          TmpStr := UTF8Encode(ElemNode.GetAttribute('NAME'));
+          if TmpStr = '' then
+          begin
+            ReportError(EPI_XML_TAG_MISSING, 0,
+              'Valuelabel name not specified.', []);
+            Exit;
+          end;
+
+          LocalValueLabel.Name := TmpStr;
           TmpStr := UTF8Encode(ElemNode.GetAttribute('EXTERNAL'));
           if TmpStr <> '' then
           begin
@@ -1253,28 +1240,25 @@ begin
             LocalDf.OnPassword := OnPassword;
             if not LocalDf.Open(TmpStr, [eoIgnoreRelates]) then
             begin
-              ErrorText := Format(Lang(0,'Datafile %s could not be opened'), [TmpStr]);
-              ErrorCode := EPI_DATAFILE_NOT_OPEN;
-              EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+              ReportError(EPI_DATAFILE_NOT_OPEN, 0,
+                'Datafile %s could not be opened', [TmpStr]);
               Exit;
             end;
             if LocalDf.Size = 0 then
             begin
-              ErrorText := Format(Lang(0,'Datafile %s does not contain any records'), [TmpStr]);
-              ErrorCode := EPI_DATAFILE_NOT_OPEN;
-              EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+              ReportError(EPI_DATAFILE_NOT_OPEN, 0,
+                'Datafile %s does not contain any records', [TmpStr]);
               Exit;
             end;
 
             if LocalDf.IndexFile.IndexCount < 2 then
             begin
-              ErrorText := Format(Lang(0,'Datafile %s must contain two KEY-fields'), [TmpStr]);
-              ErrorCode := EPI_DATAFILE_NOT_OPEN;
-              EpiLogger.AddError(ClassName, 'InternalOpen', ErrorText, 0);
+              ReportError(EPI_DATAFILE_NOT_OPEN, 0,
+                'Datafile %s must contain two KEY-fields', [TmpStr]);
               Exit;
             end;
             ValueField := LocalDf.IndexFile.IndexFields[1];
-            TextField := LocalDf.IndexFile.IndexFields[1];
+            TextField := LocalDf.IndexFile.IndexFields[2];
 
             for i := 1 to LocalDf.Size do
               LocalValueLabel.AddValueLabelPair(ValueField.AsValue[i], TextField.AsString[i]);
@@ -1284,10 +1268,41 @@ begin
           end else begin
             // LOCAL Value labels...
             // ------------------------
+            PairNode := TDOMElement(ElemNode.FirstChild);
+            while Assigned(PairNode) do
+            begin
+              if UTF8Encode(PairNode.NodeName) <> 'SET' then
+              begin
+                ReportError(EPI_XML_UNKNOWN_TAG, 0,
+                  'Unknown TAG placed in LABEL section: %s', [UTF8Encode(PairNode.NodeName)]);
+                exit;
+              end;
 
+              TmpStr := UTF8Encode(PairNode.GetAttribute('VALUE'));
+              if TmpStr = '' then
+              begin
+                ReportError(EPI_XML_ATTR_MISSING, 0,
+                  'Attribute VALUE is missing in valuelabel %s', [LocalValueLabel.Name]);
+                Exit;
+              end;
+              Case LocalValueLabel.LabelType of
+                ftInteger: Val := StrToInt(TmpStr);
+                ftFloat:   Val := StrToFloat(TmpStr, LocalFmt);
+                ftString,
+                ftBoolean: Val := TmpStr;
+              end;
+              TmpStr := UTF8Encode(PairNode.GetAttribute('LABEL'));
+              LocalValueLabel.AddValueLabelPair(Val, TmpStr, UTF8Encode(PairNode.GetAttribute('MISSING')) = '1');
+
+              PairNode := TDOMElement(PairNode.NextSibling);
+            end;
+            ValueLabels.AddValueLabelSet(LocalValueLabel);
           end;
+          ElemNode := TDOMElement(ElemNode.NextSibling);
         end;
       end;
+
+      // TODO : User section
     end;
 
     // **********************
@@ -1304,6 +1319,12 @@ begin
       TmpField.FieldLength   := StrToInt(ElemNode.GetAttribute('LENGTH'));
       TmpField.FieldDecimals   := StrToInt(ElemNode.GetAttribute('DEC'));
       TmpField.VariableLabel := UTF8Encode(ElemNode.GetAttribute('LABEL'));
+
+      // Valuelabel
+      TmpStr := UTF8Encode(ElemNode.GetAttribute('VLABEL'));
+      if TmpStr <> '' then
+        TmpField.ValueLabelSet := ValueLabels.ValueLabelSetByName(TmpStr);
+
       AddField(TmpField);
       ElemNode := TDOMElement(ElemNode.NextSibling);
     end;
@@ -1319,9 +1340,17 @@ begin
     begin
       for i := 0 to ElemNode.Attributes.Length - 1 do
       begin
-        // 5 should be enough - fieldcount > 5 digits is not likely.
-        Idx := StrToInt(Copy(ElemNode.Attributes[i].NodeName, 2, 5));
-        Field[Idx].AsString[CurRec] := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+        if ElemNode.Attributes[i].NodeName = 'S' then
+        begin
+          if ElemNode.Attributes[i].NodeValue = '1' then
+            Deleted[CurRec] := true
+          else if ElemNode.Attributes[i].NodeValue = '2' then
+            Verified[CurRec] := true;
+        end else begin
+          // 5 should be enough - fieldcount > 5 digits is not likely.
+          Idx := StrToInt(Copy(ElemNode.Attributes[i].NodeName, 2, 5));
+          Field[Idx - 1].AsString[CurRec] := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+        end;
       end;
       inc(CurRec);
       ElemNode := TDOMElement(ElemNode.NextSibling);
@@ -1685,14 +1714,15 @@ begin
       with Items[i] do
       begin
         TmpStr := TmpStr +
-          '      <LABEL NAME="' + StringToXml(Name) + '"';
+          '      <LABEL NAME="' + StringToXml(Name) +
+          '" TYPE="' + IntToStr(Ord(LabelType));
         case LabelScope of
           vlsFile:
-            TmpStr := TmpStr + ' EXTERNAL="' + StringToXml(Name) + '"/>' + LineEnding;
+            TmpStr := TmpStr + '" EXTERNAL="' + StringToXml(Name) + '"/>' + LineEnding;
           vlsGlobal,
           vlsLocal:
             Begin
-              TmpStr := TmpStr + ' TYPE="' + IntToStr(Ord(LabelType)) + '">' + LineEnding;
+              TmpStr := TmpStr + '">' + LineEnding;
               for j := 0 to Count - 1 do
               begin
                 TmpStr := TmpStr  +
@@ -1735,7 +1765,7 @@ begin
         TmpStr := TmpStr  + '" VLABEL="' + ValueLabelSet.Name;
       if Trim(VariableLabel) <> '' then
         TmpStr := TmpStr + '" LABEL="' + StringToXml(VariableLabel);
-      TmpStr := TmpStr + '"/>"' + LineEnding;
+      TmpStr := TmpStr + '"/>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     TmpStr := '  </FIELDS>' + LineEnding;
@@ -1764,14 +1794,11 @@ begin
         end;
         TmpStr := TmpStr + EncData + '"';
       end;
-      TmpStr := TmpStr + ' ST="';
       if Verified[CurRec] then
-        TmpStr := TmpStr + '2'
+        TmpStr := TmpStr + ' ST="2"'
       else if Deleted[CurRec] then
-        TmpStr := TmpStr + '1'
-      else
-        TmpStr := TmpStr + '0';
-      TmpStr := TmpStr + '"/>' + LineEnding;
+        TmpStr := TmpStr + ' ST="1"';
+      TmpStr := TmpStr + '/>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     TmpStr := '  </RECORDS>' + LineEnding;
@@ -2117,7 +2144,8 @@ begin
   FFields.Owned := True;
   FDataFields   := TEpiFields.Create(Self);
   FQuestFields  := TEpiFields.Create(Self);
-  FCheckFile    := TEpiCheckFile.Create();
+  FValueLabels  := TValueLabelSets.Create;
+  FCheckFile    := TEpiCheckFile.Create;
   FCrypter      := TDCP_rijndael.Create(nil);
 end;
 
@@ -2364,27 +2392,6 @@ begin
   result := AsInteger[Index] = DefaultMissing;
 end;
 
-function TEpiIntField.GetIsMissingValue(const index: Integer): boolean;
-var
-  i: Integer;
-  TmpInt: LongInt;
-begin
-  Result := false;
-  if IsMissing[Index] then exit;
-  if not Assigned(CheckField) then exit;
-
-  for i := 0 to MaxDefinedMissingValues do
-  begin
-    if CheckField.MissingValues[i] = '' then exit;
-    TmpInt := StrToInt(CheckField.MissingValues[i]);
-    if TmpInt = AsInteger[Index] then
-    begin
-      Result := true;
-      Exit;
-    end;
-  end;
-end;
-
 procedure TEpiIntField.SetAsBoolean(const index: Integer; const AValue: EpiBool
   );
 begin
@@ -2539,27 +2546,6 @@ end;
 function TEpiFloatField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsFloat[index] = DefaultMissing;
-end;
-
-function TEpiFloatField.GetIsMissingValue(const index: Integer): boolean;
-var
-  i: Integer;
-  TmpFlt: Extended;
-begin
-  Result := false;
-  if IsMissing[Index] then exit;
-  if not Assigned(CheckField) then exit;
-
-  for i := 0 to MaxDefinedMissingValues do
-  begin
-    if CheckField.MissingValues[i] = '' then exit;
-    TmpFlt := StrToFloat(CheckField.MissingValues[i]);
-    if TmpFlt = AsFloat[Index] then
-    begin
-      Result := true;
-      Exit;
-    end;
-  end;
 end;
 
 function TEpiFloatField.GetSize: Integer;
@@ -2768,26 +2754,6 @@ begin
   result := AsBoolean[index] = DefaultMissing;
 end;
 
-function TEpiBoolField.GetIsMissingValue(const index: Integer): boolean;
-var
-  i: Integer;
-  TmpBool: LongInt;
-begin
-  Result := false;
-  if IsMissing[Index] then exit;
-  if not Assigned(CheckField) then exit;
-
-  for i := 0 to MaxDefinedMissingValues do
-  begin
-    if CheckField.MissingValues[i] = '' then exit;
-    TmpBool := StrToInt(CheckField.MissingValues[i]);
-    if EpiBool(TmpBool) = AsBoolean[Index] then
-    begin
-      Result := true;
-      Exit;
-    end;
-  end;
-end;
 
 function TEpiBoolField.GetSize: Integer;
 begin
@@ -2950,25 +2916,6 @@ end;
 function TEpiStringField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsString[index] = DefaultMissing;
-end;
-
-function TEpiStringField.GetIsMissingValue(const index: Integer): boolean;
-var
-  i: Integer;
-begin
-  Result := false;
-  if IsMissing[Index] then exit;
-  if not Assigned(CheckField) then exit;
-
-  for i := 0 to MaxDefinedMissingValues do
-  begin
-    if CheckField.MissingValues[i] = '' then exit;
-    if CheckField.MissingValues[i] = AsString[Index] then
-    begin
-      Result := true;
-      Exit;
-    end;
-  end;
 end;
 
 function TEpiStringField.GetSize: Integer;
@@ -3143,27 +3090,6 @@ end;
 function TEpiDateField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsDate[index] = DefaultMissing;
-end;
-
-function TEpiDateField.GetIsMissingValue(const index: Integer): boolean;
-var
-  i: Integer;
-  TmpInt: LongInt;
-begin
-  Result := false;
-  if IsMissing[Index] then exit;
-  if not Assigned(CheckField) then exit;
-
-  for i := 0 to MaxDefinedMissingValues do
-  begin
-    if CheckField.MissingValues[i] = '' then exit;
-    TmpInt := StrToInt(CheckField.MissingValues[i]);
-    if TmpInt = AsInteger[Index] then
-    begin
-      Result := true;
-      Exit;
-    end;
-  end;
 end;
 
 function TEpiDateField.GetSize: Integer;

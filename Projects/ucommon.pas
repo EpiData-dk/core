@@ -319,12 +319,6 @@ NUM Name       Variable label        Type            Width  Checks              
                     CheckStr[nN2]:='Default value='+epd[nN].CheckField.DefaultValue;
                     INC(nN2);
                   END;
-                IF (epd[nN].CheckField.MissingValues[0]<>'') THEN
-                  BEGIN
-                    CheckStr[nN2]:='Missing value='+epd[nN].CheckField.MissingValues[0];
-                    IF (epd[nN].CheckField.MissingValues[1]<>'') THEN CheckStr[nN2]:=CheckStr[nN2]+','+epd[nN].CheckField.MissingValues[1];
-                    IF (epd[nN].CheckField.MissingValues[2]<>'') THEN CheckStr[nN2]:=CheckStr[nN2]+','+epd[nN].CheckField.MissingValues[2];
-                  END;
                 IF epd[nN].CheckField.NoEnter THEN
                   BEGIN
                     CheckStr[nN2]:='NoEnter';
@@ -381,11 +375,13 @@ NUM Name       Variable label        Type            Width  Checks              
                     aValue:=aValueLabelSet.Values[nN2-1];
                     aLabel:=aValueLabelSet.Labels[nN2-1];
                     IF aValue[1]<>'*' THEN
-                      BEGIN
-                        tmpStr:=aValue+': '+aLabel;
-                        IF Length(tmpStr)>20 THEN ValLabelStr[nN2]:=Copy(tmpStr,1,20)
-                        ELSE ValLabelStr[nN2]:=tmpStr;
-                      END;
+                    BEGIN
+                      tmpStr:=aValue+': '+aLabel;
+                      if aValueLabelSet.MissingValues[nN2-1] then
+                        tmpStr:=tmpStr + ' (missingvalue)';
+                      IF Length(tmpStr)>20 THEN ValLabelStr[nN2]:=Copy(tmpStr,1,20)
+                      ELSE ValLabelStr[nN2]:=tmpStr;
+                    END;
                     inc(nN2);
                   END;  //While
                 IF (nN2<aValueLabelSet.count) AND (nN2=25)
