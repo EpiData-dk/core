@@ -42,7 +42,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="90">
+    <Units Count="96">
       <Unit0>
         <Filename Value="minimalcore.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -65,7 +65,7 @@
         <Filename Value="ucommon.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCommon"/>
-        <CursorPos X="59" Y="381"/>
+        <CursorPos X="38" Y="357"/>
         <TopLine Value="350"/>
         <EditorIndex Value="4"/>
         <UsageCount Value="217"/>
@@ -159,8 +159,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UImportExport"/>
-        <CursorPos X="21" Y="1968"/>
-        <TopLine Value="1936"/>
+        <CursorPos X="21" Y="2399"/>
+        <TopLine Value="2367"/>
         <EditorIndex Value="3"/>
         <UsageCount Value="217"/>
         <Bookmarks Count="2">
@@ -364,7 +364,7 @@
         <UnitName Value="XMLRead"/>
         <CursorPos X="3" Y="323"/>
         <TopLine Value="183"/>
-        <UsageCount Value="0"/>
+        <UsageCount Value="10"/>
       </Unit37>
       <Unit38>
         <Filename Value="..\..\..\..\..\..\FreePascal\fpc\rtl\win\wininc\redef.inc"/>
@@ -546,13 +546,13 @@
         <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\objpas\sysutils\syswideh.inc"/>
         <CursorPos X="10" Y="21"/>
         <TopLine Value="1"/>
-        <UsageCount Value="0"/>
+        <UsageCount Value="10"/>
       </Unit66>
       <Unit67>
         <Filename Value="..\..\..\..\..\..\FPC\2.3.1\source\fpc\rtl\objpas\sysutils\syswide.inc"/>
         <CursorPos X="1" Y="25"/>
         <TopLine Value="21"/>
-        <UsageCount Value="0"/>
+        <UsageCount Value="10"/>
       </Unit67>
       <Unit68>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\sysinth.inc"/>
@@ -663,9 +663,9 @@
       <Unit85>
         <Filename Value="..\Utils\ErrorCodes.inc"/>
         <CursorPos X="30" Y="46"/>
-        <TopLine Value="2"/>
+        <TopLine Value="4"/>
         <EditorIndex Value="7"/>
-        <UsageCount Value="16"/>
+        <UsageCount Value="17"/>
         <Loaded Value="True"/>
       </Unit85>
       <Unit86>
@@ -692,128 +692,142 @@
         <TopLine Value="530"/>
         <UsageCount Value="10"/>
       </Unit89>
+      <Unit90>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpspreadsheet\fpspreadsheet.pas"/>
+        <UnitName Value="fpspreadsheet"/>
+        <CursorPos X="21" Y="637"/>
+        <TopLine Value="625"/>
+        <UsageCount Value="10"/>
+      </Unit90>
+      <Unit91>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpspreadsheet\fpsallformats.pas"/>
+        <UnitName Value="fpsallformats"/>
+        <CursorPos X="27" Y="13"/>
+        <TopLine Value="1"/>
+        <UsageCount Value="10"/>
+      </Unit91>
+      <Unit92>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpspreadsheet\xlsbiff8.pas"/>
+        <UnitName Value="xlsbiff8"/>
+        <CursorPos X="3" Y="287"/>
+        <TopLine Value="270"/>
+        <UsageCount Value="10"/>
+      </Unit92>
+      <Unit93>
+        <Filename Value="..\..\..\..\..\..\..\FreePascal\fpspreadsheet\fpolestorage.pas"/>
+        <UnitName Value="fpolestorage"/>
+        <CursorPos X="20" Y="719"/>
+        <TopLine Value="706"/>
+        <UsageCount Value="10"/>
+      </Unit93>
+      <Unit94>
+        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\packages\winunits-base\src\comobj.pp"/>
+        <UnitName Value="comobj"/>
+        <CursorPos X="8" Y="389"/>
+        <TopLine Value="387"/>
+        <UsageCount Value="10"/>
+      </Unit94>
+      <Unit95>
+        <Filename Value="..\..\..\..\..\..\..\FPC\2.3.1\source\fpc\packages\winunits-base\src\activex.pp"/>
+        <UnitName Value="ActiveX"/>
+        <CursorPos X="12" Y="3694"/>
+        <TopLine Value="3673"/>
+        <UsageCount Value="10"/>
+      </Unit95>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="23" HistoryIndex="22">
       <Position1>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1363" Column="1" TopLine="1340"/>
+        <Caret Line="1364" Column="24" TopLine="1341"/>
       </Position1>
       <Position2>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1364" Column="1" TopLine="1341"/>
+        <Caret Line="1136" Column="20" TopLine="1109"/>
       </Position2>
       <Position3>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1353" Column="1" TopLine="1330"/>
+        <Caret Line="1339" Column="125" TopLine="1337"/>
       </Position3>
       <Position4>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1355" Column="1" TopLine="1332"/>
+        <Caret Line="220" Column="69" TopLine="190"/>
       </Position4>
       <Position5>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1363" Column="1" TopLine="1340"/>
+        <Caret Line="182" Column="72" TopLine="151"/>
       </Position5>
       <Position6>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1364" Column="1" TopLine="1341"/>
+        <Caret Line="777" Column="1" TopLine="757"/>
       </Position6>
       <Position7>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1353" Column="1" TopLine="1330"/>
+        <Caret Line="2427" Column="27" TopLine="2416"/>
       </Position7>
       <Position8>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1355" Column="1" TopLine="1332"/>
+        <Caret Line="69" Column="72" TopLine="46"/>
       </Position8>
       <Position9>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1363" Column="1" TopLine="1340"/>
+        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
+        <Caret Line="2824" Column="50" TopLine="2801"/>
       </Position9>
       <Position10>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1364" Column="24" TopLine="1341"/>
+        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
+        <Caret Line="1773" Column="48" TopLine="1736"/>
       </Position10>
       <Position11>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1136" Column="20" TopLine="1109"/>
+        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
+        <Caret Line="1776" Column="1" TopLine="1749"/>
       </Position11>
       <Position12>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="1339" Column="125" TopLine="1337"/>
+        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
+        <Caret Line="1775" Column="62" TopLine="1753"/>
       </Position12>
       <Position13>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="220" Column="69" TopLine="190"/>
+        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
+        <Caret Line="1822" Column="64" TopLine="1805"/>
       </Position13>
       <Position14>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="182" Column="72" TopLine="151"/>
+        <Caret Line="94" Column="42" TopLine="71"/>
       </Position14>
       <Position15>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="777" Column="1" TopLine="757"/>
+        <Caret Line="646" Column="1" TopLine="611"/>
       </Position15>
       <Position16>
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="2427" Column="27" TopLine="2416"/>
+        <Caret Line="2400" Column="1" TopLine="2388"/>
       </Position16>
       <Position17>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="69" Column="72" TopLine="46"/>
-      </Position17>
-      <Position18>
-        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
-        <Caret Line="2824" Column="50" TopLine="2801"/>
-      </Position18>
-      <Position19>
-        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
-        <Caret Line="1801" Column="57" TopLine="1827"/>
-      </Position19>
-      <Position20>
-        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
-        <Caret Line="1773" Column="48" TopLine="1736"/>
-      </Position20>
-      <Position21>
-        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
-        <Caret Line="1776" Column="1" TopLine="1749"/>
-      </Position21>
-      <Position22>
-        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
-        <Caret Line="1775" Column="62" TopLine="1753"/>
-      </Position22>
-      <Position23>
-        <Filename Value="..\Datafile\UCheckFileIO.pas"/>
-        <Caret Line="1822" Column="64" TopLine="1805"/>
-      </Position23>
-      <Position24>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="94" Column="42" TopLine="71"/>
-      </Position24>
-      <Position25>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="646" Column="1" TopLine="611"/>
-      </Position25>
-      <Position26>
-        <Filename Value="..\Datafile\UEpiDataFile.pas"/>
-        <Caret Line="2400" Column="1" TopLine="2388"/>
-      </Position26>
-      <Position27>
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <Caret Line="867" Column="1" TopLine="821"/>
-      </Position27>
-      <Position28>
+      </Position17>
+      <Position18>
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <Caret Line="962" Column="3" TopLine="933"/>
-      </Position28>
-      <Position29>
+      </Position18>
+      <Position19>
         <Filename Value="..\Datafile\uimportexport.pas"/>
         <Caret Line="990" Column="1" TopLine="957"/>
-      </Position29>
-      <Position30>
+      </Position19>
+      <Position20>
         <Filename Value="ucommon.pas"/>
         <Caret Line="96" Column="1" TopLine="73"/>
-      </Position30>
+      </Position20>
+      <Position21>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="2399" Column="20" TopLine="2376"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="197" Column="12" TopLine="169"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\Datafile\uimportexport.pas"/>
+        <Caret Line="2399" Column="21" TopLine="2367"/>
+      </Position23>
     </JumpHistory>
   </ProjectOptions>
   <CompilerOptions>

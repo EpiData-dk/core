@@ -2380,23 +2380,16 @@ begin
         ACell^.Col := i;
         ACell^.Row := CurRec - 1 + OffSet;
 
-        TmpStr := DataFields[i].AsString[CurRec];
+        if DataFields[i].IsMissing[CurRec] then
+          continue;
         case DataFields[i].FieldType of
-{          ftDate, ftEuroDate, ftYMDDate,
-          ftToday, ftEuroToday, ftYMDToday:
-            begin
-              ACell^.UTF8StringValue := 'Date not supported';
-              ACell^.ContentType := cctUTF8String;
-            end; }
           ftFloat, ftInteger, ftIDNUM:
-            if Trim(TmpStr) = '' then
-              continue
-            else begin
-              ACell^.NumberValue := StrToFloat(TmpStr);
+            begin
+              ACell^.NumberValue := DataFields[i].AsFloat[CurRec];
               ACell^.ContentType := cctNumber;
             end
         else
-          ACell^.UTF8StringValue := TmpStr;
+          ACell^.UTF8StringValue := DataFields[i].AsString[CurRec];
           ACell^.ContentType := cctUTF8String;
         end;
         WorkSheet.Cells.Add(ACell);
