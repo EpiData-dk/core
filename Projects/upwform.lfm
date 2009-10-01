@@ -1,13 +1,13 @@
 object formPW: TformPW
-  Left = 310
-  Height = 188
-  Top = 225
-  Width = 356
+  Left = 682
+  Height = 207
+  Top = 472
+  Width = 388
   ActiveControl = editPW1
   BorderStyle = bsDialog
   Caption = 'Password'
-  ClientHeight = 188
-  ClientWidth = 356
+  ClientHeight = 207
+  ClientWidth = 388
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   OnCloseQuery = FormCloseQuery
@@ -57,19 +57,24 @@ object formPW: TformPW
     TabOrder = 1
   end
   object btnOK: TBitBtn
-    Left = 64
-    Height = 25
+    Left = 32
+    Height = 32
     Top = 136
-    Width = 75
+    Width = 80
+    Caption = 'Ok'
+    Default = True
     Kind = bkOK
+    ModalResult = 1
     TabOrder = 2
   end
   object btnCancel: TBitBtn
     Left = 208
-    Height = 25
+    Height = 32
     Top = 136
-    Width = 75
+    Width = 105
+    Caption = 'Cancel'
     Kind = bkCancel
+    ModalResult = 2
     TabOrder = 3
   end
 end

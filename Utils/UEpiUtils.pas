@@ -109,6 +109,8 @@ begin
     CompareList.Add(TmpStr);
   end else if (not CheckVariableName(TmpStr, AlfaNumChars + ['_'])) then
     TmpStr := 'V1';
+
+  Result := TmpStr;
 end;
 
 function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;

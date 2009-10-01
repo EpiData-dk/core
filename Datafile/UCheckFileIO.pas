@@ -2467,6 +2467,8 @@ BEGIN
   for i := 0 to aValueLabelSet.Count - 1do
   with aValueLabelSet do
   BEGIN
+    if MissingValues[i] then continue;
+
     S := '';
     if Pos(' ', Values[i]) > 0 then
       S := S + '"' + Values[i] + '"'

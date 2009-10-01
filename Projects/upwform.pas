@@ -10,6 +10,9 @@ uses
   Dialogs, StdCtrls, Buttons;
 
 type
+
+  { TformPW }
+
   TformPW = class(TForm)
     Label1: TLabel;
     labelRepeatPW: TLabel;
@@ -18,6 +21,7 @@ type
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
     labelFilename: TLabel;
+    procedure btnOKClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
@@ -37,6 +41,11 @@ procedure TformPW.FormCreate(Sender: TObject);
 begin
   labelFilename.Caption:='';
   SetDoublePW(false);
+end;
+
+procedure TformPW.btnOKClick(Sender: TObject);
+begin
+
 end;
 
 procedure TformPW.SetDoublePW(value:boolean);

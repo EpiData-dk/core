@@ -397,7 +397,7 @@ begin
   FName := '';
   FCurrentNode := nil;
   FCurrentIndex := -1;
-  LabelType := aLabelType;
+  FLabelType := aLabelType;
   if LabelType = ftString then
     FData := TAVLTree.Create(@StringCompare)
   else

@@ -3,7 +3,7 @@ program minimalcore;
 {$codepage UTF8}
 {$mode objfpc}{$H+}
 
-{$DEFINE EPI_DEBUG}
+{.$DEFINE EPI_DEBUG}
 
 {$IFDEF EPI_DEBUG}
 

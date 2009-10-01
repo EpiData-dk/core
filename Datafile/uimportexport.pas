@@ -1167,17 +1167,15 @@ BEGIN
             TmpField := TEpiField.CreateField(ftDate, nObs);
             TmpField.FieldLength := 10;
           End;
-        'F':
+        'F', 'N':
           Begin
-            TmpField := TEpiField.CreateField(ftFloat, nObs);
+            if ByteBuf[5] > 0 then
+              TmpField := TEpiField.CreateField(ftFloat, nObs)
+            else
+              TmpField := TEpiField.CreateField(ftInteger, nObs);
             TmpField.FieldLength := ByteBuf[4];
             TmpField.FieldDecimals := ByteBuf[5];
           end;
-        'N':
-          Begin
-            TmpField := TEpiField.CreateField(ftInteger, nObs);
-            TmpField.FieldLength := ByteBuf[4];
-          End;
         'L':
           Begin
             TmpField := TEpiField.CreateField(ftBoolean, nObs);
@@ -1416,6 +1414,8 @@ var
   FieldNameInRow1: Boolean;
   TmpField: TEpiField;
   Stop: Boolean;
+  LineSt: Integer;
+  Idx: Integer;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'ImportSpreadSheet', 2, 'Filename = ' + aFilename);
@@ -1428,6 +1428,8 @@ begin
 
   With DataFile do
   TRY
+    FieldNaming := fnAuto;
+    FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Unpacking spreadsheet'));
 
     WorkBook := TsWorkbook.Create;
@@ -1588,27 +1590,31 @@ begin
     { ====================
       Start reading data
       ==================== }
-    Size := RowEnd - (RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0')))) + 1;
+    LineSt := 0;
+    if FieldNameInRow1 then
+      LineSt := 1;
 
-    for i := RowStart + StrToInt((BoolToStr(FieldNameInRow1, '1', '0'))) to RowEnd do
+    Size := RowEnd - RowStart - LineSt + 1;
+
+    for i := RowStart + LineSt to RowEnd do
     begin
-      UpdateProgress(Trunc((I / RowEnd) * 100), Lang(0, 'Importing records...'));
+      Idx := (i - RowStart - LineSt) + 1;
+      UpdateProgress(Trunc((Idx / (RowEnd- RowStart)) * 100), Lang(0, 'Importing records...'));
       for j := ColStart to ColEnd do
       with  DataFields[j - ColStart] do
       begin
         ACell := WorkSheet.GetCell(i, j);
-
         case FieldType of
           ftInteger, ftFloat:
-            AsFloat[i - RowStart] := ACell^.NumberValue;
+            AsFloat[Idx] := ACell^.NumberValue;
           ftDate, ftEuroDate, ftYMDDate:
             Begin
               TmpStr := ACell^.UTF8StringValue;
               EpiIsDate(TmpStr, FieldType);
-              AsString[i - RowStart] := TmpStr;
+              AsString[Idx] := TmpStr;
             end;
           ftString:
-            AsString[i - RowStart] := ACell^.UTF8StringValue;
+            AsString[Idx] := ACell^.UTF8StringValue;
         end;
       end;
     end;

@@ -1349,7 +1349,15 @@ begin
         end else begin
           // 5 should be enough - fieldcount > 5 digits is not likely.
           Idx := StrToInt(Copy(ElemNode.Attributes[i].NodeName, 2, 5));
-          Field[Idx - 1].AsString[CurRec] := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+          TmpStr := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+          if Field[Idx-1].FieldType = ftCrypt then
+          begin
+            TmpStr := B64Decode(TmpStr);
+            FCrypter.DecryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
+            TmpStr := Trim(TmpStr);
+            FCrypter.Reset;
+          end;
+          Field[Idx - 1].AsString[CurRec] := TmpStr;;
         end;
       end;
       inc(CurRec);
@@ -1617,7 +1625,7 @@ function TEpiDataFile.InternalSave: boolean;
 var
   CurField: Integer;
   CurRec: Integer;
-  TmpStr: String;
+  TmpStr, TmpStr2: String;
   DataStream: TFileStream;
   EncData: String;
   j: Integer;
@@ -1683,6 +1691,10 @@ begin
     if RequirePassword then
     begin
       // TODO : What about UTF-8 encoding??
+      if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
+      if Password = '' then
+        raise Exception.Create('A password is needed for data files with encrypted fields');
+      FCrypter.InitStr(Password);
       EncData := Trim(Password);
       FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
       EncData := B64Encode(EncData);
@@ -1726,7 +1738,7 @@ begin
               for j := 0 to Count - 1 do
               begin
                 TmpStr := TmpStr  +
-                  '        <SET VALUE="' + Values[j] + '"';
+                  '        <SET VALUE="' + String(Values[j]) + '"';
                 if Labels[j] <> '' then
                   TmpStr := TmpStr  + ' LABEL="' + Labels[j] + '"';
                 if MissingValues[j] then
@@ -1783,16 +1795,24 @@ begin
       for CurField := 0 to Fields.Count - 1 do
       with Fields[CurField] do
       begin
-        EncData := ' F' + IntToStr(CurField + 1) + '="';
+        TmpStr2 := ' F' + IntToStr(CurField + 1) + '="';
         Case FieldType of
           ftQuestion:
             Continue;
+          ftCrypt:
+            begin
+              EncData := AsString[CurRec];
+              FCrypter.InitStr(Password);
+              FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
+              TmpStr2 := TmpStr2 + B64Encode(EncData);
+              FCrypter.Reset;
+            end;
           ftString:
-            EncData := EncData + StringToXml(AsString[CurRec]);
+            TmpStr2 := TmpStr2 + StringToXml(AsString[CurRec]);
         else
-          EncData := EncData + AsString[CurRec];
+          TmpStr2 := TmpStr2 + AsString[CurRec];
         end;
-        TmpStr := TmpStr + EncData + '"';
+        TmpStr := TmpStr + TmpStr2 + '"';
       end;
       if Verified[CurRec] then
         TmpStr := TmpStr + ' ST="2"'

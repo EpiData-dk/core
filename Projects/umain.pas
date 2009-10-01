@@ -19,6 +19,7 @@ type
     acQuit: TAction;
     acSettings: TAction;
     ActionList1: TActionList;
+    saveAllFmtsBtn: TButton;
     clipBrdChkBox: TCheckBox;
     expclipBrdChkBox: TCheckBox;
     MainMenu1: TMainMenu;
@@ -77,6 +78,7 @@ type
     procedure expclipBrdChkBoxChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure readBtnClick(Sender: TObject);
+    procedure saveAllFmtsBtnClick(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure Button2Click(Sender: TObject);
@@ -171,6 +173,36 @@ begin
   finally
     if Assigned(ChkIO) then FreeAndNil(ChkIO);
     if Assigned(Stream) then FreeAndNil(Stream);
+  end;
+end;
+
+procedure TMainForm.saveAllFmtsBtnClick(Sender: TObject);
+var
+  TmpPath: String;
+  TmpFile: String;
+begin
+  if Trim(edOutputFile.Text) = '' then exit;
+  if Trim(Df.FileName) = '' then exit;
+
+  TmpPath := ExtractFilePath(edOutputFile.Text);
+  TmpFile := TmpPath + ExtractFileName(Df.FileName);
+
+  try
+    EpiLogger.Add('Saving files to: ' + TmpFile, 1);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(0)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(1)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportStata10);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(2)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportAll);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(3)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportTxtStandard);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(4)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportExcel8);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(5)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportOpenDocument);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(6)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
+    EpiLogger.Add('Save completed successfully!', 1);
+  except
+    EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
+    EpiLogger.Add('Please see "File Info:" tab-page for details.', 1);
+    PageControl1.ActivePage := TabSheet5;
+    Memo1.Lines.Clear;
+    Memo1.Lines.Add(Df.ErrorText);
   end;
 end;
 
@@ -382,13 +414,11 @@ begin
   Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edOutputFile.Text), Ext);
   EpiLogger.Add(('Saving file to: ' + BoolToStr(expclipBrdChkBox.Checked, 'Clipboard',Ext)), 1);
   SaveDialog1.FileName := ext;
-  {$IFNDEF EPI_DEBUG}
   if fileexists(ext) then
   begin
     EpiLogger.Add('Cannot overwrite existing file: ' + ext, 2);
-   // Exit;
+    Exit;
   end;
-  {$ENDIF EPI_DEBUG}
 
   if stataCombo.Visible then
   begin
@@ -413,21 +443,17 @@ begin
   if filetypeCombo.ItemIndex = 5 then
     PExpSettings := @ExportOpenDocument;
 
-{  if filetypeCombo.ItemIndex < 4 then
-  begin           }
   TS := DateTimeToTimeStamp(Now);
-    if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
-    begin
-      EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
-      EpiLogger.Add('Please see "File Info:" tab-page for details.', 1);
-      PageControl1.ActivePage := TabSheet5;
-      Memo1.Lines.Clear;
-      Memo1.Lines.Add(Df.ErrorText);
-    end else begin
-      EpiLogger.Add(Format('Save completed successfully in: %d ms.', [DateTimeToTimeStamp(Now).Time - TS.Time]), 1);
-    end;
-{  end else
-    EpiLogger.Add('File type not yet implemented', 2);    }
+  if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
+  begin
+    EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
+    EpiLogger.Add('Please see "File Info:" tab-page for details.', 1);
+    PageControl1.ActivePage := TabSheet5;
+    Memo1.Lines.Clear;
+    Memo1.Lines.Add(Df.ErrorText);
+  end else begin
+    EpiLogger.Add(Format('Save completed successfully in: %d ms.', [DateTimeToTimeStamp(Now).Time - TS.Time]), 1);
+  end;
 end;
 
 procedure TMainForm.closeBtnClick(Sender: TObject);

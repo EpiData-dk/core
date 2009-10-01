@@ -1,22 +1,24 @@
 { This is an automatically generated lazarus resource file }
 
 LazarusResources.Add('TformPW','FORMDATA',[
-  'TPF0'#7'TformPW'#6'formPW'#4'Left'#3'6'#1#6'Height'#3#188#0#3'Top'#3#225#0#5
-  +'Width'#3'd'#1#13'ActiveControl'#7#7'editPW1'#11'BorderStyle'#7#8'bsDialog'#7
-  +'Caption'#6#8'Password'#12'ClientHeight'#3#188#0#11'ClientWidth'#3'd'#1#11'F'
-  +'ont.Height'#2#245#9'Font.Name'#6#13'MS Sans Serif'#12'OnCloseQuery'#7#14'Fo'
-  +'rmCloseQuery'#8'OnCreate'#7#10'FormCreate'#8'Position'#7#16'poMainFormCente'
-  +'r'#10'LCLVersion'#6#6'0.9.29'#0#6'TLabel'#6'Label1'#4'Left'#2' '#6'Height'#2
-  +#14#3'Top'#2'8'#5'Width'#2'V'#7'Caption'#6#14'Enter password'#11'ParentColor'
-  +#8#0#0#6'TLabel'#13'labelRepeatPW'#4'Left'#2' '#6'Height'#2#14#3'Top'#2'X'#5
-  +'Width'#2'`'#7'Caption'#6#15'Repeat password'#11'ParentColor'#8#0#0#6'TLabel'
-  +#13'labelFilename'#4'Left'#2' '#6'Height'#2#14#3'Top'#2#16#5'Width'#2'2'#7'C'
-  +'aption'#6#8'Filename'#11'ParentColor'#8#0#0#5'TEdit'#7'editPW1'#4'Left'#3
-  +#136#0#6'Height'#2#23#3'Top'#2'8'#5'Width'#3#177#0#8'EchoMode'#7#10'emPasswo'
-  +'rd'#12'PasswordChar'#6#1'*'#8'TabOrder'#2#0#0#0#5'TEdit'#7'editPW2'#4'Left'
-  +#3#136#0#6'Height'#2#23#3'Top'#2'X'#5'Width'#3#177#0#8'EchoMode'#7#10'emPass'
-  +'word'#12'PasswordChar'#6#1'*'#8'TabOrder'#2#1#0#0#7'TBitBtn'#5'btnOK'#4'Lef'
-  +'t'#2'@'#6'Height'#2#25#3'Top'#3#136#0#5'Width'#2'K'#4'Kind'#7#4'bkOK'#8'Tab'
-  +'Order'#2#2#0#0#7'TBitBtn'#9'btnCancel'#4'Left'#3#208#0#6'Height'#2#25#3'Top'
-  +#3#136#0#5'Width'#2'K'#4'Kind'#7#8'bkCancel'#8'TabOrder'#2#3#0#0#0
+  'TPF0'#7'TformPW'#6'formPW'#4'Left'#3#170#2#6'Height'#3#207#0#3'Top'#3#216#1#5
+  +'Width'#3#132#1#13'ActiveControl'#7#7'editPW1'#11'BorderStyle'#7#8'bsDialog'
+  +#7'Caption'#6#8'Password'#12'ClientHeight'#3#207#0#11'ClientWidth'#3#132#1#11
+  +'Font.Height'#2#245#9'Font.Name'#6#13'MS Sans Serif'#12'OnCloseQuery'#7#14'F'
+  +'ormCloseQuery'#8'OnCreate'#7#10'FormCreate'#8'Position'#7#16'poMainFormCent'
+  +'er'#10'LCLVersion'#6#6'0.9.29'#0#6'TLabel'#6'Label1'#4'Left'#2' '#6'Height'
+  +#2#14#3'Top'#2'8'#5'Width'#2'V'#7'Caption'#6#14'Enter password'#11'ParentCol'
+  +'or'#8#0#0#6'TLabel'#13'labelRepeatPW'#4'Left'#2' '#6'Height'#2#14#3'Top'#2
+  +'X'#5'Width'#2'`'#7'Caption'#6#15'Repeat password'#11'ParentColor'#8#0#0#6'T'
+  +'Label'#13'labelFilename'#4'Left'#2' '#6'Height'#2#14#3'Top'#2#16#5'Width'#2
+  +'2'#7'Caption'#6#8'Filename'#11'ParentColor'#8#0#0#5'TEdit'#7'editPW1'#4'Lef'
+  +'t'#3#136#0#6'Height'#2#23#3'Top'#2'8'#5'Width'#3#177#0#8'EchoMode'#7#10'emP'
+  +'assword'#12'PasswordChar'#6#1'*'#8'TabOrder'#2#0#0#0#5'TEdit'#7'editPW2'#4
+  +'Left'#3#136#0#6'Height'#2#23#3'Top'#2'X'#5'Width'#3#177#0#8'EchoMode'#7#10
+  +'emPassword'#12'PasswordChar'#6#1'*'#8'TabOrder'#2#1#0#0#7'TBitBtn'#5'btnOK'
+  +#4'Left'#2' '#6'Height'#2' '#3'Top'#3#136#0#5'Width'#2'P'#7'Caption'#6#2'Ok'
+  +#7'Default'#9#4'Kind'#7#4'bkOK'#11'ModalResult'#2#1#8'TabOrder'#2#2#0#0#7'TB'
+  +'itBtn'#9'btnCancel'#4'Left'#3#208#0#6'Height'#2' '#3'Top'#3#136#0#5'Width'#2
+  +'i'#7'Caption'#6#6'Cancel'#4'Kind'#7#8'bkCancel'#11'ModalResult'#2#2#8'TabOr'
+  +'der'#2#3#0#0#0
 ]);

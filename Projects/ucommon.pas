@@ -186,7 +186,7 @@ begin
     res.Append('');
     TMPSTR := epd.Filename;
     res.Append(Format('DATAFILE: %s',[tmpstr]));
-(*    TMPSTR := Utf8ToAnsi(epd.Filelabel);
+    TMPSTR := Utf8ToAnsi(epd.Filelabel);
     res.append('Filelabel: ' + TMPSTR);
     res.Append('');
 
@@ -195,7 +195,7 @@ begin
       tmpstr := FitLength('Last revision:',23)+
         FormatDateTime('d. mmm yyyy t',
         FileDateToDateTime(FileAge(epd.Filename)));
-    res.Append(tmpstr);    *)
+    res.Append(tmpstr);
     res.Append(FitLength('Number of fields:',23)+IntToStr(epd.NumFields));
     tmpStr:=FitLength('Number of records:',23);
     IF epd.Size=-1

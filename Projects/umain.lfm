@@ -1,7 +1,7 @@
 object MainForm: TMainForm
-  Left = 599
+  Left = 426
   Height = 649
-  Top = 311
+  Top = 259
   Width = 881
   ActiveControl = Panel1
   Caption = 'Core Test Project'
@@ -166,9 +166,9 @@ object MainForm: TMainForm
       TabOrder = 5
     end
     object CheckBox2: TCheckBox
-      Left = 552
+      Left = 427
       Height = 22
-      Top = 83
+      Top = 152
       Width = 98
       Caption = 'Write CHK file'
       Checked = True
@@ -267,13 +267,23 @@ object MainForm: TMainForm
       Top = 120
       Width = 145
       ItemHeight = 0
+      ItemIndex = 1
       Items.Strings = (
         'Excel 5.0 (95)'
         'Excel 8.0 (97, XP, 2003)'
       )
       TabOrder = 13
-      Text = 'Excel 8.0 (07, XP, 2003)'
+      Text = 'Excel 8.0 (97, XP, 2003)'
       Visible = False
+    end
+    object saveAllFmtsBtn: TButton
+      Left = 579
+      Height = 25
+      Top = 80
+      Width = 136
+      Caption = 'Save in all formats'
+      OnClick = saveAllFmtsBtnClick
+      TabOrder = 14
     end
   end
   object PageControl1: TPageControl
