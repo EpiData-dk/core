@@ -185,9 +185,16 @@ begin
   if Trim(Df.FileName) = '' then exit;
 
   TmpPath := ExtractFilePath(edOutputFile.Text);
-  TmpFile := TmpPath + ExtractFileName(Df.FileName);
+  if TmpPath = '' then
+    begin    // JL mode
+      TmpPath := ExtractFilePath(Df.Filename);
+      TmpFile := TmpPath + ExtractFileName(edOutputFile.Text);
+    end
+    else     //Tc mode:
+      TmpFile := TmpPath + ExtractFileName(Df.FileName);
 
   try
+      CheckBox2.Checked := True;
     EpiLogger.Add('Saving files to: ' + TmpFile, 1);
     SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(0)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
     SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(1)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportStata10);
