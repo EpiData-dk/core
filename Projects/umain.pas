@@ -186,23 +186,22 @@ begin
 
   TmpPath := ExtractFilePath(edOutputFile.Text);
   if TmpPath = '' then
-    begin    // JL mode
-      TmpPath := ExtractFilePath(Df.Filename);
-      TmpFile := TmpPath + ExtractFileName(edOutputFile.Text);
-    end
-    else     //Tc mode:
-      TmpFile := TmpPath + ExtractFileName(Df.FileName);
+  begin    // JL mode
+    TmpPath := ExtractFilePath(Df.Filename);
+    TmpFile := TmpPath + ExtractFileName(edOutputFile.Text);
+  end else // Tc mode:
+    TmpFile := TmpPath + ExtractFileName(Df.FileName);
 
   try
-      CheckBox2.Checked := True;
+    CheckBox2.Checked := True;
     EpiLogger.Add('Saving files to: ' + TmpFile, 1);
     SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(0)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(1)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportStata10);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(2)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportAll);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(3)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportTxtStandard);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(4)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportExcel8);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(5)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportOpenDocument);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(6)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(1)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(2)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportTxtStandard);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(3)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportOpenDocument);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(4)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportStata10);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(5)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportAll);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(6)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportExcel8);
     EpiLogger.Add('Save completed successfully!', 1);
   except
     EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
@@ -332,7 +331,7 @@ begin
   SpeedButton2.Enabled := DatafileIsOpen;
   expclipBrdChkBox.Enabled := DatafileIsOpen;
   filetypeCombo.Enabled := DatafileIsOpen;
-
+  saveAllFmtsBtn.Enabled := DatafileIsOpen;
 
   Caption := FrmCaption;
   if DatafileIsOpen then
@@ -342,15 +341,15 @@ end;
 function TMainForm.UpdateExtension(Index: integer): string;
 begin
   case Index of
-     0: Result := '.rec';
-     1: Result := '.dta';
-     2: Result := '.dbf';
-     3: Result := '.csv';
-     4: Result := '.xls';
-     5: Result := '.ods';
-     6: Result := '.recxml';
+    0: Result := '.recxml';
+    1: Result := '.rec';
+    2: Result := '.csv';
+    3: Result := '.odf';
+    4: Result := '.dta';
+    5: Result := '.dbf';
+    6: Result := '.xls';
   else
-    Result := '.rec';
+    Result := '.recxml';
   end;
 end;
 
@@ -421,11 +420,6 @@ begin
   Ext := ChangeFileExt(BoolToStr(expclipBrdChkBox.Checked, '', edOutputFile.Text), Ext);
   EpiLogger.Add(('Saving file to: ' + BoolToStr(expclipBrdChkBox.Checked, 'Clipboard',Ext)), 1);
   SaveDialog1.FileName := ext;
-  if fileexists(ext) then
-  begin
-    EpiLogger.Add('Cannot overwrite existing file: ' + ext, 2);
-    Exit;
-  end;
 
   if stataCombo.Visible then
   begin
@@ -505,9 +499,9 @@ begin
   excelCombo.Hide;
   CheckBox2.Checked := false;
   case TComboBox(Sender).ItemIndex of
-    0: CheckBox2.Checked := true;
-    1: StataCombo.Show;
-    4: excelCombo.Show;
+    1: CheckBox2.Checked := true;
+    4: StataCombo.Show;
+    6: excelCombo.Show;
   end;
   Ext := UpdateExtension(TComboBox(Sender).ItemIndex);
   EpiLogger.Add('Filetype chosen: ' + ext, 2);

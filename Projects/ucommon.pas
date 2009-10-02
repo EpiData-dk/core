@@ -21,17 +21,18 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataGlobals, uimportform, Controls, UEpiUtils;
+  UEpiDataGlobals, uimportform, Controls, UEpiUtils,
+  UEpiLog;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
   aDialog.Filter := 'Supported data files|*.recxml;*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
                   + 'EpiData XML Data file (*.recxml)|*.recxml|'
                   + 'EpiData data file (*.rec)|*.rec|'
-                  + 'Stata file (*.dta)|*.dta|'
                   + 'Text file (*.txt,*.csv)|*.txt|'
+                  + 'Open Document Spreadsheet (*.ods)|*.ods|'
+                  + 'Stata file (*.dta)|*.dta|'
                   + 'dBase file (*.dbf)|*.dbf|'
-                  + 'Open Document Spreadsheep (*.ods)|*.ods|'
                   + 'All files (*.*)|*.*';
   aDialog.FilterIndex := 0;
 end;
@@ -106,6 +107,14 @@ var
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
 begin
+  Result := false;
+  if fileexists(FileName) then
+  begin
+    EpiLogger.Add('Cannot overwrite existing file: ' + FileName, 2);
+    Exit;
+  end;
+
+
   if (AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC') and
      (AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECXML') then
   begin
