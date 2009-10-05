@@ -338,11 +338,16 @@ end;
 procedure TValueLabelSet.SetLabelType(const AValue: TFieldType);
 begin
   if AValue = FLabelType then exit;
-  FLabelType := AValue;
-  if LabelType = ftString then
-    FData.OnCompare := @StringCompare
-  else
-    FData.OnCompare := @NumberCompare;
+  // Hack to fix improper handling of setting TAVL_Tree OnCompare event.
+  // should not be required to check for Count > 0.
+  if FData.Count > 0 then
+  begin
+    FLabelType := AValue;
+    if LabelType = ftString then
+      FData.OnCompare := @StringCompare
+    else
+      FData.OnCompare := @NumberCompare;
+  end;
 end;
 
 procedure TValueLabelSet.SetMissingValue(const aValue: Variant;

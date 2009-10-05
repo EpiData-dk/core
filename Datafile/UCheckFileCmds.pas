@@ -85,8 +85,6 @@ type
 
   TChkComLegal = class(TChkCommand)
   private
-    FVarNumber:       Integer;
-    FValueLabelName:  string;
     FValueLabel:      TValueLabelSet;
     FValueLabelIsFieldRef: Boolean;
     FValueLabelUse:   string;
@@ -97,8 +95,6 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-    Property   VarNumber: Integer read FVarNumber write FVarNumber;
-    Property   ValueLabelName: string read FValueLabelName write FValueLabelName;
     Property   ValueLabel: TValueLabelSet read FValueLabel write FValueLabel;
     Property   ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
     Property   ValueLabelUse: string read FValueLabelUse write FValueLabelUse;
@@ -547,23 +543,19 @@ end;
 procedure TChkComLegal.Clone(var Dst: TChkCommand);
 begin
   inherited Clone(Dst);
-  TChkComLegal(Dst).FVarNumber := FVarNumber;
   TChkComLegal(Dst).FShowList := FShowList;
   TChkComLegal(Dst).FValueLabel := FValueLabel;
   TChkComLegal(Dst).FValueLabelIsFieldRef := FValueLabelIsFieldRef;
   TChkComLegal(Dst).FValueLabelUse := FValueLabelUse;
-  TChkComLegal(Dst).FValueLabelName := FValueLabelName;
 end;
 
 constructor TChkComLegal.Create;
 begin
   inherited Create;
-  FVarNumber := 0;
   FShowList := False;
   FValueLabel := nil;
   FValueLabelIsFieldRef := false;
   FValueLabelUse := '';
-  FValueLabelName := '';
 end;
 
 destructor TChkComLegal.Destroy;

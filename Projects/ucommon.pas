@@ -108,12 +108,14 @@ var
   SaveOptions: TEpiDataFileOptions;
 begin
   Result := false;
+
+  {$IFNDEF EPI_DEBUG}
   if fileexists(FileName) then
   begin
     EpiLogger.Add('Cannot overwrite existing file: ' + FileName, 2);
     Exit;
   end;
-
+  {$ENDIF}
 
   if (AnsiUpperCase(ExtractFileExt(FileName)) <> '.REC') and
      (AnsiUpperCase(ExtractFileExt(FileName)) <> '.RECXML') then
@@ -148,7 +150,7 @@ begin
     TmpField := Df[i].Clone(OutDf);
     OutDf.AddField(TmpField);
   end;
-  OutDf.Save(FileName, SaveOptions);
+  result := OutDf.Save(FileName, SaveOptions);
   FreeAndNil(OutDf);
 end;
 

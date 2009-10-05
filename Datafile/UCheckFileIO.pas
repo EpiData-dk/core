@@ -402,6 +402,7 @@ BEGIN
         FieldBlockToStrings(FDf[i]);
   finally
     FCheckLines.EndUpdate;
+    Result := true;
   end;
 end;
 
@@ -422,13 +423,16 @@ begin
 
   for i := FCheckLines.Count - 1 downto 0 do
   begin
-    CurLine := FCheckLines[i];
+    CurLine := Trim(FCheckLines[i]);
+    if Length(CurLine) = 0 then continue;
+    if CurLine[1] = '*' then continue;
     if Pos('INCLUDE ', AnsiUpperCase(CurLine)) > 0 then
     begin
       fn := Trim(Copy(CurLine, 9, Length(CurLine)));
       if (fn[1] = '"') and (fn[Length(fn)] = '"') then
         fn := Copy(fn, 2, Length(fn)-2);
 
+      fn := ExtractFilePath(FDF.CheckFile.FileName) + fn;
       if not FileExists(fn) then
       begin
         ReportError(Format(Lang(22870, 'Includefile %s not found'), [fn]));
@@ -816,6 +820,14 @@ var
   ValueField, TextField: TEpiField;
   i: Integer;
   F: File of byte;
+
+  function MakeCheckField(CurField: TEpiField): TEpiCheckField;
+  begin
+    if not Assigned(CurField.CheckField) then
+      CurField.CheckField := TEpiCheckField.Create;
+    result := CurField.CheckField;
+  end;
+
 BEGIN
   {Four kinds of COMMENT LEGAL possible:
   1. COMMENT LEGAL
@@ -838,8 +850,6 @@ BEGIN
   }
   Result := true;
 
-//  LocalCheck := CurField.CheckField;
-
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF CurCommand <> 'LEGAL' THEN
   BEGIN
@@ -851,7 +861,8 @@ BEGIN
   IF (CurCommand = '') OR (CurCommand = 'SHOW') THEN
   BEGIN
     // 1. scenario: COMMENT LEGAL...END Structure
-    IF CurCommand = 'SHOW' THEN LocalCheck.ShowValueLabel := True;
+    IF CurCommand = 'SHOW' THEN
+      MakeCheckField(CurField).ShowValueLabel := True;
 
     LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
     LocalValueLabel.LabelScope := vlsLocal;
@@ -958,11 +969,15 @@ BEGIN
 
     TmpStr := FParser.GetUpperToken(nwSameLine);
     IF TmpStr = 'SHOW' THEN
-       LocalCheck.ShowValueLabel := True;
+       MakeCheckField(CurField).ShowValueLabel := True;
 
     // Check is labels are compatible with current field
+    // TODO : Compatability testing!!! (Eg. ftString and ftUpperAlfa could be compared!!!)
     if not (LocalValueLabel.LabelType = CurField.FieldType) Then
+    begin
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
+      exit
+    end;
 
     // Check that if ValueLabel existed beforehand is is considered to be missingvalues.
     if Assigned(CurField.ValueLabelSet) then
@@ -998,7 +1013,7 @@ BEGIN
   //Comment Legal datafilename structure found
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF CurCommand = 'SHOW' THEN
-    LocalCheck.ShowValueLabel := True;
+    MakeCheckField(CurField).ShowValueLabel := True;
     
   TRY
     ComLegDf := TEpiDataFile.Create(0);
@@ -1491,12 +1506,18 @@ BEGIN
         BEGIN
           TmpChkCmd := TChkComLegal.Create;
           TmpField := TEpiField.Create();
+          if Assigned(CurField) then
+            TmpField.FieldLength := CurField.FieldLength
+          else
+            TmpField.FieldLength := 10; // Just give a length, 10 is hopefully enough in most cases.
           Result := RetrieveCommentLegal(TmpField);
           if Result then
           begin
-            TChkComLegal(TmpChkCmd).ShowList       := TmpField.CheckField.ShowValueLabel;
+            TChkComLegal(TmpChkCmd).ShowList := false;
+            if Assigned(TmpField.CheckField) then
+              TChkComLegal(TmpChkCmd).ShowList := TmpField.CheckField.ShowValueLabel;
             TChkComLegal(TmpChkCmd).ValueLabelIsFieldRef := TmpField.ValueLabelIsFieldRef;
-            TChkComLegal(TmpChkCmd).ValueLabel     := TmpField.ValueLabelSet;
+            TChkComLegal(TmpChkCmd).ValueLabel := TmpField.ValueLabelSet;
           end;
           FreeAndNil(TmpField);
           Exit;
@@ -2651,16 +2672,16 @@ BEGIN
                   S := 'COMMENT LEGAL';
                   if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
                   AddToCheckLines(S);
-                  Inc(FIndentLvl);
+                  // Indetation is done in LabelToText;
                   LabelToText(TChkComLegal(cmd).ValueLabel);
-                  Dec(FIndentLvl);
+                  AddToCheckLines('END');
                 end;
               vlsGlobal, vlsFile:
                 begin
                   S := 'COMMENT LEGAL ';
                   if TChkComLegal(cmd).ValueLabel.LabelScope <> vlsFile then
                     S := S + 'USE ';
-                  S := S + TChkComLegal(cmd).ValueLabelName;
+                  S := S + TChkComLegal(cmd).ValueLabel.Name;
                   if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
                   AddToCheckLines(S);
                 end;
@@ -2848,9 +2869,8 @@ BEGIN
             begin
               if ShowValueLabel then S := S + 'SHOW';
               AddToCheckLines(S);
-              Inc(FIndentLvl);
+              // Indentation is done in LabelToText
               LabelToText(aField.ValueLabelSet);
-              Dec(FIndentLvl);
               AddToCheckLines('END');
             end;
           vlsGlobal, vlsFile:

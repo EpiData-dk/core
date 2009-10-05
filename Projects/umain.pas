@@ -162,10 +162,10 @@ begin
     if FileExists(ChangeFileExt(Df.FileName, '.chk')) then
       orgChkMemo.Lines.LoadFromFile(ChangeFileExt(Df.FileName, '.chk'));
 
-//    Stream := TMemoryStream.Create();
-//    ChkIO := TCheckFileIO.Create();
-//    ChkIO.WriteCheckToStream(Stream, Df);
-//    parsedChkMemo.Lines.LoadFromStream(Stream);
+    Stream := TMemoryStream.Create();
+    ChkIO := TCheckFileIO.Create();
+    ChkIO.WriteCheckToStream(Stream, Df);
+    parsedChkMemo.Lines.LoadFromStream(Stream);
 
     LoadData(false);
 
@@ -267,18 +267,20 @@ begin
 
   //Make col-headings
   for col := 0 to df.NumDataFields - 1 do
-    sg.Cells[col+1, 0] := df[col].FieldName;
+  with df.DataFields[col] do
+    sg.Cells[col+1, 0] := FieldName;
 
   numrecs := df.Size;
   for row := 1 to numrecs do
   begin
     sg.Cells[0, row] := inttostr(row);
     for col := 0 to df.NumDataFields - 1 do
+    with df.DataFields[col] do
     begin
       if ShowAsLabels then
-        sg.Cells[col + 1, row] := df[col].AsValueLabel[row]
+        sg.Cells[col + 1, row] := AsValueLabel[row]
       else
-        sg.Cells[col + 1, row] := df[col].AsString[row];
+        sg.Cells[col + 1, row] := AsString[row];
     end;
   end;
 end;

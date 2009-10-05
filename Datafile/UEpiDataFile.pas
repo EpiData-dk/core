@@ -536,7 +536,7 @@ uses
 
 const
   NA_INT       = MaxInt;
-  NA_FLOAT     = MaxExtended;
+  NA_FLOAT     = MaxFloat;
   NA_DATE      = NA_INT;
   NA_TIME      = MaxDouble;
   NA_DATETIME  = NA_TIME;
@@ -844,20 +844,19 @@ begin
   Result.DataFile := DstDataFile;
 
   // Copy Field related values:
-//  Result.FDisplayChar := FDisplayChar;
   Result.FFieldName   := FFieldName;
   Result.FQuestX      := FQuestX;
   Result.FQuestY      := FQuestY;
-//  Result.FQuestColor  := FQuestColor;
   Result.FFieldX      := FFieldX;
   Result.FFieldY      := FFieldY;
-//  Result.FFieldColor  := FFieldColor;
   Result.FFieldType   := FFieldType;
   Result.FFieldLength := FFieldLength;
-//  Result.FCryptLength := FCryptLength;
   Result.FFieldDecimals := FFieldDecimals;
-//  Result.FQuestion    := FQuestion;
   Result.FVariableLabel := FVariableLabel;
+
+  // Question fields do not require any of the following cloned.
+  if (FieldType = ftQuestion) then
+    Exit;
 
   // Copy CheckFile if present:
   TmpCheckField := nil;
@@ -889,11 +888,14 @@ begin
   end;
 
   // Index?
-  I := Owner.FDataFile.IndexFile.IndexNoByName(FieldName);
-  if (I > 0) and (Assigned(Result.Owner)) then
+  if Assigned(DataFile) then
   begin
-   Result.Owner.FDataFile.IndexFile.IndexFields[I] := Result;
-   Result.Owner.FDataFile.IndexFile.IndexUnique[I] := Owner.FDataFile.IndexFile.IndexUnique[I];
+    I := DataFile.IndexFile.IndexNoByName(FieldName);
+    if (I > 0) and (Assigned(Result.DataFile)) then
+    begin
+     Result.DataFile.IndexFile.IndexFields[I] := Result;
+     Result.DataFile.IndexFile.IndexUnique[I] := DataFile.IndexFile.IndexUnique[I];
+    end;
   end;
 end;
 
@@ -1581,6 +1583,8 @@ begin
       for i := 0 TO DataFields.Count - 1 DO
       with DataFields[i] do begin
         TmpStr := Trim(Copy(StrBuf, BufPos, FieldLength));
+        if TmpStr = '' then
+          TmpStr := TEpiStringField.DefaultMissing;
         IF (fieldtype = ftCrypt) AND (FPassword <> '') THEN
         begin
           EncData := B64Decode(TmpStr);
@@ -2001,13 +2005,15 @@ begin
       Stream.Write(S[1], Length(S));
     end;
 
+    result := true;
+
     if not (eoIgnoreChecks in FOptions) then
     begin
       if Assigned(Stream) then FreeAndNil(Stream);
       CheckFile.FileName := ChangeFileExt(FileName, '.chk');
       Stream := TFileStream.Create(CheckFile.FileName, fmCreate);
       ChkIO := TCheckFileIO.Create();
-      ChkIO.WriteCheckToStream(Stream, Self);
+      result := ChkIO.WriteCheckToStream(Stream, Self);
       if Stream.Size = 0 then
       begin
         FreeAndNil(Stream);
