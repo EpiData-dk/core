@@ -973,11 +973,11 @@ BEGIN
 
     // Check is labels are compatible with current field
     // TODO : Compatability testing!!! (Eg. ftString and ftUpperAlfa could be compared!!!)
-    if not (LocalValueLabel.LabelType = CurField.FieldType) Then
+{    if not (LocalValueLabel.LabelType = CurField.FieldType) Then
     begin
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
-      exit
-    end;
+      exit;
+    end;       }
 
     // Check that if ValueLabel existed beforehand is is considered to be missingvalues.
     if Assigned(CurField.ValueLabelSet) then

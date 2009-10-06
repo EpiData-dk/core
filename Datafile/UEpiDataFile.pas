@@ -113,6 +113,7 @@ type
     Constructor Create;
     Destructor  Destroy; override;
     procedure   Reset;
+    function    Clone: TEpiCheckFile;
     function    DefineExists(Const aName: string): Boolean;
     function    DefineByName(Const aName: string): TEpiField;
     procedure   AddDefine(Field: TEpiField);
@@ -436,6 +437,7 @@ type
   public
     constructor Create(Const aFileName: string);
     destructor  Destroy; override;
+    function    Clone: TEpiIndexFile;
     procedure   Reset;
     function    IndexNoByName(Const Name: string): Integer;
     function    IndexFieldByName(Const Name: string): TEpiField;
@@ -491,6 +493,8 @@ type
   public
     constructor Create(ASize: Cardinal = 0); virtual;
     destructor Destroy; override;
+    function   PrepareDataFile(FieldNames: TStrings): TEpiDataFile;
+    function   Clone(CloneData: boolean = true): TEpiDataFile;
     function   RequestPassword(Const EncryptedString: string): boolean;
     function   Open(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
     function   Save(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
@@ -676,6 +680,54 @@ begin
   FTopComments    := TStringList.Create;
   FDefines        := TEpiFields.Create(nil);
   FDefines.Owned  := True;
+end;
+
+function TEpiCheckFile.Clone: TEpiCheckFile;
+var
+  i: Integer;
+begin
+  Result := TEpiCheckFile.Create;
+
+  // Clone basic:
+  Result.FConfirm            := FConfirm;
+  Result.FAutoSave           := FAutoSave;
+  Result.FGlobalDefaultValue := FGlobalDefaultValue;
+  Result.FGlobalTypeCom      := FGlobalTypeCom;
+  Result.FGlobalTypeComColor := FGlobalTypeComColor;
+  Result.FShowLastRecord     := FShowLastRecord;
+  Result.FFieldHighlightAct  := FFieldHighlightAct;
+  Result.FFieldHighlightCol  := FFieldHighlightCol;
+  Result.FMissingAction      := FMissingAction;
+
+  // Clone stringlists
+  if Assigned(FTopComments) then
+    Result.FTopComments.Assign(FTopComments);
+  if Assigned(FAssertList) then
+  begin
+    Result.FAssertList := TStringList.Create;
+    Result.FAssertList.Assign(FAssertList);
+  end;
+  if Assigned(FBackupList) then
+    Result.FBackupList.Assign(FBackupList);
+
+  // Command structures.
+  if Assigned(FBeforeFileCmds) then
+    FBeforeFileCmds.Clone(Result.FBeforeFileCmds);
+  if Assigned(FAfterFileCmds) then
+    FAfterFileCmds.Clone(Result.FAfterFileCmds);
+  if Assigned(FBeforeRecordCmds) then
+    FBeforeRecordCmds.Clone(Result.FBeforeRecordCmds);
+  if Assigned(FAfterRecordCmds) then
+    FAfterRecordCmds.Clone(Result.FAfterRecordCmds);
+  if Assigned(FRecodeCmds) then
+    FRecodeCmds.Clone(Result.FRecodeCmds);
+
+  // Other
+  for i := 0 to MaxDefinedMissingValues do
+    Result.GlobalMissingVal[i] := GlobalMissingVal[i];
+
+  for i := 0 to FDefines.Count - 1 do
+    Result.FDefines.Add(FDefines[i].Clone());
 end;
 
 function TEpiCheckFile.DefineExists(const aName: string): Boolean;
@@ -887,7 +939,7 @@ begin
     end;
   end;
 
-  // Index?
+{  // Index?
   if Assigned(DataFile) then
   begin
     I := DataFile.IndexFile.IndexNoByName(FieldName);
@@ -896,7 +948,7 @@ begin
      Result.DataFile.IndexFile.IndexFields[I] := Result;
      Result.DataFile.IndexFile.IndexUnique[I] := DataFile.IndexFile.IndexUnique[I];
     end;
-  end;
+  end;    }
 end;
 
 procedure TEpiField.NewRecords(ACount: Integer = 1);
@@ -2116,6 +2168,51 @@ begin
   end;
 end;
 
+function TEpiDataFile.PrepareDataFile(FieldNames: TStrings): TEpiDataFile;
+begin
+
+end;
+
+function TEpiDataFile.Clone(CloneData: boolean): TEpiDataFile;
+var
+  i: Integer;
+begin
+  // Create DataFile!
+  Result := TEpiDataFile.Create(Size);
+
+  // Clone Basic data:
+  Result.FileLabel   := FileLabel;
+  Result.FileVersion := FileVersion;
+  Result.FieldNaming := FieldNaming;
+  Result.Study       := Study;
+  Result.Password    := Password;
+  Result.FOptions    := Options;
+
+  // Close Events!
+  Result.OnPassword := OnPassword;
+  Result.OnProgress := OnProgress;
+  Result.OnTranslate := OnTranslate;
+
+  // Clone status field.
+  FreeAndNil(Result.FRecordStatus);
+  Result.FRecordStatus := FRecordStatus.Clone(Result, CloneData);
+
+  // Clone the check file!
+  FreeAndNil(Result.FCheckFile);
+  Result.FCheckFile := CheckFile.Clone;
+
+  // Clone Index:
+  FreeAndNil(Result.FIndexFile);
+  Result.FIndexFile := IndexFile.Clone;
+
+  // Clone ValueLabels.
+  Result.ValueLabels.Assign(ValueLabels);
+
+  // Clone Fields.
+  for i := 0 To Fields.Count -1 do
+    Result.AddField(Fields[i].Clone(Result, CloneData));
+end;
+
 function TEpiDataFile.Open(const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
 var
   TmpStream: TFileStream;
@@ -2310,6 +2407,14 @@ destructor TEpiIndexFile.Destroy;
 begin
   InternalReset;
   inherited;
+end;
+
+function TEpiIndexFile.Clone: TEpiIndexFile;
+begin
+  Result := TEpiIndexFile.Create('');
+
+  Result.FIndexFields.Assign(FIndexFields);
+  Result.FIndexUnique := FIndexUnique;
 end;
 
 procedure TEpiIndexFile.Reset;

@@ -346,7 +346,7 @@ begin
     0: Result := '.recxml';
     1: Result := '.rec';
     2: Result := '.csv';
-    3: Result := '.odf';
+    3: Result := '.ods';
     4: Result := '.dta';
     5: Result := '.dbf';
     6: Result := '.xls';
