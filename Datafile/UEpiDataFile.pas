@@ -1452,6 +1452,7 @@ var
   DataStream: TMemoryStream;
   BufPos: Integer;
   EncData: String;
+  Stop: Boolean;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'InternalOpenOld', 2, 'Filename = ' + Filename);
@@ -1582,33 +1583,46 @@ begin
     // Position for reading and check for corruptness.
     TotFieldLength := TotFieldLength + (((TotFieldLength - 1) DIV MaxRecLineLength) + 1) * 3;
     TmpLength := TextPos(TxtFile);
-    TempInt := TmpLength;
     CloseFile(TxtFile);
+
     DataStream := TMemoryStream.Create;
     DataStream.LoadFromFile(Filename);
-    DataStream.Position := DataStream.Size - 3;
-    SetLength(CharBuf, 3);
-    DataStream.Read(CharBuf[0], 3);
-    // EOF?
-    if CharBuf[2] = #26 then
+    DataStream.Position := DataStream.Size;
+
+    // Skip all lineendings / EOF chars.
+    SetLength(CharBuf, 16);
+    Stop := false;
+    while true do
     begin
-      Inc(TempInt, 1);
-      if not((CharBuf[0] = #13) and (CharBuf[1] = #10)) then
-        dec(TempInt, 2);
-    end else begin
-      if not((CharBuf[1] = #13) and (CharBuf[2] = #10)) then
-        dec(TempInt, 2);
+      DataStream.Seek(-16, soCurrent);
+      DataStream.Read(CharBuf[0], 16);
+
+      i := 15;
+      while i >= 0 do
+      begin
+        if (CharBuf[i] in ['!', '?', '^']) then
+        begin
+          Stop := true;
+          break;
+        end;
+        Dec(i);
+      end;
+      if Stop then break;
+      DataStream.Seek(-16, soCurrent);
     end;
 
-    if ((DataStream.Size - TempInt) mod TotFieldLength) <> 0 then
+    TempInt := DataStream.Position - (16 - i) + 3; // + 3 is for "!#13#10" which all .REC file should end with??!?!?
+
+    if ((TempInt - TmpLength) mod TotFieldLength) <> 0 then
     begin
-      ErrorText := Format(Lang(20118, 'Error in datafile %s. One or more records are corrupted. Size: %d, Offset: %d, TotalLength: %d'), [Filename, DataStream.Size, TempInt, TotFieldLength]);
+      ErrorText := Format(Lang(20118, 'Error in datafile %s. One or more records are corrupted. Size: %d, Offset: %d, TotalLength: %d, i: %d'),
+        [Filename, DataStream.Size, TmpLength, TotFieldLength, i]);
       ErrorCode := EPI_DATAFILE_FORMAT_ERROR;
       EpiLogger.AddError(ClassName, 'InternalOpenOld', ErrorText, 20118);
       Exit;
     end;
 
-    TempInt := ((DataStream.Size - TempInt) div TotFieldLength);
+    TempInt := ((TempInt - TmpLength) div TotFieldLength);
     Size := TempInt;
     DataStream.Position := TmpLength;
 
@@ -1616,7 +1630,7 @@ begin
     For CurRec := 1 to TempInt do
     begin
       I := DataStream.Read(CharBuf[0], TotFieldLength);
-      if I <> TotFieldLength then
+      if (I <> TotFieldLength) then
       begin
         ErrorText := Lang(20464, 'Error reading record');
         ErrorCode := EPI_READ_FILE_ERROR;
@@ -2902,10 +2916,10 @@ procedure TEpiBoolField.SetAsDate(const index: Integer; const AValue: EpiDate);
 begin
   if TEpiDateField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else if AValue >= 1 then
-    AsFloat[Index] := 1
+  else if AValue = 0 then
+    AsBoolean[Index] := 0
   else
-    AsFloat[Index] := 0;
+    AsBoolean[Index] := 1;
 end;
 
 procedure TEpiBoolField.SetAsFloat(const index: Integer; const AValue: EpiFloat
@@ -2913,10 +2927,10 @@ procedure TEpiBoolField.SetAsFloat(const index: Integer; const AValue: EpiFloat
 begin
   if TEpiFloatField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else if AValue >= 1 then
-    AsFloat[Index] := 1
+  else if AValue = 0 then
+    AsBoolean[Index] := 0
   else
-    AsFloat[Index] := 0;
+    AsBoolean[Index] := 1;
 end;
 
 procedure TEpiBoolField.SetAsInteger(const index: Integer;
@@ -2924,10 +2938,10 @@ procedure TEpiBoolField.SetAsInteger(const index: Integer;
 begin
   if TEpiIntField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else if AValue >= 1 then
-    AsFloat[Index] := 1
+  else if AValue = 0 then
+    AsBoolean[Index] := 0
   else
-    AsFloat[Index] := 0;
+    AsBoolean[Index] := 1;
 end;
 
 procedure TEpiBoolField.SetAsString(const index: Integer;
@@ -2935,10 +2949,15 @@ procedure TEpiBoolField.SetAsString(const index: Integer;
 begin
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else if Trim(AValue) <> '' then
-    AsFloat[Index] := 1
-  else
-    AsFloat[Index] := 0;
+  else if Length(AValue) > 0 then
+  begin
+    // TODO : Better recognition of boolean strings.
+    if AValue[1] in BooleanYesChars then
+      AsBoolean[Index] := 1
+    else
+      AsBoolean[Index] := 0;
+  end else
+    AsBoolean[Index] := 0;
 end;
 
 procedure TEpiBoolField.SetAsValue(const index: Integer;
