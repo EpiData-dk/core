@@ -117,7 +117,7 @@
         <UnitName Value="UCheckFileIO"/>
         <CursorPos X="37" Y="1513"/>
         <TopLine Value="1482"/>
-        <EditorIndex Value="8"/>
+        <EditorIndex Value="5"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit7>
@@ -141,7 +141,7 @@
         <Filename Value="..\Datafile\UEpiDataFile.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiDataFile"/>
-        <CursorPos X="27" Y="1631"/>
+        <CursorPos X="24" Y="1604"/>
         <TopLine Value="1589"/>
         <EditorIndex Value="1"/>
         <UsageCount Value="217"/>
@@ -168,7 +168,7 @@
         <UnitName Value="UValueLabels"/>
         <CursorPos X="3" Y="150"/>
         <TopLine Value="145"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="4"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit12>
@@ -217,14 +217,14 @@
         <UnitName Value="UDebug"/>
         <CursorPos X="8" Y="14"/>
         <TopLine Value="1"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\Utils\UEpiDataConstants.pas"/>
         <UnitName Value="UEpiDataConstants"/>
         <CursorPos X="71" Y="12"/>
         <TopLine Value="1"/>
-        <UsageCount Value="27"/>
+        <UsageCount Value="26"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\Utils\UEpiUtils.pas"/>
@@ -232,7 +232,7 @@
         <UnitName Value="UEpiUtils"/>
         <CursorPos X="110" Y="235"/>
         <TopLine Value="207"/>
-        <EditorIndex Value="9"/>
+        <EditorIndex Value="6"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit20>
@@ -242,7 +242,7 @@
         <UnitName Value="UStringUtils"/>
         <CursorPos X="1" Y="170"/>
         <TopLine Value="143"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="3"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
       </Unit21>
@@ -268,7 +268,7 @@
         <UnitName Value="UEpiDataGlobals"/>
         <CursorPos X="3" Y="76"/>
         <TopLine Value="53"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="2"/>
         <UsageCount Value="224"/>
         <Loaded Value="True"/>
       </Unit24>
@@ -286,20 +286,20 @@
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\system.inc"/>
         <CursorPos X="1" Y="197"/>
         <TopLine Value="174"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit26>
       <Unit27>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\astrings.inc"/>
         <CursorPos X="1" Y="108"/>
         <TopLine Value="85"/>
-        <UsageCount Value="24"/>
+        <UsageCount Value="23"/>
       </Unit27>
       <Unit28>
         <Filename Value="..\..\FreePascal\fpspreadsheet\fpspreadsheet.pas"/>
         <UnitName Value="fpspreadsheet"/>
         <CursorPos X="16" Y="101"/>
         <TopLine Value="76"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit28>
       <Unit29>
         <Filename Value="settings.pas"/>
@@ -315,364 +315,358 @@
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\objpas\sysutils\sysstr.inc"/>
         <CursorPos X="1" Y="826"/>
         <TopLine Value="803"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit30>
       <Unit31>
         <Filename Value="..\..\FreePascal\fpspreadsheet\fpsopendocument.pas"/>
         <UnitName Value="fpsopendocument"/>
         <CursorPos X="12" Y="469"/>
         <TopLine Value="453"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit31>
       <Unit32>
         <Filename Value="..\..\FreePascal\fpc\rtl\win\wininc\redef.inc"/>
         <CursorPos X="11" Y="656"/>
         <TopLine Value="632"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit32>
       <Unit33>
         <Filename Value="..\..\FreePascal\fpc\rtl\win\wininc\struct.inc"/>
         <CursorPos X="29" Y="4196"/>
         <TopLine Value="4170"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit33>
       <Unit34>
         <Filename Value="..\..\FreePascal\fpc\rtl\win\sysosh.inc"/>
         <CursorPos X="18" Y="20"/>
         <TopLine Value="14"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit34>
       <Unit35>
         <Filename Value="..\..\FreePascal\fpc\rtl\objpas\objpas.pp"/>
         <UnitName Value="objpas"/>
         <CursorPos X="29" Y="28"/>
         <TopLine Value="7"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit35>
       <Unit36>
         <Filename Value="..\..\FreePascal\fpc\rtl\inc\systemh.inc"/>
         <CursorPos X="3" Y="88"/>
         <TopLine Value="64"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit36>
       <Unit37>
         <Filename Value="..\..\FreePascal\fpc\rtl\win\wininc\base.inc"/>
         <CursorPos X="6" Y="71"/>
         <TopLine Value="59"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit37>
       <Unit38>
         <Filename Value="..\..\FreePascal\fpc\rtl\win32\windows.pp"/>
         <UnitName Value="windows"/>
         <CursorPos X="8" Y="45"/>
         <TopLine Value="20"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit38>
       <Unit39>
         <Filename Value="..\..\FreePascal\lazarus\lcl\include\customcheckbox.inc"/>
         <CursorPos X="1" Y="131"/>
         <TopLine Value="108"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit39>
       <Unit40>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\linux\x86_64\sighnd.inc"/>
         <CursorPos X="90" Y="50"/>
         <TopLine Value="17"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit40>
       <Unit41>
         <Filename Value="..\..\usr\share\fpcsrc\rtl\linux\system.pp"/>
         <UnitName Value="System"/>
         <CursorPos X="88" Y="236"/>
         <TopLine Value="210"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit41>
       <Unit42>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\generic.inc"/>
         <CursorPos X="1" Y="153"/>
         <TopLine Value="130"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit42>
       <Unit43>
         <Filename Value="..\..\usr\share\fpcsrc\rtl\objpas\classes\classesh.inc"/>
         <CursorPos X="10" Y="1885"/>
         <TopLine Value="1842"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit43>
       <Unit44>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\except.inc"/>
         <CursorPos X="1" Y="191"/>
         <TopLine Value="168"/>
-        <UsageCount Value="6"/>
+        <UsageCount Value="5"/>
       </Unit44>
       <Unit45>
         <Filename Value="..\..\usr\share\fpcsrc\packages\fcl-base\src\avl_tree.pp"/>
         <UnitName Value="AVL_Tree"/>
         <CursorPos X="5" Y="142"/>
         <TopLine Value="138"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit45>
       <Unit46>
         <Filename Value="..\..\usr\share\fpcsrc\rtl\inc\objpash.inc"/>
         <CursorPos X="22" Y="177"/>
         <TopLine Value="154"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit46>
       <Unit47>
         <Filename Value="..\..\FreePascal\fpspreadsheet\fpsallformats.pas"/>
         <UnitName Value="fpsallformats"/>
         <CursorPos X="40" Y="13"/>
         <TopLine Value="1"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit47>
       <Unit48>
         <Filename Value="..\..\usr\share\fpcsrc\rtl\inc\variants.pp"/>
         <UnitName Value="variants"/>
         <CursorPos X="1" Y="1631"/>
         <TopLine Value="1608"/>
-        <UsageCount Value="17"/>
+        <UsageCount Value="16"/>
       </Unit48>
       <Unit49>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\variant.inc"/>
         <CursorPos X="1" Y="585"/>
         <TopLine Value="562"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit49>
       <Unit50>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\objpas\sysutils\fina.inc"/>
         <CursorPos X="1" Y="35"/>
         <TopLine Value="12"/>
-        <UsageCount Value="15"/>
+        <UsageCount Value="14"/>
       </Unit50>
       <Unit51>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\objpas.inc"/>
         <CursorPos X="1" Y="591"/>
         <TopLine Value="568"/>
-        <UsageCount Value="15"/>
+        <UsageCount Value="14"/>
       </Unit51>
       <Unit52>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\inc\rtti.inc"/>
         <CursorPos X="1" Y="189"/>
         <TopLine Value="166"/>
-        <UsageCount Value="19"/>
+        <UsageCount Value="18"/>
       </Unit52>
       <Unit53>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\objpas\cvarutil.inc"/>
         <CursorPos X="1" Y="34"/>
         <TopLine Value="11"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit53>
       <Unit54>
         <Filename Value="..\Utils\ErrorCodes.inc"/>
         <CursorPos X="30" Y="46"/>
         <TopLine Value="1"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="8"/>
       </Unit54>
       <Unit55>
         <Filename Value="..\..\FreePascal\fpcsrc\rtl\objpas\classes\streams.inc"/>
         <CursorPos X="1" Y="68"/>
         <TopLine Value="45"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit55>
       <Unit56>
         <Filename Value="..\..\usr\share\fpcsrc\rtl\unix\cwstring.pp"/>
         <UnitName Value="cwstring"/>
         <CursorPos X="1" Y="491"/>
         <TopLine Value="468"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit56>
       <Unit57>
         <Filename Value="..\..\usr\share\fpcsrc\rtl\objpas\classes\classes.inc"/>
         <CursorPos X="3" Y="1670"/>
         <TopLine Value="1667"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit57>
       <Unit58>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\datih.inc"/>
         <CursorPos X="10" Y="103"/>
         <TopLine Value="80"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit58>
       <Unit59>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\linux\x86_64\sighnd.inc"/>
         <CursorPos X="1" Y="38"/>
         <TopLine Value="15"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit59>
       <Unit60>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\linux\system.pp"/>
         <UnitName Value="System"/>
         <CursorPos X="87" Y="229"/>
         <TopLine Value="202"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit60>
       <Unit61>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\finah.inc"/>
         <CursorPos X="10" Y="24"/>
         <TopLine Value="1"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit61>
       <Unit62>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\sysutils\fina.inc"/>
         <CursorPos X="3" Y="42"/>
         <TopLine Value="37"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit62>
       <Unit63>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\except.inc"/>
         <CursorPos X="1" Y="191"/>
         <TopLine Value="168"/>
-        <EditorIndex Value="2"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit63>
       <Unit64>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\astrings.inc"/>
         <CursorPos X="1" Y="108"/>
         <TopLine Value="85"/>
-        <EditorIndex Value="4"/>
         <UsageCount Value="30"/>
-        <Loaded Value="True"/>
       </Unit64>
       <Unit65>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\objpas\cvarutil.inc"/>
         <CursorPos X="72" Y="37"/>
         <TopLine Value="11"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit65>
       <Unit66>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\objpas\sysutils\fina.inc"/>
         <CursorPos X="1" Y="35"/>
         <TopLine Value="12"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit66>
       <Unit67>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\system.inc"/>
         <CursorPos X="1" Y="1206"/>
         <TopLine Value="1183"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit67>
       <Unit68>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\rtti.inc"/>
         <CursorPos X="1" Y="189"/>
         <TopLine Value="166"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit68>
       <Unit69>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\variant.inc"/>
         <CursorPos X="1" Y="232"/>
         <TopLine Value="209"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit69>
       <Unit70>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\packages\fcl-base\src\avl_tree.pp"/>
         <UnitName Value="AVL_Tree"/>
         <CursorPos X="70" Y="86"/>
         <TopLine Value="63"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit70>
       <Unit71>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\objpas.inc"/>
         <CursorPos X="1" Y="591"/>
         <TopLine Value="568"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit71>
       <Unit72>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\objpas\classes\stringl.inc"/>
         <CursorPos X="1" Y="774"/>
         <TopLine Value="751"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit72>
       <Unit73>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\unix\cwstring.pp"/>
         <UnitName Value="cwstring"/>
         <CursorPos X="1" Y="617"/>
         <TopLine Value="594"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit73>
       <Unit74>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\inc\heap.inc"/>
         <CursorPos X="1" Y="278"/>
         <TopLine Value="255"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit74>
       <Unit75>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\unix\sysutils.pp"/>
         <UnitName Value="sysutils"/>
         <CursorPos X="1" Y="533"/>
         <TopLine Value="510"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit75>
       <Unit76>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\linux\ossysc.inc"/>
         <CursorPos X="1" Y="421"/>
         <TopLine Value="398"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit76>
       <Unit77>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\linux\x86_64\syscall.inc"/>
         <CursorPos X="1" Y="117"/>
         <TopLine Value="94"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit77>
       <Unit78>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\linux\system.pp"/>
         <UnitName Value="system"/>
         <CursorPos X="65" Y="339"/>
         <TopLine Value="326"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit78>
       <Unit79>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\objpas\sysutils\sysstr.inc"/>
         <CursorPos X="1" Y="562"/>
         <TopLine Value="539"/>
-        <EditorIndex Value="5"/>
         <UsageCount Value="30"/>
-        <Loaded Value="True"/>
       </Unit79>
       <Unit80>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\math.pp"/>
         <UnitName Value="math"/>
         <CursorPos X="10" Y="75"/>
         <TopLine Value="26"/>
-        <UsageCount Value="3"/>
+        <UsageCount Value="2"/>
       </Unit80>
       <Unit81>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\classesh.inc"/>
         <CursorPos X="15" Y="362"/>
         <TopLine Value="339"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="6"/>
       </Unit81>
       <Unit82>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\lists.inc"/>
         <CursorPos X="18" Y="786"/>
         <TopLine Value="770"/>
-        <UsageCount Value="7"/>
+        <UsageCount Value="6"/>
       </Unit82>
       <Unit83>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\stringl.inc"/>
         <CursorPos X="18" Y="608"/>
         <TopLine Value="585"/>
-        <UsageCount Value="6"/>
+        <UsageCount Value="5"/>
       </Unit83>
       <Unit84>
         <Filename Value="..\..\..\..\..\..\usr\share\fpcsrc\rtl\objpas\classes\persist.inc"/>
         <CursorPos X="3" Y="62"/>
         <TopLine Value="59"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit84>
       <Unit85>
         <Filename Value="..\..\..\..\FreePascal\fpcsrc\rtl\objpas\classes\persist.inc"/>
         <CursorPos X="29" Y="26"/>
         <TopLine Value="4"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit85>
       <Unit86>
         <Filename Value="..\..\..\..\FreePascal\fpspreadsheet\fpolestorage.pas"/>
         <UnitName Value="fpolestorage"/>
         <CursorPos X="23" Y="42"/>
         <TopLine Value="27"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="3"/>
       </Unit86>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">

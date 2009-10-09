@@ -1612,7 +1612,6 @@ begin
     end;
 
     TempInt := DataStream.Position - (16 - i) + 3; // + 3 is for "!#13#10" which all .REC file should end with??!?!?
-
     if ((TempInt - TmpLength) mod TotFieldLength) <> 0 then
     begin
       ErrorText := Format(Lang(20118, 'Error in datafile %s. One or more records are corrupted. Size: %d, Offset: %d, TotalLength: %d, i: %d'),
