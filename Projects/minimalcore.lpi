@@ -13,13 +13,13 @@
       <Title Value="EpiData Software Core Test Project"/>
       <Icon Value="0"/>
       <UseXPManifest Value="True"/>
-      <ActiveEditorIndexAtStart Value="3"/>
+      <ActiveEditorIndexAtStart Value="8"/>
     </General>
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <CurrentMajorRevNr Value="2"/>
       <CurrentMinorRevNr Value="1"/>
-      <CurrentBuildNr Value="98"/>
+      <CurrentBuildNr Value="99"/>
       <ProjectVersion Value="0.1.1.93"/>
       <CharSet Value="04B0"/>
     </VersionInfo>
@@ -66,7 +66,7 @@
         <Filename Value="ucommon.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UCommon"/>
-        <CursorPos X="69" Y="34"/>
+        <CursorPos X="85" Y="25"/>
         <TopLine Value="1"/>
         <EditorIndex Value="3"/>
         <UsageCount Value="217"/>
@@ -234,8 +234,8 @@
         <Filename Value="..\Utils\UEpiUtils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UEpiUtils"/>
-        <CursorPos X="110" Y="235"/>
-        <TopLine Value="207"/>
+        <CursorPos X="64" Y="259"/>
+        <TopLine Value="246"/>
         <EditorIndex Value="8"/>
         <UsageCount Value="217"/>
         <Loaded Value="True"/>
@@ -814,17 +814,19 @@
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
+      <SmartLinkUnit Value="True"/>
       <Checks>
         <IOChecks Value="True"/>
       </Checks>
       <Optimizations>
-        <OptimizationLevel Value="0"/>
+        <OptimizationLevel Value="3"/>
       </Optimizations>
     </CodeGeneration>
     <Linking>
       <Debugging>
-        <GenerateDebugInfo Value="True"/>
+        <UseLineInfoUnit Value="False"/>
       </Debugging>
+      <LinkSmart Value="True"/>
       <Options>
         <Win32>
           <GraphicApplication Value="True"/>
@@ -832,7 +834,6 @@
       </Options>
     </Linking>
     <Other>
-      <CustomOptions Value="-dEPI_DEBUG"/>
       <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>
