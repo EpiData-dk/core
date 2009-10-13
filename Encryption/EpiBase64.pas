@@ -4,7 +4,7 @@
 {** Written by David Barton (davebarton@bigfoot.com) **************************}
 {** http://www.scramdisk.clara.net/ *******************************************}
 {******************************************************************************}
-unit Base64;
+unit EpiBase64;
 
 {$codepage UTF8}
 {$mode DELPHI}{$H+}

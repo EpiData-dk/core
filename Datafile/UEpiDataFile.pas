@@ -535,7 +535,7 @@ type
 implementation
 
 uses
-  SysUtils, UStringUtils, Base64, UEpiUtils,
+  SysUtils, UStringUtils, EpiBase64, UEpiUtils,
   StrUtils, UCheckFileIO, Math, UDateUtils, DOM, XMLRead, XMLWrite;
 
 const

@@ -10,7 +10,7 @@ uses
     UCheckFileCmds, UCheckFileIO, UCheckFileTypes, UDataFileTypes, 
   UEpiDataFile, UValueLabels, UImportExport, UQesHandler, DCPcrypt, Rijndael, 
   UDateUtils, UEpiLog, UEpiUtils, UStringUtils, UUtilTypes, UEpiDataGlobals, 
-  SHA1;
+  EpiSHA1, EpiBase64;
 
 implementation
 
