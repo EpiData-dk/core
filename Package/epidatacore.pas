@@ -9,7 +9,8 @@ interface
 uses
     UCheckFileCmds, UCheckFileIO, UCheckFileTypes, UDataFileTypes, 
   UEpiDataFile, UValueLabels, UImportExport, UQesHandler, DCPcrypt, Rijndael, 
-  UDateUtils, UEpiLog, UEpiUtils, UStringUtils, UUtilTypes, UEpiDataGlobals;
+  UDateUtils, UEpiLog, UEpiUtils, UStringUtils, UUtilTypes, UEpiDataGlobals, 
+  SHA1;
 
 implementation
 
