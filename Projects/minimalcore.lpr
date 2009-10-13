@@ -15,10 +15,7 @@ uses
   UWarning,
   Controls,
   {$ENDIF EPI_DEBUG}
-  UMain, ucommon, UPWform, UCheckFileCmds, UCheckFileIO, UCheckFileTypes,
-  UDataFileTypes, UEpiDataFile, UValueLabels, Base64, DCPcrypt,
-  Rijndael, SHA1, UDateUtils, UEpiUtils, UStringUtils, UUtilTypes, UEpiLog,
-  uepidataglobals, UQesHandler, UImportExport, uimportform, Settings;
+  UMain, ucommon, UPWform, uimportform, Settings, epidatacore;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 
