@@ -1371,8 +1371,13 @@ begin
       TmpField := TEpiField.CreateField(TmpFieldType, 0);
       TmpField.FieldName     := UTF8Encode(ElemNode.GetAttribute('NAME'));
       TmpField.FieldLength   := StrToInt(ElemNode.GetAttribute('LENGTH'));
-      TmpField.FieldDecimals   := StrToInt(ElemNode.GetAttribute('DEC'));
+      TmpField.FieldDecimals := StrToInt(ElemNode.GetAttribute('DEC'));
       TmpField.VariableLabel := UTF8Encode(ElemNode.GetAttribute('LABEL'));
+      TmpField.FieldX        := StrToInt(ElemNode.GetAttribute('FX'));
+      TmpField.FieldY        := StrToInt(ElemNode.GetAttribute('FY'));
+      TmpField.QuestX        := StrToInt(ElemNode.GetAttribute('QX'));
+      TmpField.QuestY        := StrToInt(ElemNode.GetAttribute('QY'));
+
 
       // Valuelabel
       TmpStr := UTF8Encode(ElemNode.GetAttribute('VLABEL'));
@@ -1845,6 +1850,10 @@ begin
       TmpStr := TmpStr + '" TYPE="' + IntToStr(Ord(FieldType));
       TmpStr := TmpStr + '" LENGTH="' + IntToStr(FieldLength);
       TmpStr := TmpStr + '" DEC="' + IntToStr(FieldDecimals);
+      TmpStr := TmpStr + '" LX="' + IntToStr(QuestX);
+      TmpStr := TmpStr + '" LY="' + IntToStr(QuestY);
+      TmpStr := TmpStr + '" FX="' + IntToStr(FieldX);
+      TmpStr := TmpStr + '" FY="' + IntToStr(FieldY);
       if Assigned(ValueLabelSet) then
         TmpStr := TmpStr  + '" VLABEL="' + ValueLabelSet.Name;
       if Trim(VariableLabel) <> '' then

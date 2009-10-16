@@ -580,7 +580,6 @@ function TCheckFileIO.RetrieveRange(CurField: TEpiField): boolean;
 VAR
   CurCommand: string;
   LocalChk: TEpiCheckField;
-  tmpS:string;
 BEGIN
   Result := true;
   LocalChk := CurField.CheckField;
@@ -814,12 +813,10 @@ END;
 function TCheckFileIO.RetrieveCommentLegal(CurField: TEpiField): boolean;
 var
   TmpStr, CurCommand: string;
-  LocalCheck: TEpiCheckField;
   LocalValueLabel: TValueLabelSet;
   ComLegDF: TEpiDataFile;
   ValueField, TextField: TEpiField;
   i: Integer;
-  F: File of byte;
 
   function MakeCheckField(CurField: TEpiField): TEpiCheckField;
   begin
@@ -1180,7 +1177,6 @@ VAR
   Number, i: Integer;
   IsUnique, Found: Boolean;
   CurCommand: string;
-  LocalCheck: TEpiCheckField;
   LocalIndex: TEpiIndexFile;
 BEGIN
   {Can be KEY [n]
@@ -1287,7 +1283,7 @@ end;
 function TCheckFileIO.IsPosibleLetCmd(CurCommand: string; var TmpCmd: TChkCommand): Boolean;
 var
   TmpStr: string;
-  I, N: Integer;
+  N: Integer;
 begin
   Result := true;
   

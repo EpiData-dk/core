@@ -21,7 +21,7 @@ function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
 var
   TmpS,
   eYearStr, eMonthStr, eDayStr: string;
-  i, qq: integer;
+  qq: integer;
   Year, Month, Day, m2, d2: word;
   tmpDate: TDateTime;
 begin

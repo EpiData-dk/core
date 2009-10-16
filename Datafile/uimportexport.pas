@@ -193,8 +193,7 @@ implementation
 
 uses
   UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
-  FileUtil, UQesHandler, Clipbrd, UStringUtils,
-  fpsallformats, UCheckFileIO;
+  FileUtil, UQesHandler, Clipbrd, UStringUtils, fpsallformats;
 
   { TEpiImportExport }
 
@@ -1096,9 +1095,7 @@ var
   HSize: LongInt;
   TmpField: TEpiField;
   TmpStr: string;
-  J: Integer;
   CurRec: Integer;
-  TmpInt: LongInt;
   CurField: Integer;
   C: Char;
   Ds: Char;
@@ -1257,7 +1254,7 @@ function TEpiImportExport.ImportTXT(const aFilename: string;
 var
   QESHandler: TQesHandler;
   ImportLines: TStrings;
-  TmpStr, EncStr: String;
+  TmpStr: String;
   FieldLines: TStrings;
   i: Integer;
   j: Integer;
@@ -1634,7 +1631,6 @@ var
   CharBuf: Array of Char;
   NVar, NObs,
   I, J, TmpInt: Integer;
-  TmpFlt: Double;
   TmpStr: string;
   TmpChar: Char;
   WritenValueLabels: TStringList;
@@ -2346,7 +2342,6 @@ var
   NObs: LongInt;
   CurRec: Integer;
   Offset: Integer;
-  TmpStr: String;
   ACell: PCell;
 begin
   EpiLogger.IncIndent;

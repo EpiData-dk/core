@@ -9,6 +9,12 @@
         <OtherUnitFiles Value="../Datafile/;../Encryption/;../Utils/"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <CStyleOperator Value="False"/>
+          <AllowLabel Value="False"/>
+        </SyntaxOptions>
+      </Parsing>
       <CodeGeneration>
         <Checks>
           <IOChecks Value="True"/>
@@ -100,11 +106,11 @@
       </Item17>
       <Item18>
         <Filename Value="../Encryption/EpiSHA1.pas"/>
-        <UnitName Value="SHA1"/>
+        <UnitName Value="EpiSHA1"/>
       </Item18>
       <Item19>
         <Filename Value="../Encryption/EpiBase64.pas"/>
-        <UnitName Value="Base64"/>
+        <UnitName Value="EpiBase64"/>
       </Item19>
     </Files>
     <RequiredPkgs Count="3">

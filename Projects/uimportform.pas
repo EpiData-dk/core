@@ -55,11 +55,6 @@ begin
 end;
 
 procedure TImportForm.Button1Click(Sender: TObject);
-var
-  ok: Boolean;
-  deltxt: String;
-  andtxt: string;
-  res: String;
 const
   delimiterlist: array[0..3] of char =
     (';', ',', #9, #32);

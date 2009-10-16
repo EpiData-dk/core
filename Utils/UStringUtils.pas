@@ -151,11 +151,10 @@ end;
 function StripWordsFromString(const Source: string; StripWords: array of string
   ): string;
 var
-  NumWords: Integer;
   i: Integer;
 begin
   Result := Source;
-  for i := 0 to NumWords -1 do
+  for i := 0 to High(StripWords) do
     Result := StringReplace(Result, StripWords[i], '', [rfIgnoreCase, rfReplaceAll]);
 end;
 

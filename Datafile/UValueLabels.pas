@@ -76,7 +76,7 @@ type
 implementation
 
 uses
-  SysUtils, UStringUtils;
+  SysUtils;
 
 type
   TValuePair = record
@@ -148,7 +148,6 @@ var
   idx: integer;
 begin
   result := nil;
-
   if FList.Find(trim(aName), idx) then
     result := TValueLabelSet(FList.Objects[idx]);
 end;
@@ -218,7 +217,6 @@ end;
 procedure TValueLabelSet.Clear;
 var
   AVLNode: TAVLTreeNode;
-  aValuePair: PValuePair;
 begin
   FCurrentIndex := -1;
   FName:='';
@@ -357,7 +355,7 @@ var
 begin
   AValuePair := FindValuePair(aValue);
   if Assigned(AValuePair) then
-    AValuePair^.FMissing := AValue;
+    AValuePair^.FMissing := AMissing;
 end;
 
 procedure TValueLabelSet.SetValueLabel(const aValue: Variant;
@@ -396,8 +394,6 @@ begin
 end;
 
 constructor TValueLabelSet.Create(aLabelType: TFieldType);
-var
-  Cmp: TListSortCompare;
 begin
   FName := '';
   FCurrentNode := nil;

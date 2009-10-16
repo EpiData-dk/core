@@ -451,8 +451,6 @@ begin
 end;
 
 procedure TChkIf.Clone(var Dst: TChkCommand);
-var
-  TmpCmds: TChkCommands;
 begin
   Inherited Clone(Dst);
   IfCmds.Clone(TChkIf(Dst).FIfCmds);

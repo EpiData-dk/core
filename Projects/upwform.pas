@@ -6,7 +6,7 @@ unit UPWform;
 interface
 
 uses
-  LResources, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  LResources, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Buttons;
 
 type

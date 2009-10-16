@@ -13,16 +13,14 @@ uses
   function  LoadDataFile(var Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
                          ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent): boolean;
   function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
-                         ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
-                         ExportSettings: Pointer): boolean;
+                         ShowProgress: TProgressEvent; ExportSettings: Pointer): boolean;
   procedure SetFilter(aDialog: TOpenDialog);
 
 implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataGlobals, uimportform, Controls, UEpiUtils,
-  UEpiLog;
+  UEpiDataGlobals, uimportform, Controls, UEpiUtils;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
@@ -97,12 +95,9 @@ begin
 end;
 
 function  SaveDataFile(Df: TEpiDataFile; Const FileName: string; IgnoreChecks: Boolean;
-                       ShowProgress: TProgressEvent; GetPassword: TRequestPasswordEvent;
-                       ExportSettings: Pointer): boolean;
+                       ShowProgress: TProgressEvent; ExportSettings: Pointer): boolean;
 var
   OutDf: TEpiDataFile;
-  I, J: Integer;
-  TmpField: TEpiField;
   S: string;
   Exporter: TEpiImportExport;
   SaveOptions: TEpiDataFileOptions;
@@ -147,14 +142,13 @@ end;
 function  DocumentDataFile(Df: TEpiDatafile): TStrings;
 var
   res: TStringList;
-  FileSiz:LongInt;
-  SizeUnit,tmpStr,tmpType,tmpWidth: string;
+  tmpStr,tmpType,tmpWidth: string;
   UsesValueLabels:boolean;
   nN,nN2,nN3,FieldNumber:integer;
   QuestStr,CheckStr,ValLabelStr:ARRAY [1..25] OF string[20];
   AutoList:Tstringlist;
   aValueLabelSet: TValueLabelSet;
-  aValue,aLabel,valuelabelname: string;
+  aValue,aLabel: string;
   epd: TEpiDatafile;
 
   Function CutString(VAR s:string; ch:TCharSet; wid:Integer):string;

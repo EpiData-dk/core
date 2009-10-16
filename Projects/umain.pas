@@ -195,13 +195,13 @@ begin
   try
     CheckBox2.Checked := True;
     EpiLogger.Add('Saving files to: ' + TmpFile, 1);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(0)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(1)), not CheckBox2.Checked, @ShowProgress, @GetPassword, nil);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(2)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportTxtStandard);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(3)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportOpenDocument);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(4)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportStata10);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(5)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportAll);
-    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(6)), not CheckBox2.Checked, @ShowProgress, @GetPassword, @ExportExcel8);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(0)), not CheckBox2.Checked, @ShowProgress, nil);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(1)), not CheckBox2.Checked, @ShowProgress, nil);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(2)), not CheckBox2.Checked, @ShowProgress, @ExportTxtStandard);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(3)), not CheckBox2.Checked, @ShowProgress, @ExportOpenDocument);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(4)), not CheckBox2.Checked, @ShowProgress, @ExportStata10);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(5)), not CheckBox2.Checked, @ShowProgress, @ExportAll);
+    SaveDataFile(Df, ChangeFileExt(TmpFile, UpdateExtension(6)), not CheckBox2.Checked, @ShowProgress, @ExportExcel8);
     EpiLogger.Add('Save completed successfully!', 1);
   except
     EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
@@ -252,7 +252,7 @@ end;
 
 procedure TMainForm.LoadData(ShowAsLabels: boolean);
 var
-  row, col, i: integer;
+  row, col: integer;
   numrecs: integer;
 begin
   if (not assigned(Df)) then exit;
@@ -447,7 +447,7 @@ begin
     PExpSettings := @ExportOpenDocument;
 
   TS := DateTimeToTimeStamp(Now);
-  if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, @GetPassword, PExpSettings) then
+  if not SaveDataFile(Df, Ext, not CheckBox2.Checked, @ShowProgress, PExpSettings) then
   begin
     EpiLogger.Add('Error occured during save. Save datafile is not consistent.', 1);
     EpiLogger.Add('Please see "File Info:" tab-page for details.', 1);
