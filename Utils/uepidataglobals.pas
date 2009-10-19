@@ -6,7 +6,7 @@ unit UEpiDataGlobals;
 interface
 
 uses
-  UDataFileTypes, Graphics, sysutils;
+  UDataFileTypes, sysutils;
   
 type
   TCharSet = Set of Char;
@@ -35,10 +35,10 @@ CONST
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',
                      'GREEN', 'LIME', 'LTGRAY', 'MAROON', 'NAVY', 'OLIVE',
                      'PURPLE', 'RED', 'SILVER', 'TEAL', 'WHITE', 'YELLOW');
-  ChkColorTypes:  ARRAY[0..17] OF TColor =
+{  ChkColorTypes:  ARRAY[0..17] OF TColor =
                     (clAqua, clBlack, clBlue, clDkGray, clFuchsia, clGray,
                      clGreen, clLime, clLtGray, clMaroon, clNavy, clOlive,
-                     clPurple, clRed, clSilver, clTeal, clWhite, clYellow);
+                     clPurple, clRed, clSilver, clTeal, clWhite, clYellow); }
                      
   FieldTypeNames: Array[0..20] of string =
                    ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',

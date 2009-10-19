@@ -7,7 +7,7 @@ interface
 
 uses
   // TODO -o Torsten : Get rid of Dialogs and Graphic. It compiles most of the LCL into the binary.
-  Classes, UValueLabels, UDataFileTypes, UCheckFileTypes, Dialogs, Graphics;
+  Classes, UValueLabels, UDataFileTypes, UCheckFileTypes;
 
 type
 
@@ -52,7 +52,7 @@ type
   private
     FText:    string;
     FKeys:      string;
-    FMsgType:   TMsgDlgType;
+    FMsgType:   byte;
   protected
     function    GetCommandType(): TChkCmdType; override;
     procedure   Clone(var Dst: TChkCommand); override;
@@ -61,7 +61,7 @@ type
     destructor  Destroy; override;
     Property    Text: string read FText write FText;
     Property    Keys: string read FKeys write FKeys;
-    Property    MsgType: TMsgDlgType read FMsgType write FMsgType;
+    Property    MsgType: byte read FMsgType write FMsgType;
   end;
 
   { TChkFieldReferer }
@@ -107,7 +107,7 @@ type
   private
     FVarNumber: Integer;
     FText:      string;
-    FColor:     TColor;
+    FColor:     byte;
   protected
     function    GetCommandType(): TChkCmdType; override;
     procedure Clone(var Dst: TChkCommand); override;
@@ -116,7 +116,7 @@ type
     destructor Destroy; override;
     Property   VarNumber: Integer read FVarNumber write FVarNumber;
     Property   Text: string read FText write FText;
-    Property   Color: TColor read FColor write FColor;
+    Property   Color: byte read FColor write FColor;
   end;
 
   { TChkRelate }
@@ -320,8 +320,8 @@ type
   TChkColor = class(TChkCommand)
   private
     FColorCmd:    Byte;      //1=color question, 2=color data,  3=color background, 4=color fieldname
-    FTxtColor:    TColor;
-    FBgColor:     TColor;
+    FTxtColor:    Byte;
+    FBgColor:     Byte;
     FIsEpiInfoNo: Boolean;
     FFieldNo:     Byte;
   protected
@@ -331,8 +331,8 @@ type
     constructor Create; override;
     destructor Destroy; override;
     Property   ColorCmd: Byte read FColorCmd write FColorCmd;
-    Property   TxtColor: TColor read FTxtColor write FTxtColor;
-    Property   BgColor: TColor read FBgColor write FBgColor;
+    Property   TxtColor: Byte read FTxtColor write FTxtColor;
+    Property   BgColor: Byte read FBgColor write FBgColor;
     Property   IsEpiInfoNo: Boolean read FIsEpiInfoNo write FIsEpiInfoNo;
     Property   FieldNo: Byte read FFieldNo write FFieldNo;
   end;
@@ -494,7 +494,7 @@ constructor TChkHelp.Create;
 begin
   inherited Create;
   FKeys := '';
-  FMsgType := mtConfirmation;
+  FMsgType := 3; // mtConfirmation;
   FText := '';
 end;
 
@@ -581,7 +581,7 @@ begin
   inherited Create;
   FVarNumber := 0;
   FText := '';
-  FColor := clBlue;
+  FColor := 0;
 end;
 
 destructor TChkTypeStr.Destroy;
@@ -916,8 +916,8 @@ constructor TChkColor.Create;
 begin
   inherited Create;
   FColorCmd := 0;
-  FTxtColor := clBlue;
-  FBgColor := clBlue;
+  FTxtColor := 0;
+  FBgColor := 0;
   FIsEpiInfoNo := false;
   FFieldNo := 0;
 end;

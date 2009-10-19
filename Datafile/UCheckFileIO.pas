@@ -88,8 +88,7 @@ implementation
 
 uses
   SysUtils, UCheckFileTypes, UEpiUtils, TypInfo,
-  Graphics, UEpiDataGlobals, Dialogs, UStringUtils,
-  StrUtils;
+  UEpiDataGlobals, UStringUtils, StrUtils;
 
 { TCheckParser }
 
@@ -1104,14 +1103,14 @@ BEGIN
     LocalCheck.TypeType := ttStatusBar;
     CurCommand := FParser.GetToken(nwSameLine);
     LocalCheck.TypeText := CurCommand;
-    LocalCheck.TypeColour := clBlue;
+    LocalCheck.TypeColour := 0;
     CurCommand := FParser.GetToken(nwSameLine);
     IF CurCommand <> '' THEN
     BEGIN
       CurCommand := AnsiUpperCase(CurCommand);
       FOR i := 0 TO High(ChkColorNames) DO
         IF CurCommand = ChkColorNames[i] THEN
-          LocalCheck.TypeColour := ChkColorTypes[i];
+          LocalCheck.TypeColour := i;
     END;
     Exit;
   END;
@@ -1123,7 +1122,7 @@ BEGIN
                TYPE COMMENT colour
                TYPE COMMENT fieldname
                TYPE COMMENT ALLFIELDS}
-    LocalCheck.TypeColour := clBlue;
+    LocalCheck.TypeColour := 0;
     LocalCheck.TypeType := ttComment;
 
     {Next word can be a fieldname, a colour or ALLFIELDS}
@@ -1139,7 +1138,7 @@ BEGIN
         CurCommand := AnsiUpperCase(CurCommand);
         FOR i := 0 TO High(ChkColorNames) DO
           IF CurCommand = ChkColorNames[i] THEN
-            LocalCheck.TypeColour := ChkColorTypes[i];
+            LocalCheck.TypeColour := i;
       END;
       Exit;
     END;
@@ -1159,7 +1158,7 @@ BEGIN
       LocalCheck.TypeType := ttColour;
       FOR i := 0 TO High(ChkColorNames) DO
         IF CurCommand = ChkColorNames[i] THEN
-          LocalCheck.TypeColour := ChkColorTypes[i];
+          LocalCheck.TypeColour := i;
     END;
 
     {Read rest of line - compatibility with Epi Info}
@@ -1335,7 +1334,7 @@ VAR
   TmpStr: string;
   Dummy: Boolean;
   N, I, J: Integer;
-  TmpColor: TColor;
+  TmpColor: Byte;
   TmpValueLabel: TValueLabelSet;
 BEGIN
   {Legal commands are
@@ -1436,7 +1435,7 @@ BEGIN
 
           TmpChkCmd := TChkHelp.Create;
           TChkHelp(TmpChkCmd).Text    := CurCommand;
-          TChkHelp(TmpChkCmd).MsgType := mtInformation;
+          TChkHelp(TmpChkCmd).MsgType := 2; // mtInformation;
           TChkHelp(TmpChkCmd).Keys    := '';
           CurCommand := FParser.GetUpperToken(nwSameLine); 
           IF CurCommand <> '' THEN
@@ -1457,13 +1456,13 @@ BEGIN
             CurCommand := FParser.GetUpperToken(nwSameLine);
           END;
           IF (TmpStr = 'TYPE=ERROR') OR (TmpStr = 'TYPE=E') THEN
-            TChkHelp(TmpChkCmd).MsgType := mtError
+            TChkHelp(TmpChkCmd).MsgType := 1 // mtError
           ELSE
             IF (TmpStr = 'TYPE=WARNING') OR (TmpStr = 'TYPE=W') THEN
-              TChkHelp(TmpChkCmd).MsgType := mtWarning
+              TChkHelp(TmpChkCmd).MsgType := 0 // mtWarning
           ELSE
             IF (TmpStr = 'TYPE=CONFIRMATION') OR (TmpStr = 'TYPE=C') THEN
-              TChkHelp(TmpChkCmd).MsgType := mtConfirmation;
+              TChkHelp(TmpChkCmd).MsgType := 3; // mtConfirmation;
         END;  //case cmdHelp
       cmdHide, cmdUnhide, cmdClear, cmdGoto:
         BEGIN
@@ -1874,7 +1873,7 @@ BEGIN
             BEGIN
               FOR i := 0 TO High(ChkColorNames) DO
                 IF CurCommand = ChkColorNames[i] THEN
-                  FDf.CheckFile.GlobalTypeComColor := ChkColorTypes[i];
+                  FDf.CheckFile.GlobalTypeComColor := i;
             END;
             Exit;
           END;
@@ -1898,12 +1897,12 @@ BEGIN
 
           //Get a colour - if present
           CurCommand := FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
-          TChkTypeStr(TmpChkCmd).Color := clBlue;
+          TChkTypeStr(TmpChkCmd).Color := 0;
           IF CurCommand<>'' THEN
           BEGIN
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                TChkTypeStr(TmpChkCmd).Color := ChkColorTypes[i];
+                TChkTypeStr(TmpChkCmd).Color := i;
 
             {Read rest of line - compatibility with Epi Info}
             REPEAT
@@ -2044,8 +2043,8 @@ BEGIN
                    or EpiData color words}
           TmpChkCmd := TChkColor.Create;
           CurCommand := FParser.GetUpperToken(nwSameLine);
-          TChkColor(TmpChkCmd).TxtColor := clBlue;
-          TChkColor(TmpChkCmd).BgColor := clBlue;
+          TChkColor(TmpChkCmd).TxtColor := 0;
+          TChkColor(TmpChkCmd).BgColor := 0;
           IF CurCommand='QUESTION' THEN TChkColor(TmpChkCmd).ColorCmd:=1
           ELSE IF CurCommand='DATA' THEN TChkColor(TmpChkCmd).ColorCmd:=2
           ELSE IF CurCommand='BACKGROUND' THEN TChkColor(TmpChkCmd).ColorCmd:=3
@@ -2070,14 +2069,14 @@ BEGIN
                 Result := ReportError(Lang(22860, 'Illegal COLOR number'));   //22860=Illegal COLOR number
                 Exit;
               END;
-              TChkColor(TmpChkCmd).BgColor := ChkColorTypes[n];
+              TChkColor(TmpChkCmd).BgColor := n;
               Exit;
             END;
 
             TChkColor(TmpChkCmd).IsEpiInfoNo := False;
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                TChkColor(TmpChkCmd).BgColor := ChkColorTypes[i];
+                TChkColor(TmpChkCmd).BgColor := i;
           END;
 
           //read rest of line
@@ -2104,8 +2103,8 @@ BEGIN
               Exit;
             END;
             n := n AND $7F;  //clear first bit which indicates flashing text in epi info
-            TChkColor(TmpChkCmd).BgColor := ChkColorTypes[(n AND $F0) SHR 4];
-            TChkColor(TmpChkCmd).TxtColor := ChkColorTypes[(n AND $0F)];
+            TChkColor(TmpChkCmd).BgColor := (n AND $F0) SHR 4;
+            TChkColor(TmpChkCmd).TxtColor := (n AND $0F);
             Exit;
           end;
 
@@ -2113,7 +2112,7 @@ BEGIN
           begin
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                TmpColor := ChkColorTypes[i];
+                TmpColor := i;
             case n of
               0: TChkColor(TmpChkCmd).TxtColor := TmpColor;
               1: TChkColor(TmpChkCmd).BgColor  := TmpColor;
@@ -2541,9 +2540,9 @@ BEGIN
           IF trim(TChkHelp(cmd).Keys) <> '' THEN
             S := S + ' KEYS="' + trim(AnsiUpperCase(TChkHelp(cmd).Keys)) + '"';
           CASE TChkHelp(cmd).MsgType OF
-            mtError:        S := S + ' TYPE=ERROR';
-            mtWarning:      S := S + ' TYPE=WARNING';
-            mtConfirmation: S := S + ' TYPE=CONFIRMATION';
+            1 {mtError}:        S := S + ' TYPE=ERROR';
+            0 {mtWarning}:      S := S + ' TYPE=WARNING';
+            3 {mtConfirmation}: S := S + ' TYPE=CONFIRMATION';
           END;
           AddToCheckLines('HELP ' + S);
         END;  //case cmdHelp
@@ -2581,14 +2580,14 @@ BEGIN
           BEGIN
             S := 'TYPE COMMENT ALLFIELDS';
             IF FDf.CheckFile.GlobalTypeComColor <> 0 THEN
-              For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = FDf.CheckFile.GlobalTypeComColor then
+              For i := 0 to High(ChkColorNames) do
+                if i = FDf.CheckFile.GlobalTypeComColor then
                   S := S + ' ' + ChkColorNames[i];
           END ELSE BEGIN
             S := 'TYPE "' + TChkTypeStr(cmd).Text + '"';
             IF TChkTypeStr(cmd).Color <> 2 THEN
-              For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = TChkTypeStr(cmd).Color then
+              For i := 0 to High(ChkColorNames) do
+                if i = TChkTypeStr(cmd).Color then
                   S := S + ' ' + ChkColorNames[i];
           END;
           AddToCheckLines(S);
@@ -2742,18 +2741,11 @@ BEGIN
             END;
           END ELSE BEGIN
             IF TChkColor(cmd).ColorCmd = 3 THEN
-            begin
-              For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = TChkColor(cmd).BgColor then
-                  S := S + ' ' + ChkColorNames[i];
-            end ELSE BEGIN
-              For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = TChkColor(cmd).txtcolor then
-                  S := S + ' ' + ChkColorNames[i];
+              S := S + ' ' + ChkColorNames[TChkColor(cmd).BgColor]
+            ELSE BEGIN
+              S := S + ' ' + ChkColorNames[TChkColor(cmd).txtcolor];
               IF TChkColor(cmd).BgColor <> 255 THEN
-                For i := 0 to High(ChkColorTypes) do
-                  if ChkColorTypes[i] = TChkColor(cmd).bgcolor then
-                    S := S + ' ' + ChkColorNames[i];
+                S := S + ' ' + ChkColorNames[TChkColor(cmd).bgcolor];
             END;
           END;
           AddToCheckLines(S);
@@ -2924,10 +2916,8 @@ BEGIN
           begin
             S := 'TYPE STATUSBAR';
             IF TypeText <> '' THEN S := S + ' "' + TypeText + '"';
-            IF TypeColour <> clBlue THEN
-              For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = TypeColour then
-                  S := S + ' ' + ChkColorNames[i];
+            IF TypeColour <> 0 THEN
+              S := S + ' ' + ChkColorNames[TypeColour];
             AddToCheckLines(S);
           END;
         {Write TYPE COMMENT}
@@ -2937,10 +2927,8 @@ BEGIN
         ttAllFields:
           Begin
             S := 'TYPE COMMENT ALLFIELDS';
-            IF TypeColour <> clBlue THEN
-              For i := 0 to High(ChkColorTypes) do
-                if ChkColorTypes[i] = TypeColour then
-                  S := S + ' ' + ChkColorNames[i];
+            IF TypeColour <> 0 THEN
+              S := S + ' ' + ChkColorNames[TypeColour];
             AddToCheckLines(S);
           END;
         {Write TYPE COMMENT <fieldname>}
@@ -2949,9 +2937,7 @@ BEGIN
         {Write TYPE COMMENT <colour>}
         ttColour:
           Begin
-            For i := 0 to High(ChkColorTypes) do
-              if ChkColorTypes[i] = TypeColour then
-                S := ChkColorNames[i];
+            S := ChkColorNames[TypeColour];
             AddToCheckLines('TYPE COMMENT ' + S);
           End;
       end;

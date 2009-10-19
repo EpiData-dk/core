@@ -146,10 +146,15 @@ const
 
 type
 
+  TClipBoardReadHook = procedure (ClipBoardLine: TStrings) of object;
+  TClipBoardWriteHook = procedure (Const DataStream: TStream) of object;
+
   { TEpiImportExport }
 
   TEpiImportExport = class(TObject)
   private
+    FOnClipBoardRead: TClipBoardReadHook;
+    FOnClipBoardWrite: TClipBoardWriteHook;
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
@@ -187,13 +192,15 @@ type
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property      ByteOrder: TByteOrder read FByteOrder;
+    property      OnClipBoardRead: TClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
+    property      OnClipBoardWrite: TClipBoardWriteHook read FOnClipBoardWrite write FOnClipBoardWrite;
   end;
 
 implementation
 
 uses
   UValueLabels, UEpiDataGlobals, UEpiUtils, Math, StrUtils, UDateUtils,
-  FileUtil, UQesHandler, Clipbrd, UStringUtils, fpsallformats;
+  FileUtil, UQesHandler, UStringUtils, fpsallformats;
 
   { TEpiImportExport }
 
@@ -1290,18 +1297,12 @@ begin
     // Importing from ClipBoard?
     if aFilename = '' then
     begin
-      if Clipboard.HasFormat(CF_Text) then
-      begin
-        TmpStr := EpiUnknownStrToUTF8(Clipboard.AsText);
-        TmpStr := StringReplace(TmpStr, #13#10, #1, [rfReplaceAll]);
-        ImportLines.Delimiter := #1;
-        ImportLines.StrictDelimiter := true;
-        ImportLines.DelimitedText := TmpStr;
-      end;
-    end else begin
+      if Assigned(OnClipBoardRead) then
+        OnClipBoardRead(ImportLines);
+    end else
       ImportLines.LoadFromFile(aFileName);
-      EpiUnknownStringsToUTF8(ImportLines);
-    end;
+
+    EpiUnknownStringsToUTF8(ImportLines);
 
     if ImportLines.Count = 0 then
     begin
@@ -2324,8 +2325,8 @@ begin
       DataStream.Write(TmpStr[1], 2);
     end;
 
-    if DataStream is TMemoryStream then
-      Clipboard.SetFormat(CF_Text, DataStream);
+    if (DataStream is TMemoryStream) and Assigned(OnClipBoardWrite) then
+      OnClipBoardWrite(DataStream);
 
     result := true;
   finally

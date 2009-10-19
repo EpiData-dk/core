@@ -20,7 +20,7 @@ implementation
 
 uses
   UValueLabels, SysUtils, UStringUtils, StrUtils,
-  UEpiDataGlobals, uimportform, Controls, UEpiUtils;
+  UEpiDataGlobals, uimportform, Controls, UEpiUtils, umain;
 
 procedure SetFilter(aDialog: TOpenDialog);
 begin
@@ -71,6 +71,7 @@ begin
   begin
     Importer := TEpiImportExport.Create;
     Importer.OnProgress := ShowProgress;
+    Importer.OnClipBoardRead := @MainForm.ReadClipboard;
     S := Trim(AnsiUpperCase(ExtractFileExt(FileName)));
     if S = '.DTA' then
       Result := Importer.ImportStata(FileName, Df)
@@ -117,6 +118,7 @@ begin
   begin
     Exporter := TEpiImportExport.Create();
     Exporter.OnProgress := ShowProgress;
+    Exporter.OnClipBoardWrite := @MainForm.WriteClipboard;
     S := AnsiUpperCase(ExtractFileExt(FileName));
     if S = '.DTA' then
       result:= Exporter.ExportStata(FileName, Df, PEpiStataExportSettings(ExportSettings))

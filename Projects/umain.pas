@@ -101,6 +101,8 @@ type
     function  UpdateExtension(Index: integer): string;
   public
     { Public declarations }
+    procedure ReadClipboard(ImportLines: TStrings);
+    procedure WriteClipboard(Const DataStream: TStream);
   end;
 
 var
@@ -111,7 +113,7 @@ implementation
 uses
   Math, UPWform, UEpiUtils, UCheckFileIO,
   UEpiDataGlobals, UImportExport, ucommon, UEpiLog,
-  Settings;
+  Settings, Clipbrd;
 
 var
   Df: TEpiDataFile = nil;
@@ -353,6 +355,25 @@ begin
   else
     Result := '.recxml';
   end;
+end;
+
+procedure TMainForm.ReadClipboard(ImportLines: TStrings);
+var
+  TmpStr: String;
+begin
+  if Clipboard.HasFormat(CF_Text) then
+  begin
+    TmpStr := Clipboard.AsText;
+    TmpStr := StringReplace(TmpStr, LineEnding, #1, [rfReplaceAll]);
+    ImportLines.Delimiter := #1;
+    ImportLines.StrictDelimiter := true;
+    ImportLines.DelimitedText := TmpStr;
+  end;
+end;
+
+procedure TMainForm.WriteClipboard(Const DataStream: TStream);
+begin
+  Clipboard.SetFormat(CF_Text, DataStream);
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);

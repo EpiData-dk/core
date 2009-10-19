@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, UValueLabels, Rijndael, UCheckFileCmds, UEpiLog,
-  UCheckFileTypes, Graphics, UDataFileTypes, UEpiDataGlobals;
+  UCheckFileTypes, UDataFileTypes, UEpiDataGlobals;
 
 type
 
@@ -39,7 +39,7 @@ type
     FValueLabelIsFieldRef: Boolean;
     FTypeType:         TTypeType;
     FTypeText:         string;
-    FTypeColor:        TColor;
+    FTypeColor:        Byte;
     FHasGlobalDefaultVal: Boolean;
     FFieldScope:       TFieldScope;
     FFieldComments:    TStrings;
@@ -72,7 +72,7 @@ type
     property    ShowValueLabel: Boolean read FShowValueLabel write FShowValueLabel;
     property    TypeType:     TTypeType read FTypeType write FTypeType;
     property    TypeText:     string read FTypeText write FTypeText;
-    property    TypeColour:   TColor read FTypeColor write FTypeColor;
+    property    TypeColour:   Byte read FTypeColor write FTypeColor;
     property    HasGlobalDefaultVal: Boolean read FHasGlobalDefaultVal write FHasGlobalDefaultVal;
     property    FieldScope:   TFieldScope read FFieldScope write FFieldScope;
     property    FieldComments: TStrings read FFieldComments;
@@ -94,11 +94,11 @@ type
     FGlobalMissingValues:  TMissingValues;
     FGlobalDefaultValue:   string;            //Global default value defined by DEFAULTVALUE ALL X or DEFAULTVALUE field-field, field X
     FGlobalTypeCom:        Boolean;           //Show that all fields has a Type Comment Fieldname
-    FGlobalTypeComColor:   TColor;
+    FGlobalTypeComColor:   Byte;
     FMissingAction:        TMissingAction;
     FShowLastRecord:       Boolean;           //if set, then last record is shown when datafile is opened; if false (default) then
     FFieldHighlightAct:    Boolean;           //highlight active field
-    FFieldHighlightCol:    TColor;            //color af highlight of active field
+    FFieldHighlightCol:    Byte;              //color of highlight of active field
     FBackupList:           TStringList;       //List of files to backup
     FErrorInFile:          Boolean;
     FHasCheckFile:         Boolean;
@@ -128,10 +128,10 @@ type
     Property    GlobalMissingVal[Index: Integer]: string read GetGlobMissing write SetGlobMissing;
     Property    MissingAction:    TMissingAction read FMissingAction write FMissingAction;
     Property    GlobalTypeCom:    Boolean read FGlobalTypeCom write FGlobalTypeCom;
-    Property    GlobalTypeComColor: TColor read FGlobalTypeComColor write FGlobalTypeComColor;
-    Property    ShowLastRecord:   Boolean read FShowLastRecord write FShowLastRecord;
+    Property    GlobalTypeComColor: Byte read FGlobalTypeComColor write FGlobalTypeComColor;
+    Property    ShowLastRecord:    Boolean read FShowLastRecord write FShowLastRecord;
     Property    FieldHighlightAct: Boolean read FFieldHighlightAct write FFieldHighlightAct;
-    Property    FieldHighlightCol: TColor read FFieldHighlightCol write FFieldHighlightCol;
+    Property    FieldHighlightCol: Byte read FFieldHighlightCol write FFieldHighlightCol;
     Property    BackupList:       TStringList read FBackupList;
     Property    TopComments:      TStringList read FTopComments;
     Property    AssertList:       TStringList read FAssertList;
@@ -582,7 +582,7 @@ begin
   FValueLabelIsFieldRef  := false;
   FTypeType           := ttNone;
   FTypeText          := '';
-  FTypeColor         := clBlue;
+  FTypeColor         := 0;
   FHasGlobalDefaultVal := false;
   FieldScope         := scNone;
 end;
@@ -772,11 +772,11 @@ begin
   FAutoSave            := false;
   FGlobalDefaultValue  := '';
   FGlobalTypeCom       := false;
-  FGlobalTypeComColor  := clBlue;
+  FGlobalTypeComColor  := 0;
   FMissingAction       := maIgnoreMissing;
   FShowLastRecord      := false;
   FFieldHighlightAct   := false;
-  FFieldHighlightCol   := clBlue;
+  FFieldHighlightCol   := 0;
   FErrorInFile         := false;
   FHasCheckFile        := false;
   FFileName            := '';
