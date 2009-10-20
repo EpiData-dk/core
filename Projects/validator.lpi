@@ -36,12 +36,17 @@
         <PackageName Value="epidatacore"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="1">
+    <Units Count="2">
       <Unit0>
         <Filename Value="validator.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="validator"/>
       </Unit0>
+      <Unit1>
+        <Filename Value="validationunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="validationunit"/>
+      </Unit1>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

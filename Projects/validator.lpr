@@ -1,13 +1,15 @@
 program validator;
 
+{$encoding utf8}
 {$mode objfpc}{$H+}
 
 uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, epidatacore
-  { you can add units after this };
+  Classes, SysUtils, CustApp, epidatacore,
+  { you can add units after this }
+  FileUtil, validationunit;
 
 type
 
@@ -28,6 +30,8 @@ type
 procedure TEpiValidator.DoRun;
 var
   ErrorMsg: String;
+  FileSearch: TFileSearcher;
+  DFValidator: TDatafileValidator;
 begin
   // quick check parameters
   OnException := @MyExceptHandler;
@@ -48,6 +52,13 @@ begin
 
   { add your program here }
 
+  DFValidator := TDatafileValidator.Create;
+  FileSearch := TFileSearcher.Create;
+  FileSearch.OnDirectoryFound := @DFValidator.DirectoryHandler;
+  FileSearch.OnFileFound := @DFValidator.FileHandler;
+
+  // TODO : Include switches and options.
+  FileSearch.Search(GetCurrentDirUTF8, '*.recxml;*.rec;*.dta;*.ods;*.txt;*.csv;*.dbf');
 
   // stop program loop
   Terminate;
