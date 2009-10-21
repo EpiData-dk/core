@@ -41,7 +41,7 @@ type
   TEpiDataFileOption    = (eoIgnoreChecks, eoIgnoreRelates, eoIgnoreIndex);
   TEpiDataFileOptions   = set of TEpiDataFileOption;
 
-  TDataFileType         = (dftEpiData, dftStata, dftCSV, dftDBase);
+  TDataFileType         = (dftEpiDataXml, dftEpiDataRec, dftStata, dftOds, dftXls, dftText, dftDBase);
 
   TByteOrder            = (boLittleEndian, boBigEndian);
 

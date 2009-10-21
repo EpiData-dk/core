@@ -451,6 +451,7 @@ type
   { TEpiDataFile }
   TEpiDataFile = class(TObject)
   private
+    FDatafileType: TDataFileType;
     FFileName:     string;                  // Physical datafile name.
     FFileLabel:    string;                  // Label of datafile. (METADATA)
     FStudy:        string;                  // Study information (METADATA)
@@ -530,6 +531,7 @@ type
     Property   ErrorCode:   Cardinal read FErrorCode write FErrorCode;
     Property   ErrorText:   string read FErrorText write FErrorText;
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
+    Property   DatafileType: TDataFileType read FDatafileType write FDatafileType;
   end;
 
 implementation
@@ -1176,6 +1178,8 @@ begin
   EpiLogger.Add(ClassName, 'InternalOpen', 2, 'Filename = ' + Filename);
   result := false;
 
+  DatafileType := dftEpiDataXml;
+
   try
     ReadXMLFile(RecXml, FileName);
 
@@ -1462,6 +1466,8 @@ begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'InternalOpenOld', 2, 'Filename = ' + Filename);
   result := false;
+
+  DatafileType := dftEpiDataRec;
 
   try
     AssignFile(TxtFile, Filename);

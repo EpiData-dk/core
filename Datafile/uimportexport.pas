@@ -637,6 +637,7 @@ begin
 
   With DataFile do
   TRY
+    DatafileType := dftStata;
     FieldNaming := fnAuto;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
@@ -1118,6 +1119,7 @@ BEGIN
 
   With DataFile do
   TRY
+    DatafileType := dftDBase;
     FieldNaming := fnAuto;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Reading header information'));
@@ -1288,6 +1290,7 @@ begin
   // IMPORT.
   With DataFile do
   TRY
+    DatafileType := dftText;
     FieldNaming := fnAuto;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Initializing'));
@@ -1433,6 +1436,7 @@ begin
     WorkBook := TsWorkbook.Create;
 
     // TODO : Implement other spreadsheet formats.
+    DatafileType := dftOds;
     WorkBook.ReadFromFile(aFilename, sfOpenDocument);
     WorkSheet := WorkBook.GetFirstWorksheet;
 
