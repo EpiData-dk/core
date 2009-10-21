@@ -24,13 +24,18 @@ type
 implementation
 
 uses
-  UImportExport;
+  UImportExport, UStringUtils, UDataFileTypes;
 
 { TDatafileValidator }
 
 procedure TDatafileValidator.ValidateOriginalDatafile(Df: TEpiDataFile);
 var
   Fn: String;
+  CtrlLines: TStringList;
+  FieldCount: String;
+  RecCount: String;
+  i: Integer;
+  FieldLines: TStrings;
 begin
   // Validating the original file is done using a <df-filename>.import file, organised in this manner:
 
@@ -49,7 +54,28 @@ begin
   }
   Fn := Df.FileName + ExtensionSeparator + 'import';
 
+  CtrlLines := TStringList.Create;
+  CtrlLines.LoadFromFile(Fn);
 
+  FieldCount := IntToStr(CtrlLines[0]);
+  RecCount   := IntToStr(CtrlLines[1]);
+
+  if Df.NumFields <> FieldCount then
+    ;   // TODO : Report errors.
+
+  if df.Size <> RecCount then
+    ;   // TODO : Report errors.
+
+  for i := 0 to FieldCount - 1 do
+  begin
+    SplitString(CtrlLines[2 + i], FieldLines, [',']);
+
+    if df[i].FieldType <> TFieldType(StrToInt(FieldLines[0])) then
+      ; // TODO : Report errors.
+
+
+
+  end;
 end;
 
 constructor TDatafileValidator.Create;
