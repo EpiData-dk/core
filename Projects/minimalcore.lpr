@@ -15,7 +15,7 @@ uses
   UWarning,
   Controls,
   {$ENDIF EPI_DEBUG}
-  UMain, ucommon, UPWform, uimportform, Settings, epidatacore;
+  UMain, ucommon, UPWform, uimportform, Settings;
 
 {$IFDEF WINDOWS}{$R minimalcore.rc}{$ENDIF}
 

@@ -45,7 +45,7 @@ implementation
 uses SysUtils, StrUtils, UEpiUtils;
 
 var
-  ODebug: TEpiLog = nil;
+  OLog: TEpiLog = nil;
 
 const
   MaxLevel: word = 4;
@@ -135,17 +135,17 @@ end;
 
 class function TEpiLog.GetInstance: TEpiLog;
 begin
-  if not Assigned(ODebug) then
+  if not Assigned(OLog) then
   begin
-    ODebug := TEpiLog.Create(1);
-    ODebug.Reset;
+    OLog := TEpiLog.Create(1);
+    OLog.Reset;
   end;
-  result := ODebug;
+  result := OLog;
 end;
 
 class procedure TEpiLog.DestroyInstance;
 begin
-  if Assigned(ODebug) then FreeAndNil(ODebug);
+  if Assigned(OLog) then FreeAndNil(OLog);
 end;
 
 procedure TEpiLog.SaveToFile(FileName: string);

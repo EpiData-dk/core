@@ -1846,7 +1846,7 @@ begin
       WITH DataFields[i] DO
       BEGIN
         TmpStr := Trim(FieldName);
-        TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength, FieldNames);
+        TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength - 1, FieldNames);
         WriteString(TmpStr, FieldNameLength);
       END;   //with
     END;  //for eN

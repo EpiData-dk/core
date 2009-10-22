@@ -7,9 +7,10 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, epidatacore,
+  Classes, SysUtils, CustApp,
   { you can add units after this }
-  FileUtil, validationunit;
+  FileUtil, validationunit,
+  UEpiUtils, UEpiLog;
 
 type
 
@@ -32,6 +33,7 @@ var
   ErrorMsg: String;
   FileSearch: TFileSearcher;
   DFValidator: TDatafileValidator;
+  CSI: TCoreSystemInformation;
 begin
   // quick check parameters
   OnException := @MyExceptHandler;
@@ -51,6 +53,8 @@ begin
   end;
 
   { add your program here }
+  GetCoreSystemInformation(CSI);
+  EpiLogger.Reset;
 
   DFValidator := TDatafileValidator.Create;
   FileSearch := TFileSearcher.Create;

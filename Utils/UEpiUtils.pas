@@ -101,7 +101,7 @@ begin
   if Assigned(CompareList) then
   begin
     Number := 1;
-    while (CompareList.IndexOf(TmpStr) <> -1) and (not CheckVariableName(TmpStr, AlfaNumChars + ['_'])) do
+    while (CompareList.IndexOf(TmpStr) <> -1) or (not CheckVariableName(TmpStr, AlfaNumChars + ['_'])) do
     begin
       TmpStr := 'V' + IntToStr(Number);
       Inc(Number)
