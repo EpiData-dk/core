@@ -9,7 +9,7 @@ uses
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms
-  { you can add units after this }, LResources,
+  { you can add units after this },
   {$IFDEF UNIX}cwstring,{$ENDIF}
   {$IFNDEF EPI_DEBUG}
   UWarning,
@@ -24,7 +24,6 @@ var
   mr: integer;
 {$ENDIF}
 begin
-  {$I minimalcore.lrs}
   Application.Title := 'EpiData Software Core Test Project';
   Application.Initialize;
 {$IFNDEF EPI_DEBUG}

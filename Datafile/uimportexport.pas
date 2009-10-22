@@ -1650,6 +1650,7 @@ var
   ByteChar, IntChar, LongChar,
   FloatChar, DoubleChar: Char;
   MissingBaseNum: Cardinal;
+  FieldNames: TStrings;
 
 Const
   ByteConst   = #251;
@@ -1839,11 +1840,13 @@ begin
     DataStream.Write(ByteBuf[0], NVar);
 
     // - varlist: variable names
+    FieldNames := TStringList.Create;
     FOR i :=0 TO NVar - 1 DO
     BEGIN
       WITH DataFields[i] DO
       BEGIN
         TmpStr := Trim(FieldName);
+        TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength, FieldNames);
         WriteString(TmpStr, FieldNameLength);
       END;   //with
     END;  //for eN
