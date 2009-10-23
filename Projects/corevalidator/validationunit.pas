@@ -20,15 +20,15 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function ReportEvent(EventType: TReportType; Msg: String): TExitResult; overload;
-    function ReportEvent(EventType: TReportType; Msg: String; Args: array of const): TExitResult; overload;
+    procedure ReportEvent(EventType: TReportType; Msg: String); overload;
+    procedure ReportEvent(EventType: TReportType; Msg: String; Args: array of const); overload;
   end;
 
   { TDatafileValidator }
 
   TDatafileValidator = class
   private
-    function  LoadDf(Fn: String; var Df: TEpiDataFile): boolean;
+    function LoadDf(Fn: String; var Df: TEpiDataFile): boolean;
     function ValidateOriginalDatafile(Df: TEpiDataFile): TExitResult;
     function ValidateExportedDatafile(OrigDf, ExportDf: TEpiDataFile): TExitResult;
   public
@@ -262,7 +262,9 @@ begin
   Fn := Df.FileName + ExtensionSeparator + 'import';
   if not FileExistsUTF8(Fn) then
   begin
-    // TODO : Report error.
+    Reporter.ReportEvent(rtFatal, 'Validation file does not exists: %s', [Fn]);
+    Result := erAbortFile;
+    Exit;
   end;
 
   CtrlLines := TStringList.Create;
@@ -272,10 +274,17 @@ begin
   RecCount   := StrToInt(CtrlLines[1]);
 
   if Df.NumFields <> FieldCount then
-    Reporter.ReportEvent(rtError, 'Original File Check: fieldcount = %d, expected = %d', [Df.NumFields, FieldCount]);
+  begin
+    Reporter.ReportEvent(rtFatal, 'Original File Check: fieldcount = %d, expected = %d', [Df.NumFields, FieldCount]);
+    Result := erAbortFile;
+    Exit;
+  end;
 
   if df.Size <> RecCount then
+  begin
     Reporter.ReportEvent(rtError, 'Original File Check: recordcount = %d, expected = %d', [df.Size, RecCount]);
+
+  end;
 
   for i := 0 to FieldCount - 1 do
   with df[i] do
@@ -347,6 +356,7 @@ var
   Df: TEpiDataFile;
   i: Integer;
   NewDf: TEpiDataFile;
+  res: TExitResult;
 const
   FormatEndings: array[1..8] of string =
     ('.recxml', '.rec', '.dta', '.ods', '.xls', '.csv', '.txt', '.dbf');
@@ -358,7 +368,11 @@ begin
   try
     LoadDf(Fn, Df);
 
-    ValidateOriginalDatafile(Df);
+    res := ValidateOriginalDatafile(Df);
+    if res = erAbortFile then
+      Exit;
+    if Res = erAbortProgram then
+      Abort;
 
     for i := Low(FormatEndings) to High(FormatEndings) do
     begin
@@ -408,13 +422,13 @@ begin
   inherited Destroy;
 end;
 
-function TReporter.ReportEvent(EventType: TReportType; Msg: String): TExitResult;
+procedure TReporter.ReportEvent(EventType: TReportType; Msg: String);
 begin
   ReportEvent(EventType, Msg, []);
 end;
 
-function TReporter.ReportEvent(EventType: TReportType; Msg: String;
-  Args: array of const): TExitResult;
+procedure TReporter.ReportEvent(EventType: TReportType; Msg: String;
+  Args: array of const);
 
 var
   TmpStr: String;
@@ -427,11 +441,6 @@ begin
   end;
   TmpStr := TmpStr + Format(Msg, Args);
 
-  if EventType = rtFatal then
-  begin
-    abort;
-
-  end;
   FLines.Add(TmpStr);
 end;
 
