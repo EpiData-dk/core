@@ -9,7 +9,7 @@ uses
 
 type
 
-  TReportType = (rtNote, rtWarning, rtError, rtFatal);
+  TReportType = (rtEmpty, rtNote, rtWarning, rtError, rtFatal);
 
   TExitResult = (erOk, erAbortField, erAbortFile, erAbortProgram);
 
@@ -22,6 +22,7 @@ type
     destructor Destroy; override;
     procedure ReportEvent(EventType: TReportType; Msg: String); overload;
     procedure ReportEvent(EventType: TReportType; Msg: String; Args: array of const); overload;
+    procedure SaveToFile(Const aFileName: string);
   end;
 
   { TDatafileValidator }
@@ -77,7 +78,8 @@ var
 implementation
 
 uses
-  UImportExport, UStringUtils, UDataFileTypes;
+  UImportExport, UStringUtils, UDataFileTypes, settings,
+  UEpiDataGlobals;
 
 type
   TCompareFields = procedure(FieldA, FieldB: TEpiField);
@@ -245,7 +247,6 @@ var
   RecCount: LongInt;
 begin
   // Validating the original file is done using a <df-filename>.import file, organised in this manner:
-
   {
    Line          1: Number [n] of fields (includes question lines in EpiData files).
    Line          2: Number [r] of records (includes records marked for deletion).
@@ -259,7 +260,8 @@ begin
                    b: Record no. (index into the number of records - 1 indexed)
                    c: Data that must be present in this field. For strings encapsulate the data in quotation marks.
   }
-  Fn := Df.FileName + ExtensionSeparator + 'import';
+
+  Fn := Df.FileName + ExtensionSeparator + 'val';
   if not FileExistsUTF8(Fn) then
   begin
     Reporter.ReportEvent(rtFatal, 'Validation file does not exists: %s', [Fn]);
@@ -283,8 +285,14 @@ begin
   if df.Size <> RecCount then
   begin
     Reporter.ReportEvent(rtError, 'Original File Check: recordcount = %d, expected = %d', [df.Size, RecCount]);
-
+    if VSettings.ErrorsAreFatal then
+    begin
+      Result := erAbortProgram;
+      Exit;
+    end;
   end;
+
+  FieldLines := nil;
 
   for i := 0 to FieldCount - 1 do
   with df[i] do
@@ -293,16 +301,48 @@ begin
 
     ApplicationName;
     if FieldType <> TFieldType(StrToInt(FieldLines[0])) then
-      ; // TODO : Report errors.
+    begin
+      Reporter.ReportEvent(rtError, 'Field "%s" has incorrect type. Was: %s, expected: %s',
+        [FieldName, FieldTypeNames[Ord(FieldType)], FieldTypeNames[StrToInt(FieldLines[0])]]);
+      if VSettings.ErrorsAreFatal then
+      begin
+        Result := erAbortProgram;
+        Exit
+      end;
+    end;
 
     if FieldLength <> StrToInt(FieldLines[1]) then
-      ; // TODO : Report errors.
+    begin
+      Reporter.ReportEvent(rtError, 'Field "%s" has incorrect length. Was: %d, expected: %d',
+        [FieldName, FieldLength, StrToInt(FieldLines[1])]);
+      if VSettings.ErrorsAreFatal then
+      begin
+        Result := erAbortProgram;
+        Exit
+      end;
+    end;
 
     if FieldDecimals <> StrToInt(FieldLines[2]) then
-      ; // TODO : Report errors.
+    begin
+      Reporter.ReportEvent(rtError, 'Field "%s" has incorrect decimals. Was: %d, expected: %d',
+        [FieldName, FieldDecimals, StrToInt(FieldLines[2])]);
+      if VSettings.ErrorsAreFatal then
+      begin
+        Result := erAbortProgram;
+        Exit
+      end;
+    end;
 
     if (Assigned(ValueLabelSet) xor (FieldLines[3] = '1')) then
-      ; // TODO : Report errors.
+    begin
+      Reporter.ReportEvent(rtError, 'Field "%s" valuelabels are incorrect. Was: %p, expected: %p',
+        [FieldName, ValueLabelSet, StrToInt(FieldLines[3])]);
+      if VSettings.ErrorsAreFatal then
+      begin
+        Result := erAbortProgram;
+        Exit
+      end;
+    end;
   end;
 end;
 
@@ -364,6 +404,12 @@ begin
   Ext := ExtractFileExt(Utf8ToAnsi(FileIterator.FileName));
   Fn := FileIterator.FileName;
   Df := nil;
+  ImpExp := nil;
+
+  Reporter.ReportEvent(rtEmpty, '');
+  Reporter.ReportEvent(rtEmpty, '==================================================');
+  Reporter.ReportEvent(rtEmpty, '= Working with file: %s', [Fn]);
+  Reporter.ReportEvent(rtEmpty, '==================================================');
 
   try
     LoadDf(Fn, Df);
@@ -407,6 +453,7 @@ begin
 
   finally
     if Assigned(ImpExp) then FreeAndNil(ImpExp);
+    if Assigned(Df) then FreeAndNil(Df);
   end;
 end;
 
@@ -438,16 +485,21 @@ begin
     rtWarning: TmpStr := 'WARNING:' + #9;
     rtError:   TmpStr := 'ERROR:' + #9;
     rtFatal:   TmpStr := 'FATAL:' + #9;
+  else
+    TmpStr := #9;
   end;
   TmpStr := TmpStr + Format(Msg, Args);
+
+  if not VSettings.NoOutput then
+    WriteLn(TmpStr);
 
   FLines.Add(TmpStr);
 end;
 
-
-finalization
+procedure TReporter.SaveToFile(const aFileName: string);
 begin
-  Reporter.FLines.SaveToFile('');
+  if aFileName = '' then exit;
+  FLines.SaveToFile(aFileName);
 end;
 
 end.

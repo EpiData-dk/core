@@ -1,6 +1,6 @@
 program validator;
 
-{$encoding utf8}
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 uses
@@ -10,7 +10,7 @@ uses
   Classes, SysUtils, CustApp,
   { you can add units after this }
   FileUtil, validationunit,
-  UEpiUtils, UEpiLog;
+  UEpiUtils, UEpiLog, settings;
 
 type
 
@@ -24,6 +24,7 @@ type
     destructor Destroy; override;
     procedure WriteHelp; virtual;
     Procedure MyExceptHandler(Sender : TObject; E : Exception);
+    procedure Terminate; override;
   end;
 
 { TEpiValidator }
@@ -34,11 +35,19 @@ var
   FileSearch: TFileSearcher;
   DFValidator: TDatafileValidator;
   CSI: TCoreSystemInformation;
+  NonOpts, Opts, LongOpts: TStrings;
 begin
   // quick check parameters
   OnException := @MyExceptHandler;
+  CaseSensitiveOptions := true;
 
-  ErrorMsg:=CheckOptions('h','help');
+  Reporter := TReporter.Create;
+  Opts := TStringList.Create;
+  NonOpts := TStringList.Create;
+  LongOpts := TStringList.Create;
+  LongOpts.CommaText := 'help,fatal,recursive,logfile:';
+
+  ErrorMsg:=CheckOptions('hl:FR', LongOpts, Opts, NonOpts);
   if ErrorMsg<>'' then begin
     ShowException(Exception.Create(ErrorMsg));
     Terminate;
@@ -52,6 +61,13 @@ begin
     Exit;
   end;
 
+  VSettings.ErrorsAreFatal := HasOption('F', 'fatal');
+  VSettings.IncludeSubDirs := HasOption('R', 'recursive');
+  if HasOption('l', 'logfile') then
+    VSettings.LogFile := GetOptionValue('l', 'logfile')
+  else
+    VSettings.LogFile := GetCurrentDirUTF8() + DirectorySeparator + 'validation.result';
+
   { add your program here }
   GetCoreSystemInformation(CSI);
   EpiLogger.Reset;
@@ -61,8 +77,21 @@ begin
   FileSearch.OnDirectoryFound := @DFValidator.DirectoryHandler;
   FileSearch.OnFileFound := @DFValidator.FileHandler;
 
-  // TODO : Include switches and options.
-  FileSearch.Search(GetCurrentDirUTF8, '*.recxml;*.rec;*.dta;*.ods;*.txt;*.csv;*.dbf');
+  if (NonOpts.Count = 0) then
+  begin
+    Reporter.ReportEvent(rtFatal, 'No start directory entered.');
+    Terminate;
+    Exit;
+  end;
+
+  if not DirectoryExistsUTF8(NonOpts[0]) then
+  begin
+    Reporter.ReportEvent(rtFatal, 'Directory does not exist: %s', [NonOpts[0]]);
+    Terminate;
+    Exit;
+  end;
+
+  FileSearch.Search(NonOpts[0], '*.recxml;*.rec;*.dta;*.ods;*.txt;*.csv;*.dbf', VSettings.IncludeSubDirs);
 
   // stop program loop
   Terminate;
@@ -87,8 +116,19 @@ end;
 
 procedure TEpiValidator.MyExceptHandler(Sender: TObject; E: Exception);
 begin
-  writeln('Something horrible happened. Aborting program.');
+  if not (E is EAbort) then
+    writeln('Something horrible happened. Aborting program.');
   Terminate;
+end;
+
+procedure TEpiValidator.Terminate;
+begin
+  if Assigned(Reporter) then
+  begin
+    Reporter.SaveToFile(VSettings.LogFile);
+    FreeAndNil(Reporter);
+  end;
+  inherited Terminate;
 end;
 
 var

@@ -27,8 +27,8 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
+        <CommandLineParams Value="~/EpiData/localdata/MustTest/"/>
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
-        <WorkingDirectory Value="/home/torsten/EpiData/TestData/MustTest"/>
       </local>
     </RunParams>
     <RequiredPackages Count="1">
@@ -36,7 +36,7 @@
         <PackageName Value="epidatacore"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
         <Filename Value="validator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -47,6 +47,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="validationunit"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="settings.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="settings"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
