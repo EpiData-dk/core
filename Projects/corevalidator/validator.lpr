@@ -111,7 +111,13 @@ end;
 procedure TEpiValidator.WriteHelp;
 begin
   { add your help code here }
-  writeln('Usage: ',ExeName,' -h');
+  writeln('Usage: ', ExeName,' [OPTION]... [PATH]');
+  writeln('');
+  writeln('OPTIONS:');
+  writeln(' -h, --help', #9#9, 'Print this help and terminate');
+  writeln(' -F, --fatal', #9#9, 'Make any error fatal and abort further progress');
+  writeln(' -l, --logfile=FILE', #9, 'Save output to this file (Default is <exe-name>.result in <exe-dir>)');
+  writeln(' -R, --recursive', #9, 'Recurse into subdirectories');
 end;
 
 procedure TEpiValidator.MyExceptHandler(Sender: TObject; E: Exception);

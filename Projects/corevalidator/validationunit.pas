@@ -11,7 +11,7 @@ type
 
   TReportType = (rtEmpty, rtNote, rtWarning, rtError, rtFatal);
 
-  TExitResult = (erOk, erAbortField, erAbortFile, erAbortProgram);
+  TExitResult = (erOk, erAbortRecord, erAbortField, erAbortFile, erAbortProgram);
 
   { TReporter }
 
@@ -30,6 +30,7 @@ type
   TDatafileValidator = class
   private
     function LoadDf(Fn: String; var Df: TEpiDataFile): boolean;
+    function HandleExit(CurrentExit: TExitResult): TExitResult;
     function ValidateOriginalDatafile(Df: TEpiDataFile): TExitResult;
     function ValidateExportedDatafile(OrigDf, ExportDf: TEpiDataFile): TExitResult;
   public
@@ -40,37 +41,37 @@ type
   end;
 
   // XML comparing.
-  procedure XmlVsRec(OrgField, NewField: TEpiField);
-  procedure XmlVsDta(OrgField, NewField: TEpiField);
-  procedure XmlVsOds(OrgField, NewField: TEpiField);
-  procedure XmlVsXls(OrgField, NewField: TEpiField);
-  procedure XmlVsTxt(OrgField, NewField: TEpiField);
-  procedure XmlVsDbf(OrgField, NewField: TEpiField);
+  procedure XmlToRec(OrgField, NewField: TEpiField);
+  procedure XmlToDta(OrgField, NewField: TEpiField);
+  procedure XmlToOds(OrgField, NewField: TEpiField);
+  procedure XmlToXls(OrgField, NewField: TEpiField);
+  procedure XmlToTxt(OrgField, NewField: TEpiField);
+  procedure XmlToDbf(OrgField, NewField: TEpiField);
 
   // Rec comparing.
-  procedure RecVsDta(OrgField, NewField: TEpiField);
-  procedure RecVsOds(OrgField, NewField: TEpiField);
-  procedure RecVsXls(OrgField, NewField: TEpiField);
-  procedure RecVsTxt(OrgField, NewField: TEpiField);
-  procedure RecVsDbf(OrgField, NewField: TEpiField);
+  procedure RecToDta(OrgField, NewField: TEpiField);
+  procedure RecToOds(OrgField, NewField: TEpiField);
+  procedure RecToXls(OrgField, NewField: TEpiField);
+  procedure RecToTxt(OrgField, NewField: TEpiField);
+  procedure RecToDbf(OrgField, NewField: TEpiField);
 
   // Stata comparing.
-  procedure DtaVsOds(OrgField, NewField: TEpiField);
-  procedure DtaVsXls(OrgField, NewField: TEpiField);
-  procedure DtaVsTxt(OrgField, NewField: TEpiField);
-  procedure DtaVsDbf(OrgField, NewField: TEpiField);
+  procedure DtaToOds(OrgField, NewField: TEpiField);
+  procedure DtaToXls(OrgField, NewField: TEpiField);
+  procedure DtaToTxt(OrgField, NewField: TEpiField);
+  procedure DtaToDbf(OrgField, NewField: TEpiField);
 
   // OpenOffice comparing.
-  procedure OdsVsXls(OrgField, NewField: TEpiField);
-  procedure OdsVsTxt(OrgField, NewField: TEpiField);
-  procedure OdsVsDbf(OrgField, NewField: TEpiField);
+  procedure OdsToXls(OrgField, NewField: TEpiField);
+  procedure OdsToTxt(OrgField, NewField: TEpiField);
+  procedure OdsToDbf(OrgField, NewField: TEpiField);
 
   // Excel comparing.
-  procedure XlsVsTxt(OrgField, NewField: TEpiField);
-  procedure XlsVsDbf(OrgField, NewField: TEpiField);
+  procedure XlsToTxt(OrgField, NewField: TEpiField);
+  procedure XlsToDbf(OrgField, NewField: TEpiField);
 
   // Dbase
-  procedure TxtVsDbf(OrgField, NewField: TEpiField);
+  procedure TxtToDbf(OrgField, NewField: TEpiField);
 
 var
   Reporter: TReporter;
@@ -87,114 +88,114 @@ type
 const
   //  Xml, Rec,       Stata,     Ods,       Xls,       Text,      DBase
   CompareFieldsArray: array[1..6] of array[1..7] of TCompareFields =
-{xml}    ((nil, @XmlVsRec, @XmlVsDta, @XmlVsOds, @XmlVsXls, @XmlVsTxt, @XmlVsDbf),
-{rec}     (nil, nil,       @RecVsDta, @RecVsOds, @RecVsXls, @RecVsTxt, @RecVsDbf),
-{dta}     (nil, nil,       nil,       @DtaVsOds, @DtaVsXls, @DtaVsTxt, @DtaVsDbf),
-{ods}     (nil, nil,       nil,       nil,       @OdsVsXls, @OdsVsTxt, @OdsVsDbf),
-{xls}     (nil, nil,       nil,       nil,       nil,       @XlsVsTxt, @XlsVsDbf),
-{txt}     (nil, nil,       nil,       nil,       nil,       nil,       @TxtVsDbf));
+{xml}    ((nil, @XmlToRec, @XmlToDta, @XmlToOds, @XmlToXls, @XmlToTxt, @XmlToDbf),
+{rec}     (nil, nil,       @RecToDta, @RecToOds, @RecToXls, @RecToTxt, @RecToDbf),
+{dta}     (nil, nil,       nil,       @DtaToOds, @DtaToXls, @DtaToTxt, @DtaToDbf),
+{ods}     (nil, nil,       nil,       nil,       @OdsToXls, @OdsToTxt, @OdsToDbf),
+{xls}     (nil, nil,       nil,       nil,       nil,       @XlsToTxt, @XlsToDbf),
+{txt}     (nil, nil,       nil,       nil,       nil,       nil,       @TxtToDbf));
 
-procedure XmlVsRec(OrgField, NewField: TEpiField);
+procedure XmlToRec(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XmlVsDta(OrgField, NewField: TEpiField);
+procedure XmlToDta(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XmlVsOds(OrgField, NewField: TEpiField);
+procedure XmlToOds(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XmlVsXls(OrgField, NewField: TEpiField);
+procedure XmlToXls(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XmlVsTxt(OrgField, NewField: TEpiField);
+procedure XmlToTxt(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XmlVsDbf(OrgField, NewField: TEpiField);
+procedure XmlToDbf(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure RecVsDta(OrgField, NewField: TEpiField);
+procedure RecToDta(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure RecVsOds(OrgField, NewField: TEpiField);
+procedure RecToOds(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure RecVsXls(OrgField, NewField: TEpiField);
+procedure RecToXls(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure RecVsTxt(OrgField, NewField: TEpiField);
+procedure RecToTxt(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure RecVsDbf(OrgField, NewField: TEpiField);
+procedure RecToDbf(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure DtaVsOds(OrgField, NewField: TEpiField);
+procedure DtaToOds(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure DtaVsXls(OrgField, NewField: TEpiField);
+procedure DtaToXls(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure DtaVsTxt(OrgField, NewField: TEpiField);
+procedure DtaToTxt(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure DtaVsDbf(OrgField, NewField: TEpiField);
+procedure DtaToDbf(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure OdsVsXls(OrgField, NewField: TEpiField);
+procedure OdsToXls(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure OdsVsTxt(OrgField, NewField: TEpiField);
+procedure OdsToTxt(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure OdsVsDbf(OrgField, NewField: TEpiField);
+procedure OdsToDbf(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XlsVsTxt(OrgField, NewField: TEpiField);
+procedure XlsToTxt(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure XlsVsDbf(OrgField, NewField: TEpiField);
+procedure XlsToDbf(OrgField, NewField: TEpiField);
 begin
 
 end;
 
-procedure TxtVsDbf(OrgField, NewField: TEpiField);
+procedure TxtToDbf(OrgField, NewField: TEpiField);
 begin
 
 end;
@@ -237,6 +238,16 @@ begin
   end;
 end;
 
+function TDatafileValidator.HandleExit(CurrentExit: TExitResult): TExitResult;
+begin
+  Result := CurrentExit;
+  if VSettings.ErrorsAreFatal then
+  begin
+    Result := erAbortProgram;
+    Exit;
+  end;
+end;
+
 function TDatafileValidator.ValidateOriginalDatafile(Df: TEpiDataFile): TExitResult;
 var
   Fn: String;
@@ -245,6 +256,9 @@ var
   FieldLines: TStrings;
   FieldCount: LongInt;
   RecCount: LongInt;
+  FieldNo: LongInt;
+  RecNo: LongInt;
+  CmpTxt: string;
 begin
   // Validating the original file is done using a <df-filename>.import file, organised in this manner:
   {
@@ -256,16 +270,16 @@ begin
                    c: Field decimals
                    d: Does this field have a value label (0 = no, 1 = yes)
    Line n+3 -> EOF: any number of lines in comma seperated format:
-                   a: Field no. (index into the list above - 0 indexed)
+                   a: Field no. (index into the list above - 1 indexed)
                    b: Record no. (index into the number of records - 1 indexed)
-                   c: Data that must be present in this field. For strings encapsulate the data in quotation marks.
+                   c: Data that must be present in this field. For strings: encapsulate the data in quotation marks.
   }
 
   Fn := Df.FileName + ExtensionSeparator + 'val';
   if not FileExistsUTF8(Fn) then
   begin
-    Reporter.ReportEvent(rtFatal, 'Validation file does not exists: %s', [Fn]);
-    Result := erAbortFile;
+    Reporter.ReportEvent(rtFatal, 'Validation file does not exist: %s', [Fn]);
+    Result := HandleExit(erAbortFile);
     Exit;
   end;
 
@@ -278,18 +292,15 @@ begin
   if Df.NumFields <> FieldCount then
   begin
     Reporter.ReportEvent(rtFatal, 'Original File Check: fieldcount = %d, expected = %d', [Df.NumFields, FieldCount]);
-    Result := erAbortFile;
+    Result := HandleExit(erAbortFile);
     Exit;
   end;
 
   if df.Size <> RecCount then
   begin
     Reporter.ReportEvent(rtError, 'Original File Check: recordcount = %d, expected = %d', [df.Size, RecCount]);
-    if VSettings.ErrorsAreFatal then
-    begin
-      Result := erAbortProgram;
-      Exit;
-    end;
+    Result := HandleExit(erAbortFile);
+    Exit;
   end;
 
   FieldLines := nil;
@@ -299,49 +310,52 @@ begin
   begin
     SplitString(CtrlLines[2 + i], FieldLines, [',']);
 
-    ApplicationName;
     if FieldType <> TFieldType(StrToInt(FieldLines[0])) then
     begin
       Reporter.ReportEvent(rtError, 'Field "%s" has incorrect type. Was: %s, expected: %s',
         [FieldName, FieldTypeNames[Ord(FieldType)], FieldTypeNames[StrToInt(FieldLines[0])]]);
-      if VSettings.ErrorsAreFatal then
-      begin
-        Result := erAbortProgram;
-        Exit
-      end;
+      Result := HandleExit(erAbortField);
+      if Result >= erAbortFile then exit;
     end;
 
     if FieldLength <> StrToInt(FieldLines[1]) then
     begin
       Reporter.ReportEvent(rtError, 'Field "%s" has incorrect length. Was: %d, expected: %d',
         [FieldName, FieldLength, StrToInt(FieldLines[1])]);
-      if VSettings.ErrorsAreFatal then
-      begin
-        Result := erAbortProgram;
-        Exit
-      end;
+      Result := HandleExit(erAbortField);
+      if Result >= erAbortFile then exit;
     end;
 
     if FieldDecimals <> StrToInt(FieldLines[2]) then
     begin
       Reporter.ReportEvent(rtError, 'Field "%s" has incorrect decimals. Was: %d, expected: %d',
         [FieldName, FieldDecimals, StrToInt(FieldLines[2])]);
-      if VSettings.ErrorsAreFatal then
-      begin
-        Result := erAbortProgram;
-        Exit
-      end;
+      Result := HandleExit(erAbortField);
+      if Result >= erAbortFile then exit;
     end;
 
     if (Assigned(ValueLabelSet) xor (FieldLines[3] = '1')) then
     begin
       Reporter.ReportEvent(rtError, 'Field "%s" valuelabels are incorrect. Was: %p, expected: %p',
         [FieldName, ValueLabelSet, StrToInt(FieldLines[3])]);
-      if VSettings.ErrorsAreFatal then
-      begin
-        Result := erAbortProgram;
-        Exit
-      end;
+      Result := HandleExit(erAbortField);
+      if Result >= erAbortFile then exit;
+    end;
+  end;
+
+  for i := FieldCount + 2 to CtrlLines.Count - 1 do
+  begin
+    SplitString(CtrlLines[i], FieldLines, [',']);
+    FieldNo := StrToInt(FieldLines[0]) - 1;
+    RecNo   := StrToInt(FieldLines[1]);
+    CmpTxt  := FieldLines[2];
+
+    if Df[FieldNo].AsString[RecNo] <> CmpTxt then
+    begin
+      Reporter.ReportEvent(rtError, 'Field "%s"(%d)[%d] does not contain correct data. Was: %s, expected: %s',
+        [Df[FieldNo].FieldName, FieldNo, RecNo, Df[FieldNo].AsString[RecNo], CmpTxt]);
+      Result := HandleExit(erAbortRecord);
+      if Result >= erAbortFile then exit;
     end;
   end;
 end;
@@ -352,16 +366,22 @@ var
   i: Integer;
   CmpFunc: TCompareFields;
 begin
-
   // Initial tests:
   // 1: Number of datafields must always be the same.
   if OrigDf.NumDataFields <> ExportDf.NumDataFields then
-    ; // TODO : Report errors.
-
+  begin
+    Reporter.ReportEvent(rtFatal, 'Exported File Check - Field Count: Original = %d, Exported = %d', [OrigDf.NumFields, ExportDf.NumFields]);
+    Result := HandleExit(erAbortFile);
+    Exit;
+  end;
 
   // 2: Number of obs. must be the same.
   if OrigDf.Size <> ExportDf.Size then
-    ; // TODO : Report errors.
+  begin
+    Reporter.ReportEvent(rtFatal, 'Exported File Check - Record Count: Original = %d, Exported = %d', [OrigDf.Size, ExportDf.Size]);
+    Result := HandleExit(erAbortFile);
+    Exit;
+  end;
 
   if OrigDf.DatafileType < ExportDf.DatafileType then
     CmpFunc := CompareFieldsArray[Ord(OrigDf.DatafileType)][Ord(ExportDf.DatafileType)]
@@ -370,7 +390,6 @@ begin
 
   for i := 0 to OrigDf.NumDataFields -1 do
     CmpFunc(OrigDf[i], ExportDf[i]);
-
 end;
 
 constructor TDatafileValidator.Create;
@@ -415,6 +434,7 @@ begin
     LoadDf(Fn, Df);
 
     res := ValidateOriginalDatafile(Df);
+
     if res = erAbortFile then
       Exit;
     if Res = erAbortProgram then
@@ -447,8 +467,8 @@ begin
 
       LoadDf(Fn, NewDf);
 
+      Reporter.ReportEvent(rtNote, '-> Exporting to:  %s', [Fn]);
       ValidateExportedDatafile(Df, NewDf)
-
     end;
 
   finally
