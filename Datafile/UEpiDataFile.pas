@@ -1377,10 +1377,10 @@ begin
       TmpField.FieldLength   := StrToInt(ElemNode.GetAttribute('LENGTH'));
       TmpField.FieldDecimals := StrToInt(ElemNode.GetAttribute('DEC'));
       TmpField.VariableLabel := UTF8Encode(ElemNode.GetAttribute('LABEL'));
-      TmpField.FieldX        := StrToInt(ElemNode.GetAttribute('FX'));
+{      TmpField.FieldX        := StrToInt(ElemNode.GetAttribute('FX'));
       TmpField.FieldY        := StrToInt(ElemNode.GetAttribute('FY'));
       TmpField.QuestX        := StrToInt(ElemNode.GetAttribute('QX'));
-      TmpField.QuestY        := StrToInt(ElemNode.GetAttribute('QY'));
+      TmpField.QuestY        := StrToInt(ElemNode.GetAttribute('QY'));}
 
 
       // Valuelabel
@@ -2180,7 +2180,7 @@ begin
   try
     Reset();
     FFieldNaming := fnFirstWord;
-    FRecordStatus := TEpiIntField.Create(ASize, ftInteger);
+    FRecordStatus.Size := ASize;
   finally
     EpiLogger.DecIndent;
   end;
@@ -2301,6 +2301,7 @@ begin
   FValueLabels  := TValueLabelSets.Create;
   FCheckFile    := TEpiCheckFile.Create;
   FCrypter      := TDCP_rijndael.Create(nil);
+  FRecordStatus := TEpiIntField.Create(0, ftInteger);
 end;
 
 function TEpiDataFile.FieldByName(Const aFieldName: string): TEpiField;

@@ -5,7 +5,7 @@ unit validationunit;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, UEpiDataFile;
+  Classes, FileUtil, SysUtils, UEpiDataFile;
 
 type
 
@@ -30,7 +30,6 @@ type
   TDatafileValidator = class
   private
     function LoadDf(Fn: String; var Df: TEpiDataFile): boolean;
-    function HandleExit(CurrentExit: TExitResult): TExitResult;
     function ValidateOriginalDatafile(Df: TEpiDataFile): TExitResult;
     function ValidateExportedDatafile(OrigDf, ExportDf: TEpiDataFile): TExitResult;
   public
@@ -40,38 +39,9 @@ type
     Procedure FileHandler(FileIterator: TFileIterator);
   end;
 
-  // XML comparing.
-  procedure XmlToRec(OrgField, NewField: TEpiField);
-  procedure XmlToDta(OrgField, NewField: TEpiField);
-  procedure XmlToOds(OrgField, NewField: TEpiField);
-  procedure XmlToXls(OrgField, NewField: TEpiField);
-  procedure XmlToTxt(OrgField, NewField: TEpiField);
-  procedure XmlToDbf(OrgField, NewField: TEpiField);
+function HandleExit(CurrentExit: TExitResult): TExitResult;
 
-  // Rec comparing.
-  procedure RecToDta(OrgField, NewField: TEpiField);
-  procedure RecToOds(OrgField, NewField: TEpiField);
-  procedure RecToXls(OrgField, NewField: TEpiField);
-  procedure RecToTxt(OrgField, NewField: TEpiField);
-  procedure RecToDbf(OrgField, NewField: TEpiField);
-
-  // Stata comparing.
-  procedure DtaToOds(OrgField, NewField: TEpiField);
-  procedure DtaToXls(OrgField, NewField: TEpiField);
-  procedure DtaToTxt(OrgField, NewField: TEpiField);
-  procedure DtaToDbf(OrgField, NewField: TEpiField);
-
-  // OpenOffice comparing.
-  procedure OdsToXls(OrgField, NewField: TEpiField);
-  procedure OdsToTxt(OrgField, NewField: TEpiField);
-  procedure OdsToDbf(OrgField, NewField: TEpiField);
-
-  // Excel comparing.
-  procedure XlsToTxt(OrgField, NewField: TEpiField);
-  procedure XlsToDbf(OrgField, NewField: TEpiField);
-
-  // Dbase
-  procedure TxtToDbf(OrgField, NewField: TEpiField);
+{$I fieldvalidateh.inc}
 
 var
   Reporter: TReporter;
@@ -83,123 +53,38 @@ uses
   UEpiDataGlobals;
 
 type
-  TCompareFields = procedure(FieldA, FieldB: TEpiField);
+  TCompareFields = function(FieldA, FieldB: TEpiField): TExitResult;
 
 const
-  //  Xml, Rec,       Stata,     Ods,       Xls,       Text,      DBase
-  CompareFieldsArray: array[1..6] of array[1..7] of TCompareFields =
-{xml}    ((nil, @XmlToRec, @XmlToDta, @XmlToOds, @XmlToXls, @XmlToTxt, @XmlToDbf),
-{rec}     (nil, nil,       @RecToDta, @RecToOds, @RecToXls, @RecToTxt, @RecToDbf),
-{dta}     (nil, nil,       nil,       @DtaToOds, @DtaToXls, @DtaToTxt, @DtaToDbf),
-{ods}     (nil, nil,       nil,       nil,       @OdsToXls, @OdsToTxt, @OdsToDbf),
-{xls}     (nil, nil,       nil,       nil,       nil,       @XlsToTxt, @XlsToDbf),
-{txt}     (nil, nil,       nil,       nil,       nil,       nil,       @TxtToDbf));
+       //  Xml,       Rec,       Stata,     Ods,       Xls,       Text,      DBase
+  CompareFieldsArray: array[1..7] of array[1..7] of TCompareFields =
+{xml}    ((nil,       @XmlToRec, @XmlToDta, @XmlToOds, @XmlToXls, @XmlToTxt, @XmlToDbf),
+{rec}     (@RecToXml, nil,       @RecToDta, @RecToOds, @RecToXls, @RecToTxt, @RecToDbf),
+{dta}     (@DtaToXml, @DtaToRec, nil,       @DtaToOds, @DtaToXls, @DtaToTxt, @DtaToDbf),
+{ods}     (@OdsToXml, @OdsToRec, @OdsToDta, nil,       @OdsToXls, @OdsToTxt, @OdsToDbf),
+{xls}     (@XlsToXml, @XlsToRec, @XlsToDta, @XlsToOds, nil,       @XlsToTxt, @XlsToDbf),
+{txt}     (@TxtToXml, @TxtToRec, @TxtToDta, @TxtToOds, @TxtToXls, nil,       @TxtToDbf),
+{dbf}     (@DbfToXml, @DbfToRec, @DbfToDta, @DbfToOds, @DbfToXls, @DbfToTxt, nil      ));
 
-procedure XmlToRec(OrgField, NewField: TEpiField);
+function HandleExit(CurrentExit: TExitResult): TExitResult;
 begin
-
+  Result := CurrentExit;
+  if VSettings.ErrorsAreFatal then
+  begin
+    Result := erAbortProgram;
+    Exit;
+  end;
 end;
 
-procedure XmlToDta(OrgField, NewField: TEpiField);
+function Validate(Test: Boolean; FailResult: TExitResult): TExitResult;
 begin
-
+  if Test then
+    result := erOk
+  else
+    Result := HandleExit(Result);
 end;
 
-procedure XmlToOds(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure XmlToXls(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure XmlToTxt(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure XmlToDbf(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure RecToDta(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure RecToOds(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure RecToXls(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure RecToTxt(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure RecToDbf(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure DtaToOds(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure DtaToXls(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure DtaToTxt(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure DtaToDbf(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure OdsToXls(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure OdsToTxt(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure OdsToDbf(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure XlsToTxt(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure XlsToDbf(OrgField, NewField: TEpiField);
-begin
-
-end;
-
-procedure TxtToDbf(OrgField, NewField: TEpiField);
-begin
-
-end;
-
+{$I fieldvalidate.inc}
 
 { TDatafileValidator }
 
@@ -216,7 +101,13 @@ begin
 
     result := true;
     Case Ext of
-      '.recxml', '.rec':
+      '.recxml' :
+        begin
+          if not Assigned(Df) then
+            Df := TEpiDataFile.Create;
+          DF.Open(Fn);
+        end;
+      '.rec':
         begin
           if not Assigned(Df) then
             Df := TEpiDataFile.Create;
@@ -238,15 +129,6 @@ begin
   end;
 end;
 
-function TDatafileValidator.HandleExit(CurrentExit: TExitResult): TExitResult;
-begin
-  Result := CurrentExit;
-  if VSettings.ErrorsAreFatal then
-  begin
-    Result := erAbortProgram;
-    Exit;
-  end;
-end;
 
 function TDatafileValidator.ValidateOriginalDatafile(Df: TEpiDataFile): TExitResult;
 var
@@ -383,11 +265,7 @@ begin
     Exit;
   end;
 
-  if OrigDf.DatafileType < ExportDf.DatafileType then
-    CmpFunc := CompareFieldsArray[Ord(OrigDf.DatafileType)][Ord(ExportDf.DatafileType)]
-  else
-    CmpFunc := CompareFieldsArray[Ord(ExportDf.DatafileType)][Ord(OrigDf.DatafileType)];
-
+  CmpFunc := CompareFieldsArray[Ord(OrigDf.DatafileType)][Ord(ExportDf.DatafileType)];
   for i := 0 to OrigDf.NumDataFields -1 do
     CmpFunc(OrigDf[i], ExportDf[i]);
 end;
@@ -440,14 +318,24 @@ begin
     if Res = erAbortProgram then
       Abort;
 
+    ImpExp := TEpiImportExport.Create;
+
     for i := Low(FormatEndings) to High(FormatEndings) do
     begin
       if Ext = FormatEndings[i] then continue;
 
+
+      Fn := GetTempFileName;
       Fn := ChangeFileExt(Fn, FormatEndings[i]);
 
       Case FormatEndings[i] of
-        '.recxml', '.rec':
+        '.recxml':
+          begin
+            NewDf := Df.Clone();
+            NewDf.Save(Fn);
+            FreeAndNil(NewDf);
+          end;
+        '.rec':
           begin
             NewDf := Df.Clone();
             NewDf.Save(Fn);
@@ -463,6 +351,9 @@ begin
           ImpExp.ExportTXT(Fn, Df, nil);
         '.dbf':
           ImpExp.ExportDBase(Fn, Df);
+      else
+        Reporter.ReportEvent(rtFatal, 'Did not find file format extension!: %s', [FormatEndings[i]]);
+        Exit;
       end;
 
       LoadDf(Fn, NewDf);
