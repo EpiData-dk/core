@@ -267,7 +267,10 @@ begin
 
   CmpFunc := CompareFieldsArray[Ord(OrigDf.DatafileType)][Ord(ExportDf.DatafileType)];
   for i := 0 to OrigDf.NumDataFields -1 do
-    CmpFunc(OrigDf[i], ExportDf[i]);
+  begin
+    Result := CmpFunc(OrigDf[i], ExportDf[i]);
+    if Result >= erAbortFile then exit;
+  end;
 end;
 
 constructor TDatafileValidator.Create;
@@ -323,10 +326,15 @@ begin
     for i := Low(FormatEndings) to High(FormatEndings) do
     begin
       if Ext = FormatEndings[i] then continue;
-
+      if assigned(VSettings.ExportFilter) then
+        if VSettings.ExportFilter.IndexOf(FormatEndings[i]) > -1 then continue;
 
       Fn := GetTempFileName;
       Fn := ChangeFileExt(Fn, FormatEndings[i]);
+
+      Reporter.ReportEvent(rtNote, '-> Exporting to:  %s', [Fn]);
+      if FileExistsUTF8(Fn) then
+        DeleteFileUTF8(Fn);
 
       Case FormatEndings[i] of
         '.recxml':
@@ -348,7 +356,7 @@ begin
         '.xls':
           ImpExp.ExportSpreadSheet(Fn, Df, @ExportExcel8);
         '.csv':
-          ImpExp.ExportTXT(Fn, Df, nil);
+          ImpExp.ExportTXT(Fn, Df, @ExportTxtStandard);
         '.dbf':
           ImpExp.ExportDBase(Fn, Df);
       else
@@ -356,10 +364,13 @@ begin
         Exit;
       end;
 
+      Reporter.ReportEvent(rtNote, '-> Loading from:  %s', [Fn]);
       LoadDf(Fn, NewDf);
 
-      Reporter.ReportEvent(rtNote, '-> Exporting to:  %s', [Fn]);
-      ValidateExportedDatafile(Df, NewDf)
+      Reporter.ReportEvent(rtNote, '-> Start validating:  %s', [Fn]);
+      ValidateExportedDatafile(Df, NewDf);
+
+      Reporter.ReportEvent(rtNote, '-> Complete!');
     end;
 
   finally

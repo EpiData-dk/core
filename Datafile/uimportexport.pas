@@ -2182,7 +2182,7 @@ begin
     WITH DataFields[i] DO
     BEGIN
       TmpStr := CreateUniqueAnsiVariableName(FieldName, 11, FieldNames);
-      WriteString(TmpStr, 11);                                  // Field name   (Bytes 0  - 10)
+      WriteString(TmpStr, 11);                                      // Field name   (Bytes 0  - 10)
       CASE FieldType of                                             // Field type   (Byte  11)
         ftInteger, ftIDNUM, ftFloat:         WriteString('N', 1, False);
         ftSoundex,
@@ -2269,6 +2269,8 @@ begin
 
   // Sanity checks:
   if not Assigned(DataFile) then Exit;
+  if not Assigned(ExpSettings) then
+    ExpSettings := @ExportTxtStandard;
 
   with DataFile do
   try
@@ -2314,7 +2316,7 @@ begin
 
         // TODO : Redesign using AsString, AsData... etc.
         case DataFields[i].FieldType of
-          ftDate, ftEuroDate, ftYMDDate:
+          ftDate, ftToday, ftEuroDate, ftEuroToday, ftYMDDate, ftYMDToday:
             TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DateSeparator,
                         DateSep, [rfReplaceAll]);
           ftFloat:

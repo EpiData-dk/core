@@ -10,7 +10,8 @@ uses
   Classes, SysUtils, CustApp,
   { you can add units after this }
   FileUtil, validationunit,
-  UEpiUtils, UEpiLog, settings;
+  UEpiUtils, UEpiLog, settings,
+  UStringUtils;
 
 type
 
@@ -45,9 +46,9 @@ begin
   Opts := TStringList.Create;
   NonOpts := TStringList.Create;
   LongOpts := TStringList.Create;
-  LongOpts.CommaText := 'help,fatal,recursive,logfile:';
+  LongOpts.CommaText := 'help,fatal,recursive,logfile:,exclude:';
 
-  ErrorMsg:=CheckOptions('hl:FR', LongOpts, Opts, NonOpts);
+  ErrorMsg:=CheckOptions('h l: F R x:', LongOpts, Opts, NonOpts);
   if ErrorMsg<>'' then begin
     ShowException(Exception.Create(ErrorMsg));
     Terminate;
@@ -67,6 +68,8 @@ begin
     VSettings.LogFile := GetOptionValue('l', 'logfile')
   else
     VSettings.LogFile := GetCurrentDirUTF8() + DirectorySeparator + 'validation.result';
+  if HasOption('x', 'exclude') then
+    SplitString(GetOptionValue('x', 'exclude'), VSettings.ExportFilter, [',']);
 
   { add your program here }
   GetCoreSystemInformation(CSI);
@@ -118,6 +121,7 @@ begin
   writeln(' -F, --fatal', #9#9, 'Make any error fatal and abort further progress');
   writeln(' -l, --logfile=FILE', #9, 'Save output to this file (Default is <exe-name>.result in <exe-dir>)');
   writeln(' -R, --recursive', #9, 'Recurse into subdirectories');
+  writeln(' -x, --exclude=LIST', #9, 'Exclude export to file types listed in LIST (comma separated - extension only).');
 end;
 
 procedure TEpiValidator.MyExceptHandler(Sender: TObject; E: Exception);

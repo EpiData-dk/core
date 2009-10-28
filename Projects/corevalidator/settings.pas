@@ -14,6 +14,7 @@ type
     IncludeSubDirs: boolean;
     LogFile: string;
     NoOutput: boolean;
+    ExportFilter: TStrings;
   end;
 
 var

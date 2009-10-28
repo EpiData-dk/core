@@ -12,6 +12,8 @@
       ;
     ftString, ftUpperAlfa, ftSoundex, ftCrypt:
       ;
+    ftQuestion:
+      Result := erOk;
   end;
 }
 
@@ -23,13 +25,16 @@ begin
     result := A;
 end;
 
+function ValidateFieldType(AField: TEpiField; CorrectFieldType: TFieldType; FailResult: TExitResult): TExitResult;
+begin
+  result := Validate(AField.FieldType = CorrectFieldType, FailResult);
+  if Result > erOk then
+    Reporter.ReportEvent(rtError, 'Field "%s" does not have correct type: Was %d, Expected: %d', [AField.FieldType, CorrectFieldType]);
+end;
+
 function XmlToRec(OrgField, NewField: TEpiField): TExitResult;
 begin
-  result := Validate(OrgField.FieldLength = NewField.FieldLength, erAbortField);
-  if Result >= erAbortField then Exit;
-
-  result := Validate(OrgField.FieldDecimals = NewField.FieldDecimals, erAbortField);
-  if Result >= erAbortField then Exit;
+  result := ValidateFieldType(NewField, OrgField.FieldType, erAbortField);
 end;
 
 function XmlToDta(OrgField, NewField: TEpiField): TExitResult;
@@ -37,84 +42,107 @@ begin
   Case OrgField.FieldType of
     ftInteger, ftIDNUM:
       begin
-        if OrgField.FieldLength <= 2 then
-          result := Validate(NewField.FieldLength = 3, erAbortField)
-        else if OrgField.FieldLength <= 5 then
-          result := Validate(NewField.FieldLength = 5, erAbortField)
-        else if OrgField.FieldLength <= 9 then
-          result := Validate(NewField.FieldLength = 10, erAbortField)
-        else  // Exports as float field.
-          result := Validate(NewField.FieldLength = 18, erAbortField);
+        if OrgField.FieldLength >= 10 then
+          result := ValidateFieldType(NewField, ftFloat, erAbortField)
+        else
+          Result := ValidateFieldType(NewField, ftInteger, erAbortField);
       end;
     ftDate, ftToday, ftEuroDate, ftEuroToday, ftYMDDate, ftYMDToday:
-      result := Validate(OrgField.FieldLength = NewField.FieldLength, erAbortField);
+      result := ValidateFieldType(NewField, ftDate, erAbortField);
     ftFloat:
       begin
-        result := Validate(NewField.FieldLength = 18, erAbortField);
-        result := Max(result, Validate(NewField.FieldDecimals = 4, erAbortField));
+        if OrgField.FieldDecimals = 0 then
+          Result := ValidateFieldType(NewField, ftInteger, erAbortField)
+        else
+          Result := ValidateFieldType(NewField, ftFloat, erAbortField);
       end;
     ftBoolean:
-      result := Validate(NewField.FieldLength = 3);
+      result := ValidateFieldType(NewField, ftInteger, erAbortField);
     ftString, ftUpperAlfa, ftSoundex, ftCrypt:
-      ;
+      Result := ValidateFieldType(NewField, ftString, erAbortField);
+    ftQuestion:
+      Result := erOk;
   end;
 end;
 
 function XmlToOds(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  Case OrgField.FieldType of
+    ftInteger, ftIDNUM:
+      Result := ValidateFieldType(NewField, ftInteger, erAbortField);
+    ftDate, ftToday:
+      Result := ValidateFieldType(NewField, ftDate, erAbortField);
+    ftEuroDate, ftEuroToday:
+      Result := ValidateFieldType(NewField, ftEuroDate, erAbortField);
+    ftYMDDate, ftYMDToday:
+      Result := ValidateFieldType(NewField, ftYMDDate, erAbortField);
+    ftFloat:
+      begin
+        if OrgField.FieldDecimals = 0 then
+          Result := ValidateFieldType(NewField, ftInteger, erAbortField)
+        else
+          Result := ValidateFieldType(NewField, ftFloat, erAbortField);
+      end;
+    ftString, ftUpperAlfa, ftSoundex, ftCrypt, ftBoolean:
+      result := ValidateFieldType(NewField, ftString, erAbortField);
+    ftQuestion:
+      Result := erOk;
+  end;
 end;
 
 function XmlToXls(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  result := XmlToOds(OrgField, NewField);
 end;
 
 function XmlToTxt(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  result := XmlToOds(OrgField, NewField);
 end;
 
 function XmlToDbf(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  Case OrgField.FieldType of
+    ftInteger, ftIDNUM, ftFloat,
+    ftString, ftUpperAlfa, ftSoundex, ftCrypt:
+      result := XmlToOds(OrgField, NewField);
+    ftDate, ftToday, ftEuroDate, ftEuroToday, ftYMDDate, ftYMDToday:
+      result := XmlToDta(OrgField, NewField);
+    ftBoolean:
+      result := ValidateFieldType(NewField, ftBoolean, erAbortField);
+    ftQuestion:
+      Result := erOk;
+  end;
 end;
 
 function RecToXml(OrgField, NewField: TEpiField): TExitResult;
 begin
-  result := Validate(OrgField.FieldName = NewField.FieldName, erAbortField);
-  if Result >= erAbortField then Exit;
-
-  result := Validate(OrgField.FieldLength = NewField.FieldLength, erAbortField);
-  if Result >= erAbortField then Exit;
-
-  result := Validate(OrgField.FieldDecimals = NewField.FieldDecimals, erAbortField);
-  if Result >= erAbortField then Exit;
+  result := XmlToRec(OrgField, NewField);
 end;
 
 function RecToDta(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  Result := XmlToDta(OrgField, NewField);
 end;
 
 function RecToOds(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  Result := XmlToOds(OrgField, NewField);
 end;
 
 function RecToXls(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  result := XmlToXls(OrgField, NewField);
 end;
 
 function RecToTxt(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  Result := XmlToTxt(OrgField, NewField);
 end;
 
 function RecToDbf(OrgField, NewField: TEpiField): TExitResult;
 begin
-
+  Result := XmlToDbf(OrgField, NewField);
 end;
 
 function DtaToXml(OrgField, NewField: TEpiField): TExitResult;
