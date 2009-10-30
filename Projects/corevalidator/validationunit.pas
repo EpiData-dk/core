@@ -81,7 +81,7 @@ begin
   if Test then
     result := erOk
   else
-    Result := HandleExit(Result);
+    Result := HandleExit(FailResult);
 end;
 
 {$I fieldvalidate.inc}
@@ -218,8 +218,8 @@ begin
 
     if (Assigned(ValueLabelSet) xor (FieldLines[3] = '1')) then
     begin
-      Reporter.ReportEvent(rtError, 'Field "%s" valuelabels are incorrect. Was: %p, expected: %p',
-        [FieldName, ValueLabelSet, StrToInt(FieldLines[3])]);
+      Reporter.ReportEvent(rtError, 'Field "%s" valuelabels are incorrect. Was: %p, expected: %d',
+        [FieldName, @ValueLabelSet, StrToInt(FieldLines[3])]);
       Result := HandleExit(erAbortField);
       if Result >= erAbortFile then exit;
     end;
@@ -268,7 +268,7 @@ begin
   CmpFunc := CompareFieldsArray[Ord(OrigDf.DatafileType)][Ord(ExportDf.DatafileType)];
   for i := 0 to OrigDf.NumDataFields -1 do
   begin
-    Result := CmpFunc(OrigDf[i], ExportDf[i]);
+    Result := CmpFunc(OrigDf.DataFields[i], ExportDf.DataFields[i]);
     if Result >= erAbortFile then exit;
   end;
 end;
@@ -298,8 +298,8 @@ var
   NewDf: TEpiDataFile;
   res: TExitResult;
 const
-  FormatEndings: array[1..8] of string =
-    ('.recxml', '.rec', '.dta', '.ods', '.xls', '.csv', '.txt', '.dbf');
+  FormatEndings: array[1..7] of string =
+    ('.recxml', '.rec', '.dta', '.ods', '.xls', '.csv', '.dbf');
 begin
   Ext := ExtractFileExt(Utf8ToAnsi(FileIterator.FileName));
   Fn := FileIterator.FileName;
@@ -332,7 +332,7 @@ begin
       Fn := GetTempFileName;
       Fn := ChangeFileExt(Fn, FormatEndings[i]);
 
-      Reporter.ReportEvent(rtNote, '-> Exporting to:  %s', [Fn]);
+      Reporter.ReportEvent(rtNote, '- Exporting to:  %s', [Fn]);
       if FileExistsUTF8(Fn) then
         DeleteFileUTF8(Fn);
 
@@ -364,13 +364,18 @@ begin
         Exit;
       end;
 
-      Reporter.ReportEvent(rtNote, '-> Loading from:  %s', [Fn]);
+      Reporter.ReportEvent(rtNote, '- Loading from:  %s', [Fn]);
       LoadDf(Fn, NewDf);
 
-      Reporter.ReportEvent(rtNote, '-> Start validating:  %s', [Fn]);
-      ValidateExportedDatafile(Df, NewDf);
+      Reporter.ReportEvent(rtNote, '- Start validating:  %s', [Fn]);
+      res := ValidateExportedDatafile(Df, NewDf);
 
-      Reporter.ReportEvent(rtNote, '-> Complete!');
+      if res = erAbortFile then
+        Exit;
+      if Res = erAbortProgram then
+        Abort;
+
+      Reporter.ReportEvent(rtNote, '- Complete!');
     end;
 
   finally

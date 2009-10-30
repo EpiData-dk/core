@@ -1735,7 +1735,7 @@ var
         '&':
           Result := Result  + '&amp;';
         '"':
-          Result := Result  + '&qout;';
+          Result := Result  + '&quot;';
         '<':
           Result := Result  + '&lt;';
         '>':

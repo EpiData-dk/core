@@ -490,6 +490,7 @@ begin
     // - previously did not succeed. Make type = ftAlfa and Length = 1;
     FieldNameInRow1 := false;
     SplitString(Lines[0], FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
+
     for i := 0 to FieldStrings.Count - 1 do
     begin
       TmpStr := FieldStrings[i];
@@ -498,11 +499,11 @@ begin
       if (TmpField.FieldLength = 0) and (TmpField.FieldType = ftInteger) then
       begin
         // TODO : Fix so that previous field is removed!!!
-        Raise Exception.Create('INCORRECTLY IMPLEMENTED. PLEASE NOTIFY EPIDATA.');
+{        Raise Exception.Create('INCORRECTLY IMPLEMENTED. PLEASE NOTIFY EPIDATA.');
         TmpField := TEpiField.CreateField(ftString);
         TmpField.FieldLength := 1;
         TmpField.FieldName := DataFile.DataFields[i].FieldName;
-        TmpField.FieldDecimals := DataFile.DataFields[i].FieldDecimals;
+        TmpField.FieldDecimals := DataFile.DataFields[i].FieldDecimals;  }
       end;
 
       case TmpField.FieldType of
@@ -530,6 +531,7 @@ begin
       if (not ok) and (FindFieldType(TmpStr, ftInteger) = ftString) then
         FieldNameInRow1 := true;
     end;
+
     if FieldNameInRow1 then
     begin
       for i := 0 to FieldStrings.Count - 1 do
@@ -1345,7 +1347,17 @@ begin
       begin
         TmpStr   := FieldLines[j];
         EpiLogger.Add('TmpStr before: ' + TmpStr, 3);
-        if TmpStr = '.' then TmpStr := '';
+
+        // If someone accidentally wrote the display missing char (usually ".") in the
+        // file, convert it to '' (empty) and write missing to field.
+        if (TmpStr = TEpiStringField.DefaultMissing) then
+          TmpStr := '';
+        if TmpStr = '' then
+        begin
+          TmpField.IsMissing[i + 1 - lStart] := true;
+          Continue;
+        end;
+
         TmpField := DataFields[j];
         case TmpField.FieldType of
           ftInteger, ftIDNUM:
@@ -1537,7 +1549,9 @@ begin
         // Skip first line since it may contain headings/field names.
         for i := RowStart + 1 to LineCount do
         begin
-          ACell := WorkSheet.GetCell(i, j);
+          ACell := WorkSheet.FindCell(i, j);
+          if not Assigned(ACell) then continue;
+
           case ACell^.ContentType of
             cctNumber : TmpStr := FloatToStr(ACell^.NumberValue);
             cctUTF8String: TmpStr := ACell^.UTF8StringValue;
@@ -1565,9 +1579,9 @@ begin
     FieldNameInRow1 := false;
     for i := ColStart to ColEnd do
     begin
-      ACell := WorkSheet.GetCell(RowStart, i);
+      ACell := WorkSheet.FindCell(i, j);
+      if not Assigned(ACell) then continue;
 
-      if not Assigned(ACell) then Continue;
       case ACell^.ContentType of
         cctNumber: TmpStr := FloatToStr(ACell^.NumberValue);
         cctUTF8String: TmpStr := ACell^.UTF8StringValue;
@@ -1583,7 +1597,8 @@ begin
     begin
       for i := ColStart to ColEnd do
       begin
-        ACell := WorkSheet.GetCell(RowStart, i);
+        ACell := WorkSheet.FindCell(i, j);
+        if not Assigned(ACell) then continue;
         DataFile.DataFields[i-colstart].FieldName := ACell^.UTF8StringValue;
         DataFile.DataFields[i].VariableLabel := ACell^.UTF8StringValue;
       end;
@@ -1605,7 +1620,8 @@ begin
       for j := ColStart to ColEnd do
       with  DataFields[j - ColStart] do
       begin
-        ACell := WorkSheet.GetCell(i, j);
+        ACell := WorkSheet.FindCell(i, j);
+        if not Assigned(ACell) then continue;
         case FieldType of
           ftInteger, ftFloat:
             AsFloat[Idx] := ACell^.NumberValue;

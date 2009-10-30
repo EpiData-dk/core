@@ -127,7 +127,10 @@ end;
 procedure TEpiValidator.MyExceptHandler(Sender: TObject; E: Exception);
 begin
   if not (E is EAbort) then
+  begin
     writeln('Something horrible happened. Aborting program.');
+    writeln('Msg: ', E.Message);
+  end;
   Terminate;
 end;
 

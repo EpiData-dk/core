@@ -3006,6 +3006,7 @@ begin
 
     try
       FCheckLines.LoadFromFile(aFileName);
+      EpiUnknownStringsToUTF8(FCheckLines);
     except
       FreeAndNil(FCheckLines);
       EpiLogger.AddError(ClassName, 'ReadCheckFile', Format('Error reading the checkfile %s', [aFileName]),20130);
