@@ -136,8 +136,8 @@ begin
     FieldName     := ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
     FieldLength   := PosEnd - PosStart + 1;
     // TODO: QuestX of Y!
-    QuestX        := 0;
-    QuestY        := 0;
+    LabelX        := 0;
+    LabelY        := 0;
     FieldX        := 0;
     FieldY        := 0;
     VariableLabel := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
@@ -163,8 +163,8 @@ begin
     FieldName    := fName;
     FieldLength  := 0;
     VariableLabel := CurLine;
-    QuestX       := CurX;
-    QuestY       := LineNum;
+    LabelX       := CurX;
+    LabelY       := LineNum;
   END;
 end;
 

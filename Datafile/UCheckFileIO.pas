@@ -209,7 +209,7 @@ END;
 function TCheckFileIO.InternalRead(): boolean;
 var
   CurCommand: string;
-  TmpCF: TEpiCheckFile;
+  TmpCF: TEpiDataFileProperties;
   Res: Boolean;
 begin
   EpiLogger.IncIndent;
@@ -292,7 +292,7 @@ end;
 
 function TCheckFileIO.InternalWrite(): boolean;
 var
-  LocalCheckFile: TEpiCheckFile;
+  LocalCheckFile: TEpiDataFileProperties;
   S: string;
   i, n: integer;
 BEGIN
@@ -397,7 +397,7 @@ BEGIN
 
     {Write field blocks}
     FOR i := 0 TO FDf.NumFields - 1 do
-      if Assigned(FDf[i].CheckField) then
+      if Assigned(FDf[i].FieldProperties) then
         FieldBlockToStrings(FDf[i]);
   finally
     FCheckLines.EndUpdate;
@@ -488,7 +488,7 @@ VAR
   ValueLabelShow: Boolean;
   tmpCommands: TChkCommands;    }
 
-  LocalCheck: TEpiCheckField;
+  LocalCheck: TEpiFieldProperties;
   CurCommand: string;
   Res: Boolean;
 BEGIN
@@ -518,10 +518,10 @@ BEGIN
   Res := True;
   
   IF CurField.FieldType = ftQuestion THEN exit;
-  If not Assigned(CurField.CheckField) then
-    CurField.CheckField := TEpiCheckField.Create();
+  If not Assigned(CurField.FieldProperties) then
+    CurField.FieldProperties := TEpiFieldProperties.Create();
 
-  LocalCheck := CurField.CheckField;
+  LocalCheck := CurField.FieldProperties;
 
   REPEAT
     CurCommand := FParser.GetUpperToken(nwAny);  
@@ -530,8 +530,8 @@ BEGIN
     ELSE IF CurCommand='MISSINGVALUE' THEN Res := RetrieveMissingValues(CurField)
     ELSE IF CurCommand='DEFAULTVALUE' THEN Res := RetrieveDefaultValue(CurField)
     ELSE IF CurCommand='AUTOSEARCH'   THEN Res := RetrieveAutosearch(CurField)            
-    ELSE IF CurCommand='MUSTENTER'   THEN LocalCheck.MustEnter := True
-    ELSE IF CurCommand='NOENTER'     THEN LocalCheck.NoEnter := True
+    ELSE IF CurCommand='MUSTENTER'   THEN LocalCheck.EntryType := entMust
+    ELSE IF CurCommand='NOENTER'     THEN LocalCheck.EntryType := entNone
     ELSE IF CurCommand='TOPOFSCREEN' THEN
     BEGIN
       LocalCheck.TopOfScreen := True;
@@ -577,41 +577,43 @@ END;
 
 function TCheckFileIO.RetrieveRange(CurField: TEpiField): boolean;
 VAR
-  CurCommand: string;
-  LocalChk: TEpiCheckField;
+  CurCommand, Range: string;
+  LocalChk: TEpiFieldProperties;
 BEGIN
   Result := true;
-  LocalChk := CurField.CheckField;
+  LocalChk := CurField.FieldProperties;
   
   {Get minimum value}
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF CurCommand='' THEN
     Result := ReportError(Lang(22712, 'RANGE command without mininum value'))
   ELSE
-    LocalChk.Min := CurCommand;
+    Range := CurCommand + '-';
+  {Check if range values are compliant with Fieldtype}
+  IF (CurCommand <> '') AND (NOT IsCompliant(CurCommand, CurField.FieldType)) THEN
+    Result := ReportError(Lang(22716, 'Minimum value is not compatible with this type of field'));
 
   {Get maxinum value}
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF CurCommand = '' THEN
     Result := ReportError(Lang(22714, 'RANGE command without maximum value'))
   ELSE
-    LocalChk.Max := CurCommand;
-
+    Range := Range + CurCommand;
   {Check if range values are compliant with Fieldtype}
-  IF (LocalChk.Min <> '') AND (NOT IsCompliant(LocalChk.Min, CurField.FieldType)) THEN
-    Result := ReportError(Lang(22716, 'Minimum value is not compatible with this type of field'));
-  IF (LocalChk.Max <> '') AND (NOT IsCompliant(LocalChk.Max, CurField.FieldType)) THEN
+  IF (CurCommand <> '') AND (NOT IsCompliant(CurCommand, CurField.FieldType)) THEN
     Result := ReportError(Lang(22718, 'Maximum value is not compatible with this type of field'));
+
+  LocalChk.Ranges.Add(Range);
 END;  //function RetrieveRange
 
 function TCheckFileIO.RetrieveLegals(CurField: TEpiField): boolean;
 VAR
   CurCommand: string;
-  LocalCheck: TEpiCheckField;
+  LocalCheck: TEpiFieldProperties;
 BEGIN
   Result := true;
 
-  LocalCheck := CurField.CheckField;
+  LocalCheck := CurField.FieldProperties;
   REPEAT
     IF NOT FParser.EndOfLines THEN
       CurCommand := FParser.GetToken(nwAny)
@@ -632,20 +634,19 @@ BEGIN
 
       if Result then
       begin  //Fieldname came after the USE command
-        LocalCheck.Legal := FDf.FieldByName(CurCommand).CheckField.Legal;
+        // TODO : Copy from other field!!!
+//        LocalCheck.Legal := FDf.FieldByName(CurCommand).CheckField.Legal;
         break;
       END;
     END ELSE IF CurCommand<>'' THEN
     BEGIN
       //LEGAL values
       IF IsCompliant(CurCommand, CurField.FieldType) THEN
-        LocalCheck.Legal := LocalCheck.Legal  + ',' + CurCommand
+        LocalCheck.Ranges.Add(CurCommand)
       ELSE
         Result := ReportError(Lang(22710, 'Legal value is not compatible with this Fieldtype'));
     END;  //else
   UNTIL not Result;
-  If LocalCheck.Legal[1] = ',' then
-    LocalCheck.Legal := Copy(LocalCheck.Legal, 2, Length(LocalCheck.Legal));
 END;
 
 function TCheckFileIO.RetrieveMissingValues(CurField: TEpiField): boolean;
@@ -698,18 +699,20 @@ BEGIN
     result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
 
   IF Result THEN
-    CurField.CheckField.DefaultValue := s;
+    CurField.DefaultValue := s;
 END;
 
 function TCheckFileIO.RetrieveAutosearch(CurField: TEpiField): boolean;
 VAR
-  LocalCheck: TEpiCheckField;
+  LocalCheck: TEpiFieldProperties;
   CurCommand: string;
 BEGIN
   result := true;
-  LocalCheck := CurField.CheckField;
+  LocalCheck := CurField.FieldProperties;
 
-  LocalCheck.AutoFields := '';
+  // TODO : .CHK Autosearch to .RECXML Autosearch.
+
+{  LocalCheck.AutoFields := '';
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF (CurCommand = 'LIST') OR (CurCommand = 'SOUNDEX') THEN
   BEGIN
@@ -732,7 +735,7 @@ BEGIN
   UNTIL (CurCommand='') or (not Result);
 
   IF LocalCheck.AutoFields[Length(LocalCheck.AutoFields)] = ',' THEN
-    LocalCheck.AutoFields := Copy(LocalCheck.AutoFields, 1, Length(LocalCheck.AutoFields) - 1);
+    LocalCheck.AutoFields := Copy(LocalCheck.AutoFields, 1, Length(LocalCheck.AutoFields) - 1);       }
 end;
 
 function TCheckFileIO.RetrieveAutoJump(CurField: TEpiField): boolean;
@@ -749,16 +752,16 @@ BEGIN
   AND (CurCommand <> 'WRITE') AND (CurCommand <> 'SKIPNEXTFIELD') THEN
     Result := ReportError(Lang(22730,'Unknown fieldname in AUTOJUMP command'))
   ELSE
-    CurField.CheckField.Jumps := 'AUTOJUMP,' + CurCommand;
+    CurField.FieldProperties.Jumps.AddObject('', TString.Create(CurCommand));// := 'AUTOJUMP,' + CurCommand;
 END;  
 
 function TCheckFileIO.RetrieveJumps(CurField: TEpiField): boolean;
 VAR
   CurCommand, TmpS: string;
-  LocalCheck: TEpiCheckField;
+  LocalCheck: TEpiFieldProperties;
 BEGIN
   Result := true;
-  LocalCheck := CurField.CheckField;
+  LocalCheck := CurField.FieldProperties;
 
   REPEAT
     {Check if a RESET command exists after JUMPS}
@@ -768,10 +771,12 @@ BEGIN
       IF AnsiUpperCase(CurCommand) <> 'RESET' THEN
         Result := ReportError(Format(Lang(22830, 'RESET expected but %s found'), [CurCommand]))
       ELSE BEGIN
-        LocalCheck.JumpResetChar := #32;
+        LocalCheck.JumpResetValue := #32;
         CurCommand := FParser.GetToken(nwSameLine);
-        IF Length(CurCommand) = 1 THEN
-          LocalCheck.JumpResetChar := CurCommand[1];
+        IF Length(CurCommand) > 1 THEN
+          Result := ReportError(Format(Lang(0, 'RESET character too long: %s'), [CurCommand]))
+        ELSE
+          LocalCheck.JumpResetValue := CurCommand;
       END;
     END;
     
@@ -788,10 +793,9 @@ BEGIN
       BEGIN
         Result := IsCompliant(CurCommand, CurField.FieldType);
         Result := Result and (not (CurField.FieldType in [ftToDay, ftYMDToday, ftEuroToday]));
-
-        TmpS := trim(CurCommand) + '>';
-
         IF Not Result THEN ReportError(Lang(22722, 'Illegal datatype'));
+
+        TmpS := Trim(CurCommand);
 
         {Get name of field to jump to}
         IF NOT FParser.EndOfLines THEN
@@ -804,7 +808,7 @@ BEGIN
           Result := ReportError(Lang(22726, 'Unknown fieldname in JUMP block'));
 
         IF Result THEN
-          LocalCheck.Jumps := LocalCheck.Jumps + TmpS + CurCommand + ',';
+          LocalCheck.Jumps.AddObject(TmpS, TString.Create(CurCommand));
       END;
   UNTIL (Not Result);
 END;
@@ -817,11 +821,11 @@ var
   ValueField, TextField: TEpiField;
   i: Integer;
 
-  function MakeCheckField(CurField: TEpiField): TEpiCheckField;
+  function MakeCheckField(CurField: TEpiField): TEpiFieldProperties;
   begin
-    if not Assigned(CurField.CheckField) then
-      CurField.CheckField := TEpiCheckField.Create;
-    result := CurField.CheckField;
+    if not Assigned(CurField.FieldProperties) then
+      CurField.FieldProperties := TEpiFieldProperties.Create;
+    result := CurField.FieldProperties;
   end;
 
 BEGIN
@@ -1083,12 +1087,12 @@ end;
 function TCheckFileIO.RetrieveType(CurField: TEpiField): Boolean;
 VAR
   CurCommand: string;
-  LocalCheck: TEpiCheckField;
+  LocalCheck: TEpiFieldProperties;
   i: integer;
 BEGIN
   {Handles TYPE COMMENT, TYPE COMMENT fieldname, TYPE STATUSBAR}
   Result := true;
-  LocalCheck := CurField.CheckField;
+  LocalCheck := CurField.FieldProperties;
 
   CurCommand := FParser.GetToken(nwSameLine);
   IF CurCommand = '' THEN
@@ -1509,8 +1513,8 @@ BEGIN
           if Result then
           begin
             TChkComLegal(TmpChkCmd).ShowList := false;
-            if Assigned(TmpField.CheckField) then
-              TChkComLegal(TmpChkCmd).ShowList := TmpField.CheckField.ShowValueLabel;
+            if Assigned(TmpField.FieldProperties) then
+              TChkComLegal(TmpChkCmd).ShowList := TmpField.FieldProperties.ShowValueLabel;
             TChkComLegal(TmpChkCmd).ValueLabelIsFieldRef := TmpField.ValueLabelIsFieldRef;
             TChkComLegal(TmpChkCmd).ValueLabel := TmpField.ValueLabelSet;
           end;
@@ -1619,13 +1623,13 @@ BEGIN
           IF Assigned(TmpField) THEN
           BEGIN
             //a DEF-var with same name exists
-            IF (TChkDefine(TmpChkCmd).Scope <> scGlobal) OR (TmpField.CheckField.FieldScope <> scGlobal) THEN
+            IF (TChkDefine(TmpChkCmd).Scope <> scGlobal) OR (TmpField.FieldProperties.FieldScope <> scGlobal) THEN
             BEGIN
               Result := ReportError(Lang(22772,'Dublicate name: The variablename is allready used'));
               Exit;
             END;
 
-            IF (TChkDefine(TmpChkCmd).Scope = scGlobal) AND (TmpField.CheckField.FieldScope = scGlobal) THEN
+            IF (TChkDefine(TmpChkCmd).Scope = scGlobal) AND (TmpField.FieldProperties.FieldScope = scGlobal) THEN
             BEGIN
               IF NOT ((TChkDefine(TmpChkCmd).FieldType = TmpField.Fieldtype) AND
                       (TChkDefine(TmpChkCmd).Length = TmpField.FieldLength) AND
@@ -1642,8 +1646,8 @@ BEGIN
           TmpField.FieldLength := TChkDefine(TmpChkCmd).Length;
           TmpField.FieldDecimals := TChkDefine(TmpChkCmd).NumDecimals;
           TmpField.IsMissing[1] := true;
-          TmpField.CheckField  := TEpiCheckField.Create();
-          TmpField.CheckField.FieldScope := TChkDefine(TmpChkCmd).Scope;
+          TmpField.FieldProperties  := TEpiFieldProperties.Create();
+          TmpField.FieldProperties.FieldScope := TChkDefine(TmpChkCmd).Scope;
 
           Fdf.CheckFile.AddDefine(TmpField);
         END;  //case cmdDefine.
@@ -1670,13 +1674,13 @@ BEGIN
             BEGIN
               IF (FDf[n].FieldType in [ftInteger, ftString, ftUpperAlfa, ftFloat, ftCrypt]) THEN
               BEGIN
-                IF (TmpStr = 'ALL') THEN FDf[n].CheckField.HasGlobalDefaultVal:=true
+                IF (TmpStr = 'ALL') THEN FDf[n].FieldProperties.HasGlobalDefaultVal:=true
                 ELSE
                   IF (FDf[n].Fieldtype in [ftString, ftUpperAlfa, ftCrypt]) AND
-                     ((TmpStr='ALLSTRINGS') OR (TmpStr='ALLSTRING')) THEN FDf[n].CheckField.HasGlobalDefaultVal:=true
+                     ((TmpStr='ALLSTRINGS') OR (TmpStr='ALLSTRING')) THEN FDf[n].FieldProperties.HasGlobalDefaultVal:=true
                 ELSE
                   IF (FDf[n].Fieldtype in [ftInteger, ftFloat]) AND
-                     (TmpStr='ALLNUMERIC') THEN FDf[n].CheckField.HasGlobalDefaultVal:=true;
+                     (TmpStr='ALLNUMERIC') THEN FDf[n].FieldProperties.HasGlobalDefaultVal:=true;
               END;   //if relevant Fieldtype
             END;  //for
             Exit;
@@ -1718,7 +1722,7 @@ BEGIN
                   IF (TmpField.FieldType <> ftQuestion) THEN
                   BEGIN
   //                  TmpField.DefaultValue := FDf.CheckFile.GlobalDefaultVal;
-                    TmpField.CheckField.HasGlobalDefaultVal := true;
+                    TmpField.FieldProperties.HasGlobalDefaultVal := true;
                   END;  //if not question field
                 END;  //for
                 //if interval
@@ -1732,7 +1736,7 @@ BEGIN
                 END;
                 IF (TmpField.Fieldtype <> ftQuestion) THEN
                 BEGIN
-                  TmpField.CheckField.HasGlobalDefaultVal := True;
+                  TmpField.FieldProperties.HasGlobalDefaultVal := True;
   //                TmpField.DefaultValue := TmpStr;
                 END;  //if not question field
               END;  //if single fieldname
@@ -2303,7 +2307,7 @@ var
   S: string;
 begin
   S := FParser.GetLineAndFlush;
-  CurField.CheckField.FieldComments.Append(FParser.GetWholeLine);
+  CurField.FieldProperties.FieldComments.Append(FParser.GetWholeLine);
   result := true;
 end;
 
@@ -2768,17 +2772,14 @@ VAR
   S: string;
   TmpList: TStrings;
   LocalVltType: TValueLabelSetScope;
-  I: Integer;
+  I, p: Integer;
 BEGIN
   TmpList := nil;
   try
-    WITH AField.CheckField DO
+    WITH AField.FieldProperties DO
     BEGIN
       AddToCheckLines(trim(AField.FieldName));
       Inc(FIndentLvl);
-
-      Min := Trim(Min);
-      Max := Trim(Max);
 
       {Write fieldblock comments}
       IF FieldComments.Count > 0 THEN
@@ -2796,8 +2797,8 @@ BEGIN
         AddToCheckLines(S);
       END;  
 
-      {Write autosearch}
-      IF AutoSearch THEN
+      {TODO: Write autosearch}
+{      IF AutoSearch THEN
       BEGIN
         S := 'AUTOSEARCH ';
         IF AutoList THEN S := S + ' LIST ';
@@ -2809,12 +2810,8 @@ BEGIN
           FreeAndNil(TmpList);
         END;
         AddToCheckLines(S);
-      END;
+      END;      }
 
-      {Write NoEnter}
-      IF NoEnter THEN
-        AddToCheckLines('NOENTER');
-        
       {Write TopOfScreen}
       IF TopOfScreen THEN
       BEGIN
@@ -2825,25 +2822,41 @@ BEGIN
       END;
 
       {Write RANGE}
-      S := Trim(Min + ' ' + Max);
+      S := '';
+      for i := 0 to Ranges.Count-1 do
+      begin
+        P := Pos('-', Ranges[i]);
+        if P > 0 then
+        begin
+          S := Copy(Ranges[i], 1, P) + ' ' + Copy(Ranges[i], P+1, 50); // 50+ digits is not likely... :D
+          Break;
+        end;
+      end;
       IF (S <> '') THEN
         AddToCheckLines('RANGE ' + S);
       
       {Write LEGAL block}
-      IF Legal<>'' THEN
-      BEGIN
-        SplitString(Legal, TmpList, [',']);
-
-        AddToCheckLines('LEGAL');
-        Inc(FIndentLvl);
-        For I := 0 to TmpList.Count -1 do
-          if Pos(' ', TmpList[i]) > 0 then
-            AddToCheckLines ('"' + TmpList[i] + '" ')
-          else
-            AddToCheckLines(TmpList[i]);
+      S := '';
+      P := 0;
+      for i := 0 to Ranges.Count-1 do
+      begin
+        if Pos('-', Ranges[i]) > 0 then continue;
+        if P = 0 then
+        begin
+          AddToCheckLines('LEGAL');
+          Inc(FIndentLvl);
+          P := 1;
+        end;
+        if Pos(' ', Ranges[i]) > 0 then
+          AddToCheckLines ('"' + Ranges[i] + '" ')
+        else
+          AddToCheckLines(Ranges[i]);
+      end;
+      if P > 0 then
+      begin
         Dec(FIndentLvl);
         AddToCheckLines('END');
-      END;
+      end;
 
       {Write Comment Legal}
       IF Assigned(aField.ValueLabelSet) THEN
@@ -2873,29 +2886,26 @@ BEGIN
       end;
 
       {Write JUMPS block}
-      IF Jumps <> '' THEN
+      IF Jumps.Count > 0 THEN
       BEGIN
-        SplitString(Jumps, TmpList, [',']);
-        IF TmpList[0] = 'AUTOJUMP' THEN
-          AddToCheckLines('AUTOJUMP ' + trim(TmpList[1]))
-        ELSE BEGIN
-          S := 'JUMPS';
-          IF JumpResetChar <> #0 THEN
-            S := S + ' RESET';
-          IF (JumpResetChar <> #0) AND (JumpResetChar <> #32) THEN
-            S := S + ' "' + JumpResetChar + '"';
-          AddToCheckLines(S);
-          Inc(FIndentLvl);
-          FOR i := 0 TO TmpList.Count - 1 DO
-            AddToCheckLines(StringReplace(TmpList[i], '>', ' ', [rfReplaceAll]));
-          Dec(FIndentLvl);
-          AddToCheckLines('END');
-        END;
+        S := 'JUMPS';
+        IF JumpResetValue <> '' THEN
+          S := S + ' RESET';
+        IF (JumpResetValue <> '') AND (JumpResetValue <> #32) THEN
+          S := S + ' "' + JumpResetValue[1] + '"';
+        AddToCheckLines(S);
+        Inc(FIndentLvl);
+        FOR i := 0 TO Jumps.Count - 1 DO
+          AddToCheckLines(Jumps[i] + ' ' + TString(Jumps.Objects[i]).Str);
+        Dec(FIndentLvl);
+        AddToCheckLines('END');
       END;
 
-      {Write MUSTENTER, REPEAT}
-      IF MustEnter THEN
-        AddToCheckLines('MUSTENTER');
+      {Write MUSTENTER, NOENTER, REPEAT, CONFIRMFIELD}
+      Case EntryType of
+        entMust: AddToCheckLines('MUSTENTER');
+        entNone: AddToCheckLines('NOENTER');
+      end;
       IF DoRepeat THEN
         AddToCheckLines('REPEAT');
       IF Confirm THEN

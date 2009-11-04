@@ -17,33 +17,28 @@ type
 
   { TEpiCheckField }
 
-  TEpiCheckField = class(TObject)
+  TEpiFieldProperties = class(TObject)
   private
-    FMustEntert:       Boolean;
-    FNoEnter:          Boolean;
+    FEntryType:        TEntryType;
     FTopOfScreen:      Boolean;
     FTopOfScreenLines: Integer;
     FDoRepeat:         boolean;
     FConfirm:          boolean;
     FBeforeCmds:       TChkCommands;
     FAfterCmds:        TChkCommands;
-    FMin:              string;
-    FMax:              string;
-    FLegal:            string;
-    FDefaultValue:     string;
-    FAutoFields:       string;
-    FAutoList:         Boolean;
-    FJumps:            string;
-    FJumpResetChar:    Char;
+    FRanges:           TStrings;
+{    FAutoFields:       string; // Flyttes til DataFile
+    FAutoList:         Boolean;}
+    FJumps:            TStrings;
+    FJumpResetValue:   String;
     FShowValueLabel:   Boolean;
-    FValueLabelIsFieldRef: Boolean;
     FTypeType:         TTypeType;
     FTypeText:         string;
     FTypeColor:        Byte;
     FHasGlobalDefaultVal: Boolean;
     FFieldScope:       TFieldScope;
     FFieldComments:    TStrings;
-    function           GetAutoSearch: Boolean;
+//    function           GetAutoSearch: Boolean;
     procedure          InternalReset;
   protected
 
@@ -51,24 +46,20 @@ type
     Constructor Create;
     Destructor  Destroy; override;
     procedure   Reset;
-    procedure   Clone(Var Dest: TEpiCheckField);
-    property    MustEnter:    boolean read FMustEntert write FMustEntert;
-    property    NoEnter:      boolean read FNoEnter write FNoEnter;
+    procedure   Clone(Var Dest: TEpiFieldProperties);
+    property    EntryType:    TEntryType read FEntryType write FEntryType;
     property    TopOfScreen:  Boolean read FTopOfScreen write FTopOfScreen;
     property    TopOfScreenLines: Integer read FTopOfScreenLines write FTopOfScreenLines;
     property    DoRepeat:     boolean read FDoRepeat write FDoRepeat;
     property    Confirm:      boolean read FConfirm write FConfirm;
     property    BeforeCmds:   TChkCommands read FBeforeCmds;
     property    AfterCmds:    TChkCommands read FAfterCmds;
-    property    Min:          string read FMin write FMin;
-    property    Max:          string read FMax write FMax;
-    property    Legal:        string read FLegal write FLegal;
-    property    DefaultValue: string read FDefaultValue write FDefaultValue;
-    property    AutoFields:   string read FAutoFields write FAutoFields;
-    property    AutoSearch:   Boolean read GetAutoSearch;
-    property    AutoList:     boolean read FAutoList write FAutoList;
-    property    Jumps:        string read FJumps write FJumps;
-    property    JumpResetChar: Char read FJumpResetChar write FJumpResetChar;
+    property    Ranges:       TStrings read FRanges;
+//    property    AutoFields:   string read FAutoFields write FAutoFields;
+//    property    AutoSearch:   Boolean read GetAutoSearch;
+//    property    AutoList:     boolean read FAutoList write FAutoList;
+    property    Jumps:        TStrings read FJumps write FJumps;
+    property    JumpResetValue: string read FJumpResetValue write FJumpResetValue;
     property    ShowValueLabel: Boolean read FShowValueLabel write FShowValueLabel;
     property    TypeType:     TTypeType read FTypeType write FTypeType;
     property    TypeText:     string read FTypeText write FTypeText;
@@ -80,7 +71,7 @@ type
 
   { TEpiCheckFile }
 
-  TEpiCheckFile = class(TObject)
+  TEpiDataFileProperties = class(TObject)
   private
     FTopComments:          TStringList;       //Commentlines in the top of the checkfile
     FBeforeFileCmds:       TChkCommands;      //Commands to be run when file is opened
@@ -113,7 +104,7 @@ type
     Constructor Create;
     Destructor  Destroy; override;
     procedure   Reset;
-    function    Clone: TEpiCheckFile;
+    function    Clone: TEpiDataFileProperties;
     function    DefineExists(Const aName: string): Boolean;
     function    DefineByName(Const aName: string): TEpiField;
     procedure   AddDefine(Field: TEpiField);
@@ -148,22 +139,22 @@ type
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
     FSize:         Integer;
-    FFieldName:    string;
-    FQuestX:       Cardinal;
-    FQuestY:       Cardinal;
-    FFieldX:       Cardinal;
-    FFieldY:       Cardinal;
     FFieldType:    TFieldType;
+    FFieldName:    string;
     FFieldLength:  Cardinal;
     FFieldDecimals: Cardinal;
-    FValueLabelIsFieldRef: Boolean;
+    FFieldX:       Cardinal;
+    FFieldY:       Cardinal;
+    FFieldColor:   Cardinal;
     FVariableLabel: string;
-    FCheckField:    TEpiCheckField;
+    FLabelX:       Cardinal;
+    FLabelY:       Cardinal;
+    FDefaultValue: string;
+    FFieldProperties: TEpiFieldProperties;
     FValueLabelSet: TValueLabelSet;
+    FValueLabelIsFieldRef: Boolean;
 //    function       GetAsFmtData: string;
   protected
-    FCurrentData: String;
-    FChanged: Boolean;
     constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
     procedure CheckIndex(Const index: integer); virtual;
     procedure AssignData(Const Source: TEpiField); virtual; abstract;
@@ -198,21 +189,23 @@ type
     procedure Exchange(i,j: integer); virtual; abstract;
     function  Compare(i,j: integer): integer; virtual; abstract;
     procedure NewRecords(ACount: Integer = 1); virtual;
-    property  FieldName:   string read FFieldName write FFieldName;
-    property  QuestX:      Cardinal read FQuestX write FQuestX;
-    property  QuestY:      Cardinal read FQuestY write FQuestY;
-    property  FieldX:      Cardinal read FFieldX write FFieldX;
-    property  FieldY:      Cardinal read FFieldY write FFieldY;
-    property  FieldType:   TFieldType read FFieldType;
-    property  FieldLength: Cardinal read FFieldLength write FFieldLength;
-    property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
-    property  VariableLabel: string read FVariableLabel write FVariableLabel;
-    property  CheckField:  TEpiCheckField read FCheckField write FCheckField;
-    property  ValueLabelSet: TValueLabelSet read FValueLabelSet write FValueLabelSet;
-    Property  ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
     property  Owner:       TEpiFields read FOwner;
     property  DataFile:    TEpiDataFile read FDataFile write FDataFile;
-    property  Size: Integer read GetSize write SetSize;
+    property  Size:        Integer read GetSize write SetSize;
+    property  FieldType:   TFieldType read FFieldType;
+    property  FieldName:   string read FFieldName write FFieldName;
+    property  FieldLength: Cardinal read FFieldLength write FFieldLength;
+    property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
+    property  FieldX:      Cardinal read FFieldX write FFieldX;
+    property  FieldY:      Cardinal read FFieldY write FFieldY;
+    property  FieldColor:  Cardinal read FFieldColor write FFieldColor;
+    property  VariableLabel: string read FVariableLabel write FVariableLabel;
+    property  LabelX:      Cardinal read FLabelX write FLabelX;
+    property  LabelY:      Cardinal read FLabelY write FLabelY;
+    property  DefaultValue: string read FDefaultValue write FDefaultValue;
+    property  FieldProperties: TEpiFieldProperties read FFieldProperties write FFieldProperties;
+    property  ValueLabelSet: TValueLabelSet read FValueLabelSet write FValueLabelSet;
+    Property  ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
     property  IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
     property  IsMissingValue[const index: Integer]: boolean read GetIsMissingValue;
     property  AsBoolean[const index: Integer]: EpiBool read GetAsBoolean write SetAsBoolean;
@@ -461,7 +454,7 @@ type
     FQuestFields:  TEpiFields;              // - holds list of question fields only. (Not Owned. FieldType = ftQuestion)
     FPassword:     string;                  // Datafile password
     FFieldNaming:  TFieldNaming;            // Datafile fieldnaming convention - Firstword or Auto.
-    FCheckFile:    TEpiCheckFile;           // Container for global/datafile level information of the .CHK file.
+    FCheckFile:    TEpiDataFileProperties;           // Container for global/datafile level information of the .CHK file.
     FOptions:      TEpiDataFileOptions;     // Options set by Open(...)
     FOnProgress:   TProgressEvent;          // Callback event for updating progress
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
@@ -526,7 +519,7 @@ type
     Property   NumFields:   Cardinal read GetNumFields;
     Property   NumDataFields: Cardinal read GetNumDataFields;
     Property   Size:        Integer read GetSize write SetSize;
-    Property   CheckFile:   TEpiCheckFile read FCheckFile;
+    Property   CheckFile:   TEpiDataFileProperties read FCheckFile;
     Property   IndexFile:   TEpiIndexFile read GetIndexFile;
     Property   ErrorCode:   Cardinal read FErrorCode write FErrorCode;
     Property   ErrorText:   string read FErrorText write FErrorText;
@@ -552,49 +545,43 @@ const
   Field_Growth_Factor = 1.20;
 
 
-{ TEpiCheckField }
+{ TEpiFieldProperties }
 
-function TEpiCheckField.GetAutoSearch: Boolean;
+{function TEpiFieldProperties.GetAutoSearch: Boolean;
 begin
   Result := AutoFields <> '';
-end;
+end;       }
 
-procedure TEpiCheckField.InternalReset;
+procedure TEpiFieldProperties.InternalReset;
 begin
   if Assigned(FBeforeCmds)    then FreeAndNil(FBeforeCmds);
   if Assigned(FAfterCmds)     then FreeAndNil(FAfterCmds);
   if Assigned(FFieldComments) then FreeAndNil(FFieldComments);
+  if Assigned(FRanges)        then FreeAndNil(FRanges);
+  if Assigned(FJumps)         then FreeAndNil(FJumps);
 
-  // TODO : FMissingValues must be reset.
-  FMustEntert        := false;
-  FNoEnter           := false;
+  FEntryType         := entAny;
   FTopOfScreen       := false;
   FTopOfScreenLines  := 0;
   FDoRepeat          := false;
   FConfirm           := false;
-  FMin               := '';
-  FMax               := '';
-  FLegal             := '';
-  FDefaultValue      := '';
-  FAutoFields        := '';
-  FAutoList          := false;
-  FJumps             := '';
-  FJumpResetChar     := #32;
+//  FAutoFields        := '';
+//  FAutoList          := false;
+  FJumpResetValue    := '';
   FShowValueLabel    := false;
-  FValueLabelIsFieldRef  := false;
-  FTypeType           := ttNone;
+  FTypeType          := ttNone;
   FTypeText          := '';
   FTypeColor         := 0;
   FHasGlobalDefaultVal := false;
   FieldScope         := scNone;
 end;
 
-constructor TEpiCheckField.Create;
+constructor TEpiFieldProperties.Create;
 begin
   Reset;
 end;
 
-destructor TEpiCheckField.Destroy;
+destructor TEpiFieldProperties.Destroy;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Destroy', 3);
@@ -606,32 +593,25 @@ begin
   end;
 end;
 
-procedure TEpiCheckField.Clone(var Dest: TEpiCheckField);
+procedure TEpiFieldProperties.Clone(var Dest: TEpiFieldProperties);
 var
   TmpCmd: TChkCommands;
   i: Integer;
 begin
   if Not Assigned(Dest) then
-    Dest := TEpiCheckField.Create();
+    Dest := TEpiFieldProperties.Create();
 
   Dest.Reset;
   
-  Dest.FMustEntert        := FMustEntert;
-  Dest.FNoEnter           := FNoEnter;
+  Dest.FEntryType         := FEntryType;
   Dest.FTopOfScreen       := FTopOfScreen;
   Dest.FTopOfScreenLines  := FTopOfScreenLines;
   Dest.FDoRepeat          := FDoRepeat;
   Dest.FConfirm           := FConfirm;
-  Dest.FMin               := FMin;
-  Dest.FMax               := FMax;
-  Dest.FLegal             := FLegal;
-  Dest.FDefaultValue      := FDefaultValue;
-  Dest.FAutoFields        := FAutoFields ;
-  Dest.FAutoList          := FAutoList;
-  Dest.FJumps             := FJumps;
-  Dest.FJumpResetChar     := FJumpResetChar;
+//  Dest.FAutoFields        := FAutoFields ;
+//  Dest.FAutoList          := FAutoList;
+  Dest.FJumpResetValue    := FJumpResetValue;
   Dest.FShowValueLabel    := FShowValueLabel;
-  Dest.FValueLabelIsFieldRef := FValueLabelIsFieldRef;
   Dest.FTypeType          := FTypeType;
   Dest.FTypeText          := FTypeText;
   Dest.FTypeColor         := FTypeColor;
@@ -644,25 +624,29 @@ begin
   FAfterCmds.Clone(TmpCmd);
 
   Dest.FFieldComments.Assign(FFieldComments);
+  Dest.FRanges.Assign(FRanges);
+  Dest.FJumps.Assign(FJumps);
 end;
 
-procedure TEpiCheckField.Reset;
+procedure TEpiFieldProperties.Reset;
 begin
   InternalReset;
 
   FBeforeCmds := TChkCommands.Create;
   FAfterCmds  := TChkCommands.Create;
   FFieldComments := TStringList.Create;
+  FRanges        := TStringList.Create;
+  FJumps         := TStringList.Create;
 end;
 
-{ TEpiCheckFile }
+{ TEpiDataFileProperties }
 
-constructor TEpiCheckFile.Create;
+constructor TEpiDataFileProperties.Create;
 begin
   Reset();
 end;
 
-destructor TEpiCheckFile.Destroy;
+destructor TEpiDataFileProperties.Destroy;
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Destroy', 3);
@@ -674,7 +658,7 @@ begin
   end
 end;
 
-procedure TEpiCheckFile.Reset;
+procedure TEpiDataFileProperties.Reset;
 begin
   InternalReset;
 
@@ -684,11 +668,11 @@ begin
   FDefines.Owned  := True;
 end;
 
-function TEpiCheckFile.Clone: TEpiCheckFile;
+function TEpiDataFileProperties.Clone: TEpiDataFileProperties;
 var
   i: Integer;
 begin
-  Result := TEpiCheckFile.Create;
+  Result := TEpiDataFileProperties.Create;
 
   // Clone basic:
   Result.FConfirm            := FConfirm;
@@ -732,33 +716,33 @@ begin
     Result.FDefines.Add(FDefines[i].Clone());
 end;
 
-function TEpiCheckFile.DefineExists(const aName: string): Boolean;
+function TEpiDataFileProperties.DefineExists(const aName: string): Boolean;
 begin
   result := FDefines.FieldExists(aName);
 end;
 
-function TEpiCheckFile.DefineByName(const aName: string): TEpiField;
+function TEpiDataFileProperties.DefineByName(const aName: string): TEpiField;
 begin
   result := FDefines.FieldByName(aName);
 end;
 
-procedure TEpiCheckFile.AddDefine(Field: TEpiField);
+procedure TEpiDataFileProperties.AddDefine(Field: TEpiField);
 begin
   FDefines.Add(Field);
 end;
 
-function TEpiCheckFile.GetGlobMissing(Index: Integer): string;
+function TEpiDataFileProperties.GetGlobMissing(Index: Integer): string;
 begin
   Result := FGlobalMissingValues[Index];
 end;
 
-procedure TEpiCheckFile.SetGlobMissing(Index: Integer;
+procedure TEpiDataFileProperties.SetGlobMissing(Index: Integer;
   const Value: string);
 begin
   FGlobalMissingValues[Index] := Value;
 end;
 
-procedure TEpiCheckFile.InternalReset;
+procedure TEpiDataFileProperties.InternalReset;
 begin
   if Assigned(FTopComments)      then FreeAndNil(FTopComments);
   if Assigned(FBeforeFileCmds)   then FreeAndNil(FBeforeFileCmds);
@@ -890,7 +874,7 @@ end;
 
 function TEpiField.Clone(DstDataFile: TEpiDataFile = nil; CloneData: boolean = true): TEpiField;
 var
-  TmpCheckField: TEpiCheckField;
+  TmpCheckField: TEpiFieldProperties;
   I: Integer;  
   Ptr: Pointer;
 begin
@@ -898,15 +882,16 @@ begin
   Result.DataFile := DstDataFile;
 
   // Copy Field related values:
-  Result.FFieldName   := FFieldName;
-  Result.FQuestX      := FQuestX;
-  Result.FQuestY      := FQuestY;
-  Result.FFieldX      := FFieldX;
-  Result.FFieldY      := FFieldY;
-  Result.FFieldType   := FFieldType;
-  Result.FFieldLength := FFieldLength;
+  Result.FFieldName     := FFieldName;
+  Result.FLabelX        := FLabelX;
+  Result.FLabelY        := FLabelY;
+  Result.FFieldX        := FFieldX;
+  Result.FFieldY        := FFieldY;
+  Result.FFieldType     := FFieldType;
+  Result.FFieldLength   := FFieldLength;
   Result.FFieldDecimals := FFieldDecimals;
   Result.FVariableLabel := FVariableLabel;
+  Result.FDefaultValue  := FDefaultValue;
 
   // Question fields do not require any of the following cloned.
   if (FieldType = ftQuestion) then
@@ -914,9 +899,9 @@ begin
 
   // Copy CheckFile if present:
   TmpCheckField := nil;
-  if Assigned(CheckField) then
-    CheckField.Clone(TmpCheckField);
-  Result.CheckField := TmpCheckField;
+  if Assigned(FieldProperties) then
+    FieldProperties.Clone(TmpCheckField);
+  Result.FieldProperties := TmpCheckField;
 
   // Assign data
   if CloneData then
@@ -963,19 +948,29 @@ end;
 
 procedure TEpiField.Reset;
 begin
-  if Assigned(FCheckField) then FreeAndNil(FCheckField);
+  if Assigned(FFieldProperties) then FreeAndNil(FFieldProperties);
 
+  // System props:
   FOwner         := nil;
   FDataFile      := nil;
-  FValueLabelSet := nil;
+
+  // Field props:
   FFieldName     := '';
-  FQuestX        := 0;
-  FQuestY        := 0;
+  FFieldLength   := 0;
+  FFieldDecimals := 0;
   FFieldX        := 0;
   FFieldY        := 0;
-  FFieldLength   := 0;
-  FFieldDecimals   := 0;
+  FFieldColor    := $FFFFFF;  // White.
+
+  // Label props:
   FVariableLabel := '';
+  FLabelX        := 0;
+  FLabelY        := 0;
+  FDefaultValue  := '';
+
+  // Valuelabel props:
+  FValueLabelSet := nil;
+  FValueLabelIsFieldRef := false;
 end;
 
 { TEpiFields }
@@ -1566,8 +1561,8 @@ begin
 
       with EField do
       begin
-        QuestX      := TmpQuestX;
-        QuestY      := TmpQuestY;
+        LabelX      := TmpQuestX;
+        LabelY      := TmpQuestY;
         FieldX      := TmpFieldX;
         FieldY      := TmpFieldY;
         FieldLength := TmpLength;
@@ -1746,6 +1741,11 @@ var
     end;
   end;
 
+  function Ins(Lvl: byte): string;
+  begin
+    result := DupeString(' ', Lvl * 2);
+  end;
+
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSave', 3);
@@ -1766,11 +1766,11 @@ begin
     // <SETTINGS> Section
     // **********************
     TmpStr := TmpStr +
-      '  <SETTINGS>' + LineEnding +
-      '    <VERSION>' + IntToStr(FileVersion) + '</VERSION>' + LineEnding +
-      '    <DATESEP>' + EpiInternalFormatSettings.DateSeparator + '</DATESEP>' + LineEnding +
-      '    <DECIMALSEP>' + EpiInternalFormatSettings.DecimalSeparator + '</DECIMALSEP>' + LineEnding +
-      '    <MISSINGMARK>' + TEpiStringField.DefaultMissing + '</MISSINGMARK>' + LineEnding;
+      Ins(1) + '<SETTINGS>' + LineEnding +
+      Ins(2) + '<VERSION>' + IntToStr(FileVersion) + '</VERSION>' + LineEnding +
+      Ins(2) + '<DATESEP>' + EpiInternalFormatSettings.DateSeparator + '</DATESEP>' + LineEnding +
+      Ins(2) + '<DECIMALSEP>' + EpiInternalFormatSettings.DecimalSeparator + '</DECIMALSEP>' + LineEnding +
+      Ins(2) + '<MISSINGMARK>' + TEpiStringField.DefaultMissing + '</MISSINGMARK>' + LineEnding;
     if RequirePassword then
     begin
       // TODO : What about UTF-8 encoding??
@@ -1783,33 +1783,33 @@ begin
       EncData := B64Encode(EncData);
       FCrypter.Reset;
       TmpStr := TmpStr +
-        '    <PASSWORD>' + EncData + '</PASSWORD>' + LineEnding;
+        Ins(2) + '<PASSWORD>' + EncData + '</PASSWORD>' + LineEnding;
     end;
     TmpStr := TmpStr +
-      '  </SETTINGS>' + LineEnding;
+      Ins(1) + '</SETTINGS>' + LineEnding;
     DataStream.Write(TmpStr[1], Length(TmpStr));
 
     // **********************
     // <METADATA> Section
     // **********************
     TmpStr :=
-      '  <METADATA>' + LineEnding;
+      Ins(1) + '<METADATA>' + LineEnding;
     if FileLabel <> '' then
       TmpStr := TmpStr +
-      '    <FILELABEL>' + StringToXml(FileLabel) + '</FILELABEL>' + LineEnding;
+        Ins(2) + '<FILELABEL>' + StringToXml(FileLabel) + '</FILELABEL>' + LineEnding;
     if Study <> '' then
       TmpStr := TmpStr +
-      '    <STUDY>' + StringToXml(Study) + '</STUDY>' + LineEnding;
+        Ins(2) + '<STUDY>' + StringToXml(Study) + '</STUDY>' + LineEnding;
     DataStream.Write(TmpStr[1], Length(TmpStr));
     if Assigned(ValueLabels) then
     with ValueLabels do
     begin
-      TmpStr := '    <LABELS>' + LineEnding;
+      TmpStr := Ins(2) + '<LABELS>' + LineEnding;
       for i := 0 to Count - 1 do
       with Items[i] do
       begin
         TmpStr := TmpStr +
-          '      <LABEL NAME="' + StringToXml(Name) +
+          Ins(3) + '<LABEL NAME="' + StringToXml(Name) +
           '" TYPE="' + IntToStr(Ord(LabelType));
         case LabelScope of
           vlsFile:
@@ -1821,7 +1821,7 @@ begin
               for j := 0 to Count - 1 do
               begin
                 TmpStr := TmpStr  +
-                  '        <SET VALUE="' + String(Values[j]) + '"';
+                  Ins(4) + '<SET VALUE="' + String(Values[j]) + '"';
                 if Labels[j] <> '' then
                   TmpStr := TmpStr  + ' LABEL="' + Labels[j] + '"';
                 if MissingValues[j] then
@@ -1832,39 +1832,75 @@ begin
             end;
         end;
         TmpStr := TmpStr +
-          '      </LABEL>' + LineEnding;
+          Ins(3) + '</LABEL>' + LineEnding;
       end;
-      TmpStr := TmpStr + '    </LABELS>' + LineEnding;
+      TmpStr := TmpStr +
+        Ins(2) + '</LABELS>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     // TODO : <USERDEFINED>
     TmpStr :=
-      '  </METADATA>' + LineEnding;
+      Ins(1) + '</METADATA>' + LineEnding;
     DataStream.Write(TmpStr[1], Length(TmpStr));
 
 
     // **********************
     // <FIELDS> Section
     // **********************
-    TmpStr := '  <FIELDS>' + LineEnding;
+    TmpStr := Ins(1) + '<FIELDS>' + LineEnding;
     DataStream.Write(TmpStr[1], Length(TmpStr));
     for CurField := 0 to Fields.Count - 1 do
     with Fields[CurField] do
     begin
-      TmpStr := '    <FIELD ';
-      TmpStr := TmpStr + 'NAME="' + StringToXml(FieldName);
-      TmpStr := TmpStr + '" TYPE="' + IntToStr(Ord(FieldType));
-      TmpStr := TmpStr + '" LENGTH="' + IntToStr(FieldLength);
-      TmpStr := TmpStr + '" DEC="' + IntToStr(FieldDecimals);
-      TmpStr := TmpStr + '" LX="' + IntToStr(QuestX);
-      TmpStr := TmpStr + '" LY="' + IntToStr(QuestY);
-      TmpStr := TmpStr + '" FX="' + IntToStr(FieldX);
-      TmpStr := TmpStr + '" FY="' + IntToStr(FieldY);
+      TmpStr := Ins(2) + '<FIELD TYPE="' + IntToStr(Ord(FieldType)) + '">' + LineEnding;
+      // Must exists tags!
+      TmpStr := TmpStr +
+        Ins(3) + '<NAME>' + StringToXml(FieldName) + '</NAME>' + LineEnding +
+        Ins(3) + '<LENGTH>' + IntToStr(FieldLength) + '</LENGTH>' + LineEnding +
+        Ins(3) + '<DECIMAL>' + IntToStr(FieldDecimals) + '</DECIMAL>' + LineEnding +
+
+      // Optional, but we choose to write out of courtesy.
+        Ins(3) + '<LABEL X="' + IntToStr(LabelX) + '" Y="' + IntToStr(LabelY) + '">' +
+          StringToXml(VariableLabel) + '</LABEL>' + LineEnding +
+        Ins(3) + '<COLOR>' + hexStr(FieldColor, 6) + '</COLOR>' + LineEnding;
+
+      // Optional:
       if Assigned(ValueLabelSet) then
-        TmpStr := TmpStr  + '" VLABEL="' + ValueLabelSet.Name;
-      if Trim(VariableLabel) <> '' then
-        TmpStr := TmpStr + '" LABEL="' + StringToXml(VariableLabel);
-      TmpStr := TmpStr + '"/>' + LineEnding;
+        TmpStr := TmpStr +
+          Ins(3) + '<VALUELABEL>' + ValueLabelSet.Name + '</VALUELABEL>' + LineEnding;
+
+      if Assigned(FieldProperties) then
+      With FieldProperties Do
+      begin
+        if Confirm then
+          TmpStr := TmpStr + Ins(3) + '<CONFIRM/>' + LineEnding;
+        if DoRepeat then
+          TmpStr := TmpStr + Ins(3) + '<REPEAT/>' + LineEnding;
+        Case EntryType of
+          entMust: TmpStr := TmpStr + Ins(3) + '<ENTER VAL="true"/>' + LineEnding;
+          entNone: TmpStr := TmpStr + Ins(3) + '<ENTER VAL="false"/>' + LineEnding;
+        end;
+        if Jumps.Count > 0 then
+        begin
+          TmpStr := TmpStr + Ins(3) + '<JUMPS>' + LineEnding;
+          For i := 0 to Jumps.Count - 1 do
+            TmpStr := TmpStr + Ins(4) + '<JUMP ON="' + Jumps[i] +
+                      '" TO="' + TString(Jumps.Objects[i]).Str + '"/>' + LineEnding;
+          TmpStr := TmpStr + Ins(3) + '</JUMPS>' + LineEnding;
+        end;
+        if Ranges.Count > 0 then
+        begin
+          TmpStr := TmpStr + Ins(3) + '<RANGE>';
+          for i := 0 to Ranges.Count - 1 do
+            TmpStr := TmpStr + Ranges[i];
+          TmpStr := TmpStr + '</RANGE>' + LineEnding;
+        end;
+      End;
+      // TODO : Keys!
+      //      if DataFile.IndexFile.IndexExists();
+
+      // End tag:
+      TmpStr := TmpStr + Ins(2) + '</FIELD>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     TmpStr := '  </FIELDS>' + LineEnding;
@@ -2005,8 +2041,8 @@ begin
       TmpStr := CreateUniqueAnsiVariableName(FieldName, MaxFieldNameLen, FieldNames);
       s := s + Format('%-10s', [TmpStr]);     //Name of field (left justified)
       s := s + ' ';                           //Space required for some unknown reason
-      s := s + Format('%4d', [QuestX]);       //Question X-position
-      s := s + Format('%4d', [QuestY]);       //Question Y-position
+      s := s + Format('%4d', [LabelX]);       //Question X-position
+      s := s + Format('%4d', [LabelY]);       //Question Y-position
       s := s + Format('%4s', ['30']);         //Question colorcode
       s := s + Format('%4d', [FieldX]);       //Entry X-position
       s := s + Format('%4d', [FieldY]);       //Entry Y-position
@@ -2299,7 +2335,7 @@ begin
   FDataFields   := TEpiFields.Create(Self);
   FQuestFields  := TEpiFields.Create(Self);
   FValueLabels  := TValueLabelSets.Create;
-  FCheckFile    := TEpiCheckFile.Create;
+  FCheckFile    := TEpiDataFileProperties.Create;
   FCrypter      := TDCP_rijndael.Create(nil);
   FRecordStatus := TEpiIntField.Create(0, ftInteger);
 end;

@@ -276,7 +276,7 @@ NUM Name       Variable label        Type            Width  Checks              
 
             {Put Checks in array} 
             IF (epd.CheckFile.HasCheckFile) AND (NOT epd.CheckFile.ErrorInFile)
-               and (Assigned(Epd[nN].CheckField)) THEN
+               and (Assigned(Epd[nN].FieldProperties)) THEN
               BEGIN
                 nN2:=1;
 {                IF epd[nN].Index>0 THEN
@@ -287,7 +287,7 @@ NUM Name       Variable label        Type            Width  Checks              
                     CheckStr[nN2]:=tmpStr;
                     INC(nN2);
                   END;         }
-                IF epd[nN].CheckField.AutoSearch THEN
+{                IF epd[nN].CheckField.AutoSearch THEN
                   BEGIN
                     tmpStr:='Autosearch ';
                     //IF FAutoList THEN tmpStr:=tmpStr+' LIST ';
@@ -300,28 +300,25 @@ NUM Name       Variable label        Type            Width  Checks              
                     END;
                     CheckStr[nN2]:=tmpStr;
                     INC(nN2);
-                  END;
-                IF epd[nN].CheckField.MustEnter THEN
-                  BEGIN
-                    CheckStr[nN2]:='Must enter';
-                    INC(nN2);
-                  END;
-                IF epd[nN].CheckField.doRepeat THEN
+                  END;      }
+                INC(nN2);
+                Case epd[nN].FieldProperties.EntryType of
+                  entMust: CheckStr[nN2-1]:='Must Enter';
+                  entNone: CheckStr[nN2-1]:='NoEnter';
+                  entAny: Dec(nN2);
+                end;
+                IF epd[nN].FieldProperties.doRepeat THEN
                   BEGIN
                     CheckStr[nN2]:='Repeat';
                     INC(nN2);
                   END;
-                IF epd[nN].CheckField.DefaultValue<>'' THEN
+                IF epd[nN].DefaultValue<>'' THEN
                   BEGIN
-                    CheckStr[nN2]:='Default value='+epd[nN].CheckField.DefaultValue;
+                    CheckStr[nN2]:='Default value='+epd[nN].DefaultValue;
                     INC(nN2);
                   END;
-                IF epd[nN].CheckField.NoEnter THEN
-                  BEGIN
-                    CheckStr[nN2]:='NoEnter';
-                    INC(nN2);
-                  END;
-                IF epd[nN].CheckField.Legal<>'' THEN
+                // TODO : Ranges in field properties.
+{                IF epd[nN].CheckField.Legal<>'' THEN
                   BEGIN
                     tmpStr:='Legal: '+trim(epd[nN].CheckField.Legal);
                     WHILE Pos('"',tmpStr)>0 DO
@@ -337,10 +334,10 @@ NUM Name       Variable label        Type            Width  Checks              
                         THEN tmpStr:=Copy(tmpStr,1,17);
                         tmpStr:=tmpStr+'...';
                       END;
-                  END;
-                IF epd[nN].CheckField.Jumps<>'' THEN
+                  END;   }
+                IF epd[nN].FieldProperties.Jumps.Count > 0 THEN
                   BEGIN
-                    tmpStr:='Jumps: '+trim(epd[nN].CheckField.Jumps);
+                    tmpStr:='Jumps: '+trim(epd[nN].FieldProperties.Jumps.CommaText);
                     WHILE Pos('"',tmpStr)>0 DO
                       Delete(tmpStr,Pos('"',tmpStr),1);
                     WHILE (tmpStr<>'') AND (nN2<=25) DO
@@ -355,7 +352,7 @@ NUM Name       Variable label        Type            Width  Checks              
                         tmpStr:=tmpStr+'...';
                       END;
                   END;
-                IF (epd[nN].CheckField.AfterCmds<>NIL) or (epd[nN].CheckField.BeforeCmds<>NIL) THEN
+                IF (epd[nN].FieldProperties.AfterCmds<>NIL) or (epd[nN].FieldProperties.BeforeCmds<>NIL) THEN
                   BEGIN
                     IF nN2=25 THEN CheckStr[25]:='More: See Checkfile'
                     ELSE CheckStr[nN2]:='More: See Checkfile';

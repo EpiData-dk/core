@@ -48,6 +48,8 @@ type
 
   TDataFileType         = (dftEpiDataXml = 1, dftEpiDataRec, dftStata, dftOds, dftXls, dftText, dftDBase);
 
+  TEntryType            = (entAny, entMust, entNone);
+
   TByteOrder            = (boLittleEndian, boBigEndian);
 
 implementation

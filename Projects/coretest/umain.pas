@@ -9,7 +9,7 @@ uses
   LResources,
   SysUtils, Variants, Classes, Controls, Forms,
   Dialogs, StdCtrls, Buttons, ExtCtrls, ComCtrls, UEpiDataFile, Grids,
-  UDataFileTypes, Graphics, Menus, ActnList;
+  UDataFileTypes, Graphics, Menus, ActnList, ColorBox;
 
 type
 
@@ -151,9 +151,8 @@ begin
       EpiLogger.Add('No Datafile Defined, this is probably because importform was canceled.', 1);
       Memo1.Lines.Clear;
       Memo1.Lines.Add('No Datafile Defined.');
-      Exit
+      Exit;
     end;
-
     Lst := TinyDocumentation(Df);
     Memo1.Lines.AddStrings(Lst);
     FreeAndNil(Lst);

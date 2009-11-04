@@ -831,8 +831,8 @@ begin
         VariableLabel := '';
         FieldX        := 0;
         FieldY        := i;
-        QuestX        := i;
-        QuestY        := i;
+        LabelX        := i;
+        LabelY        := i;
         FieldName     := '';
       END;
 
@@ -872,7 +872,7 @@ begin
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
       IF StrBuf <> '' THEN
       BEGIN
-        TmpField.CheckField := TEpiCheckField.Create();
+        TmpField.FieldProperties := TEpiFieldProperties.Create();
         TmpField.ValueLabelSet := TValueLabelSet.Create;
         TmpField.ValueLabelSet.Name := StrBuf;
         TmpField.ValueLabelSet.LabelScope := vlsGlobal;
@@ -1200,10 +1200,10 @@ BEGIN
 
       WITH TmpField DO
       BEGIN
-        QuestX        := 1;
-        QuestY        := Fields.Count + 1;
+        LabelX        := 1;
+        LabelY        := Fields.Count + 1;
         FieldX        := 12;
-        FieldY        := QuestY;
+        FieldY        := LabelY;
       END;  //with
       AddField(TmpField);
     end;

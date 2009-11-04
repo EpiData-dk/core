@@ -46,60 +46,60 @@
         <UnitName Value="UCheckFileIO"/>
       </Item2>
       <Item3>
-        <Filename Value="Datafile/UEpiDataFile.pas"/>
-        <UnitName Value="UEpiDataFile"/>
-      </Item3>
-      <Item4>
-        <Filename Value="Datafile/uimportexport.pas"/>
-        <UnitName Value="UImportExport"/>
-      </Item4>
-      <Item5>
         <Filename Value="Datafile/UCheckFileTypes.pas"/>
         <UnitName Value="UCheckFileTypes"/>
+      </Item3>
+      <Item4>
+        <Filename Value="Datafile/UDataFileTypes.pas"/>
+        <UnitName Value="UDataFileTypes"/>
+      </Item4>
+      <Item5>
+        <Filename Value="Datafile/UEpiDataFile.pas"/>
+        <UnitName Value="UEpiDataFile"/>
       </Item5>
       <Item6>
         <Filename Value="Datafile/UValueLabels.pas"/>
         <UnitName Value="UValueLabels"/>
       </Item6>
       <Item7>
-        <Filename Value="Datafile/uqeshandler.pas"/>
-        <UnitName Value="UQesHandler"/>
+        <Filename Value="Datafile/uimportexport.pas"/>
+        <UnitName Value="UImportExport"/>
       </Item7>
       <Item8>
-        <Filename Value="Datafile/UDataFileTypes.pas"/>
-        <UnitName Value="UDataFileTypes"/>
+        <Filename Value="Datafile/uqeshandler.pas"/>
+        <UnitName Value="UQesHandler"/>
       </Item8>
       <Item9>
-        <Filename Value="Encryption/EpiSHA1.pas"/>
-        <UnitName Value="EpiSHA1"/>
-      </Item9>
-      <Item10>
-        <Filename Value="Encryption/Rijndael.pas"/>
-        <UnitName Value="Rijndael"/>
-      </Item10>
-      <Item11>
         <Filename Value="Encryption/DCPcrypt.pas"/>
         <UnitName Value="DCPcrypt"/>
-      </Item11>
-      <Item12>
+      </Item9>
+      <Item10>
         <Filename Value="Encryption/EpiBase64.pas"/>
         <UnitName Value="EpiBase64"/>
+      </Item10>
+      <Item11>
+        <Filename Value="Encryption/EpiSHA1.pas"/>
+        <UnitName Value="EpiSHA1"/>
+      </Item11>
+      <Item12>
+        <Filename Value="Encryption/Rijndael.pas"/>
+        <UnitName Value="Rijndael"/>
       </Item12>
       <Item13>
         <Filename Value="Utils/ErrorCodes.inc"/>
         <Type Value="Include"/>
       </Item13>
       <Item14>
-        <Filename Value="Utils/UEpiLog.pas"/>
-        <UnitName Value="UEpiLog"/>
-      </Item14>
-      <Item15>
         <Filename Value="Utils/UDateUtils.pas"/>
         <UnitName Value="UDateUtils"/>
+      </Item14>
+      <Item15>
+        <Filename Value="Utils/UEpiLog.pas"/>
+        <UnitName Value="UEpiLog"/>
       </Item15>
       <Item16>
-        <Filename Value="Utils/uepidataglobals.pas"/>
-        <UnitName Value="UEpiDataGlobals"/>
+        <Filename Value="Utils/UEpiUtils.pas"/>
+        <UnitName Value="UEpiUtils"/>
       </Item16>
       <Item17>
         <Filename Value="Utils/UStringUtils.pas"/>
@@ -110,8 +110,8 @@
         <UnitName Value="UUtilTypes"/>
       </Item18>
       <Item19>
-        <Filename Value="Utils/UEpiUtils.pas"/>
-        <UnitName Value="UEpiUtils"/>
+        <Filename Value="Utils/uepidataglobals.pas"/>
+        <UnitName Value="UEpiDataGlobals"/>
       </Item19>
     </Files>
     <RequiredPkgs Count="3">
