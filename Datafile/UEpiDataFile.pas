@@ -17,11 +17,12 @@ type
 
   { TEpiCheckField }
 
+  { TEpiFieldProperties }
+
   TEpiFieldProperties = class(TObject)
   private
     FEntryType:        TEntryType;
-    FTopOfScreen:      Boolean;
-    FTopOfScreenLines: Integer;
+    FTopOfScreen:      Integer;
     FDoRepeat:         boolean;
     FConfirm:          boolean;
     FBeforeCmds:       TChkCommands;
@@ -32,9 +33,9 @@ type
     FJumps:            TStrings;
     FJumpResetValue:   String;
     FShowValueLabel:   Boolean;
+    FTypeField:        TEpiField;
     FTypeType:         TTypeType;
-    FTypeText:         string;
-    FTypeColor:        Byte;
+    FTypeColor:        Integer;
     FHasGlobalDefaultVal: Boolean;
     FFieldScope:       TFieldScope;
     FFieldComments:    TStrings;
@@ -48,8 +49,7 @@ type
     procedure   Reset;
     procedure   Clone(Var Dest: TEpiFieldProperties);
     property    EntryType:    TEntryType read FEntryType write FEntryType;
-    property    TopOfScreen:  Boolean read FTopOfScreen write FTopOfScreen;
-    property    TopOfScreenLines: Integer read FTopOfScreenLines write FTopOfScreenLines;
+    property    TopOfScreen:  Integer read FTopOfScreen write FTopOfScreen;
     property    DoRepeat:     boolean read FDoRepeat write FDoRepeat;
     property    Confirm:      boolean read FConfirm write FConfirm;
     property    BeforeCmds:   TChkCommands read FBeforeCmds;
@@ -62,9 +62,9 @@ type
     property    JumpResetValue: string read FJumpResetValue write FJumpResetValue;
     property    ShowValueLabel: Boolean read FShowValueLabel write FShowValueLabel;
     property    TypeType:     TTypeType read FTypeType write FTypeType;
-    property    TypeText:     string read FTypeText write FTypeText;
-    property    TypeColour:   Byte read FTypeColor write FTypeColor;
-    property    HasGlobalDefaultVal: Boolean read FHasGlobalDefaultVal write FHasGlobalDefaultVal;
+    property    TypeField:    TEpiField read FTypeField write FTypeField;
+    property    TypeColour:   Integer read FTypeColor write FTypeColor;
+    //property    HasGlobalDefaultVal: Boolean read FHasGlobalDefaultVal write FHasGlobalDefaultVal;
     property    FieldScope:   TFieldScope read FFieldScope write FFieldScope;
     property    FieldComments: TStrings read FFieldComments;
   end;
@@ -94,7 +94,13 @@ type
     FErrorInFile:          Boolean;
     FHasCheckFile:         Boolean;
     FFileName:             string;
-    FDefines:              TEpiFields;       
+    FDefines:              TEpiFields;
+
+    // New Type adaptation
+    FHasTypeStatusBar:     Boolean;
+    FTypeStatusBarText:    String;
+    FTypeStatusBarField:   TEpiField;
+    FTypeStatusBarColor:   Integer;
     function    GetGlobMissing(Index: Integer): string;
     procedure   SetGlobMissing(Index: Integer; const Value: string);
     procedure   InternalReset;
@@ -115,7 +121,7 @@ type
     Property    RecodeCmds:       TChkCommands read FRecodeCmds write FRecodeCmds;                //Commands to be run during Recode Datafile
     Property    Confirm:          Boolean read FConfirm write FConfirm;
     Property    Autosave:         Boolean read FAutoSave write FAutoSave;
-    Property    GlobalDefaultVal: string read FGlobalDefaultValue write FGlobalDefaultValue;
+//    Property    GlobalDefaultVal: string read FGlobalDefaultValue write FGlobalDefaultValue;
     Property    GlobalMissingVal[Index: Integer]: string read GetGlobMissing write SetGlobMissing;
     Property    MissingAction:    TMissingAction read FMissingAction write FMissingAction;
     Property    GlobalTypeCom:    Boolean read FGlobalTypeCom write FGlobalTypeCom;
@@ -129,7 +135,13 @@ type
     Property    ErrorInFile:      Boolean read FErrorInFile write FErrorInFile;
     Property    HasCheckFile:     Boolean read FHasCheckFile write FHasCheckFile;
     Property    FileName:         string read FFileName write FFileName;
-  end;
+
+    // New Type adaptation
+    property    HasTypeStatusBar: boolean read FHasTypeStatusBar write FHasTypeStatusBar;
+    property    TypeStatusBarText: string read FTypeStatusBarText write FTypeStatusBarText;
+    property    TypeStatusBarField: TEpiField read FTypeStatusBarField write FTypeStatusBarField;
+    property    TypeStatusBarColor: Integer read FTypeStatusBarColor write FTypeStatusBarColor;
+    end;
 
   { TEpiField }
 
@@ -153,6 +165,8 @@ type
     FFieldProperties: TEpiFieldProperties;
     FValueLabelSet: TValueLabelSet;
     FValueLabelIsFieldRef: Boolean;
+    function GetFieldProperties: TEpiFieldProperties;
+    function GetHasFieldProperties: boolean;
 //    function       GetAsFmtData: string;
   protected
     constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
@@ -203,7 +217,8 @@ type
     property  LabelX:      Cardinal read FLabelX write FLabelX;
     property  LabelY:      Cardinal read FLabelY write FLabelY;
     property  DefaultValue: string read FDefaultValue write FDefaultValue;
-    property  FieldProperties: TEpiFieldProperties read FFieldProperties write FFieldProperties;
+    property  HasFieldProperties: boolean read GetHasFieldProperties;
+    property  FieldProperties: TEpiFieldProperties read GetFieldProperties;
     property  ValueLabelSet: TValueLabelSet read FValueLabelSet write FValueLabelSet;
     Property  ValueLabelIsFieldRef: Boolean read FValueLabelIsFieldRef write FValueLabelIsFieldRef;
     property  IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
@@ -519,13 +534,15 @@ type
     Property   NumFields:   Cardinal read GetNumFields;
     Property   NumDataFields: Cardinal read GetNumDataFields;
     Property   Size:        Integer read GetSize write SetSize;
-    Property   CheckFile:   TEpiDataFileProperties read FCheckFile;
+    Property   FileProperties:   TEpiDataFileProperties read FCheckFile;
     Property   IndexFile:   TEpiIndexFile read GetIndexFile;
     Property   ErrorCode:   Cardinal read FErrorCode write FErrorCode;
     Property   ErrorText:   string read FErrorText write FErrorText;
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
     Property   DatafileType: TDataFileType read FDatafileType write FDatafileType;
   end;
+
+
 
 implementation
 
@@ -544,7 +561,6 @@ const
 
   Field_Growth_Factor = 1.20;
 
-
 { TEpiFieldProperties }
 
 {function TEpiFieldProperties.GetAutoSearch: Boolean;
@@ -561,8 +577,7 @@ begin
   if Assigned(FJumps)         then FreeAndNil(FJumps);
 
   FEntryType         := entAny;
-  FTopOfScreen       := false;
-  FTopOfScreenLines  := 0;
+  FTopOfScreen       := -1;
   FDoRepeat          := false;
   FConfirm           := false;
 //  FAutoFields        := '';
@@ -570,8 +585,8 @@ begin
   FJumpResetValue    := '';
   FShowValueLabel    := false;
   FTypeType          := ttNone;
-  FTypeText          := '';
   FTypeColor         := 0;
+  FTypeField         := nil;
   FHasGlobalDefaultVal := false;
   FieldScope         := scNone;
 end;
@@ -605,7 +620,6 @@ begin
   
   Dest.FEntryType         := FEntryType;
   Dest.FTopOfScreen       := FTopOfScreen;
-  Dest.FTopOfScreenLines  := FTopOfScreenLines;
   Dest.FDoRepeat          := FDoRepeat;
   Dest.FConfirm           := FConfirm;
 //  Dest.FAutoFields        := FAutoFields ;
@@ -613,8 +627,8 @@ begin
   Dest.FJumpResetValue    := FJumpResetValue;
   Dest.FShowValueLabel    := FShowValueLabel;
   Dest.FTypeType          := FTypeType;
-  Dest.FTypeText          := FTypeText;
   Dest.FTypeColor         := FTypeColor;
+  Dest.FTypeField         := FTypeField;
   Dest.FHasGlobalDefaultVal := FHasGlobalDefaultVal;
   Dest.FFieldScope        := FFieldScope;
 
@@ -766,6 +780,10 @@ begin
   FErrorInFile         := false;
   FHasCheckFile        := false;
   FFileName            := '';
+  FHasTypeStatusBar    := false;
+  FTypeStatusBarColor  := ChkBaseColor;
+  FTypeStatusBarText   := '';
+  FTypeStatusBarField  := nil;
 end;
 
 { TEpiField }
@@ -823,6 +841,18 @@ begin
   if AValue > Capacity then
     Capacity := AValue;
   FSize := AValue;
+end;
+
+function TEpiField.GetHasFieldProperties: boolean;
+begin
+  result := Assigned(FFieldProperties);
+end;
+
+function TEpiField.GetFieldProperties: TEpiFieldProperties;
+begin
+  if not Assigned(FFieldProperties) then
+    FFieldProperties := TEpiFieldProperties.Create;
+  result := FFieldProperties;
 end;
 
 constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType);
@@ -901,7 +931,7 @@ begin
   TmpCheckField := nil;
   if Assigned(FieldProperties) then
     FieldProperties.Clone(TmpCheckField);
-  Result.FieldProperties := TmpCheckField;
+  Result.FFieldProperties := TmpCheckField;
 
   // Assign data
   if CloneData then
@@ -960,7 +990,7 @@ begin
   FFieldDecimals := 0;
   FFieldX        := 0;
   FFieldY        := 0;
-  FFieldColor    := $FFFFFF;  // White.
+  FFieldColor    := ChkBaseColor;
 
   // Label props:
   FVariableLabel := '';
@@ -1143,7 +1173,8 @@ function TEpiDataFile.InternalOpen: boolean;
 var
   RecXml: TXMLDocument;
   RootNode: TDOMElement;
-  ElemNode: TDOMElement;
+  ElemNode,
+  SubElem: TDOMElement;
   PairNode: TDOMElement;
   SectionNode: TDOMNode;
   TmpStr: String;
@@ -1160,6 +1191,7 @@ var
   ValueField: TEpiField;
   TextField: TEpiField;
   Val: Variant;
+  List: TStrings;
 
   procedure ReportError(ErrCode: Integer; LangCode: integer; Msg: String; Args: array of const);
   begin
@@ -1194,7 +1226,7 @@ begin
       Exit;
     end;
 
-    // Version: so far we only got ver. 2
+    // Version: so far we only got ver. 0
     ElemNode := TDOMElement(SectionNode.FindNode('VERSION'));
     if not Assigned(ElemNode) then
     begin
@@ -1365,23 +1397,95 @@ begin
     ElemNode := TDOMElement(SectionNode.FindNode('FIELD'));
     while Assigned(ElemNode) do
     begin
-      // Create field from <FIELD ... /> lines
+      // Create field from <FIELD ... > sections.
+      // Must exists tags:
       TmpFieldType := TFieldType(StrToInt(ElemNode.GetAttribute('TYPE')));
       TmpField := TEpiField.CreateField(TmpFieldType, 0);
-      TmpField.FieldName     := UTF8Encode(ElemNode.GetAttribute('NAME'));
-      TmpField.FieldLength   := StrToInt(ElemNode.GetAttribute('LENGTH'));
-      TmpField.FieldDecimals := StrToInt(ElemNode.GetAttribute('DEC'));
-      TmpField.VariableLabel := UTF8Encode(ElemNode.GetAttribute('LABEL'));
-{      TmpField.FieldX        := StrToInt(ElemNode.GetAttribute('FX'));
-      TmpField.FieldY        := StrToInt(ElemNode.GetAttribute('FY'));
-      TmpField.QuestX        := StrToInt(ElemNode.GetAttribute('QX'));
-      TmpField.QuestY        := StrToInt(ElemNode.GetAttribute('QY'));}
 
+      with TmpField do
+      begin
+        FieldName     := UTF8Encode(ElemNode.FindNode('NAME').TextContent);
+        FieldLength   := StrToInt(ElemNode.FindNode('LENGTH').TextContent);
+        FieldDecimals := StrToInt(ElemNode.FindNode('DECIMALS').TextContent);
 
-      // Valuelabel
-      TmpStr := UTF8Encode(ElemNode.GetAttribute('VLABEL'));
-      if TmpStr <> '' then
-        TmpField.ValueLabelSet := ValueLabels.ValueLabelSetByName(TmpStr);
+        // Optional:
+        // - Variable labels
+        SubElem := TDOMElement(ElemNode.FindNode('LABEL'));
+        If Assigned(SubElem) then
+        begin
+          VariableLabel := UTF8Encode(SubElem.TextContent);
+          LabelX := StrToInt(SubElem.GetAttribute('X'));
+          LabelY := StrToInt(SubElem.GetAttribute('Y'));
+        end;
+        // - Color
+        SubElem :=  TDOMElement(ElemNode.FindNode('COLOR'));
+        if Assigned(SubElem) then
+          FieldColor := Hex2Dec(SubElem.TextContent);
+        // - Valuelabel
+        SubElem :=  TDOMElement(ElemNode.FindNode('VALUELABEL'));
+        if Assigned(SubElem) then
+          ValueLabelSet := ValueLabels.ValueLabelSetByName(UTF8Encode(SubElem.TextContent));
+        // - Default value
+        SubElem :=  TDOMElement(ElemNode.FindNode('DEFAULTVALUE'));
+        if Assigned(SubElem) then
+          DefaultValue := UTF8Encode(SubElem.TextContent);
+
+        // Optional - requires FieldProperties.
+        // - Confirm
+        SubElem :=  TDOMElement(ElemNode.FindNode('CONFIRM'));
+        if Assigned(SubElem) then
+          FieldProperties.Confirm := true;
+        // - Repeat
+        SubElem :=  TDOMElement(ElemNode.FindNode('REPEAT'));
+        if Assigned(SubElem) then
+          FieldProperties.DoRepeat := true;
+        // - Enter
+        SubElem :=  TDOMElement(ElemNode.FindNode('Enter'));
+        if Assigned(SubElem) then
+        begin
+          if UTF8Encode(WideLowerCase(SubElem.GetAttribute('VAL'))) = 'true' then
+            FieldProperties.EntryType := entMust
+          else
+            FieldProperties.EntryType := entNone;
+        end;
+        // - Jumps
+        SubSectionNode := ElemNode.FindNode('JUMPS');
+        if Assigned(SubSectionNode) then
+        begin
+          SubElem := TDOMElement(SubSectionNode.FirstChild);
+          while Assigned(SubElem) do
+          begin
+            FieldProperties.Jumps.AddObject(UTF8Encode(SubElem.GetAttribute('ON')),
+              TString.Create(UTF8Encode(SubElem.GetAttribute('TO'))));
+            SubElem := TDOMElement(SubElem.NextSibling);
+          end;
+          if SubSectionNode.Attributes.Length > 0 then
+            FieldProperties.JumpResetValue := UTF8Encode(SubSectionNode.Attributes[0].TextContent);
+        end;
+        SubElem := TDOMElement(ElemNode.FindNode('RANGE'));
+        if Assigned(SubElem) then
+        begin
+          SplitString(UTF8Encode(SubElem.TextContent), List, [',']);
+          FieldProperties.Ranges.Assign(List);
+        end;
+        SubElem := TDOMElement(ElemNode.FindNode('TOPOFSCREEN'));
+        if Assigned(SubElem) then
+          FieldProperties.TopOfScreen := StrToInt(SubElem.TextContent);
+        SubElem := TDOMElement(ElemNode.FindNode('TYPECOMMENT'));
+        if Assigned(SubElem) then
+        begin
+          if SubElem.GetAttribute('COLOR') <> '' then
+          begin
+            FieldProperties.TypeType := ttComment;
+            FieldProperties.TypeColour := Hex2Dec(SubElem.GetAttribute('COLOR'));
+          end else
+          if SubElem.GetAttribute('FIELD') <> '' then
+          begin
+            FieldProperties.TypeType := ttField;
+            FieldProperties.TypeField := FieldByName(UTF8Encode(SubElem.GetAttribute('COLOR')));
+          end;
+        end;
+      end;
 
       AddField(TmpField);
       ElemNode := TDOMElement(ElemNode.NextSibling);
@@ -1868,8 +1972,11 @@ begin
       if Assigned(ValueLabelSet) then
         TmpStr := TmpStr +
           Ins(3) + '<VALUELABEL>' + ValueLabelSet.Name + '</VALUELABEL>' + LineEnding;
+      if DefaultValue <> '' then
+        TmpStr := TmpStr +
+          Ins(3) + '<DEFAULTVALUE>' + DefaultValue + '</DEFAULTVALUE>' + LineEnding;
 
-      if Assigned(FieldProperties) then
+      if HasFieldProperties then
       With FieldProperties Do
       begin
         if Confirm then
@@ -1895,9 +2002,18 @@ begin
             TmpStr := TmpStr + Ranges[i];
           TmpStr := TmpStr + '</RANGE>' + LineEnding;
         end;
+        if TopOfScreen >= 0 then
+          TmpStr := TmpStr +
+            Ins(3) + '<TOPOFSCREEN>' + IntToStr(TopOfScreen) + '</TOPOFSCREEN>' + LineEnding;
+        Case TypeType of
+          ttComment: TmpStr := TmpStr +
+            Ins(3) + '<TYPECOMMENT COLOR="' + IntToHex(TypeColour, 6) + '"/>' + LineEnding;
+          ttField: TmpStr := TmpStr +
+            Ins(3) + '<TYPECOMMENT FIELD="' + TypeField.FieldName + '"/>' + LineEnding;
+        end;
+        // TODO : Keys!
+        //      if DataFile.IndexFile.IndexExists();
       End;
-      // TODO : Keys!
-      //      if DataFile.IndexFile.IndexExists();
 
       // End tag:
       TmpStr := TmpStr + Ins(2) + '</FIELD>' + LineEnding;
@@ -2129,15 +2245,15 @@ begin
     if not (eoIgnoreChecks in FOptions) then
     begin
       if Assigned(Stream) then FreeAndNil(Stream);
-      CheckFile.FileName := ChangeFileExt(FileName, '.chk');
-      Stream := TFileStream.Create(CheckFile.FileName, fmCreate);
+      FileProperties.FileName := ChangeFileExt(FileName, '.chk');
+      Stream := TFileStream.Create(FileProperties.FileName, fmCreate);
       ChkIO := TCheckFileIO.Create();
       result := ChkIO.WriteCheckToStream(Stream, Self);
       if Stream.Size = 0 then
       begin
         FreeAndNil(Stream);
-        DeleteFile(CheckFile.FileName);
-        CheckFile.FileName := '';
+        DeleteFile(FileProperties.FileName);
+        FileProperties.FileName := '';
       end;
     end;
   finally
@@ -2266,7 +2382,7 @@ begin
 
   // Clone the check file!
   FreeAndNil(Result.FCheckFile);
-  Result.FCheckFile := CheckFile.Clone;
+  Result.FCheckFile := FileProperties.Clone;
 
   // Clone Index:
   FreeAndNil(Result.FIndexFile);

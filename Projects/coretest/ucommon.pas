@@ -200,13 +200,13 @@ begin
     ELSE tmpStr:=tmpStr+IntToStr(epd.Size);
     res.Append(tmpStr);
     tmpStr:=FitLength('Checks applied: ',23);
-    IF (epd.CheckFile.HasCheckFile) and (not epd.CheckFile.ErrorInFile) THEN
+    IF (epd.FileProperties.HasCheckFile) and (not epd.FileProperties.ErrorInFile) THEN
       tmpStr := tmpStr + format('Yes (Last revision %s)',
-                [FormatDateTime('d. mmm yyyy t', FileDateToDateTime(FileAge(epd.CheckFile.FileName)))])
+                [FormatDateTime('d. mmm yyyy t', FileDateToDateTime(FileAge(epd.FileProperties.FileName)))])
     ELSE
       tmpStr := tmpStr + 'No';
     res.Append(tmpStr);
-    IF epd.CheckFile.ErrorInFile THEN res.Append(DupeString(' ',23)+'Warning: A checkfile exists but it contains errors.');
+    IF epd.FileProperties.ErrorInFile THEN res.Append(DupeString(' ',23)+'Warning: A checkfile exists but it contains errors.');
     res.Append('');
 
     {Check if value labels are used}
@@ -275,7 +275,7 @@ NUM Name       Variable label        Type            Width  Checks              
               END;
 
             {Put Checks in array} 
-            IF (epd.CheckFile.HasCheckFile) AND (NOT epd.CheckFile.ErrorInFile)
+            IF (epd.FileProperties.HasCheckFile) AND (NOT epd.FileProperties.ErrorInFile)
                and (Assigned(Epd[nN].FieldProperties)) THEN
               BEGIN
                 nN2:=1;

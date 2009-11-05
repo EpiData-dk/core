@@ -222,7 +222,7 @@ begin
   try
     FParser := TCheckParser.Create();
     FParser.LoadLines(FCheckLines);
-    TmpCF := FDf.CheckFile;
+    TmpCF := FDf.FileProperties;
 
     result := true;
     REPEAT    //Read top-level check commands
@@ -298,7 +298,7 @@ var
 BEGIN
   FCheckLines.Clear;
   FCheckLines.BeginUpdate;
-  LocalCheckFile := FDf.CheckFile;
+  LocalCheckFile := FDf.FileProperties;
   FIndentLvl := 0;
 
   try
@@ -397,7 +397,9 @@ BEGIN
 
     {Write field blocks}
     FOR i := 0 TO FDf.NumFields - 1 do
-      if Assigned(FDf[i].FieldProperties) then
+    with FDf[i] do
+      if (HasFieldProperties) or (Assigned(ValueLabelSet)) or
+         (DefaultValue <> '')  then
         FieldBlockToStrings(FDf[i]);
   finally
     FCheckLines.EndUpdate;
@@ -431,7 +433,7 @@ begin
       if (fn[1] = '"') and (fn[Length(fn)] = '"') then
         fn := Copy(fn, 2, Length(fn)-2);
 
-      fn := ExtractFilePath(FDF.CheckFile.FileName) + fn;
+      fn := ExtractFilePath(FDF.FileProperties.FileName) + fn;
       if not FileExists(fn) then
       begin
         ReportError(Format(Lang(22870, 'Includefile %s not found'), [fn]));
@@ -518,8 +520,6 @@ BEGIN
   Res := True;
   
   IF CurField.FieldType = ftQuestion THEN exit;
-  If not Assigned(CurField.FieldProperties) then
-    CurField.FieldProperties := TEpiFieldProperties.Create();
 
   LocalCheck := CurField.FieldProperties;
 
@@ -534,11 +534,10 @@ BEGIN
     ELSE IF CurCommand='NOENTER'     THEN LocalCheck.EntryType := entNone
     ELSE IF CurCommand='TOPOFSCREEN' THEN
     BEGIN
-      LocalCheck.TopOfScreen := True;
-      LocalCheck.TopOfScreenLines := 0;
+      LocalCheck.TopOfScreen := 0;
       CurCommand := FParser.GetToken(nwSameLine);
       IF (CurCommand<>'') AND (IsInteger(CurCommand)) THEN
-        LocalCheck.TopOfScreenLines := StrToInt(CurCommand);
+        LocalCheck.TopOfScreen := StrToInt(CurCommand);
     END
     ELSE IF CurCommand='REPEAT' THEN
       LocalCheck.DoRepeat := True
@@ -821,13 +820,6 @@ var
   ValueField, TextField: TEpiField;
   i: Integer;
 
-  function MakeCheckField(CurField: TEpiField): TEpiFieldProperties;
-  begin
-    if not Assigned(CurField.FieldProperties) then
-      CurField.FieldProperties := TEpiFieldProperties.Create;
-    result := CurField.FieldProperties;
-  end;
-
 BEGIN
   {Four kinds of COMMENT LEGAL possible:
   1. COMMENT LEGAL
@@ -862,7 +854,7 @@ BEGIN
   BEGIN
     // 1. scenario: COMMENT LEGAL...END Structure
     IF CurCommand = 'SHOW' THEN
-      MakeCheckField(CurField).ShowValueLabel := True;
+      CurField.FieldProperties.ShowValueLabel := True;
 
     LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
     LocalValueLabel.LabelScope := vlsLocal;
@@ -969,7 +961,7 @@ BEGIN
 
     TmpStr := FParser.GetUpperToken(nwSameLine);
     IF TmpStr = 'SHOW' THEN
-       MakeCheckField(CurField).ShowValueLabel := True;
+       CurField.FieldProperties.ShowValueLabel := True;
 
     // Check is labels are compatible with current field
     // TODO : Compatability testing!!! (Eg. ftString and ftUpperAlfa could be compared!!!)
@@ -1013,7 +1005,7 @@ BEGIN
   //Comment Legal datafilename structure found
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF CurCommand = 'SHOW' THEN
-    MakeCheckField(CurField).ShowValueLabel := True;
+    CurField.FieldProperties.ShowValueLabel := True;
     
   TRY
     ComLegDf := TEpiDataFile.Create(0);
@@ -1088,7 +1080,8 @@ function TCheckFileIO.RetrieveType(CurField: TEpiField): Boolean;
 VAR
   CurCommand: string;
   LocalCheck: TEpiFieldProperties;
-  i: integer;
+  GlobalProperties: TEpiDataFileProperties;
+  i, fc, color: integer;
 BEGIN
   {Handles TYPE COMMENT, TYPE COMMENT fieldname, TYPE STATUSBAR}
   Result := true;
@@ -1104,10 +1097,13 @@ BEGIN
   IF AnsiUpperCase(CurCommand) = 'STATUSBAR' THEN
   BEGIN
     // Syntax: TYPE STATUSBAR "<text>" [color]
-    LocalCheck.TypeType := ttStatusBar;
+    GlobalProperties := CurField.DataFile.FileProperties;
+    GlobalProperties.HasTypeStatusBar := true;
+    GlobalProperties.TypeStatusBarField := CurField;
+
     CurCommand := FParser.GetToken(nwSameLine);
-    LocalCheck.TypeText := CurCommand;
-    LocalCheck.TypeColour := 0;
+    GlobalProperties.TypeStatusBarText  := CurCommand;
+    GlobalProperties.TypeStatusBarColor := ChkBaseColor;
     CurCommand := FParser.GetToken(nwSameLine);
     IF CurCommand <> '' THEN
     BEGIN
@@ -1126,7 +1122,7 @@ BEGIN
                TYPE COMMENT colour
                TYPE COMMENT fieldname
                TYPE COMMENT ALLFIELDS}
-    LocalCheck.TypeColour := 0;
+    LocalCheck.TypeColour := ChkBaseColor;
     LocalCheck.TypeType := ttComment;
 
     {Next word can be a fieldname, a colour or ALLFIELDS}
@@ -1134,16 +1130,24 @@ BEGIN
     CurCommand := FParser.GetToken(nwSameLine);
     IF AnsiUpperCase(CurCommand) = 'ALLFIELDS' THEN
     BEGIN
-      LocalCheck.TypeType := ttAllFields;
-      LocalCheck.TypeText := '';
+      Color := ChkBaseColor;
       CurCommand := FParser.GetToken(nwSameLine);
       IF CurCommand <> '' THEN
       BEGIN
         CurCommand := AnsiUpperCase(CurCommand);
         FOR i := 0 TO High(ChkColorNames) DO
           IF CurCommand = ChkColorNames[i] THEN
-            LocalCheck.TypeColour := i;
+            Color := i;
       END;
+
+      fc := FDf.NumDataFields;
+      for i := 0 to Fc -1 do
+      with FDf.DataFields[i] do
+      begin
+        if not Assigned(ValueLabelSet) then continue;
+        FieldProperties.TypeType   := ttComment;
+        FieldProperties.TypeColour := color;
+      end;
       Exit;
     END;
 
@@ -1151,7 +1155,7 @@ BEGIN
     if FDf.FieldExists(CurCommand) then
     BEGIN
       LocalCheck.TypeType := ttField;
-      LocalCheck.TypeText := CurCommand;
+      LocalCheck.TypeField := FDf.FieldByName(CurCommand);
       Exit;
     END;
 
@@ -1159,7 +1163,6 @@ BEGIN
     IF CurCommand <> '' THEN
     BEGIN
       CurCommand := AnsiUpperCase(CurCommand);
-      LocalCheck.TypeType := ttColour;
       FOR i := 0 TO High(ChkColorNames) DO
         IF CurCommand = ChkColorNames[i] THEN
           LocalCheck.TypeColour := i;
@@ -1314,7 +1317,7 @@ begin
   {Check if tmpStr contains a fieldname or variablename}
   TmpStr := trim(Copy(CurCommand, 1, n-1));
   if (not FDf.FieldExists(TmpStr)) and
-     (not FDf.CheckFile.DefineExists(TmpStr)) THEN
+     (not FDf.FileProperties.DefineExists(TmpStr)) THEN
   BEGIN
     Result := ReportError(Lang(22758, 'Unknown field- or variablename to the left of the equal-sign'));
     Exit;
@@ -1335,7 +1338,7 @@ VAR
   TmpChkCmd: TChkCommand;
   TmpField: TEpiField;
   TmpList, ValList: TStrings;
-  TmpStr: string;
+  TmpStr, TmpStr2: string;
   Dummy: Boolean;
   N, I, J: Integer;
   TmpColor: Byte;
@@ -1619,7 +1622,7 @@ BEGIN
           // Now check is DEF-name is allready used
           // Ignore the DEF if DEF is global and a global def-field with the
           // same Fieldtype exists
-          TmpField := FDf.CheckFile.DefineByName(TChkDefine(TmpChkCmd).FieldName);
+          TmpField := FDf.FileProperties.DefineByName(TChkDefine(TmpChkCmd).FieldName);
           IF Assigned(TmpField) THEN
           BEGIN
             //a DEF-var with same name exists
@@ -1646,13 +1649,11 @@ BEGIN
           TmpField.FieldLength := TChkDefine(TmpChkCmd).Length;
           TmpField.FieldDecimals := TChkDefine(TmpChkCmd).NumDecimals;
           TmpField.IsMissing[1] := true;
-          TmpField.FieldProperties  := TEpiFieldProperties.Create();
           TmpField.FieldProperties.FieldScope := TChkDefine(TmpChkCmd).Scope;
-
-          Fdf.CheckFile.AddDefine(TmpField);
+          Fdf.FileProperties.AddDefine(TmpField);
         END;  //case cmdDefine.
-      cmdAutosave: FDf.CheckFile.Autosave := True;
-      cmdConfirm:  FDf.CheckFile.Confirm  := True;
+      cmdAutosave: FDf.FileProperties.Autosave := True;
+      cmdConfirm:  FDf.FileProperties.Confirm  := True;
       cmdDefaultAll:
         BEGIN
           //Syntax DEFAULTVALUE ALL|ALLSTRINGS|ALLSTRING|ALLNUMERIC x    eller
@@ -1669,18 +1670,18 @@ BEGIN
               Exit;
             END;
 
-            FDf.CheckFile.GlobalDefaultVal := CurCommand;
             for n:=0 TO FDf.NumFields - 1 DO
             BEGIN
               IF (FDf[n].FieldType in [ftInteger, ftString, ftUpperAlfa, ftFloat, ftCrypt]) THEN
               BEGIN
-                IF (TmpStr = 'ALL') THEN FDf[n].FieldProperties.HasGlobalDefaultVal:=true
+                IF (TmpStr = 'ALL') THEN
+                  FDf[n].DefaultValue := CurCommand
                 ELSE
                   IF (FDf[n].Fieldtype in [ftString, ftUpperAlfa, ftCrypt]) AND
-                     ((TmpStr='ALLSTRINGS') OR (TmpStr='ALLSTRING')) THEN FDf[n].FieldProperties.HasGlobalDefaultVal:=true
+                     ((TmpStr='ALLSTRINGS') OR (TmpStr='ALLSTRING')) THEN FDf[n].DefaultValue := CurCommand
                 ELSE
                   IF (FDf[n].Fieldtype in [ftInteger, ftFloat]) AND
-                     (TmpStr='ALLNUMERIC') THEN FDf[n].FieldProperties.HasGlobalDefaultVal:=true;
+                     (TmpStr='ALLNUMERIC') THEN FDf[n].DefaultValue := CurCommand;
               END;   //if relevant Fieldtype
             END;  //for
             Exit;
@@ -1697,8 +1698,7 @@ BEGIN
               Result := ReportError('DEFAULTVALUE must be followed by ALL or at least one fieldname and a default value');
               Exit;
             end;
-            TmpStr := TmpList[TmpList.Count - 1];
-            FDf.CheckFile.GlobalDefaultVal := TmpStr;
+            TmpStr2 := TmpList[TmpList.Count - 1];
 
             FOR n := 0 TO TmpList.Count-2 DO
             BEGIN
@@ -1717,14 +1717,8 @@ BEGIN
                 END;
 
                 FOR i := FDf.FieldIndex(TmpStr) TO FDf.FieldIndex(CurCommand) DO
-                BEGIN
-                  TmpField := FDf[i];
-                  IF (TmpField.FieldType <> ftQuestion) THEN
-                  BEGIN
-  //                  TmpField.DefaultValue := FDf.CheckFile.GlobalDefaultVal;
-                    TmpField.FieldProperties.HasGlobalDefaultVal := true;
-                  END;  //if not question field
-                END;  //for
+                  IF (FDf[i].FieldType <> ftQuestion) THEN
+                    FDf[i].DefaultValue := TmpStr2;
                 //if interval
               END ELSE BEGIN
                 //element is a single fieldname
@@ -1735,10 +1729,7 @@ BEGIN
                   Exit;
                 END;
                 IF (TmpField.Fieldtype <> ftQuestion) THEN
-                BEGIN
-                  TmpField.FieldProperties.HasGlobalDefaultVal := True;
-  //                TmpField.DefaultValue := TmpStr;
-                END;  //if not question field
+                  TmpField.DefaultValue := TmpStr2;
               END;  //if single fieldname
             END;  //for
           FINALLY
@@ -1762,7 +1753,7 @@ BEGIN
                   Result := ReportError(Lang(22876, 'Only numbers can be used as MISSINGVALUES ALL'));
                   Exit;
                 end;
-                FDf.CheckFile.GlobalMissingVal[i] := CurCommand;
+                FDf.FileProperties.GlobalMissingVal[i] := CurCommand;
               END;
             end;
             Exit;
@@ -1854,7 +1845,7 @@ BEGIN
             FreeAndNil(TmpList);
           END;  //try..finally
         END;  //case cmdMissingAll
-      cmdIgnoreMissing: FDf.CheckFile.MissingAction := maIgnoreMissing;
+      cmdIgnoreMissing: FDf.FileProperties.MissingAction := maIgnoreMissing;
       cmdTypeString:
         BEGIN
           {  Syntax: TYPE "text" [colour]  }
@@ -1869,7 +1860,7 @@ BEGIN
               Exit;
             END;
 
-            FDf.CheckFile.GlobalTypeCom := True;
+            FDf.FileProperties.GlobalTypeCom := True;
             TChkTypeStr(TmpChkCmd).Text := 'いtypecommentlegalallfieldsい';
             TChkTypeStr(TmpChkCmd).VarNumber := -1;
             CurCommand := FParser.GetUpperToken(nwSameLine);
@@ -1877,7 +1868,7 @@ BEGIN
             BEGIN
               FOR i := 0 TO High(ChkColorNames) DO
                 IF CurCommand = ChkColorNames[i] THEN
-                  FDf.CheckFile.GlobalTypeComColor := i;
+                  FDf.FileProperties.GlobalTypeComColor := i;
             END;
             Exit;
           END;
@@ -1996,7 +1987,7 @@ BEGIN
         END;
       cmdShowLastRecord:
         BEGIN
-          Fdf.CheckFile.ShowLastRecord := True;
+          Fdf.FileProperties.ShowLastRecord := True;
         END;
       cmdExecute:
         BEGIN
@@ -2121,8 +2112,8 @@ BEGIN
               0: TChkColor(TmpChkCmd).TxtColor := TmpColor;
               1: TChkColor(TmpChkCmd).BgColor  := TmpColor;
               2: Begin
-                  FDf.CheckFile.FieldHighlightAct := True;
-                  FDf.CheckFile.FieldHighlightCol := TmpColor;
+                  FDf.FileProperties.FieldHighlightAct := True;
+                  FDf.FileProperties.FieldHighlightCol := TmpColor;
                  End;
             end;
           end;
@@ -2132,7 +2123,7 @@ BEGIN
           {syntax: BACKUP "destination-library" [ZIP filename [date]]
            or      BACKUP "destination-library" [ENCRYPT filname password [date]] }
           TmpChkCmd := TChkBackup.Create;
-          IF (CmdList <> FDf.CheckFile.AfterFileCmds) THEN
+          IF (CmdList <> FDf.FileProperties.AfterFileCmds) THEN
           BEGIN
             Result := ReportError(Lang(22864, 'BACKUP command only legal in AFTER FILE blocks'));
             Exit;
@@ -2155,8 +2146,8 @@ BEGIN
 
           IF (CurCommand <> 'ZIP') AND (CurCommand <> 'ENCRYPT') THEN
           BEGIN
-            FDf.CheckFile.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
-            FDf.CheckFile.BackupList.Append(FDf.Filename);
+            FDf.FileProperties.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
+            FDf.FileProperties.BackupList.Append(FDf.Filename);
             Exit;
           END;
 
@@ -2170,7 +2161,7 @@ BEGIN
               Exit;
             END;
 
-            FDf.CheckFile.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
+            FDf.FileProperties.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
             TChkBackup(TmpChkCmd).Zip    := True;
             TChkBackup(TmpChkCmd).Filename := ExtractFilename(CurCommand);
             CurCommand                     := FParser.GetUpperToken(nwSameLine);   //get date parameter
@@ -2195,7 +2186,7 @@ BEGIN
             Exit;
           END;
 
-          FDf.CheckFile.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
+          FDf.FileProperties.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
           TChkBackup(TmpChkCmd).Password := CurCommand;
           CurCommand                     := FParser.GetUpperToken(nwSameLine);  //get date parameter
           IF CurCommand = 'DATE' THEN TChkBackup(TmpChkCmd).AddDate := True;
@@ -2416,7 +2407,7 @@ BEGIN
   REPEAT
     CurCommand := FParser.GetUpperToken(nwAny);
     IF (CurCommand = 'CHECK') OR (CurCommand = 'REPORT') THEN
-      FDf.CheckFile.AssertList.Append(FParser.GetWholeLine);
+      FDf.FileProperties.AssertList.Append(FParser.GetWholeLine);
   UNTIL (CurCommand = 'END') OR (FParser.EndOfLines);
 END;
 
@@ -2425,8 +2416,8 @@ VAR
   s: string;
 BEGIN
   s := FParser.GetWholeLine;
-  IF Assigned(FDf.CheckFile.TopComments) THEN
-    FDf.CheckFile.TopComments.Append(s);
+  IF Assigned(FDf.FileProperties.TopComments) THEN
+    FDf.FileProperties.TopComments.Append(s);
   Result := true;
 END;  //Procedure AddTopComment
 
@@ -2583,9 +2574,9 @@ BEGIN
           IF TChkTypeStr(cmd).Text = 'いtypecommentlegalallfieldsい' THEN
           BEGIN
             S := 'TYPE COMMENT ALLFIELDS';
-            IF FDf.CheckFile.GlobalTypeComColor <> 0 THEN
+            IF FDf.FileProperties.GlobalTypeComColor <> 0 THEN
               For i := 0 to High(ChkColorNames) do
-                if i = FDf.CheckFile.GlobalTypeComColor then
+                if i = FDf.FileProperties.GlobalTypeComColor then
                   S := S + ' ' + ChkColorNames[i];
           END ELSE BEGIN
             S := 'TYPE "' + TChkTypeStr(cmd).Text + '"';
@@ -2813,11 +2804,11 @@ BEGIN
       END;      }
 
       {Write TopOfScreen}
-      IF TopOfScreen THEN
+      IF TopOfScreen >= 0 THEN
       BEGIN
         S := 'TOPOFSCREEN';
-        IF TopOfScreenLines > 0 THEN
-          S := S + ' ' + IntToStr(TopOfScreenLines);
+        IF TopOfScreen > 0 THEN
+          S := S + ' ' + IntToStr(TopOfScreen);
         AddToCheckLines(S);
       END;
 
@@ -2922,34 +2913,34 @@ BEGIN
 
       Case TypeType of
         {Write TYPE STATUSBAR}
-        ttStatusBar:
+{        ttStatusBar:
           begin
             S := 'TYPE STATUSBAR';
             IF TypeText <> '' THEN S := S + ' "' + TypeText + '"';
             IF TypeColour <> 0 THEN
               S := S + ' ' + ChkColorNames[TypeColour];
             AddToCheckLines(S);
-          END;
+          END;          }
         {Write TYPE COMMENT}
         ttComment:
-          AddToCheckLines('TYPE COMMENT');
+          Begin
+            S := '';
+            if TypeColour <> ChkBaseColor then
+              S := ' ' + ChkColorNames[TypeColour];
+            AddToCheckLines('TYPE COMMENT' + S);
+          End;
         {Write TYPE COMMENT ALLFIELDS}
-        ttAllFields:
+{        ttAllFields:
           Begin
             S := 'TYPE COMMENT ALLFIELDS';
             IF TypeColour <> 0 THEN
               S := S + ' ' + ChkColorNames[TypeColour];
             AddToCheckLines(S);
-          END;
+          END;           }
         {Write TYPE COMMENT <fieldname>}
         ttField:
-          AddToCheckLines('TYPE COMMENT ' + TypeText);
+          AddToCheckLines('TYPE COMMENT ' + TypeField.FieldName);
         {Write TYPE COMMENT <colour>}
-        ttColour:
-          Begin
-            S := ChkColorNames[TypeColour];
-            AddToCheckLines('TYPE COMMENT ' + S);
-          End;
       end;
 
       {Write Before Entry commands}
@@ -3005,14 +2996,14 @@ begin
   result := false;
   try
     if not Assigned(DF) then exit;
-    if not Assigned(Df.CheckFile) then exit;
+    if not Assigned(Df.FileProperties) then exit;
 
     // It's not a fault if no .CHK file exists.
     result := true;
     if not FileExists(aFileName) then exit;
 
-    DF.CheckFile.HasCheckFile := true;
-    DF.CheckFile.FileName     := aFileName;
+    DF.FileProperties.HasCheckFile := true;
+    DF.FileProperties.FileName     := aFileName;
 
     try
       FCheckLines.LoadFromFile(aFileName);
@@ -3026,7 +3017,7 @@ begin
 
     FDf := Df;
     result := InternalRead();
-    FDf.CheckFile.ErrorInFile := not result;
+    FDf.FileProperties.ErrorInFile := not result;
   finally
     EpiLogger.DecIndent;
   end;

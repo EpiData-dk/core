@@ -31,11 +31,13 @@ CONST
   MaxIntegerLength      = 5;
   MaxDefinedMissingValues = 2;
 
+  ChkBaseColor = $FFFFFF;  // White
+
   ChkColorNames:   ARRAY[0..17] OF string =
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',
                      'GREEN', 'LIME', 'LTGRAY', 'MAROON', 'NAVY', 'OLIVE',
                      'PURPLE', 'RED', 'SILVER', 'TEAL', 'WHITE', 'YELLOW');
-{  ChkColorTypes:  ARRAY[0..17] OF TColor =
+{  ChkColorTypes:  ARRAY[0..17] OF Integer =
                     (clAqua, clBlack, clBlue, clDkGray, clFuchsia, clGray,
                      clGreen, clLime, clLtGray, clMaroon, clNavy, clOlive,
                      clPurple, clRed, clSilver, clTeal, clWhite, clYellow); }

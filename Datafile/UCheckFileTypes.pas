@@ -23,7 +23,7 @@ type
                  //NB! Insert new codes BEFORE cmdLet
                  cmdLet, cmdComment, cmdLeaveField);
 
-  TTypeType  = (ttNone, ttComment, ttStatusBar, ttColour, ttField, ttAllFields);
+  TTypeType  = (ttNone, ttComment, ttField);
 
   TMissingAction = (maIgnoreMissing, maRejectMissing);
 

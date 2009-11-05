@@ -872,7 +872,6 @@ begin
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
       IF StrBuf <> '' THEN
       BEGIN
-        TmpField.FieldProperties := TEpiFieldProperties.Create();
         TmpField.ValueLabelSet := TValueLabelSet.Create;
         TmpField.ValueLabelSet.Name := StrBuf;
         TmpField.ValueLabelSet.LabelScope := vlsGlobal;
@@ -1988,9 +1987,9 @@ begin
               IF TmpStr = CheckField.MissingValues[1] THEN TmpStr := '.b';
               IF TmpStr = CheckField.MissingValues[2] THEN TmpStr := '.c';
             end;
-            IF TmpStr = CheckFile.GlobalMissingVal[0] THEN TmpStr := '.a';
-            IF TmpStr = CheckFile.GlobalMissingVal[1] THEN TmpStr := '.b';
-            IF TmpStr = CheckFile.GlobalMissingVal[2] THEN TmpStr := '.c';
+            IF TmpStr = FileProperties.GlobalMissingVal[0] THEN TmpStr := '.a';
+            IF TmpStr = FileProperties.GlobalMissingVal[1] THEN TmpStr := '.b';
+            IF TmpStr = FileProperties.GlobalMissingVal[2] THEN TmpStr := '.c';
           END;     }
 
           Case TypeList[CurField] of

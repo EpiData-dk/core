@@ -51,6 +51,8 @@ type
   function GetEncodedLength(decodedlength: byte): byte;
   function GetDecodedLength(encodedlength: byte): byte;
 
+
+
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
 implementation
