@@ -15,8 +15,6 @@ type
   TEpiFields = class;
   TEpiDataFile = class;
 
-  { TEpiCheckField }
-
   { TEpiFieldProperties }
 
   TEpiFieldProperties = class(TObject)
@@ -28,21 +26,17 @@ type
     FBeforeCmds:       TChkCommands;
     FAfterCmds:        TChkCommands;
     FRanges:           TStrings;
-{    FAutoFields:       string; // Flyttes til DataFile
-    FAutoList:         Boolean;}
     FJumps:            TStrings;
     FJumpResetValue:   String;
     FShowValueLabel:   Boolean;
     FTypeField:        TEpiField;
     FTypeType:         TTypeType;
-    FTypeColor:        Integer;
+    FTypeColour:        Integer;
     FHasGlobalDefaultVal: Boolean;
     FFieldScope:       TFieldScope;
     FFieldComments:    TStrings;
-//    function           GetAutoSearch: Boolean;
-    procedure          InternalReset;
   protected
-
+    procedure          InternalReset; virtual;
   public
     Constructor Create;
     Destructor  Destroy; override;
@@ -55,52 +49,38 @@ type
     property    BeforeCmds:   TChkCommands read FBeforeCmds;
     property    AfterCmds:    TChkCommands read FAfterCmds;
     property    Ranges:       TStrings read FRanges;
-//    property    AutoFields:   string read FAutoFields write FAutoFields;
-//    property    AutoSearch:   Boolean read GetAutoSearch;
-//    property    AutoList:     boolean read FAutoList write FAutoList;
     property    Jumps:        TStrings read FJumps write FJumps;
     property    JumpResetValue: string read FJumpResetValue write FJumpResetValue;
     property    ShowValueLabel: Boolean read FShowValueLabel write FShowValueLabel;
     property    TypeType:     TTypeType read FTypeType write FTypeType;
     property    TypeField:    TEpiField read FTypeField write FTypeField;
-    property    TypeColour:   Integer read FTypeColor write FTypeColor;
-    //property    HasGlobalDefaultVal: Boolean read FHasGlobalDefaultVal write FHasGlobalDefaultVal;
+    property    TypeColour:   Integer read FTypeColour write FTypeColour;
     property    FieldScope:   TFieldScope read FFieldScope write FFieldScope;
     property    FieldComments: TStrings read FFieldComments;
   end;
 
-  { TEpiCheckFile }
+  { TEpiDataFileProperties }
 
   TEpiDataFileProperties = class(TObject)
   private
-    FTopComments:          TStringList;       //Commentlines in the top of the checkfile
-    FBeforeFileCmds:       TChkCommands;      //Commands to be run when file is opened
-    FAfterFileCmds:        TChkCommands;      //Commands to be run when file is closed
-    FBeforeRecordCmds:     TChkCommands;      //Commands to be run before current record changes
-    FAfterRecordCmds:      TChkCommands;      //Commands to be run when changing current record
-    FRecodeCmds:           TChkCommands;      //Commands to be run during Recode Datafile
-    FAssertList:           TStringList;       //used only to store Asserts for checkfilemode
-    FConfirm:              Boolean;           //If true then a field is not left automatically when filled out
-    FAutoSave:             Boolean;           //IF true then user is not asked "Save record to disk?"
-    FGlobalMissingValues:  TMissingValues;
-    FGlobalDefaultValue:   string;            //Global default value defined by DEFAULTVALUE ALL X or DEFAULTVALUE field-field, field X
-    FGlobalTypeCom:        Boolean;           //Show that all fields has a Type Comment Fieldname
-    FGlobalTypeComColor:   Byte;
-    FMissingAction:        TMissingAction;
-    FShowLastRecord:       Boolean;           //if set, then last record is shown when datafile is opened; if false (default) then
-    FFieldHighlightAct:    Boolean;           //highlight active field
-    FFieldHighlightCol:    Byte;              //color of highlight of active field
-    FBackupList:           TStringList;       //List of files to backup
-    FErrorInFile:          Boolean;
-    FHasCheckFile:         Boolean;
-    FFileName:             string;
-    FDefines:              TEpiFields;
-
-    // New Type adaptation
-    FHasTypeStatusBar:     Boolean;
-    FTypeStatusBarText:    String;
-    FTypeStatusBarField:   TEpiField;
-    FTypeStatusBarColor:   Integer;
+    FAutoFields:           TEpiFields;        // List of fields included in autosearch function.
+    FAutoList:             Boolean;           // - flag indication is result found in above search is displayed as list (to the users).
+    FBeforeFileCmds:       TChkCommands;      // Commands to be run when file is opened
+    FAfterFileCmds:        TChkCommands;      // Commands to be run when file is closed
+    FBeforeRecordCmds:     TChkCommands;      // Commands to be run before current record changes
+    FAfterRecordCmds:      TChkCommands;      // Commands to be run when changing current record
+    FRecodeCmds:           TChkCommands;      // Commands to be run during Recode Datafile
+    FGlobalMissingValues:  TMissingValues;    // Globally defined missing values. TODO : Must be removed and incorporated into new valuelabel/missingvalue structure.
+    FMissingAction:        TMissingAction;    // Flag to indicate if calculations involving missing evals to missing or 0 (zero).
+    FShowLastRecord:       Boolean;           // if set, then last record is shown when datafile is opened; if false (default) then
+    FErrorInFile:          Boolean;           // Flag indicating an error occured during read of .CHK file.
+    FHasCheckFile:         Boolean;           // Flag indicating .REC file has a .CHK file.
+    FFileName:             string;            // Filename of the benamed .CHK file (should be same as .REC both with .CHK extension.)
+    FDefines:              TEpiFields;        // List of .CHK file defines fields.
+    FHasTypeStatusBar:     Boolean;           // Flag indication if TYPE STATUSBAR is used (both .REC and XML file)
+    FTypeStatusBarText:    String;            // - text to display if above flag is true
+    FTypeStatusBarField:   TEpiField;         // - reference to field to display in statusbar.
+    FTypeStatusBarColor:   Integer;           // - color of text displayed in statusbar.
     function    GetGlobMissing(Index: Integer): string;
     procedure   SetGlobMissing(Index: Integer; const Value: string);
     procedure   InternalReset;
@@ -114,33 +94,23 @@ type
     function    DefineExists(Const aName: string): Boolean;
     function    DefineByName(Const aName: string): TEpiField;
     procedure   AddDefine(Field: TEpiField);
-    Property    BeforeFileCmds:   TChkCommands read FBeforeFileCmds write FBeforeFileCmds;        //Commands to be run when file is opened
-    Property    AfterFileCmds:    TChkCommands read FAfterFileCmds write FAfterFileCmds;          //Commands to be run when file is closed
-    Property    BeforeRecordCmds: TChkCommands read FBeforeRecordCmds write FBeforeRecordCmds;    //Commands to be run before current record changes
-    Property    AfterRecordCmds:  TChkCommands read FAfterRecordCmds write FAfterRecordCmds;      //Commands to be run when changing current record
-    Property    RecodeCmds:       TChkCommands read FRecodeCmds write FRecodeCmds;                //Commands to be run during Recode Datafile
-    Property    Confirm:          Boolean read FConfirm write FConfirm;
-    Property    Autosave:         Boolean read FAutoSave write FAutoSave;
-//    Property    GlobalDefaultVal: string read FGlobalDefaultValue write FGlobalDefaultValue;
+    Property    BeforeFileCmds:     TChkCommands read FBeforeFileCmds write FBeforeFileCmds;        //Commands to be run when file is opened
+    Property    AfterFileCmds:      TChkCommands read FAfterFileCmds write FAfterFileCmds;          //Commands to be run when file is closed
+    Property    BeforeRecordCmds:   TChkCommands read FBeforeRecordCmds write FBeforeRecordCmds;    //Commands to be run before current record changes
+    Property    AfterRecordCmds:    TChkCommands read FAfterRecordCmds write FAfterRecordCmds;      //Commands to be run when changing current record
+    Property    RecodeCmds:         TChkCommands read FRecodeCmds write FRecodeCmds;                //Commands to be run during Recode Datafile
     Property    GlobalMissingVal[Index: Integer]: string read GetGlobMissing write SetGlobMissing;
-    Property    MissingAction:    TMissingAction read FMissingAction write FMissingAction;
-    Property    GlobalTypeCom:    Boolean read FGlobalTypeCom write FGlobalTypeCom;
-    Property    GlobalTypeComColor: Byte read FGlobalTypeComColor write FGlobalTypeComColor;
-    Property    ShowLastRecord:    Boolean read FShowLastRecord write FShowLastRecord;
-    Property    FieldHighlightAct: Boolean read FFieldHighlightAct write FFieldHighlightAct;
-    Property    FieldHighlightCol: Byte read FFieldHighlightCol write FFieldHighlightCol;
-    Property    BackupList:       TStringList read FBackupList;
-    Property    TopComments:      TStringList read FTopComments;
-    Property    AssertList:       TStringList read FAssertList;
-    Property    ErrorInFile:      Boolean read FErrorInFile write FErrorInFile;
-    Property    HasCheckFile:     Boolean read FHasCheckFile write FHasCheckFile;
-    Property    FileName:         string read FFileName write FFileName;
-
-    // New Type adaptation
-    property    HasTypeStatusBar: boolean read FHasTypeStatusBar write FHasTypeStatusBar;
-    property    TypeStatusBarText: string read FTypeStatusBarText write FTypeStatusBarText;
+    Property    MissingAction:      TMissingAction read FMissingAction write FMissingAction;
+    Property    ShowLastRecord:     Boolean read FShowLastRecord write FShowLastRecord;
+    Property    ErrorInFile:        Boolean read FErrorInFile write FErrorInFile;
+    Property    HasCheckFile:       Boolean read FHasCheckFile write FHasCheckFile;
+    Property    FileName:           string read FFileName write FFileName;
+    property    HasTypeStatusBar:   boolean read FHasTypeStatusBar write FHasTypeStatusBar;
+    property    TypeStatusBarText:  string read FTypeStatusBarText write FTypeStatusBarText;
     property    TypeStatusBarField: TEpiField read FTypeStatusBarField write FTypeStatusBarField;
     property    TypeStatusBarColor: Integer read FTypeStatusBarColor write FTypeStatusBarColor;
+    property    AutoFields:         TEpiFields read FAutoFields;
+    property    AutoList:           Boolean read FAutoList write FAutoList;
     end;
 
   { TEpiField }
@@ -157,7 +127,7 @@ type
     FFieldDecimals: Cardinal;
     FFieldX:       Cardinal;
     FFieldY:       Cardinal;
-    FFieldColor:   Cardinal;
+    FFieldColour:   Cardinal;
     FVariableLabel: string;
     FLabelX:       Cardinal;
     FLabelY:       Cardinal;
@@ -212,7 +182,7 @@ type
     property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
     property  FieldX:      Cardinal read FFieldX write FFieldX;
     property  FieldY:      Cardinal read FFieldY write FFieldY;
-    property  FieldColor:  Cardinal read FFieldColor write FFieldColor;
+    property  FieldColour:  Cardinal read FFieldColour write FFieldColour;
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
     property  LabelX:      Cardinal read FLabelX write FLabelX;
     property  LabelY:      Cardinal read FLabelY write FLabelY;
@@ -414,12 +384,11 @@ type
     FList:      TList;
     function    GetField(Index: Integer): TEpiField;
     function    GetCount: Cardinal;
-  protected
-    procedure   Add(aField: TEpiField);
-    procedure   Delete(aField: TEpiField);
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
     destructor  Destroy; override;
+    procedure   Add(aField: TEpiField);
+    procedure   Delete(aField: TEpiField);
     function    FieldByName(Const aFieldName: string): TEpiField;
     function    FieldExists(Const aFieldName: string): boolean;
     function    IndexOf(Const aFieldName: string): integer;
@@ -585,7 +554,7 @@ begin
   FJumpResetValue    := '';
   FShowValueLabel    := false;
   FTypeType          := ttNone;
-  FTypeColor         := 0;
+  FTypeColour         := 0;
   FTypeField         := nil;
   FHasGlobalDefaultVal := false;
   FieldScope         := scNone;
@@ -627,7 +596,7 @@ begin
   Dest.FJumpResetValue    := FJumpResetValue;
   Dest.FShowValueLabel    := FShowValueLabel;
   Dest.FTypeType          := FTypeType;
-  Dest.FTypeColor         := FTypeColor;
+  Dest.FTypeColour         := FTypeColour;
   Dest.FTypeField         := FTypeField;
   Dest.FHasGlobalDefaultVal := FHasGlobalDefaultVal;
   Dest.FFieldScope        := FFieldScope;
@@ -680,6 +649,8 @@ begin
   FTopComments    := TStringList.Create;
   FDefines        := TEpiFields.Create(nil);
   FDefines.Owned  := True;
+  FAutoFields     := TEpiFields.Create(nil);
+  FAutoFields.Owned := false;
 end;
 
 function TEpiDataFileProperties.Clone: TEpiDataFileProperties;
@@ -691,7 +662,6 @@ begin
   // Clone basic:
   Result.FConfirm            := FConfirm;
   Result.FAutoSave           := FAutoSave;
-  Result.FGlobalDefaultValue := FGlobalDefaultValue;
   Result.FGlobalTypeCom      := FGlobalTypeCom;
   Result.FGlobalTypeComColor := FGlobalTypeComColor;
   Result.FShowLastRecord     := FShowLastRecord;
@@ -728,6 +698,9 @@ begin
 
   for i := 0 to FDefines.Count - 1 do
     Result.FDefines.Add(FDefines[i].Clone());
+
+  for i := 0 to FAutoFields.Count - 1 do
+    Result.FAutoFields.Add(FAutoFields[i]);
 end;
 
 function TEpiDataFileProperties.DefineExists(const aName: string): Boolean;
@@ -767,10 +740,10 @@ begin
   if Assigned(FAssertList)       then FreeAndNil(FAssertList);
   if Assigned(FBackupList)       then FreeAndNil(FBackupList);
   if Assigned(FDefines)          then FreeAndNil(FDefines);
+  if Assigned(FAutoFields)       then FreeAndNil(FAutoFields);
 
   FConfirm             := false;
   FAutoSave            := false;
-  FGlobalDefaultValue  := '';
   FGlobalTypeCom       := false;
   FGlobalTypeComColor  := 0;
   FMissingAction       := maIgnoreMissing;
@@ -990,7 +963,7 @@ begin
   FFieldDecimals := 0;
   FFieldX        := 0;
   FFieldY        := 0;
-  FFieldColor    := ChkBaseColor;
+  FFieldColour    := ChkBaseColor;
 
   // Label props:
   FVariableLabel := '';
@@ -1393,6 +1366,7 @@ begin
     // **********************
     // <FIELDS> Section
     // **********************
+    List := nil;
     SectionNode := RootNode.FindNode('FIELDS');
     ElemNode := TDOMElement(SectionNode.FindNode('FIELD'));
     while Assigned(ElemNode) do
@@ -1418,9 +1392,9 @@ begin
           LabelY := StrToInt(SubElem.GetAttribute('Y'));
         end;
         // - Color
-        SubElem :=  TDOMElement(ElemNode.FindNode('COLOR'));
+        SubElem :=  TDOMElement(ElemNode.FindNode('COLOUR'));
         if Assigned(SubElem) then
-          FieldColor := Hex2Dec(SubElem.TextContent);
+          FieldColour := Hex2Dec(SubElem.TextContent);
         // - Valuelabel
         SubElem :=  TDOMElement(ElemNode.FindNode('VALUELABEL'));
         if Assigned(SubElem) then
@@ -1440,7 +1414,7 @@ begin
         if Assigned(SubElem) then
           FieldProperties.DoRepeat := true;
         // - Enter
-        SubElem :=  TDOMElement(ElemNode.FindNode('Enter'));
+        SubElem :=  TDOMElement(ElemNode.FindNode('ENTER'));
         if Assigned(SubElem) then
         begin
           if UTF8Encode(WideLowerCase(SubElem.GetAttribute('VAL'))) = 'true' then
@@ -1961,12 +1935,12 @@ begin
       TmpStr := TmpStr +
         Ins(3) + '<NAME>' + StringToXml(FieldName) + '</NAME>' + LineEnding +
         Ins(3) + '<LENGTH>' + IntToStr(FieldLength) + '</LENGTH>' + LineEnding +
-        Ins(3) + '<DECIMAL>' + IntToStr(FieldDecimals) + '</DECIMAL>' + LineEnding +
+        Ins(3) + '<DECIMALS>' + IntToStr(FieldDecimals) + '</DECIMALS>' + LineEnding +
 
       // Optional, but we choose to write out of courtesy.
         Ins(3) + '<LABEL X="' + IntToStr(LabelX) + '" Y="' + IntToStr(LabelY) + '">' +
           StringToXml(VariableLabel) + '</LABEL>' + LineEnding +
-        Ins(3) + '<COLOR>' + hexStr(FieldColor, 6) + '</COLOR>' + LineEnding;
+        Ins(3) + '<COLOUR>' + hexStr(FieldColour, 6) + '</COLOUR>' + LineEnding;
 
       // Optional:
       if Assigned(ValueLabelSet) then

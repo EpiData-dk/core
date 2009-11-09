@@ -302,13 +302,6 @@ BEGIN
   FIndentLvl := 0;
 
   try
-    {Top Comments}
-    IF Assigned(LocalCheckFile.TopComments) and (LocalCheckFile.TopComments.Count > 0) THEN
-    begin
-      AddStringsToCheckLines(LocalCheckFile.TopComments);
-      AddToCheckLines('');
-    END;
-
     {Write LabelBlock}
     if Assigned(FDf.ValueLabels) and (FDf.ValueLabels.Count > 0) then
     begin
@@ -330,15 +323,6 @@ BEGIN
         for i := 0 to 2 do
           FCheckLines.Delete(FCheckLines.Count-1);
     end;
-
-    {Write assertblock}
-    IF Assigned(LocalCheckFile.AssertList) and (LocalCheckFile.AssertList.Count > 0) THEN
-    BEGIN
-      AddToCheckLines('CONSISTENCYBLOCK');
-      AddStringsToCheckLines(LocalCheckFile.AssertList);
-      AddToCheckLines('END');
-      AddToCheckLines('');
-    END;
 
     {Write recodeblock}
     IF Assigned(LocalCheckFile.RecodeCmds) and (LocalCheckFile.RecodeCmds.Count > 0) THEN
@@ -703,38 +687,32 @@ END;
 
 function TCheckFileIO.RetrieveAutosearch(CurField: TEpiField): boolean;
 VAR
-  LocalCheck: TEpiFieldProperties;
   CurCommand: string;
+  TmpField: TEpiField;
 BEGIN
   result := true;
-  LocalCheck := CurField.FieldProperties;
 
-  // TODO : .CHK Autosearch to .RECXML Autosearch.
-
-{  LocalCheck.AutoFields := '';
   CurCommand := FParser.GetUpperToken(nwSameLine);
   IF (CurCommand = 'LIST') OR (CurCommand = 'SOUNDEX') THEN
   BEGIN
-    IF CurCommand = 'LIST' THEN LocalCheck.AutoList := True;
+    IF CurCommand = 'LIST' THEN FDf.FileProperties.AutoList := True;
     CurCommand := FParser.GetUpperToken(nwSameLine);
     IF (CurCommand = 'LIST') OR (CurCommand = 'SOUNDEX') THEN
       BEGIN
-        IF CurCommand = 'LIST' THEN LocalCheck.AutoList := True;
+        IF CurCommand = 'LIST' THEN FDf.FileProperties.AutoList := True;
         CurCommand := FParser.GetUpperToken(nwSameLine);
       END;
   END;
 
   REPEAT
-    if not FDf.FieldExists(CurCommand) then
+    TmpField := FDf.FieldByName(CurCommand);
+    if not Assigned(TmpField) then
       result := ReportError(Lang(22708, 'Unknown fieldname'))
     ELSE
-      LocalCheck.AutoFields := LocalCheck.AutoFields + CurCommand + ',';
+      FDf.FileProperties.AutoFields.Add(TmpField);
 
     CurCommand := FParser.GetToken(nwSameLine);
   UNTIL (CurCommand='') or (not Result);
-
-  IF LocalCheck.AutoFields[Length(LocalCheck.AutoFields)] = ',' THEN
-    LocalCheck.AutoFields := Copy(LocalCheck.AutoFields, 1, Length(LocalCheck.AutoFields) - 1);       }
 end;
 
 function TCheckFileIO.RetrieveAutoJump(CurField: TEpiField): boolean;
@@ -1652,8 +1630,12 @@ BEGIN
           TmpField.FieldProperties.FieldScope := TChkDefine(TmpChkCmd).Scope;
           Fdf.FileProperties.AddDefine(TmpField);
         END;  //case cmdDefine.
-      cmdAutosave: FDf.FileProperties.Autosave := True;
-      cmdConfirm:  FDf.FileProperties.Confirm  := True;
+      cmdAutosave: ; // Do nothing... not supported anymore.
+      cmdConfirm:
+        begin
+          for i := 0 to FDf.NumDataFields - 1 do
+            FDf.DataFields[i].FieldProperties.Confirm := true;
+        end;
       cmdDefaultAll:
         BEGIN
           //Syntax DEFAULTVALUE ALL|ALLSTRINGS|ALLSTRING|ALLNUMERIC x    eller
@@ -1849,7 +1831,6 @@ BEGIN
       cmdTypeString:
         BEGIN
           {  Syntax: TYPE "text" [colour]  }
-          TmpChkCmd := TChkTypeStr.Create();
           CurCommand := FParser.GetToken(nwSameLine);
           IF AnsiUpperCase(CurCommand)='COMMENT' THEN
           BEGIN
@@ -1860,16 +1841,20 @@ BEGIN
               Exit;
             END;
 
-            FDf.FileProperties.GlobalTypeCom := True;
-            TChkTypeStr(TmpChkCmd).Text := '¤¤typecommentlegalallfields¤¤';
-            TChkTypeStr(TmpChkCmd).VarNumber := -1;
             CurCommand := FParser.GetUpperToken(nwSameLine);
+            J := ChkBaseColor;
             IF CurCommand<>'' THEN
             BEGIN
               FOR i := 0 TO High(ChkColorNames) DO
                 IF CurCommand = ChkColorNames[i] THEN
-                  FDf.FileProperties.GlobalTypeComColor := i;
+                  J := i;
             END;
+
+            For i := 0 to FDf.NumDataFields - 1 do
+            begin
+              FDf.DataFields[i].FieldProperties.TypeType := ttComment;
+              FDf.DataFields[i].FieldProperties.TypeColour := J;
+            end;
             Exit;
           END;
 
@@ -2286,7 +2271,7 @@ BEGIN
         TmpChkCmd := TChkOther.Create(TmpCmd);
     END;  //Case
   finally
-    if Result then
+    if (Result) and Assigned(TmpChkCmd) then
       CmdList.AddCommand(TmpChkCmd)
     else
       if Assigned(TmpChkCmd) then FreeAndNil(TmpChkCmd);
@@ -2789,19 +2774,20 @@ BEGIN
       END;  
 
       {TODO: Write autosearch}
-{      IF AutoSearch THEN
+      IF (FDf.FileProperties.AutoFields.FieldExists(aField.FieldName)) and
+         (FDf.FileProperties.AutoFields.IndexOf(aField.FieldName) = FDf.FileProperties.AutoFields.Count - 1)
+      THEN
       BEGIN
         S := 'AUTOSEARCH ';
-        IF AutoList THEN S := S + ' LIST ';
+        IF FDf.FileProperties.AutoList THEN S := S + ' LIST ';
         TRY
-          SplitString(AutoFields, TmpList, [',']);
-          FOR I := 0 TO TmpList.Count - 1 DO
-            S := S + TmpList[i] + ' ';
+          FOR I := 0 TO FDf.FileProperties.AutoFields.Count - 1 DO
+            S := S + FDf.FileProperties.AutoFields[i].FieldName + ' ';
         FINALLY
           FreeAndNil(TmpList);
         END;
         AddToCheckLines(S);
-      END;      }
+      END;
 
       {Write TopOfScreen}
       IF TopOfScreen >= 0 THEN
