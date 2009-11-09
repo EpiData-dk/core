@@ -1081,7 +1081,7 @@ BEGIN
 
     CurCommand := FParser.GetToken(nwSameLine);
     GlobalProperties.TypeStatusBarText  := CurCommand;
-    GlobalProperties.TypeStatusBarColor := ChkBaseColor;
+    GlobalProperties.TypeStatusBarColor := EpiColourBase;
     CurCommand := FParser.GetToken(nwSameLine);
     IF CurCommand <> '' THEN
     BEGIN
@@ -1100,7 +1100,7 @@ BEGIN
                TYPE COMMENT colour
                TYPE COMMENT fieldname
                TYPE COMMENT ALLFIELDS}
-    LocalCheck.TypeColour := ChkBaseColor;
+    LocalCheck.TypeColour := EpiColourBase;
     LocalCheck.TypeType := ttComment;
 
     {Next word can be a fieldname, a colour or ALLFIELDS}
@@ -1108,7 +1108,7 @@ BEGIN
     CurCommand := FParser.GetToken(nwSameLine);
     IF AnsiUpperCase(CurCommand) = 'ALLFIELDS' THEN
     BEGIN
-      Color := ChkBaseColor;
+      Color := EpiColourBase;
       CurCommand := FParser.GetToken(nwSameLine);
       IF CurCommand <> '' THEN
       BEGIN
@@ -1842,7 +1842,7 @@ BEGIN
             END;
 
             CurCommand := FParser.GetUpperToken(nwSameLine);
-            J := ChkBaseColor;
+            J := EpiColourBase;
             IF CurCommand<>'' THEN
             BEGIN
               FOR i := 0 TO High(ChkColorNames) DO
@@ -2017,46 +2017,37 @@ BEGIN
           {Syntax: COLOR QUESTION colors
                    COLOR DATA colors
                    COLOR BACKGROUND color
-                   COLOR fieldname datacolors questioncolors
 
                    Colors can be Epi Info color codes
                    or EpiData color words}
-          TmpChkCmd := TChkColor.Create;
           CurCommand := FParser.GetUpperToken(nwSameLine);
-          TChkColor(TmpChkCmd).TxtColor := 0;
-          TChkColor(TmpChkCmd).BgColor := 0;
-          IF CurCommand='QUESTION' THEN TChkColor(TmpChkCmd).ColorCmd:=1
-          ELSE IF CurCommand='DATA' THEN TChkColor(TmpChkCmd).ColorCmd:=2
-          ELSE IF CurCommand='BACKGROUND' THEN TChkColor(TmpChkCmd).ColorCmd:=3
+          IF CurCommand='QUESTION' THEN TmpColor:=1
+          ELSE IF CurCommand='DATA' THEN TmpColor:=2
+          ELSE IF CurCommand='BACKGROUND' THEN TmpColor:=3
           ELSE
             BEGIN
-              //could be COLOR fieldname
-              //will be added later
               Result := ReportError(Lang(22858, 'Unknown COLOR command'));
               Exit;
             END;
 
-          IF TChkColor(TmpChkCmd).ColorCmd=3 THEN
+          IF TmpColor=3 THEN
           BEGIN
             //command is BACKGROUND
             CurCommand := FParser.GetUpperToken(nwSameLine);
             IF IsInteger(CurCommand) THEN
             BEGIN
-              TChkColor(TmpChkCmd).IsEpiInfoNo := True;
               n := StrToInt(CurCommand);
               IF (n<0) OR (n>7) THEN
               BEGIN
                 Result := ReportError(Lang(22860, 'Illegal COLOR number'));   //22860=Illegal COLOR number
                 Exit;
               END;
-              TChkColor(TmpChkCmd).BgColor := n;
+              FDf.BackgroundColour := ChkColourEpiInfoTypes[n];
               Exit;
             END;
-
-            TChkColor(TmpChkCmd).IsEpiInfoNo := False;
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                TChkColor(TmpChkCmd).BgColor := i;
+                FDf.BackgroundColour := ChkColorTypes[i];
           END;
 
           //read rest of line
@@ -2075,7 +2066,6 @@ BEGIN
 
           if IsInteger(TmpList[0]) then
           begin
-            TChkColor(TmpChkCmd).IsEpiInfoNo := True;
             n := StrToInt(TmpList[0]);
             IF n > 255 THEN
             BEGIN
@@ -2083,8 +2073,8 @@ BEGIN
               Exit;
             END;
             n := n AND $7F;  //clear first bit which indicates flashing text in epi info
-            TChkColor(TmpChkCmd).BgColor := (n AND $F0) SHR 4;
-            TChkColor(TmpChkCmd).TxtColor := (n AND $0F);
+            TChkColor(TmpChkCmd).BgColor := ChkColourEpiInfoTypes[(n AND $F0) SHR 4];
+            TChkColor(TmpChkCmd).TxtColor := ChkColourEpiInfoTypes[(n AND $0F)];
             Exit;
           end;
 
@@ -2911,7 +2901,7 @@ BEGIN
         ttComment:
           Begin
             S := '';
-            if TypeColour <> ChkBaseColor then
+            if TypeColour <> EpiColourBase then
               S := ' ' + ChkColorNames[TypeColour];
             AddToCheckLines('TYPE COMMENT' + S);
           End;

@@ -94,11 +94,11 @@ type
     function    DefineExists(Const aName: string): Boolean;
     function    DefineByName(Const aName: string): TEpiField;
     procedure   AddDefine(Field: TEpiField);
-    Property    BeforeFileCmds:     TChkCommands read FBeforeFileCmds write FBeforeFileCmds;        //Commands to be run when file is opened
-    Property    AfterFileCmds:      TChkCommands read FAfterFileCmds write FAfterFileCmds;          //Commands to be run when file is closed
-    Property    BeforeRecordCmds:   TChkCommands read FBeforeRecordCmds write FBeforeRecordCmds;    //Commands to be run before current record changes
-    Property    AfterRecordCmds:    TChkCommands read FAfterRecordCmds write FAfterRecordCmds;      //Commands to be run when changing current record
-    Property    RecodeCmds:         TChkCommands read FRecodeCmds write FRecodeCmds;                //Commands to be run during Recode Datafile
+    Property    BeforeFileCmds:     TChkCommands read FBeforeFileCmds write FBeforeFileCmds;
+    Property    AfterFileCmds:      TChkCommands read FAfterFileCmds write FAfterFileCmds;
+    Property    BeforeRecordCmds:   TChkCommands read FBeforeRecordCmds write FBeforeRecordCmds;
+    Property    AfterRecordCmds:    TChkCommands read FAfterRecordCmds write FAfterRecordCmds;
+    Property    RecodeCmds:         TChkCommands read FRecodeCmds write FRecodeCmds;
     Property    GlobalMissingVal[Index: Integer]: string read GetGlobMissing write SetGlobMissing;
     Property    MissingAction:      TMissingAction read FMissingAction write FMissingAction;
     Property    ShowLastRecord:     Boolean read FShowLastRecord write FShowLastRecord;
@@ -111,7 +111,7 @@ type
     property    TypeStatusBarColor: Integer read FTypeStatusBarColor write FTypeStatusBarColor;
     property    AutoFields:         TEpiFields read FAutoFields;
     property    AutoList:           Boolean read FAutoList write FAutoList;
-    end;
+  end;
 
   { TEpiField }
 
@@ -127,10 +127,14 @@ type
     FFieldDecimals: Cardinal;
     FFieldX:       Cardinal;
     FFieldY:       Cardinal;
-    FFieldColour:   Cardinal;
+    FFieldColour:  Integer;
+    FFieldColourHl: Integer;
+    FFieldColourBg: Integer;
     FVariableLabel: string;
     FLabelX:       Cardinal;
     FLabelY:       Cardinal;
+    FLabelColourTxt: Integer;
+    FLabelColourBg: Integer;
     FDefaultValue: string;
     FFieldProperties: TEpiFieldProperties;
     FValueLabelSet: TValueLabelSet;
@@ -182,10 +186,14 @@ type
     property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
     property  FieldX:      Cardinal read FFieldX write FFieldX;
     property  FieldY:      Cardinal read FFieldY write FFieldY;
-    property  FieldColour:  Cardinal read FFieldColour write FFieldColour;
+    property  FieldColour:  Integer read FFieldColour write FFieldColour;
+    property  FieldColourHl: Integer read FFieldColourHl write FFieldColourHl;
+    property  FieldColourBg: Integer read FFieldColourBg write FFieldColourBg;
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
     property  LabelX:      Cardinal read FLabelX write FLabelX;
     property  LabelY:      Cardinal read FLabelY write FLabelY;
+    property  LabelColourTxt: Integer read FLabelColourTxt write FLabelColourTxt;
+    property  LabelColourBg: Integer read FLabelColourBg write FLabelColourBg;
     property  DefaultValue: string read FDefaultValue write FDefaultValue;
     property  HasFieldProperties: boolean read GetHasFieldProperties;
     property  FieldProperties: TEpiFieldProperties read GetFieldProperties;
@@ -449,6 +457,7 @@ type
     FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
     FRecordStatus: TEpiField;
+    FBackgroundColour:     Integer;         // Background color up entry form.
     function   GetDeleted(Index: integer): boolean;
     function   GetField(Index: integer): TEpiField;
     function   GetIndexFile: TEpiIndexFile;
@@ -509,6 +518,7 @@ type
     Property   ErrorText:   string read FErrorText write FErrorText;
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
     Property   DatafileType: TDataFileType read FDatafileType write FDatafileType;
+    property   BackgroundColour: Integer read FBackgroundColour write FBackgroundColour;
   end;
 
 
@@ -754,7 +764,7 @@ begin
   FHasCheckFile        := false;
   FFileName            := '';
   FHasTypeStatusBar    := false;
-  FTypeStatusBarColor  := ChkBaseColor;
+  FTypeStatusBarColor  := EpiColourBase;
   FTypeStatusBarText   := '';
   FTypeStatusBarField  := nil;
 end;
@@ -963,7 +973,8 @@ begin
   FFieldDecimals := 0;
   FFieldX        := 0;
   FFieldY        := 0;
-  FFieldColour    := ChkBaseColor;
+  FFieldColour   := EpiColourBase;
+
 
   // Label props:
   FVariableLabel := '';

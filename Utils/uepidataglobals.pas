@@ -31,16 +31,36 @@ CONST
   MaxIntegerLength      = 5;
   MaxDefinedMissingValues = 2;
 
-  ChkBaseColor = $FFFFFF;  // White
+  // Colours - codes and names.
+  // - base colour (white, use if no other good alternative exists).
+  EpiColourBase      = $FFFFFF;    // White
+  // - Field colours.
+  EpiColourFieldBg   = $FFFFFF;    // White
+  EpiColourFieldTxt  = $000000;    // Black
+  EpiColourFieldHl   = $00FFFF;    // Aqua/Cyan
+  // - Label colours.
+  EpiColourLabelTxt  = $000000;    // Black
+  EpiColourLabelBg   = $FFFFFF;    // White
+  // - Form colours.
+  EpiColourBackGrnd  = $FFFFFF;    // White
 
   ChkColorNames:   ARRAY[0..17] OF string =
                     ('AQUA', 'BLACK', 'BLUE', 'DKGRAY', 'FUCHSIA', 'GRAY',
                      'GREEN', 'LIME', 'LTGRAY', 'MAROON', 'NAVY', 'OLIVE',
                      'PURPLE', 'RED', 'SILVER', 'TEAL', 'WHITE', 'YELLOW');
-{  ChkColorTypes:  ARRAY[0..17] OF Integer =
-                    (clAqua, clBlack, clBlue, clDkGray, clFuchsia, clGray,
-                     clGreen, clLime, clLtGray, clMaroon, clNavy, clOlive,
-                     clPurple, clRed, clSilver, clTeal, clWhite, clYellow); }
+
+  ChkColorTypes:  ARRAY[0..17] OF Integer = (
+                 // clAqua,   clBlack, clBlue,   clDkGray, clFuchsia, clGray,
+                    $00FFFF,  $000000, $0000FF,  $A9A9A9,  $FF00FF,   $808080,
+                 // clGreen,  clLime,  clLtGray, clMaroon, clNavy,    clOlive,
+                    $008000,  $00FF00, $D3D3D3,  $800000,  $000080,   $808000,
+                 // clPurple, clRed,   clSilver, clTeal,   clWhite,   clYellow
+                    $800080,  $FF0000, $C0C0C0,  $008080,  $FFFFFF,   $FFFF00);
+
+  ChkColourEpiInfoTypes: Array[0..7] of Integer =
+                    // For now just all white...
+                    ($FFFFFF, $FFFFFF, $FFFFFF, $FFFFFF,
+                     $FFFFFF, $FFFFFF, $FFFFFF, $FFFFFF);
                      
   FieldTypeNames: Array[0..20] of string =
                    ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
