@@ -1321,6 +1321,8 @@ VAR
   N, I, J: Integer;
   TmpColor: Byte;
   TmpValueLabel: TValueLabelSet;
+  BgColour: LongInt;
+  TxtColour: LongInt;
 BEGIN
   {Legal commands are
     IF <boolean expr.> THEN  <cmds> [ELSE <cmds>] ENDIF
@@ -1870,19 +1872,17 @@ BEGIN
             Exit;
           END;
 
-  //        tmpCmdRec.tsVarNumber:=df.FocusedField;
-  //        IF Length(CurCommand)>40 THEN tmpCmdRec.TypeText:=Copy(CurCommand,1,40)
-          {ELSE }
+          TmpChkCmd := TChkTypeStr.Create;
           TChkTypeStr(TmpChkCmd).Text := CurCommand;
 
           //Get a colour - if present
-          CurCommand := FParser.GetToken(nwSameLine);  //  NextWord(nwSameLine);
-          TChkTypeStr(TmpChkCmd).Color := 0;
+          CurCommand := FParser.GetToken(nwSameLine);
+          TChkTypeStr(TmpChkCmd).Color := EpiColourLabelTxt;
           IF CurCommand<>'' THEN
           BEGIN
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
-                TChkTypeStr(TmpChkCmd).Color := i;
+                TChkTypeStr(TmpChkCmd).Color := ChkColorTypes[i];
 
             {Read rest of line - compatibility with Epi Info}
             REPEAT
@@ -2023,14 +2023,7 @@ BEGIN
           CurCommand := FParser.GetUpperToken(nwSameLine);
           IF CurCommand='QUESTION' THEN TmpColor:=1
           ELSE IF CurCommand='DATA' THEN TmpColor:=2
-          ELSE IF CurCommand='BACKGROUND' THEN TmpColor:=3
-          ELSE
-            BEGIN
-              Result := ReportError(Lang(22858, 'Unknown COLOR command'));
-              Exit;
-            END;
-
-          IF TmpColor=3 THEN
+          ELSE IF CurCommand='BACKGROUND' THEN
           BEGIN
             //command is BACKGROUND
             CurCommand := FParser.GetUpperToken(nwSameLine);
@@ -2048,6 +2041,10 @@ BEGIN
             FOR i := 0 TO High(ChkColorNames) DO
               IF CurCommand = ChkColorNames[i] THEN
                 FDf.BackgroundColour := ChkColorTypes[i];
+          END ELSE
+          BEGIN
+            Result := ReportError(Lang(22858, 'Unknown COLOR command'));
+            Exit;
           END;
 
           //read rest of line
@@ -2073,29 +2070,37 @@ BEGIN
               Exit;
             END;
             n := n AND $7F;  //clear first bit which indicates flashing text in epi info
-            TChkColor(TmpChkCmd).BgColor := ChkColourEpiInfoTypes[(n AND $F0) SHR 4];
-            TChkColor(TmpChkCmd).TxtColor := ChkColourEpiInfoTypes[(n AND $0F)];
-            Exit;
+            BgColour := ChkColourEpiInfoTypes[(n AND $F0) SHR 4];
+            TxtColour := ChkColourEpiInfoTypes[(n AND $0F)];
+          end else begin
+            if TmpList.Count >= 1 then
+              FOR i := 0 TO High(ChkColorNames) DO
+                IF TmpList[0] = ChkColorNames[i] THEN
+                  TxtColour := ChkColorTypes[i];
+            if TmpList.Count >= 2 then
+              FOR i := 0 TO High(ChkColorNames) DO
+                IF TmpList[1] = ChkColorNames[i] THEN
+                  BgColour := ChkColorTypes[i];
+            if TmpList.Count = 3 then
+              FOR i := 0 TO High(ChkColorNames) DO
+                IF TmpList[2] = ChkColorNames[i] THEN
+                  N := ChkColorTypes[i];
           end;
-
-          For n := 0 to TmpList.Count do
-          begin
-            FOR i := 0 TO High(ChkColorNames) DO
-              IF CurCommand = ChkColorNames[i] THEN
-                TmpColor := i;
-            case n of
-              0: TChkColor(TmpChkCmd).TxtColor := TmpColor;
-              1: TChkColor(TmpChkCmd).BgColor  := TmpColor;
-              2: Begin
-                  FDf.FileProperties.FieldHighlightAct := True;
-                  FDf.FileProperties.FieldHighlightCol := TmpColor;
-                 End;
-            end;
+          case TmpColor of
+            1: Begin
+                 CurField.LabelColourTxt := TxtColour;
+                 CurField.LabelColourBg  := BgColour;
+               End;
+            2: Begin
+                 CurField.FieldColourTxt    := TxtColour;
+                 CurField.FieldColourBg  := BgColour;
+                 CurField.FieldColourHl  := N;
+               End;
           end;
         END;
       cmdBackup:
         BEGIN
-          {syntax: BACKUP "destination-library" [ZIP filename [date]]
+{          {syntax: BACKUP "destination-library" [ZIP filename [date]]
            or      BACKUP "destination-library" [ENCRYPT filname password [date]] }
           TmpChkCmd := TChkBackup.Create;
           IF (CmdList <> FDf.FileProperties.AfterFileCmds) THEN
@@ -2164,7 +2169,7 @@ BEGIN
           FDf.FileProperties.BackupList.Append(TChkBackup(TmpChkCmd).DestLib);
           TChkBackup(TmpChkCmd).Password := CurCommand;
           CurCommand                     := FParser.GetUpperToken(nwSameLine);  //get date parameter
-          IF CurCommand = 'DATE' THEN TChkBackup(TmpChkCmd).AddDate := True;
+          IF CurCommand = 'DATE' THEN TChkBackup(TmpChkCmd).AddDate := True; }
         END;  //end case cmdBackup
       cmdRelate:
         BEGIN
@@ -2382,7 +2387,7 @@ BEGIN
   REPEAT
     CurCommand := FParser.GetUpperToken(nwAny);
     IF (CurCommand = 'CHECK') OR (CurCommand = 'REPORT') THEN
-      FDf.FileProperties.AssertList.Append(FParser.GetWholeLine);
+      FParser.GetWholeLine;
   UNTIL (CurCommand = 'END') OR (FParser.EndOfLines);
 END;
 
@@ -2391,8 +2396,8 @@ VAR
   s: string;
 BEGIN
   s := FParser.GetWholeLine;
-  IF Assigned(FDf.FileProperties.TopComments) THEN
-    FDf.FileProperties.TopComments.Append(s);
+//  IF Assigned(FDf.FileProperties.TopComments) THEN
+//    FDf.FileProperties.TopComments.Append(s);
   Result := true;
 END;  //Procedure AddTopComment
 
@@ -2546,20 +2551,11 @@ BEGIN
         AddToCheckLines('QUIT');
       cmdTypeString:
         BEGIN
-          IF TChkTypeStr(cmd).Text = '¤¤typecommentlegalallfields¤¤' THEN
-          BEGIN
-            S := 'TYPE COMMENT ALLFIELDS';
-            IF FDf.FileProperties.GlobalTypeComColor <> 0 THEN
-              For i := 0 to High(ChkColorNames) do
-                if i = FDf.FileProperties.GlobalTypeComColor then
-                  S := S + ' ' + ChkColorNames[i];
-          END ELSE BEGIN
-            S := 'TYPE "' + TChkTypeStr(cmd).Text + '"';
-            IF TChkTypeStr(cmd).Color <> 2 THEN
-              For i := 0 to High(ChkColorNames) do
-                if i = TChkTypeStr(cmd).Color then
-                  S := S + ' ' + ChkColorNames[i];
-          END;
+          S := 'TYPE "' + TChkTypeStr(cmd).Text + '"';
+          IF TChkTypeStr(cmd).Color <> ChkColorTypes[2] THEN
+            For i := 0 to High(ChkColorTypes) do
+              if ChkColorTypes[i] = TChkTypeStr(cmd).Color then
+                S := S + ' ' + ChkColorNames[i];
           AddToCheckLines(S);
         END;
       cmdBackup:

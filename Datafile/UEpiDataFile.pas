@@ -127,7 +127,7 @@ type
     FFieldDecimals: Cardinal;
     FFieldX:       Cardinal;
     FFieldY:       Cardinal;
-    FFieldColour:  Integer;
+    FFieldColourTxt:  Integer;
     FFieldColourHl: Integer;
     FFieldColourBg: Integer;
     FVariableLabel: string;
@@ -186,7 +186,7 @@ type
     property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
     property  FieldX:      Cardinal read FFieldX write FFieldX;
     property  FieldY:      Cardinal read FFieldY write FFieldY;
-    property  FieldColour:  Integer read FFieldColour write FFieldColour;
+    property  FieldColourTxt:  Integer read FFieldColourTxt write FFieldColourTxt;
     property  FieldColourHl: Integer read FFieldColourHl write FFieldColourHl;
     property  FieldColourBg: Integer read FFieldColourBg write FFieldColourBg;
     property  VariableLabel: string read FVariableLabel write FVariableLabel;
@@ -655,8 +655,6 @@ procedure TEpiDataFileProperties.Reset;
 begin
   InternalReset;
 
-  FBackupList     := TStringList.Create;
-  FTopComments    := TStringList.Create;
   FDefines        := TEpiFields.Create(nil);
   FDefines.Owned  := True;
   FAutoFields     := TEpiFields.Create(nil);
@@ -670,25 +668,8 @@ begin
   Result := TEpiDataFileProperties.Create;
 
   // Clone basic:
-  Result.FConfirm            := FConfirm;
-  Result.FAutoSave           := FAutoSave;
-  Result.FGlobalTypeCom      := FGlobalTypeCom;
-  Result.FGlobalTypeComColor := FGlobalTypeComColor;
   Result.FShowLastRecord     := FShowLastRecord;
-  Result.FFieldHighlightAct  := FFieldHighlightAct;
-  Result.FFieldHighlightCol  := FFieldHighlightCol;
   Result.FMissingAction      := FMissingAction;
-
-  // Clone stringlists
-  if Assigned(FTopComments) then
-    Result.FTopComments.Assign(FTopComments);
-  if Assigned(FAssertList) then
-  begin
-    Result.FAssertList := TStringList.Create;
-    Result.FAssertList.Assign(FAssertList);
-  end;
-  if Assigned(FBackupList) then
-    Result.FBackupList.Assign(FBackupList);
 
   // Command structures.
   if Assigned(FBeforeFileCmds) then
@@ -741,25 +722,16 @@ end;
 
 procedure TEpiDataFileProperties.InternalReset;
 begin
-  if Assigned(FTopComments)      then FreeAndNil(FTopComments);
   if Assigned(FBeforeFileCmds)   then FreeAndNil(FBeforeFileCmds);
   if Assigned(FAfterFileCmds)    then FreeAndNil(FAfterFileCmds);
   if Assigned(FBeforeRecordCmds) then FreeAndNil(FBeforeRecordCmds);
   if Assigned(FAfterRecordCmds)  then FreeAndNil(FAfterRecordCmds);
   if Assigned(FRecodeCmds)       then FreeAndNil(FRecodeCmds);
-  if Assigned(FAssertList)       then FreeAndNil(FAssertList);
-  if Assigned(FBackupList)       then FreeAndNil(FBackupList);
   if Assigned(FDefines)          then FreeAndNil(FDefines);
   if Assigned(FAutoFields)       then FreeAndNil(FAutoFields);
 
-  FConfirm             := false;
-  FAutoSave            := false;
-  FGlobalTypeCom       := false;
-  FGlobalTypeComColor  := 0;
   FMissingAction       := maIgnoreMissing;
   FShowLastRecord      := false;
-  FFieldHighlightAct   := false;
-  FFieldHighlightCol   := 0;
   FErrorInFile         := false;
   FHasCheckFile        := false;
   FFileName            := '';
@@ -973,7 +945,7 @@ begin
   FFieldDecimals := 0;
   FFieldX        := 0;
   FFieldY        := 0;
-  FFieldColour   := EpiColourBase;
+  FFieldColourTxt   := EpiColourBase;
 
 
   // Label props:
@@ -1405,7 +1377,7 @@ begin
         // - Color
         SubElem :=  TDOMElement(ElemNode.FindNode('COLOUR'));
         if Assigned(SubElem) then
-          FieldColour := Hex2Dec(SubElem.TextContent);
+          FieldColourTxt := Hex2Dec(SubElem.TextContent);
         // - Valuelabel
         SubElem :=  TDOMElement(ElemNode.FindNode('VALUELABEL'));
         if Assigned(SubElem) then
@@ -1951,7 +1923,7 @@ begin
       // Optional, but we choose to write out of courtesy.
         Ins(3) + '<LABEL X="' + IntToStr(LabelX) + '" Y="' + IntToStr(LabelY) + '">' +
           StringToXml(VariableLabel) + '</LABEL>' + LineEnding +
-        Ins(3) + '<COLOUR>' + hexStr(FieldColour, 6) + '</COLOUR>' + LineEnding;
+        Ins(3) + '<COLOUR>' + hexStr(FieldColourTxt, 6) + '</COLOUR>' + LineEnding;
 
       // Optional:
       if Assigned(ValueLabelSet) then

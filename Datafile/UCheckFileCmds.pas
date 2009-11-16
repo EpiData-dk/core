@@ -107,7 +107,7 @@ type
   private
     FVarNumber: Integer;
     FText:      string;
-    FColor:     byte;
+    FColor:     Integer;
   protected
     function    GetCommandType(): TChkCmdType; override;
     procedure Clone(var Dst: TChkCommand); override;
@@ -116,7 +116,7 @@ type
     destructor Destroy; override;
     Property   VarNumber: Integer read FVarNumber write FVarNumber;
     Property   Text: string read FText write FText;
-    Property   Color: byte read FColor write FColor;
+    Property   Color: Integer read FColor write FColor;
   end;
 
   { TChkRelate }

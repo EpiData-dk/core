@@ -1563,7 +1563,7 @@ begin
               begin
                 FieldLength := Max(FieldLength, Length(TmpStr));
                 if (StrCountChars(Tmpstr, CommaChars) > 0) then
-                  FieldDecimals := Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr);
+                  FieldDecimals := Max(FieldDecimals, Length(Tmpstr) - Pos(BoolToStr(Pos('.', Tmpstr) > 0, '.', ','), TmpStr));
               end;
             ftString:
               FieldLength := Max(FieldLength, Length(TmpStr));
@@ -1578,7 +1578,7 @@ begin
     FieldNameInRow1 := false;
     for i := ColStart to ColEnd do
     begin
-      ACell := WorkSheet.FindCell(i, j);
+      ACell := WorkSheet.FindCell(RowStart, i);
       if not Assigned(ACell) then continue;
 
       case ACell^.ContentType of
