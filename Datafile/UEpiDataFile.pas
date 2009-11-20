@@ -10,7 +10,6 @@ uses
   UCheckFileTypes, UDataFileTypes, UEpiDataGlobals;
 
 type
-
   TEpiField = class;
   TEpiFields = class;
   TEpiDataFile = class;
@@ -1919,6 +1918,7 @@ begin
         Ins(3) + '<NAME>' + StringToXml(FieldName) + '</NAME>' + LineEnding +
         Ins(3) + '<LENGTH>' + IntToStr(FieldLength) + '</LENGTH>' + LineEnding +
         Ins(3) + '<DECIMALS>' + IntToStr(FieldDecimals) + '</DECIMALS>' + LineEnding +
+        Ins(3) + '<POS X="' + IntToStr(FieldX) + '" Y="' + IntToStr(FieldY) + '"/>' + LineEnding +
 
       // Optional, but we choose to write out of courtesy.
         Ins(3) + '<LABEL X="' + IntToStr(LabelX) + '" Y="' + IntToStr(LabelY) + '">' +
