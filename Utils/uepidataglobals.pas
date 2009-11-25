@@ -31,6 +31,15 @@ CONST
   MaxIntegerLength      = 5;
   MaxDefinedMissingValues = 2;
 
+  EpiOpenFileFilter = 'Supported data files|*.recxml;*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
+                    + 'EpiData XML Data file (*.recxml)|*.recxml|'
+                    + 'EpiData data file (*.rec)|*.rec|'
+                    + 'Text file (*.txt,*.csv)|*.txt;*.csv|'
+                    + 'Open Document Spreadsheet (*.ods)|*.ods|'
+                    + 'Stata file (*.dta)|*.dta|'
+                    + 'dBase file (*.dbf)|*.dbf|'
+                    + 'All files (*.*)|*.*';
+
   // Colours - codes and names.
   // - base colour (white, use if no other good alternative exists).
   EpiColourBase      = $FFFFFF;    // White

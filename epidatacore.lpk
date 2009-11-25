@@ -37,7 +37,7 @@
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
     <Version Minor="2" Release="1" Build="99"/>
-    <Files Count="19">
+    <Files Count="21">
       <Item1>
         <Filename Value="Datafile/UCheckFileCmds.pas"/>
         <UnitName Value="UCheckFileCmds"/>
@@ -114,6 +114,14 @@
         <Filename Value="Utils/uepidataglobals.pas"/>
         <UnitName Value="UEpiDataGlobals"/>
       </Item19>
+      <Item20>
+        <Filename Value="Encryption/DCPcrypt.Inc"/>
+        <Type Value="Text"/>
+      </Item20>
+      <Item21>
+        <Filename Value="Encryption/Rijndael.Inc"/>
+        <Type Value="Text"/>
+      </Item21>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
