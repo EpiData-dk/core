@@ -52,6 +52,12 @@ type
 
   TByteOrder            = (boLittleEndian, boBigEndian);
 
+  TEpiFieldChangeEventType =
+    (fceName, fceLength, fceDecimals, fceFX, fceFY, fceFColTxt, fceFColHl, fceFColBg,
+     fceVarLabel, fceVX, fceVY, fceVColTxt, fceVColBg);
+  TEpiFieldChangeEvent  = procedure(Sender: TObject; EventType: TEpiFieldChangeEventType; OldValue: EpiVariant) of object;
+  TEpiFieldChangeDataEvent = procedure(Sender: TObject; Index: Integer; OldValue: EpiVariant) of object;
+
 implementation
 
 end.

@@ -97,33 +97,34 @@ begin
 
   try
     ImpExp := TEpiImportExport.Create;
-    Ext := ExtractFileExt(Fn);
-
     result := true;
-    Case Ext of
-      '.recxml' :
-        begin
-          if not Assigned(Df) then
-            Df := TEpiDataFile.Create;
-          DF.Open(Fn);
-        end;
-      '.rec':
-        begin
-          if not Assigned(Df) then
-            Df := TEpiDataFile.Create;
-          DF.Open(Fn);
-        end;
-      '.dta':
-        ImpExp.ImportStata(Fn, Df);
-      '.ods':
-        ImpExp.ImportSpreadSheet(Fn, Df);
-      '.csv', '.txt':
-        ImpExp.ImportTXT(Fn, Df, nil);
-      '.dbf':
-        ImpExp.ImportDBase(Fn, Df);
+
+    if CompareFileExt(Fn, '.recxml') = 0 then
+    begin
+      if not Assigned(Df) then
+        Df := TEpiDataFile.Create;
+      DF.Open(Fn);
+    end else
+    if CompareFileExt(Fn, '.rec') = 0 then
+    begin
+      if not Assigned(Df) then
+        Df := TEpiDataFile.Create;
+      DF.Open(Fn);
+    end;
+    if CompareFileExt(Fn, '.dta') = 0 then
+      ImpExp.ImportStata(Fn, Df)
+    else
+    if CompareFileExt(Fn, '.ods') = 0 then
+      ImpExp.ImportSpreadSheet(Fn, Df)
+    else
+    if (CompareFileExt(Fn, '.csv') = 0) or
+       (CompareFileExt(Fn, '.txt') = 0) then
+      ImpExp.ImportTXT(Fn, Df, nil)
+    else
+    if CompareFileExt(Fn, '.dbf') = 0 then
+      ImpExp.ImportDBase(Fn, Df)
     else
       Result := false;
-    end;
   finally
     if Assigned(ImpExp) then FreeAndNil(ImpExp);
   end;
@@ -336,30 +337,33 @@ begin
       if FileExistsUTF8(Fn) then
         DeleteFileUTF8(Fn);
 
-      Case FormatEndings[i] of
-        '.recxml':
-          begin
-            NewDf := Df.Clone();
-            NewDf.Save(Fn);
-            FreeAndNil(NewDf);
-          end;
-        '.rec':
-          begin
-            NewDf := Df.Clone();
-            NewDf.Save(Fn);
-            FreeAndNil(NewDf);
-          end;
-        '.dta':
-          ImpExp.ExportStata(Fn, Df, @ExportStata10);
-        '.ods':
-          ImpExp.ExportSpreadSheet(Fn, Df, @ExportOpenDocument);
-        '.xls':
-          ImpExp.ExportSpreadSheet(Fn, Df, @ExportExcel8);
-        '.csv':
-          ImpExp.ExportTXT(Fn, Df, @ExportTxtStandard);
-        '.dbf':
-          ImpExp.ExportDBase(Fn, Df);
+      if FormatEndings[i] = '.recxml' then
+      begin
+        NewDf := Df.Clone();
+        NewDf.Save(Fn);
+        FreeAndNil(NewDf);
+      end else
+      if FormatEndings[i] = '.rec' then
+      begin
+        NewDf := Df.Clone();
+        NewDf.Save(Fn);
+        FreeAndNil(NewDf);
+      end else
+      if FormatEndings[i] = '.dta' then
+          ImpExp.ExportStata(Fn, Df, @ExportStata10)
       else
+      if FormatEndings[i] = '.ods' then
+        ImpExp.ExportSpreadSheet(Fn, Df, @ExportOpenDocument)
+      else
+      if FormatEndings[i] = '.xls' then
+        ImpExp.ExportSpreadSheet(Fn, Df, @ExportExcel8)
+      else
+      if FormatEndings[i] = '.csv' then
+        ImpExp.ExportTXT(Fn, Df, @ExportTxtStandard)
+      else
+      if FormatEndings[i] =  '.dbf' then
+          ImpExp.ExportDBase(Fn, Df)
+      else begin
         Reporter.ReportEvent(rtFatal, 'Did not find file format extension!: %s', [FormatEndings[i]]);
         Exit;
       end;

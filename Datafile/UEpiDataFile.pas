@@ -116,6 +116,8 @@ type
 
   TEpiField = class(TObject)
   private
+    FOnChange: TEpiFieldChangeEvent;
+    FOnChangeData: TEpiFieldChangeDataEvent;
     FOwner:        TEpiFields;
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
@@ -140,9 +142,23 @@ type
     FValueLabelIsFieldRef: Boolean;
     function GetFieldProperties: TEpiFieldProperties;
     function GetHasFieldProperties: boolean;
+    procedure SetFieldColourBg(const AValue: Integer);
+    procedure SetFieldColourHl(const AValue: Integer);
+    procedure SetFieldColourTxt(const AValue: Integer);
+    procedure SetFieldDecimals(const AValue: Cardinal);
+    procedure SetFieldLength(const AValue: Cardinal);
+    procedure SetFieldName(const AValue: string);
+    procedure SetFieldX(const AValue: Cardinal);
+    procedure SetFieldY(const AValue: Cardinal);
+    procedure SetLabelColourBg(const AValue: Integer);
+    procedure SetLabelColourTxt(const AValue: Integer);
+    procedure SetLabelX(const AValue: Cardinal);
+    procedure SetLabelY(const AValue: Cardinal);
+    procedure SetVariableLabel(const AValue: string);
 //    function       GetAsFmtData: string;
   protected
     constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
+    procedure DoChange(EventType: TEpiFieldChangeEventType; OldValue: EpiVariant);
     procedure CheckIndex(Const index: integer); virtual;
     procedure AssignData(Const Source: TEpiField); virtual; abstract;
     function GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -177,22 +193,22 @@ type
     function  Compare(i,j: integer): integer; virtual; abstract;
     procedure NewRecords(ACount: Integer = 1); virtual;
     property  Owner:       TEpiFields read FOwner;
-    property  DataFile:    TEpiDataFile read FDataFile write FDataFile;
+    property  DataFile:    TEpiDataFile read FDataFile;
     property  Size:        Integer read GetSize write SetSize;
     property  FieldType:   TFieldType read FFieldType;
-    property  FieldName:   string read FFieldName write FFieldName;
-    property  FieldLength: Cardinal read FFieldLength write FFieldLength;
-    property  FieldDecimals: Cardinal read FFieldDecimals write FFieldDecimals;
-    property  FieldX:      Cardinal read FFieldX write FFieldX;
-    property  FieldY:      Cardinal read FFieldY write FFieldY;
-    property  FieldColourTxt:  Integer read FFieldColourTxt write FFieldColourTxt;
-    property  FieldColourHl: Integer read FFieldColourHl write FFieldColourHl;
-    property  FieldColourBg: Integer read FFieldColourBg write FFieldColourBg;
-    property  VariableLabel: string read FVariableLabel write FVariableLabel;
-    property  LabelX:      Cardinal read FLabelX write FLabelX;
-    property  LabelY:      Cardinal read FLabelY write FLabelY;
-    property  LabelColourTxt: Integer read FLabelColourTxt write FLabelColourTxt;
-    property  LabelColourBg: Integer read FLabelColourBg write FLabelColourBg;
+    property  FieldName:   string read FFieldName write SetFieldName;
+    property  FieldLength: Cardinal read FFieldLength write SetFieldLength;
+    property  FieldDecimals: Cardinal read FFieldDecimals write SetFieldDecimals;
+    property  FieldX:      Cardinal read FFieldX write SetFieldX;
+    property  FieldY:      Cardinal read FFieldY write SetFieldY;
+    property  FieldColourTxt:  Integer read FFieldColourTxt write SetFieldColourTxt;
+    property  FieldColourHl: Integer read FFieldColourHl write SetFieldColourHl;
+    property  FieldColourBg: Integer read FFieldColourBg write SetFieldColourBg;
+    property  VariableLabel: string read FVariableLabel write SetVariableLabel;
+    property  LabelX:      Cardinal read FLabelX write SetLabelX;
+    property  LabelY:      Cardinal read FLabelY write SetLabelY;
+    property  LabelColourTxt: Integer read FLabelColourTxt write SetLabelColourTxt;
+    property  LabelColourBg: Integer read FLabelColourBg write SetLabelColourBg;
     property  DefaultValue: string read FDefaultValue write FDefaultValue;
     property  HasFieldProperties: boolean read GetHasFieldProperties;
     property  FieldProperties: TEpiFieldProperties read GetFieldProperties;
@@ -209,6 +225,10 @@ type
     property  AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
     property  AsValue[const index: Integer]: EpiVariant read GetAsValue write SetAsValue;
     property  AsValueLabel[const index: Integer]: string read GetAsValueLabel;
+
+    // Events:
+    property  OnChange: TEpiFieldChangeEvent read FOnChange write FOnChange;
+    property  OnChangeData: TEpiFieldChangeDataEvent read FOnChangeData write FOnChangeData;
   end;
 
   { TEpiIntField }
@@ -802,6 +822,123 @@ begin
   result := Assigned(FFieldProperties);
 end;
 
+procedure TEpiField.SetFieldColourBg(const AValue: Integer);
+var
+  Val: Integer;
+begin
+  Val := FieldColourBg;
+  FFieldColourBg := AValue;
+  DoChange(fceFColBg, Val);
+end;
+
+procedure TEpiField.SetFieldColourHl(const AValue: Integer);
+var
+  Val: Integer;
+begin
+  Val := FieldColourHl;
+  FFieldColourHl := AValue;
+  DoChange(fceFColHl, Val);
+end;
+
+procedure TEpiField.SetFieldColourTxt(const AValue: Integer);
+var
+  Val: Integer;
+begin
+  Val := FieldColourTxt;
+  FFieldColourTxt := AValue;
+  DoChange(fceFColTxt, Val);
+end;
+
+procedure TEpiField.SetFieldDecimals(const AValue: Cardinal);
+var
+  Val: Cardinal;
+begin
+  Val := FieldDecimals;
+  FFieldDecimals := AValue;
+  DoChange(fceDecimals, Val);
+end;
+
+procedure TEpiField.SetFieldLength(const AValue: Cardinal);
+var
+  Val: Cardinal;
+begin
+  Val := FieldLength;
+  FFieldLength := AValue;
+  DoChange(fceLength, Val);
+end;
+
+procedure TEpiField.SetFieldName(const AValue: string);
+var
+  S: String;
+begin
+  S := FieldName;
+  FFieldName := AValue;
+  DoChange(fceName, S);
+end;
+
+procedure TEpiField.SetFieldX(const AValue: Cardinal);
+var
+  Val: Cardinal;
+begin
+  Val := FieldX;
+  FFieldX := AValue;
+  DoChange(fceFX, Val);
+end;
+
+procedure TEpiField.SetFieldY(const AValue: Cardinal);
+var
+  Val: Cardinal;
+begin
+  Val := FieldY;
+  FFieldY := AValue;
+  DoChange(fceFY, Val);
+end;
+
+procedure TEpiField.SetLabelColourBg(const AValue: Integer);
+var
+  Val: Integer;
+begin
+  Val := LabelColourBg;
+  FLabelColourBg := AValue;
+  DoChange(fceVColBg, Val);
+end;
+
+procedure TEpiField.SetLabelColourTxt(const AValue: Integer);
+var
+  Val: Integer;
+begin
+  Val := LabelColourTxt;
+  FLabelColourTxt := AValue;
+  DoChange(fceVColTxt, Val);
+end;
+
+procedure TEpiField.SetLabelX(const AValue: Cardinal);
+var
+  Val: Cardinal;
+begin
+  Val := LabelX;
+  FLabelX := AValue;
+  DoChange(fceVX, Val);
+end;
+
+procedure TEpiField.SetLabelY(const AValue: Cardinal);
+var
+  Val: Cardinal;
+begin
+  Val := LabelY;
+  FLabelY := AValue;
+  DoChange(fceVY, Val);
+end;
+
+procedure TEpiField.SetVariableLabel(const AValue: string);
+var
+  Val: String;
+begin
+  Val := VariableLabel;
+  FVariableLabel := AValue;
+  DoChange(fceVarLabel, Val);
+end;
+
 function TEpiField.GetFieldProperties: TEpiFieldProperties;
 begin
   if not Assigned(FFieldProperties) then
@@ -816,6 +953,13 @@ begin
   Reset;
   Size := ASize;
   FFieldType := AFieldType;
+end;
+
+procedure TEpiField.DoChange(EventType: TEpiFieldChangeEventType;
+  OldValue: EpiVariant);
+begin
+  if Assigned(FOnChange) then
+    FOnChange(Self, EventType, OldValue);
 end;
 
 class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal): TEpiField;
@@ -863,7 +1007,7 @@ var
   Ptr: Pointer;
 begin
   Result := TEpiField.CreateField(FieldType, Size);
-  Result.DataFile := DstDataFile;
+  Result.FDataFile := DstDataFile;
 
   // Copy Field related values:
   Result.FFieldName     := FFieldName;
@@ -1363,6 +1507,9 @@ begin
         FieldName     := UTF8Encode(ElemNode.FindNode('NAME').TextContent);
         FieldLength   := StrToInt(ElemNode.FindNode('LENGTH').TextContent);
         FieldDecimals := StrToInt(ElemNode.FindNode('DECIMALS').TextContent);
+        SubElem := TDOMElement(ElemNode.FindNode('POS'));
+        FieldX := StrToInt(SubElem.GetAttribute('X'));
+        FieldY := StrToInt(SubElem.GetAttribute('Y'));
 
         // Optional:
         // - Variable labels
