@@ -71,7 +71,7 @@ CONST
                     ($FFFFFF, $FFFFFF, $FFFFFF, $FFFFFF,
                      $FFFFFF, $FFFFFF, $FFFFFF, $FFFFFF);
                      
-  FieldTypeNames: Array[0..20] of string =
+  FieldTypeNames: Array[TFieldType] of string =
                    ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
                     'Boolean', 'Floating', 'Phonenumber', 'Time', 'Local phonenumber',
                     'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Question',

@@ -123,7 +123,7 @@ begin
   if i > 20 then
     Result := 'Unknown type'
   else
-    Result := FieldTypeNames[i];
+    Result := FieldTypeNames[FieldType];
 
   if not Assigned(Lang) then exit;
 
