@@ -51,8 +51,11 @@ type
   function GetEncodedLength(decodedlength: byte): byte;
   function GetDecodedLength(encodedlength: byte): byte;
 
+  // File dialog filter functions.
+  function GetEpiDialogFilter(ShowXML, ShowREC, ShowText, ShowODS, ShowXLS,
+    ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
 
-
+  // Version info:
   procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 
 implementation
@@ -245,6 +248,44 @@ begin
   result := (encodedlength div 4) * 3;
 end;
 
+function GetEpiDialogFilter(ShowXML, ShowREC, ShowText, ShowODS, ShowXLS,
+  ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
+var
+  CollectedExt: string;
+
+  function AddFilter(Filter: TEpiDialogFilterPair): string;
+  begin
+    result := Filter.FilterName + '|' + Filter.FilterExt + '|';
+    CollectedExt += Filter.FilterExt + ';';
+  end;
+
+begin
+  Result := '';
+  CollectedExt := '';
+  if ShowXML then
+    Result += AddFilter(EpiDialogFilterXML);
+  if ShowREC then
+    Result += AddFilter(EpiDialogFilterREC);
+  if ShowText then
+    Result += AddFilter(EpiDialogFilterText);
+  if ShowODS then
+    Result += AddFilter(EpiDialogFilterODS);
+  if ShowXLS then
+    Result += AddFilter(EpiDialogFilterXLS);
+  if ShowDTA then
+    Result += AddFilter(EpiDialogFilterDTA);
+  if ShowDBF then
+    Result += AddFilter(EpiDialogFilterDBF);
+  if ShowQES then
+    Result += AddFilter(EpiDialogFilterQES);
+
+  if ShowCollection then
+    Result := EpiDialogFilterCollection.FilterName + '|' +
+              CollectedExt + '|' + Result;
+
+  if ShowAll then
+    Result += AddFilter(EpiDialogFilterAll);
+end;
 
 procedure GetCoreSystemInformation(var CSI: TCoreSystemInformation);
 var

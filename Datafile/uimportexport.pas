@@ -176,6 +176,7 @@ type
   public
     constructor   Create;
     destructor    Destroy; override;
+    function      Import(Const aFilename: string; var DataFile: TEpiDataFile; ForceDatafileType: TDataFileType): boolean;
     function      ImportStata(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
@@ -555,6 +556,62 @@ end;
 destructor TEpiImportExport.Destroy;
 begin
   if Assigned(DataStream) then FreeAndNil(DataStream);
+end;
+
+function TEpiImportExport.Import(const aFilename: string;
+  var DataFile: TEpiDataFile; ForceDatafileType: TDataFileType): boolean;
+var
+  Ext: string;
+  QES: TQesHandler;
+begin
+
+  if ForceDatafileType = dftNone then
+  begin
+    Ext := UpperCase(ExtractFileExt(UTF8Decode(aFilename)));
+    if Ext = '.RECXML' then
+      ForceDatafileType := dftEpiDataXml
+    else if Ext = '.REC' then
+      ForceDatafileType := dftEpiDataRec
+    else if Ext = '.ODS' then
+      ForceDatafileType := dftOds
+    else if Ext = '.DTA' then
+      ForceDatafileType := dftStata
+    else if Ext = '.DBF' then
+      ForceDatafileType := dftDBase
+    else if Ext = '.TXT' then
+      ForceDatafileType := dftText
+    else if Ext = '.CSV' then
+      ForceDatafileType := dftText
+    else if Ext = '.QES' then
+      ForceDatafileType := dftQES
+  end;
+
+  Case ForceDatafileType of
+    dftOds:         result := ImportSpreadSheet(aFilename, DataFile);
+    dftStata:       result := ImportStata(aFilename, DataFile);
+    dftText:        result := ImportTXT(aFilename, DataFile, nil);
+    dftDBase:       result := ImportSpreadSheet(aFilename, DataFile);
+    dftEpiDataRec,
+    dftEpiDataXml:
+      begin
+        if Not Assigned(DataFile) then
+        begin
+          Datafile := TEpiDataFile.Create;
+          DataFile.OnProgress := OnProgress;
+          DataFile.OnTranslate := OnTranslate;
+        end;
+        DataFile.Reset;
+        result := DataFile.Open(aFilename);
+      end;
+    dftQES:
+      begin
+        QES := TQesHandler.Create;
+        QES.OnTranslate := OnTranslate;
+        QES.OnProgress := OnProgress;
+        result := QES.QesToDatafile(aFilename, DataFile);
+        FreeAndNil(QES);
+      end;
+  end;
 end;
 
 function TEpiImportExport.ImportStata(const aFilename: string;

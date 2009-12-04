@@ -31,14 +31,55 @@ CONST
   MaxIntegerLength      = 5;
   MaxDefinedMissingValues = 2;
 
-  EpiOpenFileFilter = 'Supported data files|*.recxml;*.rec;*.dta;*.txt;*.csv;*.dbf;*.ods|'
-                    + 'EpiData XML Data file (*.recxml)|*.recxml|'
-                    + 'EpiData data file (*.rec)|*.rec|'
-                    + 'Text file (*.txt,*.csv)|*.txt;*.csv|'
-                    + 'Open Document Spreadsheet (*.ods)|*.ods|'
-                    + 'Stata file (*.dta)|*.dta|'
-                    + 'dBase file (*.dbf)|*.dbf|'
-                    + 'All files (*.*)|*.*';
+  EpiDialogFilterCollection: TEpiDialogFilterPair = (
+    FilterName: 'Supported files';
+    FilterExt:  '';
+  );
+
+  EpiDialogFilterXML: TEpiDialogFilterPair = (
+    FilterName: 'EpiData XML Data file (*.recxml)';
+    FilterExt:  '*.recxml';
+  );
+
+  EpiDialogFilterREC: TEpiDialogFilterPair = (
+    FilterName: 'EpiData data file (*.rec)';
+    FilterExt:  '*.rec';
+  );
+
+  EpiDialogFilterText: TEpiDialogFilterPair = (
+    FilterName: 'Text file (*.txt,*.csv)';
+    FilterExt:  '*.txt;*.csv';
+  );
+
+  EpiDialogFilterODS: TEpiDialogFilterPair = (
+    FilterName: 'Open Document Spreadsheet (*.ods)';
+    FilterExt:  '*.ods';
+  );
+
+  EpiDialogFilterXLS: TEpiDialogFilterPair = (
+    FilterName: 'Excel Spreadsheet (*.xls)';
+    FilterExt:  '*.xls';
+  );
+
+  EpiDialogFilterDTA: TEpiDialogFilterPair = (
+    FilterName: 'Stata file (*.dta)';
+    FilterExt:  '*.dta';
+  );
+
+  EpiDialogFilterDBF: TEpiDialogFilterPair = (
+    FilterName: 'dBase file (*.dbf)';
+    FilterExt:  '*.dbf';
+  );
+
+  EpiDialogFilterQES: TEpiDialogFilterPair = (
+    FilterName: 'QES file (*.qes)';
+    FilterExt:  '*.qes';
+  );
+
+  EpiDialogFilterAll: TEpiDialogFilterPair = (
+    FilterName: 'Show All (*.*)';
+    FilterExt:  '*.*';
+  );
 
   // Colours - codes and names.
   // - base colour (white, use if no other good alternative exists).

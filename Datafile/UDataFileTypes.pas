@@ -46,7 +46,7 @@ type
   TEpiDataFileOption    = (eoIgnoreChecks, eoIgnoreRelates, eoIgnoreIndex);
   TEpiDataFileOptions   = set of TEpiDataFileOption;
 
-  TDataFileType         = (dftEpiDataXml = 1, dftEpiDataRec, dftStata, dftOds, dftXls, dftText, dftDBase);
+  TDataFileType         = (dftEpiDataXml = 1, dftEpiDataRec, dftStata, dftOds, dftXls, dftText, dftDBase, dftQES, dftNone);
 
   TEntryType            = (entAny, entMust, entNone);
 
@@ -57,6 +57,11 @@ type
      fceVarLabel, fceVX, fceVY, fceVColTxt, fceVColBg);
   TEpiFieldChangeEvent  = procedure(Sender: TObject; EventType: TEpiFieldChangeEventType; OldValue: EpiVariant) of object;
   TEpiFieldChangeDataEvent = procedure(Sender: TObject; Index: Integer; OldValue: EpiVariant) of object;
+
+  TEpiDialogFilterPair = record
+    FilterName: string;
+    FilterExt:  string;
+  end;
 
 implementation
 

@@ -51,6 +51,9 @@ type
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
   end;
 
+const
+  EpiQESFileDialogFilter = 'Epidata QES File|*.qes';
+
 implementation
 
 uses
@@ -166,6 +169,7 @@ begin
     LabelX       := CurX;
     LabelY       := LineNum;
   END;
+  CurLine := '';
 end;
 
 function TQesHandler.makeNumField(StartPos: Integer): TEpiField;
@@ -384,18 +388,20 @@ begin
   Result := false;
   Df := DataFile;
 
-  // TODO -o Torsten : Sanity checks!
+  // TODO: Sanity checks!
   if not Assigned(Df) then
     Df := TEpiDataFile.Create()
   else
     Df.Reset;
+
+  Df.DatafileType := dftQES;
 
   CurX := 1;
 
   try
     FOR LinNum := 0 TO aLines.Count - 1 DO
     BEGIN
-      UpdateProgress((LinNum * 100) div aLines.Count, Lang(20440, 'Building dataform'));
+      UpdateProgress((LinNum * 100) div aLines.Count, Lang(20440, 'Building datafile'));
       CurLine := aLines[LinNum];
 
       IF Trim(CurLine) = '' THEN CurLine := '';
@@ -409,7 +415,7 @@ begin
         IF (N > 0) Then FirstPos := Max(N, FirstPos);
         N := pos('<', CurLine);
         IF (N > 0) Then FirstPos := Max(N, FirstPos);
-        IF (FirstPos = MaxInt) AND (Trim(CurLine) <> '') THEN
+        IF (FirstPos = -MaxInt) AND (Trim(CurLine) <> '') THEN
           TmpField := MakeLabel(LinNum)
         ELSE
           BEGIN

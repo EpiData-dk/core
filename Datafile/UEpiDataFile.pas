@@ -1240,6 +1240,7 @@ begin
   FErrorText      := '';
   FErrorCode      := 0;
   FFileVersion    := 0;
+  FDatafileType   := dftNone;
 end;
 
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
