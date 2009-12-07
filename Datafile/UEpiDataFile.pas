@@ -1911,11 +1911,12 @@ function TEpiDataFile.InternalSave: boolean;
 var
   CurField: Integer;
   CurRec: Integer;
-  TmpStr, TmpStr2: String;
+  TmpStr: String;
   DataStream: TFileStream;
   EncData: String;
   j: Integer;
   i: Integer;
+  TagNo: Integer;
 
   function RequirePassword: boolean;
   var
@@ -2057,6 +2058,7 @@ begin
     // **********************
     TmpStr := Ins(1) + '<FIELDS>' + LineEnding;
     DataStream.Write(TmpStr[1], Length(TmpStr));
+    TagNo := 1;
     for CurField := 0 to Fields.Count - 1 do
     with Fields[CurField] do
     begin
@@ -2072,6 +2074,13 @@ begin
         Ins(3) + '<LABEL X="' + IntToStr(LabelX) + '" Y="' + IntToStr(LabelY) + '">' +
           StringToXml(VariableLabel) + '</LABEL>' + LineEnding +
         Ins(3) + '<COLOUR>' + hexStr(FieldColourTxt, 6) + '</COLOUR>' + LineEnding;
+
+      // TAG for association with <RECORDS> section.
+      if FieldType <> ftQuestion then
+      begin
+        TmpStr += Ins(3) + '<TAG>F' + IntToStr(TagNo) + '</TAG>' + LineEnding;
+        Inc(TagNo);
+      end;
 
       // Optional:
       if Assigned(ValueLabelSet) then
@@ -2136,33 +2145,31 @@ begin
     begin
       UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Writing records.'));
       TmpStr := '    <REC';
-      for CurField := 0 to Fields.Count - 1 do
-      with Fields[CurField] do
+      for CurField := 0 to DataFields.Count - 1 do
+      with DataFields[CurField] do
       begin
-        TmpStr2 := ' F' + IntToStr(CurField + 1) + '="';
+        TmpStr += ' F' + IntToStr(CurField + 1) + '="';
         Case FieldType of
-          ftQuestion:
-            Continue;
           ftCrypt:
             begin
               EncData := AsString[CurRec];
               FCrypter.InitStr(Password);
               FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-              TmpStr2 := TmpStr2 + B64Encode(EncData);
+              TmpStr += B64Encode(EncData);
               FCrypter.Reset;
             end;
           ftString:
-            TmpStr2 := TmpStr2 + StringToXml(AsString[CurRec]);
+            TmpStr += StringToXml(AsString[CurRec]);
         else
-          TmpStr2 := TmpStr2 + AsString[CurRec];
+          TmpStr += AsString[CurRec];
         end;
-        TmpStr := TmpStr + TmpStr2 + '"';
+        TmpStr += '"';
       end;
       if Verified[CurRec] then
-        TmpStr := TmpStr + ' ST="2"'
+        TmpStr += ' ST="2"'
       else if Deleted[CurRec] then
-        TmpStr := TmpStr + ' ST="1"';
-      TmpStr := TmpStr + '/>' + LineEnding;
+        TmpStr += ' ST="1"';
+      TmpStr += '/>' + LineEnding;
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     TmpStr := '  </RECORDS>' + LineEnding;

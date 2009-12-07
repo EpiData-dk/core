@@ -105,6 +105,7 @@ begin
       begin
         if TmpStr[i] in AlfaNumChars then
           Result := Result + TmpStr[i];
+        inc(i);
       end;
     end;
   end;
