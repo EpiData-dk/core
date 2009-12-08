@@ -120,11 +120,12 @@ type
   TEpiTxtImportSettings = record
     ImportSettings: PEpiImportSettings;
     QESFileName:    string;
-    UseQESFile:     boolean;
     FieldSeparator: Char;
     DateSeparator:  Char;
     QuoteChar:      Char;
+    FieldNaming:    TFieldNaming;
     FixedFormat:    Boolean;
+    UseQESFile:     boolean;
   end;
   PEpiTxtImportSettings = ^TEpiTxtImportSettings;
 
@@ -137,11 +138,12 @@ const
   ImportTxtGuess: TEpiTxtImportSettings = (
     ImportSettings: @ImportAll;
     QESFileName:    '';
-    UseQESFile:     false;
     FieldSeparator: #0;
     DateSeparator:  #0;
     QuoteChar:      '"';
+    FieldNaming:    fnFirstWord;
     FixedFormat:    false;
+    UseQESFile:     false;
     );
 
 type
@@ -353,7 +355,6 @@ begin
   result := false;
   SkipFirstLine := false;
 
-
   FieldStrings := nil;
   TmpField := nil;
   try
@@ -537,7 +538,11 @@ begin
     begin
       for i := 0 to FieldStrings.Count - 1 do
       begin
-        DataFile.DataFields[i].FieldName := DataFile.CreateUniqueFieldName(FieldStrings[i]);
+        if DataFile.FieldNaming = fnFirstWord then
+          TmpStr := FirstWord(FieldStrings[i], MaxInt-1)
+        else
+          TmpStr := AutoFieldName(FieldStrings[i]);
+        DataFile.DataFields[i].FieldName := DataFile.CreateUniqueFieldName(TmpStr);
         DataFile.DataFields[i].VariableLabel := FieldStrings[i];
       end;
       SkipFirstLine := true;
@@ -1349,7 +1354,7 @@ begin
   With DataFile do
   TRY
     DatafileType := dftText;
-    FieldNaming := fnAuto;
+    FieldNaming := TxtImpSetting^.FieldNaming;
     FileName := aFilename;
     UpdateProgress(0, Lang(0, 'Initializing'));
 

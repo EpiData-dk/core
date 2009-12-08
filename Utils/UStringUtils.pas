@@ -22,6 +22,7 @@ type
   end;
 
   function FirstWord(Const S: string; MaxLength: Cardinal): string;
+  function AutoFieldName(Const S: string): string;
   Function FitLength(Const S: string; L: Integer):string;
   procedure SplitString(const Source: string; var List: TStrings;
     const Splitters: TCharset = [' ']; const QuoteChars: TCharSet = ['"']);
@@ -61,11 +62,19 @@ function FirstWord(Const S: string; MaxLength: Cardinal): string;
 var
   n: Integer;
 begin
-  Result := StringReplace(S, #9, ' ', [rfReplaceAll]);
-  n := Math.Min(Pos(' ',s), MaxLength + 1);
+  Result := UTF8Decode(S);
+  Result := StringReplace(Result, #9, ' ', [rfReplaceAll]);
+  n := Math.Min(Pos(' ',Result), MaxLength + 1);
   if n = 0 then
-    n := Length(s) + 1;
-  Result := Copy(s, 1, n-1);
+    n := Length(Result) + 1;
+  Result := Copy(Result, 1, n-1);
+  Result := TrimLeft(Result);
+  Result := UTF8Encode(Result);
+end;
+
+function AutoFieldName(const S: string): string;
+begin
+  Result := UTF8Encode(StringReplace(TrimLeft(UTF8Decode(S)), ' ', '_', [rfReplaceAll]));
 end;
 
 Function FitLength(Const S: string; L: Integer):string;

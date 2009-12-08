@@ -85,38 +85,24 @@ var
 begin
   IF AText = '' THEN Result := ' ';
 
-  if Df.FieldNaming = fnAuto then
+  if Df.FieldNaming = fnFirstWord then
     // EpiInfo fieldnaming style.
-    Result := FirstWord(AText, MaxFieldNameLen)
-  else  IF Pos('{', Result) > 0 THEN
+    Result := FirstWord(AText, MaxInt - 1)
+  else IF Pos('{', Result) > 0 THEN
     // Explicit force fieldname by using { and }.
     Result := ExtractStrBetween(AText, '{', '}')
   else begin
-    // Normal guessing based on text.
-
-    TmpStr := StripWordsFromString(AText, CommonWords);
-    if (NumValidChars(TmpStr) = 0) and (Df.QuestFields.Count > 0) then
-      // Guess no good - try to find a name in prev. non-label field
-      Result := StripWordsFromString(Df.QuestFields[Df.QuestFields.Count-1].VariableLabel, CommonWords)
-    else begin
-      //Construct name from question
-      i := 0;
-      while (i < Length(TmpStr)) and (i < MaxFieldNameLen) do
-      begin
-        if TmpStr[i] in AlfaNumChars then
-          Result := Result + TmpStr[i];
-        inc(i);
-      end;
-    end;
+    // Normal - just use it all but without spaces.
+    Result := AutoFieldName(AText);
   end;
 
   // Sanity checks.
-  if not CheckVariableName(Result, AlfaNumChars) then
-    Result := 'FIELD1';
+//  if not CheckVariableName(Result, AlfaNumChars) then
+//    Result := 'FIELD1';
   if (Length(Result) > 0) and (Result[1] in NumChars) then
     Result := 'N' + Result;
-  if Length(Result) > MaxFieldNameLen then
-    Result := Copy(Result, 1, MaxFieldNameLen);
+//  if Length(Result) > MaxFieldNameLen then
+//    Result := Copy(Result, 1, MaxFieldNameLen);
   Result := Df.CreateUniqueFieldName(Result);
 end;
 

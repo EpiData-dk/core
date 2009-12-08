@@ -1292,6 +1292,7 @@ var
   TextField: TEpiField;
   Val: Variant;
   List: TStrings;
+  TagList: TStringList;
 
   procedure ReportError(ErrCode: Integer; LangCode: integer; Msg: String; Args: array of const);
   begin
@@ -1494,6 +1495,8 @@ begin
     // <FIELDS> Section
     // **********************
     List := nil;
+    TagList := TStringList.Create;
+    TagList.Sorted := true;
     SectionNode := RootNode.FindNode('FIELDS');
     ElemNode := TDOMElement(SectionNode.FindNode('FIELD'));
     while Assigned(ElemNode) do
@@ -1506,6 +1509,7 @@ begin
       with TmpField do
       begin
         FieldName     := UTF8Encode(ElemNode.FindNode('NAME').TextContent);
+        TagList.AddObject(UTF8Encode(ElemNode.FindNode('TAG').TextContent), TmpField);
         FieldLength   := StrToInt(ElemNode.FindNode('LENGTH').TextContent);
         FieldDecimals := StrToInt(ElemNode.FindNode('DECIMALS').TextContent);
         SubElem := TDOMElement(ElemNode.FindNode('POS'));
@@ -1613,17 +1617,18 @@ begin
           else if ElemNode.Attributes[i].NodeValue = '2' then
             Verified[CurRec] := true;
         end else begin
-          // 5 should be enough - fieldcount > 5 digits is not likely.
-          Idx := StrToInt(Copy(ElemNode.Attributes[i].NodeName, 2, 5));
+          if not TagList.Find(UTF8Encode(ElemNode.Attributes[i].NodeName), Idx) then
+            ; // TODO: Crash with a big BOOM!
+          TmpField := TEpiField(TagList.Objects[Idx]);
           TmpStr := UTF8Encode(ElemNode.Attributes[i].NodeValue);
-          if Field[Idx-1].FieldType = ftCrypt then
+          if TmpField.FieldType = ftCrypt then
           begin
             TmpStr := B64Decode(TmpStr);
             FCrypter.DecryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
             TmpStr := Trim(TmpStr);
             FCrypter.Reset;
           end;
-          Field[Idx - 1].AsString[CurRec] := TmpStr;;
+          TmpField.AsString[CurRec] := TmpStr;;
         end;
       end;
       inc(CurRec);
@@ -2064,8 +2069,10 @@ begin
     begin
       TmpStr := Ins(2) + '<FIELD TYPE="' + IntToStr(Ord(FieldType)) + '">' + LineEnding;
       // Must exists tags!
-      TmpStr := TmpStr +
+      TmpStr +=
         Ins(3) + '<NAME>' + StringToXml(FieldName) + '</NAME>' + LineEnding +
+        // TAG for association with <RECORDS> section.
+        Ins(3) + '<TAG>F' + IntToStr(TagNo) + '</TAG>' + LineEnding +
         Ins(3) + '<LENGTH>' + IntToStr(FieldLength) + '</LENGTH>' + LineEnding +
         Ins(3) + '<DECIMALS>' + IntToStr(FieldDecimals) + '</DECIMALS>' + LineEnding +
         Ins(3) + '<POS X="' + IntToStr(FieldX) + '" Y="' + IntToStr(FieldY) + '"/>' + LineEnding +
@@ -2075,12 +2082,7 @@ begin
           StringToXml(VariableLabel) + '</LABEL>' + LineEnding +
         Ins(3) + '<COLOUR>' + hexStr(FieldColourTxt, 6) + '</COLOUR>' + LineEnding;
 
-      // TAG for association with <RECORDS> section.
-      if FieldType <> ftQuestion then
-      begin
-        TmpStr += Ins(3) + '<TAG>F' + IntToStr(TagNo) + '</TAG>' + LineEnding;
-        Inc(TagNo);
-      end;
+      Inc(TagNo);
 
       // Optional:
       if Assigned(ValueLabelSet) then
@@ -2146,8 +2148,9 @@ begin
       UpdateProgress(Trunc((CurRec / Size) * 100), Lang(0, 'Writing records.'));
       TmpStr := '    <REC';
       for CurField := 0 to DataFields.Count - 1 do
-      with DataFields[CurField] do
+      with Fields[CurField] do
       begin
+        if FieldType = ftQuestion then continue;
         TmpStr += ' F' + IntToStr(CurField + 1) + '="';
         Case FieldType of
           ftCrypt:
