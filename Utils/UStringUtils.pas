@@ -21,7 +21,7 @@ type
     property Str: string read FStr write FStr;
   end;
 
-  function FirstWord(Const S: string; MaxLength: Cardinal): string;
+  function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
   function AutoFieldName(Const S: string): string;
   Function FitLength(Const S: string; L: Integer):string;
   procedure SplitString(const Source: string; var List: TStrings;

@@ -35,7 +35,7 @@
     </CompilerOptions>
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
-    <Version Minor="2" Release="2" Build="100"/>
+    <Version Minor="2" Release="2" Build="101"/>
     <Files Count="21">
       <Item1>
         <Filename Value="Datafile/UCheckFileCmds.pas"/>
