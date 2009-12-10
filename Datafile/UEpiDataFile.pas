@@ -826,6 +826,7 @@ procedure TEpiField.SetFieldColourBg(const AValue: Integer);
 var
   Val: Integer;
 begin
+  if FFieldColourBg = AValue then exit;
   Val := FieldColourBg;
   FFieldColourBg := AValue;
   DoChange(fceFColBg, Val);
@@ -835,6 +836,7 @@ procedure TEpiField.SetFieldColourHl(const AValue: Integer);
 var
   Val: Integer;
 begin
+  if FFieldColourHl = AValue then exit;
   Val := FieldColourHl;
   FFieldColourHl := AValue;
   DoChange(fceFColHl, Val);
@@ -844,6 +846,7 @@ procedure TEpiField.SetFieldColourTxt(const AValue: Integer);
 var
   Val: Integer;
 begin
+  if FFieldColourTxt = AValue then exit;
   Val := FieldColourTxt;
   FFieldColourTxt := AValue;
   DoChange(fceFColTxt, Val);
@@ -853,6 +856,7 @@ procedure TEpiField.SetFieldDecimals(const AValue: Cardinal);
 var
   Val: Cardinal;
 begin
+  if FFieldDecimals = AValue then exit;
   Val := FieldDecimals;
   FFieldDecimals := AValue;
   DoChange(fceDecimals, Val);
@@ -862,6 +866,7 @@ procedure TEpiField.SetFieldLength(const AValue: Cardinal);
 var
   Val: Cardinal;
 begin
+  if FFieldLength = AValue then exit;
   Val := FieldLength;
   FFieldLength := AValue;
   DoChange(fceLength, Val);
@@ -871,6 +876,7 @@ procedure TEpiField.SetFieldName(const AValue: string);
 var
   S: String;
 begin
+  if FFieldName = AValue then exit;
   S := FieldName;
   FFieldName := AValue;
   DoChange(fceName, S);
@@ -880,6 +886,7 @@ procedure TEpiField.SetFieldX(const AValue: Cardinal);
 var
   Val: Cardinal;
 begin
+  if FFieldX = AValue then exit;
   Val := FieldX;
   FFieldX := AValue;
   DoChange(fceFX, Val);
@@ -889,6 +896,7 @@ procedure TEpiField.SetFieldY(const AValue: Cardinal);
 var
   Val: Cardinal;
 begin
+  if FFieldY = AValue then exit;
   Val := FieldY;
   FFieldY := AValue;
   DoChange(fceFY, Val);
@@ -898,6 +906,7 @@ procedure TEpiField.SetLabelColourBg(const AValue: Integer);
 var
   Val: Integer;
 begin
+  if FLabelColourBg = AValue then exit;
   Val := LabelColourBg;
   FLabelColourBg := AValue;
   DoChange(fceVColBg, Val);
@@ -907,6 +916,7 @@ procedure TEpiField.SetLabelColourTxt(const AValue: Integer);
 var
   Val: Integer;
 begin
+  if FLabelColourTxt = AValue then exit;
   Val := LabelColourTxt;
   FLabelColourTxt := AValue;
   DoChange(fceVColTxt, Val);
@@ -916,6 +926,7 @@ procedure TEpiField.SetLabelX(const AValue: Cardinal);
 var
   Val: Cardinal;
 begin
+  if FLabelX = AValue then exit;
   Val := LabelX;
   FLabelX := AValue;
   DoChange(fceVX, Val);
@@ -925,6 +936,7 @@ procedure TEpiField.SetLabelY(const AValue: Cardinal);
 var
   Val: Cardinal;
 begin
+  if FLabelY = AValue then exit;
   Val := LabelY;
   FLabelY := AValue;
   DoChange(fceVY, Val);
@@ -934,6 +946,7 @@ procedure TEpiField.SetVariableLabel(const AValue: string);
 var
   Val: String;
 begin
+  if FVariableLabel = AValue then exit;
   Val := VariableLabel;
   FVariableLabel := AValue;
   DoChange(fceVarLabel, Val);
