@@ -55,6 +55,8 @@ type
     property    LabelType: TFieldType read FLabelType write SetLabelType;
   end;
 
+  { TValueLabelSets }
+
   TValueLabelSets = class(TObject)
   private
     FList: TStringList;

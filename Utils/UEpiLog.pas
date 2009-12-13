@@ -166,6 +166,11 @@ begin
   FData.SaveToStream(Stream);
 end;
 
+finalization
+begin
+  if Assigned(OLog) then FreeAndNil(OLog);
+end;
+
 end.
 
 

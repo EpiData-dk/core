@@ -1921,6 +1921,7 @@ begin
       end
     end;
   finally
+    if Assigned(DataStream) then FreeAndNil(DataStream);
     EpiLogger.DecIndent;
   end;
 end;
