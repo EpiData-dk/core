@@ -155,6 +155,7 @@ type
 
   TEpiImportExport = class(TObject)
   private
+    FFieldNaming: TFieldNaming;
     FOnClipBoardRead: TClipBoardReadHook;
     FOnClipBoardWrite: TClipBoardWriteHook;
     FOnProgress:  TProgressEvent;
@@ -197,6 +198,7 @@ type
     property      ByteOrder: TByteOrder read FByteOrder;
     property      OnClipBoardRead: TClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     property      OnClipBoardWrite: TClipBoardWriteHook read FOnClipBoardWrite write FOnClipBoardWrite;
+    property      FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
   end;
 
 implementation
@@ -613,6 +615,7 @@ begin
         QES := TQesHandler.Create;
         QES.OnTranslate := OnTranslate;
         QES.OnProgress := OnProgress;
+        QES.FieldNaming := FieldNaming;
         result := QES.QesToDatafile(aFilename, DataFile);
         FreeAndNil(QES);
       end;

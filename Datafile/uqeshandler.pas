@@ -14,6 +14,7 @@ type
 
   TQesHandler = class(TObject)
   private
+    FFieldNaming: TFieldNaming;
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FDf:          TEpiDataFile;
@@ -49,6 +50,7 @@ type
     function   DatafileToQes(Const DataFile: TEpiDatafile; Const aFileName: string): boolean;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
+    property   FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
   end;
 
 const
@@ -132,11 +134,11 @@ begin
     FieldY        := 0;
     VariableLabel := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
     VariableLabel := Trim(StringReplace(VariableLabel, '}', '', [rfIgnoreCase, rfReplaceAll]));
-{    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
+    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
     begin
       Tmpstr := FirstWord(VariableLabel, Length(VariableLabel));
       VariableLabel := Copy(VariableLabel, Length(TmpStr) + 1, Length(VariableLabel));
-    end;  }
+    end;
   end;
   Delete(CurLine, 1, PosEnd);
 end;
@@ -370,7 +372,9 @@ var
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'QesToDatafile', 2);
+
   FLines.Assign(aLines);
+  EpiUnknownStringsToUTF8(FLines);
 
   Result := false;
   Df := DataFile;
@@ -381,15 +385,16 @@ begin
   else
     Df.Reset;
 
+  Df.FieldNaming := FieldNaming;
   Df.DatafileType := dftQES;
 
   CurX := 1;
 
   try
-    FOR LinNum := 0 TO aLines.Count - 1 DO
+    FOR LinNum := 0 TO FLines.Count - 1 DO
     BEGIN
-      UpdateProgress((LinNum * 100) div aLines.Count, Lang(20440, 'Building datafile'));
-      CurLine := aLines[LinNum];
+      UpdateProgress(((LinNum+1) * 100) div FLines.Count, Lang(20440, 'Building datafile'));
+      CurLine := FLines[LinNum];
 
       IF Trim(CurLine) = '' THEN CurLine := '';
       WHILE Length(CurLine)>0 DO

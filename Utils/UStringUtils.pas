@@ -63,18 +63,18 @@ var
   n: Integer;
 begin
   Result := UTF8Decode(S);
+  Result := TrimLeft(Result);
   Result := StringReplace(Result, #9, ' ', [rfReplaceAll]);
   n := Math.Min(Pos(' ',Result), MaxLength + 1);
   if n = 0 then
     n := Length(Result) + 1;
   Result := Copy(Result, 1, n-1);
-  Result := TrimLeft(Result);
   Result := UTF8Encode(Result);
 end;
 
 function AutoFieldName(const S: string): string;
 begin
-  Result := UTF8Encode(StringReplace(TrimLeft(UTF8Decode(S)), ' ', '_', [rfReplaceAll]));
+  Result := UTF8Encode(StringReplace(Trim(UTF8Decode(S)), ' ', '_', [rfReplaceAll]));
 end;
 
 Function FitLength(Const S: string; L: Integer):string;
