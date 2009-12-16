@@ -411,6 +411,8 @@ type
     FList:      TList;
     function    GetField(Index: Integer): TEpiField;
     function    GetCount: Cardinal;
+  protected
+    procedure   Sort(Cmp: TListSortCompare);
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
     destructor  Destroy; override;
@@ -512,6 +514,8 @@ type
     procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);
     function   CreateUniqueFieldName(Const AText: string): string;
     procedure  NewRecords(ACount: Integer = 1); virtual;
+    procedure  SortFields(Cmp: TListSortCompare);
+    function   DocumentDatafile: TStrings;
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
     property   DataFields:  TEpiFields read FDataFields;
@@ -546,7 +550,7 @@ implementation
 
 uses
   SysUtils, UStringUtils, EpiBase64, UEpiUtils,
-  StrUtils, UCheckFileIO, Math, UDateUtils, DOM, XMLRead, XMLWrite;
+  StrUtils, UCheckFileIO, Math, UDateUtils, DOM, XMLRead;
 
 const
   NA_INT       = MaxInt;
@@ -1125,6 +1129,11 @@ end;
 function TEpiFields.GetCount: Cardinal;
 begin
   result := FList.Count
+end;
+
+procedure TEpiFields.Sort(Cmp: TListSortCompare);
+begin
+  FList.Sort(Cmp);
 end;
 
 constructor TEpiFields.Create(aOwner: TEpiDataFile);
@@ -2658,6 +2667,69 @@ begin
   FRecordStatus.NewRecords(ACount);
   for i := 0 to DataFields.Count - 1 do
     DataFields[i].NewRecords(ACount);
+end;
+
+procedure TEpiDataFile.SortFields(Cmp: TListSortCompare);
+begin
+  Fields.Sort(Cmp);
+  DataFields.Sort(Cmp);
+  QuestFields.Sort(Cmp);
+end;
+
+function TEpiDataFile.DocumentDatafile: TStrings;
+var
+  TmpStr: String;
+  i: Integer;
+begin
+  Result := TStringList.Create;
+
+  with Result do
+  try
+    {Header}
+    TmpStr := FileName;
+    if TmpStr = '' then
+      TmpStr := '(not saved yet)';
+    Append(Format('Datafile: %s', [TmpStr]));
+    Append(Format('Filelabel: %s', [FileLabel]));
+    if FileName <> '' then
+      Append('Last revision: ' +
+        FormatDateTime('d. mmm yyyy t', FileDateToDateTime(FileAge(Filename))));
+    Append(Format(
+      'Number of Fields: %d' + LineEnding +
+      'Number of Datafields: %d' + LineEnding +
+      'Number of Records: %d' + LineEnding,
+      [NumFields, NumDataFields, Size]));
+    Append('');
+
+    {Variable Information}
+    { - header}
+    Append('Fields in datafile:');
+    Append(DupeString('-',102));
+    Append(Format(
+      '%3s %-10s %-20s %-15s %-5s %-5s %-20s',
+      ['No','Name','Variable label','Fieldtype','Length','Decimals','Value labels']));
+    Append(DupeString('-',102));
+
+    for i := 0 to NumFields - 1 do
+    with Field[i] do
+    begin
+      TmpStr := 'N/A';
+      if Assigned(ValueLabelSet) then
+        TmpStr := ValueLabelSet.Name;
+
+      Append(
+        UTF8Encode(
+          Format(
+            '%3d %-10.10s %-20.20s %-15s %-5d %-5d %-20.20s',
+            [i+1, Utf8ToAnsi(FieldName), Utf8ToAnsi(VariableLabel),
+             Utf8ToAnsi(FieldTypeToFieldTypeName(FieldType, nil)),
+             FieldLength, FieldDecimals, Utf8ToAnsi(TmpStr)]
+          )
+        )
+      );
+    end;
+  finally
+  end;
 end;
 
 { TEpiIndexFile }
