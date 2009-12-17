@@ -606,8 +606,8 @@ begin
           Datafile := TEpiDataFile.Create;
           DataFile.OnProgress := OnProgress;
           DataFile.OnTranslate := OnTranslate;
-        end;
-        DataFile.Reset;
+        end else
+          DataFile.Reset;
         result := DataFile.Open(aFilename);
       end;
     dftQES:

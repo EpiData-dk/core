@@ -409,10 +409,12 @@ type
     FOwned:     Boolean;
     FDataFile:  TEpiDataFile;
     FList:      TList;
+    FReportOnChange: Boolean;  // Used to report back to DataFile if field is added, deleted, sorted.
     function    GetField(Index: Integer): TEpiField;
     function    GetCount: Cardinal;
   protected
     procedure   Sort(Cmp: TListSortCompare);
+    property    ReportOnChange: Boolean read FReportOnChange write FReportOnChange;
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
     destructor  Destroy; override;
@@ -460,6 +462,7 @@ type
     FDatafileType: TDataFileType;
     FFileName:     string;                  // Physical datafile name.
     FFileLabel:    string;                  // Label of datafile. (METADATA)
+    FOnChange: TEpiDataFileChangeEvent;
     FStudy:        string;                  // Study information (METADATA)
     FValueLabels:  TValueLabelSets;         // Valuelabels (METADATA)
     FFields:       TEpiFields;              // Container for all associated fields. (Owned)
@@ -486,7 +489,10 @@ type
     function   GetVerified(Index: integer): boolean;
     procedure  InternalReset;
     procedure  SetDeleted(Index: integer; const AValue: boolean);
+    procedure  SetFileLabel(const AValue: string);
+    procedure  SetFileName(const AValue: string);
     procedure  SetSize(const AValue: Integer);
+    procedure  SetStudy(const AValue: string);
     procedure  SetVerified(Index: integer; const AValue: boolean);
   protected
     function   InternalOpen: boolean;
@@ -498,6 +504,7 @@ type
     Function   TextPos(var F: Textfile): Cardinal;
     function   GetNumFields: Cardinal;
     function   GetNumDataFields: Cardinal;
+    procedure  DoChange(Event: TEpiDataFileChangeEventType; OldValue: EpiVariant);
   public
     constructor Create(ASize: Cardinal = 0); virtual;
     destructor Destroy; override;
@@ -527,9 +534,9 @@ type
     property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property   Options:     TEpiDataFileOptions read FOptions;
-    property   FileName:    string read FFileName write FFileName;
-    property   FileLabel:   string read FFileLabel write FFileLabel;
-    property   Study:       string read FStudy write FStudy;
+    property   FileName:    string read FFileName write SetFileName;
+    property   FileLabel:   string read FFileLabel write SetFileLabel;
+    property   Study:       string read FStudy write SetStudy;
     property   Password:    string read FPassword write FPassword;
     property   FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
     Property   NumFields:   Cardinal read GetNumFields;
@@ -542,6 +549,7 @@ type
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
     Property   DatafileType: TDataFileType read FDatafileType write FDatafileType;
     property   BackgroundColour: Integer read FBackgroundColour write FBackgroundColour;
+    property   OnChange: TEpiDataFileChangeEvent read FOnChange write FOnChange;
   end;
 
 
@@ -1134,12 +1142,16 @@ end;
 procedure TEpiFields.Sort(Cmp: TListSortCompare);
 begin
   FList.Sort(Cmp);
+
+  if ReportOnChange and Assigned(FDataFile) then
+    FDataFile.DoChange(dceFieldOrder, nil);
 end;
 
 constructor TEpiFields.Create(aOwner: TEpiDataFile);
 begin
   FList := TList.Create();
   FDataFile := aOwner;
+  FReportOnChange := false;
 end;
 
 destructor TEpiFields.Destroy;
@@ -1195,6 +1207,8 @@ begin
     aField.FDataFile := Self.FDataFile;
   end;
   FList.Add(aField);
+  if ReportOnChange and Assigned(FDataFile) then
+    FDataFile.DoChange(dceAddField, nil);
 end;
 
 procedure TEpiFields.Delete(aField: TEpiField);
@@ -1209,6 +1223,9 @@ begin
     aField.FOwner := nil;
     aField.FDataFile := nil;
   end;
+
+  if ReportOnChange and Assigned(FDataFile) then
+    FDataFile.DoChange(dceRemoveField, PtrInt(aField));
 end;
 
 { TEpiDataFile }
@@ -1273,6 +1290,26 @@ begin
     FRecordStatus.AsInteger[Index] := ord(rsNormal);
 end;
 
+procedure TEpiDataFile.SetFileLabel(const AValue: string);
+var
+  OldVal: String;
+begin
+  if AValue = FileLabel then exit;
+  OldVal := FileLabel;
+  FFileLabel := AValue;
+  DoChange(dceLabel, OldVal);
+end;
+
+procedure TEpiDataFile.SetFileName(const AValue: string);
+var
+  OldVal: String;
+begin
+  if AValue = FileName then exit;
+  OldVal := FileName;
+  FFileName := AValue;
+  DoChange(dceName, OldVal);
+end;
+
 procedure TEpiDataFile.SetSize(const AValue: Integer);
 var
   i: Integer;
@@ -1281,6 +1318,16 @@ begin
     DataFields[i].Size := AValue;
 
   FRecordStatus.Size := AValue;
+end;
+
+procedure TEpiDataFile.SetStudy(const AValue: string);
+var
+  OldVal: String;
+begin
+  if AValue = Study then exit;
+  OldVal := Study;
+  FStudy := AValue;
+  DoChange(dceStudy, OldVal);
 end;
 
 procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);
@@ -2461,10 +2508,18 @@ begin
   result := DataFields.Count;
 end;
 
+procedure TEpiDataFile.DoChange(Event: TEpiDataFileChangeEventType;
+  OldValue: EpiVariant);
+begin
+  if Assigned(OnChange) then
+    OnChange(Self, Event, OldValue);
+end;
+
 constructor TEpiDataFile.Create(ASize: Cardinal = 0);
 var
   p: pointer;
 begin
+  inherited Create;
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Create', 3);
   try
@@ -2586,6 +2641,7 @@ begin
 
   FFields       := TEpiFields.Create(Self);
   FFields.Owned := True;
+  FFields.ReportOnChange := true;
   FDataFields   := TEpiFields.Create(Self);
   FQuestFields  := TEpiFields.Create(Self);
   FValueLabels  := TValueLabelSets.Create;
