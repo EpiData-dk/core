@@ -16,18 +16,17 @@
         </SyntaxOptions>
       </Parsing>
       <CodeGeneration>
+        <SmartLinkUnit Value="True"/>
         <Checks>
           <IOChecks Value="True"/>
         </Checks>
         <Optimizations>
-          <OptimizationLevel Value="0"/>
+          <OptimizationLevel Value="2"/>
         </Optimizations>
       </CodeGeneration>
       <Linking>
         <Debugging>
-          <GenerateDebugInfo Value="True"/>
-          <GenerateDwarf Value="True"/>
-          <UseHeaptrc Value="True"/>
+          <UseLineInfoUnit Value="False"/>
         </Debugging>
       </Linking>
       <Other>

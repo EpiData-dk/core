@@ -1144,7 +1144,7 @@ begin
   FList.Sort(Cmp);
 
   if ReportOnChange and Assigned(FDataFile) then
-    FDataFile.DoChange(dceFieldOrder, nil);
+    FDataFile.DoChange(dceFieldOrder, 0);
 end;
 
 constructor TEpiFields.Create(aOwner: TEpiDataFile);
@@ -1208,7 +1208,7 @@ begin
   end;
   FList.Add(aField);
   if ReportOnChange and Assigned(FDataFile) then
-    FDataFile.DoChange(dceAddField, nil);
+    FDataFile.DoChange(dceAddField, 0);
 end;
 
 procedure TEpiFields.Delete(aField: TEpiField);
