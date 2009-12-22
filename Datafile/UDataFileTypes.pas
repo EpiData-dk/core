@@ -53,13 +53,13 @@ type
   TByteOrder            = (boLittleEndian, boBigEndian);
 
   TEpiFieldChangeEventType =
-    (fceName, fceLength, fceDecimals, fceFX, fceFY, fceFColTxt, fceFColHl, fceFColBg,
+    (fceUpdate, fceName, fceLength, fceDecimals, fceFX, fceFY, fceFColTxt, fceFColHl, fceFColBg,
      fceVarLabel, fceVX, fceVY, fceVColTxt, fceVColBg);
   TEpiFieldChangeEvent  = procedure(Sender: TObject; EventType: TEpiFieldChangeEventType; OldValue: EpiVariant) of object;
   TEpiFieldChangeDataEvent = procedure(Sender: TObject; Index: Integer; OldValue: EpiVariant) of object;
 
   TEpiDataFileChangeEventType =
-    (dceName, dceLabel, dceStudy, dceAddField, dceRemoveField, dceFieldOrder);
+    (dceUpdate, dceName, dceLabel, dceStudy, dceAddField, dceRemoveField, dceFieldOrder);
   TEpiDataFileChangeEvent = procedure(Sender: TObject; EventType: TEpiDataFileChangeEventType; OldValue: EpiVariant) of object;
 
   TEpiDialogFilterPair = record

@@ -21,12 +21,13 @@
           <IOChecks Value="True"/>
         </Checks>
         <Optimizations>
-          <OptimizationLevel Value="2"/>
+          <OptimizationLevel Value="0"/>
         </Optimizations>
       </CodeGeneration>
       <Linking>
         <Debugging>
-          <UseLineInfoUnit Value="False"/>
+          <GenerateDebugInfo Value="True"/>
+          <GenerateDwarf Value="True"/>
         </Debugging>
       </Linking>
       <Other>

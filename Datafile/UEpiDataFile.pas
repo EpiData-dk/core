@@ -116,8 +116,6 @@ type
 
   TEpiField = class(TObject)
   private
-    FOnChange: TEpiFieldChangeEvent;
-    FOnChangeData: TEpiFieldChangeDataEvent;
     FOwner:        TEpiFields;
     FDataFile:     TEpiDataFile;
     FCapacity:     Integer;
@@ -225,10 +223,21 @@ type
     property  AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
     property  AsValue[const index: Integer]: EpiVariant read GetAsValue write SetAsValue;
     property  AsValueLabel[const index: Integer]: string read GetAsValueLabel;
-
-    // Events:
-    property  OnChange: TEpiFieldChangeEvent read FOnChange write FOnChange;
-    property  OnChangeData: TEpiFieldChangeDataEvent read FOnChangeData write FOnChangeData;
+  private
+    // Events (and control):
+    FOnChange:     ^TEpiFieldChangeEvent;
+    FOnChangeCount: Integer;
+    FOnChangeData: ^TEpiFieldChangeDataEvent;
+    FOnChangeDataCount: Integer;
+    FUpdateCount: Integer;
+  public
+    // Events (and control):
+    procedure BeginUpdate;
+    procedure EndUpdate;
+    procedure RegisterOnChangeHook(Event: TEpiFieldChangeEvent);
+    procedure UnRegisterOnChangeHook(Event: TEpiFieldChangeEvent);
+    procedure RegisterOnChangeDataHook(Event: TEpiFieldChangeDataEvent);
+    procedure UnRegisterOnChangeDataHook(Event: TEpiFieldChangeDataEvent);
   end;
 
   { TEpiIntField }
@@ -462,7 +471,6 @@ type
     FDatafileType: TDataFileType;
     FFileName:     string;                  // Physical datafile name.
     FFileLabel:    string;                  // Label of datafile. (METADATA)
-    FOnChange: TEpiDataFileChangeEvent;
     FStudy:        string;                  // Study information (METADATA)
     FValueLabels:  TValueLabelSets;         // Valuelabels (METADATA)
     FFields:       TEpiFields;              // Container for all associated fields. (Owned)
@@ -475,13 +483,13 @@ type
     FOnProgress:   TProgressEvent;          // Callback event for updating progress
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
     FOnPassword:   TRequestPasswordEvent;   // Callback event for password request
+    FBackgroundColour:     Integer;         // Background color up entry form.
     FIndexFile:    TEpiIndexFile;
     FErrorText:    string;
     FErrorCode:    Cardinal;
     FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
     FRecordStatus: TEpiField;
-    FBackgroundColour:     Integer;         // Background color up entry form.
     function   GetDeleted(Index: integer): boolean;
     function   GetField(Index: integer): TEpiField;
     function   GetIndexFile: TEpiIndexFile;
@@ -549,7 +557,17 @@ type
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
     Property   DatafileType: TDataFileType read FDatafileType write FDatafileType;
     property   BackgroundColour: Integer read FBackgroundColour write FBackgroundColour;
-    property   OnChange: TEpiDataFileChangeEvent read FOnChange write FOnChange;
+  private
+    // OnChange-hook privates
+    FOnChangeList: ^TEpiDataFileChangeEvent;
+    FOnChangeListCount: Integer;
+    FUpdateCount: Integer;
+  public
+    // OnChange-hook methods
+    procedure  BeginUpdate;
+    procedure  EndUpdate;
+    procedure  RegisterOnChangeHook(Event: TEpiDataFileChangeEvent);
+    procedure  UnRegisterOnChangeHook(Event: TEpiDataFileChangeEvent);
   end;
 
 
@@ -982,9 +1000,13 @@ end;
 
 procedure TEpiField.DoChange(EventType: TEpiFieldChangeEventType;
   OldValue: EpiVariant);
+var
+  i: Integer;
 begin
-  if Assigned(FOnChange) then
-    FOnChange(Self, EventType, OldValue);
+  if FUpdateCount > 0 then exit;
+
+  for i := 0 to FOnChangeCount - 1 do
+    FOnChange[i](Self, EventType, OldValue);
 end;
 
 class function TEpiField.CreateField(aFieldType: TFieldType; aSize: Cardinal): TEpiField;
@@ -1099,6 +1121,77 @@ begin
   Size := Size + ACount;
 end;
 
+procedure TEpiField.BeginUpdate;
+begin
+  Inc(FUpdateCount);
+end;
+
+procedure TEpiField.EndUpdate;
+begin
+  Dec(FUpdateCount);
+
+  if (FUpdateCount < 0) or (FUpdateCount > 0) then
+  begin
+    if (FUpdateCount < 0) then
+      FUpdateCount := 0;
+    exit;
+  end;
+  DoChange(fceUpdate, 0);
+end;
+
+procedure TEpiField.RegisterOnChangeHook(Event: TEpiFieldChangeEvent);
+begin
+  Inc(FOnChangeCount);
+  ReAllocMem(FOnChange, FOnChangeCount * SizeOf(TEpiFieldChangeEvent));
+  FOnChange[FOnChangeCount-1] := Event
+end;
+
+procedure TEpiField.UnRegisterOnChangeHook(Event: TEpiFieldChangeEvent);
+var
+  Idx: LongInt;
+begin
+  Idx := 0;
+  while Idx <= FOnChangeCount -1 do
+  begin
+    if FOnChange[Idx] = Event then
+      break;
+    Inc(Idx)
+  end;
+  if Idx = FOnChangeCount then exit;
+
+  dec(FOnChangeCount);
+  if FOnChangeCount > Idx then
+    System.Move(FOnChange[Idx+1], FOnChange[Idx], (FOnChangeCount-Idx)*SizeOf(TEpiFieldChangeEvent));
+  ReAllocMem(FOnChange, FOnChangeCount*SizeOf(TEpiFieldChangeEvent));
+end;
+
+procedure TEpiField.RegisterOnChangeDataHook(Event: TEpiFieldChangeDataEvent);
+begin
+  Inc(FOnChangeDataCount);
+  ReAllocMem(FOnChangeData, FOnChangeDataCount * SizeOf(TEpiFieldChangeDataEvent));
+  FOnChangeData[FOnChangeDataCount-1] := Event
+end;
+
+procedure TEpiField.UnRegisterOnChangeDataHook(Event: TEpiFieldChangeDataEvent
+  );
+var
+  Idx: LongInt;
+begin
+  Idx := 0;
+  while Idx <= FOnChangeDataCount -1 do
+  begin
+    if FOnChangeData[Idx] = Event then
+      break;
+    Inc(Idx)
+  end;
+  if Idx = FOnChangeDataCount then exit;
+
+  dec(FOnChangeDataCount);
+  if FOnChangeDataCount > Idx then
+    System.Move(FOnChangeData[Idx+1], FOnChangeData[Idx], (FOnChangeDataCount-Idx)*SizeOf(TEpiFieldChangeDataEvent));
+  ReAllocMem(FOnChangeData, FOnChangeDataCount*SizeOf(TEpiFieldChangeDataEvent));
+end;
+
 procedure TEpiField.Reset;
 begin
   if Assigned(FFieldProperties) then FreeAndNil(FFieldProperties);
@@ -1106,6 +1199,8 @@ begin
   // System props:
   FOwner         := nil;
   FDataFile      := nil;
+  ReAllocMem(FOnChange, 0);
+  ReAllocMem(FOnChangeData, 0);
 
   // Field props:
   FFieldName     := '';
@@ -1267,6 +1362,9 @@ begin
   if Assigned(FCrypter) then FreeAndNil(FCrypter);
   if Assigned(FRecordStatus) then FreeAndNil(FRecordStatus);
   if Assigned(FValueLabels) then FreeAndNil(FValueLabels);
+
+  ReAllocMem(FOnChangeList,0);
+  FOnChangeListCount := 0;
 
   FFileName       := '';
   FFileLabel      := '';
@@ -2510,9 +2608,14 @@ end;
 
 procedure TEpiDataFile.DoChange(Event: TEpiDataFileChangeEventType;
   OldValue: EpiVariant);
+var
+  i: Integer;
+  func: TEpiDataFileChangeEvent;
 begin
-  if Assigned(OnChange) then
-    OnChange(Self, Event, OldValue);
+  if FUpdateCount > 0 then exit;
+
+  for i := 0 to FOnChangeListCount - 1 do
+    FOnChangeList[i](Self, Event, OldValue);
 end;
 
 constructor TEpiDataFile.Create(ASize: Cardinal = 0);
@@ -2522,6 +2625,7 @@ begin
   inherited Create;
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Create', 3);
+
   try
     Reset();
     FFieldNaming := fnFirstWord;
@@ -2786,6 +2890,58 @@ begin
     end;
   finally
   end;
+end;
+
+procedure TEpiDataFile.BeginUpdate;
+var
+  i: Integer;
+begin
+  Inc(FUpdateCount);
+  for i := 0 to NumFields -1 do
+    Field[i].BeginUpdate;
+end;
+
+procedure TEpiDataFile.EndUpdate;
+var
+  i: Integer;
+begin
+  Dec(FUpdateCount);
+  for i := 0 to NumFields -1 do
+    Field[i].EndUpdate;
+
+  if (FUpdateCount < 0) or (FUpdateCount > 0) then
+  begin
+    if (FUpdateCount < 0) then
+      FUpdateCount := 0;
+    exit;
+  end;
+  DoChange(dceUpdate, 0);
+end;
+
+procedure TEpiDataFile.RegisterOnChangeHook(Event: TEpiDataFileChangeEvent);
+begin
+  Inc(FOnChangeListCount);
+  ReAllocMem(FOnChangeList, FOnChangeListCount * SizeOf(TEpiDataFileChangeEvent));
+  FOnChangeList[FOnChangeListCount-1] := Event
+end;
+
+procedure TEpiDataFile.UnRegisterOnChangeHook(Event: TEpiDataFileChangeEvent);
+var
+  Idx: LongInt;
+begin
+  Idx := 0;
+  while Idx <= FOnChangeListCount -1 do
+  begin
+    if FOnChangeList[Idx] = Event then
+      break;
+    Inc(Idx)
+  end;
+  if Idx = FOnChangeListCount then exit;
+
+  dec(FOnChangeListCount);
+  if FOnChangeListCount > Idx then
+    System.Move(FOnChangeList[Idx+1],FOnChangeList[Idx],(FOnChangeListCount-Idx)*SizeOf(TEpiDataFileChangeEvent));
+  ReAllocMem(FOnChangeList,FOnChangeListCount*SizeOf(TEpiDataFileChangeEvent));
 end;
 
 { TEpiIndexFile }
