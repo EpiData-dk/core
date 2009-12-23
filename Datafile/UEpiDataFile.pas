@@ -2840,6 +2840,7 @@ function TEpiDataFile.DocumentDatafile: TStrings;
 var
   TmpStr: String;
   i: Integer;
+  j: Integer;
 begin
   Result := TStringList.Create;
 
@@ -2866,27 +2867,37 @@ begin
     Append('Fields in datafile:');
     Append(DupeString('-',102));
     Append(Format(
-      '%3s %-10s %-20s %-15s %-5s %-5s %-20s',
+      '%-3s %-10s %-20s %-15s %-6s %-8s %-20s',
       ['No','Name','Variable label','Fieldtype','Length','Decimals','Value labels']));
     Append(DupeString('-',102));
 
     for i := 0 to NumFields - 1 do
     with Field[i] do
     begin
-      TmpStr := 'N/A';
+      TmpStr := '';
       if Assigned(ValueLabelSet) then
         TmpStr := ValueLabelSet.Name;
 
       Append(
         UTF8Encode(
           Format(
-            '%3d %-10.10s %-20.20s %-15s %-5d %-5d %-20.20s',
+            '%3d %-10.10s %-20.20s %-15s %6d %8d %-20.20s',
             [i+1, Utf8ToAnsi(FieldName), Utf8ToAnsi(VariableLabel),
              Utf8ToAnsi(FieldTypeToFieldTypeName(FieldType, nil)),
              FieldLength, FieldDecimals, Utf8ToAnsi(TmpStr)]
           )
         )
       );
+
+      if Assigned(ValueLabelSet) then
+      for j := 0 to ValueLabelSet.Count -1 do
+      begin
+        // Left adjust at index 64.
+        TmpStr := String(ValueLabelSet.Values[j]) + ': ' + ValueLabelSet.Labels[j];
+        if ValueLabelSet.MissingValues[j] then
+          TmpStr += '(missing)';
+        Append(Format('%67.67s %-20.20s', ['', TmpStr]));
+      end;
     end;
   finally
   end;
