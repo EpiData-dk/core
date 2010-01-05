@@ -6,7 +6,6 @@ unit UCheckFileCmds;
 interface
 
 uses
-  // TODO -o Torsten : Get rid of Dialogs and Graphic. It compiles most of the LCL into the binary.
   Classes, UValueLabels, UDataFileTypes, UCheckFileTypes;
 
 type

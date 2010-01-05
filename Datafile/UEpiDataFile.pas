@@ -2771,11 +2771,11 @@ end;
 
 procedure TEpiDataFile.AddField(AField: TEpiField);
 begin
-  Fields.Add(AField);
   if AField.FieldType = ftQuestion then
     QuestFields.Add(AField)
   else
     DataFields.Add(AField);
+  Fields.Add(AField);
 
   // Handle Valuelabels in accordance with Field Cloning rule 2.
   if Assigned(AField.ValueLabelSet) then
