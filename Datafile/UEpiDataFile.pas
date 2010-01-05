@@ -116,25 +116,25 @@ type
 
   TEpiField = class(TObject)
   private
-    FOwner:        TEpiFields;
-    FDataFile:     TEpiDataFile;
-    FCapacity:     Integer;
-    FSize:         Integer;
-    FFieldType:    TFieldType;
-    FFieldName:    string;
-    FFieldLength:  Cardinal;
+    FOwner:         TEpiFields;
+    FDataFile:      TEpiDataFile;
+    FCapacity:      Integer;
+    FSize:          Integer;
+    FFieldType:     TFieldType;
+    FFieldName:     string;
+    FFieldLength:   Cardinal;
     FFieldDecimals: Cardinal;
-    FFieldX:       Cardinal;
-    FFieldY:       Cardinal;
-    FFieldColourTxt:  Integer;
+    FFieldX:        Integer;
+    FFieldY:        Integer;
+    FFieldColourTxt: Integer;
     FFieldColourHl: Integer;
     FFieldColourBg: Integer;
     FVariableLabel: string;
-    FLabelX:       Cardinal;
-    FLabelY:       Cardinal;
+    FLabelX:        Integer;
+    FLabelY:        Integer;
     FLabelColourTxt: Integer;
     FLabelColourBg: Integer;
-    FDefaultValue: string;
+    FDefaultValue:  string;
     FFieldProperties: TEpiFieldProperties;
     FValueLabelSet: TValueLabelSet;
     FValueLabelIsFieldRef: Boolean;
@@ -146,12 +146,12 @@ type
     procedure SetFieldDecimals(const AValue: Cardinal);
     procedure SetFieldLength(const AValue: Cardinal);
     procedure SetFieldName(const AValue: string);
-    procedure SetFieldX(const AValue: Cardinal);
-    procedure SetFieldY(const AValue: Cardinal);
+    procedure SetFieldX(const AValue: Integer);
+    procedure SetFieldY(const AValue: Integer);
     procedure SetLabelColourBg(const AValue: Integer);
     procedure SetLabelColourTxt(const AValue: Integer);
-    procedure SetLabelX(const AValue: Cardinal);
-    procedure SetLabelY(const AValue: Cardinal);
+    procedure SetLabelX(const AValue: Integer);
+    procedure SetLabelY(const AValue: Integer);
     procedure SetVariableLabel(const AValue: string);
 //    function       GetAsFmtData: string;
   protected
@@ -197,14 +197,14 @@ type
     property  FieldName:   string read FFieldName write SetFieldName;
     property  FieldLength: Cardinal read FFieldLength write SetFieldLength;
     property  FieldDecimals: Cardinal read FFieldDecimals write SetFieldDecimals;
-    property  FieldX:      Cardinal read FFieldX write SetFieldX;
-    property  FieldY:      Cardinal read FFieldY write SetFieldY;
+    property  FieldX:      Integer read FFieldX write SetFieldX;
+    property  FieldY:      Integer read FFieldY write SetFieldY;
     property  FieldColourTxt:  Integer read FFieldColourTxt write SetFieldColourTxt;
     property  FieldColourHl: Integer read FFieldColourHl write SetFieldColourHl;
     property  FieldColourBg: Integer read FFieldColourBg write SetFieldColourBg;
     property  VariableLabel: string read FVariableLabel write SetVariableLabel;
-    property  LabelX:      Cardinal read FLabelX write SetLabelX;
-    property  LabelY:      Cardinal read FLabelY write SetLabelY;
+    property  LabelX:      Integer read FLabelX write SetLabelX;
+    property  LabelY:      Integer read FLabelY write SetLabelY;
     property  LabelColourTxt: Integer read FLabelColourTxt write SetLabelColourTxt;
     property  LabelColourBg: Integer read FLabelColourBg write SetLabelColourBg;
     property  DefaultValue: string read FDefaultValue write FDefaultValue;
@@ -912,7 +912,7 @@ begin
   DoChange(fceName, S);
 end;
 
-procedure TEpiField.SetFieldX(const AValue: Cardinal);
+procedure TEpiField.SetFieldX(const AValue: Integer);
 var
   Val: Cardinal;
 begin
@@ -922,7 +922,7 @@ begin
   DoChange(fceFX, Val);
 end;
 
-procedure TEpiField.SetFieldY(const AValue: Cardinal);
+procedure TEpiField.SetFieldY(const AValue: Integer);
 var
   Val: Cardinal;
 begin
@@ -952,7 +952,7 @@ begin
   DoChange(fceVColTxt, Val);
 end;
 
-procedure TEpiField.SetLabelX(const AValue: Cardinal);
+procedure TEpiField.SetLabelX(const AValue: Integer);
 var
   Val: Cardinal;
 begin
@@ -962,7 +962,7 @@ begin
   DoChange(fceVX, Val);
 end;
 
-procedure TEpiField.SetLabelY(const AValue: Cardinal);
+procedure TEpiField.SetLabelY(const AValue: Integer);
 var
   Val: Cardinal;
 begin
