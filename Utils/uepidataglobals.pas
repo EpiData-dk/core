@@ -114,8 +114,8 @@ CONST
                      
   FieldTypeNames: Array[TFieldType] of string =
                    ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
-                    'Boolean', 'Floating', 'Phonenumber', 'Time', 'Local phonenumber',
-                    'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Question',
+                    'Boolean', 'Float', 'Phonenumber', 'Time', 'Local phonenumber',
+                    'Today (mdy)', 'Date (dmy)', 'ID-number', '', '', 'Label',
                     'Today (dmy)', 'Soundex', 'Encryptfield', 'Date (ymd)',
                     'Today (ymd)');
 

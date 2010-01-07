@@ -575,7 +575,7 @@ type
 implementation
 
 uses
-  SysUtils, UStringUtils, EpiBase64, UEpiUtils,
+  SysUtils, UStringUtils, EpiBase64, UEpiUtils, FileUtil,
   StrUtils, UCheckFileIO, Math, UDateUtils, DOM, XMLRead;
 
 const
@@ -1737,15 +1737,18 @@ begin
           if SubSectionNode.Attributes.Length > 0 then
             FieldProperties.JumpResetValue := UTF8Encode(SubSectionNode.Attributes[0].TextContent);
         end;
+        // - Range
         SubElem := TDOMElement(ElemNode.FindNode('RANGE'));
         if Assigned(SubElem) then
         begin
           SplitString(UTF8Encode(SubElem.TextContent), List, [',']);
           FieldProperties.Ranges.Assign(List);
         end;
+        // - Top of Screen (reposition to top of screen)
         SubElem := TDOMElement(ElemNode.FindNode('TOPOFSCREEN'));
         if Assigned(SubElem) then
           FieldProperties.TopOfScreen := StrToInt(SubElem.TextContent);
+        // - TypeComment (place a label next to edit field)
         SubElem := TDOMElement(ElemNode.FindNode('TYPECOMMENT'));
         if Assigned(SubElem) then
         begin
@@ -1845,7 +1848,7 @@ begin
   DatafileType := dftEpiDataRec;
 
   try
-    AssignFile(TxtFile, Filename);
+    AssignFile(TxtFile, UTF8ToSys(Filename));
     {$I-}
     System.Reset(TxtFile);
     {$I+}
@@ -1972,7 +1975,7 @@ begin
     CloseFile(TxtFile);
 
     DataStream := TMemoryStream.Create;
-    DataStream.LoadFromFile(Filename);
+    DataStream.LoadFromFile(UTF8ToSys(Filename));
     DataStream.Position := DataStream.Size;
 
     // Skip all lineendings / EOF chars.
@@ -2854,7 +2857,7 @@ begin
     Append(Format('Filelabel: %s', [FileLabel]));
     if FileName <> '' then
       Append('Last revision: ' +
-        FormatDateTime('d. mmm yyyy t', FileDateToDateTime(FileAge(Filename))));
+        FormatDateTime('d. mmm yyyy t', FileDateToDateTime(FileAge(UTF8ToSys(Filename)))));
     Append(Format(
       'Number of Fields: %d' + LineEnding +
       'Number of Datafields: %d' + LineEnding +
@@ -2880,11 +2883,11 @@ begin
 
       Append(
         UTF8Encode(
-          Format(
+          WideFormat(
             '%3d %-10.10s %-20.20s %-15s %6d %8d %-20.20s',
-            [i+1, Utf8ToAnsi(FieldName), Utf8ToAnsi(VariableLabel),
-             Utf8ToAnsi(FieldTypeToFieldTypeName(FieldType, nil)),
-             FieldLength, FieldDecimals, Utf8ToAnsi(TmpStr)]
+            [i+1, UTF8Decode(FieldName), UTF8Decode(VariableLabel),
+             UTF8Decode(FieldTypeToFieldTypeName(FieldType, nil)),
+             FieldLength, FieldDecimals, UTF8Decode(TmpStr)]
           )
         )
       );
@@ -2892,11 +2895,11 @@ begin
       if Assigned(ValueLabelSet) then
       for j := 0 to ValueLabelSet.Count -1 do
       begin
-        // Left adjust at index 64.
+        // Left adjust at index 67.
         TmpStr := String(ValueLabelSet.Values[j]) + ': ' + ValueLabelSet.Labels[j];
         if ValueLabelSet.MissingValues[j] then
           TmpStr += '(missing)';
-        Append(Format('%67.67s %-20.20s', ['', TmpStr]));
+        Append(WideFormat('%-67.67s %-20.20s', ['', UTF8Decode(TmpStr)]));
       end;
     end;
   finally

@@ -88,7 +88,7 @@ implementation
 
 uses
   SysUtils, UCheckFileTypes, UEpiUtils, TypInfo,
-  UEpiDataGlobals, UStringUtils, StrUtils;
+  UEpiDataGlobals, UStringUtils, StrUtils, FileUtil;
 
 { TCheckParser }
 
@@ -2972,13 +2972,13 @@ begin
 
     // It's not a fault if no .CHK file exists.
     result := true;
-    if not FileExists(aFileName) then exit;
+    if not FileExistsUTF8(aFileName) then exit;
 
     DF.FileProperties.HasCheckFile := true;
     DF.FileProperties.FileName     := aFileName;
 
     try
-      FCheckLines.LoadFromFile(aFileName);
+      FCheckLines.LoadFromFile(UTF8Decode(aFileName));
       EpiUnknownStringsToUTF8(FCheckLines);
     except
       FreeAndNil(FCheckLines);
