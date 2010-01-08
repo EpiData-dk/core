@@ -1,0 +1,51 @@
+#   File generated automatically by Lazarus Package Manager
+#
+#   Makefile.fpc for epidatacore 0.2.4.103
+#
+#   This file was generated on 2010-01-07
+
+[package]
+name=epidatacore
+version=0.2.4.103
+
+[compiler]
+unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
+unitdir=Datafile/ Encryption/ Utils/ ../../../FreePascal/fpspreadsheet/lib/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM)/ ../../../FreePascal/lazarus/packager/units/$(CPU_TARGET)-$(OS_TARGET)/ ./
+includedir=./
+options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Sci
+
+[target]
+units=epidatacore.pas
+
+[clean]
+files=$(wildcard $(COMPILER_UNITTARGETDIR)/*$(OEXT)) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*$(PPUEXT)) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*$(RSTEXT)) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*.compiled) \
+      $(wildcard *$(OEXT)) $(wildcard *$(PPUEXT)) $(wildcard *$(RSTEXT))
+[prerules]
+# LCL Platform
+ifndef LCL_PLATFORM
+ifeq ($(OS_TARGET),win32)
+LCL_PLATFORM=win32
+else
+ifeq ($(OS_TARGET),win64)
+LCL_PLATFORM=win32
+else
+ifeq ($(OS_TARGET),darwin)
+LCL_PLATFORM=carbon
+else
+LCL_PLATFORM=gtk2
+endif
+endif
+endif
+endif
+export LCL_PLATFORM
+
+[rules]
+.PHONY: cleartarget all
+
+cleartarget:
+        -$(DEL) $(COMPILER_UNITTARGETDIR)/epidatacore$(PPUEXT)
+
+all: cleartarget $(COMPILER_UNITTARGETDIR) epidatacore$(PPUEXT)
