@@ -444,6 +444,7 @@ begin
   try
     aLines.LoadFromFile(aFilename);
     Result := QesToDatafile(aLines, DataFile);
+    DataFile.FileName := aFilename;
   finally
     if Assigned(aLines) then FreeAndNil(aLines);
   end;
