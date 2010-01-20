@@ -2855,7 +2855,7 @@ begin
       TmpStr := '(not saved yet)';
     Append(Format('Datafile: %s', [TmpStr]));
     Append(Format('Filelabel: %s', [FileLabel]));
-    if FileName <> '' then
+    if (FileName <> '') and (FileExistsUTF8(FileName)) then
       Append('Last revision: ' +
         FormatDateTime('d. mmm yyyy t', FileDateToDateTime(FileAge(UTF8ToSys(Filename)))));
     Append(Format(
