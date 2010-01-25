@@ -158,6 +158,7 @@ type
     FFieldNaming: TFieldNaming;
     FOnClipBoardRead: TClipBoardReadHook;
     FOnClipBoardWrite: TClipBoardWriteHook;
+    FOnPassword: TRequestPasswordEvent;
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
@@ -195,6 +196,7 @@ type
     function      ExportXPT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
+    property      OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property      ByteOrder: TByteOrder read FByteOrder;
     property      OnClipBoardRead: TClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     property      OnClipBoardWrite: TClipBoardWriteHook read FOnClipBoardWrite write FOnClipBoardWrite;
@@ -606,6 +608,7 @@ begin
           Datafile := TEpiDataFile.Create;
           DataFile.OnProgress := OnProgress;
           DataFile.OnTranslate := OnTranslate;
+          DataFile.OnPassword := OnPassword;
         end else
           DataFile.Reset;
         result := DataFile.Open(aFilename);

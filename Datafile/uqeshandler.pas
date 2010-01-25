@@ -254,7 +254,7 @@ begin
   IF COPY(FieldCode,1,6)='<TODAY'   THEN result := makeToday(St, En);
   IF COPY(FieldCode,1,2)='<S'       THEN result := makeSoundex(St, En);
   IF COPY(FieldCode,1,2)='<E'       THEN result := makeCrypt(St, En);  //&&
-  IF FieldCode <> 'Done' THEN
+  IF not Assigned(result) THEN
   BEGIN
     Df.ErrorCode := EPI_QES_FAILED;
     // TODO -o Torsten : LineNum
@@ -400,14 +400,14 @@ begin
       WHILE Length(CurLine)>0 DO
       BEGIN
         //Check which code is first in the line
-        FirstPos := -MaxInt;
+        FirstPos := MaxInt;
         N := pos('#', CurLine);
-        IF (N > 0) Then FirstPos := Max(N, FirstPos);
+        IF (N > 0) Then FirstPos := Min(N, FirstPos);
         N := pos('_', CurLine);
-        IF (N > 0) Then FirstPos := Max(N, FirstPos);
+        IF (N > 0) Then FirstPos := Min(N, FirstPos);
         N := pos('<', CurLine);
-        IF (N > 0) Then FirstPos := Max(N, FirstPos);
-        IF (FirstPos = -MaxInt) AND (Trim(CurLine) <> '') THEN
+        IF (N > 0) Then FirstPos := Min(N, FirstPos);
+        IF (FirstPos = MaxInt) AND (Trim(CurLine) <> '') THEN
           TmpField := MakeLabel(LinNum)
         ELSE
           BEGIN

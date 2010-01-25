@@ -2139,6 +2139,7 @@ begin
 
   try
     DataStream := TFileStream.Create(FileName, fmCreate);
+    DatafileType := dftEpiDataXml;
     UpdateProgress(0, Lang(0, 'Writing header.'));
 
     // **********************
