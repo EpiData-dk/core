@@ -599,7 +599,7 @@ begin
     dftOds:         result := ImportSpreadSheet(aFilename, DataFile);
     dftStata:       result := ImportStata(aFilename, DataFile);
     dftText:        result := ImportTXT(aFilename, DataFile, nil);
-    dftDBase:       result := ImportSpreadSheet(aFilename, DataFile);
+    dftDBase:       result := ImportDBase(aFilename, DataFile);
     dftEpiDataRec,
     dftEpiDataXml:
       begin

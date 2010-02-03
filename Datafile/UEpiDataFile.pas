@@ -1752,7 +1752,7 @@ begin
         SubElem := TDOMElement(ElemNode.FindNode('TYPECOMMENT'));
         if Assigned(SubElem) then
         begin
-          if SubElem.GetAttribute('COLOR') <> '' then
+          if SubElem.GetAttribute('COLOUR') <> '' then
           begin
             FieldProperties.TypeType := ttComment;
             FieldProperties.TypeColour := Hex2Dec(SubElem.GetAttribute('COLOR'));
@@ -2259,10 +2259,10 @@ begin
       // Optional:
       if Assigned(ValueLabelSet) then
         TmpStr := TmpStr +
-          Ins(3) + '<VALUELABEL>' + ValueLabelSet.Name + '</VALUELABEL>' + LineEnding;
+          Ins(3) + '<VALUELABEL>' + StringToXml(ValueLabelSet.Name) + '</VALUELABEL>' + LineEnding;
       if DefaultValue <> '' then
         TmpStr := TmpStr +
-          Ins(3) + '<DEFAULTVALUE>' + DefaultValue + '</DEFAULTVALUE>' + LineEnding;
+          Ins(3) + '<DEFAULTVALUE>' + StringToXml(DefaultValue) + '</DEFAULTVALUE>' + LineEnding;
 
       if HasFieldProperties then
       With FieldProperties Do
@@ -2280,14 +2280,14 @@ begin
           TmpStr := TmpStr + Ins(3) + '<JUMPS>' + LineEnding;
           For i := 0 to Jumps.Count - 1 do
             TmpStr := TmpStr + Ins(4) + '<JUMP ON="' + Jumps[i] +
-                      '" TO="' + TString(Jumps.Objects[i]).Str + '"/>' + LineEnding;
+                      '" TO="' + StringToXml(TString(Jumps.Objects[i]).Str) + '"/>' + LineEnding;
           TmpStr := TmpStr + Ins(3) + '</JUMPS>' + LineEnding;
         end;
         if Ranges.Count > 0 then
         begin
           TmpStr := TmpStr + Ins(3) + '<RANGE>';
           for i := 0 to Ranges.Count - 1 do
-            TmpStr := TmpStr + Ranges[i];
+            TmpStr := TmpStr + StringToXml(Ranges[i]);
           TmpStr := TmpStr + '</RANGE>' + LineEnding;
         end;
         if TopOfScreen >= 0 then
@@ -2295,9 +2295,9 @@ begin
             Ins(3) + '<TOPOFSCREEN>' + IntToStr(TopOfScreen) + '</TOPOFSCREEN>' + LineEnding;
         Case TypeType of
           ttComment: TmpStr := TmpStr +
-            Ins(3) + '<TYPECOMMENT COLOR="' + IntToHex(TypeColour, 6) + '"/>' + LineEnding;
+            Ins(3) + '<TYPECOMMENT COLOUR="' + IntToHex(TypeColour, 6) + '"/>' + LineEnding;
           ttField: TmpStr := TmpStr +
-            Ins(3) + '<TYPECOMMENT FIELD="' + TypeField.FieldName + '"/>' + LineEnding;
+            Ins(3) + '<TYPECOMMENT FIELD="' + StringToXml(TypeField.FieldName) + '"/>' + LineEnding;
         end;
         // TODO : Keys!
         //      if DataFile.IndexFile.IndexExists();
