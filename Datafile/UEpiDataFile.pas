@@ -2145,7 +2145,7 @@ begin
     // **********************
     // Global <EPIDATA> structure
     // **********************
-    TmpStr := '<?xml version="1.0"?>' + LineEnding +
+    TmpStr := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding +
       '<EPIDATA>' + LineEnding;
 
     // **********************
