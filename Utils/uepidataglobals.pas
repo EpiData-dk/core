@@ -111,7 +111,14 @@ CONST
                     // For now just all white...
                     ($FFFFFF, $FFFFFF, $FFFFFF, $FFFFFF,
                      $FFFFFF, $FFFFFF, $FFFFFF, $FFFFFF);
-                     
+
+  FieldTypeXmlNames: Array[TFieldType] of string =
+                   ('int', 'string', 'mdydate', 'uppercase', 'checkbox',
+                    'bool', 'float', 'phone', 'time', 'localphone',
+                    'mdytoday', 'dmydate', 'idnum', 'res1', 'res2', 'label',
+                    'dmytoday', 'soundex', 'crypt', 'ymddate',
+                    'ymdtoday');
+
   FieldTypeNames: Array[TFieldType] of string =
                    ('Integer', 'Text', 'Date (mdy)', 'Uppercase text', 'Checkbox',
                     'Boolean', 'Float', 'Phonenumber', 'Time', 'Local phonenumber',

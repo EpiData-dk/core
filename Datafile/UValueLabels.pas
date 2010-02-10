@@ -17,6 +17,8 @@ type
   TValueLabelSet = class(TObject)
   private
     FData:     TAVLTree;
+    FExtName: string;
+    FId:       string;
     FName:     string;
     FLabelScope: TValueLabelSetScope;
     FLabelType: TFieldType;
@@ -41,7 +43,9 @@ type
     procedure   AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
     procedure   Clone(var Dest: TValueLabelSet);
     procedure   Clear;
+    property    Id:   string read FId write FId;
     property    Name: string read FName write FName;
+    property    ExtName: string read FExtName write FExtName;
     property    ValueLabel[Const aValue: Variant]: string read GetValueLabel write SetValueLabel;
     property    MissingValue[Const aValue: Variant]: boolean read GetMissingValue write SetMissingValue;
     // Should only be used to read and traverse the tree.
@@ -68,9 +72,9 @@ type
     procedure   Clear;
     procedure   Clone(var dest: TValueLabelSets);
     procedure   Assign(Const Src: TValueLabelSets);
-    function    ValueLabelSetByName(Const aName: string): TValueLabelSet;
+    function    ValueLabelSetByName(Const Id: string): TValueLabelSet;
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
-    procedure   DeleteValueLabelSet(Const Name: string);
+    procedure   DeleteValueLabelSet(Const Id: string);
     property    Count:integer read GetCount;
     property    Items[index: integer]: TValueLabelSet read GetItem; default;
   end;
@@ -92,14 +96,14 @@ type
 
 procedure TValueLabelSets.AddValueLabelSet(aValueLabelSet: TValueLabelSet);
 begin
-  FList.AddObject(trim(aValueLabelSet.Name), aValueLabelSet);
+  FList.AddObject(trim(aValueLabelSet.Id), aValueLabelSet);
 end;
 
-procedure TValueLabelSets.DeleteValueLabelSet(Const Name: string);
+procedure TValueLabelSets.DeleteValueLabelSet(Const Id: string);
 var
   idx: integer;
 begin
-  idx := FList.IndexOf(name);
+  idx := FList.IndexOf(Id);
   if idx>-1 then FList.Delete(idx);
 end;
 
@@ -145,12 +149,12 @@ begin
 end;
 
 function TValueLabelSets.ValueLabelSetByName(
-  Const aName: string): TValueLabelSet;
+  Const Id: string): TValueLabelSet;
 var
   idx: integer;
 begin
   result := nil;
-  if FList.Find(trim(aName), idx) then
+  if FList.Find(trim(Id), idx) then
     result := TValueLabelSet(FList.Objects[idx]);
 end;
 
@@ -221,7 +225,8 @@ var
   AVLNode: TAVLTreeNode;
 begin
   FCurrentIndex := -1;
-  FName:='';
+  FName := '';
+  FId := '';
   FCurrentNode := nil;
   AVLNode := FData.FindLowest;
   while Assigned(AVLNode) do
@@ -246,6 +251,7 @@ begin
 
   Dest.Clear;
   Dest.Name := Name;
+  Dest.Id := Id;
   Dest.LabelScope := LabelScope;
   AVLNode := FData.FindLowest;
   while Assigned(AVLNode) do
@@ -398,6 +404,7 @@ end;
 constructor TValueLabelSet.Create(aLabelType: TFieldType);
 begin
   FName := '';
+  FId := '';
   FCurrentNode := nil;
   FCurrentIndex := -1;
   FLabelType := aLabelType;

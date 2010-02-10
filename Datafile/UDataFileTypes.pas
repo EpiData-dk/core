@@ -53,14 +53,14 @@ type
   TByteOrder            = (boLittleEndian, boBigEndian);
 
   TEpiFieldChangeEventType =
-    (fceUpdate, fceName, fceLength, fceDecimals, fceFX, fceFY, fceFColTxt, fceFColHl, fceFColBg,
-     fceVarLabel, fceVX, fceVY, fceVColTxt, fceVColBg);
-  TEpiFieldChangeEvent  = procedure(Sender: TObject; EventType: TEpiFieldChangeEventType; OldValue: EpiVariant) of object;
-  TEpiFieldChangeDataEvent = procedure(Sender: TObject; Index: Integer; OldValue: EpiVariant) of object;
+    (fceUpdate, fceName, fceLength, fceDecimals, fceFLeft, fceFTop, fceFColTxt, fceFColHl, fceFColBg,
+     fceVarLabel, fceVLeft, fceVTop, fceVColTxt, fceVColBg);
+  TEpiFieldChangeEvent  = procedure(Sender: TObject; EventType: TEpiFieldChangeEventType; OldValue: Pointer) of object;
+  TEpiFieldChangeDataEvent = procedure(Sender: TObject; Index: Integer; OldValue: Pointer) of object;
 
   TEpiDataFileChangeEventType =
-    (dceUpdate, dceName, dceLabel, dceStudy, dceAddField, dceRemoveField, dceFieldOrder);
-  TEpiDataFileChangeEvent = procedure(Sender: TObject; EventType: TEpiDataFileChangeEventType; OldValue: EpiVariant) of object;
+    (dceUpdate, dceName, dceLabel, dceStudy, dceAddField, dceRemoveField, dceFieldOrder, dceAddText, dceRemoveText, dceAddScreenProp, dceRemoveScreenProp);
+  TEpiDataFileChangeEvent = procedure(Sender: TObject; EventType: TEpiDataFileChangeEventType; OldValue: Pointer) of object;
 
   TEpiDialogFilterPair = record
     FilterName: string;

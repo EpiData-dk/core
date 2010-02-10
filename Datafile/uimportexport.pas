@@ -468,7 +468,7 @@ begin
       SplitString(TmpStr, FieldStrings, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
 
       for j := 0 to FieldStrings.Count -1 do
-      with DataFile.DataFields[j] do
+      with DataFile[j] do
       begin
         TmpStr := FieldStrings[j];
         if (TmpStr = '.') or (Trim(TmpStr) = '') then continue;
@@ -500,7 +500,7 @@ begin
     for i := 0 to FieldStrings.Count - 1 do
     begin
       TmpStr := FieldStrings[i];
-      TmpField := DataFile.DataFields[i];
+      TmpField := DataFile[i];
 
       if (TmpField.FieldLength = 0) and (TmpField.FieldType = ftInteger) then
       begin
@@ -546,8 +546,8 @@ begin
           TmpStr := FirstWord(FieldStrings[i], MaxInt-1)
         else
           TmpStr := AutoFieldName(FieldStrings[i]);
-        DataFile.DataFields[i].FieldName := DataFile.CreateUniqueFieldName(TmpStr);
-        DataFile.DataFields[i].VariableLabel := FieldStrings[i];
+        DataFile[i].FieldName     := DataFile.CreateUniqueFieldName(TmpStr);
+        DataFile[i].VariableLabel := FieldStrings[i];
       end;
       SkipFirstLine := true;
     end;
@@ -892,15 +892,13 @@ begin
       end;
 
       TmpField := TEpiField.CreateField(TmpFieldType, NObs);
+      TmpField.ScreenProps := TEpiScreenProperty.Create(DataFile);
+      TmpField.VarLabelScreenProps := TEpiScreenProperty.Create(DataFile);
       WITH TmpField DO
       BEGIN
         FieldLength   := 0;
         FieldDecimals := 0;
         VariableLabel := '';
-        FieldX        := 0;
-        FieldY        := i;
-        LabelX        := i;
-        LabelY        := i;
         FieldName     := '';
       END;
 
@@ -967,13 +965,6 @@ begin
       TmpField.VariableLabel := StrBuf;
     END;
 
-    {Make Field's question and position entryfield}
-    FOR i := 0 TO nVar-1 DO
-    BEGIN
-      TmpField          := Fields[i];
-      TmpField.FieldX   := 10 + 1 + J + 2;
-    END;
-
     // ********************************
     //      STATA EXPANSION FIELDS
     // ********************************
@@ -997,9 +988,9 @@ begin
       FOR CurRec := 1 TO nObs DO
       BEGIN
         UpdateProgress(Trunc(100 * CurRec/nObs), Lang(0, 'Reading data'));
-        FOR CurField := 0 TO NumFields-1 DO
+        FOR CurField := 0 TO FieldCount - 1 DO
         BEGIN
-          TmpField := DataFields[Curfield];
+          TmpField := Field[Curfield];
           Case TypeList[CurField] of
             ByteConst,
             IntConst,
@@ -1221,7 +1212,7 @@ BEGIN
     SetLength(ByteBuf, 20);
     While True do
     begin
-      SetLength(FieldLengths, DataFields.Count + 1);
+      SetLength(FieldLengths, FieldCount + 1);
       DataStream.Read(CharBuf[0], 12);
       IF Ord(CharBuf[0]) = $0D THEN
         Break;
@@ -1264,14 +1255,8 @@ BEGIN
       end;
 
       TmpField.FieldName := CreateUniqueFieldName(TmpStr);
-
-      WITH TmpField DO
-      BEGIN
-        LabelX        := 1;
-        LabelY        := Fields.Count + 1;
-        FieldX        := 12;
-        FieldY        := LabelY;
-      END;  //with
+      TmpField.ScreenProps := TEpiScreenProperty.Create(DataFile);
+      TmpField.VarLabelScreenProps := TEpiScreenProperty.Create(DataFile);
       AddField(TmpField);
     end;
 
@@ -1285,8 +1270,8 @@ BEGIN
       if ReadInts(1) = $2A then
         Deleted[CurRec] := true;
 
-      FOR CurField := 0 TO DataFields.Count - 1 DO
-      with DataFields[CurField] do
+      FOR CurField := 0 TO FieldCount - 1 DO
+      with Field[CurField] do
       BEGIN
         SetLength(CharBuf, FieldLengths[CurField]);
         DataStream.Read(CharBuf[0], FieldLengths[CurField]);
@@ -1403,10 +1388,10 @@ begin
       if Trim(ImportLines[i]) = '' then continue;
       SplitString(ImportLines[i], FieldLines, [TxtImpSetting^.FieldSeparator], [TxtImpSetting^.QuoteChar]);
 
-      if FieldLines.Count > NumDataFields then
+      if FieldLines.Count > FieldCount then
       begin
         ErrorCode := EPI_IMPORT_FAILED;
-        ErrorText := Format(Lang(0, 'Error in line %d. To many delimiters - found %d, should be %d'), [i + 1, FieldLines.Count - 1, NumDataFields - 1]);
+        ErrorText := Format(Lang(0, 'Error in line %d. To many delimiters - found %d, should be %d'), [i + 1, FieldLines.Count - 1, FieldCount - 1]);
         Exit;
       end;
 
@@ -1425,7 +1410,7 @@ begin
           Continue;
         end;
 
-        TmpField := DataFields[j];
+        TmpField := Field[j];
         case TmpField.FieldType of
           ftInteger, ftIDNUM:
             ok := IsInteger(TmpStr);
@@ -1488,7 +1473,7 @@ var
   RowStart: LongWord;
   FtList: array of TFieldType;
   LineCount: LongWord;
-  FieldCount: Integer;
+  FC: Integer;
   ACell: PCell;
   TmpStr: String;
   FieldNameInRow1: Boolean;
@@ -1543,8 +1528,8 @@ begin
 
     LineCount := Math.Min(NumGuessLines, RowEnd);
     Size := RowEnd - RowStart + 1;
-    FieldCount := ColEnd - ColStart + 1;
-    SetLength(FtList, FieldCount);
+    FC := ColEnd - ColStart + 1;
+    SetLength(FtList, FC);
 
     // Skip first line since it may contain headings/field names.
     for i := RowStart + 1 to LineCount do
@@ -1584,7 +1569,7 @@ begin
 
     UpdateProgress(0, Lang(0, 'Guessing field information'));
     // Create Fields.
-    for i := 1 to FieldCount do
+    for i := 1 to FC do
     begin
       TmpField := TEpiField.CreateField(FtList[i-1], RowEnd - RowStart + 1);
       with TmpField do
@@ -1599,7 +1584,7 @@ begin
     // Guess field lengths
     for j := ColStart to ColEnd do
     begin
-      with DataFields[j - ColStart] do
+      with Field[j - ColStart] do
       begin
         // Set Length of field once - skip to next field
         if FieldType = ftBoolean then
@@ -1654,7 +1639,7 @@ begin
         cctUTF8String: TmpStr := ACell^.UTF8StringValue;
       end;
 
-      TmpField := DataFile.DataFields[i - ColStart];
+      TmpField := DataFile[i - ColStart];
       if (FindFieldType(TmpStr) = ftString) and
          (TmpField.FieldType <> ftString) then
         FieldNameInRow1 := true;;
@@ -1666,8 +1651,8 @@ begin
       begin
         ACell := WorkSheet.FindCell(i, j);
         if not Assigned(ACell) then continue;
-        DataFile.DataFields[i-colstart].FieldName := ACell^.UTF8StringValue;
-        DataFile.DataFields[i].VariableLabel := ACell^.UTF8StringValue;
+        DataFile[i-colstart].FieldName := ACell^.UTF8StringValue;
+        DataFile[i].VariableLabel := ACell^.UTF8StringValue;
       end;
     end;
 
@@ -1685,7 +1670,7 @@ begin
       Idx := (i - RowStart - LineSt) + 1;
       UpdateProgress(Trunc((Idx / (RowEnd- RowStart)) * 100), Lang(0, 'Importing records...'));
       for j := ColStart to ColEnd do
-      with  DataFields[j - ColStart] do
+      with  Field[j - ColStart] do
       begin
         ACell := WorkSheet.FindCell(i, j);
         if not Assigned(ACell) then continue;
@@ -1823,7 +1808,7 @@ begin
     if FileVersion >= $72 THEN
       FmtLength := 49;
 
-    NVar := NumDataFields;
+    NVar := FieldCount;
     NObs := Size;
 
     // ********************************
@@ -1861,7 +1846,7 @@ begin
     SetLength(ByteBuf, NVar);
     FOR i := 0 to NVar - 1 DO
     BEGIN
-      WITH DataFields[i] DO
+      WITH Field[i] DO
       BEGIN
         CASE FieldType OF
           ftInteger, ftIDNUM:
@@ -1926,7 +1911,7 @@ begin
     FieldNames := TStringList.Create;
     FOR i :=0 TO NVar - 1 DO
     BEGIN
-      WITH DataFields[i] DO
+      WITH Field[i] DO
       BEGIN
         TmpStr := Trim(FieldName);
         TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength - 1, FieldNames);
@@ -1942,7 +1927,7 @@ begin
 
     // - Fmtlist: list of formats of the variables
     FOR i := 0 TO NVar - 1 DO
-    WITH DataFields[i] DO
+    WITH Field[i] DO
     BEGIN
       CASE FieldType OF
         ftInteger, ftIDNUM:
@@ -1978,7 +1963,7 @@ begin
     UniqueValueLabels := TStringList.Create();
     UniqueValueLabels.Sorted := true;
     for i := 0 to NVar - 1 do
-    with DataFields[i] do
+    with Field[i] do
     begin
       TmpStr := '';
       if Assigned(ValueLabelSet) and (FieldType = ftInteger) then
@@ -2005,7 +1990,7 @@ begin
     // ********************************
     FOR i := 0 TO NVar - 1 DO
     BEGIN
-      WITH DataFields[i] DO
+      WITH Field[i] DO
       BEGIN
         TmpStr := Trim(VariableLabel);
         WriteString(TmpStr, FileLabelLength);
@@ -2031,7 +2016,7 @@ begin
         UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
 
         FOR CurField := 0 TO NVar - 1 DO
-        With DataFields[CurField] do
+        With Field[CurField] do
         BEGIN
           TmpStr := AsString[CurRec];
 
@@ -2228,9 +2213,9 @@ begin
 
     {Calculate recordlength as it is in dBase format}
     dbRecLength := 0;
-    FOR i := 0 TO DataFields.Count - 1 DO
+    FOR i := 0 TO FieldCount - 1 DO
     BEGIN
-      WITH DataFields[i] DO
+      WITH Field[i] DO
       BEGIN
         if FieldType in DateFieldTypes then
           INC(dbRecLength, 8)
@@ -2249,8 +2234,8 @@ begin
     WriteInts(eYear, 1);                             //header offset 1 - year of last update
     WriteInts(eMonth, 1);                            //header offset 2 - month of last update
     WriteInts(eDay, 1);                              //header offset 3 - date of last update
-    WriteInts(Size, 4);                        //header offset 4 - Number of records
-    WriteInts(32 + (DataFields.Count * 32) + 1, 2);  //header offset 8 - Header size in bytes
+    WriteInts(Size, 4);                              //header offset 4 - Number of records
+    WriteInts(32 + (FieldCount * 32) + 1, 2);  //header offset 8 - Header size in bytes
     WriteInts(dbRecLength + 1, 2);                   //header offset 10 - Record size in bytes
 
     SetLength(ByteBuf, 20);
@@ -2261,8 +2246,8 @@ begin
     SetLength(ByteBuf, 14);
     FillChar(ByteBuf[0], 14, 0);
     ByteBuf[5] := 1;
-    FOR i := 0 TO DataFields.Count - 1 DO
-    WITH DataFields[i] DO
+    FOR i := 0 TO FieldCount - 1 DO
+    WITH Field[i] DO
     BEGIN
       TmpStr := CreateUniqueAnsiVariableName(FieldName, 11, FieldNames);
       WriteString(TmpStr, 11);                                      // Field name   (Bytes 0  - 10)
@@ -2298,8 +2283,8 @@ begin
         ELSE
           WriteInts($20, 1);
 
-        FOR CurField := 0 TO DataFields.Count - 1 DO
-        WITH DataFields[CurField] DO
+        FOR CurField := 0 TO FieldCount - 1 DO
+        WITH Field[CurField] DO
         BEGIN
           TmpStr := AsString[CurRec];
           CASE FieldType of
@@ -2371,9 +2356,9 @@ begin
 
     if ExpSettings^.WriteFieldNames then
     begin
-      for i := 0 to NumDataFields - 1do
+      for i := 0 to FieldCount - 1do
       begin
-        TmpStr := DataFields[i].FieldName;
+        TmpStr := Field[i].FieldName;
         if ExpSettings^.FixedFormat then
           TmpStr := Format('%-*s', [MaxFieldNameLen, TmpStr]);
         TmpStr := TmpStr + FieldSep;
@@ -2390,15 +2375,15 @@ begin
     begin
        UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
 
-       for i := 0 to NumDataFields - 1 do
+       for i := 0 to FieldCount - 1 do
        begin
-        TmpStr := DataFields[i].AsString[CurRec];
+        TmpStr := Field[i].AsString[CurRec];
 
         if ExpSettings^.FixedFormat then
-          TmpStr := Format('%-*s', [DataFields[i].FieldLength, TmpStr]);
+          TmpStr := Format('%-*s', [Field[i].FieldLength, TmpStr]);
 
         // TODO : Redesign using AsString, AsData... etc.
-        case DataFields[i].FieldType of
+        case Field[i].FieldType of
           ftDate, ftToday, ftEuroDate, ftEuroToday, ftYMDDate, ftYMDToday:
             TmpStr := StringReplace(TmpStr, EpiInternalFormatSettings.DateSeparator,
                         DateSep, [rfReplaceAll]);
@@ -2457,8 +2442,8 @@ begin
     if ExpSettings^.WriteFieldNames then
     begin
       Offset := 1;
-      for i := 0 to NumDataFields - 1 do
-        WorkSheet.WriteUTF8Text(0, i, DataFields[i].FieldName);
+      for i := 0 to FieldCount - 1 do
+        WorkSheet.WriteUTF8Text(0, i, Fields[i].FieldName);
     end;
 
     { Write Data }
@@ -2467,23 +2452,23 @@ begin
     begin
       UpdateProgress((CurRec * 100) DIV NObs, 'Writing records');
 
-      for i := 0 to NumDataFields - 1 do
+      for i := 0 to FieldCount - 1 do
       begin
         ACell := GetMem(SizeOf(TCell));
         FillChar(ACell^, SizeOf(TCell), #0);
         ACell^.Col := i;
         ACell^.Row := CurRec - 1 + OffSet;
 
-        if DataFields[i].IsMissing[CurRec] then
+        if Field[i].IsMissing[CurRec] then
           continue;
-        case DataFields[i].FieldType of
+        case Field[i].FieldType of
           ftFloat, ftInteger, ftIDNUM:
             begin
-              ACell^.NumberValue := DataFields[i].AsFloat[CurRec];
+              ACell^.NumberValue := Field[i].AsFloat[CurRec];
               ACell^.ContentType := cctNumber;
             end
         else
-          ACell^.UTF8StringValue := DataFields[i].AsString[CurRec];
+          ACell^.UTF8StringValue := Field[i].AsString[CurRec];
           ACell^.ContentType := cctUTF8String;
         end;
         WorkSheet.Cells.Add(ACell);

@@ -380,7 +380,7 @@ BEGIN
     END;
 
     {Write field blocks}
-    FOR i := 0 TO FDf.NumFields - 1 do
+    FOR i := 0 TO FDf.FieldCount - 1 do
     with FDf[i] do
       if (HasFieldProperties) or (Assigned(ValueLabelSet)) or
          (DefaultValue <> '')  then
@@ -1118,9 +1118,9 @@ BEGIN
             Color := i;
       END;
 
-      fc := FDf.NumDataFields;
+      fc := FDf.FieldCount;
       for i := 0 to Fc -1 do
-      with FDf.DataFields[i] do
+      with FDf.Fields[i] do
       begin
         if not Assigned(ValueLabelSet) then continue;
         FieldProperties.TypeType   := ttComment;
@@ -1635,8 +1635,8 @@ BEGIN
       cmdAutosave: ; // Do nothing... not supported anymore.
       cmdConfirm:
         begin
-          for i := 0 to FDf.NumDataFields - 1 do
-            FDf.DataFields[i].FieldProperties.Confirm := true;
+          for i := 0 to FDf.FieldCount - 1 do
+            FDf[i].FieldProperties.Confirm := true;
         end;
       cmdDefaultAll:
         BEGIN
@@ -1654,7 +1654,7 @@ BEGIN
               Exit;
             END;
 
-            for n:=0 TO FDf.NumFields - 1 DO
+            for n:=0 TO FDf.FieldCount - 1 DO
             BEGIN
               IF (FDf[n].FieldType in [ftInteger, ftString, ftUpperAlfa, ftFloat, ftCrypt]) THEN
               BEGIN
@@ -1852,10 +1852,10 @@ BEGIN
                   J := i;
             END;
 
-            For i := 0 to FDf.NumDataFields - 1 do
+            For i := 0 to FDf.FieldCount - 1 do
             begin
-              FDf.DataFields[i].FieldProperties.TypeType := ttComment;
-              FDf.DataFields[i].FieldProperties.TypeColour := J;
+              FDf[i].FieldProperties.TypeType := ttComment;
+              FDf[i].FieldProperties.TypeColour := J;
             end;
             Exit;
           END;
@@ -2086,15 +2086,21 @@ BEGIN
                 IF TmpList[2] = ChkColorNames[i] THEN
                   N := ChkColorTypes[i];
           end;
+
           case TmpColor of
             1: Begin
-                 CurField.LabelColourTxt := TxtColour;
-                 CurField.LabelColourBg  := BgColour;
+                 if not Assigned(CurField.VarLabelScreenProps) then
+                   CurField.VarLabelScreenProps := TEpiScreenProperty.Create(CurField.DataFile);
+                 CurField.VarLabelScreenProps.FgColour := TxtColour;
+                 CurField.VarLabelScreenProps.BgColour := BgColour;
+                 CurField.VarLabelScreenProps.HlColour := 0;
                End;
             2: Begin
-                 CurField.FieldColourTxt    := TxtColour;
-                 CurField.FieldColourBg  := BgColour;
-                 CurField.FieldColourHl  := N;
+                 if not Assigned(CurField.ScreenProps) then
+                   CurField.ScreenProps := TEpiScreenProperty.Create(CurField.DataFile);
+                 CurField.ScreenProps.FgColour  := TxtColour;
+                 CurField.ScreenProps.BgColour  := BgColour;
+                 CurField.ScreenProps.HlColour  := N;
                End;
           end;
         END;

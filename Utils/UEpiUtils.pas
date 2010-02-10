@@ -33,6 +33,7 @@ type
   function CreateUniqueAnsiVariableName(Const Varname: string; MaxLength: integer;
     CompareList: TStrings = nil): String;
   function FieldTypeToFieldTypeName(FieldType: TFieldType; Lang: TTranslateEvent): string;
+  function XmlNameToFieldType(const XmlName: string): TFieldType;
   function IsCompliant(Value: string; Ft: TFieldType):Boolean;
   function IsInteger(const Value: string): boolean;
   function IsFloat(var Value: string): boolean;
@@ -147,6 +148,22 @@ begin
     18: result := lang(50118, Result);
     19: result := lang(50119, Result);
     20: result := lang(50120, Result);
+  end;
+end;
+
+function XmlNameToFieldType(const XmlName: string): TFieldType;
+var
+  tmpstr: String;
+  i: TFieldType;
+begin
+  // use as none... for now.
+  result := ftRes4;
+
+  tmpstr := LowerCase(XmlName);
+  for i := Low(TFieldType) to High(TFieldType) do
+  begin
+    if tmpstr = FieldTypeXmlNames[i] then
+      result := TFieldType(i);
   end;
 end;
 

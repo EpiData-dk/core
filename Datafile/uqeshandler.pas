@@ -28,7 +28,7 @@ type
     function      NumValidChars(Const AText: string): integer;
   protected
     function      makeField(Ft: TFieldType; PosStart, PosEnd: Integer): TEpiField;
-    function      makeLabel(LineNum: Integer): TEpiField;
+    function      makeLabel(LineNum: Integer): TEpiTextLabel;
     function      makeNumField(StartPos: Integer): TEpiField;
     function      makeTxtField(StartPos: Integer): TEpiField;
     function      makeOtherField(StartPos: Integer): TEpiField;
@@ -127,11 +127,8 @@ begin
   begin
     FieldName     := ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
     FieldLength   := PosEnd - PosStart + 1;
-    // TODO: QuestX of Y!
-    LabelX        := 0;
-    LabelY        := 0;
-    FieldX        := 0;
-    FieldY        := 0;
+    ScreenProps   := TEpiScreenProperty.Create(FDf);
+    VarLabelScreenProps := TEpiScreenProperty.Create(DataFile);
     VariableLabel := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
     VariableLabel := Trim(StringReplace(VariableLabel, '}', '', [rfIgnoreCase, rfReplaceAll]));
     if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
@@ -143,20 +140,20 @@ begin
   Delete(CurLine, 1, PosEnd);
 end;
 
-function TQesHandler.makeLabel(LineNum: Integer): TEpiField;
+function TQesHandler.makeLabel(LineNum: Integer): TEpiTextLabel;
 var
   fName: string;
 begin
-  FName := Format('Label%d', [PostInc(LabelNo)]);
+  FName := Format('label%d', [PostInc(LabelNo)]);
 
-  Result := TEpiField.CreateField(ftQuestion, 0);
+  Result := TEpiTextLabel.Create(FDf.TextLabels);
   WITH Result DO
   BEGIN
-    FieldName    := fName;
-    FieldLength  := 0;
-    VariableLabel := CurLine;
-    LabelX       := CurX;
-    LabelY       := LineNum;
+    Id    := fName;
+    Text  := CurLine;
+    ScreenProp := TEpiScreenProperty.Create(FDf);
+//    LabelX       := CurX;
+//    LabelY       := LineNum;
   END;
   CurLine := '';
 end;
@@ -408,7 +405,7 @@ begin
         N := pos('<', CurLine);
         IF (N > 0) Then FirstPos := Min(N, FirstPos);
         IF (FirstPos = MaxInt) AND (Trim(CurLine) <> '') THEN
-          TmpField := MakeLabel(LinNum)
+          Df.AddTextLabel(MakeLabel(LinNum))
         ELSE
           BEGIN
             CASE CurLine[FirstPos] OF
@@ -416,12 +413,12 @@ begin
               '_': TmpField := makeTxtField(FirstPos);
               '<': TmpField := makeOtherField(FirstPos);
             END;  //Case
+            Df.AddField(TmpField);
           END;  //if
-        Df.AddField(TmpField);
         IF trim(CurLine) = '' THEN CurLine := '';
       END;  //while
     END;  //for LinNum
-    IF Df.NumDataFields = 0 THEN
+    IF Df.FieldCount = 0 THEN
     BEGIN
       Df.ErrorText := Lang(20442, 'No fields found in QES-file');
       Df.ErrorCode := EPI_QES_NO_FIELDS;
