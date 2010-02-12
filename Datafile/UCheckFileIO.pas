@@ -2090,14 +2090,14 @@ BEGIN
           case TmpColor of
             1: Begin
                  if not Assigned(CurField.VarLabelScreenProps) then
-                   CurField.VarLabelScreenProps := TEpiScreenProperty.Create(CurField.DataFile);
+                   CurField.VarLabelScreenProps := FDf.ScreenProperties.DefaultScreenProperty;
                  CurField.VarLabelScreenProps.FgColour := TxtColour;
                  CurField.VarLabelScreenProps.BgColour := BgColour;
                  CurField.VarLabelScreenProps.HlColour := 0;
                End;
             2: Begin
                  if not Assigned(CurField.ScreenProps) then
-                   CurField.ScreenProps := TEpiScreenProperty.Create(CurField.DataFile);
+                   CurField.ScreenProps := FDf.ScreenProperties.DefaultScreenProperty;
                  CurField.ScreenProps.FgColour  := TxtColour;
                  CurField.ScreenProps.BgColour  := BgColour;
                  CurField.ScreenProps.HlColour  := N;

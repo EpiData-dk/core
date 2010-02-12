@@ -73,6 +73,7 @@ type
     procedure   Clone(var dest: TValueLabelSets);
     procedure   Assign(Const Src: TValueLabelSets);
     function    ValueLabelSetByName(Const Id: string): TValueLabelSet;
+    function    ValueLabelSetExits(Const Id: string; var aValueLabelSet: TValueLabelSet): boolean;
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
     procedure   DeleteValueLabelSet(Const Id: string);
     property    Count:integer read GetCount;
@@ -156,6 +157,13 @@ begin
   result := nil;
   if FList.Find(trim(Id), idx) then
     result := TValueLabelSet(FList.Objects[idx]);
+end;
+
+function TValueLabelSets.ValueLabelSetExits(const Id: string;
+  var aValueLabelSet: TValueLabelSet): boolean;
+begin
+  aValueLabelSet := ValueLabelSetByName(Id);
+  Result := Assigned(aValueLabelSet);
 end;
 
 function TValueLabelSets.GetCount:integer;

@@ -58,9 +58,13 @@ type
   TEpiFieldChangeEvent  = procedure(Sender: TObject; EventType: TEpiFieldChangeEventType; OldValue: Pointer) of object;
   TEpiFieldChangeDataEvent = procedure(Sender: TObject; Index: Integer; OldValue: Pointer) of object;
 
+  TEpiTextLabelChangeEventType =
+    (tceUpdate, tceId, tceText, tceLeft, tceTop, tceColTxt, tceColHl, tceColBg);
+  TEpiTextLabelChangeEvent  = procedure(Sender: TObject; EventType: TEpiTextLabelChangeEventType; OldValue: Pointer) of object;
+
   TEpiDataFileChangeEventType =
     (dceUpdate, dceName, dceLabel, dceStudy, dceAddField, dceRemoveField, dceFieldOrder, dceAddText, dceRemoveText, dceAddScreenProp, dceRemoveScreenProp);
-  TEpiDataFileChangeEvent = procedure(Sender: TObject; EventType: TEpiDataFileChangeEventType; OldValue: Pointer) of object;
+  TEpiDataFileChangeEvent = procedure(Sender: TObject; EventType: TEpiDataFileChangeEventType; Data: Pointer) of object;
 
   TEpiDialogFilterPair = record
     FilterName: string;

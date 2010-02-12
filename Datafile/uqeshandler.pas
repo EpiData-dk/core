@@ -127,8 +127,8 @@ begin
   begin
     FieldName     := ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
     FieldLength   := PosEnd - PosStart + 1;
-    ScreenProps   := TEpiScreenProperty.Create(FDf);
-    VarLabelScreenProps := TEpiScreenProperty.Create(DataFile);
+    ScreenProps   := FDf.ScreenProperties.DefaultScreenProperty;
+    VarLabelScreenProps := FDf.ScreenProperties.DefaultScreenProperty;
     VariableLabel := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
     VariableLabel := Trim(StringReplace(VariableLabel, '}', '', [rfIgnoreCase, rfReplaceAll]));
     if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
@@ -149,11 +149,11 @@ begin
   Result := TEpiTextLabel.Create(FDf.TextLabels);
   WITH Result DO
   BEGIN
-    Id    := fName;
-    Text  := CurLine;
-    ScreenProp := TEpiScreenProperty.Create(FDf);
-//    LabelX       := CurX;
-//    LabelY       := LineNum;
+    Id         := fName;
+    Text       := CurLine;
+    ScreenProp := Fdf.ScreenProperties.DefaultScreenProperty;
+    TextLeft   := 0;
+    TextTop    := 0;
   END;
   CurLine := '';
 end;

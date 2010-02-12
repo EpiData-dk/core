@@ -892,8 +892,8 @@ begin
       end;
 
       TmpField := TEpiField.CreateField(TmpFieldType, NObs);
-      TmpField.ScreenProps := TEpiScreenProperty.Create(DataFile);
-      TmpField.VarLabelScreenProps := TEpiScreenProperty.Create(DataFile);
+      TmpField.ScreenProps := ScreenProperties.DefaultScreenProperty;
+      TmpField.VarLabelScreenProps := ScreenProperties.DefaultScreenProperty;
       WITH TmpField DO
       BEGIN
         FieldLength   := 0;
@@ -1255,8 +1255,8 @@ BEGIN
       end;
 
       TmpField.FieldName := CreateUniqueFieldName(TmpStr);
-      TmpField.ScreenProps := TEpiScreenProperty.Create(DataFile);
-      TmpField.VarLabelScreenProps := TEpiScreenProperty.Create(DataFile);
+      TmpField.ScreenProps := ScreenProperties.DefaultScreenProperty;
+      TmpField.VarLabelScreenProps := ScreenProperties.DefaultScreenProperty;
       AddField(TmpField);
     end;
 

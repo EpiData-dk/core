@@ -18,19 +18,24 @@ type
 
 
   { TEpiScreenProperties }
+
+  { TEpiScreenProperty }
+
   TEpiScreenProperty = class(TObject)
   private
+    FName: string;
     FOwner:    TEpiScreenProperties;
     FId:       string;
     FFgColour: integer;
     FBgColour: integer;
     FHlColour: integer;
   public
-    constructor Create(AOwner: TEpiScreenProperties);
+    constructor Create(AOwner: TEpiScreenProperties); virtual;
     destructor  Destroy; override;
     procedure   Clone(var Dest: TEpiScreenProperty);
     procedure   Reset;
     property    Id: string read FId write FId;
+    property    Name: string read FName write FName;
     property    FgColour: integer read FFgColour write FFgColour;
     property    BgColour: integer read FBgColour write FBgColour;
     property    HlColour: integer read FHlColour write FHlColour;
@@ -42,7 +47,9 @@ type
     FOwner:   TEpiDataFile;
     FList:    TFPList;
     FReportOnChange: Boolean;
+    FDefaultScreenProperty: TEpiScreenProperty;
     function GetCount: Cardinal;
+    function GetDefaultScreenProperty: TEpiScreenProperty;
     function GetScreenProperty(Index: integer): TEpiScreenProperty;
   public
     constructor Create(AOwner: TEpiDataFile); virtual;
@@ -52,8 +59,9 @@ type
     procedure   Add(aScreenProperty: TEpiScreenProperty);
     procedure   Delete(aScreenProperty: TEpiScreenProperty);
     function    ScreenPropertyById(Const aScreenPropertyId: string): TEpiScreenProperty;
-    function    ScreenPropertyExists(Const aScreenPropertyId: string): boolean;
+    function    ScreenPropertyExists(Const aScreenPropertyId: string; var aScreenProperty: TEpiScreenProperty): boolean;
     function    IndexOf(Const aScreenPropertyId: string): integer;
+    Property    DefaultScreenProperty: TEpiScreenProperty read GetDefaultScreenProperty;
     Property    ScreenProperty[Index: integer]: TEpiScreenProperty read GetScreenProperty; default;
     Property    Count: Cardinal read GetCount;
     Property    ReportOnChange: Boolean read FReportOnChange write FReportOnChange;
@@ -166,14 +174,34 @@ type
     FId:         string;
     FText:       string;
     FScreenProp: TEpiScreenProperty;
+    FTextLeft: Integer;
+    FTextTop: Integer;
+    procedure SetId(const AValue: string);
+    procedure SetText(const AValue: string);
+    procedure SetTextLeft(const AValue: Integer);
+    procedure SetTextTop(const AValue: Integer);
   public
     constructor Create(AOwner: TEpiTextLabels);
     destructor  Destroy; override;
     // TODO : Clone!
     // TODO : Reset!
-    property    Id:   string read FId write FId;
-    property    Text: string read FText write FText;
+    property    Id:         string read FId write SetId;
+    property    Text:       string read FText write SetText;
+    Property    TextTop:    Integer read FTextTop write SetTextTop;
+    Property    TextLeft:   Integer read FTextLeft write SetTextLeft;
     property    ScreenProp: TEpiScreenProperty read FScreenProp write FScreenProp;
+  private
+    // Events (and control):
+    FOnChange:     ^TEpiTextLabelChangeEvent;
+    FOnChangeCount: Integer;
+    FUpdateCount:   Integer;
+    procedure DoChange(EventType: TEpiTextLabelChangeEventType; OldValue: Pointer);
+  public
+    // Events (and control):
+    procedure BeginUpdate;
+    procedure EndUpdate;
+    procedure RegisterOnChangeHook(Event: TEpiTextLabelChangeEvent);
+    procedure UnRegisterOnChangeHook(Event: TEpiTextLabelChangeEvent);
   end;
 
   { TEpiTextLabels }
@@ -208,6 +236,7 @@ type
   private
     FFieldLeft: Integer;
     FFieldTop: Integer;
+    FId: string;
     FOwner:         TEpiFields;
     FDataFile:      TEpiDataFile;
     FCapacity:      Integer;
@@ -222,7 +251,9 @@ type
     FFieldProperties: TEpiFieldProperties;
     FValueLabelSet: TValueLabelSet;
     FValueLabelIsFieldRef: Boolean;
+    FVarLabelLeft: Integer;
     FVarLabelScreenProps: TEpiScreenProperty;
+    FVarLabelTop: Integer;
     function GetFieldProperties: TEpiFieldProperties;
     function GetHasFieldProperties: boolean;
     procedure SetFieldDecimals(const AValue: Cardinal);
@@ -231,6 +262,8 @@ type
     procedure SetFieldName(const AValue: string);
     procedure SetFieldTop(const AValue: Integer);
     procedure SetVariableLabel(const AValue: string);
+    procedure SetVarLabelLeft(const AValue: Integer);
+    procedure SetVarLabelTop(const AValue: Integer);
 //    function       GetAsFmtData: string;
   protected
     constructor Create(ASize: Cardinal; AFieldType: TFieldType); virtual;
@@ -268,6 +301,7 @@ type
     procedure Exchange(i,j: integer); virtual; abstract;
     function  Compare(i,j: integer): integer; virtual; abstract;
     procedure NewRecords(ACount: Integer = 1); virtual;
+    Property  Id:            string read FId write FId;
     property  Owner:         TEpiFields read FOwner;
     property  DataFile:      TEpiDataFile read FDataFile;
     property  Size:          Integer read GetSize write SetSize;
@@ -279,6 +313,8 @@ type
     Property  FieldLeft:     Integer read FFieldLeft write SetFieldLeft;
     property  ScreenProps:   TEpiScreenProperty read FScreenProps write FScreenProps;
     property  VariableLabel: string read FVariableLabel write SetVariableLabel;
+    Property  VarLabelTop:   Integer read FVarLabelTop write SetVarLabelTop;
+    Property  VarLabelLeft:  Integer read FVarLabelLeft write SetVarLabelLeft;
     property  VarLabelScreenProps: TEpiScreenProperty read FVarLabelScreenProps write FVarLabelScreenProps;
     property  DefaultValue: string read FDefaultValue write FDefaultValue;
     property  HasFieldProperties: boolean read GetHasFieldProperties;
@@ -503,6 +539,7 @@ type
     procedure   Add(aField: TEpiField);
     procedure   Delete(aField: TEpiField);
     function    FieldByName(Const aFieldName: string): TEpiField;
+    function    FieldById(Const aId: string): TEpiField;
     function    FieldExists(Const aFieldName: string): boolean;
     function    IndexOf(Const aFieldName: string): integer;
     Property    Field[Index: integer]: TEpiField read GetField; default;
@@ -579,6 +616,7 @@ type
     procedure  SetVerified(Index: integer; const AValue: boolean);
   private
     // XML Read Functions:
+    // - read
     Procedure  ReportXmlError(ErrCode: Integer; LangCode: integer; Msg: String; Args: array of const);
     Procedure  ReadSettings(RootNode: TDOMElement; FmtSettings: TFormatSettings);
     Procedure  ReadMetaData(RootNode: TDOMElement; FmtSettings: TFormatSettings);
@@ -589,7 +627,18 @@ type
     Procedure  ReadScreenColours(RootNode: TDOMElement);
     Procedure  ReadTextLabels(RootNode: TDOMElement);
     Procedure  ReadFields(RootNode: TDOMElement);
-    Procedure  ReadRecords(RootNode: TDOMElement);
+    Procedure  ReadRecords(RootNode: TDOMElement; FmtSettings: TFormatSettings);
+    // - write
+    Function   Ins(Lvl: integer): string;
+    Function   StringToXml(Const Src: String): string;
+    Procedure  WriteSettings(St: TStream);
+    Procedure  WriteMetaData(St: TStream);
+    Procedure  WriteValueLabels(St: TStream);
+{    Procedure  WriteScreen;
+    Procedure  WriteScreenColours;
+    Procedure  WriteTextLabels;
+    Procedure  WriteFields;
+    Procedure  WriteRecords(FmtSettings: TFormatSettings); }
   protected
     function   InternalOpen: boolean;
     function   InternalOpenOld: boolean;
@@ -612,6 +661,7 @@ type
     procedure  AddField(AField: TEpiField);
     procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);
     function   FieldByName(Const aFieldName: string): TEpiField;
+    function   FieldById(Const aId: string): TEpiField;
     function   FieldExists(Const aFieldName: string): boolean;
     function   FieldIndex(Const aFieldName: string): Integer;
     function   CreateUniqueFieldName(Const AText: string): string;
@@ -986,6 +1036,8 @@ begin
 end;
 
 procedure TEpiField.SetFieldTop(const AValue: Integer);
+var
+  Val: LongInt;
 begin
   if FFieldTop = AValue then exit;
   Val := FFieldTop;
@@ -1001,6 +1053,26 @@ begin
   Val := VariableLabel;
   FVariableLabel := AValue;
   DoChange(fceVarLabel, @Val);
+end;
+
+procedure TEpiField.SetVarLabelLeft(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if FVarLabelLeft = AValue then exit;
+  Val := FVarLabelLeft;
+  FVarLabelLeft := AValue;
+  DoChange(fceVLeft, @Val);
+end;
+
+procedure TEpiField.SetVarLabelTop(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if FVarLabelTop = AValue then exit;
+  Val := FVarLabelTop;
+  FVarLabelTop := AValue;
+  DoChange(fceVTop, @Val);
 end;
 
 function TEpiField.GetFieldProperties: TEpiFieldProperties;
@@ -1212,6 +1284,7 @@ begin
   // System props:
   FOwner         := nil;
   FDataFile      := nil;
+  FScreenProps   := nil;
   ReAllocMem(FOnChange, 0);
   ReAllocMem(FOnChangeData, 0);
 
@@ -1219,9 +1292,8 @@ begin
   FFieldName     := '';
   FFieldLength   := 0;
   FFieldDecimals := 0;
-
-  // Positional:
-  FScreenProps.Reset;
+  FFieldLeft     := 0;
+  FFieldTop      := 0;
 
   // Label props:
   FVariableLabel := '';
@@ -1286,6 +1358,19 @@ begin
     Result := TEpiField(FList[i]);
 end;
 
+function TEpiFields.FieldById(const aId: string): TEpiField;
+var
+  i: Integer;
+begin
+  result := nil;
+  for i := 0 to FList.Count - 1 do
+    if AnsiCompareText(TEpiField(FList[i]).Id, aId) = 0 then
+    begin
+      result := TEpiField(FList[i]);
+      exit;
+    end
+end;
+
 function TEpiFields.FieldExists(Const aFieldName: string): boolean;
 begin
   result := Assigned(FieldByName(aFieldName)); 
@@ -1313,7 +1398,7 @@ begin
   end;
   FList.Add(aField);
   if ReportOnChange and Assigned(FDataFile) then
-    FDataFile.DoChange(dceAddField, nil);
+    FDataFile.DoChange(dceAddField, aField);
 end;
 
 procedure TEpiFields.Delete(aField: TEpiField);
@@ -1376,14 +1461,12 @@ procedure TEpiDataFile.InternalReset;
 begin
   if Assigned(FFields) then FreeAndNil(FFields);
   if Assigned(FTextLabels) then FreeAndNil(FTextLabels);
+  if Assigned(FScreenProperties) then FreeAndNil(FScreenProperties);
   if Assigned(FCheckFile) then FreeAndNil(FCheckFile);
   if Assigned(FIndexFile) then FreeAndNil(FIndexFile);
   if Assigned(FCrypter) then FreeAndNil(FCrypter);
   if Assigned(FRecordStatus) then FreeAndNil(FRecordStatus);
   if Assigned(FValueLabels) then FreeAndNil(FValueLabels);
-
-  ReAllocMem(FOnChangeList,0);
-  FOnChangeListCount := 0;
 
   FFileName       := '';
   FFileLabel      := '';
@@ -1698,10 +1781,12 @@ end;
 
 procedure TEpiDataFile.ReadScreenColours(RootNode: TDOMElement);
 var
-  ElemNode: TDOMNode;
+  ElemNode: TDOMElement;
+  SubElem: TDOMNode;
   LocalScreenProp: TEpiScreenProperty;
+  TmpStr: String;
 begin
-  ElemNode := RootNode.FirstChild;
+  ElemNode := TDOMElement(RootNode.FirstChild);
   while Assigned(ElemNode) do
   begin
     if UTF8Encode(ElemNode.NodeName) <> 'Colour' then
@@ -1711,30 +1796,103 @@ begin
 
     TmpStr := UTF8Encode(ElemNode.GetAttribute('id'));
     if TmpStr = '' then
-      ReportXmlError(EPI_XML_TAG_MISSING, 0,
+      ReportXmlError(EPI_XML_ATTR_MISSING, 0,
         'Colour attribute Id not specified.', []);
     LocalScreenProp.Id := UTF8Encode(TmpStr);
+
+    SubElem := ElemNode.FindNode('Name');
+    if not Assigned(SubElem) then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0,
+        'Colour Name tag not specified.', []);
+    LocalScreenProp.Name := UTF8Encode(SubElem.TextContent);
+
+    SubElem := ElemNode.FindNode('ForeGround');
+    if not Assigned(SubElem) then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0,
+        'Colour ForeGround tag not specified.', []);
+    LocalScreenProp.FgColour := Hex2Dec(SubElem.TextContent);
+
+    SubElem := ElemNode.FindNode('BackGround');
+    if not Assigned(SubElem) then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0,
+        'Colour BackGround tag not specified.', []);
+    LocalScreenProp.BgColour := Hex2Dec(SubElem.TextContent);
+
+    SubElem := ElemNode.FindNode('HighLight');
+    if not Assigned(SubElem) then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0,
+        'Colour HighLight tag not specified.', []);
+    LocalScreenProp.HlColour := Hex2Dec(SubElem.TextContent);
+
+    ScreenProperties.Add(LocalScreenProp);
+
+    ElemNode := TDOMElement(ElemNode.NextSibling);
+  end;
 end;
 
 procedure TEpiDataFile.ReadTextLabels(RootNode: TDOMElement);
+var
+  ElemNode: TDOMElement;
+  LocalTextLabel: TEpiTextLabel;
+  TmpStr: String;
+  SubElem: TDOMNode;
+  LocalScreenProp: TEpiScreenProperty;
 begin
+  ElemNode := TDOMElement(RootNode.FirstChild);
+  while Assigned(ElemNode) do
+  begin
+    if UTF8Encode(ElemNode.NodeName) <> 'TextLabel' then
+      ReportXmlError(EPI_XML_UNKNOWN_TAG, 0,
+        'Unknown TAG placed in TextLabels section: %s', [UTF8Encode(ElemNode.NodeName)]);
+    LocalTextLabel := TEpiTextLabel.Create(TextLabels);
 
+    TmpStr := UTF8Encode(ElemNode.GetAttribute('id'));
+    if TmpStr = '' then
+      ReportXmlError(EPI_XML_ATTR_MISSING, 0,
+        'TextLabel attribute Id not specified.', []);
+    LocalTextLabel.Id := UTF8Encode(TmpStr);
+
+    SubElem := ElemNode.FindNode('ScreenRef');
+    if Assigned(SubElem) then
+    begin
+      if not ScreenProperties.ScreenPropertyExists(UTF8Decode(SubElem.TextContent), LocalScreenProp) then
+        ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+          'Textlabel ScreenRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+    end else
+      LocalScreenProp := ScreenProperties.DefaultScreenProperty;
+    LocalTextLabel.ScreenProp := LocalScreenProp;
+
+    SubElem := ElemNode.FindNode('Text');
+    if Assigned(SubElem) then
+      LocalTextLabel.Text := UTF8Decode(SubElem.TextContent);
+
+    TextLabels.Add(LocalTextLabel);
+
+    ElemNode := TDOMElement(ElemNode.NextSibling);
+  end;
 end;
 
 procedure TEpiDataFile.ReadFields(RootNode: TDOMElement);
 var
   List: TStringList;
   ElemNode: TDOMElement;
-  SubElem: TDOMNode;
+  SubElem: TDOMElement;
   TmpField: TEpiField;
+  LocalScreenProp: TEpiScreenProperty;
+  LocalValueLabel: TValueLabelSet;
+  SubSection: TDOMNode;
 begin
-  List := nil;
-  ElemNode := TDOMElement(RootNode.FindNode('Field'));
+  ElemNode := TDOMElement(RootNode.FirstChild);
   while Assigned(ElemNode) do
   begin
-    // Create field from <FIELD> sections.
+    if UTF8Encode(ElemNode.NodeName) <> 'Field' then
+      ReportXmlError(EPI_XML_UNKNOWN_TAG, 0,
+        'Unknown TAG placed in Fields section: %s', [UTF8Encode(ElemNode.NodeName)]);
+
+    // *****************
     // Must exists tags:
-    SubElem := ElemNode.FindNode('Type');
+    // *****************
+    SubElem := TDOMElement(ElemNode.FindNode('Type'));
     if not Assigned(SubElem) then
       ReportXmlError(EPI_XML_TAG_MISSING, 0,
         'Field Type not specified.', []);
@@ -1747,82 +1905,111 @@ begin
       FieldLength   := StrToInt(ElemNode.FindNode('Length').TextContent);
       FieldDecimals := StrToInt(ElemNode.FindNode('Decimals').TextContent);
 
-      SubElem := ElemNode.FindNode('ScreenRef');
-//      if Assigned(SubElem) then
-//        ScreenProps := Self.sc;
-
-      // Optional:
-      // - Variable labels
-      SubElem := TDOMElement(ElemNode.FindNode('LABEL'));
-      If Assigned(SubElem) then
-      begin
-        VariableLabel := UTF8Encode(SubElem.TextContent);
-      end;
-      // - Valuelabel
-      SubElem :=  TDOMElement(ElemNode.FindNode('VALUELABEL'));
+      SubElem := TDOMElement(ElemNode.FindNode('ScreenRef'));
       if Assigned(SubElem) then
-        ValueLabelSet := ValueLabels.ValueLabelSetByName(UTF8Encode(SubElem.TextContent));
+      begin
+        if not ScreenProperties.ScreenPropertyExists(UTF8Decode(SubElem.TextContent), LocalScreenProp) then
+          ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+            'Field ScreenRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+      end else
+        LocalScreenProp := ScreenProperties.DefaultScreenProperty;
+      ScreenProps := LocalScreenProp;
+
+      // *****************
+      // Optional:
+      // *****************
+      // - Variable label
+      SubSection := ElemNode.FindNode('FieldLabel');
+      if Assigned(SubSection) then
+      begin
+        SubElem := TDOMElement(SubSection.FindNode('ScreenRef'));
+        if Assigned(SubElem) then
+        begin
+          if not ScreenProperties.ScreenPropertyExists(UTF8Decode(SubElem.TextContent), LocalScreenProp) then
+            ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+              'FieldLabel ScreenRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+        end else
+          LocalScreenProp := ScreenProperties.DefaultScreenProperty;
+        VarLabelScreenProps := LocalScreenProp;
+
+        SubElem := TDOMElement(ElemNode.FindNode('Text'));
+        if Assigned(SubElem) then
+          VariableLabel := UTF8Decode(SubElem.TextContent);
+      end;
+
+      // - Valuelabel
+      SubElem :=  TDOMElement(ElemNode.FindNode('ValueLabelRef'));
+      if Assigned(SubElem) then
+      begin
+        if not ValueLabels.ValueLabelSetExits(UTF8Encode(SubElem.TextContent), LocalValueLabel) then
+          ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+            'Field ValueLabelRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+      end else
+        LocalValueLabel := nil;
+      ValueLabelSet := LocalValueLabel;
+
       // - Default value
-      SubElem :=  TDOMElement(ElemNode.FindNode('DEFAULTVALUE'));
+      SubElem :=  TDOMElement(ElemNode.FindNode('DefaultValue'));
       if Assigned(SubElem) then
         DefaultValue := UTF8Encode(SubElem.TextContent);
 
       // Optional - requires FieldProperties.
       // - Confirm
-      SubElem :=  TDOMElement(ElemNode.FindNode('CONFIRM'));
+      SubElem :=  TDOMElement(ElemNode.FindNode('Confirm'));
       if Assigned(SubElem) then
         FieldProperties.Confirm := true;
       // - Repeat
-      SubElem :=  TDOMElement(ElemNode.FindNode('REPEAT'));
+      SubElem :=  TDOMElement(ElemNode.FindNode('Repeat'));
       if Assigned(SubElem) then
         FieldProperties.DoRepeat := true;
       // - Enter
-      SubElem :=  TDOMElement(ElemNode.FindNode('ENTER'));
+      SubElem :=  TDOMElement(ElemNode.FindNode('Enter'));
       if Assigned(SubElem) then
       begin
-        if UTF8Encode(WideLowerCase(SubElem.GetAttribute('VAL'))) = 'true' then
+        if UTF8Encode(WideLowerCase(SubElem.TextContent)) = 'true' then
           FieldProperties.EntryType := entMust
         else
           FieldProperties.EntryType := entNone;
       end;
       // - Jumps
-      SubSectionNode := ElemNode.FindNode('JUMPS');
-      if Assigned(SubSectionNode) then
+      SubSection := ElemNode.FindNode('Jump');
+      if Assigned(SubSection) then
       begin
-        SubElem := TDOMElement(SubSectionNode.FirstChild);
+        SubElem := TDOMElement(SubSection.FirstChild);
         while Assigned(SubElem) do
         begin
-          FieldProperties.Jumps.AddObject(UTF8Encode(SubElem.GetAttribute('ON')),
-            TString.Create(UTF8Encode(SubElem.GetAttribute('TO'))));
+          FieldProperties.Jumps.AddObject(UTF8Encode(SubElem.GetAttribute('on')),
+            TString.Create(UTF8Encode(SubElem.GetAttribute('to'))));
           SubElem := TDOMElement(SubElem.NextSibling);
         end;
-        if SubSectionNode.Attributes.Length > 0 then
-          FieldProperties.JumpResetValue := UTF8Encode(SubSectionNode.Attributes[0].TextContent);
+        if SubSection.Attributes.Length > 0 then
+          FieldProperties.JumpResetValue := UTF8Encode(SubSection.Attributes[0].TextContent);
       end;
       // - Range
-      SubElem := TDOMElement(ElemNode.FindNode('RANGE'));
+      SubElem := TDOMElement(ElemNode.FindNode('Range'));
       if Assigned(SubElem) then
       begin
+        List := nil;
         SplitString(UTF8Encode(SubElem.TextContent), List, [',']);
         FieldProperties.Ranges.Assign(List);
       end;
       // - Top of Screen (reposition to top of screen)
-      SubElem := TDOMElement(ElemNode.FindNode('TOPOFSCREEN'));
+      SubElem := TDOMElement(ElemNode.FindNode('TopOfScreen'));
       if Assigned(SubElem) then
         FieldProperties.TopOfScreen := StrToInt(SubElem.TextContent);
       // - TypeComment (place a label next to edit field)
-      SubElem := TDOMElement(ElemNode.FindNode('TYPECOMMENT'));
+      SubElem := TDOMElement(ElemNode.FindNode('TypeComment'));
       if Assigned(SubElem) then
       begin
-        if SubElem.GetAttribute('COLOUR') <> '' then
+        if SubElem.GetAttribute('colour') <> '' then
         begin
           FieldProperties.TypeType := ttComment;
-          FieldProperties.TypeColour := Hex2Dec(SubElem.GetAttribute('COLOR'));
+          FieldProperties.TypeColour := Hex2Dec(SubElem.GetAttribute('colour'));
         end else
-        if SubElem.GetAttribute('FIELD') <> '' then
+        if SubElem.GetAttribute('field') <> '' then
         begin
           FieldProperties.TypeType := ttField;
-          FieldProperties.TypeField := FieldByName(UTF8Encode(SubElem.GetAttribute('COLOR')));
+          FieldProperties.TypeField := FieldByName(UTF8Encode(SubElem.GetAttribute('colour')));
         end;
       end;
     end;
@@ -1832,9 +2019,185 @@ begin
   end;
 end;
 
-procedure TEpiDataFile.ReadRecords(RootNode: TDOMElement);
+procedure TEpiDataFile.ReadRecords(RootNode: TDOMElement;
+  FmtSettings: TFormatSettings);
+var
+  ElemNode: TDOMElement;
+  CurRec: Integer;
+  i: Integer;
+  TmpField: TEpiField;
+  TmpStr: String;
 begin
+  CurRec := 1;
+  Size := RootNode.ChildNodes.Count;
+  ElemNode := TDOMElement(RootNode.FirstChild);
+  while Assigned(ElemNode) do
+  begin
+    for i := 0 to ElemNode.Attributes.Length - 1 do
+    begin
+      if ElemNode.Attributes[i].NodeName = 'st' then
+      begin
+        if ElemNode.Attributes[i].NodeValue = '1' then
+          Deleted[CurRec] := true
+        else if ElemNode.Attributes[i].NodeValue = '2' then
+          Verified[CurRec] := true;
+      end else begin
+        TmpField := FieldById(UTF8Decode(ElemNode.Attributes[i].NodeName));
+        TmpStr := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+        if TmpField.FieldType = ftCrypt then
+        begin
+          TmpStr := B64Decode(TmpStr);
+          FCrypter.DecryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
+          TmpStr := Trim(TmpStr);
+          FCrypter.Reset;
+        end;
+        TmpField.AsString[CurRec] := TmpStr;;
+      end;
+    end;
+    inc(CurRec);
+    ElemNode := TDOMElement(ElemNode.NextSibling);
+  end;
+end;
 
+function TEpiDataFile.Ins(Lvl: integer): string;
+begin
+  result := DupeString(' ', Lvl * 2);
+end;
+
+function TEpiDataFile.StringToXml(Const Src: String): string;
+var
+  i: Integer;
+begin
+  for i := 1 to Length(Src) do
+  begin
+    case Src[i] of
+      '&':
+        Result := Result  + '&amp;';
+      '"':
+        Result := Result  + '&quot;';
+      '<':
+        Result := Result  + '&lt;';
+      '>':
+        Result := Result  + '&gt;';
+    else
+      Result := Result  + Src[i];
+    end;
+  end;
+end;
+
+procedure TEpiDataFile.WriteSettings(St: TStream);
+var
+  TmpStr: String;
+  EncData: String;
+
+  function RequirePassword: boolean;
+  var
+    i: Integer;
+  begin
+    result := true;
+    for i := 0 to FieldCount -1 do
+      if Fields[i].FieldType = ftCrypt then
+        Exit;
+    result := false;
+  end;
+
+begin
+  TmpStr :=
+    Ins(1) + '<Settings>' + LineEnding +
+    Ins(2) + '<Version>' + IntToStr(FileVersion) + '</Version>' + LineEnding +
+    Ins(2) + '<DateSeparator>' + EpiInternalFormatSettings.DateSeparator + '</DateSeparator>' + LineEnding +
+    Ins(2) + '<DecimalSeparator>' + EpiInternalFormatSettings.DecimalSeparator + '</DecimalSeparator>' + LineEnding +
+    Ins(2) + '<MissingMark>' +  StringToXml(TEpiStringField.DefaultMissing) + '</MissingMark>' + LineEnding;
+  if RequirePassword then
+  begin
+    // TODO : What about UTF-8 encoding??
+    if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
+    if Password = '' then
+      raise Exception.Create('A password is needed for data files with encrypted fields');
+    FCrypter.InitStr(Password);
+    EncData := Trim(Password);
+    FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
+    EncData := B64Encode(EncData);
+    FCrypter.Reset;
+    TmpStr := TmpStr +
+      Ins(2) + '<Password>' + EncData + '</Password>' + LineEnding;
+  end;
+  TmpStr := TmpStr +
+    Ins(1) + '</Settings>' + LineEnding;
+  St.Write(TmpStr[1], Length(TmpStr));
+end;
+
+procedure TEpiDataFile.WriteMetaData(St: TStream);
+var
+  TmpStr: String;
+begin
+  TmpStr :=
+    Ins(1) + '<MetaData>' + LineEnding;
+  if FileLabel <> '' then
+    TmpStr := TmpStr +
+      Ins(2) + '<FileLabel>' + StringToXml(FileLabel) + '</FileLabel>' + LineEnding;
+  if Study <> '' then
+    TmpStr := TmpStr +
+      Ins(2) + '<Study>' + StringToXml(Study) + '</Study>' + LineEnding;
+  St.Write(TmpStr[1], Length(TmpStr));
+
+  if ValueLabels.Count > 0 then
+    WriteValueLabels(St);
+
+  // TODO : <USERDEFINED>
+  TmpStr :=
+    Ins(1) + '</MetaData>' + LineEnding;
+  St.Write(TmpStr[1], Length(TmpStr));
+end;
+
+procedure TEpiDataFile.WriteValueLabels(St: TStream);
+var
+  TmpStr: String;
+  i: Integer;
+  j: Integer;
+begin
+  TmpStr := Ins(2) + '<ValueLabels>' + LineEnding;
+  for i := 0 to ValueLabels.Count - 1 do
+  with ValueLabels[i] do
+  begin
+    TmpStr := TmpStr +
+      Ins(3) + '<ValueLabel Id="' + StringToXml(Id) + '">' + LineEnding;
+    TmpStr := TmpStr +
+      Ins(4) + '<Type>' + FieldTypeXmlNames[LabelType] + '</Type>' + LineEnding;
+    case LabelScope of
+      vlsFile:
+        begin
+          TmpStr := TmpStr +
+            Ins(4) + '<External>' + LineEnding +
+            Ins(5) + '<File>' + StringToXml(ExtName) + '</File>' + LineEnding +
+            //Ins(5) + '<ValueField>' + StringToXml() + '</ValueField>' + LineEnding +
+            //Ins(5) + '<LabelField>' + StringToXml(ExtName) + '</LabelField>' + LineEnding +
+            Ins(4) + '</External>' + LineEnding;
+        end;
+      vlsGlobal,
+      vlsLocal:
+        Begin
+          TmpStr := TmpStr +
+            Ins(4) + '<Internal>' + LineEnding;
+          for j := 0 to Count - 1 do
+          begin
+            TmpStr := TmpStr  +
+              Ins(5) + '<Set value="' + StringToXml(String(Values[j])) + '"';
+            if Labels[j] <> '' then
+              TmpStr := TmpStr  + ' label="' + Labels[j] + '"';
+            if MissingValues[j] then
+              TmpStr := TmpStr  + ' missing="1"';
+            TmpStr := TmpStr  +
+              '/>' + LineEnding;
+          end;
+        end;
+    end;
+    TmpStr := TmpStr +
+      Ins(3) + '</ValueLabel>' + LineEnding;
+  end;
+  TmpStr := TmpStr +
+    Ins(2) + '</ValueLabels>' + LineEnding;
+  St.Write(TmpStr[1], Length(TmpStr));
 end;
 
 function TEpiDataFile.InternalOpen: boolean;
@@ -1872,81 +2235,54 @@ begin
     ReadXMLFile(RecXml, FileName);
 
     // **********************
-    // Global <EPIDATA> structure
+    // Global <EpiData> structure
     // **********************
     RootNode := RecXml.DocumentElement;
 
     // **********************
-    // <SETTINGS> Section
+    // <Settings> Section
     // **********************
     SectionNode := RootNode.FindNode('Settings');
     if not Assigned(SectionNode) then
       ReportXmlError(EPI_XML_TAG_MISSING, 0,
         'Settings section missing in file: %s', [FileName]);
-    ReadSettings(TDOMElement(SectionNode));
+    ReadSettings(TDOMElement(SectionNode), LocalFmt);
 
     // **********************
-    // <METADATA> Section
+    // <MetaData> Section
     // **********************
     SectionNode := RootNode.FindNode('MetaData');
     if Assigned(SectionNode) then
       ReadMetaData(TDOMElement(SectionNode), LocalFmt);
 
     // **********************
-    // <SCREEN> Section
+    // <Screen> Section
     // **********************
     SectionNode := RootNode.FindNode('Screen');
     if Assigned(SectionNode) then
-      ReadScreen(TDOMElement(SectionNode), LocalFmt);
-
+      ReadScreen(TDOMElement(SectionNode));
 
     // **********************
-    // <FIELDS> Section
+    // <TextLabels> Section
     // **********************
-    SectionNode := RootNode.FindNode('FIELDS');
-    if not Assigned(SectionNode) then
-      ReportXmlError(EPI_XML_TAG_MISSING, 0,
-        'Fields section missing in file: %s', [FileName]);
-    ReadFields(TDOMElement(SectionNode));
+    SectionNode := RootNode.FindNode('TextLabels');
+    if Assigned(SectionNode) then
+      ReadTextLabels(TDOMElement(SectionNode));
 
-
-
+    // **********************
+    // <Fields> Section
+    // **********************
+    SectionNode := RootNode.FindNode('Fields');
+    if Assigned(SectionNode) then
+      ReadFields(TDOMElement(SectionNode));
 
     // **********************
     // <RECORDS> Section
     // **********************
-    CurRec := 1;
-    SectionNode := RootNode.FindNode('RECORDS');
-    Size := SectionNode.ChildNodes.Count;
-    ElemNode := TDOMElement(SectionNode.FindNode('REC'));
-    while Assigned(ElemNode) do
-    begin
-      for i := 0 to ElemNode.Attributes.Length - 1 do
-      begin
-        if ElemNode.Attributes[i].NodeName = 'S' then
-        begin
-          if ElemNode.Attributes[i].NodeValue = '1' then
-            Deleted[CurRec] := true
-          else if ElemNode.Attributes[i].NodeValue = '2' then
-            Verified[CurRec] := true;
-        end else begin
-          if not TagList.Find(UTF8Encode(ElemNode.Attributes[i].NodeName), Idx) then
-            ; // TODO: Crash with a big BOOM!
-          TmpField := TEpiField(TagList.Objects[Idx]);
-          TmpStr := UTF8Encode(ElemNode.Attributes[i].NodeValue);
-          if TmpField.FieldType = ftCrypt then
-          begin
-            TmpStr := B64Decode(TmpStr);
-            FCrypter.DecryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
-            TmpStr := Trim(TmpStr);
-            FCrypter.Reset;
-          end;
-          TmpField.AsString[CurRec] := TmpStr;;
-        end;
-      end;
-      inc(CurRec);
-      ElemNode := TDOMElement(ElemNode.NextSibling);
-    end;
+    SectionNode := RootNode.FindNode('Records');
+    if Assigned(SectionNode) then
+      ReadRecords(TDOMElement(SectionNode), LocalFmt);
+
   finally
     EpiLogger.DecIndent;
     if Assigned(RecXml) then FreeAndNil(RecXml);
@@ -2092,9 +2428,9 @@ begin
         begin
           Id := TmpName;
           Text := TmpLabel;
-          ScreenProp      := TEpiScreenProperty.Create(Self);
-          ScreenProp.Left := TmpFieldX;
-          ScreenProp.Top  := TmpFieldY;
+          ScreenProp := ScreenProperties.DefaultScreenProperty;
+          TextLeft   := TmpFieldX;
+          TextTop    := TmpFieldY;
         end;
         AddTextLabel(ELabel);
         Continue;
@@ -2103,12 +2439,12 @@ begin
       EField := TEpiField.CreateField(TmpFieldType);
       with EField do
       begin
-        ScreenProps      := TEpiScreenProperty.Create(Self);
-        ScreenProps.Left := TmpFieldX;
-        ScreenProps.Top  := TmpFieldY;
-        VarLabelScreenProps      := TEpiScreenProperty.Create(Self);
-        VarLabelScreenProps.Left := TmpQuestX;
-        VarLabelScreenProps.Top  := TmpQuestY;
+        ScreenProps         := ScreenProperties.DefaultScreenProperty;
+        FieldLeft           := TmpFieldX;
+        FieldTop            := TmpFieldY;
+        VarLabelScreenProps := ScreenProperties.DefaultScreenProperty;
+        VarLabelLeft        := TmpQuestX;
+        VarLabelTop         := TmpQuestY;
 
         FieldLength := TmpLength;
         FieldDecimals := 0;
@@ -2255,44 +2591,6 @@ var
   j: Integer;
   i: Integer;
   IdNo: Integer;
-
-  function RequirePassword: boolean;
-  var
-    i: Integer;
-  begin
-    result := true;
-    for i := 0 to FieldCount -1 do
-      if Fields[i].FieldType = ftCrypt then
-        Exit;
-    result := false;
-  end;
-
-  function StringToXml(Const Src: String): string;
-  var
-    i: Integer;
-  begin
-    for i := 1 to Length(Src) do
-    begin
-      case Src[i] of
-        '&':
-          Result := Result  + '&amp;';
-        '"':
-          Result := Result  + '&quot;';
-        '<':
-          Result := Result  + '&lt;';
-        '>':
-          Result := Result  + '&gt;';
-      else
-        Result := Result  + Src[i];
-      end;
-    end;
-  end;
-
-  function Ins(Lvl: byte): string;
-  begin
-    result := DupeString(' ', Lvl * 2);
-  end;
-
 begin
   EpiLogger.IncIndent;
   EpiLogger.Add(Classname, 'InternalSave', 3);
@@ -2309,88 +2607,18 @@ begin
     // **********************
     TmpStr := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding +
       '<EpiData>' + LineEnding;
+    DataStream.Write(TmpStr[1], Length(TmpStr));
+
 
     // **********************
     // <SETTINGS> Section
     // **********************
-    TmpStr := TmpStr +
-      Ins(1) + '<Settings>' + LineEnding +
-      Ins(2) + '<Version>' + IntToStr(FileVersion) + '</Version>' + LineEnding +
-      Ins(2) + '<DateSeparator>' + EpiInternalFormatSettings.DateSeparator + '</DateSeparator>' + LineEnding +
-      Ins(2) + '<DecimalSeparator>' + EpiInternalFormatSettings.DecimalSeparator + '</DecimalSeparator>' + LineEnding +
-      Ins(2) + '<MissingMark>' +  StringToXml(TEpiStringField.DefaultMissing) + '</MissingMark>' + LineEnding;
-    if RequirePassword then
-    begin
-      // TODO : What about UTF-8 encoding??
-      if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
-      if Password = '' then
-        raise Exception.Create('A password is needed for data files with encrypted fields');
-      FCrypter.InitStr(Password);
-      EncData := Trim(Password);
-      FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-      EncData := B64Encode(EncData);
-      FCrypter.Reset;
-      TmpStr := TmpStr +
-        Ins(2) + '<Password>' + EncData + '</Password>' + LineEnding;
-    end;
-    TmpStr := TmpStr +
-      Ins(1) + '</Settings>' + LineEnding;
-    DataStream.Write(TmpStr[1], Length(TmpStr));
+    WriteSettings(DataStream);
 
     // **********************
     // <METADATA> Section
     // **********************
-    TmpStr :=
-      Ins(1) + '<MetaData>' + LineEnding;
-    if FileLabel <> '' then
-      TmpStr := TmpStr +
-        Ins(2) + '<FileLabel>' + StringToXml(FileLabel) + '</FileLabel>' + LineEnding;
-    if Study <> '' then
-      TmpStr := TmpStr +
-        Ins(2) + '<Study>' + StringToXml(Study) + '</Study>' + LineEnding;
-    DataStream.Write(TmpStr[1], Length(TmpStr));
-    if Assigned(ValueLabels) then
-    with ValueLabels do
-    begin
-      TmpStr := Ins(2) + '<ValueLabels>' + LineEnding;
-      for i := 0 to Count - 1 do
-      with Items[i] do
-      begin
-        TmpStr := TmpStr +
-          Ins(3) + '<ValueLabel Id="' + StringToXml(Id) + '">' + LineEnding;
-        TmpStr := TmpStr +
-          Ins(4) + '<Type>' + FieldTypeXmlNames[LabelType] + '</Type>' + LineEnding;
-        case LabelScope of
-          vlsFile:
-            TmpStr := TmpStr +
-              Ins(4) + '<External>' + StringToXml(ExtName) + '</External>' + LineEnding;
-          vlsGlobal,
-          vlsLocal:
-            Begin
-              for j := 0 to Count - 1 do
-              begin
-                TmpStr := TmpStr  +
-                  Ins(4) + '<Set value="' + StringToXml(String(Values[j])) + '"';
-                if Labels[j] <> '' then
-                  TmpStr := TmpStr  + ' label="' + Labels[j] + '"';
-                if MissingValues[j] then
-                  TmpStr := TmpStr  + ' missing="1"';
-                TmpStr := TmpStr  +
-                  '/>' + LineEnding;
-              end;
-            end;
-        end;
-        TmpStr := TmpStr +
-          Ins(3) + '</ValueLabel>' + LineEnding;
-      end;
-      TmpStr := TmpStr +
-        Ins(2) + '</ValueLabels>' + LineEnding;
-      DataStream.Write(TmpStr[1], Length(TmpStr));
-    end;
-    // TODO : <USERDEFINED>
-    TmpStr :=
-      Ins(1) + '</MetaData>' + LineEnding;
-    DataStream.Write(TmpStr[1], Length(TmpStr));
+    WriteMetaData(DataStream);
 
     // **********************
     // <SCREEN> Section
@@ -2621,11 +2849,11 @@ begin
       TmpStr := CreateUniqueAnsiVariableName(FieldName, MaxFieldNameLen, FieldNames);
       s := s + Format('%-10s', [TmpStr]);     //Name of field (left justified)
       s := s + ' ';                           //Space required for some unknown reason
-      s := s + Format('%4d', [VarLabelScreenProps.Left]);       //Question X-position
-      s := s + Format('%4d', [VarLabelScreenProps.Top]);       //Question Y-position
+      s := s + Format('%4d', [VarLabelLeft]);       //Question X-position
+      s := s + Format('%4d', [VarLabelTop]);       //Question Y-position
       s := s + Format('%4s', ['30']);         //Question colorcode
-      s := s + Format('%4d', [ScreenProps.Left]);       //Entry X-position
-      s := s + Format('%4d', [ScreenProps.Top]);       //Entry Y-position
+      s := s + Format('%4d', [FieldLeft]);       //Entry X-position
+      s := s + Format('%4d', [FieldTop]);       //Entry Y-position
 
       //Write FieldType
       // 0 = Question without entryfield, i.e. text only
@@ -2818,6 +3046,10 @@ begin
   try
     InternalReset();
 
+    ReAllocMem(FOnChangeList,0);
+    FOnChangeListCount := 0;
+    FUpdateCount := 0;
+
     inherited Destroy;
   finally
     EpiLogger.DecIndent;
@@ -2927,6 +3159,10 @@ begin
   FTextLabels.Owned := true;
   FTextLabels.ReportOnChange := true;
 
+  FScreenProperties := TEpiScreenProperties.Create(Self);
+  FScreenProperties.Owned := true;
+  FScreenProperties.ReportOnChange := true;
+
   FValueLabels  := TValueLabelSets.Create;
   FCheckFile    := TEpiDataFileProperties.Create;
   FCrypter      := TDCP_rijndael.Create(nil);
@@ -2936,6 +3172,11 @@ end;
 function TEpiDataFile.FieldByName(Const aFieldName: string): TEpiField;
 begin
   result := Fields.FieldByName(aFieldName);
+end;
+
+function TEpiDataFile.FieldById(const aId: string): TEpiField;
+begin
+  result := Fields.FieldById(aId);
 end;
 
 function TEpiDataFile.FieldExists(Const aFieldName: string): boolean;
@@ -4134,7 +4375,7 @@ end;
 
 { TEpiScreenProperty }
 
-constructor TEpiScreenProperty.Create(AOwner: TEpiDataFile);
+constructor TEpiScreenProperty.Create(AOwner: TEpiScreenProperties);
 begin
   inherited Create;
   FOwner := AOwner;
@@ -4153,24 +4394,62 @@ begin
     Dest := TEpiScreenProperty.Create(nil);
 
   Dest.FId       := FId;
+  Dest.FName     := FName;
   Dest.FFgColour := FFgColour;
   Dest.FBgColour := FBgColour;
   Dest.FHlColour := FHlColour;
-  Dest.FTop      := FTop;
-  Dest.FLeft     := FLeft;
 end;
 
 procedure TEpiScreenProperty.Reset;
 begin
-  Id := '';
+  Id       := '';
+  Name     := '';
   FgColour := EpiColourBase;
   BgColour := EpiColourBase;
   HlColour := EpiColourBase;
-  Top      := 0;
-  Left     := 0;
 end;
 
 { TEpiTextLabel }
+
+procedure TEpiTextLabel.SetId(const AValue: string);
+var
+  Val: String;
+begin
+  if FId = AValue then exit;
+  Val := FId;
+  FId := AValue;
+  DoChange(tceId, @Val);
+end;
+
+procedure TEpiTextLabel.SetText(const AValue: string);
+var
+  Val: String;
+begin
+  if FText = AValue then exit;
+  Val := FText;
+  FText := AValue;
+  DoChange(tceText, @Val);
+end;
+
+procedure TEpiTextLabel.SetTextLeft(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if FTextLeft = AValue then exit;
+  Val := FTextLeft;
+  FTextLeft := AValue;
+  DoChange(tceLeft, @Val);
+end;
+
+procedure TEpiTextLabel.SetTextTop(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if FTextTop = AValue then exit;
+  Val := FTextTop;
+  FTextTop := AValue;
+  DoChange(tceTop, @Val);
+end;
 
 constructor TEpiTextLabel.Create(AOwner: TEpiTextLabels);
 begin
@@ -4180,6 +4459,62 @@ end;
 destructor TEpiTextLabel.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TEpiTextLabel.DoChange(EventType: TEpiTextLabelChangeEventType;
+  OldValue: Pointer);
+var
+  i: Integer;
+begin
+  if FUpdateCount > 0 then exit;
+
+  for i := 0 to FOnChangeCount - 1 do
+    FOnChange[i](Self, EventType, OldValue);
+end;
+
+procedure TEpiTextLabel.BeginUpdate;
+begin
+  Inc(FUpdateCount);
+end;
+
+procedure TEpiTextLabel.EndUpdate;
+begin
+  Dec(FUpdateCount);
+
+  if (FUpdateCount < 0) or (FUpdateCount > 0) then
+  begin
+    if (FUpdateCount < 0) then
+      FUpdateCount := 0;
+    exit;
+  end;
+  DoChange(tceUpdate, nil);
+end;
+
+procedure TEpiTextLabel.RegisterOnChangeHook(Event: TEpiTextLabelChangeEvent);
+begin
+  Inc(FOnChangeCount);
+  ReAllocMem(FOnChange, FOnChangeCount * SizeOf(TEpiTextLabelChangeEvent));
+  FOnChange[FOnChangeCount-1] := Event
+end;
+
+procedure TEpiTextLabel.UnRegisterOnChangeHook(Event: TEpiTextLabelChangeEvent
+  );
+var
+  Idx: LongInt;
+begin
+  Idx := 0;
+  while Idx <= FOnChangeCount -1 do
+  begin
+    if FOnChange[Idx] = Event then
+      break;
+    Inc(Idx)
+  end;
+  if Idx = FOnChangeCount then exit;
+
+  dec(FOnChangeCount);
+  if FOnChangeCount > Idx then
+    System.Move(FOnChange[Idx+1], FOnChange[Idx], (FOnChangeCount-Idx)*SizeOf(TEpiFieldChangeEvent));
+  ReAllocMem(FOnChange, FOnChangeCount*SizeOf(TEpiFieldChangeEvent));
 end;
 
 { TEpiTextLabels }
@@ -4226,7 +4561,7 @@ begin
     aTextLabel.FOwner := Self;
 
   if ReportOnChange and Assigned(FOwner) then
-    FOwner.DoChange(dceAddText, nil);
+    FOwner.DoChange(dceAddText, aTextLabel);
 end;
 
 procedure TEpiTextLabels.Delete(aTextLabel: TEpiTextLabel);
@@ -4273,6 +4608,19 @@ begin
   Result := FList.Count;
 end;
 
+function TEpiScreenProperties.GetDefaultScreenProperty: TEpiScreenProperty;
+begin
+  if not Assigned(FDefaultScreenProperty) then
+  begin
+    FDefaultScreenProperty := TEpiScreenProperty.Create(Self);
+    FDefaultScreenProperty.Id := '';
+    FDefaultScreenProperty.BgColour := EpiColourBase;
+    FDefaultScreenProperty.FgColour := EpiColourBase;
+    FDefaultScreenProperty.HlColour := EpiColourBase;
+  end;
+  result := FDefaultScreenProperty;
+end;
+
 function TEpiScreenProperties.GetScreenProperty(Index: integer
   ): TEpiScreenProperty;
 begin
@@ -4284,6 +4632,7 @@ begin
   FList := TFPList.Create;
   FOwner := AOwner;
   FReportOnChange := false;
+  FDefaultScreenProperty := nil;
 end;
 
 destructor TEpiScreenProperties.Destroy;
@@ -4339,9 +4688,11 @@ begin
 end;
 
 function TEpiScreenProperties.ScreenPropertyExists(
-  const aScreenPropertyId: string): boolean;
+  const aScreenPropertyId: string; var aScreenProperty: TEpiScreenProperty
+  ): boolean;
 begin
-  result := Assigned(ScreenPropertyById(aScreenPropertyId));
+  aScreenProperty := ScreenPropertyById(aScreenPropertyId);
+  result := Assigned(aScreenProperty);
 end;
 
 function TEpiScreenProperties.IndexOf(const aScreenPropertyId: string
