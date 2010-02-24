@@ -1972,7 +1972,7 @@ begin
           FieldProperties.EntryType := entNone;
       end;
       // - Jumps
-      SubSection := ElemNode.FindNode('Jump');
+      SubSection := ElemNode.FindNode('Jumps');
       if Assigned(SubSection) then
       begin
         SubElem := TDOMElement(SubSection.FirstChild);
