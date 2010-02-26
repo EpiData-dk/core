@@ -1,4 +1,4 @@
-unit UStringUtils;
+unit epistringutils;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}
@@ -6,7 +6,7 @@ unit UStringUtils;
 interface
 
 uses
-  Classes,  SysUtils, UEpiDataGlobals, UUtilTypes;
+  Classes,  SysUtils, epidataglobals, epiutiltypes;
 
 type
 

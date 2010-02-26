@@ -1,4 +1,4 @@
-unit UEpiUtils;
+unit epiutils;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}
@@ -6,7 +6,7 @@ unit UEpiUtils;
 interface
 
 USES
-  SysUtils, UEpiDataGlobals, UDataFileTypes, Classes;
+  SysUtils, epidataglobals, UDataFileTypes, Classes;
 
 type
   TPrgVersionInfo = record
@@ -60,7 +60,7 @@ implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
-  UDateUtils, Math, UStringUtils;
+  UDateUtils, Math, epistringutils;
 
 {$IFDEF MSWINDOWS}
 type

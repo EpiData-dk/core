@@ -1,4 +1,4 @@
-unit UUtilTypes;
+unit epiutiltypes;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}

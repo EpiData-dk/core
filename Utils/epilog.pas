@@ -1,4 +1,4 @@
-unit UEpiLog;
+unit epilog;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}
@@ -42,7 +42,7 @@ function EpiLogger: TEpiLog;
 
 implementation
 
-uses SysUtils, StrUtils, UEpiUtils;
+uses SysUtils, StrUtils, epiutils;
 
 var
   OLog: TEpiLog = nil;

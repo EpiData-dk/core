@@ -1,4 +1,4 @@
-unit UEpiDataGlobals;
+unit epidataglobals;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}
@@ -6,7 +6,7 @@ unit UEpiDataGlobals;
 interface
 
 uses
-  UDataFileTypes, sysutils;
+  epidatatypes, sysutils;
   
 type
   TCharSet = Set of Char;
@@ -161,7 +161,7 @@ var
   FloatChars:      TCharSet;
   EpiInternalFormatSettings: TFormatSettings;
   EpiExternalFormatSettings: TFormatSettings;
-  {$I ErrorCodes.inc}
+  {$I epierrorcodes.inc}
 
 implementation
 

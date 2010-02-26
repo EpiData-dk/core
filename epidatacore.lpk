@@ -7,7 +7,7 @@
     <CompilerOptions>
       <Version Value="8"/>
       <SearchPaths>
-        <OtherUnitFiles Value="Datafile/;Encryption/;Utils/"/>
+        <OtherUnitFiles Value="Datafile/;Datafile/importexport/;Encryption/;Utils/"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -38,91 +38,59 @@
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
     <Version Minor="3"/>
-    <Files Count="21">
+    <Files Count="13">
       <Item1>
-        <Filename Value="Datafile/UCheckFileCmds.pas"/>
-        <UnitName Value="UCheckFileCmds"/>
-      </Item1>
-      <Item2>
-        <Filename Value="Datafile/UCheckFileIO.pas"/>
-        <UnitName Value="UCheckFileIO"/>
-      </Item2>
-      <Item3>
-        <Filename Value="Datafile/UCheckFileTypes.pas"/>
-        <UnitName Value="UCheckFileTypes"/>
-      </Item3>
-      <Item4>
-        <Filename Value="Datafile/UDataFileTypes.pas"/>
-        <UnitName Value="UDataFileTypes"/>
-      </Item4>
-      <Item5>
-        <Filename Value="Datafile/UEpiDataFile.pas"/>
-        <UnitName Value="UEpiDataFile"/>
-      </Item5>
-      <Item6>
-        <Filename Value="Datafile/UValueLabels.pas"/>
-        <UnitName Value="UValueLabels"/>
-      </Item6>
-      <Item7>
-        <Filename Value="Datafile/uimportexport.pas"/>
-        <UnitName Value="UImportExport"/>
-      </Item7>
-      <Item8>
-        <Filename Value="Datafile/uqeshandler.pas"/>
-        <UnitName Value="UQesHandler"/>
-      </Item8>
-      <Item9>
         <Filename Value="Encryption/DCPcrypt.pas"/>
         <UnitName Value="DCPcrypt"/>
-      </Item9>
-      <Item10>
+      </Item1>
+      <Item2>
         <Filename Value="Encryption/EpiBase64.pas"/>
         <UnitName Value="EpiBase64"/>
-      </Item10>
-      <Item11>
+      </Item2>
+      <Item3>
         <Filename Value="Encryption/EpiSHA1.pas"/>
         <UnitName Value="EpiSHA1"/>
-      </Item11>
-      <Item12>
+      </Item3>
+      <Item4>
         <Filename Value="Encryption/Rijndael.pas"/>
         <UnitName Value="Rijndael"/>
-      </Item12>
-      <Item13>
-        <Filename Value="Utils/ErrorCodes.inc"/>
-        <Type Value="Include"/>
-      </Item13>
-      <Item14>
-        <Filename Value="Utils/UDateUtils.pas"/>
-        <UnitName Value="UDateUtils"/>
-      </Item14>
-      <Item15>
-        <Filename Value="Utils/UEpiLog.pas"/>
-        <UnitName Value="UEpiLog"/>
-      </Item15>
-      <Item16>
-        <Filename Value="Utils/UEpiUtils.pas"/>
-        <UnitName Value="UEpiUtils"/>
-      </Item16>
-      <Item17>
-        <Filename Value="Utils/UStringUtils.pas"/>
-        <UnitName Value="UStringUtils"/>
-      </Item17>
-      <Item18>
-        <Filename Value="Utils/UUtilTypes.pas"/>
-        <UnitName Value="UUtilTypes"/>
-      </Item18>
-      <Item19>
-        <Filename Value="Utils/uepidataglobals.pas"/>
-        <UnitName Value="UEpiDataGlobals"/>
-      </Item19>
-      <Item20>
+      </Item4>
+      <Item5>
         <Filename Value="Encryption/DCPcrypt.Inc"/>
         <Type Value="Text"/>
-      </Item20>
-      <Item21>
+      </Item5>
+      <Item6>
         <Filename Value="Encryption/Rijndael.Inc"/>
         <Type Value="Text"/>
-      </Item21>
+      </Item6>
+      <Item7>
+        <Filename Value="Utils/epierrorcodes.inc"/>
+        <Type Value="Include"/>
+      </Item7>
+      <Item8>
+        <Filename Value="Utils/epidateutils.pas"/>
+        <UnitName Value="epidateutils"/>
+      </Item8>
+      <Item9>
+        <Filename Value="Utils/epilog.pas"/>
+        <UnitName Value="epilog"/>
+      </Item9>
+      <Item10>
+        <Filename Value="Utils/epiutils.pas"/>
+        <UnitName Value="epiutils"/>
+      </Item10>
+      <Item11>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item11>
+      <Item12>
+        <Filename Value="Utils/epiutiltypes.pas"/>
+        <UnitName Value="epiutiltypes"/>
+      </Item12>
+      <Item13>
+        <Filename Value="Utils/epidataglobals.pas"/>
+        <UnitName Value="epidataglobals"/>
+      </Item13>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

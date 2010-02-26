@@ -1,4 +1,4 @@
-unit UDateUtils;
+unit epidateutils;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}
@@ -6,7 +6,7 @@ unit UDateUtils;
 interface
 
 uses
-  SysUtils, UDataFileTypes, UEpiDataGlobals;
+  SysUtils, UDataFileTypes, epidataglobals;
 
   function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
   Function EpiDateTimeToStr(aDate: TDateTime; Ft: TFieldtype): string;
@@ -15,7 +15,7 @@ uses
 implementation
 
 uses
-  UEpiUtils;
+  epiutils;
 
 function EpiIsDate(var Value: string; Ft: TFieldType): boolean;
 var

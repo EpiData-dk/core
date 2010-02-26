@@ -7,10 +7,10 @@ unit epidatacore;
 interface
 
 uses
-    UCheckFileCmds, UCheckFileIO, UCheckFileTypes, UDataFileTypes, 
-  UEpiDataFile, UValueLabels, UImportExport, UQesHandler, DCPcrypt, EpiBase64, 
-  EpiSHA1, Rijndael, UDateUtils, UEpiLog, UEpiUtils, UStringUtils, UUtilTypes, 
-  UEpiDataGlobals;
+  epicheckfilecmds, epicheckfileio, epicheckfiletypes, epiimportexport,
+  epiqeshandler, epidatatypes, epicore, epivaluelabels, DCPcrypt, EpiBase64, 
+  EpiSHA1, Rijndael, epidateutils, epilog, epiutils, epistringutils, 
+  epiutiltypes, epidataglobals;
 
 implementation
 
