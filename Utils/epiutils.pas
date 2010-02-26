@@ -6,7 +6,7 @@ unit epiutils;
 interface
 
 USES
-  SysUtils, epidataglobals, UDataFileTypes, Classes;
+  SysUtils, epidataglobals, epidatatypes, Classes;
 
 type
   TPrgVersionInfo = record
@@ -60,7 +60,7 @@ implementation
 
 uses
   {$IFDEF LINUX} Linux, baseunix, {$ENDIF}
-  UDateUtils, Math, epistringutils;
+  epidateutils, Math, epistringutils;
 
 {$IFDEF MSWINDOWS}
 type
