@@ -6,7 +6,7 @@ unit epiqeshandler;
 interface
 
 uses
-  Classes, SysUtils, epidocument, epidatatypes;
+  Classes, SysUtils, epidocument, epidatatypes, epidatafile;
 
 type
 

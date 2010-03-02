@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, epicheckfilecmds, epidatatypes, epidocument, epivaluelabels,
-  epilog;
+  epilog, epidatafile, epitextlabel;
 
 type
 
@@ -1027,14 +1027,8 @@ BEGIN
       Exit;
     End;
 
-    // Todo -o Torsten: Index
-    IF (ComLegDf.IndexFile.IndexCount < 2) THEN
-    BEGIN
-      Result := ReportError(Format(Lang(22832, 'Datafile %s must contain two KEY-fields'), [ComLegDf.Filename]));
-    END;
-
-    ValueField := ComLegDf.IndexFile.IndexFields[1];
-    TextField  := ComLegDf.IndexFile.Indexfields[2];
+    ValueField := ComLegDf[1];
+    TextField  := ComLegDf[2];
 
     LocalValueLabel := TValueLabelSet.Create(ValueField.FieldType);
     LocalValueLabel.Name := CurCommand;
@@ -1161,14 +1155,12 @@ VAR
   Number, i: Integer;
   IsUnique, Found: Boolean;
   CurCommand: string;
-  LocalIndex: TEpiIndexFile;
 BEGIN
   {Can be KEY [n]
           KEY UNIQUE [n] }
-  Result := true;
+{  Result := true;
   
   Number := 0;
-  LocalIndex := FDf.IndexFile;
   CurCommand := FParser.GetUpperToken(nwSameLine);
 
   // KEY UNIQUE
@@ -1248,7 +1240,7 @@ BEGIN
   END;
 
   LocalIndex.IndexFields[Number] := CurField;
-  LocalIndex.IndexUnique[Number] := IsUnique;
+  LocalIndex.IndexUnique[Number] := IsUnique;       }
 end;
 
 function TCheckFileIO.GetCommandList(CmdList: TChkCommands; CurField: TEpiField): Boolean;
@@ -2197,12 +2189,12 @@ BEGIN
           END;
 
           TmpField := FDf.FieldByName(CurCommand);
-          I := FDf.IndexFile.IndexNoByName(TmpField.FieldName);
+{          I := FDf.IndexFile.IndexNoByName(TmpField.FieldName);
           if not FDf.IndexFile.IndexUnique[I] then
           begin
             Result := ReportError(Lang(22842,'RELATE field must be KEY UNIQUE'));
             Exit;
-          end;
+          end;                 }
 
           //Get relatefile name
           TChkRelate(TmpChkCmd).RelField := TmpField.FieldName;  //save fieldname
@@ -2756,14 +2748,14 @@ BEGIN
       END;              
 
       {Write index key}
-      I := FDf.IndexFile.IndexNoByName(aField.FieldName);
+{      I := FDf.IndexFile.IndexNoByName(aField.FieldName);
       IF I > 0 THEN
       BEGIN
         S := 'KEY ';
         IF FDf.IndexFile.IndexUnique[I] THEN S := S + 'UNIQUE ';
         S := S + IntToStr(I);
         AddToCheckLines(S);
-      END;  
+      END;                         }
 
       {TODO: Write autosearch}
       IF (FDf.FileProperties.AutoFields.FieldExists(aField.FieldName)) and

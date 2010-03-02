@@ -8,6 +8,9 @@ uses
   Classes, SysUtils;
 
 type
+  TEpiScreenProperties = class;
+  TEpiScreenProperty = class;
+
   { TEpiScreenProperty }
 
   TEpiScreenProperty = class(TObject)
@@ -35,7 +38,7 @@ type
   TEpiScreenProperties = class(TObject)
   private
     FOwned: Boolean;
-    FOwner:   TEpiDataFile;
+//    FOwner:   TEpiDataFile;
     FList:    TFPList;
     FReportOnChange: Boolean;
     FDefaultScreenProperty: TEpiScreenProperty;
@@ -43,7 +46,7 @@ type
     function GetDefaultScreenProperty: TEpiScreenProperty;
     function GetScreenProperty(Index: integer): TEpiScreenProperty;
   public
-    constructor Create(AOwner: TEpiDataFile); virtual;
+    constructor Create(AOwner: TObject); virtual;
     destructor  Destroy; override;
     // TODO : Clone!
     // TODO : Reset!
@@ -61,6 +64,9 @@ type
 
 
 implementation
+
+uses
+  epidataglobals;
 
 { TEpiScreenProperty }
 
@@ -124,10 +130,10 @@ begin
   Result := TEpiScreenProperty(FList[Index]);
 end;
 
-constructor TEpiScreenProperties.Create(AOwner: TEpiDataFile);
+constructor TEpiScreenProperties.Create(AOwner: TObject);
 begin
   FList := TFPList.Create;
-  FOwner := AOwner;
+//  FOwner := AOwner;
   FReportOnChange := false;
   FDefaultScreenProperty := nil;
 end;
@@ -156,8 +162,8 @@ begin
   if Owned then
     aScreenProperty.FOwner := Self;
 
-  if ReportOnChange and Assigned(FOwner) then
-    FOwner.DoChange(dceAddScreenProp, nil);
+//  if ReportOnChange and Assigned(FOwner) then
+//    FOwner.DoChange(dceAddScreenProp, nil);
 end;
 
 procedure TEpiScreenProperties.Delete(aScreenProperty: TEpiScreenProperty);
@@ -169,8 +175,8 @@ begin
 
   if Owned then
     aScreenProperty.FOwner := nil;
-  if ReportOnChange and Assigned(FOwner) then
-    FOwner.DoChange(dceRemoveScreenProp, aScreenProperty);
+//  if ReportOnChange and Assigned(FOwner) then
+//    FOwner.DoChange(dceRemoveScreenProp, aScreenProperty);
 end;
 
 function TEpiScreenProperties.ScreenPropertyById(const aScreenPropertyId: string

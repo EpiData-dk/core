@@ -6,7 +6,7 @@ unit epiimportexport;
 interface
 
 uses
-  Classes, SysUtils, epidocument, epidatatypes, epilog, fpspreadsheet;
+  Classes, SysUtils, epidocument, epidatatypes, epilog, fpspreadsheet, epidatafile;
 
 type
 
@@ -207,7 +207,7 @@ implementation
 
 uses
   epivaluelabels, epidataglobals, epiutils, Math, StrUtils, epidateutils,
-  FileUtil, epiqeshandler, epistringutils, fpsallformats;
+  FileUtil, epiqeshandler, epistringutils, fpsallformats, epitextlabel;
 
   { TEpiImportExport }
 

@@ -38,115 +38,135 @@
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
     <Version Minor="3"/>
-    <Files Count="27">
+    <Files Count="32">
       <Item1>
-        <Filename Value="Core/epidatafile.pas"/>
-        <UnitName Value="epidatafile"/>
-      </Item1>
-      <Item2>
-        <Filename Value="Core/epidatatypes.pas"/>
-        <UnitName Value="epidatatypes"/>
-      </Item2>
-      <Item3>
-        <Filename Value="Core/epidocument.pas"/>
-        <UnitName Value="epidocument"/>
-      </Item3>
-      <Item4>
-        <Filename Value="Core/epivaluelabels.pas"/>
-        <UnitName Value="epivaluelabels"/>
-      </Item4>
-      <Item5>
-        <Filename Value="Core/importexport/epicheckfilecmds.pas"/>
-        <UnitName Value="epicheckfilecmds"/>
-      </Item5>
-      <Item6>
-        <Filename Value="Core/importexport/epicheckfileio.pas"/>
-        <UnitName Value="epicheckfileio"/>
-      </Item6>
-      <Item7>
-        <Filename Value="Core/importexport/epicheckfiletypes.pas"/>
-        <UnitName Value="epicheckfiletypes"/>
-      </Item7>
-      <Item8>
-        <Filename Value="Core/importexport/epiimportexport.pas"/>
-        <UnitName Value="epiimportexport"/>
-      </Item8>
-      <Item9>
-        <Filename Value="Core/importexport/epiqeshandler.pas"/>
-        <UnitName Value="epiqeshandler"/>
-      </Item9>
-      <Item10>
-        <Filename Value="Encryption/DCPcrypt.pas"/>
-        <UnitName Value="DCPcrypt"/>
-      </Item10>
-      <Item11>
-        <Filename Value="Encryption/DCPcrypt.Inc"/>
-        <Type Value="Text"/>
-      </Item11>
-      <Item12>
-        <Filename Value="Encryption/EpiBase64.pas"/>
-        <UnitName Value="EpiBase64"/>
-      </Item12>
-      <Item13>
-        <Filename Value="Encryption/EpiSHA1.pas"/>
-        <UnitName Value="EpiSHA1"/>
-      </Item13>
-      <Item14>
-        <Filename Value="Encryption/Rijndael.pas"/>
-        <UnitName Value="Rijndael"/>
-      </Item14>
-      <Item15>
-        <Filename Value="Encryption/Rijndael.Inc"/>
-        <Type Value="Text"/>
-      </Item15>
-      <Item16>
-        <Filename Value="Utils/epidataglobals.pas"/>
-        <UnitName Value="epidataglobals"/>
-      </Item16>
-      <Item17>
-        <Filename Value="Utils/epidateutils.pas"/>
-        <UnitName Value="epidateutils"/>
-      </Item17>
-      <Item18>
-        <Filename Value="Utils/epierrorcodes.inc"/>
-        <Type Value="Include"/>
-      </Item18>
-      <Item19>
-        <Filename Value="Utils/epilog.pas"/>
-        <UnitName Value="epilog"/>
-      </Item19>
-      <Item20>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
-      </Item20>
-      <Item21>
-        <Filename Value="Utils/epiutils.pas"/>
-        <UnitName Value="epiutils"/>
-      </Item21>
-      <Item22>
-        <Filename Value="Utils/epiutiltypes.pas"/>
-        <UnitName Value="epiutiltypes"/>
-      </Item22>
-      <Item23>
-        <Filename Value="Core/epifield.pas"/>
-        <UnitName Value="epifield"/>
-      </Item23>
-      <Item24>
-        <Filename Value="Core/episcreenproperties.pas"/>
-        <UnitName Value="episcreenproperties"/>
-      </Item24>
-      <Item25>
-        <Filename Value="Core/epitextlabel.pas"/>
-        <UnitName Value="epitextlabel"/>
-      </Item25>
-      <Item26>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
-      </Item26>
-      <Item27>
+      </Item1>
+      <Item2>
+        <Filename Value="Core/epidatafile.pas"/>
+        <UnitName Value="epidatafile"/>
+      </Item2>
+      <Item3>
+        <Filename Value="Core/epidatafile.inc"/>
+        <Type Value="Include"/>
+      </Item3>
+      <Item4>
+        <Filename Value="Core/epidatafileh.inc"/>
+        <Type Value="Include"/>
+      </Item4>
+      <Item5>
+        <Filename Value="Core/epidatatypes.pas"/>
+        <UnitName Value="epidatatypes"/>
+      </Item5>
+      <Item6>
+        <Filename Value="Core/epidocument.pas"/>
+        <UnitName Value="epidocument"/>
+      </Item6>
+      <Item7>
+        <Filename Value="Core/epifield.inc"/>
+        <Type Value="Include"/>
+      </Item7>
+      <Item8>
+        <Filename Value="Core/epifieldh.inc"/>
+        <Type Value="Include"/>
+      </Item8>
+      <Item9>
+        <Filename Value="Core/epirelate.pas"/>
+        <UnitName Value="epirelate"/>
+      </Item9>
+      <Item10>
+        <Filename Value="Core/episcreenproperties.pas"/>
+        <UnitName Value="episcreenproperties"/>
+      </Item10>
+      <Item11>
         <Filename Value="Core/epistudy.pas"/>
         <UnitName Value="epistudy"/>
+      </Item11>
+      <Item12>
+        <Filename Value="Core/epitextlabel.inc"/>
+        <Type Value="Include"/>
+      </Item12>
+      <Item13>
+        <Filename Value="Core/epitextlabelh.inc"/>
+        <Type Value="Include"/>
+      </Item13>
+      <Item14>
+        <Filename Value="Core/epivaluelabels.pas"/>
+        <UnitName Value="epivaluelabels"/>
+      </Item14>
+      <Item15>
+        <Filename Value="Core/importexport/epicheckfilecmds.pas"/>
+        <UnitName Value="epicheckfilecmds"/>
+      </Item15>
+      <Item16>
+        <Filename Value="Core/importexport/epicheckfileio.pas"/>
+        <UnitName Value="epicheckfileio"/>
+      </Item16>
+      <Item17>
+        <Filename Value="Core/importexport/epicheckfiletypes.pas"/>
+        <UnitName Value="epicheckfiletypes"/>
+      </Item17>
+      <Item18>
+        <Filename Value="Core/importexport/epiimportexport.pas"/>
+        <UnitName Value="epiimportexport"/>
+      </Item18>
+      <Item19>
+        <Filename Value="Core/importexport/epiqeshandler.pas"/>
+        <UnitName Value="epiqeshandler"/>
+      </Item19>
+      <Item20>
+        <Filename Value="Encryption/DCPcrypt.pas"/>
+        <UnitName Value="DCPcrypt"/>
+      </Item20>
+      <Item21>
+        <Filename Value="Encryption/DCPcrypt.Inc"/>
+        <Type Value="Text"/>
+      </Item21>
+      <Item22>
+        <Filename Value="Encryption/EpiBase64.pas"/>
+        <UnitName Value="EpiBase64"/>
+      </Item22>
+      <Item23>
+        <Filename Value="Encryption/EpiSHA1.pas"/>
+        <UnitName Value="EpiSHA1"/>
+      </Item23>
+      <Item24>
+        <Filename Value="Encryption/Rijndael.pas"/>
+        <UnitName Value="Rijndael"/>
+      </Item24>
+      <Item25>
+        <Filename Value="Encryption/Rijndael.Inc"/>
+        <Type Value="Text"/>
+      </Item25>
+      <Item26>
+        <Filename Value="Utils/epidataglobals.pas"/>
+        <UnitName Value="epidataglobals"/>
+      </Item26>
+      <Item27>
+        <Filename Value="Utils/epidateutils.pas"/>
+        <UnitName Value="epidateutils"/>
       </Item27>
+      <Item28>
+        <Filename Value="Utils/epierrorcodes.inc"/>
+        <Type Value="Include"/>
+      </Item28>
+      <Item29>
+        <Filename Value="Utils/epilog.pas"/>
+        <UnitName Value="epilog"/>
+      </Item29>
+      <Item30>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item30>
+      <Item31>
+        <Filename Value="Utils/epiutils.pas"/>
+        <UnitName Value="epiutils"/>
+      </Item31>
+      <Item32>
+        <Filename Value="Utils/epiutiltypes.pas"/>
+        <UnitName Value="epiutiltypes"/>
+      </Item32>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

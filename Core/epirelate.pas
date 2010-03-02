@@ -1,4 +1,4 @@
-unit epistudy;
+unit epirelate;
 
 {$mode objfpc}{$H+}
 
@@ -9,9 +9,9 @@ uses
 
 type
 
-  { TEpiStudy }
+  { TEpiRelates }
 
-  TEpiStudy = class(TObject)
+  TEpiRelates = class(TObject)
   private
 
   public
@@ -21,14 +21,14 @@ type
 
 implementation
 
-{ TEpiStudy }
+{ TEpiRelates }
 
-constructor TEpiStudy.Create;
+constructor TEpiRelates.Create;
 begin
 
 end;
 
-destructor TEpiStudy.Destroy;
+destructor TEpiRelates.Destroy;
 begin
   inherited Destroy;
 end;
