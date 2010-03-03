@@ -1,12 +1,12 @@
 #   File generated automatically by Lazarus Package Manager
 #
-#   Makefile.fpc for epidatacore 0.3
+#   Makefile.fpc for epidatacore 0.4
 #
-#   This file was generated on 2010-02-26
+#   This file was generated on 2010-03-03
 
 [package]
 name=epidatacore
-version=0.3
+version=0.4
 
 [compiler]
 unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)

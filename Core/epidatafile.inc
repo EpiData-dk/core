@@ -2,14 +2,57 @@
 
 { TEpiDataFiles }
 
+function TEpiDataFiles.GetCount: Integer;
+begin
+  result := FList.Count;
+end;
+
+function TEpiDataFiles.GetDataFile(Index: integer): TEpiDataFile;
+begin
+  Result := TEpiDataFile(FList[Index]);
+end;
+
 constructor TEpiDataFiles.Create;
 begin
-
+  FList := TFPList.Create;
 end;
 
 destructor TEpiDataFiles.Destroy;
 begin
+  FList.Free;
   inherited Destroy;
+end;
+
+procedure TEpiDataFiles.Add(aDataFile: TEpiDataFile);
+begin
+  FList.Add(aDataFile);
+end;
+
+procedure TEpiDataFiles.Delete(aDataFile: TEpiDataFile);
+begin
+  FList.Remove(aDataFile);
+end;
+
+function TEpiDataFiles.DataFileById(const aId: string): TEpiDataFile;
+var
+  Idx: LongInt;
+begin
+  Result := nil;
+  Idx := IndexOf(aId);
+  if Idx >= 0 then
+    Result := DataFile[Idx];
+end;
+
+function TEpiDataFiles.DataFileExists(const aId: string): boolean;
+begin
+  result := IndexOf(aId) >= 0;
+end;
+
+function TEpiDataFiles.IndexOf(const aId: string): integer;
+begin
+  for result := 0 to Count - 1 do
+    if DataFile[result].Id = aId then exit;
+  result := -1;
 end;
 
 { TEpiDataFileProperties }
@@ -757,6 +800,12 @@ end;
 function TEpiDataFile.Ins(Lvl: integer): string;
 begin
   result := DupeString(' ', Lvl * 2);
+end;
+
+procedure TEpiDataFile.SetId(const AValue: string);
+begin
+  if FId = AValue then exit;
+  FId := AValue;
 end;
 
 function TEpiDataFile.StringToXml(Const Src: String): string;

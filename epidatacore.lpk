@@ -37,7 +37,7 @@
     </CompilerOptions>
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
-    <Version Minor="3"/>
+    <Version Minor="4"/>
     <Files Count="32">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>

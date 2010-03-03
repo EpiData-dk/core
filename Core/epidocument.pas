@@ -22,7 +22,6 @@ type
     procedure SetDataFiles(const AValue: TEpiDataFiles);
     procedure SetRelates(const AValue: TEpiRelates);
     procedure SetStudy(const AValue: TEpiStudy);
-
   public
     constructor Create;
     destructor Destroy; override;
@@ -62,11 +61,18 @@ end;
 
 constructor TEpiDocument.Create;
 begin
-
+  FAdmin     := TEpiAdmin.Create;
+  FDataFiles := TEpiDataFiles.Create;
+  FRelates   := TEpiRelates.Create;
+  FStudy     := TEpiStudy.Create;
 end;
 
 destructor TEpiDocument.Destroy;
 begin
+  FAdmin.Free;
+  FDataFiles.Free;
+  FRelates.Free;
+  FStudy.Free;
   inherited Destroy;
 end;
 

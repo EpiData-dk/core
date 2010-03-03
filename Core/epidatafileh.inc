@@ -7,10 +7,21 @@ type
 
   TEpiDataFiles = class(TObject)
   private
-
+    FList: TFPList;
+    FOwned: Boolean;
+    function GetCount: Integer;
+    function GetDataFile(Index: integer): TEpiDataFile;
   public
     constructor Create;
-    destructor Destroy; override;
+    destructor  Destroy; override;
+    procedure   Add(aDataFile: TEpiDataFile);
+    procedure   Delete(aDataFile: TEpiDataFile);
+    function    DataFileById(Const aId: string): TEpiDataFile;
+    function    DataFileExists(Const aId: string): boolean;
+    function    IndexOf(Const aId: string): integer;
+    Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
+    Property    Count: Integer read GetCount;
+    Property    Owned: Boolean read FOwned write FOwned;
   end;
 
 
@@ -106,7 +117,9 @@ type
     procedure  SetSize(const AValue: Integer);
     procedure  SetStudy(const AValue: string);
     procedure  SetVerified(Index: integer; const AValue: boolean);
+    procedure  SetId(const AValue: string);
   private
+    FId: string;
     // XML Read Functions:
     // - read
     Procedure  ReportXmlError(ErrCode: Integer; LangCode: integer; Msg: String; Args: array of const);
@@ -164,6 +177,7 @@ type
     procedure  NewRecords(ACount: Integer = 1); virtual;
     procedure  SortFields(Cmp: TListSortCompare);
     function   DocumentDatafile: TStrings;
+    Property   Id: string read FId write SetId;
     property   Field[Index: integer]: TEpiField read GetField; default;
     property   Fields:      TEpiFields read FFields;
     property   TextLabel[Index: integer]: TEpiTextLabel read GetTextLabel;
