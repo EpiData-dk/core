@@ -207,7 +207,7 @@ implementation
 
 uses
   epivaluelabels, epidataglobals, epiutils, Math, StrUtils, epidateutils,
-  FileUtil, epiqeshandler, epistringutils, fpsallformats, epitextlabel;
+  FileUtil, epiqeshandler, epistringutils, fpsallformats;
 
   { TEpiImportExport }
 

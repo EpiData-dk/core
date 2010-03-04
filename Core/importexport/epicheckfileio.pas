@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, epicheckfilecmds, epidatatypes, epidocument, epivaluelabels,
-  epilog, epidatafile, epitextlabel;
+  epilog, epidatafile;
 
 type
 
