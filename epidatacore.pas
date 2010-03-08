@@ -1,10 +1,10 @@
-{ This file was automatically created by Lazarus. do not edit!
-  This source is only used to compile and install the package.
+{ This file was automatically created by Lazarus. Do Not edit ! 
+  This source Is only used To compile And install the package.
  }
 
-unit epidatacore; 
+Unit epidatacore; 
 
-interface
+Interface
 
 uses
     epiadmin, epidatafile, epidatatypes, epidocument, epirelate, 
@@ -13,6 +13,6 @@ uses
   EpiBase64, EpiSHA1, Rijndael, epidataglobals, epidateutils, epilog, 
   epistringutils, epiutils, epiutiltypes;
 
-implementation
+Implementation
 
-end.
+End.
