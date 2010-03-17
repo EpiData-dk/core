@@ -55,6 +55,23 @@ begin
   result := -1;
 end;
 
+procedure TEpiDataFiles.SaveToStream(St: TStream; Lvl: Integer);
+var
+  S: String;
+  i: Integer;
+begin
+  S :=
+    Ins(Lvl) + '<DataFiles>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  for i := 0 to Count -1 do
+    DataFile[i].SaveToStream(St, Lvl + 1);
+
+  S :=
+    Ins(Lvl) + '</DataFiles>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
 { TEpiDataFileProperties }
 
 constructor TEpiDataFileProperties.Create;
@@ -808,27 +825,6 @@ begin
   FId := AValue;
 end;
 
-function TEpiDataFile.StringToXml(Const Src: String): string;
-var
-  i: Integer;
-begin
-  for i := 1 to Length(Src) do
-  begin
-    case Src[i] of
-      '&':
-        Result := Result  + '&amp;';
-      '"':
-        Result := Result  + '&quot;';
-      '<':
-        Result := Result  + '&lt;';
-      '>':
-        Result := Result  + '&gt;';
-    else
-      Result := Result  + Src[i];
-    end;
-  end;
-end;
-
 procedure TEpiDataFile.WriteSettings(St: TStream);
 var
   TmpStr: String;
@@ -885,64 +881,12 @@ begin
       Ins(2) + '<Study>' + StringToXml(Study) + '</Study>' + LineEnding;
   St.Write(TmpStr[1], Length(TmpStr));
 
-  if ValueLabels.Count > 0 then
-    WriteValueLabels(St);
-
   // TODO : <USERDEFINED>
   TmpStr :=
     Ins(1) + '</MetaData>' + LineEnding;
   St.Write(TmpStr[1], Length(TmpStr));
 end;
 
-procedure TEpiDataFile.WriteValueLabels(St: TStream);
-var
-  TmpStr: String;
-  i: Integer;
-  j: Integer;
-begin
-  TmpStr := Ins(2) + '<ValueLabels>' + LineEnding;
-  for i := 0 to ValueLabels.Count - 1 do
-  with ValueLabels[i] do
-  begin
-    TmpStr := TmpStr +
-      Ins(3) + '<ValueLabel Id="' + StringToXml(Id) + '">' + LineEnding;
-    TmpStr := TmpStr +
-      Ins(4) + '<Type>' + FieldTypeXmlNames[LabelType] + '</Type>' + LineEnding;
-    case LabelScope of
-      vlsFile:
-        begin
-          TmpStr := TmpStr +
-            Ins(4) + '<External>' + LineEnding +
-            Ins(5) + '<File>' + StringToXml(ExtName) + '</File>' + LineEnding +
-            //Ins(5) + '<ValueField>' + StringToXml() + '</ValueField>' + LineEnding +
-            //Ins(5) + '<LabelField>' + StringToXml(ExtName) + '</LabelField>' + LineEnding +
-            Ins(4) + '</External>' + LineEnding;
-        end;
-      vlsGlobal,
-      vlsLocal:
-        Begin
-          TmpStr := TmpStr +
-            Ins(4) + '<Internal>' + LineEnding;
-          for j := 0 to Count - 1 do
-          begin
-            TmpStr := TmpStr  +
-              Ins(5) + '<Set value="' + StringToXml(String(Values[j])) + '"';
-            if Labels[j] <> '' then
-              TmpStr := TmpStr  + ' label="' + Labels[j] + '"';
-            if MissingValues[j] then
-              TmpStr := TmpStr  + ' missing="1"';
-            TmpStr := TmpStr  +
-              '/>' + LineEnding;
-          end;
-        end;
-    end;
-    TmpStr := TmpStr +
-      Ins(3) + '</ValueLabel>' + LineEnding;
-  end;
-  TmpStr := TmpStr +
-    Ins(2) + '</ValueLabels>' + LineEnding;
-  St.Write(TmpStr[1], Length(TmpStr));
-end;
 
 function TEpiDataFile.InternalOpen: boolean;
 var
@@ -1885,6 +1829,18 @@ begin
   finally
     EpiLogger.DecIndent;
   end;
+end;
+
+procedure TEpiDataFile.SaveToStream(St: TStream; Lvl: Integer);
+var
+  S: String;
+begin
+  S :=
+    Ins(Lvl)     + '<DataFile id="' + Id + '">' + LineEnding +
+    Ins(Lvl + 1) + '<FileLabel>' + FileLabel + '<FileLabel>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  ValueLabels.SaveToStream(St, Lvl + 1);
 end;
 
 procedure TEpiDataFile.Reset;

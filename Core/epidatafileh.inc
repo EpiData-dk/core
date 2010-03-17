@@ -19,6 +19,7 @@ type
     function    DataFileById(Const aId: string): TEpiDataFile;
     function    DataFileExists(Const aId: string): boolean;
     function    IndexOf(Const aId: string): integer;
+    procedure   SaveToStream(St: TStream; Lvl: Integer);
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
     Property    Count: Integer read GetCount;
     Property    Owned: Boolean read FOwned write FOwned;
@@ -97,7 +98,7 @@ type
     FOptions:      TEpiDataFileOptions;     // Options set by Open(...)
     FOnProgress:   TProgressEvent;          // Callback event for updating progress
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
-    FOnPassword:   TRequestPasswordEvent;   // Callback event for password request
+    FOnPassword:   TOldRequestPasswordEvent;   // Callback event for password request
     FBackgroundColour:     Integer;         // Background color up entry form.
     FErrorText:    string;
     FErrorCode:    Cardinal;
@@ -135,15 +136,8 @@ type
     Procedure  ReadRecords(RootNode: TDOMElement; FmtSettings: TFormatSettings);
     // - write
     Function   Ins(Lvl: integer): string;
-    Function   StringToXml(Const Src: String): string;
     Procedure  WriteSettings(St: TStream);
     Procedure  WriteMetaData(St: TStream);
-    Procedure  WriteValueLabels(St: TStream);
-{    Procedure  WriteScreen;
-    Procedure  WriteScreenColours;
-    Procedure  WriteTextLabels;
-    Procedure  WriteFields;
-    Procedure  WriteRecords(FmtSettings: TFormatSettings); }
   protected
     function   InternalOpen: boolean;
     function   InternalOpenOld: boolean;
@@ -162,6 +156,7 @@ type
     function   RequestPassword(Const EncryptedString: string): boolean;
     function   Open(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
     function   Save(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
+    procedure  SaveToStream(St: TStream; Lvl: Integer);
     procedure  Reset;
     procedure  AddField(AField: TEpiField);
     procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);
@@ -187,7 +182,7 @@ type
     property   Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
     property   Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
-    property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
+    property   OnPassword:  TOldRequestPasswordEvent read FOnPassword write FOnPassword;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property   Options:     TEpiDataFileOptions read FOptions;
     property   FileName:    string read FFileName write SetFileName;

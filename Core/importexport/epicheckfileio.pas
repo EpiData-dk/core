@@ -310,7 +310,7 @@ BEGIN
       n := 0;
       for i := 0 to FDf.ValueLabels.Count -1 do
       begin
-        if FDf.ValueLabels[i].LabelScope = vlsGlobal then
+        if FDf.ValueLabels[i].LabelScope = vlsInternal then
         begin
           LabelToText(FDf.ValueLabels[i]);
           Inc(n);
@@ -644,7 +644,7 @@ BEGIN
   begin
     LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
     LocalValueLabel.Name := CurField.FieldName + '_lbl';
-    LocalValueLabel.LabelScope := vlsLocal;
+    LocalValueLabel.LabelScope := vlsInternal;
     CurField.ValueLabelSet := LocalValueLabel;
     CurField.DataFile.ValueLabels.AddValueLabelSet(LocalValueLabel);
   end;
@@ -835,7 +835,7 @@ BEGIN
       CurField.FieldProperties.ShowValueLabel := True;
 
     LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
-    LocalValueLabel.LabelScope := vlsLocal;
+    LocalValueLabel.LabelScope := vlsInternal;
 
     While True do
     Begin
@@ -1032,7 +1032,7 @@ BEGIN
 
     LocalValueLabel := TValueLabelSet.Create(ValueField.FieldType);
     LocalValueLabel.Name := CurCommand;
-    LocalValueLabel.LabelScope := vlsFile;
+    LocalValueLabel.LabelScope := vlsExternal;
 
     FOR i := 1 TO ComLegDf.Size DO
       LocalValueLabel.AddValueLabelPair(ValueField.AsValue[i], TextField.AsString[i]);
@@ -2318,7 +2318,7 @@ BEGIN
 
   aValueLabelSet := TValueLabelSet.Create;
   aValueLabelSet.Name := trim(CurCommand);
-  aValueLabelSet.LabelScope := vlsGlobal;
+  aValueLabelSet.LabelScope := vlsExternal;
 
   While True do
   Begin
@@ -2449,7 +2449,7 @@ BEGIN
 
   if (not assigned(aValueLabelSet)) then exit;
 
-  if aValueLabelSet.LabelScope = vlsGlobal then
+  if aValueLabelSet.LabelScope = vlsInternal then
     AddToCheckLines('LABEL ' + aValueLabelSet.Name);
 
   Inc(FIndentLvl);
@@ -2471,7 +2471,7 @@ BEGIN
     AddToCheckLines(S);
   END;  //for
   Dec(FIndentLvl);
-  if aValueLabelSet.LabelScope = vlsGlobal then
+  if aValueLabelSet.LabelScope = vlsInternal then
     AddToCheckLines('END');
 end;
 
@@ -2623,9 +2623,9 @@ BEGIN
           IF Assigned(TChkComLegal(cmd).ValueLabel) THEN
           BEGIN
             LocalVltType := TChkComLegal(cmd).ValueLabel.LabelScope;
-            if (LocalVltType = vlsLocal) and (TChkComLegal(cmd).ValueLabelIsFieldRef) then
-             LocalVltType := vlsGlobal;
-            case LocalVltType of
+//            if (LocalVltType = vlsLocal) and (TChkComLegal(cmd).ValueLabelIsFieldRef) then
+//             LocalVltType := vlsGlobal;
+{            case LocalVltType of
               vlsLocal:
                 begin
                   S := 'COMMENT LEGAL';
@@ -2644,7 +2644,7 @@ BEGIN
                   if TChkComLegal(cmd).ShowList then S := S + ' SHOW';
                   AddToCheckLines(S);
                 end;
-            end;  //case
+            end;  //case  }
           END;  //if valuelabel<>NIL
         END;  //case cmdComLegal
       cmdLet:
@@ -2824,7 +2824,7 @@ BEGIN
       BEGIN
         LocalVltType := aField.ValueLabelSet.LabelScope;
         S := 'COMMENT LEGAL ';
-        if (LocalVltType = vlsLocal) and (aField.ValueLabelIsFieldRef) then
+{        if (LocalVltType = vlsLocal) and (aField.ValueLabelIsFieldRef) then
           LocalVltType := vlsGlobal;
         case LocalVltType of
           vlsLocal:
@@ -2843,7 +2843,7 @@ BEGIN
               if ShowValueLabel then S := S + ' SHOW';
               AddToCheckLines(S);
             end;
-        end;  //case
+        end;  //case    }
       end;
 
       {Write JUMPS block}

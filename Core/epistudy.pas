@@ -15,7 +15,7 @@ type
   private
     FAbstractText: string;
     FAuthor: string;
-    FCreated: string;
+    FCreated: TDateTime;
     FCreator: string;
     FDescription: string;
     FId: string;
@@ -33,7 +33,6 @@ type
     FTitle: string;
     procedure SetAbstractText(const AValue: string);
     procedure SetAuthor(const AValue: string);
-    procedure SetCreated(const AValue: string);
     procedure SetCreator(const AValue: string);
     procedure SetDescription(const AValue: string);
     procedure SetId(const AValue: string);
@@ -52,12 +51,13 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    procedure  SaveToStream(St: TStream; Lvl: Integer);
     Property   Id: string read FId write SetId;
     Property   Protocol: string read FProtocol write SetProtocol;
     Property   AbstractText: string read FAbstractText write SetAbstractText;
     Property   Author: string read FAuthor write SetAuthor;
     Property   Owner: string read FOwner write SetOwner;
-    Property   Created: string read FCreated write SetCreated;
+    Property   Created: TDateTime read FCreated;
     Property   Creator: string read FCreator write SetCreator;
     Property   Description: string read FDescription write SetDescription;
     Property   Language: string read FLanguage write SetLanguage;
@@ -74,6 +74,9 @@ type
 
 implementation
 
+uses
+  epistringutils;
+
 { TEpiStudy }
 
 procedure TEpiStudy.SetAbstractText(const AValue: string);
@@ -86,12 +89,6 @@ procedure TEpiStudy.SetAuthor(const AValue: string);
 begin
   if FAuthor = AValue then exit;
   FAuthor := AValue;
-end;
-
-procedure TEpiStudy.SetCreated(const AValue: string);
-begin
-  if FCreated = AValue then exit;
-  FCreated := AValue;
 end;
 
 procedure TEpiStudy.SetCreator(const AValue: string);
@@ -186,12 +183,38 @@ end;
 
 constructor TEpiStudy.Create;
 begin
-
+  FCreated := Now;
+  FModifiedDate := FCreated;
 end;
 
 destructor TEpiStudy.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TEpiStudy.SaveToStream(St: TStream; Lvl: Integer);
+var
+  S: String;
+begin
+  S :=
+    Ins(Lvl)     + '<Study>' +
+    Ins(Lvl + 1) + '<Protocol>' + StringToXml(Protocol) + '</Protocol>' + LineEnding +
+    Ins(Lvl + 1) + '<Abstract>' + StringToXml(AbstractText) + '</Abstract>' + LineEnding +
+    Ins(Lvl + 1) + '<Author>' + StringToXml(Author) + '</Author>' + LineEnding +
+    Ins(Lvl + 1) + '<Owner>' + StringToXml(Owner) + '</Owner>' + LineEnding +
+    Ins(Lvl + 1) + '<Created>' + DateTimeToStr(Created) + '<Created>' + LineEnding +
+    Ins(Lvl + 1) + '<Creator>' + StringToXml(Creator) + '</Creator>' + LineEnding +
+    Ins(Lvl + 1) + '<Description>' + StringToXml(Description) + '</Description>' + LineEnding +
+    Ins(Lvl + 1) + '<Language>' + StringToXml(Language) + '</Language>' + LineEnding +
+    Ins(Lvl + 1) + '<Modified>' + DateTimeToStr(ModifiedDate) + '<Modified>' + LineEnding +
+    Ins(Lvl + 1) + '<Provenance>' + StringToXml(Provenance) + '</Provenance>' + LineEnding +
+    Ins(Lvl + 1) + '<References>' + StringToXml(References) + '</References>' + LineEnding +
+    Ins(Lvl + 1) + '<Rightsholder>' + StringToXml(RightsHolder) + '</Rightsholder>' + LineEnding +
+    Ins(Lvl + 1) + '<Source>' + StringToXml(Source) + '</Source>' + LineEnding +
+    Ins(Lvl + 1) + '<Subject>' + StringToXml(Subject) + '</Subject>' + LineEnding +
+    Ins(Lvl + 1) + '<Temporal>' + StringToXml(Temporal) + '</Temporal>' + LineEnding +
+    Ins(Lvl + 1) + '<Title>' + StringToXml(Title) + '</Title>' + LineEnding +
+    Ins(Lvl)     + '</Study>' + LineEnding;
 end;
 
 end.

@@ -21,6 +21,21 @@ type
     property Str: string read FStr write FStr;
   end;
 
+  { TEpiTranslatedText }
+
+  TEpiTranslatedText = class
+  private
+    FTranslatedList: TStringList;
+    function GetDefaultText: string;
+    function GetText(LangId: string): string;
+  public
+    constructor Create;
+    destructor  Destroy; override;
+    procedure   AddText(LangId: string; Text: string);
+    property    DefaultText: string read GetDefaultText;
+    property    Text[LangId: string]: string read GetText;
+  end;
+
   function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
   function AutoFieldName(Const S: string): string;
   Function FitLength(Const S: string; L: Integer):string;
@@ -34,6 +49,11 @@ type
   function EpiUnknownStrToUTF8(const Source: string): string;
   procedure EpiUnknownStringsToUTF8(Source: TStrings);
   function EpiUtf8ToAnsi(Const Source: string): string;
+
+  // Xml routines:
+  Function StringToXml(Const Src: String): string;
+  Function Ins(Level: integer): string;
+
 
 
 implementation
@@ -193,5 +213,71 @@ begin
   result := UTF8ToISO_8859_1(Source);
   {$ENDIF}
 end;
-       
+
+function StringToXml(Const Src: String): string;
+var
+  i: Integer;
+begin
+  for i := 1 to Length(Src) do
+  begin
+    case Src[i] of
+      '&':
+        Result := Result  + '&amp;';
+      '"':
+        Result := Result  + '&quot;';
+      '<':
+        Result := Result  + '&lt;';
+      '>':
+        Result := Result  + '&gt;';
+    else
+      Result := Result  + Src[i];
+    end;
+  end;
+end;
+
+function Ins(Level: integer): string;
+begin
+  result := DupeString(' ', Level);
+end;
+
+{ TEpiTranslatedText }
+
+function TEpiTranslatedText.GetDefaultText: string;
+begin
+  // TODO : Default translated text.
+  result := '';
+end;
+
+function TEpiTranslatedText.GetText(LangId: string): string;
+var
+  idx: integer;
+begin
+  if FTranslatedList.Find(LangId, idx) then
+    result := TString(FTranslatedList.Objects[idx]).Str
+  else
+    result := DefaultText;
+end;
+
+constructor TEpiTranslatedText.Create;
+begin
+  FTranslatedList := TStringList.Create;
+end;
+
+destructor TEpiTranslatedText.Destroy;
+begin
+  FTranslatedList.Clear;
+  FTranslatedList.Free;
+  inherited Destroy;
+end;
+
+procedure TEpiTranslatedText.AddText(LangId: string; Text: string);
+var
+  idx: integer;
+begin
+  if FTranslatedList.Find(LangId, idx) then
+    TString(FTranslatedList.Objects[idx]).Str := Text
+  else
+    FTranslatedList.AddObject(LangId, TString.Create(Text));
+end;
+
 end.

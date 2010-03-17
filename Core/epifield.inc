@@ -443,7 +443,7 @@ begin
       Result.ValueLabelSet := Result.DataFile.ValueLabels.ValueLabelSetByName(ValueLabelSet.Name)
     end else begin
       ValueLabelSet.Clone(Result.FValueLabelSet);
-      Result.ValueLabelSet.LabelScope := vlsLocal;
+      Result.ValueLabelSet.LabelScope := vlsInternal;
     end;
   end;
 end;

@@ -10,7 +10,7 @@ uses
   
 type
   // vlsLocal retained for compatability with old .REC/.CHK format.
-  TValueLabelSetScope = (vlsGlobal, vlsLocal, vlsFile);
+  TValueLabelSetScope = (vlsInternal, vlsExternal);
 
   { TValueLabelSet }
 
@@ -43,6 +43,7 @@ type
     procedure   AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
     procedure   Clone(var Dest: TValueLabelSet);
     procedure   Clear;
+    procedure   SaveToStream(St: TStream; Lvl: Integer);
     property    Id:   string read FId write FId;
     property    Name: string read FName write FName;
     property    ExtName: string read FExtName write FExtName;
@@ -76,6 +77,7 @@ type
     function    ValueLabelSetExits(Const Id: string; var aValueLabelSet: TValueLabelSet): boolean;
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
     procedure   DeleteValueLabelSet(Const Id: string);
+    procedure   SaveToStream(St: TStream; Lvl: Integer);
     property    Count:integer read GetCount;
     property    Items[index: integer]: TValueLabelSet read GetItem; default;
   end;
@@ -83,7 +85,7 @@ type
 implementation
 
 uses
-  SysUtils;
+  SysUtils, epistringutils, epidataglobals;
 
 type
   TValuePair = record
@@ -106,6 +108,24 @@ var
 begin
   idx := FList.IndexOf(Id);
   if idx>-1 then FList.Delete(idx);
+end;
+
+procedure TValueLabelSets.SaveToStream(St: TStream; Lvl: Integer);
+var
+  S: String;
+  i: Integer;
+begin
+  if Count = 0 then exit;
+
+  S :=
+    Ins(Lvl) + '<ValueLabels>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  for i := 0 to Count - 1 do
+    Items[i].SaveToStream(St, Lvl + 1);
+
+  S := Ins(Lvl) + '</ValueLabels>' + LineEnding;
+  St.Write(S[1], Length(S));
 end;
 
 procedure TValueLabelSets.Clear;
@@ -246,6 +266,50 @@ begin
     AVLNode := FData.FindSuccessor(AVLNode);
   end;
   FData.Clear;
+end;
+
+procedure TValueLabelSet.SaveToStream(St: TStream; Lvl: Integer);
+var
+  S: String;
+  i: Integer;
+begin
+  S :=
+    Ins(Lvl)     + '<ValueLabel Id="' + StringToXml(Id) + '">' + LineEnding +
+    Ins(Lvl + 1) + '<Type>' + FieldTypeXmlNames[LabelType] + '</Type>' + LineEnding +
+    Ins(Lvl + 1) + '<Name>' + StringToXml(Name) + '</Name>' + LineEnding;
+
+  case LabelScope of
+    vlsExternal:
+      begin
+        S := S +
+          Ins(Lvl + 1) + '<External>' + LineEnding +
+          Ins(Lvl + 2) + '<File>' + StringToXml(ExtName) + '</File>' + LineEnding +
+          // TODO : External Valuelabels references.
+          //Ins(Lvl + 2) + '<ValueField>' + StringToXml() + '</ValueField>' + LineEnding +
+          //Ins(Lvl + 2) + '<LabelField>' + StringToXml(ExtName) + '</LabelField>' + LineEnding +
+          Ins(Lvl + 1) + '</External>' + LineEnding;
+      end;
+
+    vlsInternal:
+      Begin
+        S := S +
+          Ins(Lvl + 1) + '<Internal>' + LineEnding;
+        for i := 0 to Count - 1 do
+        begin
+          S := S  +
+            // TODO : Valuelabels order!
+            Ins(Lvl + 2) + '<Set order="' + IntToStr(i) + '" value="' + StringToXml(String(Values[i])) + '"';
+          if Labels[i] <> '' then
+            S := S  + ' label="' + Labels[i] + '"';
+          if MissingValues[i] then
+            S := S  + ' missing="1"';
+          S := S  +
+            '/>' + LineEnding;
+        end;
+      end;
+  end;
+  S := S +
+    Ins(Lvl) + '</ValueLabel>' + LineEnding;
 end;
 
 

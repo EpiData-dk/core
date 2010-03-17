@@ -35,8 +35,8 @@ type
 
   TRecordState = (rsNormal, rsVerified, rsDeleted);
 
-  TRequestPasswordType  = (rpOpen, rpCreate);
-  TRequestPasswordEvent = procedure(Sender: TObject; RequestType: TRequestPasswordType; var Password: string) of object;
+  TOldRequestPasswordType  = (rpOpen, rpCreate);
+  TOldRequestPasswordEvent = procedure(Sender: TObject; RequestType: TOldRequestPasswordType; var Password: string) of object;
 
   TTranslateEvent       = function(LangCode: Integer; const Text: widestring): widestring of object;
 

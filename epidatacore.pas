@@ -1,18 +1,18 @@
-{ This file was automatically created by Lazarus. Do Not edit ! 
-  This source Is only used To compile And install the package.
+{ This file was automatically created by Lazarus. do not edit ! 
+  This source is only used to compile and install the package.
  }
 
-Unit epidatacore; 
+unit epidatacore; 
 
-Interface
+interface
 
 uses
     epiadmin, epidatafile, epidatatypes, epidocument, epirelate, 
   episcreenproperties, epistudy, epivaluelabels, epicheckfilecmds, 
   epicheckfileio, epicheckfiletypes, epiimportexport, epiqeshandler, DCPcrypt, 
   EpiBase64, EpiSHA1, Rijndael, epidataglobals, epidateutils, epilog, 
-  epistringutils, epiutils, epiutiltypes;
+  epistringutils, epiutils, epiutiltypes, episettings, epicustomclass;
 
-Implementation
+implementation
 
-End.
+end.

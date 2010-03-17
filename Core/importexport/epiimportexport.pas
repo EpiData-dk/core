@@ -158,7 +158,7 @@ type
     FFieldNaming: TFieldNaming;
     FOnClipBoardRead: TClipBoardReadHook;
     FOnClipBoardWrite: TClipBoardWriteHook;
-    FOnPassword: TRequestPasswordEvent;
+    FOnPassword:  TOldRequestPasswordEvent;
     FOnProgress:  TProgressEvent;
     FOnTranslate: TTranslateEvent;
     FByteOrder:   TByteOrder;
@@ -196,7 +196,7 @@ type
     function      ExportXPT(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
     property      OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
     property      OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
-    property      OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
+    property      OnPassword: TOldRequestPasswordEvent read FOnPassword write FOnPassword;
     property      ByteOrder: TByteOrder read FByteOrder;
     property      OnClipBoardRead: TClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     property      OnClipBoardWrite: TClipBoardWriteHook read FOnClipBoardWrite write FOnClipBoardWrite;
@@ -940,7 +940,7 @@ begin
       BEGIN
         TmpField.ValueLabelSet := TValueLabelSet.Create;
         TmpField.ValueLabelSet.Name := StrBuf;
-        TmpField.ValueLabelSet.LabelScope := vlsGlobal;
+        TmpField.ValueLabelSet.LabelScope := vlsInternal;
         ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
       END;
     END;  //for i
