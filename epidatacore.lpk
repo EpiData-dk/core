@@ -38,7 +38,7 @@
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
     <Version Minor="3"/>
-    <Files Count="21">
+    <Files Count="17">
       <Item1>
         <Filename Value="Datafile/UCheckFileCmds.pas"/>
         <UnitName Value="UCheckFileCmds"/>
@@ -72,57 +72,41 @@
         <UnitName Value="UQesHandler"/>
       </Item8>
       <Item9>
-        <Filename Value="Encryption/DCPcrypt.pas"/>
-        <UnitName Value="DCPcrypt"/>
-      </Item9>
-      <Item10>
-        <Filename Value="Encryption/EpiBase64.pas"/>
-        <UnitName Value="EpiBase64"/>
-      </Item10>
-      <Item11>
-        <Filename Value="Encryption/EpiSHA1.pas"/>
-        <UnitName Value="EpiSHA1"/>
-      </Item11>
-      <Item12>
-        <Filename Value="Encryption/Rijndael.pas"/>
-        <UnitName Value="Rijndael"/>
-      </Item12>
-      <Item13>
         <Filename Value="Utils/ErrorCodes.inc"/>
         <Type Value="Include"/>
-      </Item13>
-      <Item14>
+      </Item9>
+      <Item10>
         <Filename Value="Utils/UDateUtils.pas"/>
         <UnitName Value="UDateUtils"/>
-      </Item14>
-      <Item15>
+      </Item10>
+      <Item11>
         <Filename Value="Utils/UEpiLog.pas"/>
         <UnitName Value="UEpiLog"/>
-      </Item15>
-      <Item16>
+      </Item11>
+      <Item12>
         <Filename Value="Utils/UEpiUtils.pas"/>
         <UnitName Value="UEpiUtils"/>
-      </Item16>
-      <Item17>
+      </Item12>
+      <Item13>
         <Filename Value="Utils/UStringUtils.pas"/>
         <UnitName Value="UStringUtils"/>
-      </Item17>
-      <Item18>
+      </Item13>
+      <Item14>
         <Filename Value="Utils/UUtilTypes.pas"/>
         <UnitName Value="UUtilTypes"/>
-      </Item18>
-      <Item19>
+      </Item14>
+      <Item15>
         <Filename Value="Utils/uepidataglobals.pas"/>
         <UnitName Value="UEpiDataGlobals"/>
-      </Item19>
-      <Item20>
+      </Item15>
+      <Item16>
         <Filename Value="Encryption/DCPcrypt.Inc"/>
         <Type Value="Text"/>
-      </Item20>
-      <Item21>
+      </Item16>
+      <Item17>
         <Filename Value="Encryption/Rijndael.Inc"/>
         <Type Value="Text"/>
-      </Item21>
+      </Item17>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
