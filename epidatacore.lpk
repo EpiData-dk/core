@@ -38,7 +38,7 @@
     <Description Value="EpiData Core Components Package"/>
     <License Value="To be included."/>
     <Version Minor="4"/>
-    <Files Count="34">
+    <Files Count="28">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -116,78 +116,57 @@
         <UnitName Value="epiqeshandler"/>
       </Item19>
       <Item20>
-        <Filename Value="Encryption/DCPcrypt.pas"/>
-        <UnitName Value="DCPcrypt"/>
-      </Item20>
-      <Item21>
-        <Filename Value="Encryption/DCPcrypt.Inc"/>
-        <Type Value="Text"/>
-      </Item21>
-      <Item22>
-        <Filename Value="Encryption/EpiBase64.pas"/>
-        <UnitName Value="EpiBase64"/>
-      </Item22>
-      <Item23>
-        <Filename Value="Encryption/EpiSHA1.pas"/>
-        <UnitName Value="EpiSHA1"/>
-      </Item23>
-      <Item24>
-        <Filename Value="Encryption/Rijndael.pas"/>
-        <UnitName Value="Rijndael"/>
-      </Item24>
-      <Item25>
-        <Filename Value="Encryption/Rijndael.Inc"/>
-        <Type Value="Text"/>
-      </Item25>
-      <Item26>
         <Filename Value="Utils/epidataglobals.pas"/>
         <UnitName Value="epidataglobals"/>
-      </Item26>
-      <Item27>
+      </Item20>
+      <Item21>
         <Filename Value="Utils/epidateutils.pas"/>
         <UnitName Value="epidateutils"/>
-      </Item27>
-      <Item28>
+      </Item21>
+      <Item22>
         <Filename Value="Utils/epierrorcodes.inc"/>
         <Type Value="Include"/>
-      </Item28>
-      <Item29>
+      </Item22>
+      <Item23>
         <Filename Value="Utils/epilog.pas"/>
         <UnitName Value="epilog"/>
-      </Item29>
-      <Item30>
+      </Item23>
+      <Item24>
         <Filename Value="Utils/epistringutils.pas"/>
         <UnitName Value="epistringutils"/>
-      </Item30>
-      <Item31>
+      </Item24>
+      <Item25>
         <Filename Value="Utils/epiutils.pas"/>
         <UnitName Value="epiutils"/>
-      </Item31>
-      <Item32>
+      </Item25>
+      <Item26>
         <Filename Value="Utils/epiutiltypes.pas"/>
         <UnitName Value="epiutiltypes"/>
-      </Item32>
-      <Item33>
+      </Item26>
+      <Item27>
         <Filename Value="Core/episettings.pas"/>
         <UnitName Value="episettings"/>
-      </Item33>
-      <Item34>
+      </Item27>
+      <Item28>
         <Filename Value="Core/epicustomclass.pas"/>
         <UnitName Value="epicustomclass"/>
-      </Item34>
+      </Item28>
     </Files>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="LCL"/>
-        <MinVersion Major="1" Valid="True"/>
+        <PackageName Value="dcpcrypt"/>
       </Item1>
       <Item2>
-        <PackageName Value="laz_fpspreadsheet"/>
+        <PackageName Value="LCL"/>
+        <MinVersion Major="1" Valid="True"/>
       </Item2>
       <Item3>
+        <PackageName Value="laz_fpspreadsheet"/>
+      </Item3>
+      <Item4>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item3>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)/"/>

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epicheckfilecmds, epicheckfiletypes,
-  epidatatypes, epivaluelabels, episcreenproperties, Rijndael,
+  epidatatypes, epivaluelabels, episcreenproperties, DCPrijndael,
   DOM, math;
 
 type
@@ -27,7 +27,8 @@ implementation
 
 uses
   XMLRead, epilog, epidataglobals, epiutils, epiimportexport, strutils,
-  epistringutils, EpiBase64, epicheckfileio, FileUtil, epidateutils;
+  epistringutils, DCPbase64, epicheckfileio, FileUtil, epidateutils,
+  DCPsha1;
 
 {$I epidatafile.inc}
 {$I epifield.inc}

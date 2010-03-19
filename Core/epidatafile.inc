@@ -801,8 +801,8 @@ begin
         TmpStr := UTF8Encode(ElemNode.Attributes[i].NodeValue);
         if TmpField.FieldType = ftCrypt then
         begin
-          TmpStr := B64Decode(TmpStr);
-          FCrypter.DecryptCFB(TmpStr[1], TmpStr[1], Length(TmpStr));
+          TmpStr := Base64EncodeStr(TmpStr);
+          FCrypter.DecryptCFBblock(TmpStr[1], TmpStr[1], Length(TmpStr));
           TmpStr := Trim(TmpStr);
           FCrypter.Reset;
         end;
@@ -854,10 +854,10 @@ begin
     if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
     if Password = '' then
       raise Exception.Create('A password is needed for data files with encrypted fields');
-    FCrypter.InitStr(Password);
+    FCrypter.InitStr(Password, TDCP_sha1);
     EncData := Trim(Password);
-    FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-    EncData := B64Encode(EncData);
+    FCrypter.EncryptCFBblock(EncData[1], EncData[1], Length(EncData));
+    EncData := Base64EncodeStr(EncData);
     FCrypter.Reset;
     TmpStr := TmpStr +
       Ins(2) + '<Password>' + EncData + '</Password>' + LineEnding;
@@ -1230,8 +1230,8 @@ begin
           TmpStr := TEpiStringField.DefaultMissing;
         IF (fieldtype = ftCrypt) AND (FPassword <> '') THEN
         begin
-          EncData := B64Decode(TmpStr);
-          FCrypter.DecryptCFB(EncData[1], EncData[1], Length(EncData));
+          EncData := Base64DecodeStr(TmpStr);
+          FCrypter.DecryptCFBblock(EncData[1], EncData[1], Length(EncData));
           TmpStr := Trim(EncData);
           FCrypter.Reset;
         end;
@@ -1421,9 +1421,9 @@ begin
           ftCrypt:
             begin
               EncData := AsString[CurRec];
-              FCrypter.InitStr(Password);
-              FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-              TmpStr += B64Encode(EncData);
+              FCrypter.InitStr(Password, TDCP_sha1);
+              FCrypter.EncryptCFBblock(EncData[1], EncData[1], Length(EncData));
+              TmpStr += Base64EncodeStr(EncData);
               FCrypter.Reset;
             end;
           ftString:
@@ -1494,7 +1494,7 @@ begin
       if Assigned(OnPassword) then OnPassword(self, rpCreate, FPassWord);
       if Password = '' then
         raise Exception.Create('A password is needed for data files with encrypted fields');
-      FCrypter.InitStr(Password);
+      FCrypter.InitStr(Password, TDCP_sha1);
     END;
 
     // - Header lines (and colour):
@@ -1508,8 +1508,8 @@ begin
     IF Password <> '' THEN
     begin
       EncData := Trim(Password);
-      FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-      EncData := B64Encode(EncData);
+      FCrypter.EncryptCFBblock(EncData[1], EncData[1], Length(EncData));
+      EncData := Base64EncodeStr(EncData);
       FCrypter.Reset;
       S := S + '~KQ:' + EncData + ':KQ~ ';
     end;
@@ -1592,9 +1592,9 @@ begin
         else if FieldType = ftCrypt then
         begin
           EncData := EpiUtf8ToAnsi(Trim(AsString[CurRec]));
-          FCrypter.InitStr(Password);
-          FCrypter.EncryptCFB(EncData[1], EncData[1], Length(EncData));
-          EncData := B64Encode(EncData);
+          FCrypter.InitStr(Password, TDCP_sha1);
+          FCrypter.EncryptCFBblock(EncData[1], EncData[1], Length(EncData));
+          EncData := Base64EncodeStr(EncData);
           FCrypter.Reset;
           T := Format('%-*s', [FieldLength, EncData])
         end else if FieldType in [ftString, ftUpperAlfa] then
@@ -1659,9 +1659,9 @@ begin
     if Assigned(FOnPassword) then
       FOnPassword(Self, rpOpen, FPassword);
   try
-    S := B64Decode(EncryptedString);
-    FCrypter.InitStr(Password);
-    FCrypter.DecryptCFB(S[1], S[1], Length(S));
+    S := Base64DecodeStr(EncryptedString);
+    FCrypter.InitStr(Password, TDCP_sha1);
+    FCrypter.DecryptCFBblock(S[1], S[1], Length(S));
     FCrypter.Reset;
     Result := (AnsiCompareText(Password, S) = 0);
   except

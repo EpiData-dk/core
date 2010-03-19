@@ -9,9 +9,9 @@ interface
 uses
     epiadmin, epidatafile, epidatatypes, epidocument, epirelate, 
   episcreenproperties, epistudy, epivaluelabels, epicheckfilecmds, 
-  epicheckfileio, epicheckfiletypes, epiimportexport, epiqeshandler, DCPcrypt, 
-  EpiBase64, EpiSHA1, Rijndael, epidataglobals, epidateutils, epilog, 
-  epistringutils, epiutils, epiutiltypes, episettings, epicustomclass;
+  epicheckfileio, epicheckfiletypes, epiimportexport, epiqeshandler, 
+  epidataglobals, epidateutils, epilog, epistringutils, epiutils, 
+  epiutiltypes, episettings, epicustomclass;
 
 implementation
 

@@ -38,6 +38,8 @@ type
   TOldRequestPasswordType  = (rpOpen, rpCreate);
   TOldRequestPasswordEvent = procedure(Sender: TObject; RequestType: TOldRequestPasswordType; var Password: string) of object;
 
+  TRequestPasswordEvent = procedure(Sender: TObject; var Login: string; var Password: string) of object;
+
   TTranslateEvent       = function(LangCode: Integer; const Text: widestring): widestring of object;
 
   TProgressResult       = (prNormal, prCancel);

@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, sysutils, epicustomclass, episettings, epiadmin, epistudy, epidatafile, epirelate,
-  XMLRead, DOM;
+  XMLRead, DOM, epidatatypes;
 
 type
 
@@ -21,9 +21,11 @@ type
     FRelates: TEpiRelates;
     FSettings: TEpiSettings;
     FStudy: TEpiStudy;
+    function GetOnPassword: TRequestPasswordEvent;
     procedure SetAdmin(const AValue: TEpiAdmin);
     procedure SetDataFiles(const AValue: TEpiDataFiles);
     procedure SetFileVersion(const AValue: Integer);
+    procedure SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure SetRelates(const AValue: TEpiRelates);
     procedure SetSettings(const AValue: TEpiSettings);
     procedure SetStudy(const AValue: TEpiStudy);
@@ -41,7 +43,7 @@ type
     Property   DataFiles: TEpiDataFiles read FDataFiles write SetDataFiles;
     Property   Relates: TEpiRelates read FRelates write SetRelates;
     Property   FileVersion: Integer read FFileVersion write SetFileVersion;
-//    property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
+    property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
   end;
 
 implementation
@@ -57,6 +59,11 @@ begin
   FAdmin := AValue;
 end;
 
+function TEpiDocument.GetOnPassword: TRequestPasswordEvent;
+begin
+  result := Admin.OnPassword;
+end;
+
 procedure TEpiDocument.SetDataFiles(const AValue: TEpiDataFiles);
 begin
   if FDataFiles = AValue then exit;
@@ -67,6 +74,11 @@ procedure TEpiDocument.SetFileVersion(const AValue: Integer);
 begin
   if FFileVersion = AValue then exit;
   FFileVersion := AValue;
+end;
+
+procedure TEpiDocument.SetOnPassword(const AValue: TRequestPasswordEvent);
+begin
+  Admin.OnPassword := AValue;
 end;
 
 procedure TEpiDocument.SetRelates(const AValue: TEpiRelates);
@@ -104,7 +116,7 @@ end;
 constructor TEpiDocument.Create;
 begin
   FSettings  := TEpiSettings.Create;
-  FAdmin     := TEpiAdmin.Create;
+  FAdmin     := TEpiAdmin.Create(Self);
   FDataFiles := TEpiDataFiles.Create;
   FRelates   := TEpiRelates.Create;
   FStudy     := TEpiStudy.Create;

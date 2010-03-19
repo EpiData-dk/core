@@ -6,7 +6,7 @@ unit epiadmin;
 interface
 
 uses
-  Classes, SysUtils, epicustomclass, episettings, DOM;
+  Classes, SysUtils, epicustomclass, episettings, DOM, epidatatypes;
 
 type
   TEpiAdmin = class;
@@ -59,9 +59,14 @@ type
   TEpiAdmin = class(TEpiCustomAdmin)
   private
     FGroups: TEpiGroups;
+    FOnPassword: TRequestPasswordEvent;
     FUsers: TEpiUsers;
+    function   RequestPassword(const Setting: TEpiSettings): Boolean;
+  protected
+    FOwner: TObject;
+    property   Owner: TObject read FOwner write FOwner;
   public
-    constructor Create;
+    constructor Create(AOwner: TObject);
     destructor Destroy; override;
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
@@ -69,6 +74,7 @@ type
     procedure  LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
     Property   Users: TEpiUsers read FUsers;
     Property   Groups: TEpiGroups read FGroups;
+    property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
   end;
 
   { TEpiUsers }
@@ -82,6 +88,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    function   GetUserByLogin(const Login: string): TEpiUser;
+    function   IndexOf(const Login: string): Integer;
     procedure  SaveToStream(St: TStream; Lvl: integer);
     procedure  LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
     Property   User[Index: integer]: TEpiUser read GetUser; default;
@@ -98,6 +106,7 @@ type
     FId: string;
     FLastLogin: TDateTime;
     FLogin: string;
+    FMasterPassword: string;
     FName: string;
     FPassword: string;
     procedure SetExpireDate(const AValue: TDateTime);
@@ -105,6 +114,7 @@ type
     procedure SetId(const AValue: string);
     procedure SetLastLogin(const AValue: TDateTime);
     procedure SetLogin(const AValue: string);
+    procedure SetMasterPassword(const AValue: string);
     procedure SetName(const AValue: string);
     procedure SetPassword(const AValue: string);
   public
@@ -116,6 +126,7 @@ type
     Property   Id: string read FId write SetId;
     Property   Login: string read FLogin write SetLogin;
     Property   Password: string read FPassword write SetPassword;
+    Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     // Scrambled data (in UserInfo section):
     Property   Name: string read FName write SetName;
     Property   Group: TEpiGroup read FGroup write SetGroup;
@@ -135,6 +146,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure  SaveToStream(St: TStream; Lvl: integer);
+    procedure  LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
     function   GroupById(const Id: string): TEpiGroup;
     Property   Group[Index: integer]: TEpiGroup read GetGroup; default;
     Property   Count: integer read GetCount;
@@ -155,6 +167,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure  SaveToStream(St: TStream; Lvl: integer);
+    procedure  LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
     Property   Id: string read FId write SetId;
     Property   Name: string read FName write SetName;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
@@ -163,7 +176,22 @@ type
 implementation
 
 uses
-  epistringutils, epidataglobals;
+  epistringutils, epidataglobals, DCPsha1, DCPbase64, DCPrijndael,
+  XMLRead;
+
+function GetSHA1Base64EncodedStr(const Key: string): string;
+var
+  Sha1: TDCP_sha1;
+  Digest: string;
+begin
+  SetLength(Digest, 20);
+  Sha1 := TDCP_sha1.Create(nil);
+  Sha1.Init;
+  Sha1.UpdateStr(Key);
+  Sha1.Final(Digest);
+  result := Base64EncodeStr(Digest);
+  Sha1.Free;
+end;
 
 { TEpiCustomAdmin }
 
@@ -222,8 +250,36 @@ end;
 
 { TEpiAdmin }
 
-constructor TEpiAdmin.Create;
+function TEpiAdmin.RequestPassword(const Setting: TEpiSettings): Boolean;
+var
+  Login, password: string;
+  TheUser: TEpiUser;
+  AESDeCrypt: TDCP_rijndael;
+
 begin
+  result := false;
+
+  if not Assigned(OnPassword) then exit;
+
+  OnPassword(Self.Owner, Login, Password);
+
+  TheUser := Users.GetUserByLogin(Login);
+  if not Assigned(TheUser) then exit;
+
+  result := GetSHA1Base64EncodedStr(Password) = TheUser.Password;
+  if not result then exit;
+
+  AESDeCrypt := TDCP_rijndael.Create(nil);
+  AESDeCrypt.InitStr(Password, TDCP_sha1);
+  AESDeCrypt.DecryptCFB8bit(TheUser.MasterPassword, Password, Length(TheUser.MasterPassword));
+  Setting.MasterPassword := Password;
+  AESDeCrypt.Free;
+end;
+
+constructor TEpiAdmin.Create(AOwner: TObject);
+begin
+  FOwner := AOwner;
+
   FUsers := TEpiUsers.Create;
   FUsers.FAdmin := Self;
 
@@ -280,6 +336,8 @@ end;
 procedure TEpiAdmin.LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
 var
   Node: TDOMNode;
+  login, password: string;
+  I: Integer;
 begin
   // Root = <Admin>
 
@@ -288,13 +346,16 @@ begin
   begin
     Node := Root.FindNode('Users');
     Users.LoadFromXml(Node, Setting);
+
+    I := 0;
+    repeat
+      inc(i);
+    until RequestPassword(Setting) or (I >= 3);
   end;
-
-
 
   // Load groups first
   Node := Root.FindNode('Groups');
-  Users.LoadFromXml(Node, Setting);
+  Groups.LoadFromXml(Node, Setting);
 
   // Then load users (perhaps to complete user info).
   Node := Root.FindNode('Users');
@@ -322,6 +383,26 @@ destructor TEpiUsers.Destroy;
 begin
   FList.Free;
   inherited Destroy;
+end;
+
+function TEpiUsers.GetUserByLogin(const Login: string): TEpiUser;
+var
+  Idx: LongInt;
+begin
+  Result := nil;
+  Idx := IndexOf(Login);
+  if Idx >= 0 then
+    Result := User[Idx];
+end;
+
+function TEpiUsers.IndexOf(const Login: string): Integer;
+begin
+  for result := 0 to Count - 1 do
+  begin
+    if User[result].Login = Login then
+      exit;
+  end;
+  Result := -1;
 end;
 
 procedure TEpiUsers.SaveToStream(St: TStream; Lvl: integer);
@@ -422,6 +503,12 @@ begin
   DoChange(aeUserSetLogin, @Val);
 end;
 
+procedure TEpiUser.SetMasterPassword(const AValue: string);
+begin
+  if FMasterPassword = AValue then exit;
+  FMasterPassword := AValue;
+end;
+
 procedure TEpiUser.SetName(const AValue: string);
 var
   Val: String;
@@ -513,6 +600,31 @@ begin
   St.Write(S[1], Length(S));
 end;
 
+procedure TEpiGroups.LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
+var
+  AESDecrypt: TDCP_rijndael;
+  XMLDoc: TDOMDocumentFragment;
+  NewRoot: TDOMNode;
+  St: TStringStream;
+begin
+  // Root = <Groups>
+
+  // If file is scrambles, the we first need to descramble (using master password)
+  // and then read xml structure.
+  if Setting.Scrambled then
+  begin
+    AESDecrypt := TDCP_rijndael.Create(nil);
+    AESDecrypt.InitStr(Setting.MasterPassword, TDCP_sha1);
+    St := TStringStream.Create(Base64DecodeStr(Root.TextContent));
+    St.Position := 0;
+    AESDecrypt.DecryptStream(St, St, St.Size);
+    XMLDoc := Root.OwnerDocument.CreateDocumentFragment;
+    ReadXMLFragment(XMLDoc, St);
+    NewRoot := XMLDoc;
+  end else
+    NewRoot := Root;
+end;
+
 function TEpiGroups.GroupById(const Id: string): TEpiGroup;
 var
   i: Integer;
@@ -572,9 +684,14 @@ begin
   S :=
     Ins(Lvl) + '<Group id="' + Id + '">' + LineEnding +
     Ins(Lvl + 1) + '<Name>' + Name + '</Name>' + LineEnding +
-//TODO : Save Group Rights...    Ins(Lvl + 1) + '<Rights>' + WriteStr(Rights) + '</Rights>' + LineEnding +
+    Ins(Lvl + 1) + '<Rights>' + IntToStr(LongInt(Rights)) + '</Rights>' + LineEnding +
     Ins(Lvl) + '</Group>' + LineEnding;
   St.Write(S[1], Length(S));
+end;
+
+procedure TEpiGroup.LoadFromXml(Root: TDOMNode; const Setting: TEpiSettings);
+begin
+
 end;
 
 end.
