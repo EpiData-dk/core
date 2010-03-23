@@ -5,13 +5,13 @@ unit epistudy;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epicustomclass, DOM;
 
 type
 
   { TEpiStudy }
 
-  TEpiStudy = class(TObject)
+  TEpiStudy = class(TEpiCustomClass)
   private
     FAbstractText: string;
     FAuthor: string;
@@ -51,7 +51,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: Integer);
+    procedure  SaveToStream(St: TStream; Lvl: Integer); override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
     Property   Id: string read FId write SetId;
     Property   Protocol: string read FProtocol write SetProtocol;
     Property   AbstractText: string read FAbstractText write SetAbstractText;
@@ -215,6 +216,11 @@ begin
     Ins(Lvl + 1) + '<Temporal>' + StringToXml(Temporal) + '</Temporal>' + LineEnding +
     Ins(Lvl + 1) + '<Title>' + StringToXml(Title) + '</Title>' + LineEnding +
     Ins(Lvl)     + '</Study>' + LineEnding;
+end;
+
+procedure TEpiStudy.LoadFromXml(Root: TDOMNode);
+begin
+  //
 end;
 
 end.

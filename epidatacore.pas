@@ -7,11 +7,11 @@ unit epidatacore;
 interface
 
 uses
-    epiadmin, epidatafile, epidatatypes, epidocument, epirelate, 
-  episcreenproperties, epistudy, epivaluelabels, epicheckfilecmds, 
-  epicheckfileio, epicheckfiletypes, epiimportexport, epiqeshandler, 
-  epidataglobals, epidateutils, epilog, epistringutils, epiutils, 
-  epiutiltypes, episettings, epicustomclass;
+    epiadmin, epicustomclass, epidatafile, epidatatypes, epidocument, 
+  epirelate, episcreenproperties, episettings, epistudy, epivaluelabels, 
+  epicheckfilecmds, epicheckfileio, epicheckfiletypes, epiimportexport, 
+  epiqeshandler, epidataglobals, epidateutils, epilog, epistringutils, 
+  epiutils, epiutiltypes, epixmlutils;
 
 implementation
 

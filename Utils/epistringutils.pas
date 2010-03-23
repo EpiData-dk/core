@@ -50,12 +50,6 @@ type
   procedure EpiUnknownStringsToUTF8(Source: TStrings);
   function EpiUtf8ToAnsi(Const Source: string): string;
 
-  // Xml routines:
-  Function StringToXml(Const Src: String): string;
-  Function Ins(Level: integer): string;
-
-
-
 implementation
 
 uses
@@ -212,32 +206,6 @@ begin
   {$ELSE}
   result := UTF8ToISO_8859_1(Source);
   {$ENDIF}
-end;
-
-function StringToXml(Const Src: String): string;
-var
-  i: Integer;
-begin
-  for i := 1 to Length(Src) do
-  begin
-    case Src[i] of
-      '&':
-        Result := Result  + '&amp;';
-      '"':
-        Result := Result  + '&quot;';
-      '<':
-        Result := Result  + '&lt;';
-      '>':
-        Result := Result  + '&gt;';
-    else
-      Result := Result  + Src[i];
-    end;
-  end;
-end;
-
-function Ins(Level: integer): string;
-begin
-  result := DupeString(' ', Level);
 end;
 
 { TEpiTranslatedText }

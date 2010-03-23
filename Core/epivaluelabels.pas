@@ -6,7 +6,7 @@ unit epivaluelabels;
 interface
 
 uses
-  Classes, epidatatypes, AVL_Tree, Variants;
+  Classes, epidatatypes, AVL_Tree, Variants, epicustomclass;
   
 type
   // vlsLocal retained for compatability with old .REC/.CHK format.
@@ -14,7 +14,7 @@ type
 
   { TValueLabelSet }
 
-  TValueLabelSet = class(TObject)
+  TValueLabelSet = class(TEpiCustomClass)
   private
     FData:     TAVLTree;
     FExtName: string;
@@ -62,7 +62,7 @@ type
 
   { TValueLabelSets }
 
-  TValueLabelSets = class(TObject)
+  TValueLabelSets = class(TEpiCustomClass)
   private
     FList: TStringList;
     function GetCount:integer;

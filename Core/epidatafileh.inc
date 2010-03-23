@@ -5,7 +5,7 @@ type
 
   { TEpiDataFiles }
 
-  TEpiDataFiles = class(TObject)
+  TEpiDataFiles = class(TEpiCustomClass)
   private
     FList: TFPList;
     FOwned: Boolean;
@@ -82,7 +82,7 @@ type
 
   { TEpiDataFile }
 
-  TEpiDataFile = class(TObject)
+  TEpiDataFile = class(TEpiCustomClass)
   private
     FDatafileType: TDataFileType;
     FFileName:     string;                  // Physical datafile name.
@@ -100,8 +100,6 @@ type
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
     FOnPassword:   TOldRequestPasswordEvent;   // Callback event for password request
     FBackgroundColour:     Integer;         // Background color up entry form.
-    FErrorText:    string;
-    FErrorCode:    Cardinal;
     FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
     FRecordStatus: TEpiField;
@@ -194,8 +192,6 @@ type
     Property   TextLabelCount: Cardinal read GetTextLabelCount;
     Property   Size:        Integer read GetSize write SetSize;
     Property   FileProperties:   TEpiDataFileProperties read FCheckFile;
-    Property   ErrorCode:   Cardinal read FErrorCode write FErrorCode;
-    Property   ErrorText:   string read FErrorText write FErrorText;
     Property   FileVersion: Cardinal read FFileVersion write FFileVersion;
     Property   DatafileType: TDataFileType read FDatafileType write FDatafileType;
     property   BackgroundColour: Integer read FBackgroundColour write FBackgroundColour;

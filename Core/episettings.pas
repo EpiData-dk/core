@@ -13,9 +13,14 @@ type
   { TEpiSettings }
 
   TEpiSettings = class(TEpiCustomClass)
+  strict private
+    // Owner is TEpiDocument.
+    FOwner: TObject;
   private
     FDateSeparator: string;
     FDecimalSeparator: string;
+    // Clear Text master password for all scrambling.
+    // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
     FMissingString: string;
     FScrambled: boolean;
@@ -27,9 +32,10 @@ type
     procedure SetScrambled(const AValue: boolean);
     procedure SetVersion(const AValue: integer);
   public
-    constructor Create;
+    constructor Create(AOwner: TObject);
     destructor Destroy; override;
-    procedure  LoadFromXml(Root: TDOMNode);
+    procedure  SaveToStream(St: TStream; Lvl: integer); override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
     property   Version: integer read FVersion write SetVersion;
     property   DateSeparator: string read FDateSeparator write SetDateSeparator;
     property   DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
@@ -41,7 +47,7 @@ type
 implementation
 
 uses
-  epidataglobals, epidatafile;
+  epidataglobals, epidatafile, DCPbase64;
 
 { TEpiSettings }
 
@@ -81,14 +87,39 @@ begin
   FVersion := AValue;
 end;
 
-constructor TEpiSettings.Create;
+constructor TEpiSettings.Create(AOwner: TObject);
+var
+  Key: array[0..3] of LongInt;
+  KeyByte: array[0..3*SizeOf(LongInt)] of Char absolute Key;
+  i: Integer;
 begin
+  FOwner := AOwner;
 
+  Randomize;
+  for i := 0 to 3 do
+    Key[i] := Random(maxLongint - 1) + 1;
+
+  MasterPassword := String(KeyByte);
 end;
 
 destructor TEpiSettings.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TEpiSettings.SaveToStream(St: TStream; Lvl: integer);
+var
+  S: String;
+begin
+  S :=
+    Ins(Lvl) + '<Settings>' + LineEnding +
+    Ins(Lvl + 1) + '<Version>' + IntToStr(Version) + '</Version>' + LineEnding +
+    Ins(Lvl + 1) + '<Scrambled>' + BoolToStr(Scrambled, 'true', 'false') + '</Scrambled>' + LineEnding +
+    Ins(Lvl + 1) + '<DateSeparator>' + EpiInternalFormatSettings.DateSeparator + '</DateSeparator>' + LineEnding +
+    Ins(Lvl + 1) + '<DecimalSeparator>' + EpiInternalFormatSettings.DecimalSeparator + '</DecimalSeparator>' + LineEnding +
+    Ins(Lvl + 1) + '<MissingString>' + StringToXml(TEpiStringField.DefaultMissing) + '</MissingString>' + LineEnding +
+    Ins(Lvl) + '</Settings>' + LineEnding;
+  St.Write(S[1], Length(S));
 end;
 
 procedure TEpiSettings.LoadFromXml(Root: TDOMNode);
@@ -101,6 +132,10 @@ begin
   ElemNode := TDOMElement(Root.FindNode('Version'));
   if not Assigned(ElemNode) then
     ReportXmlError(EPI_FILE_VERSION_ERROR, 0, 'No format version specified.', []);
+
+  // Scrambled filed
+  ElemNode := TDOMElement(Root.FindNode('Scrambled'));
+  Scrambled := Assigned(ElemNode);
 
   // Date Separator
   ElemNode := TDOMElement(Root.FindNode('DateSeparator'));
@@ -122,10 +157,6 @@ begin
     MissingString := UTF8Encode(ElemNode.TextContent)
   else
     MissingString := TEpiStringField.DefaultMissing;
-
-  // Scrambled filed
-  ElemNode := TDOMElement(Root.FindNode('Scrambled'));
-  Scrambled := Assigned(ElemNode);
 end;
 
 end.

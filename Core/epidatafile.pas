@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, epicheckfilecmds, epicheckfiletypes,
   epidatatypes, epivaluelabels, episcreenproperties, DCPrijndael,
-  DOM, math;
+  DOM, math, epicustomclass;
 
 type
   TEpiDataFileProperties = class;

@@ -5,7 +5,7 @@ unit epirelate;
 interface
 
 uses
-  Classes, SysUtils, epidatafile;
+  Classes, SysUtils, epidatafile, epicustomclass;
 
 type
   TEpiRelates = class;
@@ -15,7 +15,7 @@ type
 
   { TEpiRelates }
 
-  TEpiRelates = class
+  TEpiRelates = class(TEpiCustomClass)
   private
     FRelateList: TFPList;
     FPrimaryKeys: TEpiPrimaryKeys;
