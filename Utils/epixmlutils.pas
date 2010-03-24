@@ -8,9 +8,10 @@ uses
   Classes, SysUtils, DOM;
 
   procedure InitScrambler(Password: string);
-  function  DeScramble(Root: TDOMNode): TDOMNode;
-  function  EnScramble(St: TStream): string;
-  function  EnScramble(S: string): string;
+  function  DeScramble(Root: TDOMNode): TDOMNode; overload;
+  function  DeScramble(S: string): string; overload;
+  function  EnScramble(St: TStream): string; overload;
+  function  EnScramble(S: string): string; overload;
 
 implementation
 
@@ -36,16 +37,40 @@ function DeScramble(Root: TDOMNode): TDOMNode;
 var
   St: TStringStream;
   XMLDoc: TDOMDocumentFragment;
+  s: String;
+  Node: TDOMNode;
 begin
   Result := nil;
   if not Initialized then exit;
 
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    if Node.NodeType = TEXT_NODE then
+      break;
+    node := Node.NextSibling;
+  end;
   AESCrypter.Reset;
-  St := TStringStream.Create(AESCrypter.DecryptString(Root.TextContent));
+  s := TDOMText(Node).Data;
+  s := trim(s);
+//  s := UTF8Encode(s);
+  s := AESCrypter.DecryptString(s);
+  St := TStringStream.Create(s);
+  St.Position := 0;
+
   XMLDoc := Root.OwnerDocument.CreateDocumentFragment;
   ReadXMLFragment(XMLDoc, St);
   ST.Free;
   Result := XMLDoc;
+end;
+
+function DeScramble(S: string): string; overload;
+begin
+  Result := '';
+  if not Initialized then exit;
+
+  AESCrypter.Reset;
+  Result := AESCrypter.DecryptString(S);
 end;
 
 function EnScramble(St: TStream): string;

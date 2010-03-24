@@ -209,7 +209,7 @@ begin
   Sha1 := TDCP_sha1.Create(nil);
   Sha1.Init;
   Sha1.UpdateStr(Key);
-  Sha1.Final(Digest);
+  Sha1.Final(Digest[1]);
   result := Base64EncodeStr(Digest);
   Sha1.Free;
 end;
@@ -290,7 +290,6 @@ function TEpiAdmin.RequestPassword: Boolean;
 var
   Login, Password: string;
   TheUser: TEpiUser;
-  AESDeCrypt: TDCP_rijndael;
 begin
   result := false;
 
@@ -304,13 +303,10 @@ begin
   result := GetSHA1Base64EncodedStr(Password) = TheUser.Password;
   if not result then exit;
 
-  AESDeCrypt := TDCP_rijndael.Create(nil);
-  AESDeCrypt.InitStr(Password, TDCP_sha256);
-  AESDeCrypt.DecryptCFB8bit(Base64DecodeStr(TheUser.MasterPassword)[1], Password, Length(TheUser.MasterPassword));
-  Settings.MasterPassword := Password;
-  AESDeCrypt.Free;
-
   InitScrambler(Password);
+  Settings.MasterPassword := DeScramble(TheUser.MasterPassword);
+
+  InitScrambler(Settings.MasterPassword);
 end;
 
 constructor TEpiAdmin.Create(AOwner: TObject);
@@ -362,6 +358,7 @@ begin
     Ins(Lvl) + '<Admin>' + LineEnding;
   St.Write(TmpStr[1], Length(TmpStr));
 
+  InitScrambler(Settings.MasterPassword);
   Groups.SaveToStream(St, Lvl + 1);
   Users.SaveToStream(St, Lvl + 1);
 
@@ -492,8 +489,10 @@ begin
 
     NewUser := TEpiUser.Create(Self);
     NewUser.Login := UTF8Encode(Node.FindNode('Login').TextContent);
-    NewUser.Password := Node.FindNode('Password').TextContent;
+    // Set password directly here, since the SetPassword method hash'es it and reencrypts the master password.
+    NewUser.FPassword := Node.FindNode('Password').TextContent;
     NewUser.MasterPassword := Node.FindNode('MasterPassword').TextContent;
+    AddUser(NewUser);
 
     Node := Node.NextSibling;
   end;
@@ -521,9 +520,9 @@ begin
       NewUser.MasterPassword := UTF8Encode(Node.FindNode('MasterPassword').TextContent);
     end;
     NewUser.LoadFromXml(Node);
-  end;
 
-  if not Settings.Scrambled then exit;
+    Node := Node.NextSibling;
+  end;
 end;
 
 procedure TEpiUsers.AddUser(AUser: TEpiUser);
@@ -607,9 +606,13 @@ begin
   FPassword := AValue;
   DoChange(aeUserSetPassword, @Val);
 
+  // Scramble master password with own key.
   InitScrambler(Password);
   MasterPassword := EnScramble(Admin.Settings.MasterPassword);
   InitScrambler(Admin.Settings.MasterPassword);
+
+  // Sha1 the new password and Base64 it..
+  FPassword := GetSHA1Base64EncodedStr(Password);
 end;
 
 constructor TEpiUser.Create(AOwner: TObject);
@@ -668,9 +671,9 @@ begin
   // Remember that login, password and masterpassword have already been
   // read by now... only scrambled things need to be obtained now.
 
-  Id := TDOMElement(Root).GetAttribute('Id');
+  Id := TDOMElement(Root).GetAttribute('id');
 
-  if Settings.Scrambled then
+  if Admin.Settings.Scrambled then
     NewRoot := DeScramble(Root)
   else
     NewRoot := Root;
@@ -759,7 +762,9 @@ begin
 
   // If file is scrambles, then we first need to descramble (using master password)
   // and then read xml structure.
-  if Settings.Scrambled then
+
+  InitScrambler(Admin.Settings.MasterPassword);
+  if Admin.Settings.Scrambled then
     NewRoot := DeScramble(Root)
   else
     NewRoot := Root;

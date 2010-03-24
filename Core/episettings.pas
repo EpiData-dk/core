@@ -96,10 +96,19 @@ begin
   FOwner := AOwner;
 
   Randomize;
+
+  {$IFDEF EPI_RELEASE}
+  // A little speedier and more secure (uses full spectre af possible byte combinations=
   for i := 0 to 3 do
     Key[i] := Random(maxLongint - 1) + 1;
+  {$ELSE EPI_DEBUG}
+  // A little slower and only uses a selection of printable chars.
+  for i := 0 to SizeOf(KeyByte) - 1 do
+    KeyByte[i] := Char(Random(90) + 33);
+  {$ENDIF}
 
-  MasterPassword := String(KeyByte);
+//  MasterPassword := String(KeyByte);
+  MasterPassword := 'qwerty';
 end;
 
 destructor TEpiSettings.Destroy;

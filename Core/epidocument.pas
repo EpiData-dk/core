@@ -148,11 +148,11 @@ begin
   Node := TDOMElement(Root.FindNode('Study'));
   Study.LoadFromXml(Node);
 
-  Node := TDOMElement(Root.FindNode('Datafiles'));
+{  Node := TDOMElement(Root.FindNode('Datafiles'));
   DataFiles.LoadFromXml(Node);
 
   Node := TDOMElement(Root.FindNode('Relates'));
-  Relates.LoadFromXml(Node);
+  Relates.LoadFromXml(Node);  }
 end;
 
 procedure TEpiDocument.SaveToStream(St: TStream; Lvl: integer;
