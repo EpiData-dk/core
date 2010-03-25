@@ -91,7 +91,7 @@ constructor TEpiDocument.Create;
 begin
   FSettings  := TEpiSettings.Create(Self);
   FAdmin     := TEpiAdmin.Create(Self);
-  FDataFiles := TEpiDataFiles.Create;
+  FDataFiles := TEpiDataFiles.Create(Self);
   FRelates   := TEpiRelates.Create;
   FStudy     := TEpiStudy.Create;
 end;
@@ -148,11 +148,11 @@ begin
   Node := TDOMElement(Root.FindNode('Study'));
   Study.LoadFromXml(Node);
 
-{  Node := TDOMElement(Root.FindNode('Datafiles'));
+  Node := TDOMElement(Root.FindNode('Datafiles'));
   DataFiles.LoadFromXml(Node);
 
   Node := TDOMElement(Root.FindNode('Relates'));
-  Relates.LoadFromXml(Node);  }
+  Relates.LoadFromXml(Node);
 end;
 
 procedure TEpiDocument.SaveToStream(St: TStream; Lvl: integer;
@@ -176,7 +176,7 @@ begin
   Admin.SaveToStream(St, Lvl + 1);
   Study.SaveToStream(St, Lvl + 1);
   DataFiles.SaveToStream(St, Lvl + 1);
-//  Relates.SaveToStream(St, Lvl + 1);
+  Relates.SaveToStream(St, Lvl + 1);
 
   TmpStr := Ins(Lvl) + '</EpiData>' + LineEnding;
   St.Write(TmpStr[1], Length(TmpStr));

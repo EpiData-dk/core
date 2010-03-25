@@ -4,7 +4,7 @@ type
 
   { TEpiFields }
 
-  TEpiFields = class(TObject)
+  TEpiFields = class(TEpiCustomClass)
   private
     FOwned:     Boolean;
     FDataFile:  TEpiDataFile;
@@ -28,7 +28,7 @@ type
 
   { TEpiFieldProperties }
 
-  TEpiFieldProperties = class(TObject)
+  TEpiFieldProperties = class(TEpiCustomClass)
   private
     FEntryType:        TEntryType;
     FTopOfScreen:      Integer;
@@ -72,7 +72,7 @@ type
 
   { TEpiField }
 
-  TEpiField = class(TObject)
+  TEpiField = class(TEpiCustomClass)
   private
     FDataFile: TEpiDataFile;
     FFieldLeft: Integer;

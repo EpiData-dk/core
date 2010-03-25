@@ -3,7 +3,7 @@
 type
   { TEpiTextLabels }
 
-  TEpiTextLabels = class(TObject)
+  TEpiTextLabels = class(TEpiCustomClass)
   private
     FOwned: Boolean;
     FOwner:     TEpiDataFile;
@@ -27,7 +27,7 @@ type
 
   { TEpiTextLabel }
 
-  TEpiTextLabel = class(TObject)
+  TEpiTextLabel = class(TEpiCustomClass)
   private
     FOwner:      TEpiTextLabels;
     FId:         string;

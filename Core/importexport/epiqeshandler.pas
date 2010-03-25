@@ -378,7 +378,7 @@ begin
 
   // TODO: Sanity checks!
   if not Assigned(Df) then
-    Df := TEpiDataFile.Create()
+    Df := TEpiDataFile.Create(nil)
   else
     Df.Reset;
 

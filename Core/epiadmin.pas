@@ -45,14 +45,11 @@ type
     FOnChangeList: ^TEpiAdminEvent;
     FOnChangeListCount: Integer;
     FUpdateCount: Integer;
-    FOwner: TObject;
     function   GetSettings: TEpiSettings;
     procedure  DoChange(Event: TEpiAdminEventType; Data: Pointer);
   protected
-    property   Owner: TObject read FOwner;
     property   Settings: TEpiSettings read GetSettings;
   public
-    constructor Create(AOwner: TObject); virtual;
     // OnChange-hook methods
     procedure  BeginUpdate; virtual;
     procedure  EndUpdate; virtual;
@@ -122,8 +119,12 @@ type
     FMasterPassword: string;
     FName: string;
     // Users password as stored in file:
-    // - Base64( SHA1 ( ClearTextPassword ))
+    // - '$' + Base64(Salt) + '$' + Base64( SHA1 ( Salt + ClearTextPassword + Login ))
     FPassword: string;
+    // a 4-byte string used for scrambling the password.
+    // - is reset every time the user changes password (even if it is the same password).
+    // - this gives approx. 2^32 different ways to store the same password.
+    FSalt: string;
     function GetAdmin: TEpiAdmin;
     procedure SetExpireDate(const AValue: TDateTime);
     procedure SetGroup(const AValue: TEpiGroup);
@@ -133,6 +134,8 @@ type
     procedure SetMasterPassword(const AValue: string);
     procedure SetName(const AValue: string);
     procedure SetPassword(const AValue: string);
+  protected
+    property  Salt: string read FSalt;
   public
     constructor Create(AOwner: TObject); override;
     destructor Destroy; override;
@@ -236,11 +239,6 @@ begin
     FOnChangeList[i](Self, Event, Data);
 end;
 
-constructor TEpiCustomAdmin.Create(AOwner: TObject);
-begin
-  FOwner := AOwner;
-end;
-
 procedure TEpiCustomAdmin.BeginUpdate;
 begin
   Inc(FUpdateCount);
@@ -300,10 +298,10 @@ begin
   TheUser := Users.GetUserByLogin(Login);
   if not Assigned(TheUser) then exit;
 
-  result := GetSHA1Base64EncodedStr(Password) = TheUser.Password;
+  result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + GetSHA1Base64EncodedStr(TheUser.Salt + Password + Login) = TheUser.Password;
   if not result then exit;
 
-  InitScrambler(Password);
+  InitScrambler(TheUser.Salt + Password + Login);
   Settings.MasterPassword := DeScramble(TheUser.MasterPassword);
 
   InitScrambler(Settings.MasterPassword);
@@ -491,6 +489,7 @@ begin
     NewUser.Login := UTF8Encode(Node.FindNode('Login').TextContent);
     // Set password directly here, since the SetPassword method hash'es it and reencrypts the master password.
     NewUser.FPassword := Node.FindNode('Password').TextContent;
+    NewUser.FSalt := Base64DecodeStr(ExtractStrBetween(NewUser.FPassword, '$', '$'));
     NewUser.MasterPassword := Node.FindNode('MasterPassword').TextContent;
     AddUser(NewUser);
 
@@ -600,19 +599,21 @@ end;
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   Val: String;
+  SaltInt: LongInt;
+  SaltByte: array[0..3] of char absolute SaltInt;
 begin
-  if FPassword = AValue then exit;
-  Val := FPassword;
-  FPassword := AValue;
-  DoChange(aeUserSetPassword, @Val);
+  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;
+  FSalt := String(SaltByte);
+
+  // Sha1 the new password and Base64 it..
+  FPassword := '$' + Base64EncodeStr(Salt) + '$' + GetSHA1Base64EncodedStr(Salt + AValue + Login);
 
   // Scramble master password with own key.
-  InitScrambler(Password);
+  InitScrambler(Salt + AValue + Login);
   MasterPassword := EnScramble(Admin.Settings.MasterPassword);
   InitScrambler(Admin.Settings.MasterPassword);
 
-  // Sha1 the new password and Base64 it..
-  FPassword := GetSHA1Base64EncodedStr(Password);
+  DoChange(aeUserSetPassword, nil);
 end;
 
 constructor TEpiUser.Create(AOwner: TObject);
@@ -666,6 +667,7 @@ procedure TEpiUser.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
   NewRoot: TDOMNode;
+  s: String;
 begin
   // Root = <User>
   // Remember that login, password and masterpassword have already been
@@ -691,7 +693,7 @@ begin
   ExpireDate := StrToDateTime(Node.TextContent);
 
   // Group
-  Node := NewRoot.FindNode('ExpireDate');
+  Node := NewRoot.FindNode('GroupId');
   Group := Admin.Groups.GroupById(UTF8Encode(Node.TextContent));
 end;
 
@@ -777,6 +779,7 @@ begin
 
     NewGroup := TEpiGroup.Create(Self);
     NewGroup.LoadFromXml(Node);
+    AddGroup(NewGroup);
 
     Node := Node.NextSibling;
   end;
@@ -856,7 +859,7 @@ var
   Node: TDOMNode;
 begin
   // Root = <Group>
-  Id := TDOMElement(Root).GetAttribute('Id');
+  Id := TDOMElement(Root).GetAttribute('id');
 
   // Name:
   Node := Root.FindNode('Name');

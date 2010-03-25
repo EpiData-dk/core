@@ -12,8 +12,14 @@ begin
   Result := TEpiDataFile(FList[Index]);
 end;
 
-constructor TEpiDataFiles.Create;
+function TEpiDataFiles.GetSettings: TEpiSettings;
 begin
+  result := TEpiDocument(Owner).Settings;
+end;
+
+constructor TEpiDataFiles.Create(AOwner: TObject);
+begin
+  inherited;
   FList := TFPList.Create;
 end;
 
@@ -60,6 +66,8 @@ var
   S: String;
   i: Integer;
 begin
+  if Count = 0 then exit;
+
   S :=
     Ins(Lvl) + '<DataFiles>' + LineEnding;
   St.Write(S[1], Length(S));
@@ -70,6 +78,39 @@ begin
   S :=
     Ins(Lvl) + '</DataFiles>' + LineEnding;
   St.Write(S[1], Length(S));
+end;
+
+procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode);
+var
+  NewRoot: TDOMNode;
+  Node: TDOMNode;
+  NewDF: TEpiDataFile;
+begin
+  // Root = <DataFiles>
+  if not Assigned(Root) then exit;
+
+  // If file is scrambles, then we first need to descramble (using master password)
+  // and then read xml structure.
+  if Settings.Scrambled then
+    NewRoot := DeScramble(Root)
+  else
+    NewRoot := Root;
+
+  Node := NewRoot.FirstChild;
+  while Assigned(Node) do
+  begin
+    if Node.CompareName('DataFile') <> 0 then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []); // TODO : Errormessage
+
+    NewDF := TEpiDataFile.Create(Self);
+    NewDF.LoadFromXml(Node);
+    Add(NewDF);
+
+    Node := Node.NextSibling;
+  end;
+
+  if Settings.Scrambled then
+    NewRoot.Free;
 end;
 
 { TEpiDataFileProperties }
@@ -1710,11 +1751,11 @@ begin
     FOnChangeList[i](Self, Event, OldValue);
 end;
 
-constructor TEpiDataFile.Create(ASize: Cardinal = 0);
+constructor TEpiDataFile.Create(AOwner: TObject; ASize: Cardinal);
 var
   p: pointer;
 begin
-  inherited Create;
+  inherited Create(AOwner);
   EpiLogger.IncIndent;
   EpiLogger.Add(ClassName, 'Create', 3);
 
@@ -1754,7 +1795,7 @@ var
   i: Integer;
 begin
   // Create DataFile!
-  Result := TEpiDataFile.Create(Size);
+  Result := TEpiDataFile.Create(nil, Size);
 
   // Clone Basic data:
   Result.FileLabel   := FileLabel;
@@ -1841,6 +1882,20 @@ begin
   St.Write(S[1], Length(S));
 
   ValueLabels.SaveToStream(St, Lvl + 1);
+  ScreenProperties.SaveToStream(St, Lvl + 1);
+  Fields.SaveToStream(St, Lvl + 1);
+  TextLabels.SaveToStream(St, Lvl + 1);
+
+  // TODO : Save records.
+
+  S :=
+    Ins(Lvl) + '</DataFile>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
+begin
+  //
 end;
 
 procedure TEpiDataFile.Reset;

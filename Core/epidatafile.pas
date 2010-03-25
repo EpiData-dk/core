@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, epicheckfilecmds, epicheckfiletypes,
   epidatatypes, epivaluelabels, episcreenproperties, DCPrijndael,
-  DOM, math, epicustomclass;
+  DOM, math, epicustomclass, episettings;
 
 type
   TEpiDataFileProperties = class;
@@ -28,7 +28,7 @@ implementation
 uses
   XMLRead, epilog, epidataglobals, epiutils, epiimportexport, strutils,
   epistringutils, DCPbase64, epicheckfileio, FileUtil, epidateutils,
-  DCPsha1;
+  DCPsha1, epidocument, epixmlutils;
 
 {$I epidatafile.inc}
 {$I epifield.inc}

@@ -5,7 +5,7 @@ unit episcreenproperties;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epicustomclass;
 
 type
   TEpiScreenProperties = class;
@@ -13,16 +13,15 @@ type
 
   { TEpiScreenProperty }
 
-  TEpiScreenProperty = class(TObject)
+  TEpiScreenProperty = class(TEpiCustomClass)
   private
     FName: string;
-    FOwner:    TEpiScreenProperties;
     FId:       string;
     FFgColour: integer;
     FBgColour: integer;
     FHlColour: integer;
   public
-    constructor Create(AOwner: TEpiScreenProperties); virtual;
+    constructor Create(AOwner: TObject); override;
     destructor  Destroy; override;
     procedure   Clone(var Dest: TEpiScreenProperty);
     procedure   Reset;
@@ -35,7 +34,7 @@ type
 
   { TEpiScreenProperties }
 
-  TEpiScreenProperties = class(TObject)
+  TEpiScreenProperties = class(TEpiCustomClass)
   private
     FOwned: Boolean;
 //    FOwner:   TEpiDataFile;
@@ -70,10 +69,9 @@ uses
 
 { TEpiScreenProperty }
 
-constructor TEpiScreenProperty.Create(AOwner: TEpiScreenProperties);
+constructor TEpiScreenProperty.Create(AOwner: TObject);
 begin
-  inherited Create;
-  FOwner := AOwner;
+  inherited;
   Reset;
 end;
 
@@ -159,9 +157,6 @@ procedure TEpiScreenProperties.Add(aScreenProperty: TEpiScreenProperty);
 begin
   FList.Add(aScreenProperty);
 
-  if Owned then
-    aScreenProperty.FOwner := Self;
-
 //  if ReportOnChange and Assigned(FOwner) then
 //    FOwner.DoChange(dceAddScreenProp, nil);
 end;
@@ -173,8 +168,6 @@ begin
   Idx := IndexOf(aScreenProperty.Id);
   FList.Delete(Idx);
 
-  if Owned then
-    aScreenProperty.FOwner := nil;
 //  if ReportOnChange and Assigned(FOwner) then
 //    FOwner.DoChange(dceRemoveScreenProp, aScreenProperty);
 end;

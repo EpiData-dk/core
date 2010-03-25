@@ -198,16 +198,16 @@ var
   S: String;
 begin
   S :=
-    Ins(Lvl)     + '<Study>' +
+    Ins(Lvl)     + '<Study>' + LineEnding +
     Ins(Lvl + 1) + '<Protocol>' + StringToXml(Protocol) + '</Protocol>' + LineEnding +
     Ins(Lvl + 1) + '<Abstract>' + StringToXml(AbstractText) + '</Abstract>' + LineEnding +
     Ins(Lvl + 1) + '<Author>' + StringToXml(Author) + '</Author>' + LineEnding +
     Ins(Lvl + 1) + '<Owner>' + StringToXml(Owner) + '</Owner>' + LineEnding +
-    Ins(Lvl + 1) + '<Created>' + DateTimeToStr(Created) + '<Created>' + LineEnding +
+    Ins(Lvl + 1) + '<Created>' + DateTimeToStr(Created) + '</Created>' + LineEnding +
     Ins(Lvl + 1) + '<Creator>' + StringToXml(Creator) + '</Creator>' + LineEnding +
     Ins(Lvl + 1) + '<Description>' + StringToXml(Description) + '</Description>' + LineEnding +
     Ins(Lvl + 1) + '<Language>' + StringToXml(Language) + '</Language>' + LineEnding +
-    Ins(Lvl + 1) + '<Modified>' + DateTimeToStr(ModifiedDate) + '<Modified>' + LineEnding +
+    Ins(Lvl + 1) + '<Modified>' + DateTimeToStr(ModifiedDate) + '</Modified>' + LineEnding +
     Ins(Lvl + 1) + '<Provenance>' + StringToXml(Provenance) + '</Provenance>' + LineEnding +
     Ins(Lvl + 1) + '<References>' + StringToXml(References) + '</References>' + LineEnding +
     Ins(Lvl + 1) + '<Rightsholder>' + StringToXml(RightsHolder) + '</Rightsholder>' + LineEnding +
@@ -216,11 +216,29 @@ begin
     Ins(Lvl + 1) + '<Temporal>' + StringToXml(Temporal) + '</Temporal>' + LineEnding +
     Ins(Lvl + 1) + '<Title>' + StringToXml(Title) + '</Title>' + LineEnding +
     Ins(Lvl)     + '</Study>' + LineEnding;
+  St.Write(S[1], Length(S));
 end;
 
 procedure TEpiStudy.LoadFromXml(Root: TDOMNode);
 begin
-  //
+  // Root = <Study>
+  Protocol     := UTF8Encode(Root.FindNode('Protocol').TextContent);
+  AbstractText := UTF8Encode(Root.FindNode('Abstract').TextContent);
+  Author       := UTF8Encode(Root.FindNode('Author').TextContent);
+  Owner        := UTF8Encode(Root.FindNode('Owner').TextContent);
+  // Access FCreated directly.
+  FCreated      := StrToDateTime(Root.FindNode('Created').TextContent);
+  Creator      := UTF8Encode(Root.FindNode('Creator').TextContent);
+  Description  := UTF8Encode(Root.FindNode('Description').TextContent);
+  Language     := UTF8Encode(Root.FindNode('Language').TextContent);
+  ModifiedDate := StrToDateTime(Root.FindNode('Modified').TextContent);
+  Provenance   := UTF8Encode(Root.FindNode('Provenance').TextContent);
+  References   := UTF8Encode(Root.FindNode('References').TextContent);
+  Rightsholder := UTF8Encode(Root.FindNode('Rightsholder').TextContent);
+  Source       := UTF8Encode(Root.FindNode('Source').TextContent);
+  Subject      := UTF8Encode(Root.FindNode('Subject').TextContent);
+  Temporal     := UTF8Encode(Root.FindNode('Temporal').TextContent);
+  Title        := UTF8Encode(Root.FindNode('Title').TextContent);
 end;
 
 end.

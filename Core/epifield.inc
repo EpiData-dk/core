@@ -347,6 +347,7 @@ constructor TEpiField.Create(ASize: Cardinal; AFieldType: TFieldType);
 var
   i: Integer;
 begin
+  Inherited Create(nil);
   Reset;
   Size := ASize;
   FFieldType := AFieldType;

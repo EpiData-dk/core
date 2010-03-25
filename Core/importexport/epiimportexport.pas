@@ -605,7 +605,7 @@ begin
       begin
         if Not Assigned(DataFile) then
         begin
-          Datafile := TEpiDataFile.Create;
+          Datafile := TEpiDataFile.Create(nil);
           DataFile.OnProgress := OnProgress;
           DataFile.OnTranslate := OnTranslate;
           DataFile.OnPassword := OnPassword;
@@ -703,7 +703,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create(0);
+    DataFile := TEpiDataFile.Create(nil, 0);
 
   With DataFile do
   TRY
@@ -1175,7 +1175,7 @@ BEGIN
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create(0);
+    DataFile := TEpiDataFile.Create(nil, 0);
 
   With DataFile do
   TRY
@@ -1332,7 +1332,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create();
+    DataFile := TEpiDataFile.Create(nil);
 
   if (TxtImpSetting = nil) then
     TxtImpSetting := @ImportTxtGuess;
@@ -1489,7 +1489,7 @@ begin
   if Assigned(DataFile) then
     DataFile.Reset()
   else
-    DataFile := TEpiDataFile.Create();
+    DataFile := TEpiDataFile.Create(nil);
 
   With DataFile do
   TRY

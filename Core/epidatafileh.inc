@@ -11,15 +11,19 @@ type
     FOwned: Boolean;
     function GetCount: Integer;
     function GetDataFile(Index: integer): TEpiDataFile;
+    function GetSettings: TEpiSettings;
+  protected
+    Property    Settings: TEpiSettings read GetSettings;
   public
-    constructor Create;
+    constructor Create(AOwner: TObject); override;
     destructor  Destroy; override;
     procedure   Add(aDataFile: TEpiDataFile);
     procedure   Delete(aDataFile: TEpiDataFile);
     function    DataFileById(Const aId: string): TEpiDataFile;
     function    DataFileExists(Const aId: string): boolean;
     function    IndexOf(Const aId: string): integer;
-    procedure   SaveToStream(St: TStream; Lvl: Integer);
+    procedure   SaveToStream(St: TStream; Lvl: Integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
     Property    Count: Integer read GetCount;
     Property    Owned: Boolean read FOwned write FOwned;
@@ -147,14 +151,15 @@ type
     function   GetFieldCount: Cardinal;
     procedure  DoChange(Event: TEpiDataFileChangeEventType; OldValue: Pointer);
   public
-    constructor Create(ASize: Cardinal = 0); virtual;
+    constructor Create(AOwner: TObject; ASize: Cardinal = 0); virtual;
     destructor Destroy; override;
     function   PrepareDataFile(FieldNames: TStrings): TEpiDataFile;
     function   Clone(CloneData: boolean = true): TEpiDataFile;
     function   RequestPassword(Const EncryptedString: string): boolean;
     function   Open(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
     function   Save(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
-    procedure  SaveToStream(St: TStream; Lvl: Integer);
+    procedure  SaveToStream(St: TStream; Lvl: Integer); override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  Reset;
     procedure  AddField(AField: TEpiField);
     procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);

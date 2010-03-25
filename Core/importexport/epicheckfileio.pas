@@ -986,7 +986,7 @@ BEGIN
     CurField.FieldProperties.ShowValueLabel := True;
     
   TRY
-    ComLegDf := TEpiDataFile.Create(0);
+    ComLegDf := TEpiDataFile.Create(nil);
     ComLegDF.OnPassword := FDf.OnPassword;
     IF NOT ComLegDf.Open(TmpStr, [eoIgnoreRelates]) THEN
     begin
@@ -1479,7 +1479,7 @@ BEGIN
       cmdComLegal:
         BEGIN
           TmpChkCmd := TChkComLegal.Create;
-          TmpField := TEpiField.Create();
+          TmpField := TEpiField.Create(nil);
           if Assigned(CurField) then
             TmpField.FieldLength := CurField.FieldLength
           else

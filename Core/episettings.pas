@@ -97,7 +97,7 @@ begin
 
   Randomize;
 
-  {$IFDEF EPI_RELEASE}
+  {$IFNDEF EPI_RELEASE}
   // A little speedier and more secure (uses full spectre af possible byte combinations=
   for i := 0 to 3 do
     Key[i] := Random(maxLongint - 1) + 1;
@@ -107,8 +107,8 @@ begin
     KeyByte[i] := Char(Random(90) + 33);
   {$ENDIF}
 
-//  MasterPassword := String(KeyByte);
-  MasterPassword := 'qwerty';
+  MasterPassword := String(KeyByte);
+//  MasterPassword := 'qwerty';
 end;
 
 destructor TEpiSettings.Destroy;
