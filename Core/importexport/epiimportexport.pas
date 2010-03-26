@@ -938,7 +938,7 @@ begin
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
       IF StrBuf <> '' THEN
       BEGIN
-        TmpField.ValueLabelSet := TValueLabelSet.Create;
+        TmpField.ValueLabelSet := TValueLabelSet.Create(nil, ftInteger);
         TmpField.ValueLabelSet.Name := StrBuf;
         TmpField.ValueLabelSet.LabelScope := vlsInternal;
         ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
@@ -1021,7 +1021,7 @@ begin
                     TmpField.AsString[CurRec] := DupeString(IntToStr((J - I) - 16), TmpField.FieldLength);
                     if not Assigned(TmpField.ValueLabelSet) then
                     begin
-                      TmpField.ValueLabelSet := TValueLabelSet.Create;
+                      TmpField.ValueLabelSet := TValueLabelSet.Create(nil, ftInteger);
                       TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
                       ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
                     end;
@@ -1049,7 +1049,7 @@ begin
 
                     if not Assigned(TmpField.ValueLabelSet) then
                     begin
-                      TmpField.ValueLabelSet := TValueLabelSet.Create;
+                      TmpField.ValueLabelSet := TValueLabelSet.Create(nil, ftInteger);
                       TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
                       ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
                     end;

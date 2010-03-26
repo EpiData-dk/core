@@ -86,7 +86,7 @@ end;
 
 procedure TEpiCustomClass.LoadFromXml(Root: TDOMNode);
 begin
-    //
+  //
 end;
 
 procedure TEpiCustomClass.ReportXmlError(ErrCode: Integer;

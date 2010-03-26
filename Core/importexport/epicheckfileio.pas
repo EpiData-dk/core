@@ -642,7 +642,7 @@ BEGIN
   LocalValueLabel := CurField.ValueLabelSet;
   if not Assigned(CurField.ValueLabelSet) then
   begin
-    LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
+    LocalValueLabel := TValueLabelSet.Create(CurField.DataFile.ValueLabels, CurField.FieldType);
     LocalValueLabel.Name := CurField.FieldName + '_lbl';
     LocalValueLabel.LabelScope := vlsInternal;
     CurField.ValueLabelSet := LocalValueLabel;
@@ -834,7 +834,7 @@ BEGIN
     IF CurCommand = 'SHOW' THEN
       CurField.FieldProperties.ShowValueLabel := True;
 
-    LocalValueLabel := TValueLabelSet.Create(CurField.FieldType);
+    LocalValueLabel := TValueLabelSet.Create(FDf.ValueLabels, CurField.FieldType);
     LocalValueLabel.LabelScope := vlsInternal;
 
     While True do
@@ -1030,7 +1030,7 @@ BEGIN
     ValueField := ComLegDf[1];
     TextField  := ComLegDf[2];
 
-    LocalValueLabel := TValueLabelSet.Create(ValueField.FieldType);
+    LocalValueLabel := TValueLabelSet.Create(FDf.ValueLabels, ValueField.FieldType);
     LocalValueLabel.Name := CurCommand;
     LocalValueLabel.LabelScope := vlsExternal;
 
@@ -1762,7 +1762,7 @@ BEGIN
             for i := TmpList.Count - (1 + N) to TmpList.Count - 1 do
               ValList.Add(TmpList[i]);
 
-            TmpValueLabel := TValueLabelSet.Create;
+            TmpValueLabel := TValueLabelSet.Create(FDf.ValueLabels, ftInteger);
             TmpValueLabel.Name := '__missingall' + IntToStr(Random(1000));
             for i := 0 to ValList.Count - 1 do
               TmpValueLabel.AddValueLabelPair(StrToInt(ValList[i]), '', True);
@@ -2316,7 +2316,7 @@ BEGIN
     Exit;
   end;
 
-  aValueLabelSet := TValueLabelSet.Create;
+  aValueLabelSet := TValueLabelSet.Create(FDf.ValueLabels, ftInteger);
   aValueLabelSet.Name := trim(CurCommand);
   aValueLabelSet.LabelScope := vlsExternal;
 

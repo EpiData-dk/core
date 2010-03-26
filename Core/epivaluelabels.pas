@@ -6,7 +6,7 @@ unit epivaluelabels;
 interface
 
 uses
-  Classes, epidatatypes, AVL_Tree, Variants, epicustomclass;
+  Classes, epidatatypes, AVL_Tree, Variants, epicustomclass, DOM;
   
 type
   // vlsLocal retained for compatability with old .REC/.CHK format.
@@ -38,12 +38,13 @@ type
     procedure PositionNode(Const Index: integer);
     function GetCurrentValueLabelPair: Pointer; inline;
   public
-    constructor Create(aLabelType: TFieldType = ftInteger);
+    constructor Create(AOwner: TObject; aLabelType: TFieldType = ftInteger);
     destructor  Destroy; override;
     procedure   AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
     procedure   Clone(var Dest: TValueLabelSet);
     procedure   Clear;
-    procedure   SaveToStream(St: TStream; Lvl: Integer);
+    procedure   SaveToStream(St: TStream; Lvl: Integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     property    Id:   string read FId write FId;
     property    Name: string read FName write FName;
     property    ExtName: string read FExtName write FExtName;
@@ -73,11 +74,12 @@ type
     procedure   Clear;
     procedure   Clone(var dest: TValueLabelSets);
     procedure   Assign(Const Src: TValueLabelSets);
+    procedure   SaveToStream(St: TStream; Lvl: Integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     function    ValueLabelSetByName(Const Id: string): TValueLabelSet;
     function    ValueLabelSetExits(Const Id: string; var aValueLabelSet: TValueLabelSet): boolean;
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
     procedure   DeleteValueLabelSet(Const Id: string);
-    procedure   SaveToStream(St: TStream; Lvl: Integer);
     property    Count:integer read GetCount;
     property    Items[index: integer]: TValueLabelSet read GetItem; default;
   end;
@@ -85,7 +87,7 @@ type
 implementation
 
 uses
-  SysUtils, epistringutils, epidataglobals;
+  SysUtils, epistringutils, epidataglobals, epiutils;
 
 type
   TValuePair = record
@@ -108,24 +110,6 @@ var
 begin
   idx := FList.IndexOf(Id);
   if idx>-1 then FList.Delete(idx);
-end;
-
-procedure TValueLabelSets.SaveToStream(St: TStream; Lvl: Integer);
-var
-  S: String;
-  i: Integer;
-begin
-  if Count = 0 then exit;
-
-  S :=
-    Ins(Lvl) + '<ValueLabels>' + LineEnding;
-  St.Write(S[1], Length(S));
-
-  for i := 0 to Count - 1 do
-    Items[i].SaveToStream(St, Lvl + 1);
-
-  S := Ins(Lvl) + '</ValueLabels>' + LineEnding;
-  St.Write(S[1], Length(S));
 end;
 
 procedure TValueLabelSets.Clear;
@@ -211,6 +195,45 @@ begin
     TmpValueSet := nil;
     Src[i].Clone(TmpValueSet);
     AddValueLabelSet(TmpValueSet);
+  end;
+end;
+
+procedure TValueLabelSets.SaveToStream(St: TStream; Lvl: Integer);
+var
+  S: String;
+  i: Integer;
+begin
+  if Count = 0 then exit;
+
+  S :=
+    Ins(Lvl) + '<ValueLabels>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  for i := 0 to Count - 1 do
+    Items[i].SaveToStream(St, Lvl + 1);
+
+  S := Ins(Lvl) + '</ValueLabels>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TValueLabelSets.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NewValueLabel: TValueLabelSet;
+begin
+  // Root = <ValueLabels>
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    if Node.CompareName('ValueLabel') <> 0 then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
+
+    NewValueLabel := TValueLabelSet.Create(Self, XmlNameToFieldType(Node.FindNode('Type').TextContent));
+    NewValueLabel.LoadFromXml(Node);
+    AddValueLabelSet(NewValueLabel);
+
+    Node := Node.NextSibling;
   end;
 end;
 
@@ -312,6 +335,11 @@ begin
     Ins(Lvl) + '</ValueLabel>' + LineEnding;
 end;
 
+procedure TValueLabelSet.LoadFromXml(Root: TDOMNode);
+begin
+  // Root = <ValueLabel>
+end;
+
 
 procedure TValueLabelSet.Clone(var Dest: TValueLabelSet);
 var
@@ -319,7 +347,7 @@ var
   AVLNode: TAVLTreeNode;
 begin
   if not Assigned(Dest) then
-    Dest := TValueLabelSet.Create(LabelType);
+    Dest := TValueLabelSet.Create(nil, LabelType);
 
   Dest.Clear;
   Dest.Name := Name;
@@ -473,8 +501,10 @@ begin
     Result := PValuePair(FCurrentNode.Data);
 end;
 
-constructor TValueLabelSet.Create(aLabelType: TFieldType);
+constructor TValueLabelSet.Create(AOwner: TObject; aLabelType: TFieldType);
 begin
+  inherited Create(AOwner);
+
   FName := '';
   FId := '';
   FCurrentNode := nil;

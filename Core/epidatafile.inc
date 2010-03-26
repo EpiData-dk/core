@@ -427,7 +427,7 @@ begin
         'Valuelabel Type not specified.', []);
       Exit;
     end;
-    LocalValueLabel := TValueLabelSet.Create(XmlNameToFieldType(UTF8Encode(SubElem.TextContent)));
+    LocalValueLabel := TValueLabelSet.Create(ValueLabels, XmlNameToFieldType(UTF8Encode(SubElem.TextContent)));
 
     TmpStr := UTF8Encode(ElemNode.GetAttribute('Id'));
     if TmpStr = '' then
@@ -1894,8 +1894,37 @@ begin
 end;
 
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
 begin
-  //
+  // root = <DataFile>
+
+  Id := TDOMElement(Root).AttribStrings['id'];
+
+  Node := Root.FindNode('FileLabel');
+  if Assigned(Node) then
+    FileLabel := Node.TextContent;
+
+  Node := Root.FindNode('ValueLabels');
+  if Assigned(Node) then
+    ValueLabels.LoadFromXml(Node);
+
+  Node := Root.FindNode('ScreenInfo');
+  if Assigned(Node) then
+    ValueLabels.LoadFromXml(Node);
+
+  Node := Root.FindNode('Headings');
+  if Assigned(Node) then
+    TextLabels.LoadFromXml(Node);
+
+  Node := Root.FindNode('Fields');
+  if Assigned(Node) then
+    Fields.LoadFromXml(Node);
+
+  Node := Root.FindNode('Records');
+  if Assigned(Node) then
+    Fields.LoadFromXml(Node);
+
 end;
 
 procedure TEpiDataFile.Reset;
