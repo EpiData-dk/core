@@ -5,7 +5,7 @@ unit episcreenproperties;
 interface
 
 uses
-  Classes, SysUtils, epicustomclass;
+  Classes, SysUtils, DOM, epicustomclass;
 
 type
   TEpiScreenProperties = class;
@@ -25,6 +25,8 @@ type
     destructor  Destroy; override;
     procedure   Clone(var Dest: TEpiScreenProperty);
     procedure   Reset;
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     property    Id: string read FId write FId;
     property    Name: string read FName write FName;
     property    FgColour: integer read FFgColour write FFgColour;
@@ -47,8 +49,10 @@ type
   public
     constructor Create(AOwner: TObject); virtual;
     destructor  Destroy; override;
-    // TODO : Clone!
-    // TODO : Reset!
+    // TODO :   Clone!
+    // TODO :   Reset!
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Add(aScreenProperty: TEpiScreenProperty);
     procedure   Delete(aScreenProperty: TEpiScreenProperty);
     function    ScreenPropertyById(Const aScreenPropertyId: string): TEpiScreenProperty;
@@ -65,7 +69,7 @@ type
 implementation
 
 uses
-  epidataglobals;
+  epidataglobals, strutils;
 
 { TEpiScreenProperty }
 
@@ -100,6 +104,40 @@ begin
   FgColour := EpiColourBase;
   BgColour := EpiColourBase;
   HlColour := EpiColourBase;
+end;
+
+procedure TEpiScreenProperty.SaveToStream(St: TStream; Lvl: integer);
+var
+  S: String;
+begin
+  S :=
+    Ins(Lvl) +  '<Colour>' + LineEnding +
+    Ins(Lvl + 1) + '<Name>' + StringToXml(Name) + '</Name>' + LineEnding +
+    Ins(Lvl + 1) + '<ForeGround>' + hexStr(FgColour, 8) + '</ForeGround>' + LineEnding +
+    Ins(Lvl + 1) + '<BackGround>' + hexStr(BgColour, 8) + '</BackGround>' + LineEnding +
+    Ins(Lvl + 1) + '<HighLight>' + hexStr(HlColour, 8) + '</HighLight>' + LineEnding +
+    Ins(Lvl) +  '</Colour>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiScreenProperty.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+begin
+  // Root = <Colour>
+  Id := UTF8Encode(TDOMElement(Root).GetAttribute('id'));
+
+  Node := Root.FindNode('Name');
+  Name := UTF8Encode(Node.TextContent);
+
+  Node := Root.FindNode('ForeGround');
+  FgColour := Hex2Dec(Node.TextContent);
+
+  Node := Root.FindNode('BackGround');
+  BgColour := Hex2Dec(Node.TextContent);
+
+  Node := Root.FindNode('HighLight');
+  HlColour := Hex2Dec(Node.TextContent);
 end;
 
 { TEpiScreenProperties }
@@ -151,6 +189,60 @@ begin
   end;
   FreeAndNil(FList);
   inherited Destroy;
+end;
+
+procedure TEpiScreenProperties.SaveToStream(St: TStream; Lvl: integer);
+var
+  S: String;
+  i: Integer;
+begin
+  S :=
+    Ins(Lvl) +  '<ScreenInfo>' + LineEnding +
+    Ins(Lvl + 1) + '<Form>' + LineEnding +
+    Ins(Lvl + 2) +   'Not Implemented Yet' + LineEnding +
+    Ins(Lvl + 1) + '</Form>' + LineEnding +
+    Ins(Lvl + 1) + '<Colours>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  for i := 0 to Count - 1 do
+    ScreenProperty[i].SaveToStream(St, Lvl + 2);
+
+  S :=
+    Ins(Lvl + 1) + '</Colours>' + LineEnding +
+    Ins(Lvl) +  '</ScreenInfo>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiScreenProperties.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NewScreenProperty: TEpiScreenProperty;
+begin
+  // Root = <ScreenInfo>
+  Node := Root.FindNode('Form');
+  if Assigned(Node) then
+  begin
+    // TODO : Form information.
+  end;
+
+  Node := Root.FindNode('Colours');
+  if Assigned(Node) then
+  begin
+    // Node = <Colours>
+    Node := Node.FirstChild;
+    while Assigned(Node) do
+    begin
+      // Node = <Colour>
+      if Node.CompareName('Colour') <> 0 then
+        ReportXmlError(EPI_XML_TAG_MISSING, 0 , '', []);
+
+      NewScreenProperty := TEpiScreenProperty.Create(Self);
+      NewScreenProperty.LoadFromXml(Node);
+      Add(NewScreenProperty);
+
+      Node := Node.NextSibling;
+    end;
+  end;
 end;
 
 procedure TEpiScreenProperties.Add(aScreenProperty: TEpiScreenProperty);

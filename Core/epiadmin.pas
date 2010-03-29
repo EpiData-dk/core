@@ -735,7 +735,7 @@ begin
     Ins(Lvl) + '<Groups>' + LineEnding;
   St.Write(S[1], Length(S));
 
-  if {scrambled} true then
+  if Admin.Settings.Scrambled then
     TempSt := TStringStream.Create('')
   else
     TempSt := St;
@@ -743,10 +743,11 @@ begin
   for i := 0 to Count - 1 do
     Group[i].SaveToStream(TempSt, Lvl + 1);
 
-  if {scrambled} true then
+  if Admin.Settings.Scrambled then
   begin
     S := EnScramble(TempSt) + LineEnding;
     St.Write(S[1], Length(S));
+    TempSt.Free;
   end;
 
   S :=

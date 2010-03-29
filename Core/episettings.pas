@@ -144,7 +144,7 @@ begin
 
   // Scrambled filed
   ElemNode := TDOMElement(Root.FindNode('Scrambled'));
-  Scrambled := Assigned(ElemNode);
+  Scrambled := WideLowerCase(ElemNode.TextContent) = 'true';
 
   // Date Separator
   ElemNode := TDOMElement(Root.FindNode('DateSeparator'));

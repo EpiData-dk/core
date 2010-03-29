@@ -148,7 +148,7 @@ begin
   Node := TDOMElement(Root.FindNode('Study'));
   Study.LoadFromXml(Node);
 
-  Node := TDOMElement(Root.FindNode('Datafiles'));
+  Node := TDOMElement(Root.FindNode('DataFiles'));
   DataFiles.LoadFromXml(Node);
 
   Node := TDOMElement(Root.FindNode('Relates'));

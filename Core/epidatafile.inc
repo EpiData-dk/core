@@ -65,6 +65,7 @@ procedure TEpiDataFiles.SaveToStream(St: TStream; Lvl: Integer);
 var
   S: String;
   i: Integer;
+  TempSt: TStream;
 begin
   if Count = 0 then exit;
 
@@ -72,8 +73,20 @@ begin
     Ins(Lvl) + '<DataFiles>' + LineEnding;
   St.Write(S[1], Length(S));
 
+  if {Admin.Settings.Scrambled} true then
+    TempSt := TStringStream.Create('')
+  else
+    TempSt := St;
+
   for i := 0 to Count -1 do
-    DataFile[i].SaveToStream(St, Lvl + 1);
+    DataFile[i].SaveToStream(TempSt, Lvl + 1);
+
+  if {Admin.Settings.Scrambled} true then
+  begin
+    S := EnScramble(TempSt) + LineEnding;
+    St.Write(S[1], Length(S));
+    TempSt.Free;
+  end;
 
   S :=
     Ins(Lvl) + '</DataFiles>' + LineEnding;
@@ -1878,14 +1891,13 @@ var
 begin
   S :=
     Ins(Lvl)     + '<DataFile id="' + Id + '">' + LineEnding +
-    Ins(Lvl + 1) + '<FileLabel>' + FileLabel + '<FileLabel>' + LineEnding;
+    Ins(Lvl + 1) + '<FileLabel>' + FileLabel + '</FileLabel>' + LineEnding;
   St.Write(S[1], Length(S));
 
   ValueLabels.SaveToStream(St, Lvl + 1);
   ScreenProperties.SaveToStream(St, Lvl + 1);
   Fields.SaveToStream(St, Lvl + 1);
   TextLabels.SaveToStream(St, Lvl + 1);
-
   // TODO : Save records.
 
   S :=
@@ -1911,7 +1923,7 @@ begin
 
   Node := Root.FindNode('ScreenInfo');
   if Assigned(Node) then
-    ValueLabels.LoadFromXml(Node);
+    ScreenProperties.LoadFromXml(Node);
 
   Node := Root.FindNode('Headings');
   if Assigned(Node) then
@@ -1941,7 +1953,7 @@ begin
   FScreenProperties.Owned := true;
   FScreenProperties.ReportOnChange := true;
 
-  FValueLabels  := TValueLabelSets.Create;
+  FValueLabels  := TValueLabelSets.Create(Self);
   FCheckFile    := TEpiDataFileProperties.Create;
   FCrypter      := TDCP_rijndael.Create(nil);
   FRecordStatus := TEpiIntField.Create(0, ftInteger);

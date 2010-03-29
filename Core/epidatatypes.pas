@@ -22,7 +22,7 @@ type
 
   //              0          1         2       3            4
   TFieldType   = (ftInteger, ftString, ftDate, ftUpperAlfa, ftCheckBox,
-  //              5          6         7       8            9
+  //              5          6        7           8       9
                   ftBoolean, ftFloat, ftPhoneNum, ftTime, ftLocalNum,
   //              10       11          12       13      14
                   ftToday, ftEuroDate, ftIDNUM, ftRes4, ftRes5,
