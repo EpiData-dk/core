@@ -137,7 +137,6 @@ type
     Procedure  ReadFields(RootNode: TDOMElement);
     Procedure  ReadRecords(RootNode: TDOMElement; FmtSettings: TFormatSettings);
     // - write
-    Function   Ins(Lvl: integer): string;
     Procedure  WriteSettings(St: TStream);
     Procedure  WriteMetaData(St: TStream);
   protected

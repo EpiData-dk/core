@@ -152,7 +152,7 @@ begin
   if not Assigned(FDefaultScreenProperty) then
   begin
     FDefaultScreenProperty := TEpiScreenProperty.Create(Self);
-    FDefaultScreenProperty.Id := '';
+    FDefaultScreenProperty.Id := 'default_screen';
     FDefaultScreenProperty.BgColour := EpiColourBase;
     FDefaultScreenProperty.FgColour := EpiColourBase;
     FDefaultScreenProperty.HlColour := EpiColourBase;

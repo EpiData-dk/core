@@ -517,6 +517,7 @@ begin
       NewUser.Login := UTF8Encode(Node.FindNode('Login').TextContent);
       NewUser.Password := UTF8Encode(Node.FindNode('Password').TextContent);
       NewUser.MasterPassword := UTF8Encode(Node.FindNode('MasterPassword').TextContent);
+      AddUser(NewUser);
     end;
     NewUser.LoadFromXml(Node);
 
@@ -636,14 +637,12 @@ begin
   S :=
     Ins(Lvl)     + '<User id="' + Id + '">' + LineEnding +
     Ins(Lvl + 1) + '<Login>' + Login + '</Login>' + LineEnding +
-    Ins(Lvl + 1) + '<Password>' + Password + '</Password>' + LineEnding;
-  St.Write(S[1], Length(S));
-
+    Ins(Lvl + 1) + '<Password>' + Password + '</Password>' + LineEnding +
+    Ins(Lvl + 1) + '<MasterPassword>';
   if Admin.Settings.Scrambled then
-  begin
-    S :=Ins(Lvl + 1) + '<MasterPassword>' + MasterPassword + '</MasterPassword>' + LineEnding;
-    St.Write(S[1], Length(S));
-  end;
+    S := S + MasterPassword;
+  S := S + '</MasterPassword>' + LineEnding;
+  St.Write(S[1], Length(S));
 
   S :=
     Ins(Lvl + 1) + '<Name>' + Name + '</Name>' + LineEnding +
@@ -654,9 +653,9 @@ begin
   begin
     TmpSt := TStringStream.Create(S);
     S := EnScramble(TmpSt) + LineEnding;
-    St.Write(S[1], Length(S));
     TmpSt.Free;
   end;
+  St.Write(S[1], Length(S));
 
   S :=
     Ins(Lvl) + '</User>'  + LineEnding;

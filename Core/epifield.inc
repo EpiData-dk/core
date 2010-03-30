@@ -55,6 +55,184 @@ begin
   inherited;
 end;
 
+procedure TEpiFields.SaveToStream(St: TStream; Lvl: integer);
+var
+  S: String;
+  i: Integer;
+begin
+  S :=
+    Ins(Lvl) + '<Fields>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  For i := 0 to Count - 1 do
+    Field[i].SaveToStream(St, Lvl + 1);
+
+  S :=
+    Ins(Lvl) + '</Fields>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiFields.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NewField: TEpiField;
+  TmpType: TFieldType;
+begin
+  // Root = <Fields>
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    if Node.CompareName('Field') <> 0 then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
+
+    TmpType := XmlNameToFieldType(Node.FindNode('Type').TextContent);
+    NewField := TEpiField.CreateField(TmpType);
+    NewField.LoadFromXml(Node);
+
+    Node := Node.NextSibling;
+  end;
+
+
+
+{
+
+  ElemNode := TDOMElement(RootNode.FirstChild);
+  while Assigned(ElemNode) do
+  begin
+    if UTF8Encode(ElemNode.NodeName) <> 'Field' then
+      ReportXmlError(EPI_XML_UNKNOWN_TAG, 0,
+        'Unknown TAG placed in Fields section: %s', [UTF8Encode(ElemNode.NodeName)]);
+
+    // *****************
+    // Must exists tags:
+    // *****************
+    SubElem := TDOMElement(ElemNode.FindNode('Type'));
+    if not Assigned(SubElem) then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0,
+        'Field Type not specified.', []);
+    TmpField := TEpiField.CreateField(XmlNameToFieldType(UTF8Encode(SubElem.TextContent)), 0);
+
+    with TmpField do
+    begin
+      Id            := UTF8Encode(ElemNode.GetAttribute('id'));
+      FieldName     := UTF8Encode(ElemNode.FindNode('Name').TextContent);
+      FieldLength   := StrToInt(ElemNode.FindNode('Length').TextContent);
+      FieldDecimals := StrToInt(ElemNode.FindNode('Decimals').TextContent);
+
+      SubElem := TDOMElement(ElemNode.FindNode('ScreenRef'));
+      if Assigned(SubElem) then
+      begin
+        if not ScreenProperties.ScreenPropertyExists(UTF8Decode(SubElem.TextContent), LocalScreenProp) then
+          ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+            'Field ScreenRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+      end else
+        LocalScreenProp := ScreenProperties.DefaultScreenProperty;
+      ScreenProps := LocalScreenProp;
+
+      // *****************
+      // Optional:
+      // *****************
+      // - Variable label
+      SubSection := ElemNode.FindNode('FieldLabel');
+      if Assigned(SubSection) then
+      begin
+        SubElem := TDOMElement(SubSection.FindNode('ScreenRef'));
+        if Assigned(SubElem) then
+        begin
+          if not ScreenProperties.ScreenPropertyExists(UTF8Decode(SubElem.TextContent), LocalScreenProp) then
+            ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+              'FieldLabel ScreenRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+        end else
+          LocalScreenProp := ScreenProperties.DefaultScreenProperty;
+        VarLabelScreenProps := LocalScreenProp;
+
+        SubElem := TDOMElement(ElemNode.FindNode('Text'));
+        if Assigned(SubElem) then
+          VariableLabel := UTF8Decode(SubElem.TextContent);
+      end;
+
+      // - Valuelabel
+      SubElem :=  TDOMElement(ElemNode.FindNode('ValueLabelRef'));
+      if Assigned(SubElem) then
+      begin
+        if not ValueLabels.ValueLabelSetExits(UTF8Encode(SubElem.TextContent), LocalValueLabel) then
+          ReportXmlError(EPI_XML_DESTINATION_MISSING, 0,
+            'Field ValueLabelRef %d does not exists.', [UTF8Decode(SubElem.TextContent)])
+      end else
+        LocalValueLabel := nil;
+      ValueLabelSet := LocalValueLabel;
+
+      // - Default value
+      SubElem :=  TDOMElement(ElemNode.FindNode('DefaultValue'));
+      if Assigned(SubElem) then
+        DefaultValue := UTF8Encode(SubElem.TextContent);
+
+      // Optional - requires FieldProperties.
+      // - Confirm
+      SubElem :=  TDOMElement(ElemNode.FindNode('Confirm'));
+      if Assigned(SubElem) then
+        FieldProperties.Confirm := true;
+      // - Repeat
+      SubElem :=  TDOMElement(ElemNode.FindNode('Repeat'));
+      if Assigned(SubElem) then
+        FieldProperties.DoRepeat := true;
+      // - Enter
+      SubElem :=  TDOMElement(ElemNode.FindNode('Enter'));
+      if Assigned(SubElem) then
+      begin
+        if UTF8Encode(WideLowerCase(SubElem.TextContent)) = 'true' then
+          FieldProperties.EntryType := entMust
+        else
+          FieldProperties.EntryType := entNone;
+      end;
+      // - Jumps
+      SubSection := ElemNode.FindNode('Jumps');
+      if Assigned(SubSection) then
+      begin
+        SubElem := TDOMElement(SubSection.FirstChild);
+        while Assigned(SubElem) do
+        begin
+          FieldProperties.Jumps.AddObject(UTF8Encode(SubElem.GetAttribute('on')),
+            TString.Create(UTF8Encode(SubElem.GetAttribute('to'))));
+          SubElem := TDOMElement(SubElem.NextSibling);
+        end;
+        if SubSection.Attributes.Length > 0 then
+          FieldProperties.JumpResetValue := UTF8Encode(SubSection.Attributes[0].TextContent);
+      end;
+      // - Range
+      SubElem := TDOMElement(ElemNode.FindNode('Range'));
+      if Assigned(SubElem) then
+      begin
+        List := nil;
+        SplitString(UTF8Encode(SubElem.TextContent), List, [',']);
+        FieldProperties.Ranges.Assign(List);
+      end;
+      // - Top of Screen (reposition to top of screen)
+      SubElem := TDOMElement(ElemNode.FindNode('TopOfScreen'));
+      if Assigned(SubElem) then
+        FieldProperties.TopOfScreen := StrToInt(SubElem.TextContent);
+      // - TypeComment (place a label next to edit field)
+      SubElem := TDOMElement(ElemNode.FindNode('TypeComment'));
+      if Assigned(SubElem) then
+      begin
+        if SubElem.GetAttribute('colour') <> '' then
+        begin
+          FieldProperties.TypeType := ttComment;
+          FieldProperties.TypeColour := Hex2Dec(SubElem.GetAttribute('colour'));
+        end else
+        if SubElem.GetAttribute('field') <> '' then
+        begin
+          FieldProperties.TypeType := ttField;
+          FieldProperties.TypeField := FieldByName(UTF8Encode(SubElem.GetAttribute('colour')));
+        end;
+      end;
+    end;
+
+    AddField(TmpField);
+    ElemNode := TDOMElement(ElemNode.NextSibling);
+  end;     }
+end;
+
 function TEpiFields.FieldByName(Const aFieldName: string): TEpiField;
 var
   i: LongInt;
@@ -396,6 +574,111 @@ begin
     inherited;
   finally
     EpiLogger.DecIndent;
+  end;
+end;
+
+procedure TEpiField.SaveToStream(St: TStream; Lvl: integer);
+var
+  S: String;
+  i: Integer;
+begin
+  S :=
+    Ins(Lvl) +   '<Field id="' + Id + '">' + LineEnding +
+    Ins(Lvl + 1) + '<Type>' + StringToXml(FieldTypeXmlNames[FieldType]) + '</Type>' + LineEnding +
+    Ins(Lvl + 1) + '<Name>' + StringToXml(FieldName) + '</Name>' + LineEnding +
+    Ins(Lvl + 1) + '<Length>' + IntToStr(FieldLength) + '</Length>' + LineEnding +
+    Ins(Lvl + 1) + '<Decimals>' + IntToStr(FieldDecimals) + '</Decimals>' + LineEnding +
+    Ins(Lvl + 1) + '<ScreenId>' + StringToXml(ScreenProps.Id) + '</ScreenId>' + LineEnding +
+    Ins(Lvl + 1) + '<Top>' + IntToStr(FieldTop) + '</Top>' + LineEnding +
+    Ins(Lvl + 1) + '<Left>' + IntToStr(FieldLeft) + '</Left>' + LineEnding;
+  if Assigned(ValueLabelSet) then
+    S := S +
+      Ins(Lvl + 1) + '<ValueLabelId>' + ValueLabelSet.Id + '</ValueLabelId>' + LineEnding;
+
+  // Field label:
+  S := S +
+    Ins(LvL + 1) + '<FieldLabel>' + LineEnding +
+    Ins(LvL + 2) +  '<Text>' + VariableLabel + '</Text>' + LineEnding +
+    Ins(Lvl + 2) +  '<ScreenId>' + StringToXml(VarLabelScreenProps.Id) + '</ScreenId>' + LineEnding +
+    Ins(Lvl + 2) +  '<Top>' + IntToStr(VarLabelTop) + '</Top>' + LineEnding +
+    Ins(Lvl + 2) +  '<Left>' + IntToStr(VarLabelLeft) + '</Left>' + LineEnding +
+    Ins(LvL + 1) + '</FieldLabel>' + LineEnding;
+
+  // Advanced properties:
+  if HasFieldProperties then
+  with FieldProperties do
+  begin
+    if Confirm then
+      S := S + Ins(Lvl +1) + '<Confirm/>' + LineEnding;
+    if DoRepeat then
+      S := S + Ins(Lvl +1) + '<Repeat/>' + LineEnding;
+    case EntryType of
+      entMust: S := S + Ins(Lvl +1) + '<Enter>true</Enter>' + LineEnding;
+      entNone: S := S + Ins(Lvl +1) + '<Enter>false</Enter>' + LineEnding;
+    end;
+    if TopOfScreen >= 0 then
+      S := S + Ins(Lvl + 1) + '<TopOfScreen>' + IntToStr(TopOfScreen) + '</TopOfScreen>' + LineEnding;
+
+    if Jumps.Count > 0 then
+    begin
+      S := S + Ins(Lvl + 1) + '<Jumps>' + LineEnding;
+      for i := 0 to Jumps.Count - 1 do
+        S := S + Ins(Lvl + 2) + '<Jump on="' + StringToXml(Jumps[i]) + '" to="' + StringToXml(TString(Jumps.Objects[i]).Str) + '/>' + LineEnding;
+      S := S + Ins(Lvl + 1) + '</Jumps>' + LineEnding;
+    end;
+  end;
+
+  S := S +
+    Ins(Lvl) + '</Field>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiField.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+begin
+  // Root = <Field>
+  Id            := UTF8Encode(TDOMElement(Root).AttribStrings['id']);
+  FieldName     := UTF8Encode(Root.FindNode('Name').TextContent);
+  FieldLength   := StrToInt(Root.FindNode('Length').TextContent);
+  FieldDecimals := StrToInt(Root.FindNode('Decimals').TextContent);
+  DefaultValue  := UTF8Encode(Root.FindNode('DefaultValue').TextContent);
+
+  // Position, colour:
+  FieldTop      := StrToInt(Root.FindNode('Top').TextContent);
+  FieldLeft     := StrToInt(Root.FindNode('Left').TextContent);
+  ScreenProps   := DataFile.ScreenProperties.ScreenPropertyById(UTF8Encode(Root.FindNode('ScreenId').TextContent));
+
+  // Advanced Field Properties...
+  FieldProperties.Confirm := Assigned(Root.FindNode('Confirm'));
+  FieldProperties.DoRepeat := Assigned(Root.FindNode('Repeat'));
+  Node := Root.FindNode('Enter');
+  if Assigned(Node) then
+    FieldProperties.EntryType := TEntryType(BoolToInt(WideLowerCase(Node.TextContent) = 'true', Integer(entMust), Integer(entNone)));
+  Node := Root.FindNode('TopOfScreen');
+  if Assigned(Node) then
+    FieldProperties.TopOfScreen := StrToInt(Node.TextContent);
+
+  // Bodies...
+  // - Field Label
+  Node := Root.FindNode('FieldLabel');
+  if Assigned(Node) then
+  begin
+    VariableLabel       := UTF8Encode(Node.FindNode('Text').TextContent);
+    VarLabelTop         := StrToInt(Node.FindNode('Top').TextContent);
+    VarLabelLeft        := StrToInt(Node.FindNode('Left').TextContent);
+    VarLabelScreenProps := DataFile.ScreenProperties.ScreenPropertyById(UTF8Encode(Node.FindNode('ScreenId').TextContent));
+  end;
+
+  // - Jumps
+  Node := Root.FindNode('Jumps');
+  if Assigned(Node) then
+    Node := Node.FirstChild;
+  While Assigned(Node) do
+  begin
+    // Node = <Jump>
+    FieldProperties.Jumps.AddObject(TDOMElement(Node).AttribStrings['on'], TString.Create(TDOMElement(Node).AttribStrings['to']));
+    Node := Node.NextSibling;
   end;
 end;
 

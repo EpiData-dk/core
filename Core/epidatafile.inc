@@ -73,7 +73,7 @@ begin
     Ins(Lvl) + '<DataFiles>' + LineEnding;
   St.Write(S[1], Length(S));
 
-  if {Admin.Settings.Scrambled} true then
+  if Settings.Scrambled then
     TempSt := TStringStream.Create('')
   else
     TempSt := St;
@@ -81,7 +81,7 @@ begin
   for i := 0 to Count -1 do
     DataFile[i].SaveToStream(TempSt, Lvl + 1);
 
-  if {Admin.Settings.Scrambled} true then
+  if Settings.Scrambled then
   begin
     S := EnScramble(TempSt) + LineEnding;
     St.Write(S[1], Length(S));
@@ -866,11 +866,6 @@ begin
     inc(CurRec);
     ElemNode := TDOMElement(ElemNode.NextSibling);
   end;
-end;
-
-function TEpiDataFile.Ins(Lvl: integer): string;
-begin
-  result := DupeString(' ', Lvl * 2);
 end;
 
 procedure TEpiDataFile.SetId(const AValue: string);

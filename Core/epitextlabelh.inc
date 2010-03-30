@@ -15,6 +15,8 @@ type
     destructor  Destroy; override;
     // TODO : Clone!
     // TODO : Reset!
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Add(aTextLabel: TEpiTextLabel);
     procedure   Delete(aTextLabel: TEpiTextLabel);
     function    TextLabelById(Const aTextLabelId: string): TEpiTextLabel;

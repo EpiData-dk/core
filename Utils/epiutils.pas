@@ -45,6 +45,7 @@ type
 
   // Misc. conversion.
   function BoolStrToInt(Const AValue: string): integer;
+  function BoolToInt(const Exp: boolean; const TrueInt, FalseInt: integer): integer; inline;
   function GetEncodedLength(decodedlength: byte): byte;
   function GetDecodedLength(encodedlength: byte): byte;
 
@@ -243,6 +244,15 @@ begin
   Result := 0;
   if Length(AValue) = 0 then exit;
   Result := Integer(AValue[1] in BooleanYesChars);
+end;
+
+function BoolToInt(const Exp: boolean; const TrueInt, FalseInt: integer
+  ): integer;
+begin
+  if Exp then
+    result := TrueInt
+  else
+    result := FalseInt;
 end;
 
 function GetEncodedLength(decodedlength: byte): byte;

@@ -14,6 +14,8 @@ type
   public
     constructor Create(aOwner: TEpiDataFile); virtual;
     destructor  Destroy; override;
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Sort(Cmp: TListSortCompare);
     procedure   Add(aField: TEpiField);
     procedure   Delete(aField: TEpiField);
@@ -133,7 +135,9 @@ type
     property Capacity: Integer read GetCapacity write SetCapacity;
   public
     class function CreateField(aFieldType: TFieldType; aSize: Cardinal = 0): TEpiField;
-    destructor  Destroy; override;
+    destructor Destroy; override;
+    procedure SaveToStream(St: TStream; Lvl: integer); override;
+    procedure LoadFromXml(Root: TDOMNode); override;
     procedure Reset;
     function  Clone(DstDataFile: TEpiDataFile = nil; CloneData: boolean = true): TEpiField;
     procedure Exchange(i,j: integer); virtual; abstract;

@@ -35,6 +35,45 @@ begin
   inherited Destroy;
 end;
 
+procedure TEpiTextLabels.SaveToStream(St: TStream; Lvl: integer);
+var
+  i: Integer;
+  S: String;
+begin
+  if Count = 0 then exit;
+
+  S :=
+    Ins(LvL) + '<Headings>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  for i := 0 to Count - 1 do
+    TextLabel[i].SaveToStream(St, Lvl + 1);
+
+  S :=
+    Ins(LvL) + '</Headings>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiTextLabels.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NewTextLabel: TEpiTextLabel;
+begin
+  // Root = <Headings>
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    if Node.CompareName('Heading') <> 0 then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
+
+    NewTextLabel := TEpiTextLabel.Create(Self);
+    NewTextLabel.LoadFromXml(Node);
+    Add(NewTextLabel);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
 procedure TEpiTextLabels.Add(aTextLabel: TEpiTextLabel);
 begin
   FList.Add(aTextLabel);
