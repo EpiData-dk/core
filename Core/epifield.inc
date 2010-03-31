@@ -24,18 +24,22 @@ begin
   result := FList.Count
 end;
 
+constructor TEpiFields.Create(AOwner: TObject);
+begin
+  inherited Create(AOwner);
+  FList := TList.Create();
+  if AOwner is TEpiDatafile then
+    FDataFile := TEpiDatafile(aOwner)
+  else
+    FDataFile := nil;
+end;
+
 procedure TEpiFields.Sort(Cmp: TListSortCompare);
 begin
   FList.Sort(Cmp);
 
   if Assigned(FDataFile) then
     FDataFile.DoChange(dceFieldOrder, nil);
-end;
-
-constructor TEpiFields.Create(aOwner: TEpiDataFile);
-begin
-  FList := TList.Create();
-  FDataFile := aOwner;
 end;
 
 destructor TEpiFields.Destroy;
@@ -87,7 +91,9 @@ begin
 
     TmpType := XmlNameToFieldType(Node.FindNode('Type').TextContent);
     NewField := TEpiField.CreateField(TmpType);
+    Add(NewField);
     NewField.LoadFromXml(Node);
+
 
     Node := Node.NextSibling;
   end;
@@ -642,12 +648,15 @@ begin
   FieldName     := UTF8Encode(Root.FindNode('Name').TextContent);
   FieldLength   := StrToInt(Root.FindNode('Length').TextContent);
   FieldDecimals := StrToInt(Root.FindNode('Decimals').TextContent);
-  DefaultValue  := UTF8Encode(Root.FindNode('DefaultValue').TextContent);
+  Node := Root.FindNode('DefaultValue');
+  if Assigned(Node) then
+    DefaultValue  := UTF8Encode(Node.TextContent);
 
   // Position, colour:
   FieldTop      := StrToInt(Root.FindNode('Top').TextContent);
   FieldLeft     := StrToInt(Root.FindNode('Left').TextContent);
-  ScreenProps   := DataFile.ScreenProperties.ScreenPropertyById(UTF8Encode(Root.FindNode('ScreenId').TextContent));
+  Node := Root.FindNode('ScreenId');
+  ScreenProps   := DataFile.ScreenProperties.ScreenPropertyById(UTF8Encode(Node.TextContent));
 
   // Advanced Field Properties...
   FieldProperties.Confirm := Assigned(Root.FindNode('Confirm'));

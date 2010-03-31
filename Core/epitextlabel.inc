@@ -173,6 +173,32 @@ begin
   inherited Destroy;
 end;
 
+procedure TEpiTextLabel.SaveToStream(St: TStream; Lvl: integer);
+var
+  S: String;
+begin
+  S :=
+    Ins(Lvl) +   '<Heading id="' + Id + '">' + LineEnding +
+    Ins(Lvl + 1) + '<Text>' + StringToXml(Text)  + '</Text>' + LineEnding +
+    Ins(Lvl + 1) + '<Top>' + IntToStr(TextTop)  + '</Top>' + LineEnding +
+    Ins(Lvl + 1) + '<Left>' + IntToStr(TextLeft)  + '</Left>' + LineEnding +
+    Ins(Lvl + 1) + '<ScreenId>' + StringToXml(ScreenProp.Id)  + '</ScreenId>' + LineEnding +
+    Ins(Lvl) +   '</Heading>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiTextLabel.LoadFromXml(Root: TDOMNode);
+begin
+  // Root = <Heading>
+  Id       := TDOMElement(Root).AttribStrings['id'];
+
+  Text     := UTF8Encode(Root.FindNode('Text').TextContent);
+  TextTop  := StrToInt(Root.FindNode('Top').TextContent);
+  TextLeft := StrToInt(Root.FindNode('Left').TextContent);
+  ScreenProp := FOwner.FOwner.ScreenProperties.ScreenPropertyById(
+                  UTF8Encode(Root.FindNode('ScreenId').TextContent));
+end;
+
 procedure TEpiTextLabel.DoChange(EventType: TEpiTextLabelChangeEventType;
   OldValue: Pointer);
 var

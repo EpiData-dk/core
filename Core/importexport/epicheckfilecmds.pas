@@ -6,7 +6,7 @@ unit epicheckfilecmds;
 interface
 
 uses
-  Classes, epivaluelabels, epidatatypes, epicheckfiletypes;
+  Classes, sysutils, epivaluelabels, epidatatypes, epicheckfiletypes;
 
 type
 
@@ -366,9 +366,6 @@ type
   end;
 
 implementation
-
-uses
-  SysUtils;
 
  { TChkCommands }
 

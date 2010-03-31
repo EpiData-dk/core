@@ -7,7 +7,7 @@
     <CompilerOptions>
       <Version Value="8"/>
       <SearchPaths>
-        <OtherUnitFiles Value="Encryption/;Utils/;Core/;Core/importexport/"/>
+        <OtherUnitFiles Value="Core/;Core/importexport/;Utils/"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -16,7 +16,6 @@
         </SyntaxOptions>
       </Parsing>
       <CodeGeneration>
-        <SmartLinkUnit Value="True"/>
         <Checks>
           <IOChecks Value="True"/>
         </Checks>

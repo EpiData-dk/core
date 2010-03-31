@@ -1747,6 +1747,71 @@ begin
   result := Fields.Count;
 end;
 
+procedure TEpiDataFile.SaveRecords(St: TStream; Lvl: Integer);
+var
+  CurRec: Integer;
+  CurField: Integer;
+  S: String;
+begin
+  S := Ins(Lvl) + '<Records>' + LineEnding;
+  St.Write(S[1], Length(S));
+
+  for CurRec := 1 to Size do
+  begin
+    S := Ins(Lvl + 1) + '<Record';
+
+    for CurField := 0 to FieldCount - 1 do
+    with Fields[CurField] do
+      S += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"';
+
+    if Verified[CurRec] then
+      S += ' st="2"'
+    else if Deleted[CurRec] then
+      S += ' st="1"'
+    else
+      S += ' st="0"';
+    S += '/>' + LineEnding;
+    St.Write(S[1], Length(S));
+  end;
+  S := Ins(Lvl) + '</Records>' + LineEnding;
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
+var
+  ElemNode: TDOMElement;
+  TmpField: TEpiField;
+  CurRec: Integer;
+  i: Integer;
+begin
+  // Root = <Records>
+
+  CurRec := 1;
+  Size := Root.ChildNodes.Count;
+  ElemNode := TDOMElement(Root.FirstChild);
+  while Assigned(ElemNode) do
+  begin
+    if ElemNode.CompareName('Record') <> 0 then
+      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
+
+    for i := 0 to ElemNode.Attributes.Length - 1 do
+    begin
+      if ElemNode.Attributes[i].NodeName = 'st' then
+      begin
+        if ElemNode.Attributes[i].NodeValue = '1' then
+          Deleted[CurRec] := true
+        else if ElemNode.Attributes[i].NodeValue = '2' then
+          Verified[CurRec] := true;
+      end else begin
+        TmpField := FieldById(UTF8Decode(ElemNode.Attributes[i].NodeName));
+        TmpField.AsString[CurRec] := UTF8Encode(ElemNode.Attributes[i].NodeValue);
+      end;
+    end;
+    inc(CurRec);
+    ElemNode := TDOMElement(ElemNode.NextSibling);
+  end;
+end;
+
 procedure TEpiDataFile.DoChange(Event: TEpiDataFileChangeEventType;
   OldValue: Pointer);
 var
@@ -1893,7 +1958,7 @@ begin
   ScreenProperties.SaveToStream(St, Lvl + 1);
   Fields.SaveToStream(St, Lvl + 1);
   TextLabels.SaveToStream(St, Lvl + 1);
-  // TODO : Save records.
+  SaveRecords(St, Lvl + 1);
 
   S :=
     Ins(Lvl) + '</DataFile>' + LineEnding;
@@ -1930,8 +1995,7 @@ begin
 
   Node := Root.FindNode('Records');
   if Assigned(Node) then
-    Fields.LoadFromXml(Node);
-
+    LoadRecords(Node);
 end;
 
 procedure TEpiDataFile.Reset;

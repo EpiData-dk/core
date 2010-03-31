@@ -92,8 +92,8 @@ begin
   FSettings  := TEpiSettings.Create(Self);
   FAdmin     := TEpiAdmin.Create(Self);
   FDataFiles := TEpiDataFiles.Create(Self);
-  FRelates   := TEpiRelates.Create;
-  FStudy     := TEpiStudy.Create;
+  FRelates   := TEpiRelates.Create(Self);
+  FStudy     := TEpiStudy.Create(Self);
 end;
 
 destructor TEpiDocument.Destroy;

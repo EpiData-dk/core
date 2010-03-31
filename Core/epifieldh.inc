@@ -12,7 +12,7 @@ type
     function    GetField(Index: Integer): TEpiField;
     function    GetCount: Cardinal;
   public
-    constructor Create(aOwner: TEpiDataFile); virtual;
+    constructor Create(AOwner: TObject); override;
     destructor  Destroy; override;
     procedure   SaveToStream(St: TStream; Lvl: integer); override;
     procedure   LoadFromXml(Root: TDOMNode); override;

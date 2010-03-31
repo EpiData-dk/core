@@ -49,7 +49,7 @@ type
     procedure SetTemporal(const AValue: string);
     procedure SetTitle(const AValue: string);
   public
-    constructor Create;
+    constructor Create(AOwner: TObject); override;
     destructor Destroy; override;
     procedure  SaveToStream(St: TStream; Lvl: Integer); override;
     procedure  LoadFromXml(Root: TDOMNode); override;
@@ -182,8 +182,9 @@ begin
   FTitle := AValue;
 end;
 
-constructor TEpiStudy.Create;
+constructor TEpiStudy.Create(AOwner: TObject);
 begin
+  Inherited Create(AOwner);
   FCreated := Now;
   FModifiedDate := FCreated;
 end;

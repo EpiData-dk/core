@@ -148,6 +148,8 @@ type
     Function   UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     Function   TextPos(var F: Textfile): Cardinal;
     function   GetFieldCount: Cardinal;
+    Procedure  SaveRecords(St: TStream; Lvl: Integer); virtual;
+    Procedure  LoadRecords(Root: TDOMNode); virtual;
     procedure  DoChange(Event: TEpiDataFileChangeEventType; OldValue: Pointer);
   public
     constructor Create(AOwner: TObject; ASize: Cardinal = 0); virtual;

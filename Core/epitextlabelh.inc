@@ -46,6 +46,8 @@ type
     destructor  Destroy; override;
     // TODO : Clone!
     // TODO : Reset!
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     property    Id:         string read FId write SetId;
     property    Text:       string read FText write SetText;
     Property    TextTop:    Integer read FTextTop write SetTextTop;
