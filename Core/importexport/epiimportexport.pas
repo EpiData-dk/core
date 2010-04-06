@@ -181,6 +181,7 @@ type
     constructor   Create;
     destructor    Destroy; override;
     function      Import(Const aFilename: string; var DataFile: TEpiDataFile; ForceDatafileType: TDataFileType): boolean;
+    function      ImportRec(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportStata(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportDBase(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
     function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
@@ -207,7 +208,8 @@ implementation
 
 uses
   epivaluelabels, epidataglobals, epiutils, Math, StrUtils, epidateutils,
-  FileUtil, epiqeshandler, epistringutils, fpsallformats;
+  FileUtil, epiqeshandler, epistringutils, fpsallformats, DCPrijndael, DCPbase64,
+  epicheckfileio, DCPsha1;
 
   { TEpiImportExport }
 
@@ -600,9 +602,9 @@ begin
     dftStata:       result := ImportStata(aFilename, DataFile);
     dftText:        result := ImportTXT(aFilename, DataFile, nil);
     dftDBase:       result := ImportDBase(aFilename, DataFile);
-    dftEpiDataRec,
-    dftEpiDataXml:
-      begin
+    dftEpiDataRec: ;
+    dftEpiDataXml: ;
+{      begin
         if Not Assigned(DataFile) then
         begin
           Datafile := TEpiDataFile.Create(nil);
@@ -612,7 +614,7 @@ begin
         end else
           DataFile.Reset;
         result := DataFile.Open(aFilename);
-      end;
+      end;                                              }
     dftQES:
       begin
         QES := TQesHandler.Create;
@@ -623,6 +625,343 @@ begin
         FreeAndNil(QES);
       end;
   end;
+end;
+
+function TEpiImportExport.ImportRec(const aFilename: string;
+  var DataFile: TEpiDataFile): Boolean;
+var
+  // Misc:
+  TempInt, I, TotFieldLength: integer;
+  TxtFile: TextFile;
+  EField: TEpiField;
+  FieldNumberCounter: cardinal;
+  ChkIO: TCheckFileIO;
+  CharBuf: Array of char;
+
+  // Reading the textfile:
+  TxtLine: string;
+  HeaderLineCount: Integer;
+  ValCode: Integer;
+  CurrentLine: Integer;
+
+  // Field lines:
+  TmpFieldType: TFieldType;
+  TmpFieldChar, Dummy: Char;
+  TmpFieldTypeInt,
+  TmpFieldColor, TmpQuestX, TmpQuestY, TmpLength,
+  TmpFieldX, TmpFieldY, TmpQuestColor: Integer;
+  TmpName: string[10];
+  TmpLabel, TmpStr: string;
+  CurRec: Integer;
+  StrBuf: String;
+  BufPos: Integer;
+  EncData: String;
+  Stop: Boolean;
+  ELabel: TEpiTextLabel;
+  FCrypter: TDCP_rijndael;
+
+  function RequestPassword(Const EncryptedString: string): boolean;
+  var
+    S, FPassword: string;
+  begin
+    result := false;
+    if Assigned(FOnPassword) then
+      FOnPassword(Self, rpOpen, FPassword);
+    try
+      S := Base64DecodeStr(EncryptedString);
+      FCrypter.InitStr(FPassword, TDCP_sha1);
+      FCrypter.DecryptCFBblock(S[1], S[1], Length(S));
+      FCrypter.Reset;
+      Result := (AnsiCompareText(FPassword, S) = 0);
+    except
+      DataFile.ErrorText := Lang(0, 'Fatal Error in decrypting password.');
+      DataFile.ErrorCode := EPI_INVALID_PASSWORD;
+      EpiLogger.AddError(ClassName, 'RequestPassword', DataFile.ErrorText, 0);
+      Abort;
+    end;
+  end;
+
+
+  function TextPos(var F: Textfile): Cardinal;
+  begin
+    with TTextRec(F) do
+    begin
+      Result := FileSeek(Handle, 0, 1);
+      if Mode = FMOutput then
+        inc(Result, BufPos)
+      else if BufEnd <> 0 then
+        Dec(Result, BufEnd-BufPos);
+    end;
+  end;
+
+begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(ClassName, 'ImportRec', 2, 'Filename = ' + aFilename);
+  result := false;
+
+  if Assigned(DataFile) then
+    DataFile.Reset()
+  else
+    DataFile := TEpiDataFile.Create(nil, 0);
+
+  FCrypter := TDCP_rijndael.Create(nil);
+
+  with DataFile do
+  begin
+    DatafileType := dftEpiDataRec;
+
+    try
+      AssignFile(TxtFile, UTF8ToSys(aFilename));
+      {$I-}
+      System.Reset(TxtFile);
+      {$I+}
+      if IOResult() > 0 then
+      begin
+        ErrorText := Format(Lang(20108,'Data file %s could not be opened.'),[Filename]) + #13 +
+                             Lang(20208,'Please check if the file is in use and that the file name is legal.');
+        ErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+        EpiLogger.AddError(ClassName, 'ImportRec', ErrorText, 20108);
+        Exit;
+      end;
+      // --- Read "First Line" header ---
+      ReadLn(TxtFile, TxtLine);
+
+      // - Password
+      TempInt := Pos('~KQ:', AnsiUpperCase(TxtLine));
+      if TempInt > 0 then
+      begin
+        if not RequestPassword(Copy(TxtLine, TempInt + 4, Pos(':KQ~', AnsiUpperCase(TxtLine)) - (TempInt + 4))) then
+        begin
+          ErrorText := Lang(9020, 'Incorrect password entered');
+          ErrorCode := EPI_INVALID_PASSWORD;
+          EpiLogger.AddError(ClassName, 'InternalOpenOld', ErrorText, 9020);
+          CloseFile(TxtFile);
+          Exit;
+        end;
+      end;
+
+      // - FileLabel
+      if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
+        FileLabel :=  EpiUnknownStrToUTF8(Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine)));
+
+      // - Autonaming or Firstword
+      if Pos(' VLAB', TxtLine) > 0 then
+        FieldNaming := fnFirstWord
+      else
+        FieldNaming := fnAuto;
+
+      // - Header lines:
+      Val(Copy(TxtLine, 1, Pos(' ', TxtLine)-1), HeaderLineCount, ValCode);
+      if ValCode > 0 then
+      begin
+        ErrorText := Format(Lang(20112, 'Incorrect format of datafile %s'), [Filename]);
+        ErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+        EpiLogger.AddError(ClassName, 'InternalOpenOld', ErrorText, 20112);
+        CloseFile(TxtFile);
+        Exit;
+      end;
+
+      FieldNumberCounter := 1;
+      TotFieldLength := 0;
+      // Read field defining header lines.
+      for CurrentLine := 1 to HeaderLineCount do
+      begin
+        EpiLogger.Add(ClassName, 'InternalOpenOld', 3, 'Reading headerline no: ' + IntToStr(CurrentLine));
+        if UpdateProgress((CurrentLine*100) DIV HeaderLineCount, lang(0,'Opening data file')) = prCancel then
+        begin
+          ErrorText := Lang(0, 'Cancelled by user');
+          Errorcode := EPI_USERCANCELLED;
+          EpiLogger.AddError(ClassName, 'InternalOpenOld', ErrorText, 0);
+          CloseFile(TxtFile);
+          Exit;
+        end;
+
+        ReadLn(TxtFile,
+               TmpFieldChar, TmpName, TmpQuestX, TmpQuestY,
+               TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldTypeInt, TmpLength,
+               TmpFieldColor, dummy, TmpLabel);
+
+        // Field types.
+        if TmpFieldTypeInt >= 100 then
+          // Type > 100 => float field
+          TmpFieldType := ftFloat
+        else begin
+          // Normal field type recognition.
+          TmpFieldType := ftInteger;
+          WHILE TmpFieldTypeInt > ORD(TmpFieldType) DO
+            TmpFieldType := Succ(TmpFieldType);
+        end;
+
+        // This is not a data field, but a question field.
+        if TmpLength = 0 then TmpFieldType := ftQuestion;
+
+        // Unsupported field are automatically converted to string (ftString) fields.
+        if (not (TmpFieldType in SupportedFieldTypes)) or
+           ((TmpFieldType in DateFieldTypes) and (TmpLength < 10)) then
+          TmpFieldType := ftString;
+
+        // Trim text information.
+        TmpName := Trim(TmpName);
+        TmpLabel := Trim(TmpLabel);
+
+        if TmpFieldType = ftQuestion then
+        begin
+          ELabel := NewTextLabel;
+          with ELabel do
+          begin
+            Id := TmpName;
+            Text := TmpLabel;
+            ScreenProp := ScreenProperties.DefaultScreenProperty;
+            TextLeft   := TmpFieldX;
+            TextTop    := TmpFieldY;
+          end;
+          Continue;
+        end;
+
+        EField := NewField(TmpFieldType);
+        with EField do
+        begin
+          ScreenProps         := ScreenProperties.DefaultScreenProperty;
+          FieldLeft           := TmpFieldX;
+          FieldTop            := TmpFieldY;
+          VarLabelScreenProps := ScreenProperties.DefaultScreenProperty;
+          VarLabelLeft        := TmpQuestX;
+          VarLabelTop         := TmpQuestY;
+
+          FieldLength := TmpLength;
+          FieldDecimals := 0;
+          if TmpFieldTypeInt >= 100 then
+            FieldDecimals := TmpFieldTypeInt - 100;
+          VariableLabel := EpiUnknownStrToUTF8(StringReplace(TmpLabel, '_', '-', [rfReplaceAll]));
+
+          // In old style .REC files, first word in label is the name of the field. Remove it.
+          if Pos(TmpName, VariableLabel) > 0 then
+            VariableLabel := Trim(Copy(VariableLabel, Length(TmpName)+1, Length(VariableLabel)));
+          // Ensure valid variable name.
+          FieldName := Trim(CreateUniqueFieldName(TmpName));
+          // If the field name was invalid (not very likely) use it in variable label.
+          IF FieldName <> TmpName THEN
+            VariableLabel := TmpName + ' ' + VariableLabel;
+
+          // Summerize field findings.
+          TotFieldLength := TotFieldLength + FieldLength;
+        end;  // With EField
+      end; // For CurrentLine
+
+      // Position for reading and check for corruptness.
+      TotFieldLength := TotFieldLength + (((TotFieldLength - 1) DIV MaxRecLineLength) + 1) * 3;
+      TmpLength := TextPos(TxtFile);
+      CloseFile(TxtFile);
+
+      DataStream := TMemoryStream.Create;
+      TMemoryStream(DataStream).LoadFromFile(UTF8ToSys(Filename));
+      DataStream.Position := DataStream.Size;
+
+      // Skip all lineendings / EOF chars.
+      SetLength(CharBuf, 16);
+      Stop := false;
+      while DataStream.Position >= TmpLength do
+      begin
+        DataStream.Seek(-16, soCurrent);
+        DataStream.Read(CharBuf[0], 16);
+
+        i := 15;
+        while i >= 0 do
+        begin
+          if (CharBuf[i] in ['!', '?', '^']) then
+          begin
+            Stop := true;
+            break;
+          end;
+          Dec(i);
+        end;
+        if Stop then break;
+        DataStream.Seek(-16, soCurrent);
+      end;
+
+      if DataStream.Position < TmpLength then
+        TempInt := TmpLength  // This is an empty datafile!
+      else
+        TempInt := DataStream.Position - (16 - i) + 3; // + 3 is for "!#13#10" which all .REC file should end with??!?!?
+      if ((TempInt - TmpLength) mod TotFieldLength) <> 0 then
+      begin
+        ErrorText := Format(Lang(20118, 'Error in datafile %s. One or more records are corrupted. Size: %d, Offset: %d, TotalLength: %d, i: %d'),
+          [Filename, DataStream.Size, TmpLength, TotFieldLength, i]);
+        ErrorCode := EPI_DATAFILE_FORMAT_ERROR;
+        EpiLogger.AddError(ClassName, 'InternalOpenOld', ErrorText, 20118);
+        Exit;
+      end;
+
+      TempInt := ((TempInt - TmpLength) div TotFieldLength);
+      Size := TempInt;
+      DataStream.Position := TmpLength;
+
+      SetLength(CharBuf, TotFieldLength);
+      For CurRec := 1 to TempInt do
+      begin
+        I := DataStream.Read(CharBuf[0], TotFieldLength);
+        if (I <> TotFieldLength) then
+        begin
+          ErrorText := Lang(20464, 'Error reading record');
+          ErrorCode := EPI_READ_FILE_ERROR;
+          EpiLogger.AddError(Classname, 'InternalOpenOld', ErrorText, 20464);
+          raise Exception.Create('Error reading record');
+        end;
+
+        StrBuf := CharBuf[High(CharBuf) - 2];
+        if StrBuf = '?' then
+          Deleted[CurRec] := true
+        else if StrBuf = '^' then
+          Verified[CurRec] := true;
+
+        StrBuf := StringReplace(string(CharBuf), EOLChars, '', [rfReplaceAll]);
+        BufPos := 1;
+        for i := 0 TO FieldCount - 1 DO
+        with Fields[i] do begin
+          TmpStr := Trim(Copy(StrBuf, BufPos, FieldLength));
+          if TmpStr = '' then
+            TmpStr := TEpiStringField.DefaultMissing;
+          IF (fieldtype = ftCrypt) THEN
+          begin
+            EncData := Base64DecodeStr(TmpStr);
+            FCrypter.DecryptCFBblock(EncData[1], EncData[1], Length(EncData));
+            TmpStr := Trim(EncData);
+            FCrypter.Reset;
+          end;
+          AsString[CurRec] := EpiUnknownStrToUTF8(TmpStr);
+          Inc(BufPos, FieldLength);
+        end;
+      end;
+
+      result := true;
+      if not (eoIgnoreChecks in Options) then
+      begin
+        try
+          try
+            ChkIO := TCheckFileIO.Create();
+            ChkIO.OnTranslate := Self.OnTranslate;
+            result := ChkIO.ReadCheckFile(ChangeFileExt(FileName, '.chk'), Datafile);
+            if not Result then
+            begin
+              ErrorCode := EPI_CHECKFILE_ERROR;
+              for i := 0 to ChkIO.ErrorLines.Count -1 do
+                ErrorText := ErrorText + #13#10 + ChkIO.ErrorLines[i];
+              EpiLogger.AddError(ClassName, 'InternalOpenOld', ErrorText, 0);
+            end;
+          except
+            ErrorCode := EPI_CHECKFILE_ERROR;
+            result := false;
+          end;
+        finally
+          FreeAndNil(ChkIO);
+        end
+      end;
+    finally
+      if Assigned(DataStream) then FreeAndNil(DataStream);
+      EpiLogger.DecIndent;
+    end;
+  end;
+  FCrypter.Free;
 end;
 
 function TEpiImportExport.ImportStata(const aFilename: string;

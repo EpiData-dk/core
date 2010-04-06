@@ -1,5 +1,6 @@
 unit epixmlutils;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
@@ -22,6 +23,11 @@ var
   AESCrypter: TDCP_rijndael = nil;
   Initialized: boolean = false;
 
+function Get4ByteSalt: Integer;
+begin
+  result := Random(maxLongint - 1) + 1;
+end;
+
 procedure InitScrambler(Password: string);
 begin
   // Use SHA256, since it produces a 256bit output key which makes the DCPcrypt
@@ -43,6 +49,7 @@ begin
   Result := nil;
   if not Initialized then exit;
 
+  // Extract the text content from this node (but not subnodes).
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
@@ -50,13 +57,12 @@ begin
       break;
     node := Node.NextSibling;
   end;
+
   AESCrypter.Reset;
-  s := TDOMText(Node).Data;
-  s := trim(s);
-//  s := UTF8Encode(s);
-  s := AESCrypter.DecryptString(s);
+  s := AESCrypter.DecryptString(Trim(TDOMText(Node).Data));
   St := TStringStream.Create(s);
-  St.Position := 0;
+  // Shift 4 bytes to get rid of scrambling salt...
+  St.Position := 4;
 
   XMLDoc := Root.OwnerDocument.CreateDocumentFragment;
   ReadXMLFragment(XMLDoc, St);
@@ -71,17 +77,23 @@ begin
 
   AESCrypter.Reset;
   Result := AESCrypter.DecryptString(S);
+  Delete(Result, 1, 4);
 end;
 
 function EnScramble(St: TStream): string;
 var
   TmpSt: TStringStream;
+  Salt: Integer;
+  SaltStr: Array[0..3] of Char absolute Salt;
 begin
   Result := '';
   if not Initialized then exit;
 
+  Salt := Get4ByteSalt;
+
   St.Position := 0;
-  TmpSt := TStringStream.Create('');
+  TmpSt := TStringStream.Create(String(SaltStr));
+  TmpSt.Position := TmpSt.Size;
   TmpSt.CopyFrom(St, St.Size);
   TmpSt.Position := 0;
 
@@ -91,12 +103,23 @@ begin
 end;
 
 function EnScramble(S: string): string;
+var
+  Salt: Integer;
+  SaltStr: Array[0..3] of Char absolute Salt;
 begin
   Result := '';
   if not Initialized then exit;
 
+  Salt := Get4ByteSalt;
+
   AESCrypter.Reset;
-  Result := AESCrypter.EncryptString(S);
+  Result := AESCrypter.EncryptString(String(SaltStr) + S);
+end;
+
+initialization
+
+begin
+  Randomize;
 end;
 
 Finalization

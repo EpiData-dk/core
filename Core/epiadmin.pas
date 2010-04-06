@@ -87,8 +87,8 @@ type
 
   TEpiUsers = class(TEpiCustomAdmin)
   private
-    FAdmin: TEpiAdmin;
     FList: TFPList;
+    function GetAdmin: TEpiAdmin;
     function GetCount: integer;
     function GetUser(Index: integer): TEpiUser;
   public
@@ -102,7 +102,7 @@ type
     procedure  AddUser(AUser: TEpiUser);
     Property   User[Index: integer]: TEpiUser read GetUser; default;
     Property   Count: integer read GetCount;
-    Property   Admin: TEpiAdmin read FAdmin;
+    Property   Admin: TEpiAdmin read GetAdmin;
   end;
 
   { TEpiUser }
@@ -159,8 +159,8 @@ type
 
   TEpiGroups = class(TEpiCustomAdmin)
   private
-    FAdmin: TEpiAdmin;
     FList: TFPList;
+    function GetAdmin: TEpiAdmin;
     function GetCount: integer;
     function GetGroup(Index: integer): TEpiGroup;
   public
@@ -172,7 +172,7 @@ type
     procedure  AddGroup(AGroup: TEpiGroup);
     Property   Group[Index: integer]: TEpiGroup read GetGroup; default;
     Property   Count: integer read GetCount;
-    Property   Admin: TEpiAdmin read FAdmin;
+    Property   Admin: TEpiAdmin read GetAdmin;
   end;
 
   { TEpiGroup }
@@ -312,10 +312,7 @@ begin
   inherited;
 
   FUsers := TEpiUsers.Create(self);
-  FUsers.FAdmin := Self;
-
   FGroups := TEpiGroups.Create(self);
-  FGroups.FAdmin := Self;
 end;
 
 destructor TEpiAdmin.Destroy;
@@ -411,6 +408,11 @@ end;
 function TEpiUsers.GetCount: integer;
 begin
   result := FList.Count;
+end;
+
+function TEpiUsers.GetAdmin: TEpiAdmin;
+begin
+  result := TEpiAdmin(Owner);
 end;
 
 function TEpiUsers.GetUser(Index: integer): TEpiUser;
@@ -701,6 +703,11 @@ end;
 function TEpiGroups.GetCount: integer;
 begin
   result := FList.Count;
+end;
+
+function TEpiGroups.GetAdmin: TEpiAdmin;
+begin
+  result := TEpiAdmin(Owner);
 end;
 
 function TEpiGroups.GetGroup(Index: integer): TEpiGroup;

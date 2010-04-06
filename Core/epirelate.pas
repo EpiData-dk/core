@@ -1,11 +1,12 @@
 unit epirelate;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils, epidatafile, epicustomclass, DOM;
+  Classes, SysUtils, epidatafile, epicustomclass, episettings, DOM;
 
 type
   TEpiRelates = class;
@@ -21,12 +22,17 @@ type
     FPrimaryKeys: TEpiPrimaryKeys;
     function GetCount: integer;
     function GetRelate(Index: integer): TEpiRelate;
+    function GetSettings: TEpiSettings;
     procedure SetPrimaryKeys(const AValue: TEpiPrimaryKeys);
+  protected
+    Property    Settings: TEpiSettings read GetSettings;
   public
     constructor Create(AOwner: TObject); override;
     destructor  Destroy; override;
     procedure   SaveToStream(St: TStream; Lvl: integer); override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    function    NewPrimaryKey: TEpiPrimaryKey;
+    function    NewRelate: TEpiRelate;
     procedure   Add(aRelate: TEpiRelate);
     Property    PrimaryKeys: TEpiPrimaryKeys read FPrimaryKeys write SetPrimaryKeys;
     Property    Relate[Index: integer]: TEpiRelate read GetRelate; default;
@@ -92,13 +98,18 @@ type
 implementation
 
 uses
-  epidataglobals, epidocument, epistringutils;
+  epidataglobals, epidocument, epistringutils, epixmlutils;
 
 { TEpiRelates }
 
 function TEpiRelates.GetRelate(Index: integer): TEpiRelate;
 begin
   result := TEpiRelate(FRelateList[Index]);
+end;
+
+function TEpiRelates.GetSettings: TEpiSettings;
+begin
+  result := TEpiDocument(Owner).Settings;
 end;
 
 function TEpiRelates.GetCount: integer;
@@ -129,6 +140,7 @@ procedure TEpiRelates.SaveToStream(St: TStream; Lvl: integer);
 var
   S: String;
   i: Integer;
+  TempSt: TStream;
 begin
   if count = 0 then exit;
 
@@ -136,9 +148,21 @@ begin
     Ins(Lvl) + '<Relates>' + LineEnding;
   St.Write(S[1], Length(S));
 
-  PrimaryKeys.SaveToStream(St, Lvl + 1);
+  if Settings.Scrambled then
+    TempSt := TStringStream.Create('')
+  else
+    TempSt := St;
+
+  PrimaryKeys.SaveToStream(TempSt, Lvl + 1);
   for i := 0 to Count - 1 do
-    Relate[i].SaveToStream(St, Lvl + 1);
+    Relate[i].SaveToStream(TempSt, Lvl + 1);
+
+  if Settings.Scrambled then
+  begin
+    S := EnScramble(TempSt) + LineEnding;
+    St.Write(S[1], Length(S));
+    TempSt.Free;
+  end;
 
   S :=
     Ins(Lvl) + '</Relates>' + LineEnding;
@@ -147,14 +171,22 @@ end;
 
 procedure TEpiRelates.LoadFromXml(Root: TDOMNode);
 var
+  NewRoot: TDOMNode;
   Node: TDOMNode;
-  NewRelate: TEpiRelate;
+  NRelate: TEpiRelate;
 begin
   // Root = <Relates>
-  Node := Root.FindNode('PrimaryKeys');
+  if Not Assigned(Root) then exit;
+
+  if Settings.Scrambled then
+    NewRoot := DeScramble(Root)
+  else
+    NewRoot := Root;
+
+  Node := NewRoot.FindNode('PrimaryKeys');
   PrimaryKeys.LoadFromXml(Node);
 
-  Node := Root.FirstChild;
+  Node := NewRoot.FirstChild;
   while Assigned(Node) do
   begin
     if Node.CompareName('PrimaryKeys') = 0 then
@@ -166,12 +198,24 @@ begin
     if Node.CompareName('Relate') <> 0 then
       ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
 
-    NewRelate := TEpiRelate.Create(Self);
-    NewRelate.LoadFromXml(Node);
-    Add(NewRelate);
+    NRelate := TEpiRelate.Create(Self);
+    NRelate.LoadFromXml(Node);
+    Add(NRelate);
 
     Node := Node.NextSibling;
   end;
+end;
+
+function TEpiRelates.NewPrimaryKey: TEpiPrimaryKey;
+begin
+  result := TEpiPrimaryKey.Create(PrimaryKeys);
+  PrimaryKeys.Add(Result);
+end;
+
+function TEpiRelates.NewRelate: TEpiRelate;
+begin
+  result := TEpiRelate.Create(Self);
+  Add(Result);
 end;
 
 procedure TEpiRelates.Add(aRelate: TEpiRelate);

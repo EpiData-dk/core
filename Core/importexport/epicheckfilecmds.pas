@@ -6,7 +6,7 @@ unit epicheckfilecmds;
 interface
 
 uses
-  Classes, sysutils, epivaluelabels, epidatatypes, epicheckfiletypes;
+  Classes, sysutils, epidatatypes, epicheckfiletypes, epivaluelabels;
 
 type
 

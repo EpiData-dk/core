@@ -17,6 +17,7 @@ type
   public
     constructor Create(AOwner: TObject); override;
     destructor  Destroy; override;
+    function    NewDatafile: TEpiDatafile;
     procedure   Add(aDataFile: TEpiDataFile);
     procedure   Delete(aDataFile: TEpiDataFile);
     function    DataFileById(Const aId: string): TEpiDataFile;
@@ -104,14 +105,13 @@ type
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
     FOnPassword:   TOldRequestPasswordEvent;   // Callback event for password request
     FBackgroundColour:     Integer;         // Background color up entry form.
-    FCrypter:      TDCP_rijndael;
     FFileVersion:  Cardinal;
     FRecordStatus: TEpiField;
     function   GetDeleted(Index: integer): boolean;
     function   GetField(Index: integer): TEpiField;
     function   GetSize: Integer;
     function   GetTextLabel(Index: integer): TEpiTextLabel;
-    function GetTextLabelCount: Cardinal;
+    function   GetTextLabelCount: Cardinal;
     function   GetVerified(Index: integer): boolean;
     procedure  InternalReset;
     procedure  SetDeleted(Index: integer; const AValue: boolean);
@@ -123,30 +123,11 @@ type
     procedure  SetId(const AValue: string);
   private
     FId: string;
-    // XML Read Functions:
-    // - read
-    Procedure  ReportXmlError(ErrCode: Integer; LangCode: integer; Msg: String; Args: array of const);
-    Procedure  ReadSettings(RootNode: TDOMElement; FmtSettings: TFormatSettings);
-    Procedure  ReadMetaData(RootNode: TDOMElement; FmtSettings: TFormatSettings);
-    Procedure  ReadValueLabels(RootNode: TDOMElement; LocalFmt: TFormatSettings);
-    Procedure  ReadExternalValueLabels(RootNode: TDOMElement; ValueLabelSet: TValueLabelSet);
-    Procedure  ReadInternalValueLabels(RootNode: TDOMElement; ValueLabelSet: TValueLabelSet; LocalFmt: TFormatSettings);
-    Procedure  ReadScreen(RootNode: TDOMElement);
-    Procedure  ReadScreenColours(RootNode: TDOMElement);
-    Procedure  ReadTextLabels(RootNode: TDOMElement);
-    Procedure  ReadFields(RootNode: TDOMElement);
-    Procedure  ReadRecords(RootNode: TDOMElement; FmtSettings: TFormatSettings);
-    // - write
-    Procedure  WriteSettings(St: TStream);
-    Procedure  WriteMetaData(St: TStream);
   protected
-    function   InternalOpen: boolean;
     function   InternalOpenOld: boolean;
-    function   InternalSave: boolean;
     function   InternalSaveOld: boolean;
     function   Lang(LangCode: Integer; Const LangText: string): string;
     Function   UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
-    Function   TextPos(var F: Textfile): Cardinal;
     function   GetFieldCount: Cardinal;
     Procedure  SaveRecords(St: TStream; Lvl: Integer); virtual;
     Procedure  LoadRecords(Root: TDOMNode); virtual;
@@ -156,12 +137,10 @@ type
     destructor Destroy; override;
     function   PrepareDataFile(FieldNames: TStrings): TEpiDataFile;
     function   Clone(CloneData: boolean = true): TEpiDataFile;
-    function   RequestPassword(Const EncryptedString: string): boolean;
-    function   Open(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
-    function   Save(Const aFileName: string; aOptions: TEpiDataFileOptions = []): boolean;
     procedure  SaveToStream(St: TStream; Lvl: Integer); override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  Reset;
+    function   NewField(FieldType: TFieldType): TEpiField;
     procedure  AddField(AField: TEpiField);
     procedure  RemoveField(var AField: TEpiField; DoDestroy: boolean = false);
     function   FieldByName(Const aFieldName: string): TEpiField;
@@ -169,6 +148,7 @@ type
     function   FieldExists(Const aFieldName: string): boolean;
     function   FieldIndex(Const aFieldName: string): Integer;
     function   CreateUniqueFieldName(Const AText: string): string;
+    function   NewTextLabel: TEpiTextLabel;
     procedure  AddTextLabel(ATextLabel: TEpiTextLabel);
     procedure  RemoveTextLabel(var ATextLabel: TEpiTextLabel; DoDestroy: boolean = false);
     function   TextLabelById(Const ATextLabelId: string): TEpiTextLabel;
