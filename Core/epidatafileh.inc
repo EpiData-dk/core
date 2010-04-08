@@ -99,11 +99,10 @@ type
     FScreenProperties: TEpiScreenProperties; // Container for all screen properties (for now just colours).
     FPassword:     string;                  // Datafile password
     FFieldNaming:  TFieldNaming;            // Datafile fieldnaming convention - Firstword or Auto.
-    FCheckFile:    TEpiDataFileProperties;           // Container for global/datafile level information of the .CHK file.
+    FCheckFile:    TEpiDataFileProperties;  // Container for global/datafile level information of the .CHK file.
     FOptions:      TEpiDataFileOptions;     // Options set by Open(...)
     FOnProgress:   TProgressEvent;          // Callback event for updating progress
     FOnTranslate:  TTranslateEvent;         // Callback event for translation
-    FOnPassword:   TOldRequestPasswordEvent;   // Callback event for password request
     FBackgroundColour:     Integer;         // Background color up entry form.
     FFileVersion:  Cardinal;
     FRecordStatus: TEpiField;
@@ -124,8 +123,6 @@ type
   private
     FId: string;
   protected
-    function   InternalOpenOld: boolean;
-    function   InternalSaveOld: boolean;
     function   Lang(LangCode: Integer; Const LangText: string): string;
     Function   UpdateProgress(Percent: Integer; Msg: string): TProgressResult;
     function   GetFieldCount: Cardinal;
@@ -135,10 +132,10 @@ type
   public
     constructor Create(AOwner: TObject; ASize: Cardinal = 0); virtual;
     destructor Destroy; override;
-    function   PrepareDataFile(FieldNames: TStrings): TEpiDataFile;
-    function   Clone(CloneData: boolean = true): TEpiDataFile;
     procedure  SaveToStream(St: TStream; Lvl: Integer); override;
     procedure  LoadFromXml(Root: TDOMNode); override;
+    function   PrepareDataFile(FieldNames: TStrings): TEpiDataFile;
+    function   Clone(CloneData: boolean = true): TEpiDataFile;
     procedure  Reset;
     function   NewField(FieldType: TFieldType): TEpiField;
     procedure  AddField(AField: TEpiField);
@@ -166,7 +163,6 @@ type
     property   Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
     property   Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
-    property   OnPassword:  TOldRequestPasswordEvent read FOnPassword write FOnPassword;
     property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
     property   Options:     TEpiDataFileOptions read FOptions;
     property   FileName:    string read FFileName write SetFileName;

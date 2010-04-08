@@ -90,6 +90,44 @@ uses
   SysUtils, epicheckfiletypes, epiutils, TypInfo,
   epidataglobals, epistringutils, StrUtils, FileUtil;
 
+procedure AddValueLabelPair(VLSet: TValueLabelSet; Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
+var
+  NValueLabel: TEpiCustomValueLabel;
+begin
+  // This handles old .REC/.CHK style missing values.
+
+  NValueLabel := nil;
+
+  if Assigned(NValueLabel) then
+  begin
+    // Since AddValueLabelPair is used in CheckFileIO to insert missingvalue, we may
+    // overwrite previous defined valuelabel or missing.
+    if ((NValueLabel.TheLabel <> '') and aMissing) then
+      // Val. lab. exists and we are inserting missing.
+      // keep label - update missing.
+      NValueLabel.Missing := aMissing
+    else if (NValueLabel.Missing and (aLabel <> '')) then
+      // Missing exists and we are inserting val. lab.
+      // keep missing - update label
+      NValueLabel.TheLabel := aLabel
+    else begin
+      // Normal update of situation.
+      NValueLabel.TheLabel := aLabel;
+      NValueLabel.Missing := aMissing;
+    end;
+  end else begin
+    NValueLabel := VLSet.NewValueLabel;
+    NValueLabel.Order := VLSet.Count;
+    case VLSet.LabelType of
+      ftInteger: TEpiIntValueLabel(NValueLabel).Value := aValue;
+      ftFloat:   TEpiFloatValueLabel(NValueLabel).Value := aValue;
+      ftString:  TEpiStringValueLabel(NValueLabel).Value := aValue;
+    end;
+    NValueLabel.TheLabel := aLabel;
+    NValueLabel.Missing := aMissing;
+  end;
+end;
+
 { TCheckParser }
 
 Constructor TCheckParser.Create();
@@ -663,7 +701,7 @@ BEGIN
       Result := ReportError(Lang(22710, 'Value is not compatible with this Fieldtype'));
 
     if Result then
-      LocalValueLabel.AddValueLabelPair(S, '', True);
+      AddValueLabelPair(LocalValueLabel, S, '', True);
   end;
 END;
 
@@ -856,14 +894,7 @@ BEGIN
       IF TmpStr[1] = '*' THEN
       BEGIN
         TmpStr := Trim(FParser.GetWholeLine);
-        IF Length(TmpStr) > (30 + 80) THEN
-        BEGIN
-          Result := ReportError(Lang(22874, 'Commented line is too long'));
-          Break;
-        END ELSE BEGIN
-          LocalValueLabel.AddValueLabelPair(Copy(TmpStr, 1, 30), Copy(TmpStr, 31, length(TmpStr)));
-          Continue;
-        END;
+        Continue;
       END;
 
       // To long?
@@ -895,7 +926,7 @@ BEGIN
       WHILE pos('"', CurCommand) > 0 DO
         Delete(CurCommand, Pos('"', CurCommand), 1);
 
-      LocalValueLabel.AddValueLabelPair(TmpStr, CurCommand);
+      AddValueLabelPair(LocalValueLabel, TmpStr, CurCommand);
     End;
 
     IF Result THEN
@@ -950,14 +981,15 @@ BEGIN
     end;       }
 
     // Check that if ValueLabel existed beforehand is is considered to be missingvalues.
-    if Assigned(CurField.ValueLabelSet) then
+    // TODO : ValueLabels...
+{    if Assigned(CurField.ValueLabelSet) then
     with CurField.ValueLabelSet do
     begin
       for i := 0 to Count -1 do
-        LocalValueLabel.AddValueLabelPair(Values[i], Labels[i], MissingValues[i]);
+        AddValueLabelPair(LocalValueLabel, Values[i], Labels[i], MissingValues[i]);
 
       CurField.DataFile.ValueLabels.DeleteValueLabelSet(Name);
-    end;
+    end;  }
 
     CurField.ValueLabelSet := LocalValueLabel;
     Exit;
@@ -987,7 +1019,7 @@ BEGIN
     
   TRY
     ComLegDf := TEpiDataFile.Create(nil);
-    ComLegDF.OnPassword := FDf.OnPassword;
+//    ComLegDF.OnPassword := FDf.OnPassword;
 // TODO : Old External Loading Valuelabels.
 //    IF NOT ComLegDf.Open(TmpStr, [eoIgnoreRelates]) THEN
     begin
@@ -1036,7 +1068,7 @@ BEGIN
     LocalValueLabel.LabelScope := vlsExternal;
 
     FOR i := 1 TO ComLegDf.Size DO
-      LocalValueLabel.AddValueLabelPair(ValueField.AsValue[i], TextField.AsString[i]);
+      AddValueLabelPair(LocalValueLabel, ValueField.AsValue[i], TextField.AsString[i]);
 
     FDf.ValueLabels.AddValueLabelSet(LocalValueLabel);
 
@@ -1766,7 +1798,7 @@ BEGIN
             TmpValueLabel := TValueLabelSet.Create(FDf.ValueLabels, ftInteger);
             TmpValueLabel.Name := '__missingall' + IntToStr(Random(1000));
             for i := 0 to ValList.Count - 1 do
-              TmpValueLabel.AddValueLabelPair(StrToInt(ValList[i]), '', True);
+              AddValueLabelPair(TmpValueLabel, StrToInt(ValList[i]), '', True);
             FDf.ValueLabels.AddValueLabelSet(TmpValueLabel);
 
             FOR n := 0 TO TmpList.Count-(ValList.Count + 1) DO
@@ -1793,7 +1825,9 @@ BEGIN
                     if Assigned(TmpField.ValueLabelSet) then
                     begin
                       for j := 0 to TmpValueLabel.Count - 1 do
-                        TmpField.ValueLabelSet.AddValueLabelPair(TmpValueLabel.Values[0], '', true);
+                      // TODO : Old Value Labels...
+//                        AddValueLabelPair(TmpField.ValueLabelSet, TmpValueLabel.Values[0], '', true)
+                        ;
                     end else
                       TmpField.ValueLabelSet := TmpValueLabel;
                   end;
@@ -1811,7 +1845,9 @@ BEGIN
                   if Assigned(TmpField.ValueLabelSet) then
                   begin
                     for j := 0 to TmpValueLabel.Count - 1 do
-                      TmpField.ValueLabelSet.AddValueLabelPair(TmpValueLabel.Values[0], '', true);
+                    // TODO : Old Value Labels...
+//                      AddValueLabelPair(TmpField.ValueLabelSet, TmpValueLabel.Values[0], '', true)
+                      ;
                   end else
                     TmpField.ValueLabelSet := TmpValueLabel;
                 end;
@@ -2348,7 +2384,7 @@ BEGIN
       CurCommand := Copy(TmpStr,1,30);
       IF Length(TmpStr)>30 THEN
         TmpStr := Copy(TmpStr, 31, Length(TmpStr));
-      aValueLabelSet.AddValueLabelPair(CurCommand, TmpStr);
+      AddValueLabelPair(aValueLabelSet, CurCommand, TmpStr);
       Continue;
     END;
 
@@ -2371,7 +2407,7 @@ BEGIN
 
     aValueLabelSet.LabelType := FindFieldType(TmpStr, aValueLabelSet.LabelType);
     // TODO : Change TmpStr to correct type of variant (now it's string.)
-    aValueLabelSet.AddValueLabelPair(TmpStr, CurCommand);
+    AddValueLabelPair(aValueLabelSet, TmpStr, CurCommand);
   End;
   FDf.ValueLabels.AddValueLabelSet(aValueLabelSet);
   Result := true;
@@ -2457,7 +2493,8 @@ BEGIN
   for i := 0 to aValueLabelSet.Count - 1do
   with aValueLabelSet do
   BEGIN
-    if MissingValues[i] then continue;
+    // TODO : Old Value Labels...
+{    if MissingValues[i] then continue;
 
     S := '';
     if Pos(' ', Values[i]) > 0 then
@@ -2469,7 +2506,7 @@ BEGIN
       S := S + '  "' + Labels[i] + '"'
     else
       S := S + '  ' + Labels[i];
-    AddToCheckLines(S);
+    AddToCheckLines(S);    }
   END;  //for
   Dec(FIndentLvl);
   if aValueLabelSet.LabelScope = vlsInternal then

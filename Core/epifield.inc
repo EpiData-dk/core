@@ -405,7 +405,8 @@ begin
   result := AsString[Index];
   if IsMissing[index] then exit;
   if Assigned(ValueLabelSet) then
-    result := ValueLabelSet.ValueLabel[AsString[Index]];
+    // TODO : ValueLabels
+    result := '';//ValueLabelSet.ValueLabel[AsString[Index]];
 end;
 
 function TEpiField.GetIsMissingValue(const index: Integer): boolean;
@@ -414,7 +415,8 @@ begin
   if not Assigned(ValueLabelSet) then
     exit
   else
-    result := ValueLabelSet.MissingValue[AsValue[Index]];
+    // TODO : ValueLabels
+    result := false; // ValueLabelSet.MissingValue[AsValue[Index]];
 end;
 
 function TEpiField.GetSize: Integer;
@@ -650,7 +652,10 @@ begin
   FieldDecimals := StrToInt(Root.FindNode('Decimals').TextContent);
   Node := Root.FindNode('DefaultValue');
   if Assigned(Node) then
-    DefaultValue  := UTF8Encode(Node.TextContent);
+    DefaultValue  := UTF8Encode(UTF8Encode(Node.TextContent));
+  Node := Root.FindNode('ValueLabelId');
+  if Assigned(Node) then
+    ValueLabelSet := DataFile.ValueLabels.ValueLabelSetByName(UTF8Encode(Node.TextContent));
 
   // Position, colour:
   FieldTop      := StrToInt(Root.FindNode('Top').TextContent);
@@ -658,7 +663,7 @@ begin
   Node := Root.FindNode('ScreenId');
   ScreenProps   := DataFile.ScreenProperties.ScreenPropertyById(UTF8Encode(Node.TextContent));
 
-  // Advanced Field Properties...
+    // Advanced Field Properties...
   FieldProperties.Confirm := Assigned(Root.FindNode('Confirm'));
   FieldProperties.DoRepeat := Assigned(Root.FindNode('Repeat'));
   Node := Root.FindNode('Enter');

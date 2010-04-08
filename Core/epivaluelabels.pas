@@ -17,13 +17,11 @@ type
     FOrder: Integer;
     FLabel: String;
     FMissing: Boolean;
-    FNoValue: Variant;
     function GetValueAsString: string; virtual; abstract;
   public
     procedure SaveToStream(St: TStream; Lvl: integer); override;
     procedure LoadFromXml(Root: TDOMNode); override;
     property Order: integer read FOrder write FOrder;
-    property Value: Variant read FNoValue write FNoValue;
     property TheLabel: string read FLabel write FLabel;
     property Missing: boolean read FMissing write FMissing;
   end;
@@ -81,18 +79,8 @@ type
     FCurrentIndex: Integer;
     FCurrentNode: TAVLTreeNode;
     function GetCount: integer;
-    function FindValuePair(Const Value: Variant): Pointer;
-    function GetLabels(const Index: Integer): string;
-    function GetMissingValue(const aValue: Variant): boolean;
-    function GetMissingValues(const Index: Integer): boolean;
-    function GetValueLabel(const aValue: Variant): string;
-    function GetValues(const Index: Integer): Variant;
-    procedure SetLabelType(const AValue: TFieldType); inline;
-    procedure SetMissingValue(const aValue: Variant; const AMissing: boolean);
-    procedure SetValueLabel(const aValue: Variant; const ALabel: string); inline;
-    // For traversion the tree of nodes using "random access" method.
-    procedure PositionNode(Const Index: integer);
-    function GetCurrentValueLabelPair: Pointer; inline;
+    procedure SetId(const AValue: string);
+    procedure SetLabelType(const AValue: TFieldType);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     procedure   SaveInternal(St: TStream; Lvl: integer); virtual;
@@ -105,26 +93,17 @@ type
   public
     constructor Create(AOwner: TObject; aLabelType: TFieldType = ftInteger);
     destructor  Destroy; override;
-    procedure   AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
-    procedure   Clone(var Dest: TValueLabelSet);
-    procedure   Clear;
     procedure   SaveToStream(St: TStream; Lvl: Integer); override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    property    Id:   string read FId write FId;
+    function    NewValueLabel: TEpiCustomValueLabel;
+    procedure   Add(AValueLabel: TEpiCustomValueLabel);
+    procedure   Clone(var Dest: TValueLabelSet);
+    procedure   Clear;
+    property    Id:   string read FId write SetId;
     property    Name: string read FName write FName;
     property    Count: Integer read GetCount;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TFieldType read FLabelType write SetLabelType;
-  public
-    // Data accessing properties and methods...
-    property    ValueLabel[Const aValue: Variant]: string read GetValueLabel write SetValueLabel;
-    property    MissingValue[Const aValue: Variant]: boolean read GetMissingValue write SetMissingValue;
-    // Should only be used to read and traverse the tree.
-    property    Values[Const Index: Integer]: Variant read GetValues;
-    // Should only be used to read and traverse the tree.
-    property    Labels[Const Index: Integer]: string read GetLabels;
-    // Should only be used to read and traverse the tree.
-    property    MissingValues[Const Index: Integer]: boolean read GetMissingValues;
   end;
 
   { TValueLabelSets }
@@ -137,11 +116,12 @@ type
   public
     constructor Create(AOwner: TObject); override;
     destructor  Destroy; override;
+    procedure   SaveToStream(St: TStream; Lvl: Integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Clear;
     procedure   Clone(var dest: TValueLabelSets);
     procedure   Assign(Const Src: TValueLabelSets);
-    procedure   SaveToStream(St: TStream; Lvl: Integer); override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    NewValueLabelSet(ALabelType: TFieldType): TValueLabelSet;
     function    ValueLabelSetByName(Const Id: string): TValueLabelSet;
     function    ValueLabelSetExits(Const Id: string; var aValueLabelSet: TValueLabelSet): boolean;
     procedure   AddValueLabelSet(aValueLabelSet: TValueLabelSet);
@@ -155,15 +135,6 @@ implementation
 uses
   SysUtils, epistringutils, epidataglobals, epiutils, math, epiimportexport,
   epidatafile;
-
-type
-  TValuePair = record
-    FOrder: Integer;
-    FValue: Variant;
-    FLabel: String;
-    FMissing: Boolean;
-  end;
-  PValuePair = ^TValuePair;
 
 { TValueLabelSets }
 
@@ -267,6 +238,14 @@ begin
   end;
 end;
 
+function TValueLabelSets.NewValueLabelSet(ALabelType: TFieldType
+  ): TValueLabelSet;
+begin
+  result := TValueLabelSet.Create(Self, ALabelType);
+  result.Id := 'valuelabelset_id_' + IntToStr(Count);
+  AddValueLabelSet(Result);
+end;
+
 procedure TValueLabelSets.SaveToStream(St: TStream; Lvl: Integer);
 var
   S: String;
@@ -288,7 +267,7 @@ end;
 procedure TValueLabelSets.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
-  NewValueLabel: TValueLabelSet;
+  NValueLabelSet: TValueLabelSet;
 begin
   // Root = <ValueLabels>
 
@@ -298,9 +277,9 @@ begin
     if Node.CompareName('ValueLabel') <> 0 then
       ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
 
-    NewValueLabel := TValueLabelSet.Create(Self, XmlNameToFieldType(Node.FindNode('Type').TextContent));
-    NewValueLabel.LoadFromXml(Node);
-    AddValueLabelSet(NewValueLabel);
+    NValueLabelSet := TValueLabelSet.Create(Self, XmlNameToFieldType(Node.FindNode('Type').TextContent));
+    NValueLabelSet.LoadFromXml(Node);
+    AddValueLabelSet(NValueLabelSet);
 
     Node := Node.NextSibling;
   end;
@@ -308,56 +287,15 @@ end;
 
 { TValueLabelSet }
 
-procedure TValueLabelSet.AddValueLabelPair(Const aValue: Variant; Const aLabel: string; aMissing: Boolean = false);
-var
-  NValuePair: PValuePair;
-begin
-  NValuePair := FindValuePair(aValue);
-  if Assigned(NValuePair) then
-  begin
-    // This handles old .REC/.CHK style missing values.
-    // Since AddValueLabelPair is used in CheckFileIO to insert missingvalue, we may
-    // overwrite previous defined valuelabel or missing.
-    if ((NValuePair^.FLabel <> '') and aMissing) then
-      // Val. lab. exists and we are inserting missing.
-      // keep label - update missing.
-      NValuePair^.FMissing := aMissing
-    else if (NValuePair^.FMissing and (aLabel <> '')) then
-      // Missing exists and we are inserting val. lab.
-      // keep missing - update label
-      NValuePair^.FLabel := aLabel
-    else begin
-      // Normal update of situation.
-      NValuePair^.FLabel := aLabel;
-      NValuePair^.FMissing := aMissing;
-    end;
-  end else begin
-    NValuePair := New(PValuePair);
-    NValuePair^.FValue := aValue;
-    NValuePair^.FLabel := aLabel;
-    NValuePair^.FMissing := aMissing;
-    FData.Add(NValuePair);
-  end;
-end;
-
 procedure TValueLabelSet.Clear;
-var
-  AVLNode: TAVLTreeNode;
 begin
   FCurrentIndex := -1;
   FName := '';
   FId := '';
   FCurrentNode := nil;
-  AVLNode := FData.FindLowest;
-  while Assigned(AVLNode) do
-  with PValuePair(AVLNode.Data)^ do
-  begin
-    // Nil strings to decrease ref. count.
-    FLabel := '';
-    VarClear(FValue);
-    AVLNode := FData.FindSuccessor(AVLNode);
-  end;
-  FData.Clear;
+
+  // This disposes of the objects too.
+  FData.FreeAndClear;
 end;
 
 procedure TValueLabelSet.SaveToStream(St: TStream; Lvl: Integer);
@@ -373,12 +311,12 @@ begin
 
   case LabelScope of
     vlsExternal:
-      SaveInternal(St, Lvl + 1);
-    vlsInternal:
       SaveExternal(St, Lvl + 1);
+    vlsInternal:
+      SaveInternal(St, Lvl + 1);
   end;
 
-  S := S +
+  S :=
     Ins(Lvl) + '</ValueLabel>' + LineEnding;
   St.Write(S[1], Length(S));
 end;
@@ -396,7 +334,10 @@ begin
 
   Node := Root.FindNode('Internal');
   if Assigned(Node) then
-    LoadInternal(Node)
+  begin
+    LoadInternal(Node);
+    Node := nil;
+  end
   else
     Node := Root.FindNode('External');
 
@@ -404,12 +345,22 @@ begin
     LoadExternal(Node);
 end;
 
+function TValueLabelSet.NewValueLabel: TEpiCustomValueLabel;
+begin
+  case LabelType of
+    ftInteger: result := TEpiIntValueLabel.Create(Self);
+    ftFloat:   result := TEpiFloatValueLabel.Create(Self);
+    ftString:  result := TEpiStringValueLabel.Create(Self);
+  end;
+  result.Order := Count;
+  Add(result);
+end;
+
 procedure TValueLabelSet.Clone(var Dest: TValueLabelSet);
 var
-  OldValuePair, NewValuePair: PValuePair;
   AVLNode: TAVLTreeNode;
 begin
-  if not Assigned(Dest) then
+{  if not Assigned(Dest) then
     Dest := TValueLabelSet.Create(nil, LabelType);
 
   Dest.Clear;
@@ -428,15 +379,15 @@ begin
     NewValuePair^.FMissing := OldValuePair^.FMissing;
     Dest.FData.Add(NewValuePair);
     AVLNode := FData.FindSuccessor(AVLNode);
-  end;
+  end;   }
 end;
 
-function OrderCompare(Item1, Item2: Pointer): Integer; inline;
+function OrderCompare(Item1, Item2: Pointer): Integer;
 var
   VL1: TEpiCustomValueLabel absolute Item1;
   VL2: TEpiCustomValueLabel absolute Item2;
 begin
-  Result := VL2.Order - VL1.Order;
+  Result := VL1.Order - VL2.Order;
 end;
 
 function FloatCompare(Item1, Item2: Pointer): Integer;
@@ -445,7 +396,7 @@ var
   VL2: TEpiFloatValueLabel absolute Item2;
 begin
   if (Vl1.Order = -1) then
-    Result := Math.Sign(VL2.Value - VL2.Value)
+    Result := Math.Sign(VL1.Value - VL2.Value)
   else
     Result := OrderCompare(Item1, Item2);
 end;
@@ -456,7 +407,7 @@ var
   VL2: TEpiIntValueLabel absolute Item2;
 begin
   if (Vl1.Order = -1) then
-    Result := VL2.Value - VL2.Value
+    Result := VL1.Value - VL2.Value
   else
     Result := OrderCompare(Item1, Item2);
 end;
@@ -477,54 +428,17 @@ begin
   result := FData.Count;
 end;
 
-function TValueLabelSet.FindValuePair(const Value: Variant): Pointer;
-var
-  LValuePair: TValuePair;
-  AVLNode: TAVLTreeNode;
+procedure TValueLabelSet.SetId(const AValue: string);
 begin
-  Result := nil;
-  LValuePair.FValue := Value;
-  AVLNode := FData.Find(@LValuePair);
-  if Assigned(AVLNode) then
-    Result := AVLNode.Data;
-end;
-
-function TValueLabelSet.GetLabels(const Index: Integer): string;
-begin
-  PositionNode(Index);
-  result := PValuePair(GetCurrentValueLabelPair)^.FLabel;
-end;
-
-function TValueLabelSet.GetMissingValue(const aValue: Variant): boolean;
-var
-  AValuePair: PValuePair;
-begin
-  Result := False;
-  AValuePair := PValuePair(FindValuePair(aValue));
-  if Assigned(AValuePair) then
-    Result := AValuePair^.FMissing;
-end;
-
-function TValueLabelSet.GetMissingValues(const Index: Integer): boolean;
-begin
-  PositionNode(Index);
-  result := PValuePair(GetCurrentValueLabelPair)^.FMissing;
-end;
-
-function TValueLabelSet.GetValueLabel(const aValue: Variant): string;
-var
-  AValuePair: PValuePair;
-begin
-  Result := AValue;
-  AValuePair := PValuePair(FindValuePair(aValue));
-  if Assigned(AValuePair) then
-    Result := AValuePair^.FLabel;
-end;
-
-function TValueLabelSet.GetValues(const Index: Integer): Variant;
-begin
-  PositionNode(Index);
-  result := PValuePair(GetCurrentValueLabelPair)^.FValue;
+  if FId = AValue then exit;
+  if Assigned(Owner) then
+  with TValueLabelSets(Owner) do
+  begin
+    DeleteValueLabelSet(FId);
+    FId := AValue;
+    AddValueLabelSet(Self);
+  end else
+    FId := AValue;
 end;
 
 procedure TValueLabelSet.SetLabelType(const AValue: TFieldType);
@@ -543,56 +457,11 @@ begin
   end;
 end;
 
-procedure TValueLabelSet.SetMissingValue(const aValue: Variant;
-  const AMissing: boolean);
-var
-  AValuePair: PValuePair;
-begin
-  AValuePair := FindValuePair(aValue);
-  if Assigned(AValuePair) then
-    AValuePair^.FMissing := AMissing;
-end;
-
-procedure TValueLabelSet.SetValueLabel(const aValue: Variant;
-  const ALabel: string);
-var
-  AValuePair: PValuePair;
-begin
-  AValuePair := PValuePair(FindValuePair(aValue));
-  if Assigned(AValuePair) then
-    AValuePair^.FLabel := ALabel;
-end;
-
-procedure TValueLabelSet.PositionNode(const Index: integer);
-var
-  i: Integer;
-begin
-  if (Index < 0) or (Index > FData.Count - 1) then
-    Raise Exception.CreateFmt('TValueLabelSet: Index out of bounds %d', [Index]);
-
-  if Index = FCurrentIndex then exit;
-
-  // TODO : Enhance method to run both ways and start from the nearest end point.
-  if Index = 0 then
-    FCurrentNode := FData.FindLowest
-  else
-    for i := 1 to Index - FCurrentIndex do
-      FCurrentNode := FData.FindSuccessor(FCurrentNode);
-  FCurrentIndex := Index;
-end;
-
-function TValueLabelSet.GetCurrentValueLabelPair: Pointer;
-begin
-  Result := nil;
-  if Assigned(FCurrentNode) then
-    Result := PValuePair(FCurrentNode.Data);
-end;
-
 procedure TValueLabelSet.LoadInternal(Root: TDOMNode);
 var
   Node: TDOMElement;
   Order: LongInt;
-  NewValueLabel: TEpiCustomValueLabel;
+  NValueLabel: TEpiCustomValueLabel;
   VLClass: TEpiCustomValueLabelClass;
 begin
   // Root = <Internal>
@@ -605,14 +474,9 @@ begin
     if Node.CompareName('Set') <> 0 then
       ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
 
-    case LabelType of
-      ftInteger: VLClass := TEpiIntValueLabel;
-      ftFloat:   VLClass := TEpiFloatValueLabel;
-      ftString:  VLClass := TEpiStringValueLabel;
-    end;
-    NewValueLabel := VLClass.Create(Self);
-    NewValueLabel.LoadFromXml(Node);
-    FData.Add(NewValueLabel);
+    NValueLabel := NewValueLabel;
+    NValueLabel.LoadFromXml(Node);
+//    FData.Add(NValueLabel);
 
     Node := TDOMElement(Node.NextSibling);
   end;
@@ -647,7 +511,7 @@ var
   ValueField: TEpiField;
   LabelField: TEpiField;
   VLClass: TEpiCustomValueLabelClass;
-  NewValueLabel: TEpiCustomValueLabel;
+  NValueLabel: TEpiCustomValueLabel;
   i: Integer;
 begin
   // Root = <External>
@@ -714,14 +578,14 @@ begin
 
   for i := 1 to LocalDf.Size do
   begin
-    NewValueLabel := VLClass.Create(Self);
-    NewValueLabel.TheLabel := LabelField.AsString[i];
+    NValueLabel := VLClass.Create(Self);
+    NValueLabel.TheLabel := LabelField.AsString[i];
     Case LabelType of
-      ftInteger: NewValueLabel.Value := ValueField.AsInteger[i];
-      ftFloat:   NewValueLabel.Value := ValueField.AsFloat[i];
-      ftString:  NewValueLabel.Value := ValueField.AsString[i];
+      ftInteger: TEpiIntValueLabel(NValueLabel).Value := ValueField.AsInteger[i];
+      ftFloat:   TEpiFloatValueLabel(NValueLabel).Value := ValueField.AsFloat[i];
+      ftString:  TEpiStringValueLabel(NValueLabel).Value := ValueField.AsString[i];
     end;
-    FData.Add(NewValueLabel);
+    FData.Add(NValueLabel);
   end;
   FreeAndNil(LocalDf);
   Importer.Free;
@@ -773,6 +637,11 @@ begin
   inherited;
 end;
 
+procedure TValueLabelSet.Add(AValueLabel: TEpiCustomValueLabel);
+begin
+  FData.Add(AValueLabel);
+end;
+
 procedure TEpiCustomValueLabel.SaveToStream(St: TStream; Lvl: integer);
 var
   S: String;
@@ -795,6 +664,7 @@ begin
     S := S  + ' missing="true" ';
   S := S  +
     '/>' + LineEnding;
+  St.Write(S[1], Length(S));
 end;
 
 { TEpiCustomValueLabel }

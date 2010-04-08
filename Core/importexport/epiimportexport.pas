@@ -187,6 +187,7 @@ type
     function      ImportTXT(Const aFilename: string; var DataFile: TEpiDataFile;
                             TxtImpSetting: PEpiTxtImportSettings): Boolean;
     function      ImportSpreadSheet(Const aFilename: string; var DataFile: TEpiDataFile): Boolean;
+    function      ExportRec(Const aFilename: string; Const DataFile: TEpiDataFile): boolean;
     function      ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile;
                               ExpSetting: PEpiStataExportSettings): Boolean;
     function      ExportDBase(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
@@ -1352,8 +1353,10 @@ begin
                       J := $7FFFFFFF;
                     end;
                 end;
+                // This is a missing value type.
                 if I > (J - MissingBaseNum) then
                 Begin
+                  // This corresponds to Stata's ".a", ".b", and ".c"
                   if (I >= (J - 25)) and (I <= (J - 23)) then
                   begin
                     // Write all 9's, 8's or 7's as missing value.
@@ -1364,7 +1367,8 @@ begin
                       TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
                       ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
                     end;
-                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsInteger[CurRec], '', True);
+                    // TODO : ValueLabels in STATA
+//                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsInteger[CurRec], '', True);
 //                    TmpField.CheckField.MissingValues[] := TmpField.AsString[CurRec];
                   end else
                     TmpField.IsMissing[CurRec] := true;
@@ -1392,7 +1396,8 @@ begin
                       TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
                       ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
                     end;
-                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsFloat[CurRec], '', True);
+                    // TODO : ValueLabels in STATA
+//                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsFloat[CurRec], '', True);
                   end;
                 end else begin
                   {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
@@ -1441,14 +1446,15 @@ begin
           BEGIN
             TmpInt := ReadInts(2);
             DataStream.Read(CharBuf[0], 8);
-            if Trim(TmpValSet.ValueLabel[IntToStr(TmpInt)]) <> '' then
+            // TODO : ValueLabels in STATA
+{            if Trim(TmpValSet.ValueLabel[IntToStr(TmpInt)]) <> '' then
             BEGIN
               ErrorText := Lang(23936, 'Duplicate value label name found');
               ErrorCode := EPI_FAILED;
               EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
               Exit;
-            END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(string(CharBuf)));
+            END;     }
+//            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(string(CharBuf)));
           END;  //for n
         END;  //if not end of DataStream
         //if stataversion 4
@@ -1479,7 +1485,8 @@ begin
             if (TmpInt >= $7FFFFFE5) then                                 // ignore valuelabels
               Continue;
 
-            TmpValSet.AddValueLabelPair(TmpInt, StringFromBuffer(PChar(@CharBuf[CurRec]), 32000));
+            // TODO : ValueLabels in STATA
+//            TmpValSet.AddValueLabelPair(TmpInt, StringFromBuffer(PChar(@CharBuf[CurRec]), 32000));
           END;  //for i
         END;  //while
       END;  //if stataversion 6, 7 or 8
@@ -2034,6 +2041,170 @@ begin
   end;
 end;
 
+function TEpiImportExport.ExportRec(const aFilename: string;
+  const DataFile: TEpiDataFile): boolean;
+var
+  Stream: TFileStream;
+  ChkIO: TCheckFileIO;
+  Crypt: boolean;
+  i: integer;
+  S, EncData: string;
+  CurRec: Integer;
+  T: String;
+  Z: Integer;
+  TmpStr: String;
+  FieldNames: TStrings;
+  Fmt: TFormatSettings;
+begin
+  EpiLogger.IncIndent;
+  EpiLogger.Add(Classname, 'InternalSaveOld', 3);
+  result := false;
+
+  with DataFile do
+  begin
+    IF Fields.Count = 0 THEN
+    BEGIN
+      Raise Exception.Create('No fields defined');
+      Exit;
+    END;
+
+    Stream := TFileStream.Create(FileName, fmCreate);
+    ChkIO := nil;
+
+    try
+      FieldNames := TStringList.Create;
+      Fmt.DecimalSeparator := '.';
+
+      // - Encrypted export no longer possible...
+      // - Header lines (and colour):
+      S := IntToStr(FieldCount + TextLabelCount) + ' 1 ';
+
+      // - Autonaming or Firstword
+      IF FieldNaming = fnFirstWord THEN
+        S := S + 'VLAB ';
+
+      // - FileLabel
+      IF Trim(FileLabel) <> '' THEN
+        S := S + 'Filelabel: ' + EpiUtf8ToAnsi(FileLabel);
+
+      S := S + #13#10;
+      Stream.Write(S[1], Length(S));
+
+      FOR i := 0 TO FieldCount - 1 DO
+      WITH Fields[i] DO
+      BEGIN
+        EpiLogger.Add(TEpiDataFile.Classname, 'InternalSaveOld', 3, 'Writing heading no. ' + IntToStr(i+1));
+
+        // - Fieldchar
+        IF (FieldType = ftInteger) OR (FieldType = ftFloat) OR
+           (FieldType = ftIDNUM) THEN
+          s := '#'
+        ELSE
+          s := '_';
+
+        // Since format is not UTF8 add EpiUtf8ToAnsi here else length will be f*cked
+        TmpStr := CreateUniqueAnsiVariableName(FieldName, MaxFieldNameLen, FieldNames);
+        s := s + Format('%-10s', [TmpStr]);     //Name of field (left justified)
+        s := s + ' ';                           //Space required for some unknown reason
+        s := s + Format('%4d', [VarLabelLeft]);       //Question X-position
+        s := s + Format('%4d', [VarLabelTop]);       //Question Y-position
+        s := s + Format('%4s', ['30']);         //Question colorcode
+        s := s + Format('%4d', [FieldLeft]);       //Entry X-position
+        s := s + Format('%4d', [FieldTop]);       //Entry Y-position
+
+        //Write FieldType
+        // 0 = Question without entryfield, i.e. text only
+        // 100+Number of decimals = Floating point number
+        // For all other: use the fieldtype-code (fieldtype)
+        IF FieldType = ftQuestion THEN
+          s := s + Format('%4s', ['0'])
+        ELSE IF (FieldType = ftFloat) AND (FieldDecimals > 0) THEN
+          s := s + Format('%4d', [100 + FieldDecimals])
+        ELSE if (FieldType = ftInteger) and (FieldLength > MaxIntegerLength) then
+          S := S + Format('%4d', [ORD(ftFloat)])
+        ELSE
+          s := s + Format('%4d', [ORD(fieldtype)]);
+
+        //Write length of field - use 0 for text only
+        IF FieldType = ftQuestion THEN
+          s := s + Format('%4s', ['0'])
+        ELSE BEGIN
+          s := s + Format('%4d', [FieldLength]);
+        END;
+
+        //write entry colorcode - special use in encrypted fields (holds entrylength of field)
+        IF FieldType <> ftCrypt THEN
+          s := s + Format('%4s', ['112'])
+        ELSE
+          IF FieldLength < 15 THEN
+            s := s + Format('%4d', [111 + FieldLength])
+          ELSE
+            s := s + Format('%4d', [FieldLength]);
+
+        s := s + ' ';                      //Another unnescessary blank
+        s := s + EpiUtf8ToAnsi(VariableLabel);
+
+        s := s + #13#10;
+        Stream.Write(S[1], Length(S));
+      END; // End With Field...
+
+      // ******************
+      //    Write Data
+      // ******************
+      for CurRec := 1 to Size do
+      begin
+        S := '';
+        for i := 0 TO FieldCount - 1 DO
+        with Field[i] do begin
+          if IsMissing[CurRec] then
+            T := DupeString(' ', FieldLength)
+          else if FieldType in [ftString, ftUpperAlfa, ftCrypt] then
+            T := Format('%-*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])])
+          else if FieldType = ftFloat then
+            T := Format('%*.*f', [FieldLength, FieldDecimals, AsFloat[CurRec]], Fmt)
+          else
+            T := Format('%*s', [FieldLength, EpiUtf8ToAnsi(AsString[CurRec])]);
+          S := S + T;
+        end;
+        Z := Length(S);
+        if Z + 3 > MaxRecLineLength then
+          for I := (Z div MaxRecLineLength) downto 1 do
+            Insert(EOLchars, S, (MaxRecLineLength * I) + 1);
+
+        if Deleted[CurRec] then
+          S := S + '?' + #13#10
+        else if Verified[CurRec] then
+          S := S + '^' + #13#10
+        else
+          S := S + EOLchars;
+
+        Stream.Write(S[1], Length(S));
+      end;
+
+      result := true;
+
+      if not (eoIgnoreChecks in Options) then
+      begin
+        if Assigned(Stream) then FreeAndNil(Stream);
+        FileProperties.FileName := ChangeFileExt(FileName, '.chk');
+        Stream := TFileStream.Create(FileProperties.FileName, fmCreate);
+        ChkIO := TCheckFileIO.Create();
+        result := ChkIO.WriteCheckToStream(Stream, Datafile);
+        if Stream.Size = 0 then
+        begin
+          FreeAndNil(Stream);
+          DeleteFile(FileProperties.FileName);
+          FileProperties.FileName := '';
+        end;
+      end;
+    finally
+      EpiLogger.DecIndent;
+      if Assigned(Stream) then FreeAndNil(Stream);
+      if Assigned(ChkIO) then FreeAndNil(ChkIO);
+    end;
+  end;
+end;
+
 function TEpiImportExport.ExportStata(const aFilename: string;
   const DataFile: TEpiDataFile; ExpSetting: PEpiStataExportSettings): Boolean;
 var
@@ -2470,8 +2641,9 @@ begin
         {Fill out entries}
         FOR j := 0 TO VLblSet.Count - 1 DO
         BEGIN
-          WriteInts(StrToInt(VLblSet.Values[j]), 2);
-          WriteString(VLblSet.Labels[j], 8);
+          // TODO : ValueLabels in STATA
+          WriteInts(0 {StrToInt(VLblSet.Values[j])}, 2);
+          WriteString(''{VLblSet.Labels[j]}, 8);
         END;  //for j
       END;
     END ELSE BEGIN
@@ -2489,9 +2661,11 @@ begin
         for J := 0 to NObs - 1 do
         begin
           Move(CurRec, ByteBuf[J * 4], 4);
-          TmpInt := StrToInt(VLblSet.Values[J]);
+          // TODO : ValueLabels in STATA
+          TmpInt := 0; //StrToInt(VLblSet.Values[J]);
           Move(TmpInt, ValBuf[J * 4], 4);
-          TmpStr := EpiUtf8ToAnsi(VLblSet.Labels[J]);
+          // TODO : ValueLabels in STATA
+          TmpStr := ' '; //EpiUtf8ToAnsi(VLblSet.Labels[J]);
           Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
           Inc(CurRec, Length(TmpStr) + 1);
         end;

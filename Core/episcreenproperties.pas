@@ -39,7 +39,6 @@ type
   TEpiScreenProperties = class(TEpiCustomClass)
   private
     FOwned: Boolean;
-//    FOwner:   TEpiDataFile;
     FList:    TFPList;
     FReportOnChange: Boolean;
     FDefaultScreenProperty: TEpiScreenProperty;
