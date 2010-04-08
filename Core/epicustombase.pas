@@ -12,27 +12,35 @@ type
 
   { TEpiCustomBase }
   TEpiEventGroup = (eegCustomBase);
-  TEpiCustomChangeEventType = (eceUpdate);
+  TEpiCustomChangeEventType = (eceUpdate, eceId, eceName);
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: Word; EventType: Word; Data: Pointer) of object;
 
   TEpiCustomBase = class
+  { Commen data and methods }
   private
     FOwner: TEpiCustomBase;
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
-    Function    Ins(Level: integer): string;
+
+  { Save/Load functionality }
+  private
+    procedure  RaiseError(const Root: TDOMNode; NodeName: string);
+  protected
+    Function   Ins(Level: integer): string;
+    function   LoadNode(var Node: TDOMNode; const Root: TDOMNode;
+      NodeName: string; Fatal: boolean): boolean;
   public
     procedure  SaveToStream(St: TStream; Lvl: integer); virtual;
     procedure  LoadFromXml(Root: TDOMNode); virtual;
+
+  { Change-event hooks }
   private
-    // OnChange-hook privates
     FOnChangeList: ^TEpiChangeEvent;
     FOnChangeListCount: Integer;
     FUpdateCount: Integer;
   protected
-    procedure  DoChange(EventGroup: Word; EventType: Word; Data: Pointer);
+    procedure  DoChange(EventGroup: Word; EventType: Word; Data: Pointer); virtual;
   public
-    // OnChange-hook methods
     procedure  BeginUpdate; virtual;
     procedure  EndUpdate; virtual;
     procedure  RegisterOnChangeHook(Event: TEpiChangeEvent); virtual;
@@ -50,9 +58,9 @@ type
     FId: string;
     FName: string;
     function GetId: string; virtual;
-    function GetName: string;
+    function GetName: string; virtual;
     procedure SetId(const AValue: string); virtual;
-    procedure SetName(const AValue: string);
+    procedure SetName(const AValue: string); virtual;
   public
     property Id: string read GetId write SetId;
     property Name: string read GetName write SetName;
@@ -80,9 +88,29 @@ begin
   FOwner := AOwner;
 end;
 
+procedure TEpiCustomBase.RaiseError(const Root: TDOMNode; NodeName: string) ;
+begin
+  raise Exception.Create('ERROR: A required XML tag was not found.' + LineEnding +
+          Format('In section %s the tag "%s" was expected!', [Root.NodeName, NodeName]));
+end;
+
 function TEpiCustomBase.Ins(Level: integer): string;
 begin
   result := DupeString(' ', Level);
+end;
+
+function TEpiCustomBase.LoadNode(var Node: TDOMNode; const Root: TDOMNode;
+  NodeName: string; Fatal: boolean): boolean;
+begin
+  result := true;
+
+  Node := Root.FindNode(NodeName);
+  if Assigned(Node) then exit;
+
+  result := false;
+  if not Fatal then exit;
+
+  RaiseError(Root, NodeName);
 end;
 
 procedure TEpiCustomBase.SaveToStream(St: TStream; Lvl: integer);
@@ -152,14 +180,6 @@ begin
   ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent));
 end;
 
-{ TEpiCustomList }
-
-constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
-begin
-  inherited Create(AOwner);
-  FList := TFPList.Create;
-end;
-
 { TEpiCustomItem }
 
 constructor TEpiCustomItem.Create(AOwner: TEpiCustomBase);
@@ -178,17 +198,32 @@ begin
 end;
 
 procedure TEpiCustomItem.SetId(const AValue: string);
+var
+  Val: String;
 begin
   if FId = AValue then exit;
-  
+  Val := FId;
+  FId := AValue;
+  DoChange(Word(eegCustomBase), Word(eceId), @Val);
 end;
 
 procedure TEpiCustomItem.SetName(const AValue: string);
+var
+  Val: String;
 begin
   if FName = AValue then exit;
+  Val := FName;
   FName := AValue;
+  DoChange(Word(eegCustomBase), Word(eceName), @Val);
 end;
 
+{ TEpiCustomList }
+
+constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FList := TFPList.Create;
+end;
 
 end.
 

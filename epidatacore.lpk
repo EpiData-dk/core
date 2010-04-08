@@ -6,7 +6,7 @@
       <Version Value="8"/>
       <SearchPaths>
         <OtherUnitFiles Value="Core/"/>
-        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)/"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
@@ -17,7 +17,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Minor="4"/>
+    <Version Minor="5"/>
     <Files Count="1">
       <Item1>
         <Filename Value="Core/epicustombase.pas"/>
