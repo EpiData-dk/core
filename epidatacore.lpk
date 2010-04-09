@@ -18,11 +18,19 @@
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
-    <Files Count="1">
+    <Files Count="3">
       <Item1>
         <Filename Value="Core/epicustombase.pas"/>
         <UnitName Value="epicustombase"/>
       </Item1>
+      <Item2>
+        <Filename Value="Core/epiadmin.pas"/>
+        <UnitName Value="epiadmin"/>
+      </Item2>
+      <Item3>
+        <Filename Value="Core/episettings.pas"/>
+        <UnitName Value="episettings"/>
+      </Item3>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

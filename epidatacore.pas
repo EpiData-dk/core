@@ -7,7 +7,7 @@ unit epidatacore;
 interface
 
 uses
-  epicustombase;
+  epicustombase, epiadmin, episettings;
 
 implementation
 
