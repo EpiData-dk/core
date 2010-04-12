@@ -124,8 +124,8 @@ begin
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node);
 
-  LoadNode(Node, Root, rsDataFiles, true);
-  DataFiles.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsDataFiles, false) then
+    DataFiles.LoadFromXml(Node);
  {
   LoadNode(Node, Root, rsRelates, true);
   Relates.LoadFromXml(Node);    }
@@ -146,11 +146,7 @@ begin
   // Global <EpiData> structure
   // **********************
   SaveClasses(St, Lvl,
-    [
-     Settings,
-     Admin,
-     Study,
-     DataFiles
+    [Settings, Admin, Study, DataFiles
 //     Relates
      ],
      rsEpiData

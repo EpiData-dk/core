@@ -6,7 +6,7 @@ unit epidatafiles;
 interface
 
 uses
-  Classes, SysUtils, DOM, epicustombase;
+  Classes, SysUtils, DOM, epicustombase, episettings;
 
 type
   // Forward prototype declaration...
@@ -33,6 +33,9 @@ type
 {$I epiheadingsh.inc}
 
 implementation
+
+uses
+  epidocument;
 
 {$I epidatafiles.inc}
 {$I epigroups.inc}
