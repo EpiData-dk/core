@@ -107,6 +107,11 @@ end;
 constructor TEpiSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  Version := 0;
+  Scrambled := false;
+  DateSeparator := '/';
+  DecimalSeparator := ',';
+  MissingString := '.';
 end;
 
 destructor TEpiSettings.Destroy;
@@ -124,7 +129,7 @@ begin
     SaveNode(Lvl + 1, rsDateSep,    DateSeparator) +
     SaveNode(Lvl + 1, rsDecSep,     DecimalSeparator) +
     SaveNode(Lvl + 1, rsMissingStr, MissingString);
-  SaveStream(St, SaveNode(Lvl, rsSettings, S));
+  SaveStream(St, SaveSection(Lvl, rsSettings, S));
 end;
 
 procedure TEpiSettings.LoadFromXml(Root: TDOMNode);

@@ -24,18 +24,15 @@ type
   TEpiAdminRights = set of TEpiAdminRight;
 
   TEpiAdminChangeEventType = (
-    // Generic event.
-    eaceUpdate,
     // User related events:
-    eaceUserAdd, eaceUserRemove,
-    eaceUserSetId, eaceUserSetLogin, eaceUserSetName, eaceUserSetPassword,
-      eaceUserSetGroup,
+    eaceUserSetLogin,
+    eaceUserSetPassword, eaceUserSetGroup,
+    eaceUserSetExpireDate,eaceUserSetLastLogin,
     // Group related events:
-    eaceAddGroup, eaceRemoveGroup,
-    eaceGroupSetId, eaceGroupSetName, eaceGroupSetRights
-    );
+    eaceGroupSetRights
+  );
 
-  TRequestPasswordEvent = procedure(Sender: TEpiAdmin; var Login: string; var Password: string) of object;
+  TRequestPasswordEvent = procedure(Sender: TObject; var Login: string; var Password: string) of object;
 
   { TEpiAdmin }
 
@@ -141,8 +138,9 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: integer);
+    procedure  SaveToStream(St: TStream; Lvl: integer); override;
     procedure  LoadFromXml(Root: TDOMNode); override;
+    function   NewGroup: TEpiGroup;
     Property   Group[Index: integer]: TEpiGroup read GetGroup; default;
     Property   Admin: TEpiAdmin read GetAdmin;
   end;
@@ -164,18 +162,30 @@ type
 implementation
 
 uses
-  DCPsha256, DCPsha1, DCPbase64, DCPrijndael,
-  XMLRead;
+  DCPsha256, DCPsha1, DCPbase64, DCPrijndael, epistringutils,
+  XMLRead, epidocument;
 
 const
+  // Admin
   rsAdmin  = 'Admin';
+
+  // User
   rsUsers  = 'Users';
-  rsUser   = 'User';
-  rsLogin  = 'Login';
-  rsPassword = 'Password';
-  rsMasterPassword = 'MasterPassword';
+   rsUser   = 'User';
+    rsLogin  = 'Login';
+    rsPassword = 'Password';
+    rsMasterPassword = 'MasterPassword';
+    rsLastLogin = 'LastLogin';
+    rsExpireDate = 'ExpireDate';
+    rsGroupId = 'GroupId';
+
+    // Applies for both user and group
+    rsName = 'Name';
+
+  // Group
   rsGroups = 'Groups';
-  rsGroup  = 'Group';
+   rsGroup  = 'Group';
+    rsRights = 'Rights';
 
 function GetSHA1Base64EncodedStr(const Key: string): string;
 var
@@ -219,7 +229,7 @@ end;
 function TEpiAdmin.GetSettings: TEpiSettings;
 begin
   // TODO : GetSettings - missing EpiDocument;
-  result := nil;
+  result := TEpiDocument(Owner).Settings;
 end;
 
 procedure TEpiAdmin.SetMasterPassword(const AValue: string);
@@ -314,14 +324,12 @@ end;
 
 function TEpiAdmin.NewUser: TEpiUser;
 begin
-  result := TEpiUser.Create(Users);
-  Users.AddItem(result);
+  result := Users.NewUser;
 end;
 
 function TEpiAdmin.NewGroup: TEpiGroup;
 begin
-  result := TEpiGroup.Create(Groups);
-  Groups.AddItem(result);
+  result := Groups.NewGroup;
 end;
 
 { TEpiUsers }
@@ -351,7 +359,7 @@ var
   i: Integer;
 begin
   Result := nil;
-  for i := 0 to Count do
+  for i := 0 to Count - 1 do
   begin
     if Users[i].Login = Login then
     begin
@@ -363,7 +371,7 @@ end;
 
 procedure TEpiUsers.SaveToStream(St: TStream; Lvl: integer);
 begin
-  SaveClasses(St, Lvl, Self , rsUsers);
+  SaveList(St, Lvl, Self , rsUsers);
 end;
 
 procedure TEpiUsers.PreLoadFromXml(Root: TDOMNode);
@@ -377,10 +385,7 @@ begin
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
-    // TODO : ErrorMessage
-    if Node.CompareName('User') <> 0 then
-//      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
-       ;
+    CheckNode(Node, rsUser);
 
     NUser := NewUser;
     NUser.Login := LoadNodeString(Node, rsLogin);
@@ -409,30 +414,20 @@ begin
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
-    // TODO : ErrorMessage
-    if Node.CompeareName('User') <> 0 then
-      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []);
+    CheckNode(Node, rsUser);
 
-    NUser := GetUserByLogin(UTF8Encode(Node.FindNode('Login').TextContent));
+    NUser := GetUserByLogin(LoadNodeString(Node, rsLogin));
     if not Assigned(NUser) then
     begin
-      NUser := TEpiUser.Create(Self);
-      NUser.Login := UTF8Encode(Node.FindNode('Login').TextContent);
-      NUser.Password := UTF8Encode(Node.FindNode('Password').TextContent);
-      NUser.MasterPassword := UTF8Encode(Node.FindNode('MasterPassword').TextContent);
-      AddUser(NUser);
+      NUser := NewUser;
+      NUser.Login := LoadNodeString(Node, rsLogin);
+      NUser.FPassword := LoadNodeString(Node, rsPassword);
+      NUser.MasterPassword := LoadNodeString(Node, rsMasterPassword);
     end;
     NUser.LoadFromXml(Node);
 
     Node := Node.NextSibling;
   end;
-end;
-
-procedure TEpiUsers.AddUser(AUser: TEpiUser);
-begin
-  if not Assigned(AUser) then exit;
-
-  FList.Add(AUser);
 end;
 
 { TEpiUser }
@@ -444,13 +439,17 @@ begin
   if FGroup = AValue then exit;
   Val := FGroup;
   FGroup := AValue;
-  DoChange(eaceUserSetGroup, Val);
+  DoChange(Word(eegAdmin), Word(eaceUserSetGroup), Val);
 end;
 
 procedure TEpiUser.SetExpireDate(const AValue: TDateTime);
+var
+  Val: TDateTime;
 begin
   if FExpireDate = AValue then exit;
+  Val := FExpireDate;
   FExpireDate := AValue;
+  DoChange(Word(eegAdmin), Word(eaceUserSetExpireDate), @Val);
 end;
 
 function TEpiUser.GetAdmin: TEpiAdmin;
@@ -458,20 +457,14 @@ begin
   result := TEpiAdmin(TEpiUsers(Owner).Owner);
 end;
 
-procedure TEpiUser.SetId(const AValue: string);
-var
-  Val: String;
-begin
-  if FId = AValue then exit;
-  Val := FId;
-  FId := AValue;
-  DoChange(eaceUserSetId, @Val);
-end;
-
 procedure TEpiUser.SetLastLogin(const AValue: TDateTime);
+var
+  Val: TDateTime;
 begin
   if FLastLogin = AValue then exit;
+  Val := FLastLogin;
   FLastLogin := AValue;
+  DoChange(Word(eegAdmin), Word(eaceUserSetLastLogin), @Val);
 end;
 
 procedure TEpiUser.SetLogin(const AValue: string);
@@ -481,7 +474,7 @@ begin
   if FLogin = AValue then exit;
   Val := FLogin;
   FLogin := AValue;
-  DoChange(eaceUserSetLogin, @Val);
+  DoChange(Word(eegAdmin), Word(eaceUserSetLogin), @Val);
 end;
 
 procedure TEpiUser.SetMasterPassword(const AValue: string);
@@ -490,21 +483,11 @@ begin
   FMasterPassword := AValue;
 end;
 
-procedure TEpiUser.SetName(const AValue: string);
-var
-  Val: String;
-begin
-  if FName = AValue then exit;
-  Val := FName;
-  FName := AValue;
-  DoChange(eaceUserSetName, @Val);
-end;
-
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   Val: String;
   SaltInt: LongInt;
-  SaltByte: array[0..3] of chear absolute SaltInt;
+  SaltByte: array[0..3] of char absolute SaltInt;
 begin
   SaltInt := (Random(maxLongint - 1) + 1) or $80000000;
   FSalt := String(SaltByte);
@@ -513,11 +496,11 @@ begin
   FPassword := '$' + Base64EncodeStr(Salt) + '$' + GetSHA1Base64EncodedStr(Salt + AValue + Login);
 
   // Scramble master password with own key.
-  InitScrambler(Salt + AValue + Login);
-  MasterPassword := EnScramble(Admin.Settings.MasterPassword);
-  InitScrambler(Admin.Settings.MasterPassword);
+  InitCrypt(Salt + AValue + Login);
+  MasterPassword := EnCrypt(Admin.MasterPassword);
+  InitCrypt(Admin.MasterPassword);
 
-  DoChange(eaceUserSetPassword, nil);
+  DoChange(Word(eegAdmin), Word(eaceUserSetPassword), nil);
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
@@ -528,40 +511,34 @@ end;
 
 destructor TEpiUser.Destroy;
 begin
+  FLogin := '';
+  FMasterPassword := '';
+  FPassword := '';
+  FSalt := '';
+  FId := '';
+  FName := '';
   inherited Destroy;
 end;
 
 procedure TEpiUser.SaveToStream(St: TStream; Lvl: integer);
 var
   S: String;
-  TmpSt: TStringStream;
+  T: String;
 begin
   S :=
-    Ins(Lvl)     + '<User id="' + Id + '">' + LineEnding +
-    Ins(Lvl + 1) + '<Login>' + Login + '</Login>' + LineEnding +
-    Ins(Lvl + 1) + '<Password>' + Password + '</Password>' + LineEnding +
-    Ins(Lvl + 1) + '<MasterPassword>';
-  if Admin.Settings.Scrambled then
-    S := S + MasterPassword;
-  S := S + '</MasterPassword>' + LineEnding;
-  St.Write(S[1], Length(S));
+    SaveNode(Lvl + 1, rsLogin, Login) +
+    SaveNode(Lvl + 1, rsPassword, Password) +
+    SaveNode(Lvl + 1, rsMasterPassword, BoolToStr(Admin.Settings.Scrambled, MasterPassword, ''));
 
-  S :=
-    Ins(Lvl + 1) + '<Name>' + Name + '</Name>' + LineEnding +
-    Ins(Lvl + 1) + '<GroupId>' + Group.Id + '</GroupId>' + LineEnding +
-    Ins(Lvl + 1) + '<LastLogin>' + DateTimeToStr(LastLogin) + '</LastLogin>' + LineEnding +
-    Ins(Lvl + 1) + '<ExpireDate>' + DateTimeToStr(ExpireDate) + '</ExpireDate>' + LineEnding;
+  T :=
+    SaveNode(Lvl + 1, rsName, Name) +
+    SaveNode(Lvl + 1, rsGroupId, Group.Id) +
+    SaveNode(Lvl + 1, rsLastLogin, LastLogin) +
+    SaveNode(Lvl + 1, rsExpireDate, ExpireDate);
   if Admin.Settings.Scrambled then
-  begin
-    TmpSt := TStringStream.Create(S);
-    S := EnScramble(TmpSt) + LineEnding;
-    TmpSt.Free;
-  end;
-  St.Write(S[1], Length(S));
+   T := EnCrypt(T);
 
-  S :=
-    Ins(Lvl) + '</User>'  + LineEnding;
-  St.Write(S[1], Length(S));
+  SaveStream(St, SaveSection(Lvl, rsUser, Id, S + T));
 end;
 
 procedure TEpiUser.LoadFromXml(Root: TDOMNode);
@@ -577,33 +554,20 @@ begin
   Id := TDOMElement(Root).GetAttribute('id');
 
   if Admin.Settings.Scrambled then
-    NewRoot := DeScramble(Root)
+    NewRoot := DeCrypt(Root)
   else
     NewRoot := Root;
 
-  // Name
-  Node := NewRoot.FindNode('Name');
-  Name := UTF8Encode(Node.TextContent);
+  Name       := LoadNodeString(NewRoot, rsName);
+  LastLogin  := LoadNodeDateTime(NewRoot, rsLastLogin);
+  ExpireDate := LoadNodeDateTime(NewRoot, rsExpireDate);
+  Group      := TEpiGroup(Admin.Groups.GetItemById(LoadNodeString(NewRoot, rsGroupId)));
 
-  // Last login
-  Node := NewRoot.FindNode('LastLogin');
-  LastLogin := StrToDateTime(Node.TextContent);
-
-  // Expire Date
-  Node := NewRoot.FindNode('ExpireDate');
-  ExpireDate := StrToDateTime(Node.TextContent);
-
-  // Group
-  Node := NewRoot.FindNode('GroupId');
-  Group := Admin.Groups.GroupById(UTF8Encode(Node.TextContent));
+  if Admin.Settings.Scrambled then
+    NewRoot.Free;
 end;
 
 { TEpiGroups }
-
-function TEpiGroups.GetCount: integer;
-begin
-  result := FList.Count;
-end;
 
 function TEpiGroups.GetAdmin: TEpiAdmin;
 begin
@@ -617,7 +581,7 @@ end;
 
 constructor TEpiGroups.Create(AOwner: TEpiCustomBase);
 begin
-  inherited;
+  inherited Create(AOwner);
 end;
 
 destructor TEpiGroups.Destroy;
@@ -631,105 +595,48 @@ var
   i: Integer;
   TempSt: TStream;
 begin
-  if Count = 0 then
-    exit;
-
-  S :=
-    Ins(Lvl) + '<Groups>' + LineEnding;
-  St.Write(S[1], Length(S));
-
-  if Admin.Settings.Scrambled then
-    TempSt := TStringStream.Create('')
-  else
-    TempSt := St;
-
-  for i := 0 to Count - 1 do
-    Group[i].SaveToStream(TempSt, Lvl + 1);
-
-  if Admin.Settings.Scrambled then
-  begin
-    S := EnScramble(TempSt) + LineEnding;
-    St.Write(S[1], Length(S));
-    TempSt.Free;
-  end;
-
-  S :=
-    Ins(Lvl) + '</Groups>' + LineEnding;
-  St.Write(S[1], Length(S));
+  InitCrypt(Admin.MasterPassword);
+  SaveList(St, Lvl, Self, rsGroups, Admin.Settings.Scrambled);
 end;
 
 procedure TEpiGroups.LoadFromXml(Root: TDOMNode);
 var
   NewRoot: TDOMNode;
-  NewGroup: TEpiGroup;
+  NGroup: TEpiGroup;
   Node: TDOMNode;
 begin
   // Root = <Groups>
 
   // If file is scrambles, then we first need to descramble (using master password)
   // and then read xml structure.
-
-  InitScrambler(Admin.Settings.MasterPassword);
   if Admin.Settings.Scrambled then
-    NewRoot := DeScramble(Root)
+    NewRoot := DeCrypt(Root)
   else
     NewRoot := Root;
 
   Node := NewRoot.FirstChild;
   while Assigned(Node) do
   begin
-    if Node.CompeareName('Group') <> 0 then
-      ReportXmlError(EPI_XML_TAG_MISSING, 0, '', []); // TODO : Errormessage
+    CheckNode(Node, rsGroup);
 
-    NewGroup := TEpiGroup.Create(Self);
-    NewGroup.LoadFromXml(Node);
-    AddGroup(NewGroup);
+    NGroup := NewGroup;
+    NGroup.LoadFromXml(Node);
 
     Node := Node.NextSibling;
   end;
 
-  if Settings.Scrambled then
+  if Admin.Settings.Scrambled then
     NewRoot.Free;
 end;
 
-function TEpiGroups.GroupById(const Id: string): TEpiGroup;
-var
-  i: Integer;
+function TEpiGroups.NewGroup: TEpiGroup;
 begin
-  result := nil;
-  for i := 0 to Count -1 do
-    if Group[i].Id = Id then
-      result := Group[i];
-end;
-
-procedure TEpiGroups.AddGroup(AGroup: TEpiGroup);
-begin
-  if not Assigned(AGroup) then exit;
-
-  FList.Add(AGroup);
+  Result := TEpiGroup.Create(Self);
+  Result.Id := 'group_id_' + IntToStr(Count);
+  AddItem(Result);
 end;
 
 { TEpiGroup }
-
-procedure TEpiGroup.SetId(const AValue: string);
-var
-  Val: String;
-begin
-  if FId = AValue then exit;
-  Val := FId;
-  FId := AValue;
-  DoChange(eaceGroupSetId, @Val);
-end;
-
-procedure TEpiGroup.SetName(const AValue: string);
-var
-  Val: String;
-begin
-  if FName = AValue then exit;
-  Val := FName;
-  FName := AValue;
-  DoChange(eaceGroupSetName, @Val);
-end;
 
 procedure TEpiGroup.SetRights(const AValue: TEpiAdminRights);
 var
@@ -738,7 +645,7 @@ begin
   if FRights = AValue then exit;
   Val := FRights;
   FRights := AValue;
-  DoChange(eaceGroupSetRights, @Val);
+  DoChange(Word(eegAdmin), Word(eaceGroupSetRights), @Val);
 end;
 
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
@@ -756,27 +663,19 @@ var
   S: String;
 begin
   S :=
-    Ins(Lvl) + '<Group id="' + Id + '">' + LineEnding +
-    Ins(Lvl + 1) + '<Name>' + Name + '</Name>' + LineEnding +
-    Ins(Lvl + 1) + '<Rights>' + IntToStr(LongInt(Rights)) + '</Rights>' + LineEnding +
-    Ins(Lvl) + '</Group>' + LineEnding;
-  St.Write(S[1], Length(S));
+    SaveNode(Lvl + 1, rsName, Name) +
+    SaveNode(Lvl + 1, rsRights, LongInt(Rights));
+
+  SaveStream(St, SaveSection(Lvl, rsGroup, Id, S));
 end;
 
 procedure TEpiGroup.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
 begin
   // Root = <Group>
   Id := TDOMElement(Root).GetAttribute('id');
 
-  // Name:
-  Node := Root.FindNode('Name');
-  Name := UTF8Encode(Node.TextContent);
-
-  // Rights:
-  Node := Root.FindNode('Rights');
-  Rights := TEpiAdminRights(StrToInt(Node.TextContent));
+  Name := LoadNodeString(Root, rsName);
+  Rights := TEpiAdminRights(LoadNodeInt(Root, rsRights));
 end;
 
 end.

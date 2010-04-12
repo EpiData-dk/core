@@ -5,7 +5,7 @@
     <CompilerOptions>
       <Version Value="8"/>
       <SearchPaths>
-        <OtherUnitFiles Value="Core/"/>
+        <OtherUnitFiles Value="Core/;Utils/"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -13,24 +13,84 @@
           <UseAnsiStrings Value="True"/>
         </SyntaxOptions>
       </Parsing>
+      <CodeGeneration>
+        <SmartLinkUnit Value="True"/>
+        <Optimizations>
+          <OptimizationLevel Value="0"/>
+        </Optimizations>
+      </CodeGeneration>
+      <Linking>
+        <Debugging>
+          <GenerateDebugInfo Value="True"/>
+          <GenerateDwarf Value="True"/>
+        </Debugging>
+      </Linking>
       <Other>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
-    <Files Count="3">
+    <Files Count="15">
       <Item1>
-        <Filename Value="Core/epicustombase.pas"/>
-        <UnitName Value="epicustombase"/>
-      </Item1>
-      <Item2>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
+      </Item1>
+      <Item2>
+        <Filename Value="Core/epicustombase.pas"/>
+        <UnitName Value="epicustombase"/>
       </Item2>
       <Item3>
+        <Filename Value="Core/epidatafiles.pas"/>
+        <UnitName Value="epidatafiles"/>
+      </Item3>
+      <Item4>
+        <Filename Value="Core/epidatafiles.inc"/>
+        <Type Value="Include"/>
+      </Item4>
+      <Item5>
+        <Filename Value="Core/epidatafilesh.inc"/>
+        <Type Value="Include"/>
+      </Item5>
+      <Item6>
+        <Filename Value="Core/epidocument.pas"/>
+        <UnitName Value="epidocument"/>
+      </Item6>
+      <Item7>
+        <Filename Value="Core/epifields.inc"/>
+        <Type Value="Include"/>
+      </Item7>
+      <Item8>
+        <Filename Value="Core/epifieldsh.inc"/>
+        <Type Value="Include"/>
+      </Item8>
+      <Item9>
+        <Filename Value="Core/epigroups.inc"/>
+        <Type Value="Include"/>
+      </Item9>
+      <Item10>
+        <Filename Value="Core/epigroupsh.inc"/>
+        <Type Value="Include"/>
+      </Item10>
+      <Item11>
+        <Filename Value="Core/epiheadings.inc"/>
+        <Type Value="Include"/>
+      </Item11>
+      <Item12>
+        <Filename Value="Core/epiheadingsh.inc"/>
+        <Type Value="Include"/>
+      </Item12>
+      <Item13>
         <Filename Value="Core/episettings.pas"/>
         <UnitName Value="episettings"/>
-      </Item3>
+      </Item13>
+      <Item14>
+        <Filename Value="Core/epistudy.pas"/>
+        <UnitName Value="epistudy"/>
+      </Item14>
+      <Item15>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item15>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

@@ -23,7 +23,9 @@ type
     // episettings.pas
     eegSetting,
     // epiadmin.pas
-    eegAdmin
+    eegAdmin,
+    // epistudy.pas
+    eegStudy
     );
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
@@ -35,20 +37,20 @@ type
   TEpiCustomBase = class
   { Commen data and methods }
   private
-    FOwner: TEpiCustomBase;
-    FCrypter: TDCP_rijndael;
+    FOwner:     TEpiCustomBase;
+    FCrypter:   TDCP_rijndael; static;
     function    Get4ByteSalt: Integer;
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
-  // Scrambling
+
+  { Scrambling }
     procedure   InitCrypt(Key: string);
     function    EnCrypt(Const S: string): string; overload;
     function    EnCrypt(Const St: TStream): string; overload;
     function    DeCrypt(Root: TDOMNode): TDOMNode; overload;
     function    DeCrypt(S: string): string; overload;
-    property    Crypter: TDCP_rijndael read FCrypter;
+//    property    Crypter: TDCP_rijndael read FCrypter;
     property    Owner: TEpiCustomBase read FOwner;
-
 
   { Save/Load functionality }
   private
@@ -56,6 +58,9 @@ type
     function   StringToXml(const S: string): string;
     Function   Ins(Level: integer): string;
   protected
+    { Check methods }
+    procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
+
     { Load methods }
     function   LoadNode(var Node: TDOMNode; const Root: TDOMNode;
       NodeName: string; Fatal: boolean): boolean; virtual;
@@ -63,6 +68,7 @@ type
     function   LoadNodeInt(const Root: TDOMNode; NodeName: string): integer;
     function   LoadNodeFloat(const Root: TDOMNode; NodeName: string): extended;
     function   LoadNodeString(const Root: TDOMNode; NodeName: string): String;
+    function   LoadNodeDateTime(const Root: TDOMNode; NodeName: string): TDateTime;
     function   LoadNodeBool(const Root: TDOMNode; NodeName: string): boolean;
 
     { Save Methods }
@@ -71,8 +77,16 @@ type
     procedure  SaveClasses(const St: TStream; const Lvl: integer;
       const Classes: array of TEpiCustomBase; const NodeName: string); overload;
     // Save a list container
-    procedure  SaveClasses(const St: TStream; const Lvl: integer;
-      const List: TEpiCustomList; const NodeName: string); overload;
+    procedure  SaveList(const St: TStream; const Lvl: integer;
+      const List: TEpiCustomList; const NodeName: string;
+      EnCryptList: boolean = false); overload;
+
+    // Section Nodes w/o Id's (does not XML'ify content)
+    function   SaveSection(const Lvl: integer; const NodeName: string;
+      const Content: string): string; overload;
+    function   SaveSection(const Lvl: integer; const NodeName: string;
+      const Id: string; const Content: string): string; overload;
+
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: string): string; overload;
@@ -80,6 +94,8 @@ type
       const Val: integer): string; overload;
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: extended): string; overload;
+    function   SaveNode(const Lvl: integer; const NodeName: string;
+      const Val: TDateTime): string; overload;
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
   public
@@ -169,9 +185,11 @@ end;
 procedure TEpiCustomBase.InitCrypt(Key: string);
 begin
   if not Assigned(FCrypter) then
+  begin
     FCrypter := TDCP_rijndael.Create(nil);
+    Randomize;
+  end;
 
-  Randomize;
   FCrypter.InitStr(Key, TDCP_sha256);
 end;
 
@@ -187,9 +205,9 @@ begin
   // bytes of ciphertext being the same - and this is NOT a secure encryption.
   // Hence pre-padding with 4 random bytes, will do the trick for most parts.
   Salt := Get4ByteSalt;
-  Result := Crypter.EncryptString(String(SaltStr) + S);
+  Result := FCrypter.EncryptString(String(SaltStr) + S);
 
-  Crypter.Reset;
+  FCrypter.Reset;
 end;
 
 function TEpiCustomBase.EnCrypt(const St: TStream): string;
@@ -206,8 +224,8 @@ begin
   TmpSt.CopyFrom(St, St.Size);
   TmpSt.Position := 0;
 
-  Result := Crypter.EncryptString(TStringStream(TmpSt).DataString);
-  Crypter.Reset;
+  Result := FCrypter.EncryptString(TStringStream(TmpSt).DataString);
+  FCrypter.Reset;
   TmpSt.Free;
 end;
 
@@ -229,7 +247,7 @@ begin
     node := Node.NextSibling;
   end;
 
-  s := Crypter.DecryptString(Trim(TDOMText(Node).Data));
+  s := FCrypter.DecryptString(Trim(TDOMText(Node).Data));
   St := TStringStream.Create(s);
   // Shift 4 bytes to get rid of scrambling salt...
   St.Position := 4;
@@ -237,14 +255,14 @@ begin
   XMLDoc := Root.OwnerDocument.CreateDocumentFragment;
   ReadXMLFragment(XMLDoc, St);
   ST.Free;
-  Crypter.Reset;
+  FCrypter.Reset;
   Result := XMLDoc;
 end;
 
 function TEpiCustomBase.DeCrypt(S: string): string;
 begin
-  Result := Crypter.DecryptString(S);
-  Crypter.Reset;
+  Result := FCrypter.DecryptString(S);
+  FCrypter.Reset;
   Delete(Result, 1, 4);
 end;
 
@@ -265,6 +283,13 @@ end;
 function TEpiCustomBase.Ins(Level: integer): string;
 begin
   result := DupeString(' ', Level);
+end;
+
+procedure TEpiCustomBase.CheckNode(const Node: TDOMNode; const NodeName: string
+  );
+begin
+  if Node.CompareName(NodeName) <> 0 then
+    RaiseError(Node, NodeName);
 end;
 
 function TEpiCustomBase.LoadNode(var Node: TDOMNode; const Root: TDOMNode;
@@ -308,6 +333,15 @@ begin
   result := UTF8Encode(Node.TextContent);
 end;
 
+function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode; NodeName: string
+  ): TDateTime;
+var
+  Node: TDOMNode;
+begin
+  LoadNode(Node, Root, NodeName, true);
+  result := StrToDateTime(Node.TextContent);
+end;
+
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
   NodeName: string): boolean;
 var
@@ -328,20 +362,54 @@ var
   i: Integer;
 begin
   SaveStream(St, Ins(Lvl) + '<' + NodeName + '>' + LineEnding);
-  for i := 0 to High(Classes) do
+  for i := Low(Classes) to High(Classes) do
     Classes[i].SaveToStream(St, Lvl + 1);
   SaveStream(St, Ins(Lvl) + '</' + NodeName + '>' + LineEnding);
 end;
 
-procedure TEpiCustomBase.SaveClasses(const St: TStream; const Lvl: integer;
-  const List: TEpiCustomList; const NodeName: string);
+procedure TEpiCustomBase.SaveList(const St: TStream; const Lvl: integer;
+  const List: TEpiCustomList; const NodeName: string; EnCryptList: boolean);
 var
   i: Integer;
+  TmpSt: TStream;
+  S: String;
 begin
   SaveStream(St, Ins(Lvl) + '<' + NodeName + '>' + LineEnding);
+
+  if EncryptList then
+    TmpSt := TMemoryStream.Create
+  else
+    TmpSt := St;
+
   for i := 0 to List.Count - 1 do
-    List.Items[i].SaveToStream(St, Lvl + 1);
+    List.Items[i].SaveToStream(TmpSt, Lvl + 1);
+
+  if EncryptList then
+  begin
+    S := EnCrypt(TmpSt);
+    SaveStream(St, S);
+    TmpSt.Free;
+  end;
+
   SaveStream(St, Ins(Lvl) + '</' + NodeName + '>' + LineEnding);
+end;
+
+function TEpiCustomBase.SaveSection(const Lvl: integer; const NodeName: string;
+  const Content: string): string;
+begin
+  Result :=
+    Ins(Lvl) + '<' + NodeName + '>' + LineEnding +
+       Content +
+    Ins(Lvl) + '</' + NodeName + '>' + LineEnding;
+end;
+
+function TEpiCustomBase.SaveSection(const Lvl: integer; const NodeName: string;
+  const Id: string; const Content: string): string;
+begin
+  Result :=
+    Ins(Lvl) + '<' + NodeName + ' id="' + Id + '">' + LineEnding +
+       Content +
+    Ins(Lvl) + '</' + NodeName + '>' + LineEnding;
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
@@ -362,6 +430,12 @@ function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: extended): string;
 begin
   result := SaveNode(Lvl, NodeName, FloatToStr(Val));
+end;
+
+function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
+  const Val: TDateTime): string;
+begin
+  result := SaveNode(Lvl, NodeName, DateTimeToStr(Val));
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
