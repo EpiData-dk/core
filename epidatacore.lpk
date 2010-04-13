@@ -30,7 +30,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
-    <Files Count="15">
+    <Files Count="18">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -91,6 +91,17 @@
         <Filename Value="Utils/epistringutils.pas"/>
         <UnitName Value="epistringutils"/>
       </Item15>
+      <Item16>
+        <Filename Value="Core/epixmlconstants.inc"/>
+      </Item16>
+      <Item17>
+        <Filename Value="Core/epidatafilestypes.pas"/>
+        <UnitName Value="epidatafilestypes"/>
+      </Item17>
+      <Item18>
+        <Filename Value="Core/epivaluelabels.pas"/>
+        <UnitName Value="epivaluelabels"/>
+      </Item18>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

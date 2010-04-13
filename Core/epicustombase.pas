@@ -25,7 +25,9 @@ type
     // epiadmin.pas
     eegAdmin,
     // epistudy.pas
-    eegStudy
+    eegStudy,
+    // epivaluelabels.pas
+    eegValueLabels
     );
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
@@ -49,15 +51,16 @@ type
     function    EnCrypt(Const St: TStream): string; overload;
     function    DeCrypt(Root: TDOMNode): TDOMNode; overload;
     function    DeCrypt(S: string): string; overload;
-//    property    Crypter: TDCP_rijndael read FCrypter;
+//    property    Crypter: TDCP_rijndael read FCrypter;   // DOES NOT WORK WITH FPC 2.4 - only from 2.5.1
     property    Owner: TEpiCustomBase read FOwner;
 
   { Save/Load functionality }
   private
     procedure  RaiseError(const Root: TDOMNode; NodeName: string);
+  protected
     function   StringToXml(const S: string): string;
     Function   Ins(Level: integer): string;
-  protected
+
     { Check methods }
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
 
@@ -125,13 +128,12 @@ type
   protected
     FId: string;
     FName: string;
-    function GetId: string; virtual;
-    function GetName: string; virtual;
+    function  GetId: string; virtual;
+    function  GetName: string; virtual;
     procedure SetId(const AValue: string); virtual;
     procedure SetName(const AValue: string); virtual;
-  public
-    property Id: string read GetId write SetId;
-    property Name: string read GetName write SetName;
+    property  Id: string read GetId write SetId;
+    property  Name: string read GetName write SetName;
   end;
 
   { TEpiCustomList }
@@ -156,7 +158,7 @@ type
     function    GetItemByName(Name: string): TEpiCustomItem; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
     property    Count: Integer read GetCount;
-    property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems;
+    property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
 
   { Change-event hooks overrides}
@@ -164,6 +166,8 @@ type
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
   end;
+
+{$I epixmlconstants.inc}
 
 implementation
 

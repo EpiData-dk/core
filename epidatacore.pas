@@ -8,7 +8,7 @@ interface
 
 uses
     epiadmin, epicustombase, epidatafiles, epidocument, episettings, epistudy, 
-  epistringutils;
+  epistringutils, epidatafilestypes, epivaluelabels;
 
 implementation
 

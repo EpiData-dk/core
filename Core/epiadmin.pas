@@ -81,7 +81,7 @@ type
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  PreLoadFromXml(Root: TDOMNode);
     function   NewUser: TEpiUser;
-    Property   Users[Index: integer]: TEpiUser read GetUsers; default;
+    Property   Users[Index: integer]: TEpiUser read GetUsers;
     Property   Admin: TEpiAdmin read GetAdmin;
   end;
 
@@ -164,28 +164,6 @@ implementation
 uses
   DCPsha256, DCPsha1, DCPbase64, DCPrijndael, epistringutils,
   XMLRead, epidocument;
-
-const
-  // Admin
-  rsAdmin  = 'Admin';
-
-  // User
-  rsUsers  = 'Users';
-   rsUser   = 'User';
-    rsLogin  = 'Login';
-    rsPassword = 'Password';
-    rsMasterPassword = 'MasterPassword';
-    rsLastLogin = 'LastLogin';
-    rsExpireDate = 'ExpireDate';
-    rsGroupId = 'GroupId';
-
-    // Applies for both user and group
-    rsName = 'Name';
-
-  // Group
-  rsGroups = 'Groups';
-   rsGroup  = 'Group';
-    rsRights = 'Rights';
 
 function GetSHA1Base64EncodedStr(const Key: string): string;
 var

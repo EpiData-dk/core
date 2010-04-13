@@ -43,15 +43,6 @@ type
 
 implementation
 
-const
-  rsVersion = 'Version';
-  rsScrambled = 'Scrambled';
-  rsDateSep = 'DateSeparator';
-  rsDecSep = 'DecimalSeparator';
-  rsMissingStr = 'MissingString';
-  rsSettings = 'Settings';
-
-
 { TEpiSettings }
 
 procedure TEpiSettings.SetDateSeparator(const AValue: string);

@@ -84,26 +84,6 @@ implementation
 uses
   epistringutils;
 
-const
-  rsStudy = 'Study';
-  rsProtocol =  'Protocol';
-  rsAbstract = 'Abstract';
-  rsAuthor = 'Author';
-  rsOwner = 'Owner';
-  rsCreated = 'Created';
-  rsCreator = 'Creator';
-  rsDescription = 'Description';
-  rsLanguage = 'Language';
-  rsModified = 'Modified';
-  rsProvenance = 'Provenance';
-  rsReferences = 'References';
-  rsRightsholder = 'Rightsholder';
-  rsSource = 'Source';
-  rsSubject = 'Subject';
-  rsTemporal = 'Temporal';
-  rsTitle = 'Title';
-
-
 { TEpiStudy }
 
 procedure TEpiStudy.SetAbstractText(const AValue: string);

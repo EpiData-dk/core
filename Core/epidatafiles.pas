@@ -35,7 +35,7 @@ type
 implementation
 
 uses
-  epidocument;
+  epidocument, strutils;
 
 {$I epidatafiles.inc}
 {$I epigroups.inc}

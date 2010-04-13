@@ -42,14 +42,6 @@ type
 
 implementation
 
-const
-  rsEpiData = 'EpiData';
-  rsSettings = 'Settings';
-  rsAdmin = 'Admin';
-  rsStudy = 'Study';
-  rsDataFiles = 'DataFiles';
-  rsRelates = 'Relates';
-
 { TEpiDocument }
 
 function TEpiDocument.GetOnPassword: TRequestPasswordEvent;
