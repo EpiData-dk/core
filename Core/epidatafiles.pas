@@ -6,7 +6,7 @@ unit epidatafiles;
 interface
 
 uses
-  Classes, SysUtils, DOM, epicustombase, episettings;
+  Classes, SysUtils, DOM, epicustombase, episettings, epidatafilestypes;
 
 type
   // Forward prototype declaration...

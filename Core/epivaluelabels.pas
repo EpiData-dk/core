@@ -56,9 +56,11 @@ type
     property Value: EpiString read FValue write FValue;
   end;
 
-  TValueLabelSetScope = (vlsInternal, vlsExternal);
 
   { TEpiValueLabelSet }
+
+  TValueLabelSetScope = (vlsInternal, vlsExternal);
+
   TEpiValueLabelSet = class(TEpiCustomList)
   { External Valuelabel Set Properties }
   private
@@ -74,28 +76,40 @@ type
 
   private
     FData: TAVLTree;
-    FId: string;
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
-    FName: string;
-    procedure   SetId(const AValue: string);
     procedure   SetLabelType(const AValue: TEpiFieldType);
-    procedure   SetName(const AValue: string);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     procedure   SaveInternal(St: TStream; Lvl: integer); virtual;
     procedure   LoadExternal(Root: TDOMNode); virtual;
     procedure   SaveExternal(St: TStream; Lvl: integer); virtual;
+  { Add/Remove overrides }
+  public
+    procedure   AddItem(Item: TEpiCustomItem); override;
+    procedure   RemoveItem(Item: TEpiCustomItem); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   SaveToStream(St: TStream; Lvl: integer); override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
-    property    Id:   string read FId write SetId;
-    property    Name: string read FName write SetName;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
+  end;
+
+  { TEpiValueLabelSets }
+
+  TEpiValueLabelSets = class(TEpiCustomList)
+  private
+    function GetValueLabels(index: integer): TEpiValueLabelSet;
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    destructor  Destroy; override;
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
+    property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
   end;
 
 implementation
@@ -169,16 +183,6 @@ end;
 
 { TEpiValueLabelSet }
 
-procedure TEpiValueLabelSet.SetId(const AValue: string);
-var
-  Val: String;
-begin
-  if FId = AValue then exit;
-  Val := FId;
-  FId := AValue;
-  DoChange(Word(eegCustomBase), Word(ecceId), @Val);
-end;
-
 function OrderCompare(Item1, Item2: Pointer): Integer;
 var
   VL1: TEpiCustomValueLabel absolute Item1;
@@ -236,16 +240,6 @@ begin
   end;
 end;
 
-procedure TEpiValueLabelSet.SetName(const AValue: string);
-var
-  Val: String;
-begin
-  if FName = AValue then exit;
-  Val := FName;
-  FName := AValue;
-  DoChange(Word(eegCustomBase), Word(ecceName), @Val);
-end;
-
 procedure TEpiValueLabelSet.LoadInternal(Root: TDOMNode);
 var
   Node: TDOMNode;
@@ -288,12 +282,35 @@ end;
 
 procedure TEpiValueLabelSet.LoadExternal(Root: TDOMNode);
 begin
-
+  // TODO : Load External Value Labels.
 end;
 
 procedure TEpiValueLabelSet.SaveExternal(St: TStream; Lvl: integer);
+var
+  S: String;
 begin
+  Inc(Lvl);
+  S := SaveNode(Lvl, rsFile, ExtName);
+  if ExtId <> '' then
+    S += SaveNode(Lvl, rsDataFileId, ExtId);
+  if ExtValField <> '' then
+    S += SaveNode(Lvl, rsValueField, ExtValField);
+  if ExtLabelField <> '' then
+    S += SaveNode(Lvl, rsLabelField, ExtLabelField);
+  S += SaveSection(Lvl, rsExternal, S);
+  SaveStream(St, S);
+end;
 
+procedure TEpiValueLabelSet.AddItem(Item: TEpiCustomItem);
+begin
+  FData.Add(Item);
+  DoChange(Word(eegCustomBase), Word(ecceAddItem), nil);
+end;
+
+procedure TEpiValueLabelSet.RemoveItem(Item: TEpiCustomItem);
+begin
+  FData.Remove(Item);
+  DoChange(Word(eegCustomBase), Word(ecceDelItem), Item);
 end;
 
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
@@ -304,17 +321,30 @@ end;
 
 destructor TEpiValueLabelSet.Destroy;
 begin
+  FData.FreeAndClear;
+  FData.Free;
   inherited Destroy;
 end;
 
 procedure TEpiValueLabelSet.SaveToStream(St: TStream; Lvl: integer);
 begin
+  // TODO : Save Value label set.
   inherited SaveToStream(St, Lvl);
 end;
 
 procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  // Root = <ValueLabel>
+  Id := TDOMElement(Root).AttribStrings['id'];
+  Name := LoadNodeString(Root, rsName);
+
+  if LoadNode(Node, Root, rsInternal, false) then
+    LoadInternal(Node);
+
+  if LoadNode(Node, Root, rsExternal, false) then
+    LoadExternal(Node);
 end;
 
 function TEpiValueLabelSet.NewValueLabel: TEpiCustomValueLabel;
@@ -326,6 +356,57 @@ begin
   end;
   result.Order := Count;
   AddItem(result);
+end;
+
+{ TEpiValueLabelSets }
+
+function TEpiValueLabelSets.GetValueLabels(index: integer): TEpiValueLabelSet;
+begin
+  result := TEpiValueLabelSet(Items[Index]);
+end;
+
+constructor TEpiValueLabelSets.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+end;
+
+destructor TEpiValueLabelSets.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TEpiValueLabelSets.SaveToStream(St: TStream; Lvl: integer);
+begin
+  if Count = 0 then exit;
+
+  SaveList(St, Lvl, Self, rsValueLabels);
+end;
+
+procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NValueLabelSet: TEpiValueLabelSet;
+begin
+  // Root = <ValueLabels>
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    CheckNode(Node, rsValueLabel);
+
+    NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadNodeInt(Node, rsType)));
+    NValueLabelSet.LoadFromXml(Node);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
+function TEpiValueLabelSets.NewValueLabelSet(ALabelType: TEpiFieldType
+  ): TEpiValueLabelSet;
+begin
+  result := TEpiValueLabelSet.Create(Self);
+  result.LabelType := ALabelType;
+  result.Id := 'valuelabelset_id_' + IntToStr(Count);
+  AddItem(Result);
 end;
 
 end.

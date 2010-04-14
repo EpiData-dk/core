@@ -2,7 +2,7 @@ const
   // Common constants in the XML tree.
   rsName = 'Name';
   rsId   = 'id';
-
+  rsType = 'Type';
 
   rsEpiData         = 'EpiData';
    // Settings
@@ -54,9 +54,15 @@ const
        rsValueLabel      = 'ValueLabel';
         rsInternal        = 'Internal';
          rsSet             = 'Set';
+        rsExternal        = 'External';
+         rsFile            = 'File';
+         rsDataFileId      = 'DataFileId';
+         rsValueField      = 'ValueField';
+         rsLabelField      = 'LabelField';
       rsScreenInfo      = 'ScreenInfo';
       rsHeadings        = 'Headings';
       rsFields          = 'Fields';
+       rsField           = 'Field';
       rsRecords         = 'Records';
 
    rsRelates         = 'Relates';

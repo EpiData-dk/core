@@ -38,6 +38,7 @@ type
     destructor  Destroy; override;
     procedure   SaveToStream(St: TStream; Lvl: integer); override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    function    NewField(FieldType: TEpiFieldType): TEpiField;
     property    Groups: TEpiGroups read FGroups;
     property    Group[Index: integer]: TEpiGroup read GetGroup;
     property    Fields: TEpiFields read FFields;

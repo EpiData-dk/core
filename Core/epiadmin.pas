@@ -127,6 +127,9 @@ type
     Property   Group: TEpiGroup read FGroup write SetGroup;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
+  published
+    Property   Id;
+    property   Name;
   end;
 
   { TEpiGroups }
@@ -157,6 +160,9 @@ type
     procedure  SaveToStream(St: TStream; Lvl: integer); override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
+  published
+    Property   Id;
+    property   Name;
   end;
 
 implementation

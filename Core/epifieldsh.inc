@@ -6,10 +6,14 @@ type
 
   TEpiFields = class(TEpiCustomList)
   private
+    function GetDataFile: TEpiDataFile;
 
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor Destroy; override;
+    destructor  Destroy; override;
+    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
+    property    DataFile: TEpiDataFile read GetDataFile;
   end;
 
   { TEpiField }
@@ -19,6 +23,6 @@ type
 
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor Destroy; override;
+    destructor  Destroy; override;
   end;
 

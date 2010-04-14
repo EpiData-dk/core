@@ -138,7 +138,7 @@ type
 
   { TEpiCustomList }
 
-  TEpiCustomList = class(TEpiCustomBase)
+  TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
     FList: TFPList;
@@ -154,8 +154,8 @@ type
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     procedure   DeleteItem(Index: integer); virtual;
-    function    GetItemById(Id: string): TEpiCustomItem; virtual;
-    function    GetItemByName(Name: string): TEpiCustomItem; virtual;
+    function    GetItemById(aId: string): TEpiCustomItem; virtual;
+    function    GetItemByName(aName: string): TEpiCustomItem; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
@@ -625,14 +625,14 @@ begin
   DoChange(Word(eegCustomBase), Word(ecceDelItem), Val);
 end;
 
-function TEpiCustomList.GetItemById(Id: string): TEpiCustomItem;
+function TEpiCustomList.GetItemById(aId: string): TEpiCustomItem;
 var
   i: Integer;
 begin
   Result := nil;
   for i := 0 to Count - 1 do
   begin
-    if TEpiCustomItem(FList[i]).Id = Id then
+    if TEpiCustomItem(FList[i]).Id = aId then
     begin
       Result := TEpiCustomItem(FList[i]);
       Exit;
@@ -640,14 +640,14 @@ begin
   end;
 end;
 
-function TEpiCustomList.GetItemByName(Name: string): TEpiCustomItem;
+function TEpiCustomList.GetItemByName(aName: string): TEpiCustomItem;
 var
   i: Integer;
 begin
   Result := nil;
   for i := 0 to Count - 1 do
   begin
-    if TEpiCustomItem(FList[i]).Name = Name then
+    if TEpiCustomItem(FList[i]).Name = aName then
     begin
       Result := TEpiCustomItem(FList[i]);
       Exit;

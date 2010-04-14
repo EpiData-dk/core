@@ -163,3 +163,9 @@ begin
 //  LoadRecords  ValueLabels.LoadFromXml(Node);
 end;
 
+function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;
+begin
+  // TODO : TEpiDataFile.NewField
+  result := nil;
+end;
+
