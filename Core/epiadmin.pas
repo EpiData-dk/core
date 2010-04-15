@@ -423,7 +423,7 @@ begin
   if FGroup = AValue then exit;
   Val := FGroup;
   FGroup := AValue;
-  DoChange(Word(eegAdmin), Word(eaceUserSetGroup), Val);
+  DoChange(eegAdmin, Word(eaceUserSetGroup), Val);
 end;
 
 procedure TEpiUser.SetExpireDate(const AValue: TDateTime);
@@ -433,7 +433,7 @@ begin
   if FExpireDate = AValue then exit;
   Val := FExpireDate;
   FExpireDate := AValue;
-  DoChange(Word(eegAdmin), Word(eaceUserSetExpireDate), @Val);
+  DoChange(eegAdmin, Word(eaceUserSetExpireDate), @Val);
 end;
 
 function TEpiUser.GetAdmin: TEpiAdmin;
@@ -448,7 +448,7 @@ begin
   if FLastLogin = AValue then exit;
   Val := FLastLogin;
   FLastLogin := AValue;
-  DoChange(Word(eegAdmin), Word(eaceUserSetLastLogin), @Val);
+  DoChange(eegAdmin, Word(eaceUserSetLastLogin), @Val);
 end;
 
 procedure TEpiUser.SetLogin(const AValue: string);
@@ -458,7 +458,7 @@ begin
   if FLogin = AValue then exit;
   Val := FLogin;
   FLogin := AValue;
-  DoChange(Word(eegAdmin), Word(eaceUserSetLogin), @Val);
+  DoChange(eegAdmin, Word(eaceUserSetLogin), @Val);
 end;
 
 procedure TEpiUser.SetMasterPassword(const AValue: string);
@@ -484,7 +484,7 @@ begin
   MasterPassword := EnCrypt(Admin.MasterPassword);
   InitCrypt(Admin.MasterPassword);
 
-  DoChange(Word(eegAdmin), Word(eaceUserSetPassword), nil);
+  DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
@@ -579,7 +579,6 @@ var
   i: Integer;
   TempSt: TStream;
 begin
-  InitCrypt(Admin.MasterPassword);
   SaveList(St, Lvl, Self, rsGroups, Admin.Settings.Scrambled);
 end;
 
@@ -629,7 +628,7 @@ begin
   if FRights = AValue then exit;
   Val := FRights;
   FRights := AValue;
-  DoChange(Word(eegAdmin), Word(eaceGroupSetRights), @Val);
+  DoChange(eegAdmin, Word(eaceGroupSetRights), @Val);
 end;
 
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);

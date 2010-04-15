@@ -9,9 +9,9 @@ uses
   Classes, SysUtils, DOM, DCPrijndael;
 
 type
+  TEpiCustomBase = class;
   TEpiCustomItem = class;
   TEpiCustomList = class;
-  TEpiCustomBase = class;
 
   { TEpiCustomBase }
   // eeg = Epi Event Group
@@ -26,6 +26,11 @@ type
     eegAdmin,
     // epistudy.pas
     eegStudy,
+    // epidatafiles.pas
+    eegDataFiles,
+    eegFields,
+    eegGroups,
+    eegHeading,
     // epivaluelabels.pas
     eegValueLabels
     );
@@ -33,7 +38,7 @@ type
   TEpiCustomChangeEventType = (
     ecceUpdate, ecceId, ecceName, ecceAddItem, ecceDelItem, ecceSetItem
   );
-  TEpiChangeEvent = procedure(Sender: TObject; EventGroup: Word; EventType: Word; Data: Pointer) of object;
+  TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
 {$static on}
   TEpiCustomBase = class
@@ -111,7 +116,7 @@ type
     FOnChangeListCount: Integer;
     FUpdateCount: Integer;
   protected
-    procedure  DoChange(EventGroup: Word; EventType: Word; Data: Pointer); virtual;
+    procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
   public
     procedure  BeginUpdate; virtual;
     procedure  EndUpdate; virtual;
@@ -462,7 +467,8 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
-procedure TEpiCustomBase.DoChange(EventGroup: word; EventType: word; Data: Pointer);
+procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 var
   i: Integer;
 begin
@@ -486,7 +492,7 @@ begin
       FUpdateCount := 0;
     exit;
   end;
-  DoChange(word(eegCustomBase), word(ecceUpdate), nil);
+  DoChange(eegCustomBase, word(ecceUpdate), nil);
 end;
 
 procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent);
@@ -539,7 +545,7 @@ begin
   if FId = AValue then exit;
   Val := FId;
   FId := AValue;
-  DoChange(Word(eegCustomBase), Word(ecceId), @Val);
+  DoChange(eegCustomBase, Word(ecceId), @Val);
 end;
 
 procedure TEpiCustomItem.SetName(const AValue: string);
@@ -549,7 +555,7 @@ begin
   if FName = AValue then exit;
   Val := FName;
   FName := AValue;
-  DoChange(Word(eegCustomBase), Word(ecceName), @Val);
+  DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
 procedure TEpiCustomList.SetItemOwner(const AValue: boolean);
@@ -584,7 +590,7 @@ begin
   if FList[Index] = Pointer(AValue) then exit;
   Val := FList[Index];
   FList[Index] := AValue;
-  DoChange(Word(eegCustomBase), Word(ecceSetItem), Val);
+  DoChange(eegCustomBase, Word(ecceSetItem), Val);
 end;
 
 destructor TEpiCustomList.Destroy;
@@ -607,13 +613,13 @@ end;
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
   FList.Add(Item);
-  DoChange(Word(eegCustomBase), Word(ecceAddItem), nil);
+  DoChange(eegCustomBase, Word(ecceAddItem), nil);
 end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
   FList.Remove(Item);
-  DoChange(Word(eegCustomBase), Word(ecceDelItem), Item);
+  DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
 
 procedure TEpiCustomList.DeleteItem(Index: integer);
@@ -622,7 +628,7 @@ var
 begin
   Val := FList[Index];
   FList.Delete(Index);
-  DoChange(Word(eegCustomBase), Word(ecceDelItem), Val);
+  DoChange(eegCustomBase, Word(ecceDelItem), Val);
 end;
 
 function TEpiCustomList.GetItemById(aId: string): TEpiCustomItem;

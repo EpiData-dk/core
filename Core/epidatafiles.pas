@@ -6,7 +6,8 @@ unit epidatafiles;
 interface
 
 uses
-  Classes, SysUtils, DOM, epicustombase, episettings, epidatafilestypes;
+  Classes, SysUtils, DOM, epicustombase, episettings, epidatafilestypes,
+  epivaluelabels, epiadmin;
 
 type
   // Forward prototype declaration...
@@ -16,8 +17,8 @@ type
   TEpiDataFile = class;
 
   // Groups
-  TEpiGroups = class;
-  TEpiGroup = class;
+  TEpiSections = class;
+  TEpiSection = class;
 
   // Fields
   TEpiFields = class;
@@ -27,18 +28,22 @@ type
   TEpiHeadings = class;
   TEpiHeading = class;
 
+{  TEpiDataFilesChangeEventType = (
+    efce
+  );}
+
 {$I epidatafilesh.inc}
-{$I epigroupsh.inc}
+{$I episectionsh.inc}
 {$I epifieldsh.inc}
 {$I epiheadingsh.inc}
 
 implementation
 
 uses
-  epidocument, strutils;
+  epidocument, strutils, math;
 
 {$I epidatafiles.inc}
-{$I epigroups.inc}
+{$I episections.inc}
 {$I epifields.inc}
 {$I epiheadings.inc}
 

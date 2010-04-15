@@ -67,38 +67,37 @@ begin
   AddItem(Result);
 end;
 
+{ TEpiDataFile }
+
 function TEpiDataFile.GetField(Index: integer): TEpiField;
 begin
-  result := TEpiField(Fields[Index]);
+//  result := TEpiField(Fields[Index]);
 end;
 
-function TEpiDataFile.GetGroup(Index: integer): TEpiGroup;
+function TEpiDataFile.GetSection(Index: integer): TEpiSection;
 begin
-  result := TEpiGroup(Groups[Index]);
+//  result := TEpiSection(Sections[Index]);
 end;
 
 function TEpiDataFile.GetHeading(Index: integer): TEpiHeading;
 begin
-  result := TEpiHeading(Headings[Index]);
+//  result := TEpiHeading(Headings[Index]);
 end;
 
-{ TEpiDataFile }
+function TEpiDataFile.GetValueLabelSet(Index: integer): TEpiValueLabelSet;
+begin
+  result := TEpiValueLabelSet(FValueLabels[Index]);
+end;
 
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
 
-  // Groups
-  FGroups := TEpiGroups.Create(Self);
-  FGroups.ItemOwner := true;
+  // Sections
+  FSections := TEpiSections.Create(Self);
+  FSections.ItemOwner := true;
 
-  // Fields
-  FFields := TEpiFields.Create(Self);
-  FFields.ItemOwner := true;
-
-  // Headings
-  FHeadings := TEpiHeadings.Create(Self);
-  FHeadings.ItemOwner := true;
+  FMainSection := TEpiSection.Create(Self);
 
   // TODO : RecordStatus on DATAFILE!
 //  FRecordStatus := TEpiIntField.Create(Self);
@@ -107,9 +106,8 @@ end;
 
 destructor TEpiDataFile.Destroy;
 begin
-  FHeadings.Free;
-  FFields.Free;
-  FGroups.Free;
+  FMainSection.Free;
+  FSections.Free;
   inherited Destroy;
 end;
 
@@ -131,8 +129,8 @@ begin
 
 //  ValueLabels.SaveToStream(St, Lvl + 1);
 //  ScreenProperties.SaveToStream(St, Lvl + 1);
-  Fields.SaveToStream(St, Lvl + 1);
-  Headings.SaveToStream(St, Lvl + 1);
+//  Fields.SaveToStream(St, Lvl + 1);
+//  Headings.SaveToStream(St, Lvl + 1);
 //  SaveRecords(St, Lvl + 1);
 
   S :=
@@ -147,17 +145,17 @@ begin
   Id := TDOMElement(Root).AttribStrings['id'];
   Name := LoadNodeString(Root, rsName);
 
-//  if LoadNode(Node, Root, rsValueLabels, false) then
-//    ValueLabels.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsValueLabels, false) then
+    ValueLabels.LoadFromXml(Node);
 
 //  if LoadNode(Node, Root, rsScreenInfo, false) then
 //    ScreenInfo.LoadFromXml(Node);
 
-  if LoadNode(Node, Root, rsHeadings, false) then
-    Headings.LoadFromXml(Node);
+//  if LoadNode(Node, Root, rsHeadings, false) then
+//    Headings.LoadFromXml(Node);
 
-  if LoadNode(Node, Root, rsFields, false) then
-    Fields.LoadFromXml(Node);
+//  if LoadNode(Node, Root, rsFields, false) then
+//    Fields.LoadFromXml(Node);
 
 //  if LoadNode(Node, Root, rsRecords, false) then
 //  LoadRecords  ValueLabels.LoadFromXml(Node);
@@ -165,7 +163,6 @@ end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;
 begin
-  // TODO : TEpiDataFile.NewField
-  result := nil;
+//  result := Fields.NewField(FieldType);
 end;
 

@@ -64,11 +64,11 @@
         <Type Value="Include"/>
       </Item8>
       <Item9>
-        <Filename Value="Core/epigroups.inc"/>
+        <Filename Value="Core/episections.inc"/>
         <Type Value="Include"/>
       </Item9>
       <Item10>
-        <Filename Value="Core/epigroupsh.inc"/>
+        <Filename Value="Core/episectionsh.inc"/>
         <Type Value="Include"/>
       </Item10>
       <Item11>
@@ -93,6 +93,7 @@
       </Item15>
       <Item16>
         <Filename Value="Core/epixmlconstants.inc"/>
+        <UnitName Value="epixmlconstants"/>
       </Item16>
       <Item17>
         <Filename Value="Core/epidatafilestypes.pas"/>

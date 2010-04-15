@@ -304,13 +304,13 @@ end;
 procedure TEpiValueLabelSet.AddItem(Item: TEpiCustomItem);
 begin
   FData.Add(Item);
-  DoChange(Word(eegCustomBase), Word(ecceAddItem), nil);
+  DoChange(eegCustomBase, Word(ecceAddItem), nil);
 end;
 
 procedure TEpiValueLabelSet.RemoveItem(Item: TEpiCustomItem);
 begin
   FData.Remove(Item);
-  DoChange(Word(eegCustomBase), Word(ecceDelItem), Item);
+  DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
 
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);

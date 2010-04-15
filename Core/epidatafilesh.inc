@@ -22,12 +22,13 @@ type
   TEpiDataFile = class(TEpiCustomItem)
   private
     { Data containers }
-    FGroups: TEpiGroups;
-    FFields: TEpiFields;
-    FHeadings: TEpiHeadings;
+    FSections: TEpiSections;
+    FMainSection: TEpiSection;
+    FValueLabels: TEpiValueLabelSets;
     function GetField(Index: integer): TEpiField;
-    function GetGroup(Index: integer): TEpiGroup;
+    function GetSection(Index: integer): TEpiSection;
     function GetHeading(Index: integer): TEpiHeading;
+    function GetValueLabelSet(Index: integer): TEpiValueLabelSet;
   private
     { Private housekeeping }
     FRecordStatus: TEpiField;
@@ -39,10 +40,13 @@ type
     procedure   SaveToStream(St: TStream; Lvl: integer); override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
-    property    Groups: TEpiGroups read FGroups;
-    property    Group[Index: integer]: TEpiGroup read GetGroup;
-    property    Fields: TEpiFields read FFields;
+    property    Sections: TEpiSections read FSections;
+    property    Section[Index: integer]: TEpiSection read GetSection;
+    property    MainSection: TEpiSection read FMainSection;
+{    property    Fields: TEpiFields read FFields;
     property    Field[Index: integer]: TEpiField read GetField;
     property    Headings: TEpiHeadings read FHeadings;
-    property    Heading[Index: integer]: TEpiHeading read GetHeading;
+    property    Heading[Index: integer]: TEpiHeading read GetHeading; }
+    property    ValueLabels: TEpiValueLabelSets read FValueLabels;
+    property    ValueLabelSet[Index: integer]: TEpiValueLabelSet read GetValueLabelSet;
   end;

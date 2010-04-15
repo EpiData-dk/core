@@ -93,7 +93,7 @@ begin
   if FAbstractText = AValue then exit;
   Val := FAbstractText;
   FAbstractText := AValue;
-  DoChange(Word(eegStudy), Word(esceSetAbstract), @Val);
+  DoChange(eegStudy, Word(esceSetAbstract), @Val);
 end;
 
 procedure TEpiStudy.SetAuthor(const AValue: string);
@@ -103,7 +103,7 @@ begin
   if FAuthor = AValue then exit;
   Val := FAuthor;
   FAuthor := AValue;
-  DoChange(Word(eegStudy), Word(esceSetAuthor), @Val);
+  DoChange(eegStudy, Word(esceSetAuthor), @Val);
 end;
 
 procedure TEpiStudy.SetCreator(const AValue: string);
@@ -113,7 +113,7 @@ begin
   if FCreator = AValue then exit;
   Val := FCreator;
   FCreator := AValue;
-  DoChange(Word(eegStudy), Word(esceSetCreator), @Val);
+  DoChange(eegStudy, Word(esceSetCreator), @Val);
 end;
 
 procedure TEpiStudy.SetDescription(const AValue: string);
@@ -123,7 +123,7 @@ begin
   if FDescription = AValue then exit;
   Val := FDescription;
   FDescription := AValue;
-  DoChange(Word(eegStudy), Word(esceSetDesc), @Val);
+  DoChange(eegStudy, Word(esceSetDesc), @Val);
 end;
 
 procedure TEpiStudy.SetLanguage(const AValue: string);
@@ -133,7 +133,7 @@ begin
   if FLanguage = AValue then exit;
   Val := FLanguage;
   FLanguage := AValue;
-  DoChange(Word(eegStudy), Word(esceSetLanguage), @Val);
+  DoChange(eegStudy, Word(esceSetLanguage), @Val);
 end;
 
 procedure TEpiStudy.SetModifiedDate(const AValue: TDateTime);
@@ -143,7 +143,7 @@ begin
   if FModifiedDate = AValue then exit;
   Val := FModifiedDate;
   FModifiedDate := AValue;
-  DoChange(Word(eegStudy), Word(esceSetModified), @Val);
+  DoChange(eegStudy, Word(esceSetModified), @Val);
 end;
 
 procedure TEpiStudy.SetStudyOwner(const AValue: string);
@@ -153,7 +153,7 @@ begin
   if FStudyOwner = AValue then exit;
   Val := FStudyOwner;
   FStudyOwner := AValue;
-  DoChange(Word(eegStudy), Word(esceSetOwner), @Val);
+  DoChange(eegStudy, Word(esceSetOwner), @Val);
 end;
 
 procedure TEpiStudy.SetProtocol(const AValue: string);
@@ -163,7 +163,7 @@ begin
   if FProtocol = AValue then exit;
   Val := FProtocol;
   FProtocol := AValue;
-  DoChange(Word(eegStudy), Word(esceSetProtocol), @Val);
+  DoChange(eegStudy, Word(esceSetProtocol), @Val);
 end;
 
 procedure TEpiStudy.SetProvenance(const AValue: string);
@@ -173,7 +173,7 @@ begin
   if FProvenance = AValue then exit;
   Val := FProvenance;
   FProvenance := AValue;
-  DoChange(Word(eegStudy), Word(esceSetProv), @Val);
+  DoChange(eegStudy, Word(esceSetProv), @Val);
 end;
 
 procedure TEpiStudy.SetReferences(const AValue: string);
@@ -183,7 +183,7 @@ begin
   if FReferences = AValue then exit;
   Val := FReferences;
   FReferences := AValue;
-  DoChange(Word(eegStudy), Word(esceSetRef), @Val);
+  DoChange(eegStudy, Word(esceSetRef), @Val);
 end;
 
 procedure TEpiStudy.SetRightsHolder(const AValue: string);
@@ -193,7 +193,7 @@ begin
   if FRightsHolder = AValue then exit;
   Val := FRightsHolder;
   FRightsHolder := AValue;
-  DoChange(Word(eegStudy), Word(esceSetRightsHolder), @Val);
+  DoChange(eegStudy, Word(esceSetRightsHolder), @Val);
 end;
 
 procedure TEpiStudy.SetSource(const AValue: string);
@@ -203,7 +203,7 @@ begin
   if FSource = AValue then exit;
   Val := FSource;
   FSource := AValue;
-  DoChange(Word(eegStudy), Word(esceSetSource), @Val);
+  DoChange(eegStudy, Word(esceSetSource), @Val);
 end;
 
 procedure TEpiStudy.SetSpatial(const AValue: string);
@@ -213,7 +213,7 @@ begin
   if FSpatial = AValue then exit;
   Val := FSpatial;
   FSpatial := AValue;
-  DoChange(Word(eegStudy), Word(esceSetSpatial), @Val);
+  DoChange(eegStudy, Word(esceSetSpatial), @Val);
 end;
 
 procedure TEpiStudy.SetSubject(const AValue: string);
@@ -223,7 +223,7 @@ begin
   if FSubject = AValue then exit;
   Val := FSubject;
   FSubject := AValue;
-  DoChange(Word(eegStudy), Word(esceSetSubject), @Val);
+  DoChange(eegStudy, Word(esceSetSubject), @Val);
 end;
 
 procedure TEpiStudy.SetTemporal(const AValue: string);
@@ -233,7 +233,7 @@ begin
   if FTemporal = AValue then exit;
   Val := FTemporal;
   FTemporal := AValue;
-  DoChange(Word(eegStudy), Word(esceSetTemporal), @Val);
+  DoChange(eegStudy, Word(esceSetTemporal), @Val);
 end;
 
 procedure TEpiStudy.SetTitle(const AValue: string);
@@ -243,7 +243,7 @@ begin
   if FTitle = AValue then exit;
   Val := FTitle;
   FTitle := AValue;
-  DoChange(Word(eegStudy), Word(esceSetTitle), @Val);
+  DoChange(eegStudy, Word(esceSetTitle), @Val);
 end;
 
 constructor TEpiStudy.Create(AOwner: TEpiCustomBase);

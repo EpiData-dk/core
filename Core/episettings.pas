@@ -52,7 +52,7 @@ begin
   if FDateSeparator = AValue then exit;
   Val := FDateSeparator;
   FDateSeparator := AValue;
-  DoChange(Word(eegSetting), Word(esceDateSep), @Val);
+  DoChange(eegSetting, Word(esceDateSep), @Val);
 end;
 
 procedure TEpiSettings.SetDecimalSeparator(const AValue: string);
@@ -62,7 +62,7 @@ begin
   if FDecimalSeparator = AValue then exit;
   Val := FDecimalSeparator;
   FDecimalSeparator := AValue;
-  DoChange(Word(eegSetting), Word(esceDecSep), @Val);
+  DoChange(eegSetting, Word(esceDecSep), @Val);
 end;
 
 procedure TEpiSettings.SetMissingString(const AValue: string);
@@ -72,7 +72,7 @@ begin
   if FMissingString = AValue then exit;
   Val := FMissingString;
   FMissingString := AValue;
-  DoChange(Word(eegSetting), Word(esceMissing), @Val);
+  DoChange(eegSetting, Word(esceMissing), @Val);
 end;
 
 procedure TEpiSettings.SetScrambled(const AValue: boolean);
@@ -82,7 +82,7 @@ begin
   if FScrambled = AValue then exit;
   Val := FScrambled;
   FScrambled := AValue;
-  DoChange(Word(eegSetting), Word(esceScramble), @Val);
+  DoChange(eegSetting, Word(esceScramble), @Val);
 end;
 
 procedure TEpiSettings.SetVersion(const AValue: integer);
@@ -92,7 +92,7 @@ begin
   if FVersion = AValue then exit;
   Val := FVersion;
   FVersion := AValue;
-  DoChange(Word(eegSetting), Word(esceVersion), @Val);
+  DoChange(eegSetting, Word(esceVersion), @Val);
 end;
 
 constructor TEpiSettings.Create(AOwner: TEpiCustomBase);

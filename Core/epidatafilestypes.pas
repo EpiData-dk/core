@@ -11,8 +11,8 @@ type
   EpiInteger   = Integer;
   EpiFloat     = Extended;
   EpiDate      = Integer;
-  EpiTime      = Double;
-  EpiDateTime  = Double;
+  EpiTime      = TDateTime;
+  EpiDateTime  = TDateTime;
   EpiString    = string;
   EpiBool      = Byte;
   EpiVariant   = Variant;
