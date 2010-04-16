@@ -50,7 +50,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     property   Settings: TEpiSettings read GetSettings;
     Property   Users: TEpiUsers read FUsers;
@@ -76,8 +77,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
+    class function XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
-    procedure  SaveToStream(St: TStream; Lvl: integer); override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  PreLoadFromXml(Root: TDOMNode);
     function   NewUser: TEpiUser;
@@ -115,7 +116,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
@@ -141,7 +143,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function ScrambleXml: boolean; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     function   NewGroup: TEpiGroup;
     Property   Group[Index: integer]: TEpiGroup read GetGroup; default;
@@ -157,7 +160,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
   published
@@ -248,33 +252,18 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiAdmin.BeginUpdate;
-var
-  i: Integer;
+class function TEpiAdmin.XMLName: string;
 begin
-  inherited BeginUpdate;
-  Groups.BeginUpdate;
-  Users.BeginUpdate;
+  Result := rsAdmin;
 end;
 
-procedure TEpiAdmin.EndUpdate;
-var
-  i: Integer;
+function TEpiAdmin.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Users.EndUpdate;
-  Groups.EndUpdate;
-  inherited EndUpdate;
-end;
-
-procedure TEpiAdmin.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
-begin
-  if Groups.Count = 0 then
-    Exit;
-
   InitCrypt(MasterPassword);
-  SaveClasses(St, Lvl, [Groups, Users], rsAdmin);
+  Content :=
+    Groups.SaveToXml('', Lvl + 1) +
+    Users.SaveToXml('', Lvl + 1);
+  result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiAdmin.LoadFromXml(Root: TDOMNode);
@@ -316,6 +305,24 @@ begin
   result := Groups.NewGroup;
 end;
 
+procedure TEpiAdmin.BeginUpdate;
+var
+  i: Integer;
+begin
+  inherited BeginUpdate;
+  Groups.BeginUpdate;
+  Users.BeginUpdate;
+end;
+
+procedure TEpiAdmin.EndUpdate;
+var
+  i: Integer;
+begin
+  Users.EndUpdate;
+  Groups.EndUpdate;
+  inherited EndUpdate;
+end;
+
 { TEpiUsers }
 
 function TEpiUsers.GetAdmin: TEpiAdmin;
@@ -353,9 +360,9 @@ begin
   end;
 end;
 
-procedure TEpiUsers.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiUsers.XMLName: string;
 begin
-  SaveList(St, Lvl, Self , rsUsers);
+  result := rsUsers;
 end;
 
 procedure TEpiUsers.PreLoadFromXml(Root: TDOMNode);
@@ -504,25 +511,31 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiUser.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiUser.XMLName: string;
+begin
+  result := rsUser;
+end;
+
+function TEpiUser.SaveToXml(Content: String; Lvl: integer): string;
 var
   S: String;
-  T: String;
 begin
+  Inc(Lvl);
+  Result :=
+    SaveNode(Lvl, rsLogin, Login) +
+    SaveNode(Lvl, rsPassword, Password) +
+    SaveNode(Lvl, rsMasterPassword, BoolToStr(Admin.Settings.Scrambled, MasterPassword, ''));
+
   S :=
-    SaveNode(Lvl + 1, rsLogin, Login) +
-    SaveNode(Lvl + 1, rsPassword, Password) +
-    SaveNode(Lvl + 1, rsMasterPassword, BoolToStr(Admin.Settings.Scrambled, MasterPassword, ''));
-
-  T :=
-    SaveNode(Lvl + 1, rsName, Name) +
-    SaveNode(Lvl + 1, rsGroupId, Group.Id) +
-    SaveNode(Lvl + 1, rsLastLogin, LastLogin) +
-    SaveNode(Lvl + 1, rsExpireDate, ExpireDate);
+    SaveNode(Lvl, rsName, Name) +
+    SaveNode(Lvl, rsGroupId, Group.Id) +
+    SaveNode(Lvl, rsLastLogin, LastLogin) +
+    SaveNode(Lvl, rsExpireDate, ExpireDate);
   if Admin.Settings.Scrambled then
-   T := EnCrypt(T);
+    S := EnCrypt(S);
 
-  SaveStream(St, SaveSection(Lvl, rsUser, Id, S + T));
+  Dec(Lvl);
+  Result := inherited SaveToXml(Result + S, Lvl);
 end;
 
 procedure TEpiUser.LoadFromXml(Root: TDOMNode);
@@ -573,13 +586,14 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiGroups.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
-  i: Integer;
-  TempSt: TStream;
+class function TEpiGroups.XMLName: string;
 begin
-  SaveList(St, Lvl, Self, rsGroups, Admin.Settings.Scrambled);
+  Result := rsGroups;
+end;
+
+function TEpiGroups.ScrambleXml: boolean;
+begin
+  Result := Admin.Settings.Scrambled;
 end;
 
 procedure TEpiGroups.LoadFromXml(Root: TDOMNode);
@@ -641,15 +655,16 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiGroup.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
+class function TEpiGroup.XMLName: string;
 begin
-  S :=
-    SaveNode(Lvl + 1, rsName, Name) +
-    SaveNode(Lvl + 1, rsRights, LongInt(Rights));
+  Result := rsGroup;
+end;
 
-  SaveStream(St, SaveSection(Lvl, rsGroup, Id, S));
+function TEpiGroup.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content :=
+    SaveNode(Lvl + 1, rsRights, LongInt(Rights));
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiGroup.LoadFromXml(Root: TDOMNode);

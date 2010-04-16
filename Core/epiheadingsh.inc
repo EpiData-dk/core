@@ -10,6 +10,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
+
+    function   NewHeading: TEpiHeading;
   end;
 
   { TEpiHeading }

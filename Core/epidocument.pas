@@ -27,11 +27,12 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    class function XMLName: string; override;
     procedure  LoadFromFile(const AFileName: string);
     procedure  LoadFromStream(const St: TStream);
     procedure  LoadFromXml(Root: TDOMNode); override;
-    procedure  SaveToStream(St: TStream; Lvl: integer = 0;
-      IncludeHeader: boolean = true);
+    function   SaveToXml(Lvl: integer = 0;
+      IncludeHeader: boolean = true): string;
     Property   Settings: TEpiSettings read FSettings;
     Property   Admin: TEpiAdmin read FAdmin;
     Property   Study: TEpiStudy read FStudy;
@@ -72,6 +73,11 @@ begin
 //  FRelates.Free;
   FStudy.Free;
   inherited Destroy;
+end;
+
+class function TEpiDocument.XMLName: string;
+begin
+  Result := rsEpiData;
 end;
 
 procedure TEpiDocument.LoadFromFile(const AFileName: string);
@@ -123,26 +129,22 @@ begin
   Relates.LoadFromXml(Node);    }
 end;
 
-procedure TEpiDocument.SaveToStream(St: TStream; Lvl: integer;
-  IncludeHeader: boolean);
+function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;
 var
-  TmpStr: String;
+  Content: string;
 begin
   if IncludeHeader then
-  begin
-    TmpStr := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding;
-    SaveStream(St, TmpStr);
-  end;
+    Result := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding;
 
   // **********************
   // Global <EpiData> structure
   // **********************
-  SaveClasses(St, Lvl,
-    [Settings, Admin, Study, DataFiles
-//     Relates
-     ],
-     rsEpiData
-  );
+  Content :=
+    Settings.SaveToXml('', Lvl + 1) +
+    Admin.SaveToXml('', Lvl + 1) +
+    Study.SaveToXml('', Lvl + 1) +
+    DataFiles.SaveToXml('', Lvl + 1);
+  Result += inherited SaveToXml(Content, Lvl);
 end;
 
 end.

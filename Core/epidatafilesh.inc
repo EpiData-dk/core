@@ -4,6 +4,10 @@ type
 
   { TEpiDataFiles }
 
+//  TEpiDataFilesChangeEventType = (
+//      edfce
+//    );
+
   TEpiDataFiles = class(TEpiCustomList)
   private
     function    GetDataFile(Index: integer): TEpiDataFile;
@@ -13,7 +17,9 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function ScrambleXml: boolean; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewDataFile: TEpiDataFile;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
@@ -22,6 +28,8 @@ type
   TEpiDataFile = class(TEpiCustomItem)
   private
     { Data containers }
+    FAllFields: TEpiFields;
+    FAllHeadings: TEpiHeadings;
     FSections: TEpiSections;
     FMainSection: TEpiSection;
     FValueLabels: TEpiValueLabelSets;
@@ -32,21 +40,29 @@ type
   private
     { Private housekeeping }
     FRecordStatus: TEpiField;
-  private
-    { Properties }
+    procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+    function    GetSize: Integer;
+    procedure   SetSize(const AValue: Integer);
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
-    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
+    function    NewSection: TEpiSection;
+    property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;
-    property    MainSection: TEpiSection read FMainSection;
-{    property    Fields: TEpiFields read FFields;
+    property    Fields: TEpiFields read FAllFields;
     property    Field[Index: integer]: TEpiField read GetField;
-    property    Headings: TEpiHeadings read FHeadings;
-    property    Heading[Index: integer]: TEpiHeading read GetHeading; }
+    property    Headings: TEpiHeadings read FAllHeadings;
+    property    Heading[Index: integer]: TEpiHeading read GetHeading;
     property    ValueLabels: TEpiValueLabelSets read FValueLabels;
     property    ValueLabelSet[Index: integer]: TEpiValueLabelSet read GetValueLabelSet;
+    Property    Size: Integer read GetSize write SetSize;
+  public
+    { "Publiclised" inherited properties }
+    property    Name;
+    property    Id;
   end;

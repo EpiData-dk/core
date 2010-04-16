@@ -20,7 +20,7 @@ type
   );
 
 
-  TEpiStudy = class(TEpiCustomItem)
+  TEpiStudy = class(TEpiCustomBase)
   private
     FAbstractText: string;
     FAuthor: string;
@@ -58,7 +58,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: Integer); override;
+    class function XMLName: string; override;
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     Property   Protocol: string read FProtocol write SetProtocol;
     Property   AbstractText: string read FAbstractText write SetAbstractText;
@@ -258,31 +259,31 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiStudy.SaveToStream(St: TStream; Lvl: Integer);
-var
-  S: String;
+class function TEpiStudy.XMLName: string;
 begin
-  Inc(Lvl);
-  S :=
-    SaveNode(Lvl, rsProtocol, Protocol) +
-    SaveNode(Lvl, rsAbstract, AbstractText) +
-    SaveNode(Lvl, rsAuthor, Author) +
-    SaveNode(Lvl, rsOwner, StudyOwner) +
-    SaveNode(Lvl, rsCreated, Created) +
-    SaveNode(Lvl, rsCreator, Creator) +
-    SaveNode(Lvl, rsDescription, Description) +
-    SaveNode(Lvl, rsLanguage, Language) +
-    SaveNode(Lvl, rsModified, ModifiedDate) +
-    SaveNode(Lvl, rsProvenance, Provenance) +
-    SaveNode(Lvl, rsReferences, References) +
-    SaveNode(Lvl, rsRightsholder, RightsHolder) +
-    SaveNode(Lvl, rsSource, Source) +
-    SaveNode(Lvl, rsSubject, Subject) +
-    SaveNode(Lvl, rsTemporal, Temporal) +
-    SaveNode(Lvl, rsTitle, Title);
-  Dec(Lvl);
-  S := SaveSection(Lvl, rsStudy, Id, S);
-  SaveStream(St, S);
+  Result := rsStudy;
+end;
+
+function TEpiStudy.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content :=
+    SaveNode(Lvl + 1, rsProtocol, Protocol) +
+    SaveNode(Lvl + 1, rsAbstract, AbstractText) +
+    SaveNode(Lvl + 1, rsAuthor, Author) +
+    SaveNode(Lvl + 1, rsOwner, StudyOwner) +
+    SaveNode(Lvl + 1, rsCreated, Created) +
+    SaveNode(Lvl + 1, rsCreator, Creator) +
+    SaveNode(Lvl + 1, rsDescription, Description) +
+    SaveNode(Lvl + 1, rsLanguage, Language) +
+    SaveNode(Lvl + 1, rsModified, ModifiedDate) +
+    SaveNode(Lvl + 1, rsProvenance, Provenance) +
+    SaveNode(Lvl + 1, rsReferences, References) +
+    SaveNode(Lvl + 1, rsRightsholder, RightsHolder) +
+    SaveNode(Lvl + 1, rsSource, Source) +
+    SaveNode(Lvl + 1, rsSubject, Subject) +
+    SaveNode(Lvl + 1, rsTemporal, Temporal) +
+    SaveNode(Lvl + 1, rsTitle, Title);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiStudy.LoadFromXml(Root: TDOMNode);

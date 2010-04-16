@@ -12,13 +12,15 @@ type
   TEpiFields = class(TEpiCustomList)
   private
     function GetDataFile: TEpiDataFile;
+    function GetField(index: integer): TEpiField;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     property    DataFile: TEpiDataFile read GetDataFile;
+    property    Field[index: integer]: TEpiField read GetField; default;
   end;
 
   { TEpiField }
@@ -32,10 +34,12 @@ type
     FFieldTop: Integer;
     FFieldType: TEpiFieldType;
     FSize: Integer;
+    function    GetName: string;
     procedure   SetFieldDecimals(const AValue: Cardinal);
     procedure   SetFieldLeft(const AValue: Integer);
     procedure   SetFieldLength(const AValue: Cardinal);
     procedure   SetFieldTop(const AValue: Integer);
+    procedure   SetName(const AValue: string);
   protected
     procedure   CheckIndex(Const index: integer); virtual;
     function    GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -79,6 +83,7 @@ type
   { Field Properties }
   public
     property    FieldType:     TEpiFieldType read FFieldType;
+    property    FieldName:     string read GetName write SetName;
     property    FieldLength:   Cardinal read FFieldLength write SetFieldLength;
     property    FieldDecimals: Cardinal read FFieldDecimals write SetFieldDecimals;
     Property    FieldTop:      Integer read FFieldTop write SetFieldTop;
@@ -91,10 +96,15 @@ type
     function    Compare(i,j: integer): integer; virtual; abstract;
 
   { Class inheritance, load/save, etc. }
+  protected
+    // Never ever create a field directly!
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    class function CreateField(AOwner: TEpiCustomBase;
+      AFieldType: TEpiFieldType): TEpiField;
     destructor  Destroy; override;
-    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
   end;
 
@@ -205,7 +215,76 @@ type
   // ftString, ftUpperString
   TEpiStringField = class(TEpiField)
   private
-     FData: array of EpiString;
+    FData: array of EpiString;
+  protected
+    function GetAsBoolean(const index: Integer): EpiBool; override;
+    function GetAsDate(const index: Integer): EpiDate; override;
+    function GetAsDateTime(const index: Integer): EpiDateTime; override;
+    function GetAsFloat(const index: Integer): EpiFloat; override;
+    function GetAsInteger(const index: Integer): EpiInteger; override;
+    function GetAsString(const index: Integer): EpiString; override;
+    function GetAsTime(const index: Integer): EpiTime; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
+    function GetCapacity: Integer; override;
+    function GetIsMissing(const index: Integer): boolean; override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
+    procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
+    procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsTime(const index: Integer; const AValue: EpiTime); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
+  public
+    class function CheckMissing(AValue: EpiString): boolean;
+    class function DefaultMissing: EpiString;
+    function Compare(i, j: integer): integer; override;
+    procedure Exchange(i, j: integer); override;
+  end;
+
+  { TEpiDateField }
+  // Handles following field types:
+  // ftDMYDate, ftDMYToday, ftMDYDate, ftMDYToday, ftYMDDate, ftYMDToday
+  // - note: this is very much subject to change as we introduce time/timedate fields.
+  TEpiDateField = class(TEpiField)
+  private
+    FData: array of EpiDate;
+  protected
+    function GetAsBoolean(const index: Integer): EpiBool; override;
+    function GetAsDate(const index: Integer): EpiDate; override;
+    function GetAsDateTime(const index: Integer): EpiDateTime; override;
+    function GetAsFloat(const index: Integer): EpiFloat; override;
+    function GetAsInteger(const index: Integer): EpiInteger; override;
+    function GetAsString(const index: Integer): EpiString; override;
+    function GetAsTime(const index: Integer): EpiTime; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
+    function GetCapacity: Integer; override;
+    function GetIsMissing(const index: Integer): boolean; override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
+    procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
+    procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsTime(const index: Integer; const AValue: EpiTime); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
+  public
+    class function CheckMissing(AValue: EpiDate): boolean;
+    class function DefaultMissing: EpiDate;
+    function Compare(i, j: integer): integer; override;
+    procedure Exchange(i, j: integer); override;
+  end;
+
+  { TEpiDateTimeField }
+
+  TEpiDateTimeField = class(TEpiField)
+  private
+     FData: array of EpiDateTime;
+  protected
      function GetAsBoolean(const index: Integer): EpiBool; override;
      function GetAsDate(const index: Integer): EpiDate; override;
      function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -227,41 +306,9 @@ type
      procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
      procedure SetCapacity(AValue: Integer); override;
   public
-    class function CheckMissing(AValue: EpiString): boolean;
-    class function DefaultMissing: EpiString;
+    class function CheckMissing(AValue: EpiDateTime): boolean;
+    class function DefaultMissing: EpiDateTime;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
   end;
-
-  { TEpiDateField }
-  // Handles following field types:
-  // ftDMYDate, ftDMYToday, ftMDYDate, ftMDYToday, ftYMDDate, ftYMDToday
-  // - note: this is very much subject to change as we introduce time/timedate fields.
-  TEpiDateField = class(TEpiField)
-  private
-     FData: array of EpiDate;
-  public
-    class function CheckMissing(AValue: EpiDate): boolean;
-    class function DefaultMissing: EpiDate;
-  end;
-
-  { TEpiDateTimeField }
-
-  TEpiDateTimeField = class(TEpiField)
-  private
-     FData: array of EpiDateTime;
-  public
-    class function CheckMissing(AValue: EpiDateTime): boolean;
-    class function DefaultMissing: EpiDateTime;
-  end;
-
-
-
-
-
-
-
-
-
-
 

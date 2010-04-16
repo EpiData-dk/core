@@ -18,14 +18,36 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiSections.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiSections.XMLName: string;
 begin
-  inherited SaveToStream(St, Lvl);
+  result := rsSections;
 end;
 
 procedure TEpiSections.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NSection: TEpiSection;
 begin
-  inherited LoadFromXml(Root);
+  // Root = <Sections>
+  if not Assigned(Root) then exit;
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    CheckNode(Node, rsSection);
+
+    NSection := NewSection;
+    NSection.LoadFromXml(Node);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
+function TEpiSections.NewSection: TEpiSection;
+begin
+  result := TEpiSection.Create(Self);
+  result.Id := 'section_id_' + IntToStr(count);
+  AddItem(result);
 end;
 
 { TEpiSection }
@@ -43,21 +65,55 @@ end;
 constructor TEpiSection.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FFields := TEpiFields.Create(self);
+  FFields.ItemOwner := true;
+
+  FHeadings := TEpiHeadings.Create(self);
+  FHeadings.ItemOwner := true;
 end;
 
 destructor TEpiSection.Destroy;
 begin
+  FHeadings.Free;
+  FFields.Free;
   inherited Destroy;
 end;
 
-procedure TEpiSection.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiSection.XMLName: string;
 begin
-  inherited SaveToStream(St, Lvl);
+  Result := rsSection;
+end;
+
+function TEpiSection.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content :=
+    Fields.SaveToXml('', Lvl + 1) +
+    Headings.SaveToXml('', Lvl + 1);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiSection.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  // Root = <Section>
+  if not Assigned(Root) then exit;
+
+  if LoadNode(Node, Root, rsFields, false) then
+    Fields.LoadFromXml(Node);
+
+  if LoadNode(Node, Root, rsHeadings, false) then
+    Headings.LoadFromXml(Node);
+end;
+
+function TEpiSection.NewField(FieldType: TEpiFieldType): TEpiField;
+begin
+  result := Fields.NewField(FieldType);
+end;
+
+function TEpiSection.NewHeading: TEpiHeading;
+begin
+  Result := Headings.NewHeading;
 end;
 
 

@@ -28,10 +28,6 @@ type
   TEpiHeadings = class;
   TEpiHeading = class;
 
-{  TEpiDataFilesChangeEventType = (
-    efce
-  );}
-
 {$I epidatafilesh.inc}
 {$I episectionsh.inc}
 {$I epifieldsh.inc}

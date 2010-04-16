@@ -17,7 +17,7 @@ type
     FLabel: String;
     function GetValueAsString: string; virtual; abstract;
   public
-    procedure SaveToStream(St: TStream; Lvl: integer); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     property Order: integer read FOrder write FOrder;
     property TheLabel: string read FLabel write FLabel;
@@ -81,9 +81,9 @@ type
     procedure   SetLabelType(const AValue: TEpiFieldType);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
-    procedure   SaveInternal(St: TStream; Lvl: integer); virtual;
+    function    SaveInternal(Lvl: integer): string; virtual;
     procedure   LoadExternal(Root: TDOMNode); virtual;
-    procedure   SaveExternal(St: TStream; Lvl: integer); virtual;
+    function    SaveExternal(Lvl: integer): string; virtual;
   { Add/Remove overrides }
   public
     procedure   AddItem(Item: TEpiCustomItem); override;
@@ -91,7 +91,8 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
@@ -106,7 +107,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    procedure   SaveToStream(St: TStream; Lvl: integer); override;
+    class function XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
@@ -119,16 +120,14 @@ uses
 
 { TEpiCustomValueLabel }
 
-procedure TEpiCustomValueLabel.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
+function TEpiCustomValueLabel.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  S := DupeString(' ', LvL) + '<Set ';
-  S := S + 'order="' + IntToStr(Order) + '" ';
-  S := S + 'value="' + GetValueAsString + '" ';
-  S := S + 'label="' + TheLabel + '"';
-  S := S + '/>' + LineEnding;
-  SaveStream(St, S);
+  Result :=
+    Indent(LvL) + '<Set ' +
+                  'order="' + IntToStr(Order) + '" ' +
+                  'value="' + GetValueAsString + '" ' +
+                  'label="' + TheLabel + '"' +
+                  '/>' + LineEnding;
 end;
 
 procedure TEpiCustomValueLabel.LoadFromXml(Root: TDOMNode);
@@ -261,23 +260,21 @@ begin
   end;
 end;
 
-procedure TEpiValueLabelSet.SaveInternal(St: TStream; Lvl: integer);
+function TEpiValueLabelSet.SaveInternal(Lvl: integer): string;
 var
   DataNode: TAVLTreeNode;
   S: String;
 begin
-  S := Ins(Lvl) + '<' + rsInternal + '>' + LineEnding;
-  SaveStream(St, S);
+  Result := Indent(Lvl) + '<' + rsInternal + '>' + LineEnding;
 
   DataNode := FData.FindLowest;
   while Assigned(DataNode) do
   begin
-    TEpiCustomValueLabel(DataNode.Data).SaveToStream(St, Lvl + 1);
+    Result += TEpiCustomValueLabel(DataNode.Data).SaveToXml('', Lvl + 1);
     DataNode := FData.FindSuccessor(DataNode);
   end;
 
-  S := Ins(Lvl) + '</' + rsInternal + '>' + LineEnding;
-  SaveStream(St, S);
+  Result := Indent(Lvl) + '</' + rsInternal + '>' + LineEnding;
 end;
 
 procedure TEpiValueLabelSet.LoadExternal(Root: TDOMNode);
@@ -285,20 +282,19 @@ begin
   // TODO : Load External Value Labels.
 end;
 
-procedure TEpiValueLabelSet.SaveExternal(St: TStream; Lvl: integer);
+function TEpiValueLabelSet.SaveExternal(Lvl: integer): string;
 var
   S: String;
 begin
   Inc(Lvl);
-  S := SaveNode(Lvl, rsFile, ExtName);
+  Result := SaveNode(Lvl, rsFile, ExtName);
   if ExtId <> '' then
-    S += SaveNode(Lvl, rsDataFileId, ExtId);
+    Result += SaveNode(Lvl, rsDataFileId, ExtId);
   if ExtValField <> '' then
-    S += SaveNode(Lvl, rsValueField, ExtValField);
+    Result += SaveNode(Lvl, rsValueField, ExtValField);
   if ExtLabelField <> '' then
-    S += SaveNode(Lvl, rsLabelField, ExtLabelField);
-  S += SaveSection(Lvl, rsExternal, S);
-  SaveStream(St, S);
+    Result += SaveNode(Lvl, rsLabelField, ExtLabelField);
+  result := TEpiCustomItem(Self).SaveToXml(Result, Lvl);
 end;
 
 procedure TEpiValueLabelSet.AddItem(Item: TEpiCustomItem);
@@ -326,10 +322,24 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiValueLabelSet.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiValueLabelSet.XMLName: string;
 begin
-  // TODO : Save Value label set.
-  inherited SaveToStream(St, Lvl);
+  Result := rsValueLabel;
+end;
+
+function TEpiValueLabelSet.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  // TODO : Save Value Labels correct.
+  Content := SaveNode(Lvl + 1, rsType, Integer(LabelType));
+
+  case LabelScope of
+    vlsExternal:
+      Content += SaveExternal(Lvl + 1);
+    vlsInternal:
+      Content += SaveInternal(Lvl + 1);
+  end;
+
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);
@@ -375,11 +385,9 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiValueLabelSets.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiValueLabelSets.XMLName: string;
 begin
-  if Count = 0 then exit;
-
-  SaveList(St, Lvl, Self, rsValueLabels);
+  result := rsValueLabels;
 end;
 
 procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode);

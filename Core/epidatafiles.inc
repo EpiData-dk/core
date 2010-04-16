@@ -22,11 +22,20 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiDataFiles.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiDataFiles.XMLName: string;
+begin
+  Result := rsDataFiles;
+end;
+
+function TEpiDataFiles.ScrambleXml: boolean;
+begin
+  Result := Settings.Scrambled;
+end;
+
+function TEpiDataFiles.SaveToXml(Content: String; Lvl: integer): string;
 begin
   if Count = 0 then exit;
-
-  SaveList(St, Lvl, Self, rsEpiDataFiles, Settings.Scrambled);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode);
@@ -48,7 +57,7 @@ begin
   Node := NewRoot.FirstChild;
   while Assigned(Node) do
   begin
-    CheckNode(Node, rsEpiDataFile);
+    CheckNode(Node, rsDataFile);
 
     NDf := NewDataFile;
     NDf.LoadFromXml(Node);
@@ -71,17 +80,17 @@ end;
 
 function TEpiDataFile.GetField(Index: integer): TEpiField;
 begin
-//  result := TEpiField(Fields[Index]);
+  result := TEpiField(Fields[Index]);
 end;
 
 function TEpiDataFile.GetSection(Index: integer): TEpiSection;
 begin
-//  result := TEpiSection(Sections[Index]);
+  result := TEpiSection(Sections[Index]);
 end;
 
 function TEpiDataFile.GetHeading(Index: integer): TEpiHeading;
 begin
-//  result := TEpiHeading(Headings[Index]);
+  result := TEpiHeading(Headings[Index]);
 end;
 
 function TEpiDataFile.GetValueLabelSet(Index: integer): TEpiValueLabelSet;
@@ -89,53 +98,117 @@ begin
   result := TEpiValueLabelSet(FValueLabels[Index]);
 end;
 
+procedure TEpiDataFile.LocalEventHook(Sender: TObject;
+  EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+begin
+  case EventGrp of
+    eegCustomBase:
+      begin
+        case TEpiCustomChangeEventType(EventType) of
+          // On AddItem "data" is a pointer to the added item.
+          ecceAddItem:
+            begin
+              // Here we make sure that fields added to any section is also added
+              // to the global list of fields.
+              if (Sender is TEpiFields) then
+              begin
+                Fields.AddItem(TEpiField(Data));
+                TEpiField(Data).Size := Size;
+              end;
+              if (Sender is TEpiHeadings) then
+                Headings.AddItem(TEpiHeading(Data));
+
+              // If more sections are created, we need to add a hook to this also.
+              if (Sender is TEpiSections) then
+              with TEpiSection(Data) do
+              begin
+                Fields.RegisterOnChangeHook(@LocalEventHook, true);
+                Headings.RegisterOnChangeHook(@LocalEventHook, true);
+              end;
+            end;
+
+          // On DelIetem "data" is a pointer to the now deleted item.
+          ecceDelItem:
+            begin
+              if (Sender is TEpiFields) then
+                Fields.RemoveItem(TEpiField(Data));
+              if (Sender is TEpiHeadings) then
+                Headings.RemoveItem(TEpiHeading(Data));
+
+              // If sections are removed, we need to delete the hook
+              // in case the section lives on elsewhere.
+              if (Sender is TEpiSections) then
+              with TEpiSection(Data) do
+              begin
+                Fields.UnRegisterOnChangeHook(@LocalEventHook);
+                Headings.UnRegisterOnChangeHook(@LocalEventHook);
+              end;
+            end;
+        end;
+      end;
+  end;
+end;
+
+function TEpiDataFile.GetSize: Integer;
+begin
+  result := FRecordStatus.Size;
+end;
+
+procedure TEpiDataFile.SetSize(const AValue: Integer);
+var
+  i: Integer;
+begin
+  if AValue = Size then exit;
+
+  FRecordStatus.Size := AValue;
+
+  for i := 0 to Fields.Count - 1 do
+    Fields[i].Size := AValue;
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
 
+  // The "all" containers.
+  FAllFields := TEpiFields.Create(Self);
+  FAllHeadings := TEpiHeadings.Create(Self);
+
   // Sections
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
+  FSections.RegisterOnChangeHook(@LocalEventHook, true);
+  // The special main section...
+  FMainSection := NewSection;
 
-  FMainSection := TEpiSection.Create(Self);
-
-  // TODO : RecordStatus on DATAFILE!
-//  FRecordStatus := TEpiIntField.Create(Self);
-//  FRecordStatus.Size := Size;
+  FRecordStatus := TEpiField.CreateField(Self, ftInteger);
+  FRecordStatus.Size := Size;
 end;
 
 destructor TEpiDataFile.Destroy;
 begin
+  FRecordStatus.Free;
   FMainSection.Free;
   FSections.Free;
+  FAllFields.Free;
+  FAllHeadings.Free;
   inherited Destroy;
 end;
 
-// TODO : SMARTEN UP ON SAVETOSTREAM IN TEPIDATAFILE!!!
-procedure TEpiDataFile.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
-
-  function Ins(Lvl: integer): string; inline;
-  begin
-    result := dupestring(' ', lvl);
-  end;
-
+class function TEpiDataFile.XMLName: string;
 begin
-  S :=
-    Ins(Lvl)     + '<DataFile id="' + Id + '">' + LineEnding +
-    Ins(Lvl + 1) + '<Name>' + Name + '</Name>' + LineEnding;
-  St.Write(S[1], Length(S));
+  Result := rsDataFile;
+end;
 
-//  ValueLabels.SaveToStream(St, Lvl + 1);
-//  ScreenProperties.SaveToStream(St, Lvl + 1);
-//  Fields.SaveToStream(St, Lvl + 1);
-//  Headings.SaveToStream(St, Lvl + 1);
-//  SaveRecords(St, Lvl + 1);
-
-  S :=
-    Ins(Lvl) + '</DataFile>' + LineEnding;
-  St.Write(S[1], Length(S));
+function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content :=
+  //  ValueLabels.SaveToXml('', Lvl + 1);
+  //  ScreenProperties.SaveToXml('', Lvl + 1);
+    Sections.SaveToXml('', Lvl + 1) +
+//    SaveRecord(Lvl + 1);
+    '';
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
@@ -163,6 +236,11 @@ end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;
 begin
-//  result := Fields.NewField(FieldType);
+  result := MainSection.NewField(FieldType);
+end;
+
+function TEpiDataFile.NewSection: TEpiSection;
+begin
+  result := Sections.NewSection;
 end;
 

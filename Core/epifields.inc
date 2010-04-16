@@ -19,6 +19,11 @@ begin
   result := TEpiDataFile(Owner);
 end;
 
+function TEpiFields.GetField(index: integer): TEpiField;
+begin
+  result := TEpiField(Items[index]);
+end;
+
 constructor TEpiFields.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -29,9 +34,9 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiFields.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiFields.XMLName: string;
 begin
-  SaveList(St, Lvl, Self, rsFields);
+  Result := rsFields;
 end;
 
 procedure TEpiFields.LoadFromXml(Root: TDOMNode);
@@ -54,7 +59,7 @@ end;
 
 function TEpiFields.NewField(FieldType: TEpiFieldType): TEpiField;
 begin
-  result := nil;
+  result := TEpiField.CreateField(Self, FieldType);
   Result.Id := 'field_id_' + IntToStr(Count);
   AddItem(Result);
 end;
@@ -69,6 +74,11 @@ begin
   Val := FFieldDecimals;
   FFieldDecimals := AValue;
   DoChange(eegDataFiles, Word(efceSetDecimal), @Val);
+end;
+
+function TEpiField.GetName: string;
+begin
+  result := inherited GetName;
 end;
 
 procedure TEpiField.SetFieldLeft(const AValue: Integer);
@@ -101,6 +111,11 @@ begin
   DoChange(eegDataFiles, Word(efceSetTop), @Val);
 end;
 
+procedure TEpiField.SetName(const AValue: string);
+begin
+  inherited SetName(AValue);
+end;
+
 procedure TEpiField.CheckIndex(const index: integer);
 begin
   if (Index < 0) or (Index > Size - 1) then
@@ -125,9 +140,36 @@ begin
   FSize := AValue;
 end;
 
-constructor TEpiField.Create(AOwner: TEpiCustomBase);
+constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
+  FFieldType := AFieldType;
+end;
+
+class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
+begin
+  case AFieldType of
+    ftInteger, ftAutoInc:
+      Result := TEpiIntField.Create(AOwner, AFieldType);
+
+    ftDMYDate,  ftMDYDate,  ftYMDDate,
+    ftDMYToday, ftMDYToday, ftYMDToday:
+      Result := TEpiDateField.Create(AOwner, AFieldType);
+
+    ftTime, ftTimeNow:
+      result := TEpiDateTimeField.Create(AOwner, AFieldType);
+
+    ftFloat:
+      Result := TEpiFloatField.Create(AOwner, AFieldType);
+
+    ftBoolean:
+      Result := TEpiBoolField.Create(AOwner, AFieldType);
+
+    ftString, ftUpperString:
+      Result := TEpiStringField.Create(AOwner, AFieldType);
+  else
+    result := nil;
+  end;
 end;
 
 destructor TEpiField.Destroy;
@@ -135,14 +177,44 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiField.SaveToStream(St: TStream; Lvl: integer);
+class function TEpiField.XMLName: string;
 begin
-  inherited SaveToStream(St, Lvl);
+  Result := rsField;
+end;
+
+function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content :=
+    SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
+    SaveNode(Lvl + 1, rsLength, FieldLength) +
+    SaveNode(Lvl + 1, rsDecimals, FieldDecimals) +
+//    SaveNode(Lvl + 1, rsColourId, ColourProp.Id) +
+    SaveNode(Lvl + 1, rsLeft, FieldLeft) +
+    SaveNode(Lvl + 1, rsTop, FieldTop) +
+//    SaveNode(Lvl + 1, rsValueLabelId, ValueLabel.Id) +
+    '';
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiField.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  // Root = <Field>
+  Id            := UTF8Encode(TDOMElement(Root).AttribStrings['id']);
+  FieldName     := LoadNodeString(Root, rsName);
+  FieldLength   := LoadNodeInt(Root, rsLength);
+  FieldDecimals := LoadNodeInt(Root, rsDecimals);
+  if LoadNode(Node, Root, rsValueLabelId, false) then
+    ; //ValueLabelSet := DataFile.ValueLabels.GetById(LoadNodeString(Root, rsValueLabelId));
+
+  // Position, colour:
+  FieldTop      := LoadNodeInt(Root, rsTop);
+  FieldLeft     := LoadNodeInt(Root, rsLeft);
+  if LoadNode(Node, Root, rsColourId, false) then
+    //ColourProp := DataFile.ColourProperties.ScreenPropertyById(UTF8Encode(Node.TextContent));
+  else
+    ; //ScreenProps   := DataFile.ScreenProperties.DefaultScreenProperty;
 end;
 
 { TEpiIntField }
@@ -866,6 +938,77 @@ end;
 
 { TEpiDateField }
 
+function TEpiDateField.GetAsBoolean(const index: Integer): EpiBool;
+begin
+  if IsMissing[Index] then
+    result := TEpiBoolField.DefaultMissing
+  else if AsDate[index] >= 1 then
+    result := 1
+  else
+    result := 0;
+end;
+
+function TEpiDateField.GetAsDate(const index: Integer): EpiDate;
+begin
+  CheckIndex(Index);
+  result := FData[index];
+end;
+
+function TEpiDateField.GetAsDateTime(const index: Integer): EpiDateTime;
+begin
+  if IsMissing[Index] then
+    result := TEpiDateTimeField.DefaultMissing
+  else
+    Result := AsDate[Index];
+end;
+
+function TEpiDateField.GetAsFloat(const index: Integer): EpiFloat;
+begin
+  if IsMissing[Index] then
+    result := TEpiFloatField.DefaultMissing
+  else
+    result := AsDate[index];
+end;
+
+function TEpiDateField.GetAsInteger(const index: Integer): EpiInteger;
+begin
+  if IsMissing[Index] then
+    result := TEpiIntField.DefaultMissing
+  else
+    result := AsDate[index];
+end;
+
+function TEpiDateField.GetAsString(const index: Integer): EpiString;
+begin
+  if IsMissing[Index] then
+    result := TEpiStringField.DefaultMissing
+  else
+    result := DateToStr(AsDateTime[index]);
+end;
+
+function TEpiDateField.GetAsTime(const index: Integer): EpiTime;
+begin
+  if IsMissing[Index] then
+    result := TEpiDateTimeField.DefaultMissing
+  else
+    Result := AsDate[Index];
+end;
+
+function TEpiDateField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  result := AsDate[index];
+end;
+
+function TEpiDateField.GetCapacity: Integer;
+begin
+  result := Length(FData);
+end;
+
+function TEpiDateField.GetIsMissing(const index: Integer): boolean;
+begin
+  result := AsDate[index] = DefaultMissing;
+end;
+
 class function TEpiDateField.CheckMissing(AValue: EpiDate): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -876,8 +1019,245 @@ begin
   result := NA_DATE;
 end;
 
+function TEpiDateField.Compare(i, j: integer): integer;
+begin
+  Result := AsDate[i] - AsDate[j];
+end;
+
+procedure TEpiDateField.Exchange(i, j: integer);
+var
+  TmpDate: EpiDate;
+begin
+  TmpDate := AsDate[i];
+  AsDate[i] := AsDate[j];
+  AsDate[j] := TmpDate;
+end;
+
+procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
+  );
+begin
+  if TEpiBoolField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDate[index] := AValue;
+end;
+
+procedure TEpiDateField.SetAsDate(const index: Integer; const AValue: EpiDate);
+begin
+  CheckIndex(Index);
+  FData[index] := AValue;
+end;
+
+procedure TEpiDateField.SetAsDateTime(const index: Integer;
+  const AValue: EpiDateTime);
+begin
+  if TEpiDateTimeField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else                  // TODO : Define rounding function.
+    AsDate[index] := Trunc(AValue);
+end;
+
+procedure TEpiDateField.SetAsFloat(const index: Integer; const AValue: EpiFloat
+  );
+begin
+  if TEpiFloatField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else                  // TODO : Define rounding function.
+    AsDate[index] := Trunc(AValue);
+end;
+
+procedure TEpiDateField.SetAsInteger(const index: Integer;
+  const AValue: EpiInteger);
+begin
+  if TEpiIntField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDate[index] := AValue;
+end;
+
+procedure TEpiDateField.SetAsString(const index: Integer;
+  const AValue: EpiString);
+begin
+  if TEpiStringField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else                   // TODO : Date conversion routine.
+    AsDate[index] := Trunc(StrToDateDef(AValue, DefaultMissing));
+end;
+
+procedure TEpiDateField.SetAsTime(const index: Integer; const AValue: EpiTime);
+begin
+  if TEpiDateTimeField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else                  // TODO : Define rounding function.
+    AsDate[index] := Trunc(AValue);
+end;
+
+procedure TEpiDateField.SetAsValue(const index: Integer;
+  const AValue: EpiVariant);
+begin
+  AsDate[index] := AValue;
+end;
+
+procedure TEpiDateField.SetIsMissing(const index: Integer; const AValue: boolean
+  );
+begin
+  AsDate[index] := DefaultMissing;
+end;
+
+procedure TEpiDateField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
 
 { TEpiDateTimeField }
+
+function TEpiDateTimeField.GetAsBoolean(const index: Integer): EpiBool;
+begin
+  if IsMissing[Index] then
+    result := TEpiBoolField.DefaultMissing
+  else
+    result := Sign(AsDateTime[index]);
+end;
+
+function TEpiDateTimeField.GetAsDate(const index: Integer): EpiDate;
+begin
+  if IsMissing[Index] then
+    result := TEpiDateField.DefaultMissing
+  else        // TODO : Rounding function
+    result := Trunc(AsDateTime[Index]);
+end;
+
+function TEpiDateTimeField.GetAsDateTime(const index: Integer): EpiDateTime;
+begin
+  CheckIndex(Index);
+  result := FData[index];
+end;
+
+function TEpiDateTimeField.GetAsFloat(const index: Integer): EpiFloat;
+begin
+  if IsMissing[Index] then
+    result := TEpiFloatField.DefaultMissing
+  else
+    result := AsDateTime[Index];
+end;
+
+function TEpiDateTimeField.GetAsInteger(const index: Integer): EpiInteger;
+begin
+  if IsMissing[Index] then
+    result := TEpiIntField.DefaultMissing
+  else
+    result := Trunc(AsDateTime[Index]);
+end;
+
+function TEpiDateTimeField.GetAsString(const index: Integer): EpiString;
+begin
+  if IsMissing[Index] then
+    result := TEpiStringField.DefaultMissing
+  else
+    result := DateTimeToStr(AsDateTime[Index]);
+end;
+
+function TEpiDateTimeField.GetAsTime(const index: Integer): EpiTime;
+begin
+  if IsMissing[Index] then
+    result := DefaultMissing
+  else
+    result := frac(AsDateTime[Index]);
+end;
+
+function TEpiDateTimeField.GetAsValue(const index: Integer): EpiVariant;
+begin
+  Result := AsDateTime[index];
+end;
+
+function TEpiDateTimeField.GetCapacity: Integer;
+begin
+  Result := Length(FData);
+end;
+
+function TEpiDateTimeField.GetIsMissing(const index: Integer): boolean;
+begin
+  Result := AsDateTime[index] = NA_DATETIME;
+end;
+
+procedure TEpiDateTimeField.SetAsBoolean(const index: Integer;
+  const AValue: EpiBool);
+begin
+  if TEpiBoolField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDateTime[index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetAsDate(const index: Integer;
+  const AValue: EpiDate);
+begin
+  if TEpiDateField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDateTime[index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetAsDateTime(const index: Integer;
+  const AValue: EpiDateTime);
+begin
+  CheckIndex(index);
+  FData[Index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetAsFloat(const index: Integer;
+  const AValue: EpiFloat);
+begin
+  if TEpiFloatField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDateTime[index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetAsInteger(const index: Integer;
+  const AValue: EpiInteger);
+begin
+  if TEpiIntField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDateTime[index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetAsString(const index: Integer;
+  const AValue: EpiString);
+begin
+  if TEpiStringField.CheckMissing(AValue) then
+    IsMissing[Index] := true
+  else
+    AsDateTime[index] := StrToDateDef(AValue, DefaultMissing);
+end;
+
+procedure TEpiDateTimeField.SetAsTime(const index: Integer;
+  const AValue: EpiTime);
+begin
+  AsDateTime[index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetAsValue(const index: Integer;
+  const AValue: EpiVariant);
+begin
+  AsDateTime[index] := AValue;
+end;
+
+procedure TEpiDateTimeField.SetIsMissing(const index: Integer;
+  const AValue: boolean);
+begin
+  AsDateTime[index] := DefaultMissing;
+end;
+
+procedure TEpiDateTimeField.SetCapacity(AValue: Integer);
+begin
+  if AValue = Capacity then exit;
+  SetLength(FData, AValue);
+  FCapacity := AValue;
+end;
 
 class function TEpiDateTimeField.CheckMissing(AValue: EpiDateTime): boolean;
 begin
@@ -887,5 +1267,19 @@ end;
 class function TEpiDateTimeField.DefaultMissing: EpiDateTime;
 begin
   result := NA_DATETIME;
+end;
+
+function TEpiDateTimeField.Compare(i, j: integer): integer;
+begin
+  Result := Sign(AsDateTime[i] - AsDateTime[j]);
+end;
+
+procedure TEpiDateTimeField.Exchange(i, j: integer);
+var
+  TmpDateTime: EpiDateTime;
+begin
+  TmpDateTime := AsDateTime[i];
+  AsDateTime[i] := AsDateTime[j];
+  AsDateTime[j] := TmpDateTime;
 end;
 

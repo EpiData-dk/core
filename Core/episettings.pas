@@ -31,14 +31,15 @@ type
     procedure SetVersion(const AValue: integer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor Destroy; override;
-    procedure  SaveToStream(St: TStream; Lvl: integer); override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
-    property   Version: integer read FVersion write SetVersion;
-    property   DateSeparator: string read FDateSeparator write SetDateSeparator;
-    property   DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
-    property   MissingString: string read FMissingString write SetMissingString;
-    property   Scrambled: boolean read FScrambled write SetScrambled;
+    destructor  Destroy; override;
+    class function XMLName: string; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
+    property    Version: integer read FVersion write SetVersion;
+    property    DateSeparator: string read FDateSeparator write SetDateSeparator;
+    property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
+    property    MissingString: string read FMissingString write SetMissingString;
+    property    Scrambled: boolean read FScrambled write SetScrambled;
   end;
 
 implementation
@@ -110,17 +111,20 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiSettings.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
+class function TEpiSettings.XMLName: string;
 begin
-  S :=
+  Result := rsSettings;
+end;
+
+function TEpiSettings.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Result :=
     SaveNode(Lvl + 1, rsVersion,    Version) +
     SaveNode(Lvl + 1, rsScrambled,  Scrambled) +
     SaveNode(Lvl + 1, rsDateSep,    DateSeparator) +
     SaveNode(Lvl + 1, rsDecSep,     DecimalSeparator) +
     SaveNode(Lvl + 1, rsMissingStr, MissingString);
-  SaveStream(St, SaveSection(Lvl, rsSettings, S));
+  result := inherited SaveToXml(Result, Lvl);
 end;
 
 procedure TEpiSettings.LoadFromXml(Root: TDOMNode);

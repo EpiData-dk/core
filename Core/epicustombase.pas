@@ -64,7 +64,7 @@ type
     procedure  RaiseError(const Root: TDOMNode; NodeName: string);
   protected
     function   StringToXml(const S: string): string;
-    Function   Ins(Level: integer): string;
+    Function   Indent(Level: integer): string;
 
     { Check methods }
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
@@ -79,21 +79,20 @@ type
     function   LoadNodeDateTime(const Root: TDOMNode; NodeName: string): TDateTime;
     function   LoadNodeBool(const Root: TDOMNode; NodeName: string): boolean;
 
-    { Save Methods }
+    { Save Methods
     procedure  SaveStream(const St: TStream; const Constent: string);
     // Save list of different containers
-    procedure  SaveClasses(const St: TStream; const Lvl: integer;
-      const Classes: array of TEpiCustomBase; const NodeName: string); overload;
+    procedure  SaveClasses(const Lvl: integer;
+      const Classes: array of TEpiCustomBase); overload;
     // Save a list container
     procedure  SaveList(const St: TStream; const Lvl: integer;
       const List: TEpiCustomList; const NodeName: string;
       EnCryptList: boolean = false); overload;
 
-    // Section Nodes w/o Id's (does not XML'ify content)
     function   SaveSection(const Lvl: integer; const NodeName: string;
       const Content: string): string; overload;
     function   SaveSection(const Lvl: integer; const NodeName: string;
-      const Id: string; const Content: string): string; overload;
+      const Id: string; const Content: string): string; overload;     }
 
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
@@ -107,20 +106,23 @@ type
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
   public
-    procedure  SaveToStream(St: TStream; Lvl: integer); virtual;
+    class function XMLName: string; virtual;
+    function   SaveToXml(Content: String; Lvl: integer): string; virtual;
     procedure  LoadFromXml(Root: TDOMNode); virtual;
 
     { Change-event hooks }
   private
     FOnChangeList: ^TEpiChangeEvent;
     FOnChangeListCount: Integer;
+    FOnChangeListIgnoreUpdate: ^TEpiChangeEvent;
+    FOnChangeListCountIgnoreUpdate: Integer;
     FUpdateCount: Integer;
   protected
     procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
   public
     procedure  BeginUpdate; virtual;
     procedure  EndUpdate; virtual;
-    procedure  RegisterOnChangeHook(Event: TEpiChangeEvent); virtual;
+    procedure  RegisterOnChangeHook(Event: TEpiChangeEvent; IgnoreUpdate: boolean = false); virtual;
     procedure  UnRegisterOnChangeHook(Event: TEpiChangeEvent); virtual;
   end;
 {$static off}
@@ -139,6 +141,8 @@ type
     procedure SetName(const AValue: string); virtual;
     property  Id: string read GetId write SetId;
     property  Name: string read GetName write SetName;
+  public
+    function  SaveToXml(Content: String; Lvl: integer): string; override;
   end;
 
   { TEpiCustomList }
@@ -153,9 +157,11 @@ type
     function    GetCount: Integer; virtual;
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
+    function    ScrambleXml: boolean; virtual;
     property    List: TFPList read FList;
   public
     destructor  Destroy; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     procedure   DeleteItem(Index: integer); virtual;
@@ -289,7 +295,7 @@ begin
    [rfReplaceAll]);
 end;
 
-function TEpiCustomBase.Ins(Level: integer): string;
+function TEpiCustomBase.Indent(Level: integer): string;
 begin
   result := DupeString(' ', Level);
 end;
@@ -360,6 +366,7 @@ begin
   result := WideLowerCase(Node.TextContent) = 'true';
 end;
 
+{
 procedure TEpiCustomBase.SaveStream(const St: TStream; const Constent: string);
 begin
   St.Write(Constent[1], Length(Constent));
@@ -420,12 +427,12 @@ begin
        Content +
     Ins(Lvl) + '</' + NodeName + '>' + LineEnding;
 end;
-
+           }
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: string): string;
 begin
   Result :=
-    Ins(Lvl) + '<' + NodeName + '>' + StringToXml(Val) + '</' + NodeName + '>' +
+    Indent(Lvl) + '<' + NodeName + '>' + StringToXml(Val) + '</' + NodeName + '>' +
     LineEnding;
 end;
 
@@ -453,13 +460,17 @@ begin
   result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
 end;
 
-procedure TEpiCustomBase.SaveToStream(St: TStream; Lvl: integer);
-var
-  S: String;
+class function TEpiCustomBase.XMLName: string;
 begin
-  // Base template - should be overridden in descendants.
-  S := Ins(LvL) + '<' + ClassName + '>Not Implemented Yet</' + ClassName + '>' + LineEnding;
-  St.Write(S[1], Length(S));
+  result := ClassName;
+end;
+
+function TEpiCustomBase.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  result :=
+    Indent(Lvl) + '<' + XMLName + '>' + LineEnding +
+      Content +
+    Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
 end;
 
 procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode);
@@ -472,6 +483,9 @@ procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
 var
   i: Integer;
 begin
+  for i := 0 to FOnChangeListCountIgnoreUpdate - 1 do
+    FOnChangeListIgnoreUpdate[i](Self, EventGroup, EventType, Data);
+
   if FUpdateCount > 0 then exit;
 
   for i := 0 to FOnChangeListCount - 1 do
@@ -495,17 +509,40 @@ begin
   DoChange(eegCustomBase, word(ecceUpdate), nil);
 end;
 
-procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent);
+procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent;
+  IgnoreUpdate: boolean);
 begin
-  Inc(FOnChangeListCount);
-  ReAllocMem(FOnChangeList, FOnChangeListCount * SizeOf(TEpiChangeEvent));
-  FOnChangeList[FOnChangeListCount-1] := Event
+  if IgnoreUpdate then
+  begin
+    Inc(FOnChangeListCountIgnoreUpdate);
+    ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate * SizeOf(TEpiChangeEvent));
+    FOnChangeListIgnoreUpdate[FOnChangeListCountIgnoreUpdate-1] := Event;
+  end else begin
+    Inc(FOnChangeListCount);
+    ReAllocMem(FOnChangeList, FOnChangeListCount * SizeOf(TEpiChangeEvent));
+    FOnChangeList[FOnChangeListCount-1] := Event;
+  end;
 end;
 
 procedure TEpiCustomBase.UnRegisterOnChangeHook(Event: TEpiChangeEvent);
 var
   Idx: LongInt;
 begin
+  Idx := 0;
+  while Idx <= FOnChangeListCountIgnoreUpdate -1 do
+  begin
+    if FOnChangeListIgnoreUpdate[Idx] = Event then
+      break;
+    Inc(Idx)
+  end;
+  if (Idx < FOnChangeListCountIgnoreUpdate) then
+  begin
+    dec(FOnChangeListCountIgnoreUpdate);
+    if FOnChangeListCountIgnoreUpdate > Idx then
+      System.Move(FOnChangeListIgnoreUpdate[Idx+1],FOnChangeListIgnoreUpdate[Idx],(FOnChangeListCountIgnoreUpdate-Idx)*SizeOf(TEpiChangeEvent));
+    ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate*SizeOf(TEpiChangeEvent));
+  end;
+
   Idx := 0;
   while Idx <= FOnChangeListCount -1 do
   begin
@@ -558,6 +595,15 @@ begin
   DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
+function TEpiCustomItem.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  result :=
+    Indent(Lvl) + '<' + XMLName + ' id="' + Id + '">' + LineEnding +
+      SaveNode(Lvl + 1, rsName, Name) +
+      Content +
+    Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
+end;
+
 procedure TEpiCustomList.SetItemOwner(const AValue: boolean);
 begin
   if FItemOwner = AValue then exit;
@@ -593,6 +639,11 @@ begin
   DoChange(eegCustomBase, Word(ecceSetItem), Val);
 end;
 
+function TEpiCustomList.ScrambleXml: boolean;
+begin
+  result := false;
+end;
+
 destructor TEpiCustomList.Destroy;
 var
   F: TEpiCustomItem;
@@ -610,10 +661,31 @@ begin
   inherited Destroy;
 end;
 
+function TEpiCustomList.SaveToXml(Content: String; Lvl: integer): string;
+  inline;
+var
+  S: String;
+  i: Integer;
+begin
+  result :=
+    Indent(Lvl) + '<' + XMLName + '>' + LineEnding +
+      Content;
+
+  S := '';
+  for i := 0 to Count - 1 do
+    S += Items[i].SaveToXml('', Lvl + 1);
+
+  if ScrambleXml then
+    S := EnCrypt(S) + LineEnding;
+
+  Result += S;
+  Result += Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
+end;
+
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
   FList.Add(Item);
-  DoChange(eegCustomBase, Word(ecceAddItem), nil);
+  DoChange(eegCustomBase, Word(ecceAddItem), Item);
 end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
