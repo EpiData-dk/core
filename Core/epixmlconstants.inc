@@ -72,6 +72,7 @@ const
          rsValueLabelId    = 'ValueLabelId';
 //          rsQuestion        = 'Question';
      rsRecords         = 'Records';
+      rsRecord          = 'Record';
 
    rsRelates         = 'Relates';
 

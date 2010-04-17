@@ -29,8 +29,29 @@ type
     // Strings
     ftString, ftUpperString
   );
-
   TEpiFieldTypes  = Set of TEpiFieldType;
+
+const
+  BoolFieldTypes:
+    TEpiFieldTypes = [ftBoolean];
+
+  IntFieldTypes:
+    TEpiFieldTypes = [ftInteger, ftAutoInc];
+
+  FloatFieldTypes:
+    TEpiFieldTypes = [ftFloat];
+
+  DateFieldTypes:
+    TEpiFieldTypes = [ftDMYDate,  ftMDYDate,  ftYMDDate,
+                   ftDMYToday, ftMDYToday, ftYMDToday];
+
+  TimeFieldTypes:
+    TEpiFieldTypes = [ftTime, ftTimeNow];
+
+  StringFieldTypes:
+    TEpiFieldTypes = [ftString, ftUpperString];
+
+type
   TEpiRecordState = (rsNormal, rsVerified, rsDeleted);
 
 implementation

@@ -18,7 +18,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     class function XMLName: string; override;
-    function ScrambleXml: boolean; override;
+    function    ScrambleXml: boolean; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewDataFile: TEpiDataFile;
@@ -43,6 +43,7 @@ type
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
     function    GetSize: Integer;
     procedure   SetSize(const AValue: Integer);
+    function    SaveRecords(Lvl: integer): string;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
@@ -55,7 +56,7 @@ type
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;
     property    Fields: TEpiFields read FAllFields;
-    property    Field[Index: integer]: TEpiField read GetField;
+    property    Field[Index: integer]: TEpiField read GetField; default;
     property    Headings: TEpiHeadings read FAllHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
     property    ValueLabels: TEpiValueLabelSets read FValueLabels;

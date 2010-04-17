@@ -166,6 +166,38 @@ begin
     Fields[i].Size := AValue;
 end;
 
+function TEpiDataFile.SaveRecords(Lvl: integer): string;
+var
+  Sz: LongInt;
+  Fc: LongInt;
+  CurRec: Integer;
+  CurField: Integer;
+begin
+  Result :=
+    Indent(Lvl) + '<' + rsRecords + '>' + LineEnding;
+
+  Sz := Size;
+  Fc := Fields.Count;
+  for CurRec := 0 to Sz - 1 do
+  begin
+    Result += Indent(Lvl + 1) + '<' + rsRecord;
+
+    for CurField := 0 to Fc - 1 do
+    with Fields[CurField] do
+      Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"';
+
+{    if Verified[CurRec] then
+      S += ' st="2"'
+    else if Deleted[CurRec] then
+      S += ' st="1"'
+    else
+      S += ' st="0"';}
+    Result += '/>' + LineEnding;
+  end;
+  Result +=
+    Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
@@ -206,8 +238,7 @@ begin
   //  ValueLabels.SaveToXml('', Lvl + 1);
   //  ScreenProperties.SaveToXml('', Lvl + 1);
     Sections.SaveToXml('', Lvl + 1) +
-//    SaveRecord(Lvl + 1);
-    '';
+    SaveRecords(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
