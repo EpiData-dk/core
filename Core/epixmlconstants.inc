@@ -1,8 +1,13 @@
 const
   // Common constants in the XML tree.
+  // - Generic
+  rsType = 'Type';
+  // - CustomItem
   rsName = 'Name';
   rsId   = 'id';
-  rsType = 'Type';
+  // - CustomControlItem
+  rsTop  = 'Top';
+  rsLeft = 'Left';
 
   rsEpiData         = 'EpiData';
    // Settings
@@ -61,18 +66,25 @@ const
      rsScreenInfo      = 'ScreenInfo';
      rsSections        = 'Sections';
       rsSection         = 'Section';
+       rsGroupIdList     = 'GroupIdList';
        rsHeadings        = 'Headings';
        rsFields          = 'Fields';
         rsField           = 'Field';
          rsLength          = 'Length';
          rsDecimals        = 'Decimals';
          rsColourId        = 'ColourId';
-         rsTop             = 'Top';
-         rsLeft            = 'Left';
          rsValueLabelId    = 'ValueLabelId';
 //          rsQuestion        = 'Question';
      rsRecords         = 'Records';
       rsRecord          = 'Record';
 
-   rsRelates         = 'Relates';
+   rsRelations       = 'Relations';
+    rsPrimaryKeys     = 'PrimaryKeys';
+     rsPrimaryKey      = 'PrimaryKey';
+      rsFieldIdList     = 'FieldIdList';
+    rsRelates         = 'Relates';
+     rsRelate          = 'Relate';
+      rsFieldId         = 'FieldId';
+      rsValue           = 'Value';
+      rsDestDataFileId  = 'DestDataFileId';
 

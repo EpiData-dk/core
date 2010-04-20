@@ -66,54 +66,24 @@ end;
 
 { TEpiField }
 
-procedure TEpiField.SetFieldDecimals(const AValue: Cardinal);
+procedure TEpiField.SetDecimals(const AValue: Cardinal);
 var
   Val: LongWord;
 begin
-  if FFieldDecimals = AValue then exit;
-  Val := FFieldDecimals;
-  FFieldDecimals := AValue;
+  if Decimals = AValue then exit;
+  Val := Decimals;
+  FDecimals := AValue;
   DoChange(eegDataFiles, Word(efceSetDecimal), @Val);
 end;
 
-function TEpiField.GetName: string;
-begin
-  result := inherited GetName;
-end;
-
-procedure TEpiField.SetFieldLeft(const AValue: Integer);
-var
-  Val: LongInt;
-begin
-  if FFieldLeft = AValue then exit;
-  Val := FFieldLeft;
-  FFieldLeft := AValue;
-  DoChange(eegDataFiles, Word(efceSetLeft), @Val);
-end;
-
-procedure TEpiField.SetFieldLength(const AValue: Cardinal);
+procedure TEpiField.SetLength(const AValue: Cardinal);
 var
   Val: LongWord;
 begin
-  if FFieldLength = AValue then exit;
-  Val := FFieldLength;
-  FFieldLength := AValue;
+  if Length = AValue then exit;
+  Val := Length;
+  FLength := AValue;
   DoChange(eegDataFiles, Word(efceSetLength), @Val);
-end;
-
-procedure TEpiField.SetFieldTop(const AValue: Integer);
-var
-  Val: LongInt;
-begin
-  if FFieldTop = AValue then exit;
-  Val := FFieldTop;
-  FFieldTop := AValue;
-  DoChange(eegDataFiles, Word(efceSetTop), @Val);
-end;
-
-procedure TEpiField.SetName(const AValue: string);
-begin
-  inherited SetName(AValue);
 end;
 
 procedure TEpiField.CheckIndex(const index: integer);
@@ -144,6 +114,11 @@ constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
   FFieldType := AFieldType;
+end;
+
+class function TEpiField.IdString: string;
+begin
+  Result := 'field_id_';
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
@@ -186,11 +161,9 @@ function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content :=
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
-    SaveNode(Lvl + 1, rsLength, FieldLength) +
-    SaveNode(Lvl + 1, rsDecimals, FieldDecimals) +
+    SaveNode(Lvl + 1, rsLength, Length) +
+    SaveNode(Lvl + 1, rsDecimals, Decimals) +
 //    SaveNode(Lvl + 1, rsColourId, ColourProp.Id) +
-    SaveNode(Lvl + 1, rsLeft, FieldLeft) +
-    SaveNode(Lvl + 1, rsTop, FieldTop) +
 //    SaveNode(Lvl + 1, rsValueLabelId, ValueLabel.Id) +
     '';
   Result := inherited SaveToXml(Content, Lvl);
@@ -201,16 +174,13 @@ var
   Node: TDOMNode;
 begin
   // Root = <Field>
-  Id            := UTF8Encode(TDOMElement(Root).AttribStrings['id']);
-  FieldName     := LoadNodeString(Root, rsName);
-  FieldLength   := LoadNodeInt(Root, rsLength);
-  FieldDecimals := LoadNodeInt(Root, rsDecimals);
+  inherited LoadFromXml(Root);
+  Length   := LoadNodeInt(Root, rsLength);
+  Decimals := LoadNodeInt(Root, rsDecimals);
   if LoadNode(Node, Root, rsValueLabelId, false) then
     ; //ValueLabelSet := DataFile.ValueLabels.GetById(LoadNodeString(Root, rsValueLabelId));
 
-  // Position, colour:
-  FieldTop      := LoadNodeInt(Root, rsTop);
-  FieldLeft     := LoadNodeInt(Root, rsLeft);
+  // Colour:
   if LoadNode(Node, Root, rsColourId, false) then
     //ColourProp := DataFile.ColourProperties.ScreenPropertyById(UTF8Encode(Node.TextContent));
   else
@@ -279,7 +249,7 @@ end;
 
 function TEpiIntField.GetCapacity: Integer;
 begin
-  result := Length(FData);
+  result := System.Length(FData);
 end;
 
 function TEpiIntField.GetIsMissing(const index: Integer): boolean;
@@ -356,7 +326,7 @@ end;
 procedure TEpiIntField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
-  SetLength(FData, AValue);
+  System.SetLength(FData, AValue);
   FCapacity := AValue;
 end;
 
@@ -455,7 +425,7 @@ end;
 
 function TEpiFloatField.GetCapacity: Integer;
 begin
-  result := Length(FData);
+  result := System.Length(FData);
 end;
 
 function TEpiFloatField.GetIsMissing(const index: Integer): boolean;
@@ -539,7 +509,7 @@ end;
 procedure TEpiFloatField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
-  SetLength(FData, AValue);
+  System.SetLength(FData, AValue);
   FCapacity := AValue;
 end;
 
@@ -630,7 +600,7 @@ end;
 
 function TEpiBoolField.GetCapacity: Integer;
 begin
-  result := Length(FData);
+  result := System.Length(FData);
 end;
 
 function TEpiBoolField.GetIsMissing(const index: Integer): boolean;
@@ -693,7 +663,7 @@ procedure TEpiBoolField.SetAsString(const index: Integer;
 begin
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else if Length(AValue) > 0 then
+  else if System.Length(AValue) > 0 then
   begin
     // TODO : Better recognition of boolean strings.
     if AValue[1] in ['Y'] then
@@ -729,7 +699,7 @@ end;
 procedure TEpiBoolField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
-  SetLength(FData, AValue);
+  System.SetLength(FData, AValue);
   FCapacity := AValue;
 end;
 
@@ -822,7 +792,7 @@ end;
 
 function TEpiStringField.GetCapacity: Integer;
 begin
-  result := Length(FData);
+  result := System.Length(FData);
 end;
 
 function TEpiStringField.GetIsMissing(const index: Integer): boolean;
@@ -908,7 +878,7 @@ end;
 procedure TEpiStringField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
-  SetLength(FData, AValue);
+  System.SetLength(FData, AValue);
   FCapacity := AValue;
 end;
 
@@ -1001,7 +971,7 @@ end;
 
 function TEpiDateField.GetCapacity: Integer;
 begin
-  result := Length(FData);
+  result := System.Length(FData);
 end;
 
 function TEpiDateField.GetIsMissing(const index: Integer): boolean;
@@ -1107,7 +1077,7 @@ end;
 procedure TEpiDateField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
-  SetLength(FData, AValue);
+  System.SetLength(FData, AValue);
   FCapacity := AValue;
 end;
 
@@ -1174,7 +1144,7 @@ end;
 
 function TEpiDateTimeField.GetCapacity: Integer;
 begin
-  Result := Length(FData);
+  Result := System.Length(FData);
 end;
 
 function TEpiDateTimeField.GetIsMissing(const index: Integer): boolean;
@@ -1255,7 +1225,7 @@ end;
 procedure TEpiDateTimeField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
-  SetLength(FData, AValue);
+  System.SetLength(FData, AValue);
   FCapacity := AValue;
 end;
 

@@ -7,8 +7,9 @@ unit epidatacore;
 interface
 
 uses
-    epiadmin, epicustombase, epidatafiles, epidocument, episettings, epistudy, 
-  epistringutils, epidatafilestypes, epivaluelabels;
+    epiadmin, epicustombase, epidatafiles, epidatafilestypes, epidocument, 
+  epirelations, episettings, epistudy, epivaluelabels, epistringutils, 
+  epimiscutils;
 
 implementation
 

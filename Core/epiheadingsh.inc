@@ -22,5 +22,6 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
+    class function IdString: string; override;
   end;
 

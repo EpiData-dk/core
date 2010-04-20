@@ -112,6 +112,7 @@ type
     procedure SetMasterPassword(const AValue: string);
     procedure SetPassword(const AValue: string);
   protected
+    class function IdString: string; override;
     property  Salt: string read FSalt;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -157,6 +158,8 @@ type
   private
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
+  protected
+    class function IdString: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -172,7 +175,7 @@ type
 implementation
 
 uses
-  DCPsha256, DCPsha1, DCPbase64, DCPrijndael, epistringutils,
+  DCPsha1, DCPbase64, epistringutils,
   XMLRead, epidocument;
 
 function GetSHA1Base64EncodedStr(const Key: string): string;
@@ -243,6 +246,8 @@ begin
   FUsers.ItemOwner := true;
   FGroups := TEpiGroups.Create(self);
   FGroups.ItemOwner := true;
+
+  RegisterClasses([Groups, Users]);
 end;
 
 destructor TEpiAdmin.Destroy;
@@ -260,16 +265,12 @@ end;
 function TEpiAdmin.SaveToXml(Content: String; Lvl: integer): string;
 begin
   InitCrypt(MasterPassword);
-  Content :=
-    Groups.SaveToXml('', Lvl + 1) +
-    Users.SaveToXml('', Lvl + 1);
   result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiAdmin.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
-  login, password: string;
   I: Integer;
 begin
   // Root = <Admin>
@@ -306,20 +307,12 @@ begin
 end;
 
 procedure TEpiAdmin.BeginUpdate;
-var
-  i: Integer;
 begin
   inherited BeginUpdate;
-  Groups.BeginUpdate;
-  Users.BeginUpdate;
 end;
 
 procedure TEpiAdmin.EndUpdate;
-var
-  i: Integer;
 begin
-  Users.EndUpdate;
-  Groups.EndUpdate;
   inherited EndUpdate;
 end;
 
@@ -392,7 +385,7 @@ end;
 function TEpiUsers.NewUser: TEpiUser;
 begin
   Result := TEpiUser.Create(Self);
-  Result.Id := 'user_id_' + IntToStr(Count);
+  Result.Id := GetUniqueItemId(TEpiUser);
   AddItem(Result);
 end;
 
@@ -476,7 +469,6 @@ end;
 
 procedure TEpiUser.SetPassword(const AValue: string);
 var
-  Val: String;
   SaltInt: LongInt;
   SaltByte: array[0..3] of char absolute SaltInt;
 begin
@@ -492,6 +484,11 @@ begin
   InitCrypt(Admin.MasterPassword);
 
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
+end;
+
+class function TEpiUser.IdString: string;
+begin
+  Result := 'user_id_';
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
@@ -521,11 +518,12 @@ var
   S: String;
 begin
   Inc(Lvl);
-  Result :=
+  Content :=
     SaveNode(Lvl, rsLogin, Login) +
     SaveNode(Lvl, rsPassword, Password) +
     SaveNode(Lvl, rsMasterPassword, BoolToStr(Admin.Settings.Scrambled, MasterPassword, ''));
 
+  // TODO : NAME MUST NOT BE SAVED UNSCRAMBLED!!!
   S :=
     SaveNode(Lvl, rsName, Name) +
     SaveNode(Lvl, rsGroupId, Group.Id) +
@@ -535,20 +533,17 @@ begin
     S := EnCrypt(S);
 
   Dec(Lvl);
-  Result := inherited SaveToXml(Result + S, Lvl);
+  Result := inherited SaveToXml(Content + S, Lvl);
 end;
 
 procedure TEpiUser.LoadFromXml(Root: TDOMNode);
 var
-  Node: TDOMNode;
   NewRoot: TDOMNode;
-  s: String;
 begin
   // Root = <User>
   // Remember that login, password and masterpassword have already been
   // read by now... only scrambled things need to be obtained now.
-
-  Id := TDOMElement(Root).GetAttribute('id');
+  inherited LoadFromXml(Root);
 
   if Admin.Settings.Scrambled then
     NewRoot := DeCrypt(Root)
@@ -629,7 +624,7 @@ end;
 function TEpiGroups.NewGroup: TEpiGroup;
 begin
   Result := TEpiGroup.Create(Self);
-  Result.Id := 'group_id_' + IntToStr(Count);
+  Result.Id := GetUniqueItemId(TEpiGroup);
   AddItem(Result);
 end;
 
@@ -643,6 +638,11 @@ begin
   Val := FRights;
   FRights := AValue;
   DoChange(eegAdmin, Word(eaceGroupSetRights), @Val);
+end;
+
+class function TEpiGroup.IdString: string;
+begin
+  Result := 'group_id_';
 end;
 
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);

@@ -25,21 +25,15 @@ type
 
   { TEpiField }
 
-  TEpiField = class(TEpiCustomItem)
+  TEpiField = class(TEpiCustomControlItem)
   private
     FCapacity: Integer;
-    FFieldDecimals: Cardinal;
-    FFieldLeft: Integer;
-    FFieldLength: Cardinal;
-    FFieldTop: Integer;
+    FDecimals: Cardinal;
+    FLength: Cardinal;
     FFieldType: TEpiFieldType;
     FSize: Integer;
-    function    GetName: string;
-    procedure   SetFieldDecimals(const AValue: Cardinal);
-    procedure   SetFieldLeft(const AValue: Integer);
-    procedure   SetFieldLength(const AValue: Cardinal);
-    procedure   SetFieldTop(const AValue: Integer);
-    procedure   SetName(const AValue: string);
+    procedure   SetDecimals(const AValue: Cardinal);
+    procedure   SetLength(const AValue: Cardinal);
   protected
     procedure   CheckIndex(Const index: integer); virtual;
     function    GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -82,13 +76,14 @@ type
 
   { Field Properties }
   public
-    property    FieldType:     TEpiFieldType read FFieldType;
-    property    FieldName:     string read GetName write SetName;
-    property    FieldLength:   Cardinal read FFieldLength write SetFieldLength;
-    property    FieldDecimals: Cardinal read FFieldDecimals write SetFieldDecimals;
-    Property    FieldTop:      Integer read FFieldTop write SetFieldTop;
-    Property    FieldLeft:     Integer read FFieldLeft write SetFieldLeft;
-    property    Size:          Integer read GetSize write SetSize;
+    property    FieldType: TEpiFieldType read FFieldType;
+    property    Id;
+    property    Name;
+    property    Length:    Cardinal read FLength write SetLength;
+    property    Decimals:  Cardinal read FDecimals write SetDecimals;
+    property    Size:      Integer read GetSize write SetSize;
+    property    Top;
+    property    Left;
 
   { Helper methods }
   public
@@ -99,6 +94,7 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+    class function IdString: string; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;

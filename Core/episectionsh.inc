@@ -18,13 +18,15 @@ type
 
   { TEpiSection }
 
-  TEpiSection = class(TEpiCustomItem)
+  TEpiSection = class(TEpiCustomControlItem)
   private
     FFields: TEpiFields;
     FGroups: TEpiGroups;
     FHeadings: TEpiHeadings;
     function GetField(Index: integer): TEpiField;
     function GetHeading(Index: integer): TEpiHeading;
+  protected
+    class function IdString: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -42,5 +44,7 @@ type
     { "Publiclised" inherited properties }
     property    Name;
     property    Id;
+    property    Top;
+    property    Left;
   end;
 

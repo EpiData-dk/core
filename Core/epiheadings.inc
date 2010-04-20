@@ -31,5 +31,10 @@ begin
   inherited Destroy;
 end;
 
+class function TEpiHeading.IdString: string;
+begin
+  Result := 'heading_id_';
+end;
+
 
 

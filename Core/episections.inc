@@ -46,7 +46,7 @@ end;
 function TEpiSections.NewSection: TEpiSection;
 begin
   result := TEpiSection.Create(Self);
-  result.Id := 'section_id_' + IntToStr(count);
+  result.Id := GetUniqueItemId(TEpiSection);
   AddItem(result);
 end;
 
@@ -62,6 +62,11 @@ begin
   result := TEpiHeading(Headings[Index]);
 end;
 
+class function TEpiSection.IdString: string;
+begin
+  Result := 'section_id_'
+end;
+
 constructor TEpiSection.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -70,10 +75,15 @@ begin
 
   FHeadings := TEpiHeadings.Create(self);
   FHeadings.ItemOwner := true;
+
+  FGroups := TEpiGroups.Create(Self);
+
+  RegisterClasses([Fields, Headings]);
 end;
 
 destructor TEpiSection.Destroy;
 begin
+  FGroups.Free;
   FHeadings.Free;
   FFields.Free;
   inherited Destroy;
@@ -85,10 +95,17 @@ begin
 end;
 
 function TEpiSection.SaveToXml(Content: String; Lvl: integer): string;
+var
+  i: Integer;
 begin
-  Content :=
-    Fields.SaveToXml('', Lvl + 1) +
-    Headings.SaveToXml('', Lvl + 1);
+  Content := '';
+  For i := 0 to Groups.Count - 1 do
+    Content += ',' + Groups[i].Id;
+  if Length(Content) > 0 then
+  begin
+    Delete(Content, 1, 1);
+    Content := SaveNode(Lvl + 1, rsGroupIdList, Content);
+  end;
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -97,7 +114,7 @@ var
   Node: TDOMNode;
 begin
   // Root = <Section>
-  if not Assigned(Root) then exit;
+  inherited LoadFromXml(Root);
 
   if LoadNode(Node, Root, rsFields, false) then
     Fields.LoadFromXml(Node);
@@ -115,5 +132,3 @@ function TEpiSection.NewHeading: TEpiHeading;
 begin
   Result := Headings.NewHeading;
 end;
-
-

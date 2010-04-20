@@ -108,6 +108,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     class function XMLName: string; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
@@ -388,6 +389,12 @@ end;
 class function TEpiValueLabelSets.XMLName: string;
 begin
   result := rsValueLabels;
+end;
+
+function TEpiValueLabelSets.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  if Count = 0 then exit;
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode);

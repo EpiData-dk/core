@@ -8,7 +8,7 @@ interface
 uses
   Classes, sysutils, XMLRead, DOM,
   episettings, epiadmin, epidatafiles,
-  epistudy, //epirelate,
+  epistudy, epirelations,
   epicustombase;
 
 type
@@ -18,10 +18,10 @@ type
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
-    FDataFiles: TEpiDataFiles;
-//    FRelates: TEpiRelates;
     FSettings: TEpiSettings;
     FStudy: TEpiStudy;
+    FDataFiles: TEpiDataFiles;
+    FRelations: TEpiRelations;
     function GetOnPassword: TRequestPasswordEvent;
     procedure SetOnPassword(const AValue: TRequestPasswordEvent);
   public
@@ -37,7 +37,7 @@ type
     Property   Admin: TEpiAdmin read FAdmin;
     Property   Study: TEpiStudy read FStudy;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
-//    Property   Relates: TEpiRelates read FRelates;
+    Property   Relations: TEpiRelations read FRelations;
     property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
   end;
 
@@ -60,18 +60,20 @@ begin
   inherited Create(nil);
   FSettings  := TEpiSettings.Create(Self);
   FAdmin     := TEpiAdmin.Create(Self);
-  FDataFiles := TEpiDataFiles.Create(Self);
-//  FRelates   := TEpiRelates.Create(Self);
   FStudy     := TEpiStudy.Create(Self);
+  FDataFiles := TEpiDataFiles.Create(Self);
+  FRelations := TEpiRelations.Create(Self);
+
+  RegisterClasses([Settings, Admin, Study, DataFiles, Relations]);
 end;
 
 destructor TEpiDocument.Destroy;
 begin
-  FSettings.Free;
-  FAdmin.Free;
+  FRelations.Free;
   FDataFiles.Free;
-//  FRelates.Free;
   FStudy.Free;
+  FAdmin.Free;
+  FSettings.Free;
   inherited Destroy;
 end;
 
@@ -124,9 +126,9 @@ begin
 
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node);
- {
-  LoadNode(Node, Root, rsRelates, true);
-  Relates.LoadFromXml(Node);    }
+
+  LoadNode(Node, Root, rsRelations, true);
+    Relations.LoadFromXml(Node);
 end;
 
 function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;
@@ -136,14 +138,7 @@ begin
   if IncludeHeader then
     Result := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding;
 
-  // **********************
-  // Global <EpiData> structure
-  // **********************
-  Content :=
-    Settings.SaveToXml('', Lvl + 1) +
-    Admin.SaveToXml('', Lvl + 1) +
-    Study.SaveToXml('', Lvl + 1) +
-    DataFiles.SaveToXml('', Lvl + 1);
+  // Inherited saves everything, since the the classes have been registered in Create.
   Result += inherited SaveToXml(Content, Lvl);
 end;
 

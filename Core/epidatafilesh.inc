@@ -40,10 +40,16 @@ type
   private
     { Private housekeeping }
     FRecordStatus: TEpiField;
-    procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+    function    GetDeleted(Index: integer): boolean;
+    function    GetVerified(Index: integer): boolean;
     function    GetSize: Integer;
-    procedure   SetSize(const AValue: Integer);
+    procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
     function    SaveRecords(Lvl: integer): string;
+    procedure   SetDeleted(Index: integer; const AValue: boolean);
+    procedure   SetSize(const AValue: Integer);
+    procedure   SetVerified(Index: integer; const AValue: boolean);
+  protected
+    class function IdString: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
@@ -62,6 +68,8 @@ type
     property    ValueLabels: TEpiValueLabelSets read FValueLabels;
     property    ValueLabelSet[Index: integer]: TEpiValueLabelSet read GetValueLabelSet;
     Property    Size: Integer read GetSize write SetSize;
+    property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
+    property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
   public
     { "Publiclised" inherited properties }
     property    Name;

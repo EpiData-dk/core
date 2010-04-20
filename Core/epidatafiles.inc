@@ -72,7 +72,7 @@ end;
 function TEpiDataFiles.NewDataFile: TEpiDataFile;
 begin
   Result := TEpiDataFile.Create(Self);
-  Result.Id := 'datafile_id_' + IntToStr(Count);
+  Result.Id := GetUniqueItemId(TEpiDataFile);
   AddItem(Result);
 end;
 
@@ -98,8 +98,26 @@ begin
   result := TEpiValueLabelSet(FValueLabels[Index]);
 end;
 
+function TEpiDataFile.GetDeleted(Index: integer): boolean;
+begin
+  result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
+end;
+
+function TEpiDataFile.GetVerified(Index: integer): boolean;
+begin
+  result := FRecordStatus.AsInteger[Index] = Ord(rsVerified);
+end;
+
+function TEpiDataFile.GetSize: Integer;
+begin
+  result := FRecordStatus.Size;
+end;
+
 procedure TEpiDataFile.LocalEventHook(Sender: TObject;
   EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+var
+  F: TEpiField;
+  H: TEpiHeading;
 begin
   case EventGrp of
     eegCustomBase:
@@ -112,11 +130,22 @@ begin
               // to the global list of fields.
               if (Sender is TEpiFields) then
               begin
-                Fields.AddItem(TEpiField(Data));
-                TEpiField(Data).Size := Size;
+                F := TEpiField(Data);
+                // Check that id is not in conflict with others.
+                if Fields.ItemExistsById(F.Id) then
+                  F.Id := Fields.GetUniqueItemId(TEpiField);
+                Fields.AddItem(F);
+                F.Size := Size;
               end;
+              // Same goes for headings
               if (Sender is TEpiHeadings) then
+              begin
+                H := TEpiHeading(Data);
+                // Check that id is not in conflict with others.
+                if Headings.ItemExistsById(H.Id) then
+                  H.Id := Headings.GetUniqueItemId(TEpiHeading);
                 Headings.AddItem(TEpiHeading(Data));
+              end;
 
               // If more sections are created, we need to add a hook to this also.
               if (Sender is TEpiSections) then
@@ -149,23 +178,6 @@ begin
   end;
 end;
 
-function TEpiDataFile.GetSize: Integer;
-begin
-  result := FRecordStatus.Size;
-end;
-
-procedure TEpiDataFile.SetSize(const AValue: Integer);
-var
-  i: Integer;
-begin
-  if AValue = Size then exit;
-
-  FRecordStatus.Size := AValue;
-
-  for i := 0 to Fields.Count - 1 do
-    Fields[i].Size := AValue;
-end;
-
 function TEpiDataFile.SaveRecords(Lvl: integer): string;
 var
   Sz: LongInt;
@@ -186,35 +198,75 @@ begin
     with Fields[CurField] do
       Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"';
 
-{    if Verified[CurRec] then
-      S += ' st="2"'
+    if Verified[CurRec] then
+      Result += ' st="2"'
     else if Deleted[CurRec] then
-      S += ' st="1"'
+      Result += ' st="1"'
     else
-      S += ' st="0"';}
+      Result += ' st="0"';
     Result += '/>' + LineEnding;
   end;
   Result +=
     Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
 end;
 
+procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
+begin
+  if AValue then
+    FRecordStatus.AsInteger[Index] := Ord(rsDeleted)
+  else
+    FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+end;
+
+procedure TEpiDataFile.SetSize(const AValue: Integer);
+var
+  i: Integer;
+begin
+  if AValue = Size then exit;
+
+  FRecordStatus.Size := AValue;
+
+  for i := 0 to Fields.Count - 1 do
+    Fields[i].Size := AValue;
+end;
+
+procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);
+begin
+  if AValue then
+    FRecordStatus.AsInteger[Index] := Ord(rsVerified)
+  else
+    FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+end;
+
+class function TEpiDataFile.IdString: string;
+begin
+  Result := 'datafile_id_';
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
-
-  // The "all" containers.
-  FAllFields := TEpiFields.Create(Self);
-  FAllHeadings := TEpiHeadings.Create(Self);
 
   // Sections
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
   FSections.RegisterOnChangeHook(@LocalEventHook, true);
+
+  // Valuelabels
+  FValueLabels := TEpiValueLabelSets.Create(Self);
+  FValueLabels.ItemOwner := true;
+
+  // The "all" containers.
+  FAllFields := TEpiFields.Create(Self);
+  FAllHeadings := TEpiHeadings.Create(Self);
+
   // The special main section...
   FMainSection := NewSection;
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
+
+  RegisterClasses([Sections, ValueLabels]);
 end;
 
 destructor TEpiDataFile.Destroy;
@@ -234,11 +286,7 @@ end;
 
 function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Content :=
-  //  ValueLabels.SaveToXml('', Lvl + 1);
-  //  ScreenProperties.SaveToXml('', Lvl + 1);
-    Sections.SaveToXml('', Lvl + 1) +
-    SaveRecords(Lvl + 1);
+  Content := SaveRecords(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -246,20 +294,17 @@ procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
-  Id := TDOMElement(Root).AttribStrings['id'];
-  Name := LoadNodeString(Root, rsName);
-
   if LoadNode(Node, Root, rsValueLabels, false) then
     ValueLabels.LoadFromXml(Node);
 
 //  if LoadNode(Node, Root, rsScreenInfo, false) then
 //    ScreenInfo.LoadFromXml(Node);
 
-//  if LoadNode(Node, Root, rsHeadings, false) then
-//    Headings.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsHeadings, false) then
+    Headings.LoadFromXml(Node);
 
-//  if LoadNode(Node, Root, rsFields, false) then
-//    Fields.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsFields, false) then
+    Fields.LoadFromXml(Node);
 
 //  if LoadNode(Node, Root, rsRecords, false) then
 //  LoadRecords  ValueLabels.LoadFromXml(Node);
@@ -274,4 +319,3 @@ function TEpiDataFile.NewSection: TEpiSection;
 begin
   result := Sections.NewSection;
 end;
-

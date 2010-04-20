@@ -32,32 +32,29 @@ type
     eegGroups,
     eegHeading,
     // epivaluelabels.pas
-    eegValueLabels
+    eegValueLabels,
+    // epirelations.pas
+    eegRelates
     );
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
-    ecceUpdate, ecceId, ecceName, ecceAddItem, ecceDelItem, ecceSetItem
+    ecceUpdate, ecceId, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
+    ecceSetTop, ecceSetLeft
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
 {$static on}
   TEpiCustomBase = class
-  { Commen data and methods }
+  { Scrambling }
   private
-    FOwner:     TEpiCustomBase;
     FCrypter:   TDCP_rijndael; static;
     function    Get4ByteSalt: Integer;
   protected
-    constructor Create(AOwner: TEpiCustomBase); virtual;
-
-  { Scrambling }
     procedure   InitCrypt(Key: string);
     function    EnCrypt(Const S: string): string; overload;
-    function    EnCrypt(Const St: TStream): string; overload;
     function    DeCrypt(Root: TDOMNode): TDOMNode; overload;
     function    DeCrypt(S: string): string; overload;
 //    property    Crypter: TDCP_rijndael read FCrypter;   // DOES NOT WORK WITH FPC 2.4 - only from 2.5.1
-    property    Owner: TEpiCustomBase read FOwner;
 
   { Save/Load functionality }
   private
@@ -68,7 +65,6 @@ type
 
     { Check methods }
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
-
     { Load methods }
     function   LoadNode(var Node: TDOMNode; const Root: TDOMNode;
       NodeName: string; Fatal: boolean): boolean; virtual;
@@ -78,22 +74,6 @@ type
     function   LoadNodeString(const Root: TDOMNode; NodeName: string): String;
     function   LoadNodeDateTime(const Root: TDOMNode; NodeName: string): TDateTime;
     function   LoadNodeBool(const Root: TDOMNode; NodeName: string): boolean;
-
-    { Save Methods
-    procedure  SaveStream(const St: TStream; const Constent: string);
-    // Save list of different containers
-    procedure  SaveClasses(const Lvl: integer;
-      const Classes: array of TEpiCustomBase); overload;
-    // Save a list container
-    procedure  SaveList(const St: TStream; const Lvl: integer;
-      const List: TEpiCustomList; const NodeName: string;
-      EnCryptList: boolean = false); overload;
-
-    function   SaveSection(const Lvl: integer; const NodeName: string;
-      const Content: string): string; overload;
-    function   SaveSection(const Lvl: integer; const NodeName: string;
-      const Id: string; const Content: string): string; overload;     }
-
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: string): string; overload;
@@ -124,14 +104,43 @@ type
     procedure  EndUpdate; virtual;
     procedure  RegisterOnChangeHook(Event: TEpiChangeEvent; IgnoreUpdate: boolean = false); virtual;
     procedure  UnRegisterOnChangeHook(Event: TEpiChangeEvent); virtual;
+
+  { Translation }
+  public
+    procedure   SetLanguage(LangCode: string); virtual;
+
+  { Class properties / inheritance }
+  private
+    FClassList: TFPList;
+    FOwner:     TEpiCustomBase;
+  protected
+    constructor Create(AOwner: TEpiCustomBase); virtual;
+    procedure   RegisterClasses(AClassList: Array of TEpiCustomBase); virtual;
+    property    ClassList: TFPList read FClassList;
+  public
+    destructor  Destroy; override;
+    property    Owner: TEpiCustomBase read FOwner;
   end;
 {$static off}
+
+  { TEpiTranslatedText }
+
+  TEpiTranslatedText = class(TEpiCustomBase)
+  private
+    FTextList: TStringList;
+    FCurrentText: String;
+  protected
+    procedure   SetLanguage(LangCode: string); override;
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    destructor  Destroy; override;
+    property    Text: string read FCurrentText;
+  end;
+
 
   { TEpiCustomItem }
 
   TEpiCustomItem = class(TEpiCustomBase)
-  protected
-    constructor Create(AOwner: TEpiCustomBase); override;
   protected
     FId: string;
     FName: string;
@@ -139,10 +148,29 @@ type
     function  GetName: string; virtual;
     procedure SetId(const AValue: string); virtual;
     procedure SetName(const AValue: string); virtual;
+    class function IdString: string; virtual; abstract;
     property  Id: string read GetId write SetId;
     property  Name: string read GetName write SetName;
   public
-    function  SaveToXml(Content: String; Lvl: integer): string; override;
+    destructor Destroy; override;
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
+  end;
+  TEpiCustomItemClass = class of TEpiCustomItem;
+
+  { TEpiCustomControlItem }
+
+  TEpiCustomControlItem = class(TEpiCustomItem)
+  private
+    FLeft: integer;
+    FTop: integer;
+  protected
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  SetLeft(const AValue: Integer); virtual;
+    procedure  SetTop(const AValue: Integer); virtual;
+    property   Left: Integer read FLeft write SetLeft;
+    property   Top: Integer read FTop write SetTop;
   end;
 
   { TEpiCustomList }
@@ -157,6 +185,7 @@ type
     function    GetCount: Integer; virtual;
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
+    class function IdString: string; override;
     function    ScrambleXml: boolean; virtual;
     property    List: TFPList read FList;
   public
@@ -166,8 +195,11 @@ type
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     procedure   DeleteItem(Index: integer); virtual;
     function    GetItemById(aId: string): TEpiCustomItem; virtual;
+    function    ItemExistsById(aId: string): boolean; virtual;
     function    GetItemByName(aName: string): TEpiCustomItem; virtual;
+    function    ItemExistsByName(aName: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
+    function    GetUniqueItemId(AClass: TEpiCustomItemClass): string; virtual;
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
@@ -176,6 +208,10 @@ type
   public
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
+
+  { Tanslation overrides }
+  public
+    procedure SetLanguage(LangCode: string); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -183,7 +219,7 @@ type
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead;
+  StrUtils, DCPsha256, XMLRead, epistringutils;
 
 { TEpiCustomBase }
 
@@ -195,6 +231,21 @@ end;
 constructor TEpiCustomBase.Create(AOwner: TEpiCustomBase);
 begin
   FOwner := AOwner;
+  FClassList := TFPList.Create;
+end;
+
+procedure TEpiCustomBase.RegisterClasses(AClassList: array of TEpiCustomBase);
+var
+  i: Integer;
+begin
+  for i := Low(AClassList) to High(AClassList) do
+    ClassList.Add(AClassList[i]);
+end;
+
+destructor TEpiCustomBase.Destroy;
+begin
+  FClassList.Free;
+  inherited Destroy;
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
@@ -223,25 +274,6 @@ begin
   Result := FCrypter.EncryptString(String(SaltStr) + S);
 
   FCrypter.Reset;
-end;
-
-function TEpiCustomBase.EnCrypt(const St: TStream): string;
-var
-  TmpSt: TStringStream;
-  Salt: Integer;
-  SaltStr: Array[0..3] of Char absolute Salt;
-begin
-  Salt := Get4ByteSalt;
-
-  St.Position := 0;
-  TmpSt := TStringStream.Create(String(SaltStr));
-  TmpSt.Position := TmpSt.Size;
-  TmpSt.CopyFrom(St, St.Size);
-  TmpSt.Position := 0;
-
-  Result := FCrypter.EncryptString(TStringStream(TmpSt).DataString);
-  FCrypter.Reset;
-  TmpSt.Free;
 end;
 
 function TEpiCustomBase.DeCrypt(Root: TDOMNode): TDOMNode;
@@ -466,11 +498,17 @@ begin
 end;
 
 function TEpiCustomBase.SaveToXml(Content: String; Lvl: integer): string;
+var
+  i: Integer;
 begin
   result :=
     Indent(Lvl) + '<' + XMLName + '>' + LineEnding +
-      Content +
-    Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
+      Content;
+
+  for i := 0 to ClassList.Count - 1 do
+    Result += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
+
+  Result += Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
 end;
 
 procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode);
@@ -493,12 +531,22 @@ begin
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
+var
+  i: Integer;
 begin
   Inc(FUpdateCount);
+
+  for i := 0 to ClassList.Count - 1 do
+    TEpiCustomBase(ClassList[i]).BeginUpdate;
 end;
 
 procedure TEpiCustomBase.EndUpdate;
+var
+  i: Integer;
 begin
+  for i := ClassList.Count - 1 downto 0 do
+    TEpiCustomBase(ClassList[i]).BeginUpdate;
+
   Dec(FUpdateCount);
   if (FUpdateCount < 0) or (FUpdateCount > 0) then
   begin
@@ -558,12 +606,42 @@ begin
   ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent));
 end;
 
-{ TEpiCustomItem }
+procedure TEpiCustomBase.SetLanguage(LangCode: string);
+var
+  i: Integer;
+begin
+  for i := 0 to ClassList.Count - 1 do
+    TEpiCustomBase(ClassList[i]).SetLanguage(LangCode);
+end;
 
-constructor TEpiCustomItem.Create(AOwner: TEpiCustomBase);
+{ TEpiTranslatedText }
+
+procedure TEpiTranslatedText.SetLanguage(LangCode: string);
+var
+  Idx:  integer;
+begin
+  inherited SetLanguage(LangCode);
+
+  if FTextList.Find(LangCode, Idx) then
+    FCurrentText := TString(FTextList.Objects[Idx]).Str
+  else
+    ; // TODO : Find Original language.
+end;
+
+constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FTextList := TStringList.Create;
+  FTextList.Sorted := true;
 end;
+
+destructor TEpiTranslatedText.Destroy;
+begin
+  FTextList.Free;
+  inherited Destroy;
+end;
+
+{ TEpiCustomItem }
 
 function TEpiCustomItem.GetId: string;
 begin
@@ -595,22 +673,81 @@ begin
   DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
+destructor TEpiCustomItem.Destroy;
+begin
+  FId := '';
+  FName := '';
+  inherited Destroy;
+end;
+
 function TEpiCustomItem.SaveToXml(Content: String; Lvl: integer): string;
+var
+  i: Integer;
 begin
   result :=
     Indent(Lvl) + '<' + XMLName + ' id="' + Id + '">' + LineEnding +
-      SaveNode(Lvl + 1, rsName, Name) +
-      Content +
+      SaveNode(Lvl + 1, rsName, Name);
+
+  for i := 0 to ClassList.Count - 1 do
+    Result += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
+
+  result +=
+    Content +
     Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
 end;
+
+procedure TEpiCustomItem.LoadFromXml(Root: TDOMNode);
+begin
+  Id := TDOMElement(Root).AttribStrings[rsId];
+  Name := LoadNodeString(Root, rsName);
+end;
+
+function TEpiCustomControlItem.SaveToXml(Content: String; Lvl: integer
+  ): string;
+begin
+  Content :=
+    SaveNode(Lvl + 1, rsTop, Top) +
+    SaveNode(Lvl + 1, rsLeft, Left) +
+    Content;
+  Result := inherited SaveToXml(Content, Lvl);
+end;
+
+procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode);
+begin
+  inherited LoadFromXml(Root);
+  Top := LoadNodeInt(Root, rsTop);
+  Left := LoadNodeInt(Root, rsLeft);
+end;
+
+{ TEpiCustomControlItem }
+
+procedure TEpiCustomControlItem.SetLeft(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if Left = AValue then exit;
+  Val := Left;
+  FLeft := AValue;
+  DoChange(eegCustomBase, Word(ecceSetLeft), @Val);
+end;
+
+procedure TEpiCustomControlItem.SetTop(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if Top = AValue then exit;
+  Val := Top;
+  FTop := AValue;
+  DoChange(eegCustomBase, Word(ecceSetTop), @Val);
+end;
+
+{ TEpiCustomList }
 
 procedure TEpiCustomList.SetItemOwner(const AValue: boolean);
 begin
   if FItemOwner = AValue then exit;
   FItemOwner := AValue;
 end;
-
-{ TEpiCustomList }
 
 constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
 begin
@@ -639,9 +776,25 @@ begin
   DoChange(eegCustomBase, Word(ecceSetItem), Val);
 end;
 
+class function TEpiCustomList.IdString: string;
+begin
+  Result := '';
+end;
+
 function TEpiCustomList.ScrambleXml: boolean;
 begin
   result := false;
+end;
+
+function TEpiCustomList.GetUniqueItemId(AClass: TEpiCustomItemClass): string;
+var
+  i: Integer;
+begin
+  i := Count;
+  repeat
+    result := AClass.IdString + IntToStr(i);
+    Inc(i);
+  until (not ItemExistsById(result));
 end;
 
 destructor TEpiCustomList.Destroy;
@@ -718,6 +871,11 @@ begin
   end;
 end;
 
+function TEpiCustomList.ItemExistsById(aId: string): boolean;
+begin
+  result := Assigned(GetItemById(aId));
+end;
+
 function TEpiCustomList.GetItemByName(aName: string): TEpiCustomItem;
 var
   i: Integer;
@@ -731,6 +889,11 @@ begin
       Exit;
     end;
   end;
+end;
+
+function TEpiCustomList.ItemExistsByName(aName: string): boolean;
+begin
+  result := Assigned(GetItemByName(aName));
 end;
 
 function TEpiCustomList.IndexOf(Item: TEpiCustomItem): integer;
@@ -754,6 +917,15 @@ begin
   for i := 0 to Count - 1 do
     Items[i].EndUpdate;
   inherited EndUpdate;
+end;
+
+procedure TEpiCustomList.SetLanguage(LangCode: string);
+var
+  i: Integer;
+begin
+  inherited SetLanguage(LangCode);
+  for i := 0 to Count - 1 do
+    Items[i].SetLanguage(LangCode);
 end;
 
 end.
