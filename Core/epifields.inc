@@ -34,7 +34,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiFields.XMLName: string;
+function TEpiFields.XMLName: string;
 begin
   Result := rsFields;
 end;
@@ -152,7 +152,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiField.XMLName: string;
+function TEpiField.XMLName: string;
 begin
   Result := rsField;
 end;

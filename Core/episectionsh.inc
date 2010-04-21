@@ -10,7 +10,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewSection: TEpiSection;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
@@ -30,7 +30,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;

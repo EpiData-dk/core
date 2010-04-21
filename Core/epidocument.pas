@@ -25,9 +25,9 @@ type
     function GetOnPassword: TRequestPasswordEvent;
     procedure SetOnPassword(const AValue: TRequestPasswordEvent);
   public
-    constructor Create;
+    constructor Create(Const LangCode: string);
     destructor Destroy; override;
-    class function XMLName: string; override;
+    function   XMLName: string; override;
     procedure  LoadFromFile(const AFileName: string);
     procedure  LoadFromStream(const St: TStream);
     procedure  LoadFromXml(Root: TDOMNode); override;
@@ -55,7 +55,7 @@ begin
   Admin.OnPassword := AValue;
 end;
 
-constructor TEpiDocument.Create;
+constructor TEpiDocument.Create(const LangCode: string);
 begin
   inherited Create(nil);
   FSettings  := TEpiSettings.Create(Self);
@@ -65,6 +65,8 @@ begin
   FRelations := TEpiRelations.Create(Self);
 
   RegisterClasses([Settings, Admin, Study, DataFiles, Relations]);
+
+  SetLanguage(LangCode, true);
 end;
 
 destructor TEpiDocument.Destroy;
@@ -77,7 +79,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiDocument.XMLName: string;
+function TEpiDocument.XMLName: string;
 begin
   Result := rsEpiData;
 end;

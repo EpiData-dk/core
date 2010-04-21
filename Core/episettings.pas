@@ -32,7 +32,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     property    Version: integer read FVersion write SetVersion;
@@ -111,7 +111,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiSettings.XMLName: string;
+function TEpiSettings.XMLName: string;
 begin
   Result := rsSettings;
 end;

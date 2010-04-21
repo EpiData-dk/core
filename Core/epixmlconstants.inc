@@ -48,6 +48,7 @@ const
     rsReferences      = 'References';
     rsRightsholder    = 'Rightsholder';
     rsSource          = 'Source';
+    rsSpatial         = 'Spatial';
     rsSubject         = 'Subject';
     rsTemporal        = 'Temporal';
     rsTitle           = 'Title';

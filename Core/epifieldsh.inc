@@ -16,7 +16,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     property    DataFile: TEpiDataFile read GetDataFile;
@@ -99,7 +99,7 @@ type
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;
     destructor  Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
   end;

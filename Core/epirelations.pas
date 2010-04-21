@@ -25,7 +25,7 @@ type
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   class function XMLName: string; override;
+   function XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    function    NewPrimaryKey: TEpiPrimaryKey;
@@ -42,7 +42,7 @@ type
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   class function XMLName: string; override;
+   function XMLName: string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    function    NewPrimaryKey: TEpiPrimaryKey;
  end;
@@ -58,7 +58,7 @@ type
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   class function XMLName: string; override;
+   function XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    property    DataFile: TEpiDataFile read FDataFile write FDataFile;
@@ -74,7 +74,7 @@ type
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   class function XMLName: string; override;
+   function XMLName: string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    function    NewRelate: TEpiRelate;
  end;
@@ -98,7 +98,7 @@ type
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor Destroy; override;
-   class function XMLName: string; override;
+   function XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    property    DataFile: TEpiDataFile read FDataFile write SetDataFile;
@@ -143,7 +143,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiRelations.XMLName: string;
+function TEpiRelations.XMLName: string;
 begin
   Result := rsRelations;
 end;
@@ -193,7 +193,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiPrimaryKeys.XMLName: string;
+function TEpiPrimaryKeys.XMLName: string;
 begin
   Result := rsPrimaryKeys;
 end;
@@ -242,7 +242,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiPrimaryKey.XMLName: string;
+function TEpiPrimaryKey.XMLName: string;
 begin
   Result := rsPrimaryKey;
 end;
@@ -287,7 +287,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiRelates.XMLName: string;
+function TEpiRelates.XMLName: string;
 begin
   Result := rsRelates;
 end;
@@ -386,7 +386,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiRelate.XMLName: string;
+function TEpiRelate.XMLName: string;
 begin
   Result := rsRelate;
 end;

@@ -18,7 +18,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiSections.XMLName: string;
+function TEpiSections.XMLName: string;
 begin
   result := rsSections;
 end;
@@ -89,7 +89,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiSection.XMLName: string;
+function TEpiSection.XMLName: string;
 begin
   Result := rsSection;
 end;

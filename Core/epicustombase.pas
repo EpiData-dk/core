@@ -86,7 +86,7 @@ type
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
   public
-    class function XMLName: string; virtual;
+    function XMLName: string; virtual;
     function   SaveToXml(Content: String; Lvl: integer): string; virtual;
     procedure  LoadFromXml(Root: TDOMNode); virtual;
 
@@ -106,8 +106,12 @@ type
     procedure  UnRegisterOnChangeHook(Event: TEpiChangeEvent); virtual;
 
   { Translation }
+  private
+    FCurrentLang: string; static;
+    FDefaultLang: string; static;
   public
-    procedure   SetLanguage(LangCode: string); virtual;
+    procedure   SetLanguage(Const LangCode: string;
+      const DefaultLanguage: boolean); virtual;
 
   { Class properties / inheritance }
   private
@@ -115,7 +119,7 @@ type
     FOwner:     TEpiCustomBase;
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
-    procedure   RegisterClasses(AClassList: Array of TEpiCustomBase); virtual;
+    procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
     destructor  Destroy; override;
@@ -129,32 +133,38 @@ type
   private
     FTextList: TStringList;
     FCurrentText: String;
+    FXMLName: string;
+    procedure   SetCurrentText(const AValue: string);
   protected
-    procedure   SetLanguage(LangCode: string); override;
+    procedure   SetLanguage(Const LangCode: string;
+      Const DefaultLanguage: boolean); override;
+    function XMLName: string; override;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string);
     destructor  Destroy; override;
-    property    Text: string read FCurrentText;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure   SetText(Const LangCode: string; Const AText: string);
+    property    Text: string read FCurrentText write SetCurrentText;
   end;
-
 
   { TEpiCustomItem }
 
   TEpiCustomItem = class(TEpiCustomBase)
   protected
     FId: string;
-    FName: string;
-    function  GetId: string; virtual;
-    function  GetName: string; virtual;
-    procedure SetId(const AValue: string); virtual;
-    procedure SetName(const AValue: string); virtual;
+    FName: TEpiTranslatedText;
+    constructor Create(AOwner: TEpiCustomBase); override;
+    function    GetId: string; virtual;
+    function    GetName: string; virtual;
+    procedure   SetId(const AValue: string); virtual;
+    procedure   SetName(const AValue: string); virtual;
     class function IdString: string; virtual; abstract;
-    property  Id: string read GetId write SetId;
-    property  Name: string read GetName write SetName;
+    property    Id: string read GetId write SetId;
+    property    Name: string read GetName write SetName;
   public
-    destructor Destroy; override;
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    destructor  Destroy; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -211,7 +221,8 @@ type
 
   { Tanslation overrides }
   public
-    procedure SetLanguage(LangCode: string); override;
+    procedure SetLanguage(Const LangCode: string;
+      Const DefaultLanguage: boolean); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -234,12 +245,12 @@ begin
   FClassList := TFPList.Create;
 end;
 
-procedure TEpiCustomBase.RegisterClasses(AClassList: array of TEpiCustomBase);
+procedure TEpiCustomBase.RegisterClasses(AClasses: array of TEpiCustomBase);
 var
   i: Integer;
 begin
-  for i := Low(AClassList) to High(AClassList) do
-    ClassList.Add(AClassList[i]);
+  for i := Low(AClasses) to High(AClasses) do
+    ClassList.Add(AClasses[i]);
 end;
 
 destructor TEpiCustomBase.Destroy;
@@ -492,7 +503,7 @@ begin
   result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
 end;
 
-class function TEpiCustomBase.XMLName: string;
+function TEpiCustomBase.XMLName: string;
 begin
   result := ClassName;
 end;
@@ -606,42 +617,102 @@ begin
   ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent));
 end;
 
-procedure TEpiCustomBase.SetLanguage(LangCode: string);
+procedure TEpiCustomBase.SetLanguage(const LangCode: string;
+  const DefaultLanguage: boolean);
 var
   i: Integer;
 begin
   for i := 0 to ClassList.Count - 1 do
-    TEpiCustomBase(ClassList[i]).SetLanguage(LangCode);
+    TEpiCustomBase(ClassList[i]).SetLanguage(LangCode, DefaultLanguage);
 end;
 
 { TEpiTranslatedText }
 
-procedure TEpiTranslatedText.SetLanguage(LangCode: string);
+procedure TEpiTranslatedText.SetCurrentText(const AValue: string);
+begin
+  if FCurrentText = AValue then exit;
+
+  SetText(FCurrentLang, AValue);
+  FCurrentText := AValue
+end;
+
+procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
+  const DefaultLanguage: boolean);
 var
   Idx:  integer;
 begin
-  inherited SetLanguage(LangCode);
+  inherited SetLanguage(LangCode, DefaultLanguage);
 
+  // First seek "new" language
   if FTextList.Find(LangCode, Idx) then
     FCurrentText := TString(FTextList.Objects[Idx]).Str
-  else
-    ; // TODO : Find Original language.
+  // Fallback to default language
+  else if FTextList.Find(FDefaultLang, Idx) then
+    FCurrentText := TString(FTextList.Objects[Idx]).Str
+  // If new default language does not exists create empty entry.
+  else if DefaultLanguage then
+  begin
+    SetText(LangCode, '');
+    FCurrentText := '';
+  end;
+  if DefaultLanguage then
+    FDefaultLang := LangCode;
+  FCurrentLang := LangCode;
 end;
 
-constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase);
+function TEpiTranslatedText.XMLName: string;
+begin
+  Result := FXMLName;
+end;
+
+constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase;
+  const aXMLName: string);
 begin
   inherited Create(AOwner);
   FTextList := TStringList.Create;
   FTextList.Sorted := true;
+  FXMLName := aXMLName
 end;
 
 destructor TEpiTranslatedText.Destroy;
+var
+  i: Integer;
 begin
+  for i := FTextList.Count - 1 downto 0 do
+    FTextList.Objects[i].Free;
   FTextList.Free;
   inherited Destroy;
 end;
 
+function TEpiTranslatedText.SaveToXml(Content: String; Lvl: integer): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to FTextList.Count - 1 do
+    Result += Indent(Lvl) + '<' + XMLName + ' xml:lang="' + FTextList[i] + '">' +
+               TString(FTextList.Objects[i]).Str + '</' + XMLName + '>' + LineEnding;
+end;
+
+procedure TEpiTranslatedText.SetText( const LangCode: string;
+  const AText: string);
+var
+  Idx: integer;
+begin
+  if FTextList.Find(LangCode, Idx) then
+    TString(FTextList.Objects[Idx]).Str := AText
+  else
+    FTextList.AddObject(LangCode, TString.Create(AText));
+end;
+
 { TEpiCustomItem }
+
+constructor TEpiCustomItem.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FName := TEpiTranslatedText.Create(Self, rsName);
+  RegisterClasses([FName]);
+end;
 
 function TEpiCustomItem.GetId: string;
 begin
@@ -650,7 +721,7 @@ end;
 
 function TEpiCustomItem.GetName: string;
 begin
-  result := FName;
+  result := FName.Text;
 end;
 
 procedure TEpiCustomItem.SetId(const AValue: string);
@@ -667,16 +738,16 @@ procedure TEpiCustomItem.SetName(const AValue: string);
 var
   Val: String;
 begin
-  if FName = AValue then exit;
-  Val := FName;
-  FName := AValue;
+  if FName.Text = AValue then exit;
+  Val := FName.Text;
+  FName.Text := AValue;
   DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
 destructor TEpiCustomItem.Destroy;
 begin
   FId := '';
-  FName := '';
+  FName.Free;
   inherited Destroy;
 end;
 
@@ -685,8 +756,7 @@ var
   i: Integer;
 begin
   result :=
-    Indent(Lvl) + '<' + XMLName + ' id="' + Id + '">' + LineEnding +
-      SaveNode(Lvl + 1, rsName, Name);
+    Indent(Lvl) + '<' + XMLName + ' id="' + Id + '">' + LineEnding;
 
   for i := 0 to ClassList.Count - 1 do
     Result += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
@@ -919,13 +989,14 @@ begin
   inherited EndUpdate;
 end;
 
-procedure TEpiCustomList.SetLanguage(LangCode: string);
+procedure TEpiCustomList.SetLanguage(const LangCode: string;
+  const DefaultLanguage: boolean);
 var
   i: Integer;
 begin
-  inherited SetLanguage(LangCode);
+  inherited SetLanguage(LangCode, DefaultLanguage);
   for i := 0 to Count - 1 do
-    Items[i].SetLanguage(LangCode);
+    Items[i].SetLanguage(LangCode, DefaultLanguage);
 end;
 
 end.

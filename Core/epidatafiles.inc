@@ -22,7 +22,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiDataFiles.XMLName: string;
+function TEpiDataFiles.XMLName: string;
 begin
   Result := rsDataFiles;
 end;
@@ -279,7 +279,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiDataFile.XMLName: string;
+function TEpiDataFile.XMLName: string;
 begin
   Result := rsDataFile;
 end;

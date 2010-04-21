@@ -50,7 +50,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    class function XMLName: string; override;
+    function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     property   Settings: TEpiSettings read GetSettings;
@@ -77,7 +77,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  PreLoadFromXml(Root: TDOMNode);
@@ -117,7 +117,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     property   Admin: TEpiAdmin read GetAdmin;
@@ -144,7 +144,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function ScrambleXml: boolean; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     function   NewGroup: TEpiGroup;
@@ -163,7 +163,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    class function XMLName: string; override;
+    function XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
@@ -257,7 +257,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiAdmin.XMLName: string;
+function TEpiAdmin.XMLName: string;
 begin
   Result := rsAdmin;
 end;
@@ -353,7 +353,7 @@ begin
   end;
 end;
 
-class function TEpiUsers.XMLName: string;
+function TEpiUsers.XMLName: string;
 begin
   result := rsUsers;
 end;
@@ -503,12 +503,10 @@ begin
   FMasterPassword := '';
   FPassword := '';
   FSalt := '';
-  FId := '';
-  FName := '';
   inherited Destroy;
 end;
 
-class function TEpiUser.XMLName: string;
+function TEpiUser.XMLName: string;
 begin
   result := rsUser;
 end;
@@ -581,7 +579,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiGroups.XMLName: string;
+function TEpiGroups.XMLName: string;
 begin
   Result := rsGroups;
 end;
@@ -655,7 +653,7 @@ begin
   inherited Destroy;
 end;
 
-class function TEpiGroup.XMLName: string;
+function TEpiGroup.XMLName: string;
 begin
   Result := rsGroup;
 end;
