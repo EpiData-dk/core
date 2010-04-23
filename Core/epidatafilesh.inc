@@ -2,30 +2,24 @@
 
 type
 
-  { TEpiDataFiles }
-
-//  TEpiDataFilesChangeEventType = (
-//      edfce
-//    );
-
   TEpiDataFiles = class(TEpiCustomList)
   private
     function    GetDataFile(Index: integer): TEpiDataFile;
     function    GetSettings: TEpiSettings;
   protected
     Property    Settings: TEpiSettings read GetSettings;
+    function    ScrambleXml: boolean; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    function XMLName: string; override;
-    function    ScrambleXml: boolean; override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewDataFile: TEpiDataFile;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 
-  TEpiDataFile = class(TEpiCustomItem)
+  TEpiDataFile = class(TEpiCustomNamedItem)
   private
     { Data containers }
     FAllFields: TEpiFields;
@@ -58,6 +52,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
+    function    NewHeading: TEpiHeading;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;

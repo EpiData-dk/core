@@ -10,18 +10,25 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-
+    function   XMLName: string; override;
     function   NewHeading: TEpiHeading;
   end;
 
   { TEpiHeading }
 
-  TEpiHeading = class(TEpiCustomItem)
+  TEpiHeading = class(TEpiCustomControlItem)
   private
-
+    FCaption: TEpiTranslatedText;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor Destroy; override;
+    destructor  Destroy; override;
     class function IdString: string; override;
+    function    XMLName: string; override;
+  public
+    property Id;
+    property Name;
+    property Caption: TEpiTranslatedText read FCaption;
+    property Top;
+    property Left;
   end;
 

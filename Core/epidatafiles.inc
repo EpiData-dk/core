@@ -136,6 +136,7 @@ begin
                   F.Id := Fields.GetUniqueItemId(TEpiField);
                 Fields.AddItem(F);
                 F.Size := Size;
+                F.FDataFile := Self;
               end;
               // Same goes for headings
               if (Sender is TEpiHeadings) then
@@ -266,7 +267,7 @@ begin
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
 
-  RegisterClasses([Sections, ValueLabels]);
+  RegisterClasses([ValueLabels, Sections]);
 end;
 
 destructor TEpiDataFile.Destroy;
@@ -294,17 +295,13 @@ procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
-  if LoadNode(Node, Root, rsValueLabels, false) then
+  inherited LoadFromXml(Root);
+
+  if LoadNode(Node, Root, rsValueLabelSets, false) then
     ValueLabels.LoadFromXml(Node);
 
-//  if LoadNode(Node, Root, rsScreenInfo, false) then
-//    ScreenInfo.LoadFromXml(Node);
-
-  if LoadNode(Node, Root, rsHeadings, false) then
-    Headings.LoadFromXml(Node);
-
-  if LoadNode(Node, Root, rsFields, false) then
-    Fields.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsSections, false) then
+    Sections.LoadFromXml(Node);
 
 //  if LoadNode(Node, Root, rsRecords, false) then
 //  LoadRecords  ValueLabels.LoadFromXml(Node);
@@ -318,4 +315,9 @@ end;
 function TEpiDataFile.NewSection: TEpiSection;
 begin
   result := Sections.NewSection;
+end;
+
+function TEpiDataFile.NewHeading: TEpiHeading;
+begin
+  result := MainSection.NewHeading;
 end;

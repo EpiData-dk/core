@@ -16,7 +16,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     property    DataFile: TEpiDataFile read GetDataFile;
@@ -28,10 +28,13 @@ type
   TEpiField = class(TEpiCustomControlItem)
   private
     FCapacity: Integer;
+    FDataFile: TEpiDataFile;
     FDecimals: Cardinal;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
     FSize: Integer;
+    FValueLabelSet: TEpiValueLabelSet;
+    FQuestion:  TEpiHeading;
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetLength(const AValue: Cardinal);
   protected
@@ -84,6 +87,8 @@ type
     property    Size:      Integer read GetSize write SetSize;
     property    Top;
     property    Left;
+    property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write FValueLabelSet;
+    property    Question: TEpiHeading read FQuestion;
 
   { Helper methods }
   public
@@ -99,9 +104,10 @@ type
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    property    DataFile: TEpiDataFile read FDataFile;
   end;
 
   { TEpiIntField }

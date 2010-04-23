@@ -26,6 +26,7 @@
         </Debugging>
       </Linking>
       <Other>
+        <CustomOptions Value="-dEPI_DEBUG"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>

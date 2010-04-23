@@ -332,7 +332,7 @@ begin
   FAbstractText := TEpiTranslatedText.Create(Self, rsAbstract);
   FCreator      := TEpiTranslatedText.Create(Self, rsCreator);
   FDescription  := TEpiTranslatedText.Create(Self, rsDescription);
-  FStudyOwner   := TEpiTranslatedText.Create(Self, rsStudy);
+  FStudyOwner   := TEpiTranslatedText.Create(Self, rsOwner);
   FProtocol     := TEpiTranslatedText.Create(Self, rsProtocol);
   FProvenance   := TEpiTranslatedText.Create(Self, rsProvenance);
   FReferences   := TEpiTranslatedText.Create(Self, rsReferences);

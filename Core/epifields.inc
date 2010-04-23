@@ -50,7 +50,7 @@ begin
   begin
     CheckNode(Node, rsField);
 
-    NField := DataFile.NewField(TEpiFieldType(LoadNodeInt(Node, rsType)));
+    NField := NewField(TEpiFieldType(LoadNodeInt(Node, rsType)));
     NField.LoadFromXml(Node);
 
     Node := Node.NextSibling;
@@ -114,6 +114,9 @@ constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
   FFieldType := AFieldType;
+  FQuestion := TEpiHeading.Create(Self);
+
+  RegisterClasses([FQuestion]);
 end;
 
 class function TEpiField.IdString: string;
@@ -162,10 +165,9 @@ begin
   Content :=
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
     SaveNode(Lvl + 1, rsLength, Length) +
-    SaveNode(Lvl + 1, rsDecimals, Decimals) +
-//    SaveNode(Lvl + 1, rsColourId, ColourProp.Id) +
-//    SaveNode(Lvl + 1, rsValueLabelId, ValueLabel.Id) +
-    '';
+    SaveNode(Lvl + 1, rsDecimals, Decimals);
+  if Assigned(ValueLabelSet) then
+    Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -178,13 +180,7 @@ begin
   Length   := LoadNodeInt(Root, rsLength);
   Decimals := LoadNodeInt(Root, rsDecimals);
   if LoadNode(Node, Root, rsValueLabelId, false) then
-    ; //ValueLabelSet := DataFile.ValueLabels.GetById(LoadNodeString(Root, rsValueLabelId));
-
-  // Colour:
-  if LoadNode(Node, Root, rsColourId, false) then
-    //ColourProp := DataFile.ColourProperties.ScreenPropertyById(UTF8Encode(Node.TextContent));
-  else
-    ; //ScreenProps   := DataFile.ScreenProperties.DefaultScreenProperty;
+    ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
 end;
 
 { TEpiIntField }

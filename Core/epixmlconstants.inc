@@ -3,8 +3,9 @@ const
   // - Generic
   rsType = 'Type';
   // - CustomItem
-  rsName = 'Name';
   rsId   = 'id';
+  // - CustomNamedItem
+  rsName = 'Name';
   // - CustomControlItem
   rsTop  = 'Top';
   rsLeft = 'Left';
@@ -55,10 +56,11 @@ const
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
-     rsValueLabels     = 'ValueLabels';
-      rsValueLabel      = 'ValueLabel';
+     rsValueLabelSets  = 'ValueLabelSets';
+      rsValueLabelSet   = 'ValueLabelSet';
        rsInternal        = 'Internal';
-        rsSet             = 'Set';
+        rsValueLabel      = 'ValueLabel';
+         rsLabel           = 'Label';
        rsExternal        = 'External';
         rsFile            = 'File';
         rsDataFileId      = 'DataFileId';
@@ -69,6 +71,8 @@ const
       rsSection         = 'Section';
        rsGroupIdList     = 'GroupIdList';
        rsHeadings        = 'Headings';
+        rsHeading         = 'Heading';
+         rsCaption         = 'Caption';
        rsFields          = 'Fields';
         rsField           = 'Field';
          rsLength          = 'Length';

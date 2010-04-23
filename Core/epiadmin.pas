@@ -97,6 +97,7 @@ type
     // Master password as stored in file:
     // - Base64( AES ( CleearTextPassword ))
     FMasterPassword: string;
+    FName: string;
     // Users password as stored in file:
     // - '$' + Base64(Salt) + '$' + Base64( SHA1 ( Salt + CleearTextPassword + Login ))
     FPassword: string;
@@ -110,6 +111,7 @@ type
     procedure SetLastLogin(const AValue: TDateTime);
     procedure SetLogin(const AValue: string);
     procedure SetMasterPassword(const AValue: string);
+    procedure SetName(const AValue: string);
     procedure SetPassword(const AValue: string);
   protected
     class function IdString: string; override;
@@ -130,31 +132,31 @@ type
     Property   Group: TEpiGroup read FGroup write SetGroup;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
-  published
+    property   Name: string read FName write SetName;
+  public
     Property   Id;
-    property   Name;
   end;
 
   { TEpiGroups }
 
   TEpiGroups = class(TEpiCustomList)
   private
-    function GetAdmin: TEpiAdmin;
-    function GetGroup(Index: integer): TEpiGroup;
+    function    GetAdmin: TEpiAdmin;
+    function    GetGroup(Index: integer): TEpiGroup;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor Destroy; override;
-    function XMLName: string; override;
-    function ScrambleXml: boolean; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
-    function   NewGroup: TEpiGroup;
-    Property   Group[Index: integer]: TEpiGroup read GetGroup; default;
-    Property   Admin: TEpiAdmin read GetAdmin;
+    destructor  Destroy; override;
+    function    XMLName: string; override;
+    function    ScrambleXml: boolean; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    NewGroup: TEpiGroup;
+    Property    Group[Index: integer]: TEpiGroup read GetGroup; default;
+    Property    Admin: TEpiAdmin read GetAdmin;
   end;
 
   { TEpiGroup }
 
-  TEpiGroup = class(TEpiCustomItem)
+  TEpiGroup = class(TEpiCustomNamedItem)
   private
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
@@ -467,6 +469,12 @@ begin
   FMasterPassword := AValue;
 end;
 
+procedure TEpiUser.SetName(const AValue: string);
+begin
+  if FName = AValue then exit;
+  FName := AValue;
+end;
+
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   SaltInt: LongInt;
@@ -668,9 +676,7 @@ end;
 procedure TEpiGroup.LoadFromXml(Root: TDOMNode);
 begin
   // Root = <Group>
-  Id := TDOMElement(Root).GetAttribute('id');
-
-  Name := LoadNodeString(Root, rsName);
+  inherited LoadFromXml(Root);
   Rights := TEpiAdminRights(LoadNodeInt(Root, rsRights));
 end;
 

@@ -14,13 +14,14 @@ type
   TEpiCustomValueLabel = class(TEpiCustomItem)
   private
     FOrder: Integer;
-    FLabel: String;
+    FLabel: TEpiTranslatedText;
     function GetValueAsString: string; virtual; abstract;
   public
+    constructor Create(AOwner: TEpiCustomBase); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     property Order: integer read FOrder write FOrder;
-    property TheLabel: string read FLabel write FLabel;
+    property TheLabel: TEpiTranslatedText read FLabel write FLabel;
   end;
 
   { TEpiIntValueLabel }
@@ -84,19 +85,25 @@ type
     function    SaveInternal(Lvl: integer): string; virtual;
     procedure   LoadExternal(Root: TDOMNode); virtual;
     function    SaveExternal(Lvl: integer): string; virtual;
-  { Add/Remove overrides }
-  public
+  { TEpiCustomList overrides }
+{  public
+    function    GetCount: Integer; override;
     procedure   AddItem(Item: TEpiCustomItem); override;
     procedure   RemoveItem(Item: TEpiCustomItem); override;
+    property    Items[Index: integer]: TEpiCustomItem    }
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
+  public
+    { "Publiclised" inherited properties }
+    property    Id;
+    property    Name;
   end;
 
   { TEpiValueLabelSets }
@@ -121,25 +128,43 @@ uses
 
 { TEpiCustomValueLabel }
 
+constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FLabel := TEpiTranslatedText.Create(Self, rsLabel);
+  RegisterClasses([FLabel]);
+end;
+
 function TEpiCustomValueLabel.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Result :=
-    Indent(LvL) + '<Set ' +
-                  'order="' + IntToStr(Order) + '" ' +
-                  'value="' + GetValueAsString + '" ' +
-                  'label="' + TheLabel + '"' +
-                  '/>' + LineEnding;
+  with TEpiValueLabelSet(Owner) do
+  begin
+    if LabelScope = vlsExternal then exit;
+    if Items[0] = Self then
+      result := Indent(Lvl) + '<' + rsInternal + '>' + LineEnding;
+  end;
+
+  Result +=
+    Indent(LvL + 1) +
+      '<' + rsValueLabel + ' order="' + IntToStr(Order) + '" value="' + GetValueAsString + '">' + LineEnding +
+      FLabel.SaveToXml('', Lvl + 2) +
+    Indent(Lvl + 1) +
+      '</' + rsValueLabel + '>' + LineEnding;
+
+  with TEpiValueLabelSet(Owner) do
+    if Items[Count - 1] = Self then
+      result += Indent(Lvl) + '</' + rsInternal + '>' + LineEnding;
 end;
 
 procedure TEpiCustomValueLabel.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMElement;
 begin
-  // Root = <Set>
+  // Root = <ValueLabel>
   Node := TDOMElement(Root);
 
   Order    := StrToIntDef(Node.AttribStrings['order'], -1);
-  TheLabel := UTF8Encode(Node.AttribStrings['label']);
+  TheLabel.LoadFromXml(Root);
 end;
 
 { TEpiIntValueLabel }
@@ -229,7 +254,7 @@ begin
   if AValue = FLabelType then exit;
   // Hack to fix improper handling of setting TAVL_Tree OnCompare event.
   // should not be required to check for Count > 0.
-  if FData.Count > 0 then
+//  if FData.Count > 0 then
   begin
     FLabelType := AValue;
     Case LabelType of
@@ -251,8 +276,8 @@ begin
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
-    // Node = <Set ... />
-    CheckNode(Node, rsSet);
+    // Node = <ValueLabel ... />
+    CheckNode(Node, rsValueLabel);
 
     NValueLabel := NewValueLabel;
     NValueLabel.LoadFromXml(Node);
@@ -268,14 +293,15 @@ var
 begin
   Result := Indent(Lvl) + '<' + rsInternal + '>' + LineEnding;
 
-  DataNode := FData.FindLowest;
+{  DataNode := FData.FindLowest;
   while Assigned(DataNode) do
   begin
     Result += TEpiCustomValueLabel(DataNode.Data).SaveToXml('', Lvl + 1);
     DataNode := FData.FindSuccessor(DataNode);
-  end;
+  end;     }
+  Result += Indent(Lvl) + '</' + rsInternal + '>' + LineEnding;
 
-  Result := Indent(Lvl) + '</' + rsInternal + '>' + LineEnding;
+  Result := inherited SaveToXml(Result, Lvl + 1);
 end;
 
 procedure TEpiValueLabelSet.LoadExternal(Root: TDOMNode);
@@ -298,6 +324,11 @@ begin
   result := TEpiCustomItem(Self).SaveToXml(Result, Lvl);
 end;
 
+{function TEpiValueLabelSet.GetCount: Integer;
+begin
+  Result := FData.Count;
+end;
+
 procedure TEpiValueLabelSet.AddItem(Item: TEpiCustomItem);
 begin
   FData.Add(Item);
@@ -309,7 +340,7 @@ begin
   FData.Remove(Item);
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
-
+                     }
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -325,7 +356,7 @@ end;
 
 function TEpiValueLabelSet.XMLName: string;
 begin
-  Result := rsValueLabel;
+  Result := rsValueLabelSet;
 end;
 
 function TEpiValueLabelSet.SaveToXml(Content: String; Lvl: integer): string;
@@ -333,12 +364,12 @@ begin
   // TODO : Save Value Labels correct.
   Content := SaveNode(Lvl + 1, rsType, Integer(LabelType));
 
-  case LabelScope of
+{  case LabelScope of
     vlsExternal:
       Content += SaveExternal(Lvl + 1);
     vlsInternal:
       Content += SaveInternal(Lvl + 1);
-  end;
+  end;}
 
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -347,10 +378,8 @@ procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
+  inherited LoadFromXml(Root);
   // Root = <ValueLabel>
-  Id := TDOMElement(Root).AttribStrings['id'];
-  Name := LoadNodeString(Root, rsName);
-
   if LoadNode(Node, Root, rsInternal, false) then
     LoadInternal(Node);
 
@@ -388,7 +417,7 @@ end;
 
 function TEpiValueLabelSets.XMLName: string;
 begin
-  result := rsValueLabels;
+  result := rsValueLabelSets;
 end;
 
 function TEpiValueLabelSets.SaveToXml(Content: String; Lvl: integer): string;
@@ -402,11 +431,13 @@ var
   Node: TDOMNode;
   NValueLabelSet: TEpiValueLabelSet;
 begin
-  // Root = <ValueLabels>
+  inherited LoadFromXml(Root);
+
+  // Root = <ValueLabelSets>
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
-    CheckNode(Node, rsValueLabel);
+    CheckNode(Node, rsValueLabelSet);
 
     NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadNodeInt(Node, rsType)));
     NValueLabelSet.LoadFromXml(Node);

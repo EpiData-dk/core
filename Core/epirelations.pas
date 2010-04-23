@@ -22,10 +22,12 @@ type
    FRelates: TEpiRelates;
    function    GetPrimaryKey(Index: integer): TEpiPrimaryKey;
    function    GetRelate(Index: integer): TEpiRelate;
+ protected
+   function    ScrambleXml: boolean; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   function XMLName: string; override;
+   function    XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    function    NewPrimaryKey: TEpiPrimaryKey;
@@ -126,6 +128,11 @@ begin
   result := TEpiRelate(Relates.Items[Index]);
 end;
 
+function TEpiRelations.ScrambleXml: boolean;
+begin
+  Result := TEpiDocument(Owner).Settings.Scrambled;
+end;
+
 constructor TEpiRelations.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -134,6 +141,8 @@ begin
 
   FRelates := TEpiRelates.Create(Self);
   FRelates.ItemOwner := true;
+
+  RegisterClasses([FPrimaryKeys, FRelates]);
 end;
 
 destructor TEpiRelations.Destroy;
@@ -151,10 +160,6 @@ end;
 function TEpiRelations.SaveToXml(Content: String; Lvl: integer): string;
 begin
   if (PrimaryKeys.Count = 0) and (Relates.Count = 0) then exit;
-
-  Content :=
-    PrimaryKeys.SaveToXml('', Lvl + 1) +
-    Relates.SaveToXml('', Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -203,6 +208,7 @@ var
   Node: TDOMNode;
   NPrimaryKey: TEpiPrimaryKey;
 begin
+  inherited LoadFromXml(Root);
   // Root = <PrimaryKeys>
   Node := Root.FirstChild;
   while Assigned(Node) do
