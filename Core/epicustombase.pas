@@ -114,8 +114,8 @@ type
 
   { Translation }
   private
-    FCurrentLang: string; static;
-    FDefaultLang: string; static;
+    FCurrentLang: string; // static;
+    FDefaultLang: string; // static;
   public
     procedure   SetLanguage(Const LangCode: string;
       const DefaultLanguage: boolean); virtual;
@@ -124,6 +124,7 @@ type
   private
     FClassList: TFPList;
     FOwner:     TEpiCustomBase;
+    function GetRootOwner: TEpiCustomBase;
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
@@ -131,6 +132,7 @@ type
   public
     destructor  Destroy; override;
     property    Owner: TEpiCustomBase read FOwner;
+    property    RootOwner: TEpiCustomBase read GetRootOwner;
   end;
 {$static off}
 
@@ -430,68 +432,6 @@ begin
   result := WideLowerCase(Node.TextContent) = 'true';
 end;
 
-{
-procedure TEpiCustomBase.SaveStream(const St: TStream; const Constent: string);
-begin
-  St.Write(Constent[1], Length(Constent));
-end;
-
-procedure TEpiCustomBase.SaveClasses(const St: TStream; const Lvl: integer;
-  const Classes: array of TEpiCustomBase; const NodeName: string);
-var
-  i: Integer;
-begin
-  SaveStream(St, Ins(Lvl) + '<' + NodeName + '>' + LineEnding);
-  for i := Low(Classes) to High(Classes) do
-    Classes[i].SaveToStream(St, Lvl + 1);
-  SaveStream(St, Ins(Lvl) + '</' + NodeName + '>' + LineEnding);
-end;
-
-procedure TEpiCustomBase.SaveList(const St: TStream; const Lvl: integer;
-  const List: TEpiCustomList; const NodeName: string; EnCryptList: boolean);
-var
-  i: Integer;
-  TmpSt: TStream;
-  S: String;
-begin
-  SaveStream(St, Ins(Lvl) + '<' + NodeName + '>' + LineEnding);
-
-  if EncryptList then
-    TmpSt := TMemoryStream.Create
-  else
-    TmpSt := St;
-
-  for i := 0 to List.Count - 1 do
-    List.Items[i].SaveToStream(TmpSt, Lvl + 1);
-
-  if EncryptList then
-  begin
-    S := EnCrypt(TmpSt);
-    SaveStream(St, S);
-    TmpSt.Free;
-  end;
-
-  SaveStream(St, Ins(Lvl) + '</' + NodeName + '>' + LineEnding);
-end;
-
-function TEpiCustomBase.SaveSection(const Lvl: integer; const NodeName: string;
-  const Content: string): string;
-begin
-  Result :=
-    Ins(Lvl) + '<' + NodeName + '>' + LineEnding +
-       Content +
-    Ins(Lvl) + '</' + NodeName + '>' + LineEnding;
-end;
-
-function TEpiCustomBase.SaveSection(const Lvl: integer; const NodeName: string;
-  const Id: string; const Content: string): string;
-begin
-  Result :=
-    Ins(Lvl) + '<' + NodeName + ' id="' + Id + '">' + LineEnding +
-       Content +
-    Ins(Lvl) + '</' + NodeName + '>' + LineEnding;
-end;
-           }
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: string): string;
 begin
@@ -661,6 +601,19 @@ var
 begin
   for i := 0 to ClassList.Count - 1 do
     TEpiCustomBase(ClassList[i]).SetLanguage(LangCode, DefaultLanguage);
+end;
+
+function TEpiCustomBase.GetRootOwner: TEpiCustomBase;
+var
+  Obj: TEpiCustomBase;
+begin
+  Obj := Self;
+  while Assigned(Obj) do
+  begin
+    if not Assigned(Obj.Owner) then
+      Exit(Obj);
+    Obj := Obj.Owner;
+  end;
 end;
 
 { TEpiTranslatedText }

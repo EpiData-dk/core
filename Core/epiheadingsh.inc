@@ -11,6 +11,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
     function   NewHeading: TEpiHeading;
   end;
 
@@ -24,6 +25,7 @@ type
     destructor  Destroy; override;
     class function IdString: string; override;
     function    XMLName: string; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
   public
     property Id;
     property Name;

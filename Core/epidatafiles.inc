@@ -152,6 +152,7 @@ begin
               if (Sender is TEpiSections) then
               with TEpiSection(Data) do
               begin
+                FDataFile := Self;
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
               end;
@@ -197,7 +198,7 @@ begin
 
     for CurField := 0 to Fc - 1 do
     with Fields[CurField] do
-      Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"';
+      Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"'{$IFDEF EPI_DEBUG}+LineEnding{$ENDIF};
 
     if Verified[CurRec] then
       Result += ' st="2"'
@@ -209,6 +210,41 @@ begin
   end;
   Result +=
     Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
+end;
+
+procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
+var
+  CurRec: Integer;
+  Node: TDOMElement;
+  i: Integer;
+  TmpField: TEpiField;
+begin
+  // Root = <Records>
+
+  CurRec := 0;
+  Size := Root.ChildNodes.Count;
+  Node := TDOMElement(Root.FirstChild);
+  while Assigned(Node) do
+  begin
+    CheckNode(Node, rsRecord);
+
+    for i := 0 to Node.Attributes.Length - 1 do
+    with Node.Attributes[i] do
+    begin
+      if NodeName = 'st' then
+      begin
+        if NodeValue = '1' then
+          Deleted[CurRec] := true
+        else if NodeValue = '2' then
+          Verified[CurRec] := true;
+      end else begin
+        TmpField := TEpiField(Fields.GetItemById(UTF8Decode(NodeName)));
+        TmpField.AsString[CurRec] := UTF8Encode(NodeValue);
+      end;
+    end;
+    inc(CurRec);
+    Node := TDOMElement(Node.NextSibling);
+  end;
 end;
 
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
@@ -263,6 +299,7 @@ begin
 
   // The special main section...
   FMainSection := NewSection;
+  FMainSection.Id := FMainSection.IdString + 'main';
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
@@ -295,6 +332,11 @@ procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
+  // Since the main section is autocreated we remove it during load.
+  Sections.RemoveItem(MainSection);
+  MainSection.Free;
+
+  // Now start loading.
   inherited LoadFromXml(Root);
 
   if LoadNode(Node, Root, rsValueLabelSets, false) then
@@ -303,8 +345,11 @@ begin
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);
 
-//  if LoadNode(Node, Root, rsRecords, false) then
-//  LoadRecords  ValueLabels.LoadFromXml(Node);
+  if Sections.ItemExistsById(TEpiSection.IdString + 'main') then
+    FMainSection := TEpiSection(TEpiSection.IdString + 'main');
+
+  if LoadNode(Node, Root, rsRecords, false) then
+    LoadRecords(Node);
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;

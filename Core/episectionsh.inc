@@ -10,7 +10,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewSection: TEpiSection;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
@@ -20,6 +20,7 @@ type
 
   TEpiSection = class(TEpiCustomControlItem)
   private
+    FDataFile: TEpiDataFile;
     FFields: TEpiFields;
     FGroups: TEpiGroups;
     FHeadings: TEpiHeadings;
@@ -30,7 +31,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
@@ -40,6 +41,7 @@ type
     property    Headings: TEpiHeadings read FHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
     property    Groups: TEpiGroups read FGroups;
+    property    DataFile: TEpiDataFile read FDataFile;
   public
     { "Publiclised" inherited properties }
     property    Name;

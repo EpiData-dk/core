@@ -36,7 +36,7 @@ type
 implementation
 
 uses
-  epidocument, math;
+  epidocument, math, epistringutils;
 
 {$I epidatafiles.inc}
 {$I episections.inc}

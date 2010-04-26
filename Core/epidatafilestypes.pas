@@ -18,15 +18,20 @@ type
   EpiVariant   = Variant;
 
   TEpiFieldType = (
-    // Bool
+    // Bool  (0)
     ftBoolean,
-    // Numbers
+
+    // Numbers  (1, 2, 3)
     ftInteger, ftAutoInc, ftFloat,
-    // Date/time
+
+    // Date/time (4, 5, 6)
     ftDMYDate, ftMDYDate, ftYMDDate,
+    // (7, 8, 9)
     ftDMYToday, ftMDYToday, ftYMDToday,
+    // (10, 11)
     ftTime, ftTimeNow,
-    // Strings
+
+    // Strings (12, 13)
     ftString, ftUpperString
   );
   TEpiFieldTypes  = Set of TEpiFieldType;

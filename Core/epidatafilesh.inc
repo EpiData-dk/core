@@ -19,6 +19,8 @@ type
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 
+  { TEpiDataFile }
+
   TEpiDataFile = class(TEpiCustomNamedItem)
   private
     { Data containers }
@@ -39,6 +41,7 @@ type
     function    GetSize: Integer;
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
     function    SaveRecords(Lvl: integer): string;
+    procedure   LoadRecords(Root: TDOMNode);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
@@ -47,7 +50,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;

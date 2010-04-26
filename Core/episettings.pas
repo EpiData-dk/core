@@ -14,7 +14,7 @@ type
 
   // esce = Epi Setting Change Event
   TEpiSettingChangeEvent = (
-    esceVersion, esceDateSep, esceDecSep, esceMissing, esceScramble
+    esceVersion, esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
   );
 
   TEpiSettings = class(TEpiCustomBase)
@@ -23,20 +23,23 @@ type
     FDecimalSeparator: string;
     FMissingString: string;
     FScrambled: boolean;
+    FTimeSeparator: string;
     FVersion: integer;
     procedure SetDateSeparator(const AValue: string);
     procedure SetDecimalSeparator(const AValue: string);
     procedure SetMissingString(const AValue: string);
     procedure SetScrambled(const AValue: boolean);
+    procedure SetTimeSeparator(const AValue: string);
     procedure SetVersion(const AValue: integer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     property    Version: integer read FVersion write SetVersion;
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
+    property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
     property    MissingString: string read FMissingString write SetMissingString;
     property    Scrambled: boolean read FScrambled write SetScrambled;
@@ -86,6 +89,16 @@ begin
   DoChange(eegSetting, Word(esceScramble), @Val);
 end;
 
+procedure TEpiSettings.SetTimeSeparator(const AValue: string);
+var
+  Val: String;
+begin
+  if FTimeSeparator = AValue then exit;
+  Val := FTimeSeparator;
+  FTimeSeparator := AValue;
+  DoChange(eegSetting, Word(esceTimeSep), @Val);
+end;
+
 procedure TEpiSettings.SetVersion(const AValue: integer);
 var
   Val: LongInt;
@@ -102,6 +115,7 @@ begin
   Version := 0;
   Scrambled := false;
   DateSeparator := '/';
+  TimeSeparator := '.';
   DecimalSeparator := ',';
   MissingString := '.';
 end;
@@ -122,6 +136,7 @@ begin
     SaveNode(Lvl + 1, rsVersion,    Version) +
     SaveNode(Lvl + 1, rsScrambled,  Scrambled) +
     SaveNode(Lvl + 1, rsDateSep,    DateSeparator) +
+    SaveNode(Lvl + 1, rsTimeSep,    TimeSeparator) +
     SaveNode(Lvl + 1, rsDecSep,     DecimalSeparator) +
     SaveNode(Lvl + 1, rsMissingStr, MissingString);
   result := inherited SaveToXml(Result, Lvl);
@@ -137,6 +152,7 @@ begin
   Version          := LoadNodeInt(Root, rsVersion);
   Scrambled        := LoadNodeBool(Root, rsScrambled);
   DateSeparator    := LoadNodeString(Root, rsDateSep)[1];
+  TimeSeparator    := LoadNodeString(Root, rsTimeSep)[1];
   DecimalSeparator := LoadNodeString(Root, rsDecSep)[1];
   MissingString    := LoadNodeString(Root, rsMissingStr);
 end;

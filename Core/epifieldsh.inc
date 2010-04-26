@@ -35,8 +35,12 @@ type
     FSize: Integer;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiHeading;
+    LocalFmtSettings: TFormatSettings;
+    function    GetSettings: TEpiSettings;
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetLength(const AValue: Cardinal);
+    procedure   SaveFormatSettings;
+    procedure   RestoreFormatSettings;
   protected
     procedure   CheckIndex(Const index: integer); virtual;
     function    GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -64,6 +68,7 @@ type
     procedure   SetSize(const AValue: Integer); virtual;
 
     property    Capacity: Integer read GetCapacity write SetCapacity;
+    property    Settings: TEpiSettings read GetSettings;
 
   { Data access properties }
   public
@@ -282,7 +287,8 @@ type
   end;
 
   { TEpiDateTimeField }
-
+  // Handles following field types:
+  // ftTime, ftTimeNow
   TEpiDateTimeField = class(TEpiField)
   private
      FData: array of EpiDateTime;

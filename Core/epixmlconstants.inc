@@ -16,6 +16,7 @@ const
     rsVersion         = 'Version';
     rsScrambled       = 'Scrambled';
     rsDateSep         = 'DateSeparator';
+    rsTimeSep         = 'TimeSeparator';
     rsDecSep          = 'DecimalSeparator';
     rsMissingStr      = 'MissingString';
 

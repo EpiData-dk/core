@@ -17,6 +17,26 @@ begin
   Result := rsHeadings;
 end;
 
+procedure TEpiHeadings.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  NHeading: TEpiHeading;
+begin
+  // Root = <Headings>
+  if not Assigned(Root) then exit;
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    CheckNode(Node, rsHeading);
+
+    NHeading := NewHeading;
+    NHeading.LoadFromXml(Node);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
 function TEpiHeadings.NewHeading: TEpiHeading;
 begin
   result := TEpiHeading.Create(Self);
@@ -47,6 +67,12 @@ end;
 function TEpiHeading.XMLName: string;
 begin
   Result := rsHeading;
+end;
+
+procedure TEpiHeading.LoadFromXml(Root: TDOMNode);
+begin
+  inherited LoadFromXml(Root);
+  FCaption.LoadFromXml(Root);
 end;
 
 

@@ -60,7 +60,7 @@ type
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   function XMLName: string; override;
+   function    XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    property    DataFile: TEpiDataFile read FDataFile write FDataFile;
