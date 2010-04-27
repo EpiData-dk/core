@@ -8,8 +8,8 @@ interface
 
 uses
     epiadmin, epicustombase, epidatafiles, epidatafilestypes, epidocument, 
-  epirelations, episettings, epistudy, epivaluelabels, epistringutils, 
-  epimiscutils;
+  epirelations, episettings, epistudy, epivaluelabels, epiimport, 
+  epimiscutils, epistringutils;
 
 implementation
 

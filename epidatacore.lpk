@@ -5,7 +5,7 @@
     <CompilerOptions>
       <Version Value="8"/>
       <SearchPaths>
-        <OtherUnitFiles Value="Core/;Utils/"/>
+        <OtherUnitFiles Value="Core/;Utils/;ImportExport/"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -31,7 +31,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
-    <Files Count="20">
+    <Files Count="21">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -105,25 +105,33 @@
         <UnitName Value="epixmlconstants"/>
       </Item18>
       <Item19>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
+        <Filename Value="ImportExport/epiimport.pas"/>
+        <UnitName Value="epiimport"/>
       </Item19>
       <Item20>
         <Filename Value="Utils/epimiscutils.pas"/>
         <UnitName Value="epimiscutils"/>
       </Item20>
+      <Item21>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item21>
     </Files>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="laz_fpspreadsheet"/>
+        <PackageName Value="LCL"/>
+        <MinVersion Major="1" Valid="True"/>
       </Item1>
       <Item2>
-        <PackageName Value="dcpcrypt"/>
+        <PackageName Value="laz_fpspreadsheet"/>
       </Item2>
       <Item3>
+        <PackageName Value="dcpcrypt"/>
+      </Item3>
+      <Item4>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item3>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)/"/>

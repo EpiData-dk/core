@@ -27,7 +27,15 @@ type
   procedure SplitString(const Source: string; var List: TStrings;
     const Splitters: TCharset = [' ']; const QuoteChars: TCharSet = ['"']);
 
+  // Conversion routines regarding UTF-8 etc.
+  function EpiUnknownStrToUTF8(const Source: string): string;
+  procedure EpiUnknownStringsToUTF8(Source: TStrings);
+  function EpiUtf8ToAnsi(Const Source: string): string;
+
 implementation
+
+uses
+  LConvEncoding;
 
 function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
 var
@@ -79,6 +87,33 @@ begin
   finally
     list.EndUpdate;
   end;
+end;
+
+function EpiUnknownStrToUTF8(const Source: string): string;
+var
+  EncStr: String;
+begin
+  Result := '';
+  if Trim(Source) = '' then Exit;
+  EncStr := GuessEncoding(Source);
+  Result := ConvertEncoding(Source, EncStr, 'utf8');
+end;
+
+procedure EpiUnknownStringsToUTF8(Source: TStrings);
+var
+  i: Integer;
+begin
+  for i := 0 to Source.Count -1 do
+    Source[i] := EpiUnknownStrToUTF8(Source[i]);
+end;
+
+function EpiUtf8ToAnsi(const Source: string): string;
+begin
+  {$IFDEF MSWINDOWS}
+  result := UTF8ToSys(Source);
+  {$ELSE}
+  result := UTF8ToISO_8859_1(Source);
+  {$ENDIF}
 end;
 
 { TString }
