@@ -1,16 +1,16 @@
 #   File generated automatically by Lazarus Package Manager
 #
-#   Makefile.fpc for epidatacore 0.3
+#   Makefile.fpc for epidatacore 0.4
 #
-#   This file was generated on 2010-02-11
+#   This file was generated on 2010-03-31
 
 [package]
 name=epidatacore
-version=0.3
+version=0.4
 
 [compiler]
 unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
-unitdir=Datafile/ Encryption/ Utils/ ../../../FreePascal/fpspreadsheet/lib/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM)/ ../../../FreePascal/lazarus/packager/units/$(CPU_TARGET)-$(OS_TARGET)/ ./
+unitdir=Core/ Core/importexport/ Utils/ ../../../FreePascal/fpspreadsheet/lib/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM)/ ../../../FreePascal/dcpcrypt/lib/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/packager/units/$(CPU_TARGET)-$(OS_TARGET)/ ./
 includedir=./
 options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Sci
 
