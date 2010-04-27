@@ -45,9 +45,7 @@ end;
 
 function TEpiSections.NewSection: TEpiSection;
 begin
-  result := TEpiSection.Create(Self);
-  result.Id := GetUniqueItemId(TEpiSection);
-  AddItem(result);
+  result := TEpiSection(NewItem(TEpiSection));
 end;
 
 { TEpiSection }

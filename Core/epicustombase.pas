@@ -149,7 +149,7 @@ type
   protected
     procedure   SetLanguage(Const LangCode: string;
       Const DefaultLanguage: boolean); override;
-    function XMLName: string; override;
+    function    XMLName: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string);
     destructor  Destroy; override;
@@ -219,6 +219,7 @@ type
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
+    function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     procedure   DeleteItem(Index: integer); virtual;
@@ -904,6 +905,14 @@ begin
     S += Items[i].SaveToXml('', Lvl + 1);
   Content += S;
   result := inherited SaveToXml(Content, Lvl);
+end;
+
+function TEpiCustomList.NewItem(ItemClass: TEpiCustomItemClass
+  ): TEpiCustomItem;
+begin
+  Result := ItemClass.Create(Self);
+  Result.Id := GetUniqueItemId(ItemClass);
+  AddItem(Result);
 end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);

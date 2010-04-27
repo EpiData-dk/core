@@ -35,7 +35,7 @@ type
 implementation
 
 uses
-  LConvEncoding;
+  LConvEncoding, FileUtil;
 
 function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
 var

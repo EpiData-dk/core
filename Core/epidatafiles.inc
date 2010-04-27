@@ -71,9 +71,7 @@ end;
 
 function TEpiDataFiles.NewDataFile: TEpiDataFile;
 begin
-  Result := TEpiDataFile.Create(Self);
-  Result.Id := GetUniqueItemId(TEpiDataFile);
-  AddItem(Result);
+  Result := TEpiDataFile(NewItem(TEpiDataFile));
 end;
 
 { TEpiDataFile }

@@ -39,9 +39,7 @@ end;
 
 function TEpiHeadings.NewHeading: TEpiHeading;
 begin
-  result := TEpiHeading.Create(Self);
-  result.Id := GetUniqueItemId(TEpiHeading);
-  AddItem(result);
+  result := TEpiHeading(NewItem(TEpiHeading));
 end;
 
 { TEpiHeading }
