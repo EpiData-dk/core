@@ -198,6 +198,7 @@ type
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
+  public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
   end;

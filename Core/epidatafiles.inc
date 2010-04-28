@@ -278,6 +278,11 @@ begin
   Result := 'datafile_id_';
 end;
 
+constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
+begin
+  Create(AOwner, 0);
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);

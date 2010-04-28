@@ -47,6 +47,7 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
   protected
     class function IdString: string; override;
+    constructor Create(AOwner: TEpiCustomBase); override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
