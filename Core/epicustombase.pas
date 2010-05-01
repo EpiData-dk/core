@@ -167,10 +167,10 @@ type
     function    GetId: string; virtual;
     procedure   SetId(const AValue: string); virtual;
     class function IdString: string; virtual; abstract;
-    property    Id: string read GetId write SetId;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    property    Id: string read GetId write SetId;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -181,10 +181,10 @@ type
     FName: TEpiTranslatedText;
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
-    property    Name: TEpiTranslatedText read FName;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    property    Name: TEpiTranslatedText read FName;
   end;
 
   { TEpiCustomControlItem }
