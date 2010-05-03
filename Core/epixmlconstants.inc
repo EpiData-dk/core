@@ -70,6 +70,8 @@ const
      rsScreenInfo      = 'ScreenInfo';
      rsSections        = 'Sections';
       rsSection         = 'Section';
+       rsWidth           = 'Width';
+       rsHeight          = 'Height';
        rsGroupIdList     = 'GroupIdList';
        rsHeadings        = 'Headings';
         rsHeading         = 'Heading';

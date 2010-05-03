@@ -2,6 +2,10 @@
 
 type
 
+  TEpiSectionsChangeEventType = (
+    esceWidth, esceHeight
+  );
+
   { TEpiSections }
 
   TEpiSections = class(TEpiCustomList)
@@ -24,8 +28,12 @@ type
     FFields: TEpiFields;
     FGroups: TEpiGroups;
     FHeadings: TEpiHeadings;
-    function GetField(Index: integer): TEpiField;
-    function GetHeading(Index: integer): TEpiHeading;
+    FHeight: integer;
+    FWidth: integer;
+    function    GetField(Index: integer): TEpiField;
+    function    GetHeading(Index: integer): TEpiHeading;
+    procedure   SetHeight(const AValue: integer);
+    procedure   SetWidth(const AValue: integer);
   protected
     class function IdString: string; override;
   public
@@ -42,11 +50,7 @@ type
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
     property    Groups: TEpiGroups read FGroups;
     property    DataFile: TEpiDataFile read FDataFile;
-  public
-    { "Publiclised" inherited properties }
-    property    Name;
-    property    Id;
-    property    Top;
-    property    Left;
+    property    Width: integer read FWidth write SetWidth;
+    property    Height: integer read FHeight write SetHeight;
   end;
 

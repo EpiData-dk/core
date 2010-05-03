@@ -85,13 +85,9 @@ type
   { Field Properties }
   public
     property    FieldType: TEpiFieldType read FFieldType;
-    property    Id;
-    property    Name;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
     property    Size:      Integer read GetSize write SetSize;
-    property    Top;
-    property    Left;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write FValueLabelSet;
     property    Question: TEpiHeading read FQuestion;
 

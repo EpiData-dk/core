@@ -27,10 +27,6 @@ type
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
   public
-    property Id;
-    property Name;
     property Caption: TEpiTranslatedText read FCaption;
-    property Top;
-    property Left;
   end;
 

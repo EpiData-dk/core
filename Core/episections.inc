@@ -60,6 +60,26 @@ begin
   result := TEpiHeading(Headings[Index]);
 end;
 
+procedure TEpiSection.SetHeight(const AValue: integer);
+var
+  Val: LongInt;
+begin
+  if FHeight = AValue then exit;
+  Val := FHeight;
+  FHeight := AValue;
+  DoChange(eegSections, Word(esceHeight), @Val);
+end;
+
+procedure TEpiSection.SetWidth(const AValue: integer);
+var
+  Val: LongInt;
+begin
+  if FWidth = AValue then exit;
+  Val := FWidth;
+  FWidth := AValue;
+  DoChange(eegSections, Word(esceWidth), @Val);
+end;
+
 class function TEpiSection.IdString: string;
 begin
   Result := 'section_id_'
@@ -104,6 +124,10 @@ begin
     Delete(Content, 1, 1);
     Content := SaveNode(Lvl + 1, rsGroupIdList, Content);
   end;
+  Content :=
+    SaveNode(Lvl + 1, rsWidth, Width) +
+    SaveNode(Lvl + 1, rsHeight, Height) +
+    Content;
   Result := inherited SaveToXml(Content, Lvl);
 end;
 

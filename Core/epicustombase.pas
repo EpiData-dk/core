@@ -34,6 +34,7 @@ type
     eegStudy,
     // epidatafiles.pas
     eegDataFiles,
+    eegSections,
     eegFields,
     eegGroups,
     eegHeading,
@@ -687,7 +688,7 @@ begin
   for i := 0 to FTextList.Count - 1 do
     if TString(FTextList.Objects[i]).Str <> '' then
       Result += Indent(Lvl) + '<' + XMLName + ' xml:lang="' + FTextList[i] + '">' +
-                TString(FTextList.Objects[i]).Str + '</' + XMLName + '>' + LineEnding;
+                StringToXml(TString(FTextList.Objects[i]).Str) + '</' + XMLName + '>' + LineEnding;
 end;
 
 procedure TEpiTranslatedText.LoadFromXml(Root: TDOMNode);
@@ -918,23 +919,26 @@ end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
+  if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
   DoChange(eegCustomBase, Word(ecceAddItem), Item);
 end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
+  if ItemOwner then Item.FOwner := nil;
   FList.Remove(Item);
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
 
 procedure TEpiCustomList.DeleteItem(Index: integer);
 var
-  Val: Pointer;
+  Item: TEpiCustomItem;
 begin
-  Val := FList[Index];
+  Item := TEpiCustomItem(FList[Index]);
   FList.Delete(Index);
-  DoChange(eegCustomBase, Word(ecceDelItem), Val);
+  if ItemOwner then Item.FOwner := nil;
+  DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
 
 function TEpiCustomList.GetItemById(aId: string): TEpiCustomItem;
