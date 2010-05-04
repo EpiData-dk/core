@@ -46,7 +46,7 @@ type
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
     ecceUpdate, ecceId, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
-    ecceSetTop, ecceSetLeft
+    ecceSetTop, ecceSetLeft, ecceText
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
@@ -622,11 +622,14 @@ end;
 { TEpiTranslatedText }
 
 procedure TEpiTranslatedText.SetCurrentText(const AValue: string);
+var
+  Val: String;
 begin
   if FCurrentText = AValue then exit;
-
+  Val := FCurrentText;
   SetText(FCurrentLang, AValue);
-  FCurrentText := AValue
+  FCurrentText := AValue;
+  DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
 procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
