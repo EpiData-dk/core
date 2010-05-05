@@ -386,7 +386,7 @@ end;
 
 function TEpiUsers.NewUser: TEpiUser;
 begin
-  Result := TEpiUser.Create(Self);
+  Result := TEpiUser(NewItem(TEpiUser));
   Result.Id := GetUniqueItemId(TEpiUser);
   AddItem(Result);
 end;
@@ -629,7 +629,7 @@ end;
 
 function TEpiGroups.NewGroup: TEpiGroup;
 begin
-  Result := TEpiGroup.Create(Self);
+  Result := TEpiGroup(NewItem(TEpiGroup));
   Result.Id := GetUniqueItemId(TEpiGroup);
   AddItem(Result);
 end;
