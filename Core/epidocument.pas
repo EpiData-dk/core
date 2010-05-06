@@ -62,6 +62,7 @@ begin
   FAdmin     := TEpiAdmin.Create(Self);
   FStudy     := TEpiStudy.Create(Self);
   FDataFiles := TEpiDataFiles.Create(Self);
+  FDataFiles.ItemOwner := true;
   FRelations := TEpiRelations.Create(Self);
 
   RegisterClasses([Settings, Admin, Study, DataFiles, Relations]);

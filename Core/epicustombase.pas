@@ -115,8 +115,8 @@ type
 
   { Translation }
   private
-    FCurrentLang: string; // static;
-    FDefaultLang: string; // static;
+    FCurrentLang: string;
+    FDefaultLang: string;
   public
     procedure   SetLanguage(Const LangCode: string;
       const DefaultLanguage: boolean); virtual;
@@ -602,6 +602,13 @@ procedure TEpiCustomBase.SetLanguage(const LangCode: string;
 var
   i: Integer;
 begin
+  {$IFDEF EPI_CONSOLE_DEBUG}
+  writeln(ClassName,'.SetLanguage: ', LangCode, ' (', DefaultLanguage, ')');
+  {$ENDIF EPI_CONSOLE_DEBUG}
+  if DefaultLanguage then
+    FDefaultLang := LangCode;
+  FCurrentLang := LangCode;
+
   for i := 0 to ClassList.Count - 1 do
     TEpiCustomBase(ClassList[i]).SetLanguage(LangCode, DefaultLanguage);
 end;
@@ -637,8 +644,6 @@ procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
 var
   Idx:  integer;
 begin
-  inherited SetLanguage(LangCode, DefaultLanguage);
-
   // First seek "new" language
   if FTextList.Find(LangCode, Idx) then
     FCurrentText := TString(FTextList.Objects[Idx]).Str
@@ -651,9 +656,7 @@ begin
     SetText(LangCode, '');
     FCurrentText := '';
   end;
-  if DefaultLanguage then
-    FDefaultLang := LangCode;
-  FCurrentLang := LangCode;
+  inherited SetLanguage(LangCode, DefaultLanguage);
 end;
 
 function TEpiTranslatedText.XMLName: string;
@@ -924,6 +927,18 @@ procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
   if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
+  {$IFDEF EPI_CONSOLE_DEBUG}
+  writeln(LineEnding, ClassName,'.AddItem: ', Item.Id, ' (', Item.ClassName, ')');
+  writeln('Setting language to:', FDefaultLang);
+  {$ENDIF EPI_CONSOLE_DEBUG}
+  if ItemOwner then
+  begin
+    Item.SetLanguage(FDefaultLang, true);
+    Item.SetLanguage(FCurrentLang, false);
+  end;
+  {$IFDEF EPI_CONSOLE_DEBUG}
+  writeln('Language complete');
+  {$ENDIF EPI_CONSOLE_DEBUG}
   DoChange(eegCustomBase, Word(ecceAddItem), Item);
 end;
 
