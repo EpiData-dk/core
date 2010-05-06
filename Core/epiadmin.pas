@@ -387,8 +387,6 @@ end;
 function TEpiUsers.NewUser: TEpiUser;
 begin
   Result := TEpiUser(NewItem(TEpiUser));
-  Result.Id := GetUniqueItemId(TEpiUser);
-  AddItem(Result);
 end;
 
 procedure TEpiUsers.LoadFromXml(Root: TDOMNode);
@@ -630,8 +628,6 @@ end;
 function TEpiGroups.NewGroup: TEpiGroup;
 begin
   Result := TEpiGroup(NewItem(TEpiGroup));
-  Result.Id := GetUniqueItemId(TEpiGroup);
-  AddItem(Result);
 end;
 
 { TEpiGroup }
