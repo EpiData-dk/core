@@ -93,29 +93,43 @@ begin
   DoChange(eegDataFiles, Word(efceSetLength), @Val);
 end;
 
-procedure TEpiField.SaveFormatSettings;
-var
-  Sep: String;
-  S: String;
+procedure TEpiField.LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
+  EventType: Word; Data: Pointer);
 begin
-  LocalFmtSettings := DefaultFormatSettings;
-
-  case FieldType of
-    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+  if (Sender is TEpiValueLabelSet) then
+  begin
+    if (EventGroup = eegCustomBase) and (EventType = word(ecceDestroy)) then
+      FValueLabelSet := nil;
   end;
-  DefaultFormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
-  DefaultFormatSettings.DateSeparator := Settings.DateSeparator[1];
-  DefaultFormatSettings.TimeSeparator := Settings.TimeSeparator[1];
-  DefaultFormatSettings.ShortDateFormat := S;
-  DefaultFormatSettings.ShortTimeFormat := 'HH:NN';
-  DefaultFormatSettings.LongTimeFormat := 'HH:NN:SS';
+
+  if (Sender is TEpiValueLabelSets) then
+  begin
+    if (EventGroup = eegCustomBase) and
+       (EventType = word(ecceDelItem)) and
+       (FValueLabelSet = TEpiValueLabelSet(Data)) then
+      FValueLabelSet := nil;
+  end;
 end;
 
-procedure TEpiField.RestoreFormatSettings;
+procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
 begin
-  DefaultFormatSettings := LocalFmtSettings;
+  if Assigned(FValueLabelSet) then
+  begin
+    // UnRegister our hook on the previous valuelabel set.
+    FValueLabelSet.UnRegisterOnChangeHook(@LocalEventHook);
+    // also do the same with the parent.
+    if Assigned(FValueLabelSet.Owner) then
+      FValueLabelSet.Owner.UnRegisterOnChangeHook(@LocalEventHook);
+  end;
+
+  FValueLabelSet := AValue;
+
+  if Assigned(FValueLabelSet) then
+  begin
+    FValueLabelSet.RegisterOnChangeHook(@LocalEventHook, true);
+    if Assigned(FValueLabelSet.Owner) then
+      FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
+  end;
 end;
 
 procedure TEpiField.CheckIndex(const index: integer);
@@ -436,9 +450,7 @@ function TEpiFloatField.GetAsString(const index: Integer): EpiString;
 begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
-  SaveFormatSettings;
   result := FloatToStr(AsFloat[Index]);
-  RestoreFormatSettings;
 end;
 
 function TEpiFloatField.GetAsTime(const index: Integer): EpiTime;
@@ -512,11 +524,8 @@ procedure TEpiFloatField.SetAsString(const index: Integer;
 begin
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else begin
-    SaveFormatSettings;
+  else
     AsFloat[Index] := StrToFloatDef(AValue, DefaultMissing);
-    RestoreFormatSettings;
-  end;
 end;
 
 procedure TEpiFloatField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -985,13 +994,15 @@ end;
 function TEpiDateField.GetAsString(const index: Integer): EpiString;
 var
   S: String;
-  Sep: string;
 begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
-  SaveFormatSettings;
-  result := FormatDateTime('ddddd', AsDate[index]);
-  RestoreFormatSettings;
+  case FieldType of
+    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+  end;
+  result := FormatDateTime('S', AsDate[index]);
 end;
 
 function TEpiDateField.GetAsTime(const index: Integer): EpiTime;
@@ -1086,16 +1097,20 @@ end;
 procedure TEpiDateField.SetAsString(const index: Integer;
   const AValue: EpiString);
 var
-  Fmt: TFormatSettings;
+  S: String;
 begin
   if TEpiStringField.CheckMissing(AValue) then
   begin
     IsMissing[Index] := true;
     exit;
   end;
-  SaveFormatSettings;
+  case FieldType of
+    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+  end;
+  DefaultFormatSettings.ShortDateFormat := S;
   AsDate[index] := Trunc(StrToDateDef(AValue, DefaultMissing));
-  RestoreFormatSettings;
 end;
 
 procedure TEpiDateField.SetAsTime(const index: Integer; const AValue: EpiTime);
@@ -1169,10 +1184,7 @@ function TEpiDateTimeField.GetAsString(const index: Integer): EpiString;
 begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
-
-  SaveFormatSettings;
   result := TimeToStr(AsDateTime[Index]);
-  RestoreFormatSettings;
 end;
 
 function TEpiDateTimeField.GetAsTime(const index: Integer): EpiTime;
@@ -1246,11 +1258,8 @@ procedure TEpiDateTimeField.SetAsString(const index: Integer;
 begin
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
-  else begin
-    SaveFormatSettings;
+  else
     AsDateTime[index] := StrToTimeDef(AValue, DefaultMissing);
-    RestoreFormatSettings;
-  end;
 end;
 
 procedure TEpiDateTimeField.SetAsTime(const index: Integer;

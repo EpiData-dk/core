@@ -20,7 +20,7 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ImportRec(Const aFilename: string; Const Document: TEpiDocument): TEpiDataFile;
+    function    ImportRec(Const aFilename: string; Document: TEpiDocument = nil): TEpiDataFile;
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
   end;
 
@@ -47,7 +47,7 @@ begin
 end;
 
 function TEpiImport.ImportRec(const aFilename: string;
-  const Document: TEpiDocument): TEpiDataFile;
+  Document: TEpiDocument = nil): TEpiDataFile;
 var
   TxtFile: TextFile;
   TxtLine: string;
@@ -140,7 +140,11 @@ begin
   if not FileExistsUTF8(aFilename) then
     RaiseError('File does not exists');
 
-  result := Document.DataFiles.NewDataFile;
+  if Assigned(Document) then
+    result := Document.DataFiles.NewDataFile
+  else
+    result := TEpiDataFile.Create(nil);
+
   with Result do
   try
     AssignFile(TxtFile, UTF8ToSys(aFilename));

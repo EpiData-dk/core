@@ -45,7 +45,7 @@ type
     );
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
-    ecceUpdate, ecceId, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
+    ecceDestroy, ecceUpdate, ecceId, ecceAddItem, ecceDelItem, ecceSetItem,
     ecceSetTop, ecceSetLeft, ecceText
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
@@ -224,7 +224,7 @@ type
     function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
-    procedure   DeleteItem(Index: integer); virtual;
+    function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
     function    GetItemById(aId: string): TEpiCustomItem; virtual;
     function    ItemExistsById(aId: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
@@ -274,6 +274,13 @@ end;
 
 destructor TEpiCustomBase.Destroy;
 begin
+  // Do the last Free notification to the event hooks.
+  // - this allows for objects pointing the "self" to remove reference if needed.
+  {$IFDEF EPI_CONSOLE_DEBUG}
+  writeln('TEpiCustomBase.Destoy: ' + ClassName);
+  {$ENDIF EPI_CONSOLE_DEBUG}
+  DoChange(eegCustomBase, Word(ecceDestroy), nil);
+
   FClassList.Free;
   Freemem(FOnChangeList);
   Freemem(FOnChangeListIgnoreUpdate);
@@ -864,6 +871,7 @@ procedure TEpiCustomList.SetItems(Index: integer; const AValue: TEpiCustomItem
 var
   Val: Pointer;
 begin
+  // TODO : Set owner!
   if FList[Index] = Pointer(AValue) then exit;
   Val := FList[Index];
   FList[Index] := AValue;
@@ -927,36 +935,29 @@ procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
   if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln(LineEnding, ClassName,'.AddItem: ', Item.Id, ' (', Item.ClassName, ')');
-  writeln('Setting language to:', FDefaultLang);
-  {$ENDIF EPI_CONSOLE_DEBUG}
+
   if ItemOwner then
   begin
     Item.SetLanguage(FDefaultLang, true);
     Item.SetLanguage(FCurrentLang, false);
   end;
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln('Language complete');
-  {$ENDIF EPI_CONSOLE_DEBUG}
+
   DoChange(eegCustomBase, Word(ecceAddItem), Item);
 end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
-  if ItemOwner then Item.FOwner := nil;
   FList.Remove(Item);
+  if ItemOwner then Item.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
 
-procedure TEpiCustomList.DeleteItem(Index: integer);
-var
-  Item: TEpiCustomItem;
+function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
-  Item := TEpiCustomItem(FList[Index]);
+  Result := TEpiCustomItem(FList[Index]);
   FList.Delete(Index);
-  if ItemOwner then Item.FOwner := nil;
-  DoChange(eegCustomBase, Word(ecceDelItem), Item);
+  if ItemOwner then Result.FOwner := nil;
+  DoChange(eegCustomBase, Word(ecceDelItem), Result);
 end;
 
 function TEpiCustomList.GetItemById(aId: string): TEpiCustomItem;

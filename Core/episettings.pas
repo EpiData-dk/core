@@ -56,6 +56,7 @@ begin
   if FDateSeparator = AValue then exit;
   Val := FDateSeparator;
   FDateSeparator := AValue;
+  DefaultFormatSettings.DateSeparator := FDateSeparator[1];
   DoChange(eegSetting, Word(esceDateSep), @Val);
 end;
 
@@ -66,6 +67,7 @@ begin
   if FDecimalSeparator = AValue then exit;
   Val := FDecimalSeparator;
   FDecimalSeparator := AValue;
+  DefaultFormatSettings.DecimalSeparator := FDecimalSeparator[1];
   DoChange(eegSetting, Word(esceDecSep), @Val);
 end;
 
@@ -96,6 +98,7 @@ begin
   if FTimeSeparator = AValue then exit;
   Val := FTimeSeparator;
   FTimeSeparator := AValue;
+  DefaultFormatSettings.TimeSeparator := TimeSeparator[1];
   DoChange(eegSetting, Word(esceTimeSep), @Val);
 end;
 
@@ -114,6 +117,10 @@ begin
   inherited Create(AOwner);
   Version := 0;
   Scrambled := false;
+
+  DefaultFormatSettings.ShortTimeFormat := 'HH:NN';
+  DefaultFormatSettings.LongTimeFormat := 'HH:NN:SS';
+
   DateSeparator := '/';
   TimeSeparator := '.';
   DecimalSeparator := ',';

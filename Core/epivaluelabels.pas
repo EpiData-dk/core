@@ -76,7 +76,7 @@ type
     property    ExtLabelField: string read FExtLabelField write FExtLabelField;
 
   private
-    FData: TAVLTree;
+//    FData: TAVLTree;
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
     procedure   SetLabelType(const AValue: TEpiFieldType);
@@ -110,7 +110,7 @@ type
 
   TEpiValueLabelSets = class(TEpiCustomList)
   private
-    function GetValueLabels(index: integer): TEpiValueLabelSet;
+    function    GetValueLabels(index: integer): TEpiValueLabelSet;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -257,11 +257,11 @@ begin
 //  if FData.Count > 0 then
   begin
     FLabelType := AValue;
-    Case LabelType of
+{    Case LabelType of
       ftString:  FData.OnCompare := @StringCompare;
       ftInteger: FData.OnCompare := @IntCompare;
       ftFloat:   FData.OnCompare := @FloatCompare;
-    end;
+    end;}
   end;
 end;
 
@@ -344,13 +344,13 @@ end;
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  FData := TAVLTree.Create;
+//  FData := TAVLTree.Create;
 end;
 
 destructor TEpiValueLabelSet.Destroy;
 begin
-  FData.FreeAndClear;
-  FData.Free;
+//  FData.FreeAndClear;
+//  FData.Free;
   inherited Destroy;
 end;
 

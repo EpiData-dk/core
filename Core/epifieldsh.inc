@@ -39,8 +39,9 @@ type
     function    GetSettings: TEpiSettings;
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetLength(const AValue: Cardinal);
-    procedure   SaveFormatSettings;
-    procedure   RestoreFormatSettings;
+    procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+    procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
   protected
     procedure   CheckIndex(Const index: integer); virtual;
     function    GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -88,8 +89,8 @@ type
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
     property    Size:      Integer read GetSize write SetSize;
-    property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write FValueLabelSet;
-    property    Question: TEpiHeading read FQuestion;
+    property    Question:  TEpiHeading read FQuestion;
+    property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
 
   { Helper methods }
   public
