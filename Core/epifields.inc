@@ -198,6 +198,7 @@ end;
 
 destructor TEpiField.Destroy;
 begin
+  FQuestion.Free;
   inherited Destroy;
 end;
 

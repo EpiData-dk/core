@@ -166,9 +166,10 @@ begin
 
               // If sections are removed, we need to delete the hook
               // in case the section lives on elsewhere.
-              if (Sender is TEpiSections) then
+              if (Sender is TEpiSections)  then
               with TEpiSection(Data) do
               begin
+                if Destroying then exit;
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
               end;

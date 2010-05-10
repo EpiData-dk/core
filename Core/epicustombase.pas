@@ -105,6 +105,8 @@ type
     FOnChangeListIgnoreUpdate: ^TEpiChangeEvent;
     FOnChangeListCountIgnoreUpdate: Integer;
     FUpdateCount: Integer;
+    function   GetOnChangeListCount: integer;
+    function   GetOnChangeListCountIgnoreUpdate: integer;
   protected
     procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
   public
@@ -125,11 +127,14 @@ type
   private
     FClassList: TFPList;
     FOwner:     TEpiCustomBase;
-    function GetRootOwner: TEpiCustomBase;
+    FDestroying: Boolean;
+    function    GetDestroying: Boolean;
+    function    GetRootOwner: TEpiCustomBase;
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
+    property    Destroying: Boolean read GetDestroying;
   public
     destructor  Destroy; override;
     property    Owner: TEpiCustomBase read FOwner;
@@ -211,6 +216,8 @@ type
     FItemOwner: boolean;
     FList: TFPList;
     procedure   SetItemOwner(const AValue: boolean);
+    procedure   OnChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     function    GetCount: Integer; virtual;
@@ -262,6 +269,7 @@ constructor TEpiCustomBase.Create(AOwner: TEpiCustomBase);
 begin
   FOwner := AOwner;
   FClassList := TFPList.Create;
+  FDestroying := false;
 end;
 
 procedure TEpiCustomBase.RegisterClasses(AClasses: array of TEpiCustomBase);
@@ -279,6 +287,7 @@ begin
   {$IFDEF EPI_CONSOLE_DEBUG}
   writeln('TEpiCustomBase.Destoy: ' + ClassName);
   {$ENDIF EPI_CONSOLE_DEBUG}
+  FDestroying := true;
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
   FClassList.Free;
@@ -508,18 +517,36 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
+function TEpiCustomBase.GetOnChangeListCount: integer;
+begin
+  result := FOnChangeListCount;
+end;
+
+function TEpiCustomBase.GetOnChangeListCountIgnoreUpdate: integer;
+begin
+  result := FOnChangeListCountIgnoreUpdate;
+end;
+
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 var
   i: Integer;
 begin
-  for i := 0 to FOnChangeListCountIgnoreUpdate - 1 do
+  i := 0;
+  while i < GetOnChangeListCountIgnoreUpdate do
+  begin
     FOnChangeListIgnoreUpdate[i](Self, EventGroup, EventType, Data);
+    inc(i);
+  end;
 
   if FUpdateCount > 0 then exit;
 
-  for i := 0 to FOnChangeListCount - 1 do
+  i := 0;
+  while i < GetOnChangeListCount do
+  begin
     FOnChangeList[i](Self, EventGroup, EventType, Data);
+    inc(i);
+  end;
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
@@ -631,6 +658,11 @@ begin
       Exit(Obj);
     Obj := Obj.Owner;
   end;
+end;
+
+function TEpiCustomBase.GetDestroying: Boolean;
+begin
+  result := FDestroying;
 end;
 
 { TEpiTranslatedText }
@@ -850,6 +882,18 @@ begin
   FItemOwner := AValue;
 end;
 
+procedure TEpiCustomList.OnChangeHook(Sender: TObject;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+var
+  EpiSender: TEpiCustomItem absolute Sender;
+begin
+  if EventGroup <> eegCustomBase then exit;
+
+  case TEpiCustomChangeEventType(EventType) of
+    ecceDestroy: RemoveItem(EpiSender);
+  end;
+end;
+
 constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -935,6 +979,7 @@ procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
   if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
+  Item.RegisterOnChangeHook(@OnChangeHook, true);
 
   if ItemOwner then
   begin
@@ -948,6 +993,7 @@ end;
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
   FList.Remove(Item);
+  Item.UnRegisterOnChangeHook(@OnChangeHook);
   if ItemOwner then Item.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
@@ -956,6 +1002,7 @@ function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := TEpiCustomItem(FList[Index]);
   FList.Delete(Index);
+  Result.UnRegisterOnChangeHook(@OnChangeHook);
   if ItemOwner then Result.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Result);
 end;
