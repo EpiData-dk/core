@@ -31,7 +31,7 @@ end;
 
 destructor TEpiFields.Destroy;
 begin
-  inherited Destroy;
+   inherited Destroy;
 end;
 
 function TEpiFields.XMLName: string;

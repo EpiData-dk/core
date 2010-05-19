@@ -944,12 +944,14 @@ var
 begin
   while FList.Count > 0 do
   begin
-    if ItemOwner then
-    begin
-      F := TEpiCustomItem(FList.Last);
-      FreeAndNil(F);
-    end;
+    // Using this unusual construct in destroying list items (when owned)
+    // ensures that destroy notifications from Items is defered until after
+    // the item is removed from the list.
+    F := TEpiCustomItem(FList.Last);
+    // Deleting is faster than removing...
     FList.Delete(FList.Count - 1);
+    if ItemOwner then
+      FreeAndNil(F);
   end;
   FreeAndNil(FList);
   inherited Destroy;
