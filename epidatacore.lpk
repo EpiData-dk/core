@@ -26,8 +26,8 @@
         </Debugging>
       </Linking>
       <Other>
-        <CustomOptions Value="-dEPI_DEBUG"/>
         <CompilerPath Value="$(CompPath)"/>
+        <CreateMakefileOnBuild Value="True"/>
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
