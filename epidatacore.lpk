@@ -10,6 +10,7 @@
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
+          <AllowLabel Value="False"/>
           <UseAnsiStrings Value="True"/>
         </SyntaxOptions>
       </Parsing>
@@ -21,8 +22,7 @@
       </CodeGeneration>
       <Linking>
         <Debugging>
-          <GenerateDebugInfo Value="True"/>
-          <GenerateDwarf Value="True"/>
+          <UseLineInfoUnit Value="False"/>
         </Debugging>
       </Linking>
       <Other>

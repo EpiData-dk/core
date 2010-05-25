@@ -2,7 +2,7 @@
 #
 #   Makefile.fpc for epidatacore 0.5
 #
-#   This file was generated on 2010-05-21
+#   This file was generated on 2010-05-25
 
 [package]
 name=epidatacore
@@ -12,7 +12,7 @@ version=0.5
 unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
 unitdir=Core/ Utils/ ImportExport/ ../../../FreePascal/dcpcrypt/lib/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/fpspreadsheet/lib/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/ ../../../FreePascal/lazarus/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM)/ ../../../FreePascal/lazarus/packager/units/$(CPU_TARGET)-$(OS_TARGET)/ ./
 includedir=./
-options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Scghi
+options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Schi
 
 [target]
 units=epidatacore.pas
