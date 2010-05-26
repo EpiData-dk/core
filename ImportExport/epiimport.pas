@@ -20,7 +20,8 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ImportRec(Const aFilename: string; Document: TEpiDocument = nil): TEpiDataFile;
+    function    ImportRec(Const aFilename: string; Const Document: TEpiDocument): TEpiDataFile; overload;
+    function    ImportRec(Const aFileName: string; var DataFile: TEpiDataFile): boolean; overload;
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
   end;
 
@@ -47,7 +48,14 @@ begin
 end;
 
 function TEpiImport.ImportRec(const aFilename: string;
-  Document: TEpiDocument = nil): TEpiDataFile;
+  Const Document: TEpiDocument): TEpiDataFile;
+begin
+  Result := Document.DataFiles.NewDataFile;
+  ImportRec(aFilename, Result);
+end;
+
+function TEpiImport.ImportRec(const aFileName: string;
+  var DataFile: TEpiDataFile): boolean;
 var
   TxtFile: TextFile;
   TxtLine: string;
@@ -79,20 +87,21 @@ var
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
   FieldTypeConversionTable: array[0..20] of TEpiFieldType = (
-  //   0          1         2          3              4
-  //   ftInteger, ftString, ftDate,    ftUpperAlfa,   ftCheckBox,
-       ftInteger, ftString, ftMDYDate, ftUpperString, ftBoolean,
+  //   0           1            2           3              4
+  //   ftInteger,  ftString,    ftDate,     ftUpperAlfa,   ftCheckBox,
+       ftInteger,  ftString,    ftMDYDate,  ftUpperString, ftBoolean,
 
-  //   5          6        7           8       9
-  //   ftBoolean, ftFloat, ftPhoneNum, ftTime, ftLocalNum,
-       ftBoolean, ftFloat, ftString,   ftTime, ftString,
-  //   10          11          12         13        14
-  //   ftToday,    ftEuroDate, ftIDNUM,   ftRes4,   ftRes5,
-       ftMDYToday, ftDMYDate,  ftAutoInc, ftString, ftString,
+  //   5           6            7           8              9
+  //   ftBoolean,  ftFloat,     ftPhoneNum, ftTime,        ftLocalNum,
+       ftBoolean,  ftFloat,     ftString,   ftTime,        ftString,
 
-  //   15          16           17         18        19
-  //   ftQuestion, ftEuroToday, ftSoundex, ftCrypt,  ftYMDDate,
-       ftString,   ftDMYToday,  ftString,  ftString, ftYMDDate,
+  //   10          11           12          13             14
+  //   ftToday,    ftEuroDate,  ftIDNUM,    ftRes4,        ftRes5,
+       ftMDYToday, ftDMYDate,   ftAutoInc,  ftString,      ftString,
+
+  //   15          16           17          18             19
+  //   ftQuestion, ftEuroToday, ftSoundex,  ftCrypt,       ftYMDDate,
+       ftString,   ftDMYToday,  ftString,   ftString,      ftYMDDate,
 
   //   20
   //   ftYMDToday);
@@ -134,18 +143,16 @@ const
   end;
 
 begin
-  result := nil;
+  result := false;
 
   if aFilename = '' then exit;
   if not FileExistsUTF8(aFilename) then
     RaiseError('File does not exists');
 
-  if Assigned(Document) then
-    result := Document.DataFiles.NewDataFile
-  else
-    result := TEpiDataFile.Create(nil);
+  if not Assigned(DataFile) then
+    DataFile := TEpiDataFile.Create(nil);
 
-  with Result do
+  with DataFile do
   try
     AssignFile(TxtFile, UTF8ToSys(aFilename));
     {$PUSH}
@@ -330,6 +337,7 @@ begin
 //    CloseFile(TxtFile);
     if Assigned(DataStream) then DataStream.Free;
   end;
+  result := true;
 end;
 
 end.
