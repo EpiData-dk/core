@@ -50,7 +50,7 @@ type
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
-{$static on}
+  {$static on}
   TEpiCustomBase = class
   { Scrambling }
   private
@@ -140,7 +140,7 @@ type
     property    Owner: TEpiCustomBase read FOwner;
     property    RootOwner: TEpiCustomBase read GetRootOwner;
   end;
-{$static off}
+  {$static off}
 
   { TEpiTranslatedText }
 
@@ -211,6 +211,7 @@ type
 
   { TEpiCustomList }
 
+  TEpiOnNewItemClass = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
   TEpiCustomList = class(TEpiCustomNamedItem)
   private
     FItemOwner: boolean;
@@ -239,6 +240,12 @@ type
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
+
+  { New Item Hook }
+  private
+    FOnNewItemClass: TEpiOnNewItemClass;
+  public
+    property   OnNewItemClass: TEpiOnNewItemClass read FOnNewItemClass write FOnNewItemClass;
 
   { Change-event hooks overrides}
   public
@@ -972,6 +979,10 @@ end;
 function TEpiCustomList.NewItem(ItemClass: TEpiCustomItemClass
   ): TEpiCustomItem;
 begin
+  if Assigned(OnNewItemClass) then
+    ItemClass := OnNewItemClass(Self, ItemClass);
+  if not Assigned(ItemClass) then
+    Exception.Create('');
   Result := ItemClass.Create(Self);
   Result.Id := GetUniqueItemId(ItemClass);
   AddItem(Result);

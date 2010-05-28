@@ -141,9 +141,12 @@ begin
   inherited LoadFromXml(Root);
 
   GroupList := nil;
-  SplitString(LoadNodeString(Root, rsGroupIdList), GroupList, [',']);
-  for i := 0 to GroupList.Count - 1 do
-    Groups.AddItem(TEpiDocument(RootOwner).Admin.Groups.GetItemById(GroupList[i]));
+  if LoadNode(Node, Root, rsGroupIdList, false) then
+  begin
+    SplitString(LoadNodeString(Root, rsGroupIdList), GroupList, [',']);
+    for i := 0 to GroupList.Count - 1 do
+      Groups.AddItem(TEpiDocument(RootOwner).Admin.Groups.GetItemById(GroupList[i]));
+  end;
 
   if LoadNode(Node, Root, rsFields, false) then
     Fields.LoadFromXml(Node);

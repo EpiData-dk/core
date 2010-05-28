@@ -130,7 +130,7 @@ begin
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node);
 
-  LoadNode(Node, Root, rsRelations, true);
+  if LoadNode(Node, Root, rsRelations, false) then
     Relations.LoadFromXml(Node);
 end;
 
