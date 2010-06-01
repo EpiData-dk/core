@@ -50,6 +50,8 @@ type
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
+  TEpiCustomBaseState = set of (ebsDestroying, ebsUpdating);
+
   {$static on}
   TEpiCustomBase = class
   { Scrambling }
@@ -127,18 +129,17 @@ type
   private
     FClassList: TFPList;
     FOwner:     TEpiCustomBase;
-    FDestroying: Boolean;
-    function    GetDestroying: Boolean;
+    FState:     TEpiCustomBaseState;
     function    GetRootOwner: TEpiCustomBase;
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
-    property    Destroying: Boolean read GetDestroying;
   public
     destructor  Destroy; override;
     property    Owner: TEpiCustomBase read FOwner;
     property    RootOwner: TEpiCustomBase read GetRootOwner;
+    property    State: TEpiCustomBaseState read FState;
   end;
   {$static off}
 
@@ -276,7 +277,7 @@ constructor TEpiCustomBase.Create(AOwner: TEpiCustomBase);
 begin
   FOwner := AOwner;
   FClassList := TFPList.Create;
-  FDestroying := false;
+  FState := [];
 end;
 
 procedure TEpiCustomBase.RegisterClasses(AClasses: array of TEpiCustomBase);
@@ -294,7 +295,7 @@ begin
   {$IFDEF EPI_CONSOLE_DEBUG}
   writeln('TEpiCustomBase.Destoy: ' + ClassName);
   {$ENDIF EPI_CONSOLE_DEBUG}
-  FDestroying := true;
+  Include(FState, ebsDestroying);
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
   FClassList.Free;
@@ -446,6 +447,7 @@ var
   Node: TDOMNode;
 begin
   LoadNode(Node, Root, NodeName, true);
+  DefaultFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN';
   result := StrToDateTime(Node.TextContent);
 end;
 
@@ -481,7 +483,7 @@ end;
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: TDateTime): string;
 begin
-  result := SaveNode(Lvl, NodeName, DateTimeToStr(Val));
+  result := SaveNode(Lvl, NodeName, FormatDateTime('YYYY/MM/DD HH:NN', Val));
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
@@ -586,7 +588,10 @@ begin
       FUpdateCount := 0;
     exit;
   end;
+
+  Include(FState, ebsUpdating);
   DoChange(eegCustomBase, word(ecceUpdate), nil);
+  Exclude(FState, ebsUpdating);
 end;
 
 procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent;
@@ -665,11 +670,6 @@ begin
       Exit(Obj);
     Obj := Obj.Owner;
   end;
-end;
-
-function TEpiCustomBase.GetDestroying: Boolean;
-begin
-  result := FDestroying;
 end;
 
 { TEpiTranslatedText }
@@ -765,7 +765,10 @@ begin
     if ElemList[i].ParentNode <> Root then continue;
     LangCode := UTF8Encode(TDOMElement(ElemList[i]).AttribStrings['xml:lang']);
     Val := UTF8Encode(ElemList[i].TextContent);
-    SetText(LangCode, Val);
+    if LangCode = FCurrentLang then
+      SetCurrentText(Val)
+    else
+      SetText(LangCode, Val);
   end;
   ElemList.Free;
 end;

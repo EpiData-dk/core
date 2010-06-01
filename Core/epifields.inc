@@ -1003,7 +1003,7 @@ begin
     ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
     ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
   end;
-  result := FormatDateTime('S', AsDate[index]);
+  result := FormatDateTime(S, AsDate[index]);
 end;
 
 function TEpiDateField.GetAsTime(const index: Integer): EpiTime;

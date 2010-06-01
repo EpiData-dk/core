@@ -171,8 +171,10 @@ begin
         RaiseError('Incorrect Password');
 
     // - FileLabel
+    StrBuf := '';
     if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
-      Name.Text :=  EpiUnknownStrToUTF8(Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine)));
+      StrBuf :=  EpiUnknownStrToUTF8(Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine)));
+    Name.Text := StrBuf;
 
     // - Header lines:
     Val(Copy(TxtLine, 1, Pos(' ', TxtLine)-1), HeaderLineCount, ValCode);
@@ -223,6 +225,7 @@ begin
       end;
 
       EField := NewField(TmpFieldType);
+      EField.BeginUpdate;
       with EField do
       begin
         Left           := TmpFieldX;
@@ -250,6 +253,7 @@ begin
         // Summerize field findings.
         TotFieldLength := TotFieldLength + Length;
       end;  // With EField
+      EField.EndUpdate;
     end; // For CurrentLine
 
     // Position for reading and check for corruptness.
@@ -296,6 +300,7 @@ begin
     DataStream.Position := TmpLength;
 
     SetLength(CharBuf, TotFieldLength);
+    BeginUpdate;
     For CurRec := 0 to TempInt-1 do
     begin
       I := DataStream.Read(CharBuf[0], TotFieldLength);
@@ -331,6 +336,7 @@ begin
         Inc(BufPos, Length);
       end;
     end;
+    EndUpdate;
 
     // TODO : Import .CHK files.
   finally

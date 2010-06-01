@@ -140,6 +140,9 @@ begin
   // Root = <Section>
   inherited LoadFromXml(Root);
 
+  Width := LoadNodeInt(Root, rsWidth);
+  Height := LoadNodeInt(Root, rsHeight);
+
   GroupList := nil;
   if LoadNode(Node, Root, rsGroupIdList, false) then
   begin

@@ -169,7 +169,7 @@ begin
               if (Sender is TEpiSections)  then
               with TEpiSection(Data) do
               begin
-                if Destroying then exit;
+                if (ebsDestroying in State) then exit;
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
               end;
@@ -350,7 +350,7 @@ begin
     Sections.LoadFromXml(Node);
 
   if Sections.ItemExistsById(TEpiSection.IdString + 'main') then
-    FMainSection := TEpiSection(TEpiSection.IdString + 'main');
+    FMainSection := TEpiSection(Sections.GetItemById(TEpiSection.IdString + 'main'));
 
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
