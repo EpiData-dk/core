@@ -214,13 +214,15 @@ begin
       if FieldIsQuestion then
       begin
         EHeading := NewHeading;
+        EHeading.BeginUpdate;
         with EHeading do
         begin
           Name.Text    := TmpName;
           Caption.Text := TmpLabel;
-          Left         := TmpFieldX;
-          Top          := TmpFieldY;
+          Left         := TmpQuestX;
+          Top          := TmpQuestY;
         end;
+        EHeading.EndUpdate;
         Continue;
       end;
 
