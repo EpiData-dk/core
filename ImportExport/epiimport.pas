@@ -5,7 +5,7 @@ unit epiimport;
 interface
 
 uses
-  Classes, SysUtils, epidocument,epidatafiles, epidatafilestypes;
+  Classes, SysUtils, epidocument,epidatafiles, epidatafilestypes, epiadmin;
 
 type
 
@@ -16,19 +16,22 @@ type
   TEpiImport = class(TObject)
   private
     FOnClipBoardRead: TEpiClipBoardReadHook;
+    FOnRequestPassword: TRequestPasswordEvent;
     procedure   RaiseError(Const Msg: string);
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ImportRec(Const aFilename: string; Const Document: TEpiDocument): TEpiDataFile; overload;
-    function    ImportRec(Const aFileName: string; var DataFile: TEpiDataFile): boolean; overload;
+    function    ImportRec(Const aFileName: string; var DataFile: TEpiDataFile;
+      ImportData: boolean = true): boolean;
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
+    // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
+    property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
   end;
 
 implementation
 
 uses
-  FileUtil, epistringutils;
+  FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1;
 
 { TEpiImport }
 
@@ -47,15 +50,8 @@ begin
   inherited Destroy;
 end;
 
-function TEpiImport.ImportRec(const aFilename: string;
-  Const Document: TEpiDocument): TEpiDataFile;
-begin
-  Result := Document.DataFiles.NewDataFile;
-  ImportRec(aFilename, Result);
-end;
-
 function TEpiImport.ImportRec(const aFileName: string;
-  var DataFile: TEpiDataFile): boolean;
+  var DataFile: TEpiDataFile; ImportData: boolean): boolean;
 var
   TxtFile: TextFile;
   TxtLine: string;
@@ -82,7 +78,9 @@ var
   VariableLabel: String;
   DataStream: TMemoryStream;
   CharBuf: Array of char;
+  IsCrypt: TBits;
   i: Integer;
+  Decrypter: TDCP_rijndael;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -114,20 +112,19 @@ const
     S, FPassword: string;
   begin
     result := false;
-{    if Assigned(FOnPassword) then
-      FOnPassword(Self, rpOpen, FPassword);
+    if Assigned(FOnRequestPassword) then
+      FOnRequestPassword(Self, S, FPassword);
     try
       S := Base64DecodeStr(EncryptedString);
-      FCrypter.InitStr(FPassword, TDCP_sha1);
-      FCrypter.DecryptCFBblock(S[1], S[1], Length(S));
-      FCrypter.Reset;
+      FPassword := 'fakepass';
+      Decrypter := TDCP_rijndael.Create(nil);
+      DeCrypter.InitStr(FPassword, TDCP_sha1);
+      DeCrypter.DecryptCFB8bit(S[1], S[1], Length(S));
+      DeCrypter.Reset;
       Result := (AnsiCompareText(FPassword, S) = 0);
     except
-      DataFile.ErrorText := Lang(0, 'Fatal Error in decrypting password.');
-      DataFile.ErrorCode := EPI_INVALID_PASSWORD;
-      EpiLogger.AddError(ClassName, 'RequestPassword', DataFile.ErrorText, 0);
       Abort;
-    end;    }
+    end;
   end;
 
   function TextPos(var F: Textfile): Cardinal;
@@ -183,6 +180,8 @@ begin
 
     // Read field defining header lines.
     TotFieldLength := 0;
+
+    IsCrypt := TBits.Create(HeaderLineCount);
     for CurrentLine := 1 to HeaderLineCount do
     begin
       ReadLn(TxtFile,
@@ -198,6 +197,11 @@ begin
       else begin
         // Normal field type recognition.
         TmpFieldType := FieldTypeConversionTable[TmpFieldTypeInt];
+
+        // This is an encrypted field... (new XML does not have single encrypted fields.)
+        if (TmpFieldTypeInt = 18) then
+          IsCrypt.Bits[CurrentLine-1] := true;
+
         // This is not a data field, but a question field.
         if (TmpFieldTypeInt = 15) or (TmpLength = 0) then
           FieldIsQuestion := true;
@@ -263,82 +267,60 @@ begin
     TmpLength := TextPos(TxtFile);
     CloseFile(TxtFile);
 
-    DataStream := TMemoryStream.Create;
-    DataStream.LoadFromFile(UTF8ToSys(AFilename));
-    DataStream.Position := DataStream.Size;
-
-    // Skip all lineendings / EOF chars.
-    SetLength(CharBuf, 16);
-    Stop := false;
-    while DataStream.Position >= TmpLength do
+    if ImportData then
     begin
-      DataStream.Seek(-16, soCurrent);
-      DataStream.Read(CharBuf[0], 16);
+      DataStream := TMemoryStream.Create;
+      DataStream.LoadFromFile(UTF8ToSys(AFilename));
+      DataStream.Position := TmpLength;
 
-      i := 15;
-      while i >= 0 do
+      SetLength(CharBuf, TotFieldLength);
+      BeginUpdate;
+      CurRec := 0;
+
+      while true do
       begin
-        if (CharBuf[i] in ['!', '?', '^']) then
+        Size := CurRec + 1; // TODO : Fix to use an upcomming ADDRECORDS method!!! This is VERY inefficient.
+        I := DataStream.Read(CharBuf[0], TotFieldLength);
+        if (I <> TotFieldLength) then
         begin
-          Stop := true;
           break;
+          // TODO : Exit gracefully when reading beyond last record...
+          // Could be an imcomplete record.
         end;
-        Dec(i);
-      end;
-      if Stop then break;
-      DataStream.Seek(-16, soCurrent);
-    end;
 
-    if DataStream.Position < TmpLength then
-      TempInt := TmpLength  // This is an empty datafile!
-    else
-      TempInt := DataStream.Position - (16 - i) + 3; // + 3 is for "!#13#10" which all .REC file should end with??!?!?
-    if ((TempInt - TmpLength) mod TotFieldLength) <> 0 then
-      RaiseError(Format('Error in datafile %s. One or more records are corrupted. Size: %d, Offset: %d, TotalLength: %d, i: %d',
-        [AFilename, DataStream.Size, TmpLength, TotFieldLength, i]));
+        StrBuf := CharBuf[High(CharBuf) - 2];
+        if StrBuf = '?' then
+          Deleted[CurRec] := true
+        else if StrBuf = '^' then
+          Verified[CurRec] := true;
 
-    TempInt := ((TempInt - TmpLength) div TotFieldLength);
-    Size := TempInt;
-    DataStream.Position := TmpLength;
+        StrBuf := StringReplace(string(CharBuf), '!'#13#10, '', [rfReplaceAll]);
+        BufPos := 1;
+        for i := 0 TO Fields.Count - 1 DO
+        with Fields[i] do begin
+          TmpStr := Trim(Copy(StrBuf, BufPos, Length));
 
-    SetLength(CharBuf, TotFieldLength);
-    BeginUpdate;
-    For CurRec := 0 to TempInt-1 do
-    begin
-      I := DataStream.Read(CharBuf[0], TotFieldLength);
-      if (I <> TotFieldLength) then
-        RaiseError(Format('Error reading record: %d', [CurRec+1]));
+          if TmpStr = '' then
+          begin
+            IsMissing[CurRec] := true;
+            Inc(BufPos, Length);
+            continue;
+          end;
 
-      StrBuf := CharBuf[High(CharBuf) - 2];
-      if StrBuf = '?' then
-        Deleted[CurRec] := true
-      else if StrBuf = '^' then
-        Verified[CurRec] := true;
-
-      StrBuf := StringReplace(string(CharBuf), '!'#13#10, '', [rfReplaceAll]);
-      BufPos := 1;
-      for i := 0 TO Fields.Count - 1 DO
-      with Fields[i] do begin
-        TmpStr := Trim(Copy(StrBuf, BufPos, Length));
-        if TmpStr = '' then
-        begin
-          IsMissing[CurRec] := true;
+          if IsCrypt.Bits[i] then
+          begin
+            EncData := Base64DecodeStr(TmpStr);
+            Decrypter.DecryptCFB8bit(EncData[1], EncData[1], System.Length(EncData));
+            TmpStr := Trim(EncData);
+            Decrypter.Reset;
+          end;
+          AsString[CurRec] := EpiUnknownStrToUTF8(TmpStr);
           Inc(BufPos, Length);
-          continue;
         end;
-//        IF (fieldtype = ftCrypt) THEN
-{        if false then
-        begin
-          EncData := Base64DecodeStr(TmpStr);
-          FCrypter.DecryptCFBblock(EncData[1], EncData[1], Length(EncData));
-          TmpStr := Trim(EncData);
-          FCrypter.Reset;
-        end; }
-        AsString[CurRec] := EpiUnknownStrToUTF8(TmpStr);
-        Inc(BufPos, Length);
+        Inc(CurRec);
       end;
+      EndUpdate;
     end;
-    EndUpdate;
 
     // TODO : Import .CHK files.
   finally
