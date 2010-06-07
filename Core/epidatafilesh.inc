@@ -69,4 +69,8 @@ type
     Property    Size: Integer read GetSize write SetSize;
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
+  public
+    { Update Overrides}
+    procedure BeginUpdate; override;
+    procedure EndUpdate; override;
   end;

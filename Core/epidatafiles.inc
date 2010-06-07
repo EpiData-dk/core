@@ -370,3 +370,17 @@ function TEpiDataFile.NewHeading: TEpiHeading;
 begin
   result := MainSection.NewHeading;
 end;
+
+procedure TEpiDataFile.BeginUpdate;
+begin
+  inherited BeginUpdate;
+  Fields.BeginUpdate;
+  Headings.BeginUpdate;
+end;
+
+procedure TEpiDataFile.EndUpdate;
+begin
+  Headings.EndUpdate;
+  Fields.EndUpdate;
+  inherited EndUpdate;
+end;
