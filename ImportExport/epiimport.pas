@@ -242,7 +242,9 @@ begin
     Name.Text := StrBuf;
 
     // - Header lines:
-    Val(Copy(TxtLine, 1, Pos(' ', TxtLine)-1), HeaderLineCount, ValCode);
+    TempInt := Pos(' ', TxtLine)-1;
+    if TempInt = -1 then TempInt := Length(TxtLine);
+    Val(Copy(TxtLine, 1, TempInt), HeaderLineCount, ValCode);
     if ValCode > 0 then
       RaiseError(Format('Incorrect format of file: %S', [aFilename]));
 

@@ -314,7 +314,7 @@ end;
 destructor TEpiDataFile.Destroy;
 begin
   FRecordStatus.Free;
-  FMainSection.Free;
+//  FMainSection.Free;
   FSections.Free;
   FAllFields.Free;
   FAllHeadings.Free;
