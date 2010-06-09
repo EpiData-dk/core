@@ -15,10 +15,10 @@ type
   TEpiCustomClass = class(TObject)
   private
     FErrorCode: integer; static;
-    FErrorText: string; static;
     AESCrypter: TDCP_rijndael;
     FOwner: TObject;
   protected
+    FErrorText: string; //static;
     Function   StringToXml(Const Src: String): string;
     Function   Ins(Level: integer): string;
     property   Owner: TObject read FOwner;
