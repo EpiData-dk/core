@@ -68,6 +68,8 @@ begin
   RegisterClasses([Settings, Admin, Study, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
+  // Needed to reset initial settings.
+  Modified := false;
 end;
 
 destructor TEpiDocument.Destroy;

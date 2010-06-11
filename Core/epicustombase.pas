@@ -128,11 +128,15 @@ type
   { Class properties / inheritance }
   private
     FClassList: TFPList;
+    FModified: Boolean;
+    FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
     FState:     TEpiCustomBaseState;
     function    GetRootOwner: TEpiCustomBase;
+    procedure   SetOnModified(const AValue: TNotifyEvent);
   protected
     constructor Create(AOwner: TEpiCustomBase); virtual;
+    procedure   SetModified(const AValue: Boolean); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
@@ -140,6 +144,8 @@ type
     property    Owner: TEpiCustomBase read FOwner;
     property    RootOwner: TEpiCustomBase read GetRootOwner;
     property    State: TEpiCustomBaseState read FState;
+    property    Modified: Boolean read FModified write SetModified;
+    property    OnModified: TNotifyEvent read FOnModified write SetOnModified;
   end;
   {$static off}
 
@@ -248,7 +254,7 @@ type
   public
     property   OnNewItemClass: TEpiOnNewItemClass read FOnNewItemClass write FOnNewItemClass;
 
-  { Change-event hooks overrides}
+  { Change-event hooks overrides }
   public
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
@@ -257,6 +263,10 @@ type
   public
     procedure SetLanguage(Const LangCode: string;
       Const DefaultLanguage: boolean); override;
+
+  { Class properties overrides }
+  protected
+    procedure SetModified(const AValue: Boolean); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -278,6 +288,7 @@ begin
   FOwner := AOwner;
   FClassList := TFPList.Create;
   FState := [];
+  FModified := false;
 end;
 
 procedure TEpiCustomBase.RegisterClasses(AClasses: array of TEpiCustomBase);
@@ -548,6 +559,9 @@ begin
     inc(i);
   end;
 
+  if (EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate)) then
+    Modified := true;
+
   if FUpdateCount > 0 then exit;
 
   i := 0;
@@ -670,6 +684,31 @@ begin
       Exit(Obj);
     Obj := Obj.Owner;
   end;
+end;
+
+procedure TEpiCustomBase.SetModified(const AValue: Boolean);
+var
+  i: Integer;
+begin
+  if FModified = AValue then exit;
+  FModified := AValue;
+  if Assigned(FOnModified) then
+    FOnModified(Self);
+
+  if AValue then
+  begin
+    if Assigned(Owner) then
+      Owner.Modified := AValue;
+  end else begin
+    for i := 0 to ClassList.Count - 1 do
+      TEpiCustomBase(ClassList[i]).Modified := AValue;
+  end;
+end;
+
+procedure TEpiCustomBase.SetOnModified(const AValue: TNotifyEvent);
+begin
+  if FOnModified = AValue then exit;
+  FOnModified := AValue;
 end;
 
 { TEpiTranslatedText }
@@ -1080,6 +1119,16 @@ begin
   inherited SetLanguage(LangCode, DefaultLanguage);
   for i := 0 to Count - 1 do
     Items[i].SetLanguage(LangCode, DefaultLanguage);
+end;
+
+procedure TEpiCustomList.SetModified(const AValue: Boolean);
+var
+  i: Integer;
+begin
+  inherited SetModified(AValue);
+  if not AValue then
+    for i := 0 to Count - 1 do
+      Items[i].Modified := AValue;
 end;
 
 end.
