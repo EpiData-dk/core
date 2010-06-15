@@ -257,13 +257,17 @@ end;
 procedure TEpiDataFile.SetSize(const AValue: Integer);
 var
   i: Integer;
+  Val: LongInt;
 begin
   if AValue = Size then exit;
 
+  Val := FRecordStatus.Size;
   FRecordStatus.Size := AValue;
 
   for i := 0 to Fields.Count - 1 do
     Fields[i].Size := AValue;
+
+  DoChange(eegDataFiles, Word(edceSize), @Val);
 end;
 
 procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);

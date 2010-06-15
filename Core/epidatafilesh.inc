@@ -2,6 +2,10 @@
 
 type
 
+  TEpiDatafileChangeEventType = (
+    edceSize
+  );
+
   TEpiDataFiles = class(TEpiCustomList)
   private
     function    GetDataFile(Index: integer): TEpiDataFile;
