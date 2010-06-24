@@ -32,10 +32,13 @@ type
   procedure EpiUnknownStringsToUTF8(Source: TStrings);
   function EpiUtf8ToAnsi(Const Source: string): string;
 
+  function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
+  function AutoFieldName(Const S: string): string;
+
 implementation
 
 uses
-  LConvEncoding, FileUtil;
+  LConvEncoding, FileUtil, math;
 
 function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
 var
@@ -114,6 +117,25 @@ begin
   {$ELSE}
   result := UTF8ToISO_8859_1(Source);
   {$ENDIF}
+end;
+
+function FirstWord(Const S: string; MaxLength: Cardinal): string;
+var
+  n: Integer;
+begin
+  Result := UTF8Decode(S);
+  Result := TrimLeft(Result);
+  Result := StringReplace(Result, #9, ' ', [rfReplaceAll]);
+  n := Math.Min(Pos(' ',Result), MaxLength + 1);
+  if n = 0 then
+    n := Length(Result) + 1;
+  Result := Copy(Result, 1, n-1);
+  Result := UTF8Encode(Result);
+end;
+
+function AutoFieldName(const S: string): string;
+begin
+  Result := UTF8Encode(StringReplace(Trim(UTF8Decode(S)), ' ', '_', [rfReplaceAll]));
 end;
 
 { TString }
