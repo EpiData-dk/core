@@ -427,6 +427,8 @@ var
   FileVersion: Byte;
   VarDataLength: Integer;
 
+  FieldList: TFPList;
+
   function ReadSingleMissing(var MisVal: string): Single;
   var
     Buf: Array[0..3] of Byte absolute Result;
@@ -557,7 +559,9 @@ begin
 
     // nobs (number of obs)
     NObs := ReadInts(DataStream, 4);
-    Size := NObs;
+    // Don't mess with the records if only structure is imported.
+    if ImportData then
+      Size := NObs;
 
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
@@ -587,6 +591,8 @@ begin
     DataStream.Read(ByteBuf[0], FmtLength * NVar);
 
     VarDataLength := 0;
+    FieldList := TFPList.Create;
+    FieldList.Capacity := NVar;
     FOR i := 0 TO NVar - 1 DO
     BEGIN
       // Update typelist to consts...
@@ -650,6 +656,7 @@ begin
       end;
 
       TmpField := NewField(TmpFieldType);
+      FieldList.Add(TmpField);
       TmpField.BeginUpdate;
       WITH TmpField DO
       BEGIN
@@ -721,7 +728,7 @@ begin
     J := 0;
     FOR i := 0 TO nVar-1 DO
     BEGIN
-      TmpField := Fields[i];
+      TmpField := TEpiField(FieldList[i]);
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FileLabelLength]), FileLabelLength));
       IF Length(StrBuf)>50 THEN
         StrBuf := Copy(StrBuf, 1, 48) + '..';
