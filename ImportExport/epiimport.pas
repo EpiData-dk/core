@@ -30,6 +30,8 @@ type
       ImportData: boolean = true): boolean;
     function    ImportStata(Const aFilename: string; var DataFile: TEpiDataFile;
       ImportData: boolean = true): Boolean;
+    function    ImportQES(Const aFilename: string; var DataFile: TEpiDataFile;
+      ActiveSection: TEpiSection): Boolean;
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
@@ -38,7 +40,8 @@ type
 implementation
 
 uses
-  FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils;
+  FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
+  epiqeshandler;
 
 var
   BigEndian: boolean = false;
@@ -933,6 +936,16 @@ begin
   finally
     if Assigned(DataStream) then FreeAndNil(DataStream);
   end;
+end;
+
+function TEpiImport.ImportQES(const aFilename: string;
+  var DataFile: TEpiDataFile; ActiveSection: TEpiSection): Boolean;
+var
+  QH: TQesHandler;
+begin
+  QH := TQesHandler.Create;
+  Result := QH.QesToDatafile(aFilename, DataFile, ActiveSection);
+  QH.Free;
 end;
 
 end.

@@ -3,7 +3,7 @@
   <Package Version="3">
     <Name Value="epidatacore"/>
     <CompilerOptions>
-      <Version Value="8"/>
+      <Version Value="9"/>
       <SearchPaths>
         <OtherUnitFiles Value="Core/;Utils/;ImportExport/"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
@@ -11,7 +11,6 @@
       <Parsing>
         <SyntaxOptions>
           <AllowLabel Value="False"/>
-          <UseAnsiStrings Value="True"/>
         </SyntaxOptions>
       </Parsing>
       <CodeGeneration>
@@ -31,7 +30,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
-    <Files Count="21">
+    <Files Count="22">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -109,13 +108,17 @@
         <UnitName Value="epiimport"/>
       </Item19>
       <Item20>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
+        <Filename Value="ImportExport/epiqeshandler.pas"/>
+        <UnitName Value="epiqeshandler"/>
       </Item20>
       <Item21>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
+      </Item21>
+      <Item22>
         <Filename Value="Utils/epistringutils.pas"/>
         <UnitName Value="epistringutils"/>
-      </Item21>
+      </Item22>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
