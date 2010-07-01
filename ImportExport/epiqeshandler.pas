@@ -18,6 +18,7 @@ type
 //    FOnProgress:  TProgressEvent;
 //    FOnTranslate: TTranslateEvent;
     FDf:          TEpiDataFile;
+    FFieldPrefix: string;
     FSec:         TEpiSection;
     FLines:       TStringList;
     CurLine:      string;
@@ -52,6 +53,7 @@ type
     function   QesToDatafile(Const aLines: TStringList; var DataFile: TEpiDataFile; ActiveSection: TEpiSection): boolean; overload;
     function   QesToDatafile(Const aFilename: string; var DataFile: TEpiDataFile; ActiveSection: TEpiSection): boolean; overload;
     function   DatafileToQes(Const DataFile: TEpiDatafile; Const aFileName: string): boolean;
+    property   FieldPrefix: string read FFieldPrefix write FFieldPrefix;
 //    property   OnProgress:  TProgressEvent read FOnProgress write FOnProgress;
 //    property   OnTranslate: TTranslateEvent read FOnTranslate write FOnTranslate;
 //    property   FieldNaming: TFieldNaming read FFieldNaming write FFieldNaming;
@@ -151,16 +153,16 @@ begin
   With result do
   begin
     BeginUpdate;
-    Name.Text             := ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
+    Name.Text             := FieldPrefix + IntToStr(Df.Fields.Count);  //ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
     Length                := PosEnd - PosStart + 1;
     Top                   := CurY;
     TmpStr                := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
     Question.Caption.Text := Trim(StringReplace(TmpStr, '}', '', [rfIgnoreCase, rfReplaceAll]));
-//    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
+{//    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
     begin
       Tmpstr := FirstWord(Question.Caption.Text, System.Length(Question.Caption.Text));
       Question.Caption.Text := Copy(Question.Caption.Text, System.Length(TmpStr) + 1, System.Length(Question.Caption.Text));
-    end;
+    end;      }
   end;
   Delete(CurLine, 1, PosEnd);
 end;
@@ -410,8 +412,8 @@ begin
     FOR LinNum := 0 TO FLines.Count - 1 DO
     BEGIN
       UpdateProgress(((CurY+1) * 100) div FLines.Count, Lang(20440, 'Building datafile'));
-      CurLine := FLines[CurY];
       CurY := LinNum;
+      CurLine := FLines[CurY];
 
       IF Trim(CurLine) = '' THEN CurLine := '';
       WHILE Length(CurLine)>0 DO
