@@ -169,9 +169,6 @@ type
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
-  published
-    Property   Id;
-    property   Name;
   end;
 
 implementation
