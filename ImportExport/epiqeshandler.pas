@@ -153,7 +153,7 @@ begin
   With result do
   begin
     BeginUpdate;
-    Name.Text             := FieldPrefix + IntToStr(Df.Fields.Count);  //ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
+    Name                  := FieldPrefix + IntToStr(Df.Fields.Count);  //ExtractFieldName(Copy(CurLine, 1, PosStart - 1));
     Length                := PosEnd - PosStart + 1;
     Top                   := CurY;
     TmpStr                := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);

@@ -88,6 +88,8 @@ end;
 constructor TEpiSection.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FName := TEpiTranslatedText.Create(Self, rsName);
+
   FFields := TEpiFields.Create(self);
   FFields.ItemOwner := true;
 
@@ -96,7 +98,7 @@ begin
 
   FGroups := TEpiGroups.Create(Self);
 
-  RegisterClasses([Fields, Headings]);
+  RegisterClasses([Name, Fields, Headings]);
 end;
 
 destructor TEpiSection.Destroy;
@@ -104,6 +106,7 @@ begin
   FGroups.Free;
   FHeadings.Free;
   FFields.Free;
+  FName.Free;
   inherited Destroy;
 end;
 

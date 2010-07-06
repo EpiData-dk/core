@@ -156,8 +156,9 @@ type
 
   { TEpiGroup }
 
-  TEpiGroup = class(TEpiCustomNamedItem)
+  TEpiGroup = class(TEpiCustomItem)
   private
+    FName: TEpiTranslatedText;
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
   protected
@@ -165,9 +166,10 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    function XMLName: string; override;
+    function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
+    property   Name: TEpiTranslatedText read FName;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
   end;
 
@@ -647,10 +649,14 @@ end;
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+
+  FName := TEpiTranslatedText.Create(Self, rsName);
+  RegisterClasses([Name]);
 end;
 
 destructor TEpiGroup.Destroy;
 begin
+  FName.Free;
   inherited Destroy;
 end;
 
@@ -670,6 +676,9 @@ procedure TEpiGroup.LoadFromXml(Root: TDOMNode);
 begin
   // Root = <Group>
   inherited LoadFromXml(Root);
+
+  // If no name present, TEpiTranslatedText will take care of it.
+  Name.LoadFromXml(Root);
   Rights := TEpiAdminRights(LoadNodeInt(Root, rsRights));
 end;
 

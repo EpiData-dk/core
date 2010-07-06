@@ -288,9 +288,18 @@ begin
   Create(AOwner, 0);
 end;
 
+function TEpiDataFile.ValidateFieldRename(Field: TEpiField; NewName: string
+  ): boolean;
+begin
+  result := not (Fields.FieldExistsByName(NewName));
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
+
+  // Name...
+  FName := TEpiTranslatedText.Create(Self, rsName);
 
   // Sections
   FSections := TEpiSections.Create(Self);
@@ -312,7 +321,7 @@ begin
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
 
-  RegisterClasses([ValueLabels, Sections]);
+  RegisterClasses([Name, ValueLabels, Sections]);
 end;
 
 destructor TEpiDataFile.Destroy;
@@ -320,8 +329,10 @@ begin
   FRecordStatus.Free;
 //  FMainSection.Free;
   FSections.Free;
+  FValueLabels.Free;
   FAllFields.Free;
   FAllHeadings.Free;
+  FName.Free;
   inherited Destroy;
 end;
 
@@ -346,6 +357,9 @@ begin
 
   // Now start loading.
   inherited LoadFromXml(Root);
+
+  // If no name present, TEpiTranslatedText will take care of it.
+  Name.LoadFromXml(Root);
 
   if LoadNode(Node, Root, rsValueLabelSets, false) then
     ValueLabels.LoadFromXml(Node);

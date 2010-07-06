@@ -324,10 +324,9 @@ begin
           if Pos(TmpName, VariableLabel) > 0 then
             VariableLabel := Trim(Copy(VariableLabel, System.Length(TmpName)+1, System.Length(VariableLabel)));
           Caption.Text := VariableLabel;
-          Name.Text := VariableLabel;
         end;
         // Ensure valid variable name.
-        Name.Text := TmpName;
+        Name := TmpName;
 
         // Summerize field findings.
         TotFieldLength := TotFieldLength + Length;
@@ -703,7 +702,7 @@ begin
 
       // - varlist
       StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);
-      TmpField.Name.Text := Trim(StrBuf);
+      TmpField.Name := Trim(StrBuf);
     END;
 
     // - lbllist: names af value label

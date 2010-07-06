@@ -100,10 +100,6 @@ type
     function    NewValueLabel: TEpiCustomValueLabel;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
-  public
-    { "Publiclised" inherited properties }
-    property    Id;
-    property    Name;
   end;
 
   { TEpiValueLabelSets }

@@ -2,7 +2,7 @@
 
 type
 
-  TEpiDatafileChangeEventType = (
+  TEpiDataFileChangeEventType = (
     edceSize
   );
 
@@ -25,9 +25,10 @@ type
 
   { TEpiDataFile }
 
-  TEpiDataFile = class(TEpiCustomNamedItem)
+  TEpiDataFile = class(TEpiCustomItem)
   private
     { Data containers }
+    FName: TEpiTranslatedText;
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
     FSections: TEpiSections;
@@ -52,6 +53,7 @@ type
   protected
     class function IdString: string; override;
     constructor Create(AOwner: TEpiCustomBase); override;
+    function    ValidateFieldRename(Field: TEpiField; NewName: string): boolean;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
@@ -61,6 +63,7 @@ type
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
+    property    Name: TEpiTranslatedText read FName;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;

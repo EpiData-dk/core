@@ -189,7 +189,7 @@ type
 
   { TEpiCustomNamedItem }
 
-  TEpiCustomNamedItem = Class(TEpiCustomItem)
+{  TEpiCustomNamedItem = Class(TEpiCustomItem)
   private
     FName: TEpiTranslatedText;
   protected
@@ -198,11 +198,11 @@ type
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     property    Name: TEpiTranslatedText read FName;
-  end;
+  end;     }
 
   { TEpiCustomControlItem }
 
-  TEpiCustomControlItem = class(TEpiCustomNamedItem)
+  TEpiCustomControlItem = class(TEpiCustomItem)
   private
     FLeft: integer;
     FTop: integer;
@@ -219,7 +219,7 @@ type
   { TEpiCustomList }
 
   TEpiOnNewItemClass = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
-  TEpiCustomList = class(TEpiCustomNamedItem)
+  TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
     FList: TFPList;
@@ -864,7 +864,7 @@ begin
 end;
 
 { TEpiCustomNamedItem }
-
+{
 constructor TEpiCustomNamedItem.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -883,7 +883,7 @@ begin
   inherited LoadFromXml(Root);
   FName.LoadFromXml(Root);
 end;
-
+}
 { TEpiCustomControlItem }
 
 function TEpiCustomControlItem.SaveToXml(Content: String; Lvl: integer

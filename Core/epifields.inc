@@ -64,6 +64,20 @@ begin
   AddItem(Result);
 end;
 
+function TEpiFields.FieldExists(AField: TEpiField): boolean;
+begin
+  FieldExistsByName(AField.Name);
+end;
+
+function TEpiFields.FieldExistsByName(AName: string): boolean;
+var
+  i: Integer;
+begin
+  result := false;
+  for i := 0 to Count - 1 do
+    if CompareStr(Field[i].Name, AName) = 0 then exit(true);
+end;
+
 { TEpiField }
 
 procedure TEpiField.SetDecimals(const AValue: Cardinal);
@@ -109,6 +123,21 @@ begin
        (FValueLabelSet = TEpiValueLabelSet(Data)) then
       FValueLabelSet := nil;
   end;
+end;
+
+procedure TEpiField.SetName(const AValue: string);
+var
+  Val: String;
+begin
+  if FName = AValue then exit;
+
+  // Validate against Datafile.
+  if (Assigned(DataFile)) and
+     not DataFile.ValidateFieldRename(Self, AValue) then exit;
+
+  Val := FName;
+  FName := AValue;
+  DoChange(eegFields, Word(efceName), @Val);
 end;
 
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
@@ -210,6 +239,7 @@ end;
 function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content :=
+    SaveNode(Lvl + 1, rsName, Name) +
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
     SaveNode(Lvl + 1, rsLength, Length) +
     SaveNode(Lvl + 1, rsDecimals, Decimals);
@@ -224,6 +254,7 @@ var
 begin
   // Root = <Field>
   inherited LoadFromXml(Root);
+  Name     := LoadNodeString(Root, rsName);
   Length   := LoadNodeInt(Root, rsLength);
   Decimals := LoadNodeInt(Root, rsDecimals);
   if LoadNode(Node, Root, rsValueLabelId, false) then

@@ -29,6 +29,7 @@ type
     FGroups: TEpiGroups;
     FHeadings: TEpiHeadings;
     FHeight: integer;
+    FName: TEpiTranslatedText;
     FWidth: integer;
     function    GetField(Index: integer): TEpiField;
     function    GetHeading(Index: integer): TEpiHeading;
@@ -44,6 +45,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;
+    property    Name: TEpiTranslatedText read FName;
     property    Fields: TEpiFields read FFields;
     property    Field[Index: integer]: TEpiField read GetField;
     property    Headings: TEpiHeadings read FHeadings;

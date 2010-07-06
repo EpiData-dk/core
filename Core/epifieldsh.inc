@@ -3,8 +3,8 @@
 type
 
   TEpiFieldsChangeEventType = (
-    efceSetDecimal, efceSetLeft, efceSetLength, efceSetTop,
-    efceSetSize
+    efceName, efceSetDecimal, efceSetLeft, efceSetLength,
+    efceSetTop, efceSetSize
   );
 
   { TEpiFields }
@@ -19,6 +19,8 @@ type
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
+    function    FieldExists(AField: TEpiField): boolean;
+    function    FieldExistsByName(AName: string): boolean;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
   end;
@@ -32,6 +34,7 @@ type
     FDecimals: Cardinal;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
+    FName: string;
     FSize: Integer;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiHeading;
@@ -41,6 +44,7 @@ type
     procedure   SetLength(const AValue: Cardinal);
     procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    procedure   SetName(const AValue: string);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
   protected
     procedure   CheckIndex(Const index: integer); virtual;
@@ -85,6 +89,7 @@ type
 
   { Field Properties }
   public
+    property    Name: string read FName write SetName;
     property    FieldType: TEpiFieldType read FFieldType;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
