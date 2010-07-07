@@ -34,11 +34,12 @@ type
 
   function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
   function AutoFieldName(Const S: string): string;
+  function ValidateIdentifierUTF8(Const AValue: string): boolean;
 
 implementation
 
 uses
-  LConvEncoding, FileUtil, math;
+  LConvEncoding, FileUtil, math, LCLProc;
 
 function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
 var
@@ -136,6 +137,15 @@ end;
 function AutoFieldName(const S: string): string;
 begin
   Result := UTF8Encode(StringReplace(Trim(UTF8Decode(S)), ' ', '_', [rfReplaceAll]));
+end;
+
+function ValidateIdentifierUTF8(const AValue: string): boolean;
+begin
+  result := true;
+  if FindInvalidUTF8Character(PChar(@AValue[1]), Length(AValue)) <> -1 then
+    exit(false);
+  if UTF8Pos(' ', AValue) > 0 then
+    exit(false);
 end;
 
 { TString }

@@ -60,7 +60,7 @@ end;
 function TEpiFields.NewField(FieldType: TEpiFieldType): TEpiField;
 begin
   result := TEpiField.CreateField(Self, FieldType);
-  Result.Id := 'field_id_' + IntToStr(Count);
+  Result.Id := GetUniqueItemId(TEpiCustomItemClass(Result.ClassType));
   AddItem(Result);
 end;
 
@@ -131,6 +131,10 @@ var
 begin
   if FName = AValue then exit;
 
+  // Validate identifier
+  if not ValidateIdentifierUTF8(AValue) then
+    Exit;
+
   // Validate against Datafile.
   if (Assigned(DataFile)) and
      not DataFile.ValidateFieldRename(Self, AValue) then exit;
@@ -196,7 +200,7 @@ end;
 
 class function TEpiField.IdString: string;
 begin
-  Result := 'field_id_';
+  Result := 'f';
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
