@@ -46,8 +46,8 @@ const
   );
 
   EpiDialogFilterXML: TEpiDialogFilterPair = (
-    FilterName: 'EpiData XML Data file (*.recxml)';
-    FilterExt:  '*.recxml';
+    FilterName: 'EpiData XML Data file (*.epx)';
+    FilterExt:  '*.epx';
   );
 
   EpiDialogFilterREC: TEpiDialogFilterPair = (
