@@ -352,7 +352,6 @@ begin
 
       while true do
       begin
-        Size := CurRec + 1; // TODO : Fix to use an upcomming ADDRECORDS method!!! This is VERY inefficient.
         I := DataStream.Read(CharBuf[0], TotFieldLength);
         if (I <> TotFieldLength) then
         begin
@@ -361,6 +360,7 @@ begin
           // Could be an imcomplete record.
         end;
 
+        Size := CurRec + 1; // TODO : Fix to use an upcomming ADDRECORDS method!!! This is VERY inefficient.
         StrBuf := CharBuf[High(CharBuf) - 2];
         if StrBuf = '?' then
           Deleted[CurRec] := true
@@ -387,6 +387,8 @@ begin
             TmpStr := Trim(EncData);
             Decrypter.Reset;
           end;
+          if FieldType = ftFloat then       // "." was Always dec. separator in old .REC files.
+            TmpStr := StringReplace(TmpStr, '.', DecimalSeparator, [rfReplaceAll]);
           AsString[CurRec] := EpiUnknownStrToUTF8(TmpStr);
           Inc(BufPos, Length);
         end;
