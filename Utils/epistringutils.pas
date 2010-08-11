@@ -8,6 +8,7 @@ interface
 uses
   Classes,  SysUtils;
 
+
 type
 
   { TString }
@@ -23,6 +24,7 @@ type
 
   TCharSet = Set of Char;
 
+  function CountChar(Const UTF8String: string; Const WChar: WideChar): integer;
   function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
   procedure SplitString(const Source: string; var List: TStrings;
     const Splitters: TCharset = [' ']; const QuoteChars: TCharSet = ['"']);
@@ -40,6 +42,21 @@ implementation
 
 uses
   LConvEncoding, FileUtil, math, LCLProc;
+
+function CountChar(const UTF8String: string; Const WChar: WideChar): integer;
+var
+  WS: WideString;
+  L: LongInt;
+  i: Integer;
+begin
+  WS := UTF8ToUTF16(UTF8String);
+  L := UTF16Length(WS);
+
+  result := 0;
+  for i := 1 to L do
+    if WS[i] = WChar then
+      inc(result);
+end;
 
 function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
 var
