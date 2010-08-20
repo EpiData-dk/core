@@ -4,7 +4,7 @@ type
 
   TEpiFieldsChangeEventType = (
     efceName, efceSetDecimal, efceSetLeft, efceSetLength,
-    efceSetTop, efceSetSize
+    efceSetTop, efceSetSize, efceData
   );
 
   { TEpiFields }

@@ -375,9 +375,13 @@ end;
 
 procedure TEpiIntField.SetAsInteger(const index: Integer;
   const AValue: EpiInteger);
+var
+  Val: EpiInteger;
 begin
   CheckIndex(Index);
+  Val := FData[index];
   FData[Index] := AValue;
+  DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiIntField.SetAsString(const index: Integer; const AValue: EpiString
@@ -541,9 +545,13 @@ end;
 
 procedure TEpiFloatField.SetAsFloat(const index: Integer; const AValue: EpiFloat
   );
+var
+  Val: EpiFloat;
 begin
   CheckIndex(Index);
+  Val := FData[Index];
   FData[index] := AValue;
+  DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiFloatField.SetAsInteger(const index: Integer;
@@ -689,9 +697,13 @@ end;
 
 procedure TEpiBoolField.SetAsBoolean(const index: Integer; const AValue: EpiBool
   );
+var
+  Val: EpiBool;
 begin
   CheckIndex(Index);
+  Val := FData[index];
   FData[index] := AValue;
+  DoChange(eegFields, Word(efceData), @Val);
 end;
 
 procedure TEpiBoolField.SetAsDate(const index: Integer; const AValue: EpiDate);
@@ -928,9 +940,13 @@ end;
 
 procedure TEpiStringField.SetAsString(const index: Integer;
   const AValue: EpiString);
+var
+  Val: EpiString;
 begin
   CheckIndex(Index);
+  Val := FData[index];
   FData[index] := AValue;
+  DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -1098,9 +1114,13 @@ begin
 end;
 
 procedure TEpiDateField.SetAsDate(const index: Integer; const AValue: EpiDate);
+var
+  Val: EpiDate;
 begin
   CheckIndex(Index);
+  Val := FData[index];
   FData[index] := AValue;
+  DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiDateField.SetAsDateTime(const index: Integer;
@@ -1266,9 +1286,13 @@ end;
 
 procedure TEpiDateTimeField.SetAsDateTime(const index: Integer;
   const AValue: EpiDateTime);
+var
+  Val: EpiDateTime;
 begin
   CheckIndex(index);
+  Val := FData[Index];
   FData[Index] := AValue;
+  DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiDateTimeField.SetAsFloat(const index: Integer;
