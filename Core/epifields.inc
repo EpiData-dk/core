@@ -5,8 +5,8 @@ const
   NA_INT       = MaxInt;
   NA_FLOAT     = MaxFloat;
   NA_DATE      = NA_INT;
-  NA_TIME      = MaxDouble;
-  NA_DATETIME  = NA_TIME;
+  NA_TIME      = $FFFFFFFF; //MaxDouble;
+//  NA_DATETIME  = NA_TIME;
   NA_STRING    = '.';
   NA_BOOL      = $7F;
 
@@ -408,9 +408,13 @@ begin
 end;
 
 procedure TEpiIntField.SetCapacity(AValue: Integer);
+var
+  i: LongInt;
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
+  for i := FCapacity to AValue-1 do
+    FData[i] := DefaultMissing;
   FCapacity := AValue;
 end;
 
@@ -594,9 +598,13 @@ begin
 end;
 
 procedure TEpiFloatField.SetCapacity(AValue: Integer);
+var
+  i: LongInt;
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
+  for i := FCapacity to AValue-1 do
+    FData[i] := DefaultMissing;
   FCapacity := AValue;
 end;
 
@@ -788,9 +796,13 @@ begin
 end;
 
 procedure TEpiBoolField.SetCapacity(AValue: Integer);
+var
+  i: LongInt;
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
+  for i := FCapacity to AValue-1 do
+    FData[i] := DefaultMissing;
   FCapacity := AValue;
 end;
 
@@ -974,6 +986,7 @@ procedure TEpiStringField.SetCapacity(AValue: Integer);
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
+  // We do not want to initialize string, this is costly and should be avoided.
   FCapacity := AValue;
 end;
 
@@ -1190,9 +1203,13 @@ begin
 end;
 
 procedure TEpiDateField.SetCapacity(AValue: Integer);
+var
+  i: LongInt;
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
+  for i := FCapacity to AValue-1 do
+    FData[i] := DefaultMissing;
   FCapacity := AValue;
 end;
 
@@ -1263,7 +1280,7 @@ end;
 
 function TEpiDateTimeField.GetIsMissing(const index: Integer): boolean;
 begin
-  Result := AsDateTime[index] = NA_DATETIME;
+  Result := AsDateTime[index] = DefaultMissing;
 end;
 
 procedure TEpiDateTimeField.SetAsBoolean(const index: Integer;
@@ -1341,9 +1358,13 @@ begin
 end;
 
 procedure TEpiDateTimeField.SetCapacity(AValue: Integer);
+var
+  i: LongInt;
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
+  for i := FCapacity to AValue-1 do
+    FData[i] := DefaultMissing;
   FCapacity := AValue;
 end;
 
@@ -1354,7 +1375,7 @@ end;
 
 class function TEpiDateTimeField.DefaultMissing: EpiDateTime;
 begin
-  result := NA_DATETIME;
+  result := NA_TIME;
 end;
 
 function TEpiDateTimeField.Compare(i, j: integer): integer;

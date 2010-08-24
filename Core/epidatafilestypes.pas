@@ -56,6 +56,11 @@ const
   StringFieldTypes:
     TEpiFieldTypes = [ftString, ftUpperString];
 
+  AutoFieldTypes:
+    TEpiFieldTypes = [ftAutoInc,
+                   ftDMYToday, ftMDYToday, ftYMDToday,
+                   ftTimeNow];
+
 type
   TEpiRecordState = (rsNormal, rsVerified, rsDeleted);
 

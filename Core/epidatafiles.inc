@@ -197,7 +197,8 @@ begin
 
     for CurField := 0 to Fc - 1 do
     with Fields[CurField] do
-      Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"'{$IFDEF EPI_DEBUG}+LineEnding{$ENDIF};
+      if not IsMissing[CurRec] then
+        Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"'{$IFDEF EPI_DEBUG}+LineEnding{$ENDIF};
 
     if Verified[CurRec] then
       Result += ' st="2"'
