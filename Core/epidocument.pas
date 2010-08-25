@@ -134,6 +134,8 @@ begin
 
   if LoadNode(Node, Root, rsRelations, false) then
     Relations.LoadFromXml(Node);
+
+  Modified := false;
 end;
 
 function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;
