@@ -390,6 +390,39 @@ begin
   result := MainSection.NewHeading;
 end;
 
+procedure TEpiDataFile.NewRecords(const Count: Cardinal = 1);
+const
+  Field_Growth_Factor = 1.20;
+var
+  CurrentSize, CurrentCapacity: LongInt;
+  NewSize, NewCapacity: Int64;
+  i: Integer;
+begin
+  // Assuming most entries will contain at least 10 records, we start out
+  // increasing capacity in chunks of 10.
+
+  CurrentSize     := Size;
+  CurrentCapacity := FRecordStatus.Capacity;
+  NewSize         := CurrentSize + Count;
+  NewCapacity     := CurrentCapacity;
+
+  if (NewSize > CurrentCapacity) then
+  begin
+    if (NewSize < 50) then
+      NewCapacity := ((NewSize div 10) * 10) + 10
+    else
+      NewCapacity := Trunc(NewSize * Field_Growth_Factor);
+  end;
+
+  FRecordStatus.Capacity := NewCapacity;
+  FRecordStatus.Size     := NewSize;
+  for i := 0 to Fields.Count -1 do
+  begin
+    Field[i].Capacity    := NewCapacity;
+    Field[i].Size        := NewSize;
+  end;
+end;
+
 procedure TEpiDataFile.BeginUpdate;
 begin
   inherited BeginUpdate;

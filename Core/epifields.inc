@@ -10,8 +10,6 @@ const
   NA_STRING    = '.';
   NA_BOOL      = $7F;
 
-  Field_Growth_Factor = 1.20;
-
 { TEpiFields }
 
 function TEpiFields.GetDataFile: TEpiDataFile;
@@ -174,11 +172,6 @@ end;
 function TEpiField.GetSize: Integer;
 begin
   result := FSize;
-end;
-
-procedure TEpiField.Grow;
-begin
-  Capacity := Trunc(Capacity * Field_Growth_Factor);
 end;
 
 procedure TEpiField.SetSize(const AValue: Integer);

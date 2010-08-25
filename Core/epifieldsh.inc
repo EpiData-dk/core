@@ -59,7 +59,6 @@ type
     function    GetCapacity: Integer; virtual; abstract;
     function    GetIsMissing(const index: Integer): boolean; virtual; abstract;
     function    GetSize: Integer; virtual;
-    procedure   Grow; virtual;
     procedure   SetAsBoolean(const index: Integer; const AValue: EpiBool); virtual; abstract;
     procedure   SetAsDate(const index: Integer; const AValue: EpiDate); virtual; abstract;
     procedure   SetAsDateTime(const index: Integer; const AValue: EpiDateTime); virtual; abstract;

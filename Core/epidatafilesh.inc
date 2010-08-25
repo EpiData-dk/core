@@ -63,6 +63,7 @@ type
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
+    procedure   NewRecords(Const Count: Cardinal = 1);
     property    Name: TEpiTranslatedText read FName;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
