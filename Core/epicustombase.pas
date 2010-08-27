@@ -559,7 +559,9 @@ begin
     inc(i);
   end;
 
-  if (EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate)) then
+  if ((EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate))) or
+     (EventGroup <> eegCustomBase)
+  then
     Modified := true;
 
   if FUpdateCount > 0 then exit;
