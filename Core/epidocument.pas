@@ -147,6 +147,7 @@ begin
 
   // Inherited saves everything, since the the classes have been registered in Create.
   Result += inherited SaveToXml(Content, Lvl);
+  Modified := false;
 end;
 
 end.
