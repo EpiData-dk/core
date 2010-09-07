@@ -20,6 +20,10 @@ const
     rsDecSep          = 'DecimalSeparator';
     rsMissingStr      = 'MissingString';
 
+   rsProjectSettings = 'ProjectSettings';
+    rsShowFieldNames  = 'ShowFieldNames';
+    rsShowFieldBorders= 'ShowFieldBorders';
+
    rsAdmin           = 'Admin';
     // User
     rsUsers           = 'Users';

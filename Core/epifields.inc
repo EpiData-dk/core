@@ -88,11 +88,11 @@ begin
   DoChange(eegDataFiles, Word(efceSetDecimal), @Val);
 end;
 
-function TEpiField.GetSettings: TEpiSettings;
+function TEpiField.GetSettings: TEpiXMLSettings;
 begin
   Result := nil;
   if RootOwner is TEpiDocument then
-    Result := TEpiDocument(RootOwner).Settings;
+    Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
 procedure TEpiField.SetLength(const AValue: Cardinal);

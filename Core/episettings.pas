@@ -10,14 +10,14 @@ uses
 
 type
 
-  { TEpiSettings }
+  { TEpiXMLSettings }
 
   // esce = Epi Setting Change Event
   TEpiSettingChangeEvent = (
     esceVersion, esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
   );
 
-  TEpiSettings = class(TEpiCustomBase)
+  TEpiXMLSettings = class(TEpiCustomBase)
   private
     FDateSeparator: string;
     FDecimalSeparator: string;
@@ -45,11 +45,33 @@ type
     property    Scrambled: boolean read FScrambled write SetScrambled;
   end;
 
+  { TEpiProjectSettings }
+
+  TEpiProjectSettings = class(TEpiCustomBase)
+  private
+    FShowFieldBorders: Boolean;
+    FShowFieldNames: Boolean;
+    procedure   SetShowFieldBorders(const AValue: Boolean);
+    procedure   SetShowFieldNames(const AValue: Boolean);
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    destructor  Destroy; override;
+    function    XMLName: string; override;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    ScrambleXml: boolean; override;
+    property    ShowFieldNames: Boolean read FShowFieldNames write SetShowFieldNames;
+    property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
+  end;
+
 implementation
 
-{ TEpiSettings }
+uses
+  epidocument;
 
-procedure TEpiSettings.SetDateSeparator(const AValue: string);
+{ TEpiXMLSettings }
+
+procedure TEpiXMLSettings.SetDateSeparator(const AValue: string);
 var
   Val: String;
 begin
@@ -60,7 +82,7 @@ begin
   DoChange(eegSetting, Word(esceDateSep), @Val);
 end;
 
-procedure TEpiSettings.SetDecimalSeparator(const AValue: string);
+procedure TEpiXMLSettings.SetDecimalSeparator(const AValue: string);
 var
   Val: String;
 begin
@@ -71,7 +93,7 @@ begin
   DoChange(eegSetting, Word(esceDecSep), @Val);
 end;
 
-procedure TEpiSettings.SetMissingString(const AValue: string);
+procedure TEpiXMLSettings.SetMissingString(const AValue: string);
 var
   Val: String;
 begin
@@ -81,7 +103,7 @@ begin
   DoChange(eegSetting, Word(esceMissing), @Val);
 end;
 
-procedure TEpiSettings.SetScrambled(const AValue: boolean);
+procedure TEpiXMLSettings.SetScrambled(const AValue: boolean);
 var
   Val: Boolean;
 begin
@@ -91,7 +113,7 @@ begin
   DoChange(eegSetting, Word(esceScramble), @Val);
 end;
 
-procedure TEpiSettings.SetTimeSeparator(const AValue: string);
+procedure TEpiXMLSettings.SetTimeSeparator(const AValue: string);
 var
   Val: String;
 begin
@@ -102,7 +124,7 @@ begin
   DoChange(eegSetting, Word(esceTimeSep), @Val);
 end;
 
-procedure TEpiSettings.SetVersion(const AValue: integer);
+procedure TEpiXMLSettings.SetVersion(const AValue: integer);
 var
   Val: LongInt;
 begin
@@ -112,7 +134,7 @@ begin
   DoChange(eegSetting, Word(esceVersion), @Val);
 end;
 
-constructor TEpiSettings.Create(AOwner: TEpiCustomBase);
+constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   Version := 0;
@@ -127,17 +149,17 @@ begin
   MissingString := '.';
 end;
 
-destructor TEpiSettings.Destroy;
+destructor TEpiXMLSettings.Destroy;
 begin
   inherited Destroy;
 end;
 
-function TEpiSettings.XMLName: string;
+function TEpiXMLSettings.XMLName: string;
 begin
   Result := rsSettings;
 end;
 
-function TEpiSettings.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiXMLSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Result :=
     SaveNode(Lvl + 1, rsVersion,    Version) +
@@ -149,7 +171,7 @@ begin
   result := inherited SaveToXml(Result, Lvl);
 end;
 
-procedure TEpiSettings.LoadFromXml(Root: TDOMNode);
+procedure TEpiXMLSettings.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
@@ -162,6 +184,57 @@ begin
   TimeSeparator    := LoadNodeString(Root, rsTimeSep)[1];
   DecimalSeparator := LoadNodeString(Root, rsDecSep)[1];
   MissingString    := LoadNodeString(Root, rsMissingStr);
+end;
+
+{ TEpiProjectSettings }
+
+procedure TEpiProjectSettings.SetShowFieldBorders(const AValue: Boolean);
+begin
+  if FShowFieldBorders = AValue then exit;
+  FShowFieldBorders := AValue;
+end;
+
+procedure TEpiProjectSettings.SetShowFieldNames(const AValue: Boolean);
+begin
+  if FShowFieldNames = AValue then exit;
+  FShowFieldNames := AValue;
+end;
+
+constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+
+  FShowFieldBorders := true;
+  FShowFieldNames   := true;
+end;
+
+destructor TEpiProjectSettings.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TEpiProjectSettings.XMLName: string;
+begin
+  Result := rsProjectSettings;
+end;
+
+function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Result :=
+    SaveNode(Lvl + 1, rsShowFieldNames,   ShowFieldNames) +
+    SaveNode(Lvl + 1, rsShowFieldBorders, ShowFieldBorders);
+  Result := inherited SaveToXml(Result, Lvl);
+end;
+
+procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode);
+begin
+  ShowFieldNames   := LoadNodeBool(Root, rsShowFieldNames);
+  ShowFieldBorders := LoadNodeBool(Root, rsShowFieldBorders);
+end;
+
+function TEpiProjectSettings.ScrambleXml: boolean;
+begin
+  Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
 end;
 
 end.

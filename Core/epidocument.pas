@@ -18,12 +18,14 @@ type
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
-    FSettings: TEpiSettings;
+    FProjectSettings: TEpiProjectSettings;
+    FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
     FRelations: TEpiRelations;
-    function GetOnPassword: TRequestPasswordEvent;
-    procedure SetOnPassword(const AValue: TRequestPasswordEvent);
+    function   GetOnPassword: TRequestPasswordEvent;
+    procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
+    procedure  SetProjectSettings(const AValue: TEpiProjectSettings);
   public
     constructor Create(Const LangCode: string);
     destructor Destroy; override;
@@ -33,7 +35,8 @@ type
     procedure  LoadFromXml(Root: TDOMNode); override;
     function   SaveToXml(Lvl: integer = 0;
       IncludeHeader: boolean = true): string;
-    Property   Settings: TEpiSettings read FSettings;
+    Property   XMLSettings: TEpiXMLSettings read FXMLSettings;
+    property   ProjectSettings: TEpiProjectSettings read FProjectSettings write SetProjectSettings;
     Property   Admin: TEpiAdmin read FAdmin;
     Property   Study: TEpiStudy read FStudy;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
@@ -55,20 +58,27 @@ begin
   Admin.OnPassword := AValue;
 end;
 
+procedure TEpiDocument.SetProjectSettings(const AValue: TEpiProjectSettings);
+begin
+  if FProjectSettings = AValue then exit;
+  FProjectSettings := AValue;
+end;
+
 constructor TEpiDocument.Create(const LangCode: string);
 begin
   inherited Create(nil);
-  FSettings  := TEpiSettings.Create(Self);
-  FAdmin     := TEpiAdmin.Create(Self);
-  FStudy     := TEpiStudy.Create(Self);
-  FDataFiles := TEpiDataFiles.Create(Self);
+  FXMLSettings     := TEpiXMLSettings.Create(Self);
+  FProjectSettings := TEpiProjectSettings.Create(Self);
+  FAdmin           := TEpiAdmin.Create(Self);
+  FStudy           := TEpiStudy.Create(Self);
+  FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
-  FRelations := TEpiRelations.Create(Self);
+  FRelations       := TEpiRelations.Create(Self);
 
-  RegisterClasses([Settings, Admin, Study, DataFiles, Relations]);
+  RegisterClasses([XMLSettings, ProjectSettings, Admin, Study, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
-  // Needed to reset initial settings.
+  // Needed to reset initial XMLSettings.
   Modified := false;
 end;
 
@@ -78,7 +88,7 @@ begin
   FDataFiles.Free;
   FStudy.Free;
   FAdmin.Free;
-  FSettings.Free;
+  FXMLSettings.Free;
   inherited Destroy;
 end;
 
@@ -117,11 +127,14 @@ var
 begin
   // Root = <EpiData>
 
-  // First read settings!
-  // - we need to catch if this is a scrambled file and other important settings
+  // First read XMLSettings!
+  // - we need to catch if this is a scrambled file and other important XMLSettings
   // - such as version of the file.
   LoadNode(Node, Root, rsSettings, true);
-  Settings.LoadFromXml(Node);
+  XMLSettings.LoadFromXml(Node);
+
+  if LoadNode(Node, Root, rsProjectSettings, false) then
+    ProjectSettings.LoadFromXml(Node);
 
   LoadNode(Node, Root, rsAdmin, true);
   Admin.LoadFromXml(Node);

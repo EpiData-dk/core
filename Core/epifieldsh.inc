@@ -39,7 +39,7 @@ type
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiHeading;
     LocalFmtSettings: TFormatSettings;
-    function    GetSettings: TEpiSettings;
+    function    GetSettings: TEpiXMLSettings;
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetLength(const AValue: Cardinal);
     procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
@@ -72,7 +72,7 @@ type
     procedure   SetSize(const AValue: Integer); virtual;
 
     property    Capacity: Integer read GetCapacity write SetCapacity;
-    property    Settings: TEpiSettings read GetSettings;
+    property    Settings: TEpiXMLSettings read GetSettings;
 
   { Data access properties }
   public

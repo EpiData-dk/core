@@ -9,9 +9,9 @@ type
   TEpiDataFiles = class(TEpiCustomList)
   private
     function    GetDataFile(Index: integer): TEpiDataFile;
-    function    GetSettings: TEpiSettings;
+    function    GetSettings: TEpiXMLSettings;
   protected
-    Property    Settings: TEpiSettings read GetSettings;
+    Property    Settings: TEpiXMLSettings read GetSettings;
     function    ScrambleXml: boolean; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;

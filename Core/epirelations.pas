@@ -130,7 +130,7 @@ end;
 
 function TEpiRelations.ScrambleXml: boolean;
 begin
-  Result := TEpiDocument(Owner).Settings.Scrambled;
+  Result := TEpiDocument(Owner).XMLSettings.Scrambled;
 end;
 
 constructor TEpiRelations.Create(AOwner: TEpiCustomBase);

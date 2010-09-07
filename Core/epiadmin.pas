@@ -44,7 +44,7 @@ type
     // Clear Text master password for all scrambling.
     // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
-    function   GetSettings: TEpiSettings;
+    function   GetSettings: TEpiXMLSettings;
     function   RequestPassword: Boolean;
     procedure  SetMasterPassword(const AValue: string);
   public
@@ -53,7 +53,7 @@ type
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
-    property   Settings: TEpiSettings read GetSettings;
+    property   Settings: TEpiXMLSettings read GetSettings;
     Property   Users: TEpiUsers read FUsers;
     Property   Groups: TEpiGroups read FGroups;
     property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
@@ -218,10 +218,10 @@ begin
   InitCrypt(MasterPassword);
 end;
 
-function TEpiAdmin.GetSettings: TEpiSettings;
+function TEpiAdmin.GetSettings: TEpiXMLSettings;
 begin
   // TODO : GetSettings - missing EpiDocument;
-  result := TEpiDocument(Owner).Settings;
+  result := TEpiDocument(Owner).XMLSettings;
 end;
 
 procedure TEpiAdmin.SetMasterPassword(const AValue: string);

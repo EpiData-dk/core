@@ -7,9 +7,9 @@ begin
   result := TEpiDataFile(Items[Index]);
 end;
 
-function TEpiDataFiles.GetSettings: TEpiSettings;
+function TEpiDataFiles.GetSettings: TEpiXMLSettings;
 begin
-  result := TEpiDocument(Owner).Settings;
+  result := TEpiDocument(Owner).XMLSettings;
 end;
 
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
