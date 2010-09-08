@@ -47,6 +47,10 @@ type
 
   { TEpiProjectSettings }
 
+  TEpiProjectSettingChangeEvent = (
+    epceFieldName, epceFieldBorder
+  );
+
   TEpiProjectSettings = class(TEpiCustomBase)
   private
     FShowFieldBorders: Boolean;
@@ -79,7 +83,7 @@ begin
   Val := FDateSeparator;
   FDateSeparator := AValue;
   DefaultFormatSettings.DateSeparator := FDateSeparator[1];
-  DoChange(eegSetting, Word(esceDateSep), @Val);
+  DoChange(eegXMLSetting, Word(esceDateSep), @Val);
 end;
 
 procedure TEpiXMLSettings.SetDecimalSeparator(const AValue: string);
@@ -90,7 +94,7 @@ begin
   Val := FDecimalSeparator;
   FDecimalSeparator := AValue;
   DefaultFormatSettings.DecimalSeparator := FDecimalSeparator[1];
-  DoChange(eegSetting, Word(esceDecSep), @Val);
+  DoChange(eegXMLSetting, Word(esceDecSep), @Val);
 end;
 
 procedure TEpiXMLSettings.SetMissingString(const AValue: string);
@@ -100,7 +104,7 @@ begin
   if FMissingString = AValue then exit;
   Val := FMissingString;
   FMissingString := AValue;
-  DoChange(eegSetting, Word(esceMissing), @Val);
+  DoChange(eegXMLSetting, Word(esceMissing), @Val);
 end;
 
 procedure TEpiXMLSettings.SetScrambled(const AValue: boolean);
@@ -110,7 +114,7 @@ begin
   if FScrambled = AValue then exit;
   Val := FScrambled;
   FScrambled := AValue;
-  DoChange(eegSetting, Word(esceScramble), @Val);
+  DoChange(eegXMLSetting, Word(esceScramble), @Val);
 end;
 
 procedure TEpiXMLSettings.SetTimeSeparator(const AValue: string);
@@ -121,7 +125,7 @@ begin
   Val := FTimeSeparator;
   FTimeSeparator := AValue;
   DefaultFormatSettings.TimeSeparator := TimeSeparator[1];
-  DoChange(eegSetting, Word(esceTimeSep), @Val);
+  DoChange(eegXMLSetting, Word(esceTimeSep), @Val);
 end;
 
 procedure TEpiXMLSettings.SetVersion(const AValue: integer);
@@ -131,7 +135,7 @@ begin
   if FVersion = AValue then exit;
   Val := FVersion;
   FVersion := AValue;
-  DoChange(eegSetting, Word(esceVersion), @Val);
+  DoChange(eegXMLSetting, Word(esceVersion), @Val);
 end;
 
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
@@ -189,15 +193,23 @@ end;
 { TEpiProjectSettings }
 
 procedure TEpiProjectSettings.SetShowFieldBorders(const AValue: Boolean);
+var
+  Val: Boolean;
 begin
   if FShowFieldBorders = AValue then exit;
+  Val := FShowFieldBorders;
   FShowFieldBorders := AValue;
+  DoChange(eegProjectSettings, Word(epceFieldBorder), @Val);
 end;
 
 procedure TEpiProjectSettings.SetShowFieldNames(const AValue: Boolean);
+var
+  Val: Boolean;
 begin
   if FShowFieldNames = AValue then exit;
+  Val := FShowFieldNames;
   FShowFieldNames := AValue;
+  DoChange(eegProjectSettings, Word(epceFieldName), @Val);
 end;
 
 constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);

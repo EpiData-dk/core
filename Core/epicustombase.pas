@@ -27,7 +27,8 @@ type
     // epidocument.pas
     eegDocument,
     // episettings.pas
-    eegSetting,
+    eegXMLSetting,
+    eegProjectSettings,
     // epiadmin.pas
     eegAdmin,
     // epistudy.pas
