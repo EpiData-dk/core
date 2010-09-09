@@ -143,6 +143,9 @@ begin
   // Root = <Section>
   inherited LoadFromXml(Root);
 
+  // If no name present, TEpiTranslatedText will take care of it.
+  Name.LoadFromXml(Root);
+
   Width := LoadNodeInt(Root, rsWidth);
   Height := LoadNodeInt(Root, rsHeight);
 
