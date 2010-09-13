@@ -129,7 +129,8 @@ begin
 
   // First read XMLSettings!
   // - we need to catch if this is a scrambled file and other important XMLSettings
-  // - such as version of the file.
+  // - such as version of the file, formatsettings, etc...
+  BackupFormatSettings;
   LoadNode(Node, Root, rsSettings, true);
   XMLSettings.LoadFromXml(Node);
 
@@ -148,6 +149,7 @@ begin
   if LoadNode(Node, Root, rsRelations, false) then
     Relations.LoadFromXml(Node);
 
+  RestoreFormatSettings;
   Modified := false;
 end;
 

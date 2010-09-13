@@ -188,19 +188,6 @@ type
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
-  { TEpiCustomNamedItem }
-
-{  TEpiCustomNamedItem = Class(TEpiCustomItem)
-  private
-    FName: TEpiTranslatedText;
-  protected
-    constructor Create(AOwner: TEpiCustomBase); override;
-  public
-    destructor  Destroy; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
-    property    Name: TEpiTranslatedText read FName;
-  end;     }
-
   { TEpiCustomControlItem }
 
   TEpiCustomControlItem = class(TEpiCustomItem)
@@ -272,10 +259,26 @@ type
 
 {$I epixmlconstants.inc}
 
+procedure BackupFormatSettings;
+procedure RestoreFormatSettings;
+
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils;
+  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument;
+
+var
+  BackupDefaultFormatSettings: TFormatSettings;
+
+procedure BackupFormatSettings;
+begin
+  BackupDefaultFormatSettings := DefaultFormatSettings;
+end;
+
+procedure RestoreFormatSettings;
+begin
+  DefaultFormatSettings := BackupDefaultFormatSettings;
+end;
 
 { TEpiCustomBase }
 
