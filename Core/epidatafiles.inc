@@ -189,6 +189,7 @@ begin
   Result :=
     Indent(Lvl) + '<' + rsRecords + '>' + LineEnding;
 
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
   for CurRec := 0 to Sz - 1 do
@@ -208,6 +209,8 @@ begin
       Result += ' st="0"';
     Result += '/>' + LineEnding;
   end;
+  RestoreFormatSettings;
+
   Result +=
     Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
 end;
