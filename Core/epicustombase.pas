@@ -259,7 +259,8 @@ type
 
 {$I epixmlconstants.inc}
 
-procedure BackupFormatSettings;
+procedure BackupFormatSettings(NewFormatSettings: TFormatSettings); overload;
+procedure BackupFormatSettings; overload;
 procedure RestoreFormatSettings;
 
 implementation
@@ -269,6 +270,12 @@ uses
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
+
+procedure BackupFormatSettings(NewFormatSettings: TFormatSettings);
+begin
+  BackupDefaultFormatSettings := DefaultFormatSettings;
+  DefaultFormatSettings := NewFormatSettings;
+end;
 
 procedure BackupFormatSettings;
 begin
@@ -444,7 +451,10 @@ var
   Node: TDOMNode;
 begin
   LoadNode(Node, Root, NodeName, true);
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   result := StrToFloat(Node.TextContent);
+  RestoreFormatSettings;
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
@@ -462,8 +472,10 @@ var
   Node: TDOMNode;
 begin
   LoadNode(Node, Root, NodeName, true);
-  DefaultFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN';
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   result := StrToDateTime(Node.TextContent);
+  RestoreFormatSettings;
 end;
 
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
@@ -492,13 +504,23 @@ end;
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: extended): string;
 begin
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   result := SaveNode(Lvl, NodeName, FloatToStr(Val));
+  RestoreFormatSettings;
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: TDateTime): string;
 begin
-  result := SaveNode(Lvl, NodeName, FormatDateTime('YYYY/MM/DD HH:NN', Val));
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    result := SaveNode(Lvl, NodeName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
+    RestoreFormatSettings;
+  end else
+    result := SaveNode(Lvl, NodeName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
@@ -869,27 +891,6 @@ begin
   Id := TDOMElement(Root).AttribStrings[rsId];
 end;
 
-{ TEpiCustomNamedItem }
-{
-constructor TEpiCustomNamedItem.Create(AOwner: TEpiCustomBase);
-begin
-  inherited Create(AOwner);
-  FName := TEpiTranslatedText.Create(Self, rsName);
-  RegisterClasses([FName]);
-end;
-
-destructor TEpiCustomNamedItem.Destroy;
-begin
-  FName.Free;
-  inherited Destroy;
-end;
-
-procedure TEpiCustomNamedItem.LoadFromXml(Root: TDOMNode);
-begin
-  inherited LoadFromXml(Root);
-  FName.LoadFromXml(Root);
-end;
-}
 { TEpiCustomControlItem }
 
 function TEpiCustomControlItem.SaveToXml(Content: String; Lvl: integer
@@ -1097,9 +1098,6 @@ procedure TEpiCustomList.BeginUpdate;
 var
   i: Integer;
 begin
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln('TEpiCustomList.BeginUpdate: ' + ClassName);
-  {$ENDIF EPI_CONSOLE_DEBUG}
   inherited BeginUpdate;
   for i := 0 to Count - 1 do
     Items[i].BeginUpdate;
@@ -1109,9 +1107,6 @@ procedure TEpiCustomList.EndUpdate;
 var
   i: Integer;
 begin
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln('TEpiCustomList.EndUpdate: ' + ClassName);
-  {$ENDIF EPI_CONSOLE_DEBUG}
   for i := 0 to Count - 1 do
     Items[i].EndUpdate;
   inherited EndUpdate;

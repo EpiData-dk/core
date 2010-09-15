@@ -21,6 +21,7 @@ type
   private
     FDateSeparator: string;
     FDecimalSeparator: string;
+    FFormatSettings: TFormatSettings;
     FMissingString: string;
     FScrambled: boolean;
     FTimeSeparator: string;
@@ -43,6 +44,7 @@ type
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
     property    MissingString: string read FMissingString write SetMissingString;
     property    Scrambled: boolean read FScrambled write SetScrambled;
+    property    FormatSettings: TFormatSettings read FFormatSettings;
   end;
 
   { TEpiProjectSettings }
@@ -79,10 +81,10 @@ procedure TEpiXMLSettings.SetDateSeparator(const AValue: string);
 var
   Val: String;
 begin
-//  if FDateSeparator = AValue then exit;
+  if FDateSeparator = AValue then exit;
   Val := FDateSeparator;
   FDateSeparator := AValue;
-  DefaultFormatSettings.DateSeparator := FDateSeparator[1];
+  FFormatSettings.DateSeparator := FDateSeparator[1];
   DoChange(eegXMLSetting, Word(esceDateSep), @Val);
 end;
 
@@ -90,10 +92,10 @@ procedure TEpiXMLSettings.SetDecimalSeparator(const AValue: string);
 var
   Val: String;
 begin
-//  if FDecimalSeparator = AValue then exit;
+  if FDecimalSeparator = AValue then exit;
   Val := FDecimalSeparator;
   FDecimalSeparator := AValue;
-  DefaultFormatSettings.DecimalSeparator := FDecimalSeparator[1];
+  FFormatSettings.DecimalSeparator := FDecimalSeparator[1];
   DoChange(eegXMLSetting, Word(esceDecSep), @Val);
 end;
 
@@ -121,10 +123,10 @@ procedure TEpiXMLSettings.SetTimeSeparator(const AValue: string);
 var
   Val: String;
 begin
-//  if FTimeSeparator = AValue then exit;
+  if FTimeSeparator = AValue then exit;
   Val := FTimeSeparator;
   FTimeSeparator := AValue;
-  DefaultFormatSettings.TimeSeparator := TimeSeparator[1];
+  FFormatSettings.TimeSeparator := TimeSeparator[1];
   DoChange(eegXMLSetting, Word(esceTimeSep), @Val);
 end;
 
@@ -144,15 +146,16 @@ begin
   Version := 0;
   Scrambled := false;
 
-  DefaultFormatSettings.ShortTimeFormat := 'HH:NN';
-  DefaultFormatSettings.LongTimeFormat := 'HH:NN:SS';
+//  DefaultFormatSettings.ShortTimeFormat := 'HH:NN';
+//  DefaultFormatSettings.LongTimeFormat := 'HH:NN:SS';
+  FFormatSettings := DefaultFormatSettings;
+  FFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN:SS';
+  FFormatSettings.LongDateFormat  := 'YYYY/MM/DD HH:NN:SS';
 
-  BackupFormatSettings;
   DateSeparator := '/';
   TimeSeparator := '.';
   DecimalSeparator := ',';
   MissingString := '.';
-  RestoreFormatSettings;
 end;
 
 destructor TEpiXMLSettings.Destroy;

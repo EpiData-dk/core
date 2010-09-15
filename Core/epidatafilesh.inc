@@ -34,10 +34,10 @@ type
     FSections: TEpiSections;
     FMainSection: TEpiSection;
     FValueLabels: TEpiValueLabelSets;
-    function GetField(Index: integer): TEpiField;
-    function GetSection(Index: integer): TEpiSection;
-    function GetHeading(Index: integer): TEpiHeading;
-    function GetValueLabelSet(Index: integer): TEpiValueLabelSet;
+    function    GetField(Index: integer): TEpiField;
+    function    GetSection(Index: integer): TEpiSection;
+    function    GetHeading(Index: integer): TEpiHeading;
+    function    GetValueLabelSet(Index: integer): TEpiValueLabelSet;
   private
     { Private housekeeping }
     FRecordStatus: TEpiField;

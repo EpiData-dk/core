@@ -224,6 +224,7 @@ begin
   CurRec := 0;
   Size := Root.ChildNodes.Count;
   Node := TDOMElement(Root.FirstChild);
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
   begin
     CheckNode(Node, rsRecord);
@@ -245,6 +246,7 @@ begin
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
+  RestoreFormatSettings;
 end;
 
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
