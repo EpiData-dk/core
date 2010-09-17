@@ -32,24 +32,6 @@ const
     ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
 
 
-type
-  TEpiVersionInfo = record
-    VersionNo: Integer;
-    MajorRev:  Integer;
-    MinorRev:  Integer;
-    BuildNo:   Integer;
-  end;
-
-const
-  CoreVersion: TEpiVersionInfo = (
-    VersionNo: 0;
-    MajorRev:  5;
-    MinorRev:  0;
-    BuildNo:   0;
-  );
-
-  function GetCoreVersionInfo: string;
-  function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
 
 implementation
 
@@ -148,25 +130,6 @@ begin
 
   if ShowAll then
     Result += AddFilter(EpiDialogFilterAll);
-end;
-
-function GetCoreVersionInfo: string;
-begin
-  result := GetEpiVersionInfo(CoreVersion);
-end;
-
-function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
-begin
-  with VersionInfo do
-  begin
-    result := IntToStr(VersionNo);
-    if MajorRev + MinorRev + BuildNo > 0 then
-      result := result + '.' + IntToStr(MajorRev);
-    if MinorRev + BuildNo > 0 then
-      result := result + '.' + IntToStr(MinorRev);
-    if BuildNo > 0 then
-      result := result + '.' + IntToStr(BuildNo);
-  end;
 end;
 
 end.

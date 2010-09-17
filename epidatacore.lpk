@@ -5,7 +5,7 @@
     <CompilerOptions>
       <Version Value="9"/>
       <SearchPaths>
-        <OtherUnitFiles Value="Core/;Utils/;ImportExport/"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -30,7 +30,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="5"/>
-    <Files Count="22">
+    <Files Count="23">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -119,19 +119,27 @@
         <Filename Value="Utils/epistringutils.pas"/>
         <UnitName Value="epistringutils"/>
       </Item22>
+      <Item23>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
+      </Item23>
     </Files>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="LCL"/>
-        <MinVersion Major="1" Valid="True"/>
+        <PackageName Value="lnetbase"/>
+        <MinVersion Minor="6" Valid="True"/>
       </Item1>
       <Item2>
-        <PackageName Value="dcpcrypt"/>
+        <PackageName Value="LCL"/>
+        <MinVersion Major="1" Valid="True"/>
       </Item2>
       <Item3>
+        <PackageName Value="dcpcrypt"/>
+      </Item3>
+      <Item4>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item3>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)/"/>

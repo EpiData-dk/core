@@ -1,0 +1,197 @@
+unit epiversionutils;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, lNetSSL, lhttp, lHTTPUtil, lnet;
+
+type
+
+  TEpiVersionInfo = record
+    VersionNo: Integer;
+    MajorRev:  Integer;
+    MinorRev:  Integer;
+    BuildNo:   Integer;
+  end;
+
+  function GetCoreVersionInfo: string;
+  function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
+  function CheckVersionOnline(Const ProgramName: String;
+    var StableVersion: TEpiVersionInfo;
+    var TestVersion: TEpiVersionInfo;
+    var Response: string): boolean;
+
+implementation
+
+uses
+  strutils;
+
+const
+  CoreVersion: TEpiVersionInfo = (
+    VersionNo: 0;
+    MajorRev:  5;
+    MinorRev:  0;
+    BuildNo:   0;
+  );
+
+  EpiDataURL = 'http://www.epidata.dk/version/checkversion.php';
+
+function GetCoreVersionInfo: string;
+begin
+  result := GetEpiVersionInfo(CoreVersion);
+end;
+
+function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
+begin
+  with VersionInfo do
+  begin
+    result := IntToStr(VersionNo);
+    if MajorRev + MinorRev + BuildNo > 0 then
+      result := result + '.' + IntToStr(MajorRev);
+    if MinorRev + BuildNo > 0 then
+      result := result + '.' + IntToStr(MinorRev);
+    if BuildNo > 0 then
+      result := result + '.' + IntToStr(BuildNo);
+  end;
+end;
+
+{ TEpiVersionChecker }
+
+type
+  TEpiVersionChecker = class
+  private
+    FResponse: string;
+    HTTPClient: TLHTTPClient;
+    SSL: TLSSLSession;
+    Done: boolean;
+    procedure HTTPClientDisconnect(aSocket: TLSocket);
+    procedure HTTPClientDoneInput(ASocket: TLHTTPClientSocket);
+    procedure HTTPClientError(const msg: string; aSocket: TLSocket);
+    function  HTTPClientInput(ASocket: TLHTTPClientSocket; ABuffer: pchar;
+      ASize: integer): integer;
+    procedure HTTPClientProcessHeaders(ASocket: TLHTTPClientSocket);
+  public
+    function CheckVersionOnline(Const URL: string; var StableVersion: TEpiVersionInfo;
+      var TestVersion: TEpiVersionInfo): boolean;
+    property Response: string read FResponse;
+  end;
+
+procedure TEpiVersionChecker.HTTPClientDisconnect(aSocket: TLSocket);
+begin
+  Done := true;
+end;
+
+procedure TEpiVersionChecker.HTTPClientDoneInput(ASocket: TLHTTPClientSocket);
+begin
+  ASocket.Disconnect;
+end;
+
+procedure TEpiVersionChecker.HTTPClientError(const msg: string;
+  aSocket: TLSocket);
+begin
+  FResponse := msg;
+  Done := true;
+end;
+
+function TEpiVersionChecker.HTTPClientInput(ASocket: TLHTTPClientSocket;
+  ABuffer: pchar; ASize: integer): integer;
+begin
+  SetLength(FResponse, ASize);
+  Move(ABuffer^, FResponse[1], ASize);
+  Result := aSize; // tell the http buffer we read it all
+end;
+
+procedure TEpiVersionChecker.HTTPClientProcessHeaders(
+  ASocket: TLHTTPClientSocket);
+begin
+// Header response
+end;
+
+function TEpiVersionChecker.CheckVersionOnline(const URL: string;
+  var StableVersion: TEpiVersionInfo; var TestVersion: TEpiVersionInfo
+  ): boolean;
+var
+  Host: string;
+  URI: string;
+  Port: Word;
+begin
+  FResponse := '';
+  HttpClient := TLHTTPClient.Create(nil);
+  SSL        := TLSSLSession.Create(HTTPClient);
+
+  try
+    SSl.SSLActive := DecomposeURL(URL, Host, URI, Port);
+    HttpClient.Session := SSL;
+    HttpClient.Host := Host;
+    HttpClient.Method := hmGet;
+    HttpClient.Port := Port;
+    HttpClient.URI := URI;
+    HttpClient.Timeout := -1;
+    HttpClient.OnDisconnect := @HTTPClientDisconnect;
+    HttpClient.OnDoneInput := @HTTPClientDoneInput;
+    HttpClient.OnError := @HTTPClientError;
+    HttpClient.OnInput := @HTTPClientInput;
+    HttpClient.OnProcessHeaders := @HTTPClientProcessHeaders;
+    HttpClient.SendRequest;
+    Done := false;
+
+    while not Done do
+      HttpClient.CallAction;
+  finally
+    HttpClient.Free;
+  end;
+end;
+
+function CheckVersionOnline(const ProgramName: String;
+  var StableVersion: TEpiVersionInfo; var TestVersion: TEpiVersionInfo;
+  var Response: string): boolean;
+var
+  VersionChecker: TEpiVersionChecker;
+  URL: String;
+  List: TStringList;
+begin
+  FillByte(StableVersion, SizeOf(TEpiVersionInfo), 0);
+  FillByte(TestVersion, SizeOf(TEpiVersionInfo), 0);
+
+  URL := EpiDataURL +
+    '?program=' + LowerCase(ProgramName) +
+    '&os=' + LowerCase({$I %FPCTARGETOS%}) +
+    '&arch=' + LowerCase({$I %FPCTARGETCPU%});
+
+  VersionChecker := TEpiVersionChecker.Create;
+  VersionChecker.CheckVersionOnline(URL, StableVersion, TestVersion);
+  Response := VersionChecker.Response;
+  VersionChecker.Free;
+
+  if Pos(result, 'error') >0 then exit(false);
+
+  List := TStringList.Create;
+  List.DelimitedText := Response;
+
+  if List.Count >= 1 then
+  With StableVersion do
+  begin
+    URL := List[0];
+    VersionNo := StrToInt(Copy2SymbDel(URL, '.'));
+    MajorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+    MinorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+    BuildNo   := StrToInt(URL);
+  end;
+
+  if List.Count >= 2 then
+  With TestVersion do
+  begin
+    URL := List[1];
+    VersionNo := StrToInt(Copy2SymbDel(URL, '.'));
+    MajorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+    MinorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+    BuildNo   := StrToInt(URL);
+  end;
+  Response := '';
+  result := true;
+end;
+
+end.
+
