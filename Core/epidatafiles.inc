@@ -397,7 +397,7 @@ end;
 
 procedure TEpiDataFile.NewRecords(const Count: Cardinal = 1);
 const
-  Field_Growth_Factor = 1.20;
+  Field_Growth_Factor = 1.25;
 var
   CurrentSize, CurrentCapacity: LongInt;
   NewSize, NewCapacity: Int64;
@@ -416,7 +416,7 @@ begin
     if (NewSize < 50) then
       NewCapacity := ((NewSize div 10) * 10) + 10
     else
-      NewCapacity := Trunc(NewSize * Field_Growth_Factor);
+      NewCapacity := Trunc((NewSize-1) * Field_Growth_Factor);
   end;
 
   FRecordStatus.Capacity := NewCapacity;

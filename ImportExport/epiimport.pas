@@ -152,6 +152,7 @@ var
   IsCrypt: TBits;
   i: Integer;
   Decrypter: TDCP_rijndael;
+  LocalDateSeparator: Char;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -340,6 +341,9 @@ begin
     CloseFile(TxtFile);
     DataStream := nil;
 
+    LocalDateSeparator := DateSeparator;
+    DateSeparator := '/';  // This was standard in old .rec files.
+
     if ImportData then
     begin
       DataStream := TMemoryStream.Create;
@@ -360,7 +364,7 @@ begin
           // Could be an imcomplete record.
         end;
 
-        Size := CurRec + 1; // TODO : Fix to use an upcomming ADDRECORDS method!!! This is VERY inefficient.
+        NewRecords();  // Increments by one in size, but expands using "growth factor".
         StrBuf := CharBuf[High(CharBuf) - 2];
         if StrBuf = '?' then
           Deleted[CurRec] := true
@@ -400,6 +404,7 @@ begin
     // TODO : Import .CHK files.
   finally
 //    CloseFile(TxtFile);
+    DateSeparator := LocalDateSeparator;
     if Assigned(DataStream) then DataStream.Free;
   end;
   result := true;
