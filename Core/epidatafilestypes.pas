@@ -8,7 +8,7 @@ uses
   variants;
 
 type
-  EpiInteger   = Integer;
+  EpiInteger   = Int64;
   EpiFloat     = Extended;
   EpiDate      = Integer;
   EpiTime      = TDateTime;

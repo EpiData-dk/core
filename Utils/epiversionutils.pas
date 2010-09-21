@@ -64,7 +64,7 @@ type
   private
     FResponse: string;
     HTTPClient: TLHTTPClient;
-    SSL: TLSSLSession;
+    Session: TLSession;
     Done: boolean;
     procedure HTTPClientDisconnect(aSocket: TLSocket);
     procedure HTTPClientDoneInput(ASocket: TLHTTPClientSocket);
@@ -119,11 +119,11 @@ var
 begin
   FResponse := '';
   HttpClient := TLHTTPClient.Create(nil);
-  SSL        := TLSSLSession.Create(HTTPClient);
+  Session    := TLSession.Create(HTTPClient);
 
   try
-    SSl.SSLActive := DecomposeURL(URL, Host, URI, Port);
-    HttpClient.Session := SSL;
+    DecomposeURL(URL, Host, URI, Port);
+    HttpClient.Session := Session;
     HttpClient.Host := Host;
     HttpClient.Method := hmGet;
     HttpClient.Port := Port;
