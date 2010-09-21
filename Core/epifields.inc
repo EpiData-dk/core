@@ -2,7 +2,7 @@
 {%MainUnit epidatafiles.pas}
 
 const
-  NA_INT       = MaxInt;
+  NA_INT       = $7FFFFFFFFFFFFFFF;
   NA_FLOAT     = MaxFloat;
   NA_DATE      = NA_INT;
   NA_TIME      = $FFFFFFFF; //MaxDouble;
@@ -383,7 +383,7 @@ begin
   if TEpiStringField.CheckMissing(AValue) then
     IsMissing[Index] := true
   else
-    AsInteger[index] := StrToIntDef(AValue, DefaultMissing);
+    AsInteger[index] := StrToInt64Def(AValue, DefaultMissing);
 end;
 
 procedure TEpiIntField.SetAsTime(const index: Integer; const AValue: EpiTime);
