@@ -2889,4 +2889,9 @@ endif
 .PHONY: cleartarget all
 cleartarget:
 	-$(DEL) $(COMPILER_UNITTARGETDIR)/epidatacore$(PPUEXT)
-all: cleartarget $(COMPILER_UNITTARGETDIR) epidatacore$(PPUEXT)
+lnet: 
+	$(MAKE) -C $(LNET_PATH)/lazaruspackage all
+dcpcrypt:
+	$(MAKE) -C $(DCPCRYPT_PATH) all
+otherpackages: lnet dcpcrypt
+all: otherpackages cleartarget $(COMPILER_UNITTARGETDIR) epidatacore$(PPUEXT)

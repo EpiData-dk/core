@@ -7,10 +7,18 @@ name=epidatacore
 version=0.5
 
 [compiler]
-unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
-unitdir=Core Utils ImportExport $(DCPCRYPT_PATH)/lib/$(CPU_TARGET)-$(OS_TARGET) $(LAZ_PATH)/lcl/units/$(CPU_TARGET)-$(OS_TARGET) $(LAZ_PATH)/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) $(LAZ_PATH)/packager/units/$(CPU_TARGET)-$(OS_TARGET) $(LNET_PATH)/lazaruspackage/lib/$(CPU_TARGET)-$(OS_TARGET) .
-includedir=.
 options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Schi
+unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
+unitdir=Core \
+	Utils \
+	ImportExport \
+	$(DCPCRYPT_PATH)/lib/$(CPU_TARGET)-$(OS_TARGET) \
+	$(LAZ_PATH)/lcl/units/$(CPU_TARGET)-$(OS_TARGET) \
+	$(LAZ_PATH)/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) \
+	$(LAZ_PATH)/packager/units/$(CPU_TARGET)-$(OS_TARGET) \
+	$(LNET_PATH)/lazaruspackage/lib/$(CPU_TARGET)-$(OS_TARGET) \
+	.
+includedir=.
 
 [install]
 fpcpackage=n
@@ -54,4 +62,12 @@ export LCL_PLATFORM
 cleartarget:
         -$(DEL) $(COMPILER_UNITTARGETDIR)/epidatacore$(PPUEXT)
 
-all: cleartarget $(COMPILER_UNITTARGETDIR) epidatacore$(PPUEXT)
+lnet: 
+	$(MAKE) -C $(LNET_PATH)/lazaruspackage all
+
+dcpcrypt:
+	$(MAKE) -C $(DCPCRYPT_PATH) all
+
+otherpackages: lnet dcpcrypt
+
+all: otherpackages cleartarget $(COMPILER_UNITTARGETDIR) epidatacore$(PPUEXT)
