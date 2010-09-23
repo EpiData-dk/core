@@ -28,7 +28,7 @@ files=$(wildcard $(COMPILER_UNITTARGETDIR)/*$(OEXT)) \
       $(wildcard *$(OEXT)) $(wildcard *$(PPUEXT)) $(wildcard *$(RSTEXT))
 [prerules]
 # Include to find paths to required packages.
-#include Makefile.rc
+include Makefile.rc
 
 # LCL Platform
 ifndef LCL_PLATFORM
