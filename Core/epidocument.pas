@@ -25,7 +25,6 @@ type
     FRelations: TEpiRelations;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
-    procedure  SetProjectSettings(const AValue: TEpiProjectSettings);
   public
     constructor Create(Const LangCode: string);
     destructor Destroy; override;
@@ -36,7 +35,7 @@ type
     function   SaveToXml(Lvl: integer = 0;
       IncludeHeader: boolean = true): string;
     Property   XMLSettings: TEpiXMLSettings read FXMLSettings;
-    property   ProjectSettings: TEpiProjectSettings read FProjectSettings write SetProjectSettings;
+    property   ProjectSettings: TEpiProjectSettings read FProjectSettings;
     Property   Admin: TEpiAdmin read FAdmin;
     Property   Study: TEpiStudy read FStudy;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
@@ -56,12 +55,6 @@ end;
 procedure TEpiDocument.SetOnPassword(const AValue: TRequestPasswordEvent);
 begin
   Admin.OnPassword := AValue;
-end;
-
-procedure TEpiDocument.SetProjectSettings(const AValue: TEpiProjectSettings);
-begin
-  if FProjectSettings = AValue then exit;
-  FProjectSettings := AValue;
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -160,7 +153,6 @@ begin
 
   // Inherited saves everything, since the the classes have been registered in Create.
   Result += inherited SaveToXml(Content, Lvl);
-  Modified := false;
 end;
 
 end.

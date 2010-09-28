@@ -19,9 +19,9 @@ type
   function GetCoreVersionInfo: string;
   function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
   function CheckVersionOnline(Const ProgramName: String;
-    var StableVersion: TEpiVersionInfo;
-    var TestVersion: TEpiVersionInfo;
-    var Response: string): boolean;
+    out StableVersion: TEpiVersionInfo;
+    out TestVersion: TEpiVersionInfo;
+    out Response: string): boolean;
 
 implementation
 
@@ -32,7 +32,7 @@ const
   CoreVersion: TEpiVersionInfo = (
     VersionNo: 0;
     MajorRev:  5;
-    MinorRev:  0;
+    MinorRev:  1;
     BuildNo:   0;
   );
 
@@ -66,6 +66,7 @@ type
     HTTPClient: TLHTTPClient;
     Session: TLSession;
     Done: boolean;
+    ConnectOK: boolean;
     procedure HTTPClientDisconnect(aSocket: TLSocket);
     procedure HTTPClientDoneInput(ASocket: TLHTTPClientSocket);
     procedure HTTPClientError(const msg: string; aSocket: TLSocket);
@@ -118,6 +119,7 @@ var
   Port: Word;
 begin
   FResponse := '';
+  ConnectOK := false;
   HttpClient := TLHTTPClient.Create(nil);
   Session    := TLSession.Create(HTTPClient);
 
@@ -145,8 +147,8 @@ begin
 end;
 
 function CheckVersionOnline(const ProgramName: String;
-  var StableVersion: TEpiVersionInfo; var TestVersion: TEpiVersionInfo;
-  var Response: string): boolean;
+  out StableVersion: TEpiVersionInfo; out TestVersion: TEpiVersionInfo;
+  out Response: string): boolean;
 var
   VersionChecker: TEpiVersionChecker;
   URL: String;
@@ -165,7 +167,7 @@ begin
   Response := VersionChecker.Response;
   VersionChecker.Free;
 
-  if Pos(result, 'error') >0 then exit(false);
+  if Pos(Response, 'error') >0 then exit(false);
 
   List := TStringList.Create;
   List.DelimitedText := Response;

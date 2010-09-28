@@ -28,7 +28,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Minor="5"/>
+    <Version Minor="5" Release="1"/>
     <Files Count="23">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
@@ -141,7 +141,7 @@
       </Item4>
     </RequiredPkgs>
     <UsageOptions>
-      <UnitPath Value="$(PkgOutDir)/"/>
+      <UnitPath Value="$(PkgOutDir)"/>
     </UsageOptions>
     <PublishOptions>
       <Version Value="2"/>

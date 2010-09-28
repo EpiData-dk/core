@@ -50,13 +50,17 @@ type
   { TEpiProjectSettings }
 
   TEpiProjectSettingChangeEvent = (
-    epceFieldName, epceFieldBorder
+    epceFieldName, epceFieldBorder, epceBackupInterval, epceBackupShutdown
   );
 
   TEpiProjectSettings = class(TEpiCustomBase)
   private
+    FBackupInterval: Integer;
+    FBackupOnShutdown: Boolean;
     FShowFieldBorders: Boolean;
     FShowFieldNames: Boolean;
+    procedure   SetBackupInterval(const AValue: Integer);
+    procedure   SetBackupOnShutdown(const AValue: Boolean);
     procedure   SetShowFieldBorders(const AValue: Boolean);
     procedure   SetShowFieldNames(const AValue: Boolean);
   public
@@ -68,6 +72,8 @@ type
     function    ScrambleXml: boolean; override;
     property    ShowFieldNames: Boolean read FShowFieldNames write SetShowFieldNames;
     property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
+    property    BackupInterval: Integer read FBackupInterval write SetBackupInterval;
+    property    BackupOnShutdown: Boolean read FBackupOnShutdown write SetBackupOnShutdown;
   end;
 
 implementation
@@ -207,6 +213,26 @@ begin
   DoChange(eegProjectSettings, Word(epceFieldBorder), @Val);
 end;
 
+procedure TEpiProjectSettings.SetBackupInterval(const AValue: Integer);
+var
+  Val: LongInt;
+begin
+  if FBackupInterval = AValue then exit;
+  Val := FBackupInterval;
+  FBackupInterval := AValue;
+  DoChange(eegProjectSettings, Word(epceBackupInterval), @Val);
+end;
+
+procedure TEpiProjectSettings.SetBackupOnShutdown(const AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FBackupOnShutdown = AValue then exit;
+  Val := FBackupOnShutdown;
+  FBackupOnShutdown := AValue;
+  DoChange(eegProjectSettings, Word(epceBackupShutdown), @Val);
+end;
+
 procedure TEpiProjectSettings.SetShowFieldNames(const AValue: Boolean);
 var
   Val: Boolean;
@@ -223,6 +249,7 @@ begin
 
   FShowFieldBorders := true;
   FShowFieldNames   := true;
+  FBackupInterval   := 10;
 end;
 
 destructor TEpiProjectSettings.Destroy;
@@ -238,6 +265,7 @@ end;
 function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Result :=
+    SaveNode(Lvl + 1, rsBackupInterval,   BackupInterval) +
     SaveNode(Lvl + 1, rsShowFieldNames,   ShowFieldNames) +
     SaveNode(Lvl + 1, rsShowFieldBorders, ShowFieldBorders);
   Result := inherited SaveToXml(Result, Lvl);
@@ -245,6 +273,7 @@ end;
 
 procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode);
 begin
+  BackupInterval   := LoadNodeInt(Root, rsBackupInterval);
   ShowFieldNames   := LoadNodeBool(Root, rsShowFieldNames);
   ShowFieldBorders := LoadNodeBool(Root, rsShowFieldBorders);
 end;
