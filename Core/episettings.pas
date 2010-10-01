@@ -265,15 +265,17 @@ end;
 function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Result :=
-    SaveNode(Lvl + 1, rsBackupInterval,   BackupInterval) +
-    SaveNode(Lvl + 1, rsShowFieldNames,   ShowFieldNames) +
-    SaveNode(Lvl + 1, rsShowFieldBorders, ShowFieldBorders);
+    SaveNode(Lvl + 1, rsTimedBackupInterval, BackupInterval) +
+    SaveNode(Lvl + 1, rsBackupOnShutdown,    BackupOnShutdown) +
+    SaveNode(Lvl + 1, rsShowFieldNames,      ShowFieldNames) +
+    SaveNode(Lvl + 1, rsShowFieldBorders,    ShowFieldBorders);
   Result := inherited SaveToXml(Result, Lvl);
 end;
 
 procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode);
 begin
-  BackupInterval   := LoadNodeInt(Root, rsBackupInterval);
+  BackupInterval   := LoadNodeInt(Root, rsTimedBackupInterval);
+  BackupOnShutdown := LoadNodeBool(Root,rsBackupOnShutdown);
   ShowFieldNames   := LoadNodeBool(Root, rsShowFieldNames);
   ShowFieldBorders := LoadNodeBool(Root, rsShowFieldBorders);
 end;

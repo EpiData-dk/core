@@ -87,6 +87,7 @@ end;
 procedure TEpiVersionChecker.HTTPClientDoneInput(ASocket: TLHTTPClientSocket);
 begin
   ASocket.Disconnect;
+  ConnectOK := true;
 end;
 
 procedure TEpiVersionChecker.HTTPClientError(const msg: string;
@@ -94,6 +95,7 @@ procedure TEpiVersionChecker.HTTPClientError(const msg: string;
 begin
   FResponse := msg;
   Done := true;
+  ConnectOK := false;
 end;
 
 function TEpiVersionChecker.HTTPClientInput(ASocket: TLHTTPClientSocket;
@@ -143,6 +145,7 @@ begin
       HttpClient.CallAction;
   finally
     HttpClient.Free;
+    Result := ConnectOK;
   end;
 end;
 
@@ -163,11 +166,11 @@ begin
     '&arch=' + LowerCase({$I %FPCTARGETCPU%});
 
   VersionChecker := TEpiVersionChecker.Create;
-  VersionChecker.CheckVersionOnline(URL, StableVersion, TestVersion);
+  Result := VersionChecker.CheckVersionOnline(URL, StableVersion, TestVersion);
   Response := VersionChecker.Response;
   VersionChecker.Free;
 
-  if Pos(Response, 'error') >0 then exit(false);
+  if (Pos(LowerCase(Response), 'error') > 0) or (not result) then exit(false);
 
   List := TStringList.Create;
   List.DelimitedText := Response;

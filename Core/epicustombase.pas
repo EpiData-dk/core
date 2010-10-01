@@ -3,12 +3,6 @@ unit epicustombase;
 {$codepage UTF8}
 {$mode objfpc}{$H+}
 
-{$IFDEF EPI_DEBUG}
- {$IFDEF LINUX}
-  {$DEFINE EPI_CONSOLE_DEBUG}
- {$ENDIF LINUX}
-{$ENDIF EPI_DEBUG}
-
 interface
 
 uses
@@ -266,6 +260,9 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
+  {$IFDEF EPICORETIMING}
+  LCLIntf, LCLProc,
+  {$ENDIF}
   StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument;
 
 var
@@ -314,9 +311,6 @@ destructor TEpiCustomBase.Destroy;
 begin
   // Do the last Free notification to the event hooks.
   // - this allows for objects pointing the "self" to remove reference if needed.
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln('TEpiCustomBase.Destoy: ' + ClassName);
-  {$ENDIF EPI_CONSOLE_DEBUG}
   Include(FState, ebsDestroying);
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
@@ -538,10 +532,25 @@ function TEpiCustomBase.SaveToXml(Content: String; Lvl: integer): string;
 var
   i: Integer;
   S: String;
+  {$IFDEF EPICORETIMING}
+  St, St1, Diff: LongWord;
+  {$ENDIF}
 begin
+  {$IFDEF EPICORETIMING}
+  St := GetTickCount;
+  {$ENDIF}
   S := Content;
   for i := 0 to ClassList.Count - 1 do
+  {$IFDEF EPICORETIMING}
+  begin
+    St1 := GetTickCount;
+  {$ENDIF}
     S += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
+  {$IFDEF EPICORETIMING}
+    Diff := GetTickCount - St1;
+    DebugLn('*%s(%s): time = %d', [Indent(lvl), TEpiCustomBase(ClassList[i]).ClassName, Diff]);
+  end;
+  {$ENDIF}
 
   if ScrambleXml then
     S := EnCrypt(S) + LineEnding;
@@ -556,6 +565,10 @@ begin
   Result += '>' + LineEnding +
     S +
     Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
+  {$IFDEF EPICORETIMING}
+  Diff := GetTickCount - St;
+  DebugLn('%s%s: time = %d', [Indent(lvl), ClassName, Diff]);
+  {$ENDIF}
 end;
 
 procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode);
@@ -604,9 +617,6 @@ procedure TEpiCustomBase.BeginUpdate;
 var
   i: Integer;
 begin
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln('TEpiCustomBase.BeginUpdate: ' + ClassName);
-  {$ENDIF EPI_CONSOLE_DEBUG}
   Inc(FUpdateCount);
 
   for i := 0 to ClassList.Count - 1 do
@@ -617,9 +627,6 @@ procedure TEpiCustomBase.EndUpdate;
 var
   i: Integer;
 begin
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln('TEpiCustomBase.EndUpdate: ' + ClassName);
-  {$ENDIF EPI_CONSOLE_DEBUG}
   for i := ClassList.Count - 1 downto 0 do
     TEpiCustomBase(ClassList[i]).EndUpdate;
 
@@ -690,9 +697,6 @@ procedure TEpiCustomBase.SetLanguage(const LangCode: string;
 var
   i: Integer;
 begin
-  {$IFDEF EPI_CONSOLE_DEBUG}
-  writeln(ClassName,'.SetLanguage: ', LangCode, ' (', DefaultLanguage, ')');
-  {$ENDIF EPI_CONSOLE_DEBUG}
   if DefaultLanguage then
     FDefaultLang := LangCode;
   FCurrentLang := LangCode;
