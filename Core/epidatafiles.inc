@@ -261,9 +261,33 @@ var
      );
   var
     i: integer;
+    IsPrime: Boolean;
   begin
-    for i := Low(Primes) to High(primes) do
-      if AValue < Primes[i] then exit(Primes[i]);
+    // Lookup into the primes table.
+    if AValue <= Primes[High(primes)] then
+      for i := Low(Primes) to High(primes) do
+        if AValue < Primes[i] then exit(Primes[i]);
+
+    // Too high a value, search for a prime.
+    Result := AValue;
+    if Result mod 2 = 0 then inc(Result);
+    // This limits max number of variables to 1511**2 = 2.283.121
+    // - it should be enough.
+    while result < (1511**2) do
+    begin
+      IsPrime := true;
+      for i := Low(Primes) to High(Primes) do
+      begin
+        if (Primes[i]**2) > Result then break;
+        if (Result mod Primes[i]) = 0 then
+        begin
+          IsPrime := false;
+          break;
+        end;
+      end;
+      if IsPrime then Exit;
+      Inc(Result, 2);
+    end;
     result := -1;
   end;
 
