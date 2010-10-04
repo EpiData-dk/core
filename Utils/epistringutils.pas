@@ -37,6 +37,9 @@ type
   function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
   function AutoFieldName(Const S: string): string;
   function ValidateIdentifierUTF8(Const AValue: string): boolean;
+  function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
+  function CreateUniqueAnsiVariableName(Const Varname: string; MaxLength: integer;
+    CompareList: TStrings = nil): String;
 
 implementation
 
@@ -163,6 +166,42 @@ begin
     exit(false);
   if UTF8Pos(' ', AValue) > 0 then
     exit(false);
+end;
+
+function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
+var
+  i: integer;
+begin
+  result := false;
+  for i := 1 to Length(VarName) do
+    if not (Varname[i] in ValidChars) THEN exit;
+  result := true;
+end;
+
+function CreateUniqueAnsiVariableName(const Varname: string;
+  MaxLength: integer; CompareList: TStrings): String;
+var
+  TmpStr: String;
+  Number: Integer;
+begin
+  TmpStr := EpiUtf8ToAnsi(Varname);
+
+  if Length(TmpStr) > MaxLength then
+    TmpStr := Copy(TmpStr, 1, MaxLength);
+
+  if Assigned(CompareList) then
+  begin
+    Number := 1;
+    while (CompareList.IndexOf(TmpStr) <> -1) or (not CheckVariableName(TmpStr, ['a'..'z', 'A'..'Z','0'..'9','_'])) do
+    begin
+      TmpStr := 'V' + IntToStr(Number);
+      Inc(Number)
+    end;
+    CompareList.Add(TmpStr);
+  end else if (not CheckVariableName(TmpStr, ['a'..'z', 'A'..'Z','0'..'9','_'])) then
+    TmpStr := 'V1';
+
+  Result := TmpStr;
 end;
 
 { TString }
