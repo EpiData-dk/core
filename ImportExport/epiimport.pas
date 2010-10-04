@@ -161,9 +161,13 @@ const
   //   ftInteger,  ftString,    ftDate,     ftUpperAlfa,   ftCheckBox,
        ftInteger,  ftString,    ftMDYDate,  ftUpperString, ftBoolean,
 
+  //   Note on 6:  Since new format support ~18 digits in new integer field type
+  //     the old "double real" is converted, as it contains no decimals (by
+  //     definition). Floating fields with digits has a FieldTypeNo > 100, and
+  //     is handled seperately in the code below.
   //   5           6            7           8              9
   //   ftBoolean,  ftFloat,     ftPhoneNum, ftTime,        ftLocalNum,
-       ftBoolean,  ftFloat,     ftString,   ftTime,        ftString,
+       ftBoolean,  ftInteger,   ftString,   ftTime,        ftString,
 
   //   10          11           12          13             14
   //   ftToday,    ftEuroDate,  ftIDNUM,    ftRes4,        ftRes5,
@@ -266,9 +270,12 @@ begin
       // Field types.
       FieldIsQuestion := false;
       if TmpFieldTypeInt >= 100 then
+      begin
         // Type > 100 => float field
-        TmpFieldType := ftFloat
-      else begin
+        TmpFieldType := ftFloat;
+        if TmpFieldTypeInt = 100 then
+          TmpFieldType := ftInteger;
+      end else begin
         // Normal field type recognition.
         TmpFieldType := FieldTypeConversionTable[TmpFieldTypeInt];
 
