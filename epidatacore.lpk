@@ -103,28 +103,28 @@
         <UnitName Value="epixmlconstants"/>
       </Item18>
       <Item19>
-        <Filename Value="ImportExport/epiimport.pas"/>
-        <UnitName Value="epiimport"/>
-      </Item19>
-      <Item20>
-        <Filename Value="ImportExport/epiqeshandler.pas"/>
-        <UnitName Value="epiqeshandler"/>
-      </Item20>
-      <Item21>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
-      </Item21>
-      <Item22>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
-      </Item22>
-      <Item23>
-        <Filename Value="Utils/epiversionutils.pas"/>
-        <UnitName Value="epiversionutils"/>
-      </Item23>
-      <Item24>
         <Filename Value="ImportExport/epiexport.pas"/>
         <UnitName Value="epiexport"/>
+      </Item19>
+      <Item20>
+        <Filename Value="ImportExport/epiimport.pas"/>
+        <UnitName Value="epiimport"/>
+      </Item20>
+      <Item21>
+        <Filename Value="ImportExport/epiqeshandler.pas"/>
+        <UnitName Value="epiqeshandler"/>
+      </Item21>
+      <Item22>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
+      </Item22>
+      <Item23>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item23>
+      <Item24>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
       </Item24>
     </Files>
     <RequiredPkgs Count="4">

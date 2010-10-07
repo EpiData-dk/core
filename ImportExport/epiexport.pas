@@ -14,11 +14,12 @@ type
   TEpiExport = class(TObject)
   private
     procedure   RaiseError(Const Msg: string);
-    procedure   WriteBuf(Buf: Array of Byte; Count: Integer);
-    procedure   WriteInts(Const Val, Count: Integer);
-    procedure   WriteSingle(Val: Single);
-    procedure   WriteDouble(Val: Double);
-    procedure   WriteString(Const Str: string; Const Count: Integer; Terminate: Boolean = True);
+    procedure   WriteByte(St: TStream; Val: ShortInt);
+    procedure   WriteWord(St: TStream; Val: SmallInt);
+    procedure   WriteInt(St: TStream; Val: LongInt);
+    procedure   WriteSingle(St: TStream; Val: Single);
+    procedure   WriteDouble(St: TStream; Val: Double);
+    procedure   WriteString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -34,33 +35,46 @@ uses
 
 procedure TEpiExport.RaiseError(const Msg: string);
 begin
-
+  raise Exception.Create(Msg);
 end;
 
-procedure TEpiExport.WriteBuf(Buf: array of Byte; Count: Integer);
+procedure TEpiExport.WriteByte(St: TStream; Val: ShortInt);
 begin
-
+  St.Write(Val, 1);
 end;
 
-procedure TEpiExport.WriteInts(const Val, Count: Integer);
+procedure TEpiExport.WriteWord(St: TStream; Val: SmallInt);
 begin
-
+  Val := NtoLE(Val);
+  St.Write(Val, 2);
 end;
 
-procedure TEpiExport.WriteSingle(Val: Single);
+procedure TEpiExport.WriteInt(St: TStream; Val: LongInt);
 begin
-
+  Val := NtoLE(Val);
+  St.Write(Val, 4);
 end;
 
-procedure TEpiExport.WriteDouble(Val: Double);
+procedure TEpiExport.WriteSingle(St: TStream; Val: Single);
 begin
-
+  St.Write(Val, 4);
 end;
 
-procedure TEpiExport.WriteString(const Str: string; const Count: Integer;
-  Terminate: Boolean);
+procedure TEpiExport.WriteDouble(St: TStream; Val: Double);
 begin
+  St.Write(Val, 8);
+end;
 
+procedure TEpiExport.WriteString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
+var
+  StrBuf: PChar;
+  z: integer;
+begin
+  if Terminate then z := 0 else z := 1;
+  StrBuf := StrAlloc(Count + z);
+  StrPLCopy(PChar(@StrBuf[0]), EpiUtf8ToAnsi(Str), Count - 1 + z);
+  St.Write(StrBuf[0], Count);
+  StrDispose(StrBuf);
 end;
 
 constructor TEpiExport.Create;
@@ -119,7 +133,7 @@ Const
       else
         FltByte[5] := 0;
       end;
-    WriteDouble(Val);
+    WriteDouble(DataStream, Val);
   end;
 
 
@@ -196,8 +210,8 @@ begin
     ByteBuf[2] := 1;                                          // Filetype - only 1 is legal value
     ByteBuf[3] := 0;                                          // Unused
     DataStream.Write(ByteBuf[0], 4);
-    WriteInts(NVar, 2);                                       // Number of Variables
-    WriteInts(NObs, 4);                                       // Number of records
+    WriteWord(DataStream, NVar);                                       // Number of Variables
+    WriteInt(DataStream,  NObs);                                       // Number of records
 
 
     IF trim(Name.Text) <> '' THEN
@@ -209,11 +223,11 @@ begin
       TmpStr := Copy(TmpStr, 1, FileLabelLength - 1);
 
     // data_label \0 terminated.
-    WriteString(TmpStr, FileLabelLength);
+    WriteString(DataStream, TmpStr, FileLabelLength);
 
     // time_stamp \0 terminated (not used in epidata)
     TmpStr := FormatDateTime('dd mmm yyyy hh":"nn', Now);
-    WriteString(TmpStr, 18);
+    WriteString(DataStream, TmpStr, 18);
 
     // ********************************
     //         STATA DESCRIBTORS
@@ -275,7 +289,7 @@ begin
       BEGIN
         TmpStr := Trim(Name);
         TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength - 1, FieldNames);
-        WriteString(TmpStr, FieldNameLength);
+        WriteString(DataStream, TmpStr, FieldNameLength);
       END;   //with
     END;  //for eN
 
@@ -302,13 +316,13 @@ begin
         ftDMYToday, ftMDYToday, ftYMDToday:
           TmpStr := '%d';
       END;   //case FeltType
-      WriteString(TmpStr, FmtLength);
+      WriteString(DataStream, TmpStr, FmtLength);
     END;  //for - with
 
     // - lbllist: names af value label
     SetLength(ByteBuf, 33*NVar);
     FillByte(ByteBuf[0], 33*NVar, 0);
-    WriteBuf(ByteBuf, 33*NVar);
+    DataStream.Write(ByteBuf[0], 33*NVar);
     // TODO : VALUELABELS
 {    WritenValueLabels := TStringList.Create();
     WritenValueLabels.Sorted := true;
@@ -345,7 +359,7 @@ begin
       WITH Field[i] DO
       BEGIN
         TmpStr := Trim(EpiUtf8ToAnsi(Question.Caption.Text));
-        WriteString(TmpStr, FileLabelLength);
+        WriteString(DataStream, TmpStr, FileLabelLength);
       END;  //with
     END;  //for eN
 
@@ -353,42 +367,79 @@ begin
     //      STATA EXPANSION FIELDS
     // ********************************
     // - skip expansion fields
-    WriteInts(0, 3);
+    WriteWord(DataStream, 0);
+    WriteByte(DataStream, 0); // 3 bytes....
     if FileVersion >= $6E then
-      WriteInts(0, 2);
+      WriteWord(DataStream, 0); // 5 bytes in total...
 
     // ********************************
     //          STATA DATA
     // ********************************
-    // TODO -O Torsten : Redesign to use correct decendant of TEpiField.
-    //    ie. use AsFloat, AsDate, AsString.... etc.
     TRY
-      FOR CurRec := 1 TO NObs DO
+      FOR CurRec := 0 TO NObs-1 DO
       BEGIN
         FOR CurField := 0 TO NVar - 1 DO
         With Field[CurField] do
-        BEGIN
+        Case TypeList[CurField] of
+          ByteConst:   begin
+                          // Specific missing values
+                          // TODO : MissingValues (STATA)
+                          {
+                          IF (FileVersion >= $71) AND (FieldType in [ftInteger, ftIDNUM, ftFloat]) AND
+                             (FieldDecimals = 0) AND (FieldLength < 10) THEN
+                          BEGIN
+                            if Assigned(CheckField) then
+                            begin
+                              IF TmpStr = CheckField.MissingValues[0] THEN TmpStr := '.a';
+                              IF TmpStr = CheckField.MissingValues[1] THEN TmpStr := '.b';
+                              IF TmpStr = CheckField.MissingValues[2] THEN TmpStr := '.c';
+                            end;
+                            IF TmpStr = FileProperties.GlobalMissingVal[0] THEN TmpStr := '.a';
+                            IF TmpStr = FileProperties.GlobalMissingVal[1] THEN TmpStr := '.b';
+                            IF TmpStr = FileProperties.GlobalMissingVal[2] THEN TmpStr := '.c';
+                          END;     }
+                         if IsMissing[CurRec] then
+                           WriteByte(DataStream, $7F)
+                         else
+                           WriteByte(DataStream, AsInteger[CurRec]);
+                       end;
+          IntConst:    begin
+                         if IsMissing[CurRec] then
+                           WriteWord(DataStream, $7FFF)
+                         else
+                           WriteWord(DataStream, AsInteger[CurRec]);
+                       end;
+          LongConst:   begin
+                         if IsMissing[CurRec] then
+                           WriteInt(DataStream, $7FFFFFFF)
+                         else
+                           {Date is converted from Delphi's/Lazarus 30/12-1899 base
+                            to Stata's 1/1-1960 base by substracting 21916 days}
+                           If (FieldType in DateFieldTypes) then
+                             WriteInt(DataStream, AsDate[CurRec] - 21916)
+                           else
+                             WriteInt(DataStream, AsInteger[CurRec]);
+                       end;
+          DoubleConst: begin
+                         if IsMissing[CurRec] then
+                           WriteDouble(DataStream, Power(2, 1023))
+                         else
+                           WriteDouble(DataStream, AsFloat[CurRec]);
+                       end
+        else
+          WriteString(DataStream, AsString[CurRec], 207);
+        end;
+
+
+
+(*
+
+
           TmpStr := AsString[CurRec-1];
 
           IF trim(TmpStr)='' THEN
             TmpStr := '..';
 
-          // Specific missing values
-          // TODO : MissingValues (STATA)
-          {
-          IF (FileVersion >= $71) AND (FieldType in [ftInteger, ftIDNUM, ftFloat]) AND
-             (FieldDecimals = 0) AND (FieldLength < 10) THEN
-          BEGIN
-            if Assigned(CheckField) then
-            begin
-              IF TmpStr = CheckField.MissingValues[0] THEN TmpStr := '.a';
-              IF TmpStr = CheckField.MissingValues[1] THEN TmpStr := '.b';
-              IF TmpStr = CheckField.MissingValues[2] THEN TmpStr := '.c';
-            end;
-            IF TmpStr = FileProperties.GlobalMissingVal[0] THEN TmpStr := '.a';
-            IF TmpStr = FileProperties.GlobalMissingVal[1] THEN TmpStr := '.b';
-            IF TmpStr = FileProperties.GlobalMissingVal[2] THEN TmpStr := '.c';
-          END;     }
 
           Case TypeList[CurField] of
             ByteConst,
@@ -453,9 +504,10 @@ begin
             if TmpStr = '..' then TmpStr := '';
             WriteString(TmpStr, Length, False);
           end;
-        END;  //for CurVar
+        END;  //for CurField      *)
       END;  //for CurObs
     EXCEPT
+
       RaiseError('Error in exporting to Stata');
       Exit;
     END;  //try..Except
