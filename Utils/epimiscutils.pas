@@ -28,12 +28,18 @@ const
 
 
   // File dialog filter functions.
-  function GetEpiDialogFilter(ShowXML, ShowREC, ShowText, ShowODS, ShowXLS,
+  function GetEpiDialogFilter(ShowEPX, ShowEPZ, ShowREC, ShowText, ShowODS, ShowXLS,
     ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
+
+  procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
+  procedure ZipFileToStream(Var St: TStream;   Const ZipFileName: string);
 
 
 
 implementation
+
+uses
+  zipper, FileUtil, LCLProc;
 
 type
   TEpiDialogFilterPair = record
@@ -47,9 +53,14 @@ const
     FilterExt:  '';
   );
 
-  EpiDialogFilterXML: TEpiDialogFilterPair = (
+  EpiDialogFilterEPX: TEpiDialogFilterPair = (
     FilterName: 'EpiData XML Data file (*.epx)';
     FilterExt:  '*.epx';
+  );
+
+  EpiDialogFilterEPZ: TEpiDialogFilterPair = (
+    FilterName: 'EpiData XML Zipped Data file (*.epz)';
+    FilterExt:  '*.epz';
   );
 
   EpiDialogFilterREC: TEpiDialogFilterPair = (
@@ -93,8 +104,8 @@ const
   );
 
 
-function GetEpiDialogFilter(ShowXML, ShowREC, ShowText, ShowODS, ShowXLS,
-  ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
+function GetEpiDialogFilter(ShowEPX, ShowEPZ, ShowREC, ShowText, ShowODS,
+  ShowXLS, ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
 var
   CollectedExt: string;
 
@@ -107,8 +118,10 @@ var
 begin
   Result := '';
   CollectedExt := '';
-  if ShowXML then
-    Result += AddFilter(EpiDialogFilterXML);
+  if ShowEPX then
+    Result += AddFilter(EpiDialogFilterEPX);
+  if ShowEPZ then
+    Result += AddFilter(EpiDialogFilterEPZ);
   if ShowREC then
     Result += AddFilter(EpiDialogFilterREC);
   if ShowText then
@@ -130,6 +143,54 @@ begin
 
   if ShowAll then
     Result += AddFilter(EpiDialogFilterAll);
+end;
+
+procedure StreamToZipFile(const St: TStream; const ZipFileName: string);
+var
+  TheZipper: TZipper;
+begin
+  TheZipper           := TZipper.Create;
+  TheZipper.FileName  := ZipFileName;
+  TheZipper.InMemSize := St.Size;  // No disk usage, we assume files are "rather" small ~50-100 Mb.
+  TheZipper.Entries.AddFileEntry(St, SysToUTF8(ExtractFileName(UTF8ToSys(ZipFileName))));
+  TheZipper.ZipAllFiles;
+  TheZipper.Free;
+end;
+
+type
+  TTmpStreamHandler = class
+  private
+    TSt: TStream;
+  public
+    constructor create(St: TStream);
+    Procedure CreateStream(Sender : TObject; var AStream : TStream; AItem : TFullZipFileEntry);
+  end;
+
+  constructor TTmpStreamHandler.create(St: TStream);
+  begin
+    TSt := St;
+  end;
+
+  procedure TTmpStreamHandler.CreateStream(Sender : TObject; var AStream : TStream; AItem : TFullZipFileEntry);
+  begin
+    if Assigned(TSt) then
+      AStream := TSt
+    else
+      AStream := TMemoryStream.Create;
+  end;
+
+procedure ZipFileToStream(var St: TStream; const ZipFileName: string);
+var
+  TheUnZipper: TUnZipper;
+  StHandler: TTmpStreamHandler;
+begin
+  StHandler := TTmpStreamHandler.create(St);
+  TheUnZipper           := TUnZipper.Create;
+  TheUnZipper.FileName  := ZipFileName;
+  TheUnZipper.OnCreateStream := @StHandler.CreateStream;
+  TheUnZipper.OnDoneStream   := @StHandler.CreateStream; // This is only needed to prevent TUnZipper from FreeAndNil the stream.
+  TheUnZipper.UnZipAllFiles;
+  TheUnZipper.Free;
 end;
 
 end.

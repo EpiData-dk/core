@@ -34,6 +34,8 @@ type
     procedure  LoadFromXml(Root: TDOMNode); override;
     function   SaveToXml(Lvl: integer = 0;
       IncludeHeader: boolean = true): string;
+    procedure  SaveToStream(Const St: TStream);
+    procedure  SaveToFile(Const AFileName: string);
     Property   XMLSettings: TEpiXMLSettings read FXMLSettings;
     property   ProjectSettings: TEpiProjectSettings read FProjectSettings;
     Property   Admin: TEpiAdmin read FAdmin;
@@ -153,6 +155,23 @@ begin
 
   // Inherited saves everything, since the the classes have been registered in Create.
   Result += inherited SaveToXml(Content, Lvl);
+end;
+
+procedure TEpiDocument.SaveToStream(const St: TStream);
+var
+  S: String;
+begin
+  S := SaveToXml(0);
+  St.Write(S[1], Length(S));
+end;
+
+procedure TEpiDocument.SaveToFile(const AFileName: string);
+var
+  Fs: TFileStream;
+begin
+  Fs := TFileStream.Create(AFileName, fmCreate);
+  SaveToStream(Fs);
+  Fs.Free;
 end;
 
 end.
