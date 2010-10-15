@@ -152,7 +152,7 @@ begin
   TheZipper           := TZipper.Create;
   TheZipper.FileName  := ZipFileName;
   TheZipper.InMemSize := St.Size;  // No disk usage, we assume files are "rather" small ~50-100 Mb.
-  TheZipper.Entries.AddFileEntry(St, SysToUTF8(ExtractFileName(UTF8ToSys(ZipFileName))));
+  TheZipper.Entries.AddFileEntry(St, SysToUTF8(ExtractFileName(ChangeFileExt(UTF8ToSys(ZipFileName), '.epx'))));
   TheZipper.ZipAllFiles;
   TheZipper.Free;
 end;

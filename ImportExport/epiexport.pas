@@ -163,7 +163,7 @@ begin
     FileVersion := 0; //ExpSetting^.FileVersion;
 
     if not (FileVersion in [$69, $6C, $6E, $71, $72]) then
-      FileVersion := $71;                    // Default to Version 10 (Latest of May 2009)
+      FileVersion := $71;                    // Default to Version 8
 
     // Version specific settings:
     // - "original" setting from Ver. 4
