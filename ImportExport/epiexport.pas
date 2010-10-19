@@ -215,9 +215,9 @@ begin
 
 
     IF trim(Name.Text) <> '' THEN
-      TmpStr := Trim(UTF8ToSys(Name.Text))
+      TmpStr := Trim(Name.Text)
     ELSE
-      TmpStr := Format('Datafile created by EpiData based on %s', [ExtractFilename(UTF8ToSys(aFilename))]);
+      TmpStr := Format('Datafile created by EpiData based on %s', [SysToUTF8(ExtractFilename(UTF8ToSys(aFilename)))]);
 
     IF Length(TmpStr) > (FileLabelLength - 1) THEN
       TmpStr := Copy(TmpStr, 1, FileLabelLength - 1);
@@ -355,13 +355,8 @@ begin
     //      STATA VARIABLE LABELS
     // ********************************
     FOR i := 0 TO NVar - 1 DO
-    BEGIN
-      WITH Field[i] DO
-      BEGIN
-        TmpStr := Trim(EpiUtf8ToAnsi(Question.Caption.Text));
-        WriteString(DataStream, TmpStr, FileLabelLength);
-      END;  //with
-    END;  //for eN
+    WITH Field[i] DO
+        WriteString(DataStream, Trim(EpiUtf8ToAnsi(Question.Caption.Text)), FileLabelLength);
 
     // ********************************
     //      STATA EXPANSION FIELDS

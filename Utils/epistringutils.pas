@@ -33,6 +33,9 @@ type
   function EpiUnknownStrToUTF8(const Source: string): string;
   procedure EpiUnknownStringsToUTF8(Source: TStrings);
   function EpiUtf8ToAnsi(Const Source: string): string;
+  // Other UTF8 routines.
+
+  function EpiCutString(Const S: string; Const MaxLength: integer; Const AddDots: boolean = true): string;
 
   function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
   function AutoFieldName(Const S: string): string;
@@ -138,6 +141,15 @@ begin
   {$ELSE}
   result := UTF8ToISO_8859_1(Source);
   {$ENDIF}
+end;
+
+function EpiCutString(const S: string; const MaxLength: integer;
+  const AddDots: boolean): string;
+begin
+  if (UTF8Length(S) > MaxLength) then
+    Result := UTF8Copy(S, 1, MaxLength - 3) + '...'
+  else
+    Result := S;
 end;
 
 function FirstWord(Const S: string; MaxLength: Cardinal): string;
