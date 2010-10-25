@@ -25,6 +25,8 @@ type
     FRelations: TEpiRelations;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
+  protected
+    procedure SetModified(const AValue: Boolean); override;
   public
     constructor Create(Const LangCode: string);
     destructor Destroy; override;
@@ -57,6 +59,14 @@ end;
 procedure TEpiDocument.SetOnPassword(const AValue: TRequestPasswordEvent);
 begin
   Admin.OnPassword := AValue;
+end;
+
+procedure TEpiDocument.SetModified(const AValue: Boolean);
+begin
+  inherited SetModified(AValue);
+//  State;
+//  if Assigned(Study) then
+//    Study.ModifiedDate := now;
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);

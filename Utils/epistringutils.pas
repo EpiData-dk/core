@@ -33,8 +33,8 @@ type
   function EpiUnknownStrToUTF8(const Source: string): string;
   procedure EpiUnknownStringsToUTF8(Source: TStrings);
   function EpiUtf8ToAnsi(Const Source: string): string;
-  // Other UTF8 routines.
 
+  // Other UTF8 routines.
   function EpiCutString(Const S: string; Const MaxLength: integer; Const AddDots: boolean = true): string;
 
   function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;

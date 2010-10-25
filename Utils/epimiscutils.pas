@@ -27,6 +27,15 @@ const
   {ftUpperString}(true,      false,     false,     false,   false,     false,     false,     false,      false,      false,      false,  false,     true,     true));
 
 
+  const EpiTypeNames: array[TEpiFieldType] of string =
+    ('Boolean',
+     'Integer', 'Auto Increment', 'Float',
+     'Date (DMY)', 'Date (MDY)', 'Date (YMD)',
+     'Date (DMY - Auto)', 'Date (MDY - Auto)', 'Date (YMD - Auto)',
+     'Time', 'Time (Auto)',
+     'String', 'Uppercase'
+    );
+
   // File dialog filter functions.
   function GetEpiDialogFilter(ShowEPX, ShowEPZ, ShowREC, ShowText, ShowODS, ShowXLS,
     ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
