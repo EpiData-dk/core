@@ -28,7 +28,8 @@ type
   protected
     procedure SetModified(const AValue: Boolean); override;
   public
-    constructor Create(Const LangCode: string);
+    constructor Create(AOwner: TComponent; Const LangCode: string);
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromFile(const AFileName: string);
@@ -69,9 +70,9 @@ begin
 //    Study.ModifiedDate := now;
 end;
 
-constructor TEpiDocument.Create(const LangCode: string);
+constructor TEpiDocument.Create(AOwner: TComponent);
 begin
-  inherited Create(nil);
+  inherited Create(AOwner);
   FXMLSettings     := TEpiXMLSettings.Create(Self);
   FProjectSettings := TEpiProjectSettings.Create(Self);
   FAdmin           := TEpiAdmin.Create(Self);
@@ -81,6 +82,11 @@ begin
   FRelations       := TEpiRelations.Create(Self);
 
   RegisterClasses([XMLSettings, ProjectSettings, Admin, Study, DataFiles, Relations]);
+end;
+
+constructor TEpiDocument.Create(AOwner: TComponent; const LangCode: string);
+begin
+  Create(AOwner);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.

@@ -48,7 +48,7 @@ type
     function   RequestPassword: Boolean;
     procedure  SetMasterPassword(const AValue: string);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
@@ -75,7 +75,7 @@ type
     function GetAdmin: TEpiAdmin;
     function GetUsers(Index: integer): TEpiUser;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
@@ -117,7 +117,7 @@ type
     class function IdString: string; override;
     property  Salt: string read FSalt;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
@@ -144,7 +144,7 @@ type
     function    GetAdmin: TEpiAdmin;
     function    GetGroup(Index: integer): TEpiGroup;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    ScrambleXml: boolean; override;
@@ -164,7 +164,7 @@ type
   protected
     class function IdString: string; override;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
@@ -230,7 +230,7 @@ begin
   FMasterPassword := AValue;
 end;
 
-constructor TEpiAdmin.Create(AOwner: TEpiCustomBase);
+constructor TEpiAdmin.Create(AOwner: TComponent);
 var
   Key: array[0..3] of LongInt;
   KeyByte: array[0..3*SizeOf(LongInt)] of Char absolute Key;
@@ -329,7 +329,7 @@ begin
   result := TEpiUser(Items[Index]);
 end;
 
-constructor TEpiUsers.Create(AOwner: TEpiCustomBase);
+constructor TEpiUsers.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -496,7 +496,7 @@ begin
   Result := 'user_id_';
 end;
 
-constructor TEpiUser.Create(AOwner: TEpiCustomBase);
+constructor TEpiUser.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FGroup := nil;
@@ -574,7 +574,7 @@ begin
   Result := TEpiGroup(Items[Index]);
 end;
 
-constructor TEpiGroups.Create(AOwner: TEpiCustomBase);
+constructor TEpiGroups.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -646,7 +646,7 @@ begin
   Result := 'group_id_';
 end;
 
-constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
+constructor TEpiGroup.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 

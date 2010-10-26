@@ -22,7 +22,7 @@ begin
   result := TEpiField(Items[index]);
 end;
 
-constructor TEpiFields.Create(AOwner: TEpiCustomBase);
+constructor TEpiFields.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -105,24 +105,6 @@ begin
   DoChange(eegDataFiles, Word(efceSetLength), @Val);
 end;
 
-procedure TEpiField.LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
-begin
-  if (Sender is TEpiValueLabelSet) then
-  begin
-    if (EventGroup = eegCustomBase) and (EventType = word(ecceDestroy)) then
-      FValueLabelSet := nil;
-  end;
-
-  if (Sender is TEpiValueLabelSets) then
-  begin
-    if (EventGroup = eegCustomBase) and
-       (EventType = word(ecceDelItem)) and
-       (FValueLabelSet = TEpiValueLabelSet(Data)) then
-      FValueLabelSet := nil;
-  end;
-end;
-
 procedure TEpiField.SetName(const AValue: string);
 var
   Val: String;
@@ -144,23 +126,8 @@ end;
 
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
 begin
-  if Assigned(FValueLabelSet) then
-  begin
-    // UnRegister our hook on the previous valuelabel set.
-    FValueLabelSet.UnRegisterOnChangeHook(@LocalEventHook);
-    // also do the same with the parent.
-    if Assigned(FValueLabelSet.Owner) then
-      FValueLabelSet.Owner.UnRegisterOnChangeHook(@LocalEventHook);
-  end;
-
+  if FValueLabelSet = AValue then exit;
   FValueLabelSet := AValue;
-
-  if Assigned(FValueLabelSet) then
-  begin
-    FValueLabelSet.RegisterOnChangeHook(@LocalEventHook, true);
-    if Assigned(FValueLabelSet.Owner) then
-      FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
-  end;
 end;
 
 procedure TEpiField.CheckIndex(const index: integer);
@@ -182,7 +149,7 @@ begin
   FSize := AValue;
 end;
 
-constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+constructor TEpiField.Create(AOwner: TComponent; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
   FFieldType := AFieldType;

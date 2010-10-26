@@ -12,7 +12,7 @@ begin
   result := TEpiDocument(Owner).XMLSettings;
 end;
 
-constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
+constructor TEpiDataFiles.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -169,7 +169,7 @@ begin
               if (Sender is TEpiSections)  then
               with TEpiSection(Data) do
               begin
-                if (ebsDestroying in State) then exit;
+//                if (ebsDestroying in State) then exit;
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
               end;
@@ -403,7 +403,7 @@ begin
   Result := 'datafile_id_';
 end;
 
-constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
+constructor TEpiDataFile.Create(AOwner: TComponent);
 begin
   Create(AOwner, 0);
 end;
@@ -414,7 +414,7 @@ begin
   result := not (Fields.FieldExistsByName(NewName));
 end;
 
-constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
+constructor TEpiDataFile.Create(AOwner: TComponent; const Size: integer);
 begin
   inherited Create(AOwner);
 

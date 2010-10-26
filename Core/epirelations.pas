@@ -25,7 +25,7 @@ type
  protected
    function    ScrambleXml: boolean; override;
  public
-   constructor Create(AOwner: TEpiCustomBase); override;
+   constructor Create(AOwner: TComponent); override;
    destructor  Destroy; override;
    function    XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -42,7 +42,7 @@ type
 
  TEpiPrimaryKeys = class(TEpiCustomList)
  public
-   constructor Create(AOwner: TEpiCustomBase); override;
+   constructor Create(AOwner: TComponent); override;
    destructor  Destroy; override;
    function XMLName: string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
@@ -58,7 +58,7 @@ type
  protected
    class function IdString: string; override;
  public
-   constructor Create(AOwner: TEpiCustomBase); override;
+   constructor Create(AOwner: TComponent); override;
    destructor  Destroy; override;
    function    XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -74,7 +74,7 @@ type
 
  TEpiRelates = class(TEpiCustomList)
  public
-   constructor Create(AOwner: TEpiCustomBase); override;
+   constructor Create(AOwner: TComponent); override;
    destructor  Destroy; override;
    function XMLName: string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
@@ -98,7 +98,7 @@ type
  protected
    class function IdString: string; override;
  public
-   constructor Create(AOwner: TEpiCustomBase); override;
+   constructor Create(AOwner: TComponent); override;
    destructor Destroy; override;
    function XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -133,7 +133,7 @@ begin
   Result := TEpiDocument(Owner).XMLSettings.Scrambled;
 end;
 
-constructor TEpiRelations.Create(AOwner: TEpiCustomBase);
+constructor TEpiRelations.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FPrimaryKeys := TEpiPrimaryKeys.Create(Self);
@@ -188,7 +188,7 @@ end;
 
 { TEpiPrimaryKeys }
 
-constructor TEpiPrimaryKeys.Create(AOwner: TEpiCustomBase);
+constructor TEpiPrimaryKeys.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -236,7 +236,7 @@ end;
 
 { TEpiPrimaryKey }
 
-constructor TEpiPrimaryKey.Create(AOwner: TEpiCustomBase);
+constructor TEpiPrimaryKey.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FFields := TEpiFields.Create(Self);
@@ -283,7 +283,7 @@ end;
 
 { TEpiRelates }
 
-constructor TEpiRelates.Create(AOwner: TEpiCustomBase);
+constructor TEpiRelates.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -382,7 +382,7 @@ begin
   Result := 'relate_id_';
 end;
 
-constructor TEpiRelate.Create(AOwner: TEpiCustomBase);
+constructor TEpiRelate.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;

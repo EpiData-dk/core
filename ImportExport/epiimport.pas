@@ -302,7 +302,6 @@ begin
         EHeading.BeginUpdate;
         with EHeading do
         begin
-          Name.Text    := EpiUnknownStrToUTF8(TmpName);
           Caption.Text := EpiUnknownStrToUTF8(TmpLabel);
           Left         := TmpQuestX;
           Top          := TmpQuestY;

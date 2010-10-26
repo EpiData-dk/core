@@ -2,7 +2,7 @@
 
 { TEpiHeadings }
 
-constructor TEpiHeadings.Create(AOwner: TEpiCustomBase);
+constructor TEpiHeadings.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -44,7 +44,7 @@ end;
 
 { TEpiHeading }
 
-constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
+constructor TEpiHeading.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FCaption := TEpiTranslatedText.Create(Self, rsCaption);

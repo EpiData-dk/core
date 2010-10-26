@@ -45,10 +45,8 @@ type
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
-  TEpiCustomBaseState = set of (ebsDestroying, ebsUpdating);
-
   {$static on}
-  TEpiCustomBase = class
+  TEpiCustomBase = class(TComponent)
   { Scrambling }
   private
     FCrypter:   TDCP_rijndael; static;
@@ -125,20 +123,16 @@ type
     FClassList: TFPList;
     FModified: Boolean;
     FOnModified: TNotifyEvent;
-    FOwner:     TEpiCustomBase;
-    FState:     TEpiCustomBaseState;
     function    GetRootOwner: TEpiCustomBase;
     procedure   SetOnModified(const AValue: TNotifyEvent);
   protected
-    constructor Create(AOwner: TEpiCustomBase); virtual;
+    constructor Create(AOwner: TComponent); override;
     procedure   SetModified(const AValue: Boolean); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
     destructor  Destroy; override;
-    property    Owner: TEpiCustomBase read FOwner;
     property    RootOwner: TEpiCustomBase read GetRootOwner;
-    property    State: TEpiCustomBaseState read FState;
     property    Modified: Boolean read FModified write SetModified;
     property    OnModified: TNotifyEvent read FOnModified write SetOnModified;
   end;
@@ -159,7 +153,7 @@ type
       Const DefaultLanguage: boolean); override;
     function    XMLName: string; override;
   public
-    constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string);
+    constructor Create(AOwner: TComponent; Const aXMLName: string);
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -209,7 +203,7 @@ type
     procedure   OnChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
   protected
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     function    GetCount: Integer; virtual;
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
@@ -291,11 +285,10 @@ begin
   result := Random(maxLongint - 1) + 1;
 end;
 
-constructor TEpiCustomBase.Create(AOwner: TEpiCustomBase);
+constructor TEpiCustomBase.Create(AOwner: TComponent);
 begin
-  FOwner := AOwner;
+  inherited Create(AOwner);
   FClassList := TFPList.Create;
-  FState := [];
   FModified := false;
 end;
 
@@ -311,7 +304,6 @@ destructor TEpiCustomBase.Destroy;
 begin
   // Do the last Free notification to the event hooks.
   // - this allows for objects pointing the "self" to remove reference if needed.
-  Include(FState, ebsDestroying);
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
   FClassList.Free;
@@ -638,9 +630,7 @@ begin
     exit;
   end;
 
-  Include(FState, ebsUpdating);
   DoChange(eegCustomBase, word(ecceUpdate), nil);
-  Exclude(FState, ebsUpdating);
 end;
 
 procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent;
@@ -707,13 +697,13 @@ end;
 
 function TEpiCustomBase.GetRootOwner: TEpiCustomBase;
 var
-  Obj: TEpiCustomBase;
+  Obj: TComponent;
 begin
   Obj := Self;
   while Assigned(Obj) do
   begin
     if not Assigned(Obj.Owner) then
-      Exit(Obj);
+      Exit(TEpiCustomBase(Obj));
     Obj := Obj.Owner;
   end;
 end;
@@ -730,7 +720,7 @@ begin
   if AValue then
   begin
     if Assigned(Owner) then
-      Owner.Modified := AValue;
+      TEpiCustomBase(Owner).Modified := AValue;
   end else begin
     for i := 0 to ClassList.Count - 1 do
       TEpiCustomBase(ClassList[i]).Modified := AValue;
@@ -781,7 +771,7 @@ begin
   Result := FXMLName;
 end;
 
-constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase;
+constructor TEpiTranslatedText.Create(AOwner: TComponent;
   const aXMLName: string);
 begin
   inherited Create(AOwner);
@@ -954,7 +944,7 @@ begin
   end;
 end;
 
-constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
+constructor TEpiCustomList.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FList := TFPList.Create;
@@ -1043,7 +1033,7 @@ end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
-  if ItemOwner then Item.FOwner := Self;
+  if ItemOwner then Item.Owner := Self;
   FList.Add(Item);
   Item.RegisterOnChangeHook(@OnChangeHook, true);
 

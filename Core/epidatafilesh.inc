@@ -14,7 +14,7 @@ type
     Property    Settings: TEpiXMLSettings read GetSettings;
     function    ScrambleXml: boolean; override;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -52,10 +52,10 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
   protected
     class function IdString: string; override;
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     function    ValidateFieldRename(Field: TEpiField; NewName: string): boolean;
   public
-    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
+    constructor Create(AOwner: TComponent; const Size: integer = 0);
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;

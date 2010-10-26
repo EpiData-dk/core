@@ -8,7 +8,7 @@ begin
   result := TEpiSection(Items[Index]);
 end;
 
-constructor TEpiSections.Create(AOwner: TEpiCustomBase);
+constructor TEpiSections.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;
@@ -85,7 +85,7 @@ begin
   Result := 'section_id_'
 end;
 
-constructor TEpiSection.Create(AOwner: TEpiCustomBase);
+constructor TEpiSection.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FName := TEpiTranslatedText.Create(Self, rsName);

@@ -33,7 +33,7 @@ type
     procedure SetTimeSeparator(const AValue: string);
     procedure SetVersion(const AValue: integer);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -64,7 +64,7 @@ type
     procedure   SetShowFieldBorders(const AValue: Boolean);
     procedure   SetShowFieldNames(const AValue: Boolean);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -146,7 +146,7 @@ begin
   DoChange(eegXMLSetting, Word(esceVersion), @Val);
 end;
 
-constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
+constructor TEpiXMLSettings.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   Version := 0;
@@ -243,7 +243,7 @@ begin
   DoChange(eegProjectSettings, Word(epceFieldName), @Val);
 end;
 
-constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);
+constructor TEpiProjectSettings.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 

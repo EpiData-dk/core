@@ -14,7 +14,7 @@ type
     function GetDataFile: TEpiDataFile;
     function GetField(index: integer): TEpiField;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -42,8 +42,6 @@ type
     function    GetSettings: TEpiXMLSettings;
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetLength(const AValue: Cardinal);
-    procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
     procedure   SetName(const AValue: string);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
   protected
@@ -104,7 +102,7 @@ type
   { Class inheritance, load/save, etc. }
   protected
     // Never ever create a field directly!
-    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+    constructor Create(AOwner: TComponent; AFieldType: TEpiFieldType);
     class function IdString: string; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;

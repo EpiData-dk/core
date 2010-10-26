@@ -43,7 +43,7 @@ type
     procedure SetLanguage(const AValue: string);
     procedure SetModifiedDate(const AValue: TDateTime);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
@@ -104,7 +104,7 @@ begin
   DoChange(eegStudy, Word(esceSetModified), @Val);
 end;
 
-constructor TEpiStudy.Create(AOwner: TEpiCustomBase);
+constructor TEpiStudy.Create(AOwner: TComponent);
 begin
   Inherited Create(AOwner);
 

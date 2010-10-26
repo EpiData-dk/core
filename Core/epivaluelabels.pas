@@ -17,7 +17,7 @@ type
     FLabel: TEpiTranslatedText;
     function GetValueAsString: string; virtual; abstract;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     property Order: integer read FOrder write FOrder;
@@ -92,7 +92,7 @@ type
     procedure   RemoveItem(Item: TEpiCustomItem); override;
     property    Items[Index: integer]: TEpiCustomItem    }
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -108,7 +108,7 @@ type
   private
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     function XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -124,7 +124,7 @@ uses
 
 { TEpiCustomValueLabel }
 
-constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
+constructor TEpiCustomValueLabel.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FLabel := TEpiTranslatedText.Create(Self, rsLabel);
@@ -337,7 +337,7 @@ begin
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
                      }
-constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
+constructor TEpiValueLabelSet.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 //  FData := TAVLTree.Create;
@@ -401,7 +401,7 @@ begin
   result := TEpiValueLabelSet(Items[Index]);
 end;
 
-constructor TEpiValueLabelSets.Create(AOwner: TEpiCustomBase);
+constructor TEpiValueLabelSets.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 end;

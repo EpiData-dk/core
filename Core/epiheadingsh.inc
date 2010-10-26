@@ -8,7 +8,7 @@ type
   private
 
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
@@ -21,7 +21,7 @@ type
   private
     FCaption:   TEpiTranslatedText;
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
     class function IdString: string; override;
     function    XMLName: string; override;
