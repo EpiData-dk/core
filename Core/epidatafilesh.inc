@@ -8,6 +8,7 @@ type
 
   TEpiDataFiles = class(TEpiCustomList)
   private
+    FValueLabelSets: TEpiValueLabelSets;
     function    GetDataFile(Index: integer): TEpiDataFile;
     function    GetSettings: TEpiXMLSettings;
   protected
@@ -21,6 +22,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewDataFile: TEpiDataFile;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
+    property    ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
   end;
 
   { TEpiDataFile }
@@ -33,7 +35,6 @@ type
     FAllHeadings: TEpiHeadings;
     FSections: TEpiSections;
     FMainSection: TEpiSection;
-    FValueLabels: TEpiValueLabelSets;
     function    GetField(Index: integer): TEpiField;
     function    GetSection(Index: integer): TEpiSection;
     function    GetHeading(Index: integer): TEpiHeading;
@@ -42,6 +43,7 @@ type
     { Private housekeeping }
     FRecordStatus: TEpiField;
     function    GetDeleted(Index: integer): boolean;
+    function GetValueLabelSets: TEpiValueLabelSets;
     function    GetVerified(Index: integer): boolean;
     function    GetSize: Integer;
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
@@ -72,7 +74,7 @@ type
     property    Field[Index: integer]: TEpiField read GetField; default;
     property    Headings: TEpiHeadings read FAllHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
-    property    ValueLabels: TEpiValueLabelSets read FValueLabels;
+    property    ValueLabels: TEpiValueLabelSets read GetValueLabelSets;
     property    ValueLabelSet[Index: integer]: TEpiValueLabelSet read GetValueLabelSet;
     Property    Size: Integer read GetSize write SetSize;
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;

@@ -46,6 +46,8 @@ type
       EventType: Word; Data: Pointer);
     procedure   SetName(const AValue: string);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
+    function    GetIsMissingValue(const index: Integer): boolean;
+    procedure   SetIsMissingValue(const index: Integer; const AValue: boolean);
   protected
     procedure   CheckIndex(Const index: integer); virtual;
     function    GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -85,6 +87,7 @@ type
     property    AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
     property    AsValue[const index: Integer]: EpiVariant read GetAsValue write SetAsValue;
     property    IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
+    property    IsMissingValue[const index: Integer]: boolean read GetIsMissingValue write SetIsMissingValue;
 
   { Field Properties }
   public

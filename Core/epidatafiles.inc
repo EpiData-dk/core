@@ -15,6 +15,12 @@ end;
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+
+  // Valuelabels
+  FValueLabelSets := TEpiValueLabelSets.Create(Self);
+  FValueLabelSets.ItemOwner := true;
+
+  RegisterClasses([FValueLabelSets]);
 end;
 
 destructor TEpiDataFiles.Destroy;
@@ -93,12 +99,17 @@ end;
 
 function TEpiDataFile.GetValueLabelSet(Index: integer): TEpiValueLabelSet;
 begin
-  result := TEpiValueLabelSet(FValueLabels[Index]);
+  result := ValueLabels[Index];
 end;
 
 function TEpiDataFile.GetDeleted(Index: integer): boolean;
 begin
   result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
+end;
+
+function TEpiDataFile.GetValueLabelSets: TEpiValueLabelSets;
+begin
+  result := TEpiDataFiles(Owner).FValueLabelSets;
 end;
 
 function TEpiDataFile.GetVerified(Index: integer): boolean;
@@ -426,10 +437,6 @@ begin
   FSections.ItemOwner := true;
   FSections.RegisterOnChangeHook(@LocalEventHook, true);
 
-  // Valuelabels
-  FValueLabels := TEpiValueLabelSets.Create(Self);
-  FValueLabels.ItemOwner := true;
-
   // The "all" containers.
   FAllFields := TEpiFields.Create(Self);
   FAllHeadings := TEpiHeadings.Create(Self);
@@ -441,15 +448,13 @@ begin
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
 
-  RegisterClasses([Name, ValueLabels, Sections]);
+  RegisterClasses([Name, Sections]);
 end;
 
 destructor TEpiDataFile.Destroy;
 begin
   FRecordStatus.Free;
-//  FMainSection.Free;
   FSections.Free;
-  FValueLabels.Free;
   FAllFields.Free;
   FAllHeadings.Free;
   FName.Free;
