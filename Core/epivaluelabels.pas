@@ -16,6 +16,7 @@ type
     FIsMissingValue: boolean;
     FOrder: Integer;
     FLabel: TEpiTranslatedText;
+  protected
     function GetValueAsString: string; virtual; abstract;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -24,13 +25,16 @@ type
     property Order: integer read FOrder write FOrder;
     property TheLabel: TEpiTranslatedText read FLabel write FLabel;
     property IsMissingValue: boolean read FIsMissingValue write FIsMissingValue;
+    property ValueAsString: string read GetValueAsString;
   end;
+  TEpiCustomValueLabelClass = class of TEpiCustomValueLabel;
 
   { TEpiIntValueLabel }
 
   TEpiIntValueLabel = class(TEpiCustomValueLabel)
   private
     FValue: EpiInteger;
+  protected
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
@@ -42,6 +46,7 @@ type
   TEpiFloatValueLabel = class(TEpiCustomValueLabel)
   private
     FValue: EpiFloat;
+  protected
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
@@ -53,6 +58,7 @@ type
   TEpiStringValueLabel = class(TEpiCustomValueLabel)
   private
     FValue: EpiString;
+  protected
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
@@ -79,10 +85,12 @@ type
   private
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
+    FName: string;
     function    GetIsMissingValue(const AValue: variant): boolean;
     function    GetValueLabel(const AValue: variant): string;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
     procedure   SetLabelType(const AValue: TEpiFieldType);
+    procedure   SetName(const AValue: string);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     function    SaveInternal(Lvl: integer): string; virtual;
@@ -96,9 +104,10 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
+    property    Name: string read FName write SetName;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
-    property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels;
+    property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
     property    ValueLabel[Const AValue: variant]: string read GetValueLabel;
     property    IsMissingValue[Const AValue: variant]: boolean read GetIsMissingValue;
   end;
@@ -261,6 +270,16 @@ procedure TEpiValueLabelSet.SetLabelType(const AValue: TEpiFieldType);
 begin
   if AValue = FLabelType then exit;
   FLabelType := AValue;
+end;
+
+procedure TEpiValueLabelSet.SetName(const AValue: string);
+var
+  Val: String;
+begin
+  if FName = AValue then exit;
+  Val := FName;
+  FName := AValue;
+//  DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): string;
