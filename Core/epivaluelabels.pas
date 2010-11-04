@@ -86,8 +86,10 @@ type
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
     FName: string;
+    function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
     function    GetValueLabel(const AValue: variant): string;
+    function    GetValueLabelExists(const AValue: variant): boolean;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
     procedure   SetLabelType(const AValue: TEpiFieldType);
     procedure   SetName(const AValue: string);
@@ -109,6 +111,7 @@ type
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
     property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
     property    ValueLabel[Const AValue: variant]: string read GetValueLabel;
+    property    ValueLabelExists[Const AValue: variant]: boolean read GetValueLabelExists;
     property    IsMissingValue[Const AValue: variant]: boolean read GetIsMissingValue;
   end;
 
@@ -117,6 +120,8 @@ type
   TEpiValueLabelSets = class(TEpiCustomList)
   private
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
+  protected
+    function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -277,36 +282,29 @@ var
   Val: String;
 begin
   if FName = AValue then exit;
+
+  if Assigned(Owner) and
+    (not TEpiValueLabelSets(Owner).ValidateRename(Self, AValue)) then
+      exit;
+
   Val := FName;
   FName := AValue;
-//  DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): string;
 var
   i: Integer;
 begin
-  case LabelType of
-    ftString:
-      begin
-        for i := 0 to Count - 1 do
-          if SameText(AValue, TEpiStringValueLabel(Items[i]).FValue) then
-            exit(ValueLabels[i].TheLabel.Text)
-      end;
-    ftFloat:
-      begin
-        for i := 0 to Count -1 do
-          if SameValue(AValue, TEpiFloatValueLabel(Items[i]).FValue) then
-            exit(ValueLabels[i].TheLabel.Text);
-      end;
-    ftInteger:
-      begin
-        for i := 0 to Count - 1 do
-          if AValue = TEpiIntValueLabel(Items[i]).FValue then
-            exit(ValueLabels[i].TheLabel.Text)
-      end;
-  end;
-  result := VarToStr(AValue);
+  I := GetValueLabelIndex(AValue);
+  if I = -1 then
+    result := VarToStr(AValue)
+  else
+    result := ValueLabels[i].TheLabel.Text
+end;
+
+function TEpiValueLabelSet.GetValueLabelExists(const AValue: variant): boolean;
+begin
+  result := GetValueLabelIndex(AValue) <> -1;
 end;
 
 function TEpiValueLabelSet.GetValueLabels(const index: integer
@@ -315,31 +313,38 @@ begin
   result := TEpiCustomValueLabel(Items[index]);
 end;
 
-function TEpiValueLabelSet.GetIsMissingValue(const AValue: variant): boolean;
-var
-  i: Integer;
+function TEpiValueLabelSet.GetValueLabelIndex(const AValue: variant): integer;
 begin
   case LabelType of
     ftString:
       begin
-        for i := 0 to Count - 1 do
-          if SameText(AValue, TEpiStringValueLabel(Items[i]).FValue) then
-            exit(ValueLabels[i].IsMissingValue);
+        for result := 0 to Count - 1 do
+          if SameText(AValue, TEpiStringValueLabel(Items[result]).FValue) then
+            exit;
       end;
     ftFloat:
       begin
-        for i := 0 to Count -1 do
-          if SameValue(AValue, TEpiFloatValueLabel(Items[i]).FValue) then
-            exit(ValueLabels[i].IsMissingValue);
+        for result := 0 to Count -1 do
+          if SameValue(AValue, TEpiFloatValueLabel(Items[result]).FValue) then
+            exit;
       end;
     ftInteger:
       begin
-        for i := 0 to Count - 1 do
-          if AValue = TEpiIntValueLabel(Items[i]).FValue then
-            exit(ValueLabels[i].IsMissingValue);
+        for result := 0 to Count - 1 do
+          if AValue = TEpiIntValueLabel(Items[result]).FValue then
+            exit;
       end;
   end;
-  Result := false;
+  result := -1;
+end;
+
+function TEpiValueLabelSet.GetIsMissingValue(const AValue: variant): boolean;
+var
+  i: Integer;
+begin
+  I := GetValueLabelIndex(AValue);
+  Result := (I <> -1) and
+            ValueLabels[i].IsMissingValue;
 end;
 
 procedure TEpiValueLabelSet.LoadInternal(Root: TDOMNode);
@@ -450,6 +455,18 @@ end;
 function TEpiValueLabelSets.GetValueLabels(index: integer): TEpiValueLabelSet;
 begin
   result := TEpiValueLabelSet(Items[Index]);
+end;
+
+function TEpiValueLabelSets.ValidateRename(ValueLabelSet: TEpiValueLabelSet;
+  NewName: string): boolean;
+var
+  i: Integer;
+begin
+  result := false;
+  for i := 0 to Count - 1 do
+    if CompareStr(ValueLabels[i].Name, NewName) = 0 then
+      exit;
+  result := true;
 end;
 
 constructor TEpiValueLabelSets.Create(AOwner: TEpiCustomBase);

@@ -220,6 +220,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
+    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
     function    GetItemById(aId: string): TEpiCustomItem; virtual;
@@ -1045,6 +1046,22 @@ procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
   if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
+  Item.RegisterOnChangeHook(@OnChangeHook, true);
+
+  if ItemOwner then
+  begin
+    Item.SetLanguage(FDefaultLang, true);
+    Item.SetLanguage(FCurrentLang, false);
+  end;
+
+  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+end;
+
+procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
+  );
+begin
+  if ItemOwner then Item.FOwner := Self;
+  FList.Insert(Index, Item);
   Item.RegisterOnChangeHook(@OnChangeHook, true);
 
   if ItemOwner then
