@@ -446,7 +446,7 @@ begin
     ftFloat:   result := TEpiFloatValueLabel.Create(Self);
     ftString:  result := TEpiStringValueLabel.Create(Self);
   end;
-  result.Order := Count;
+  result.Order := Count + 1;
   AddItem(result);
 end;
 
