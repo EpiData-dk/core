@@ -12,22 +12,6 @@ begin
   result := TEpiDocument(Owner).XMLSettings;
 end;
 
-constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
-begin
-  inherited Create(AOwner);
-
-  // Valuelabels
-  FValueLabelSets := TEpiValueLabelSets.Create(Self);
-  FValueLabelSets.ItemOwner := true;
-
-  RegisterClasses([FValueLabelSets]);
-end;
-
-destructor TEpiDataFiles.Destroy;
-begin
-  inherited Destroy;
-end;
-
 function TEpiDataFiles.XMLName: string;
 begin
   Result := rsDataFiles;
@@ -36,6 +20,16 @@ end;
 function TEpiDataFiles.ScrambleXml: boolean;
 begin
   Result := Settings.Scrambled;
+end;
+
+constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+end;
+
+destructor TEpiDataFiles.Destroy;
+begin
+  inherited Destroy;
 end;
 
 function TEpiDataFiles.SaveToXml(Content: String; Lvl: integer): string;
@@ -53,7 +47,7 @@ begin
   // Root = <DataFiles>
   if not Assigned(Root) then exit;
 
-  // If file is scrambles, then we first need to descramble (using master password)
+  // If file is scrambled, then we first need to descramble (using master password)
   // and then read xml structure.
   if Settings.Scrambled then
     NewRoot := DeCrypt(Root)
@@ -109,7 +103,7 @@ end;
 
 function TEpiDataFile.GetValueLabelSets: TEpiValueLabelSets;
 begin
-  result := TEpiDataFiles(Owner).FValueLabelSets;
+  result := TEpiDocument(RootOwner).ValueLabelSets;
 end;
 
 function TEpiDataFile.GetVerified(Index: integer): boolean;
@@ -485,9 +479,6 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Name.LoadFromXml(Root);
-
-  if LoadNode(Node, Root, rsValueLabelSets, false) then
-    ValueLabels.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);

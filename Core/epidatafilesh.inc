@@ -6,6 +6,8 @@ type
     edceSize
   );
 
+  { TEpiDataFiles }
+
   TEpiDataFiles = class(TEpiCustomList)
   private
     FValueLabelSets: TEpiValueLabelSets;
@@ -22,7 +24,6 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewDataFile: TEpiDataFile;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
-    property    ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
   end;
 
   { TEpiDataFile }
@@ -43,7 +44,7 @@ type
     { Private housekeeping }
     FRecordStatus: TEpiField;
     function    GetDeleted(Index: integer): boolean;
-    function GetValueLabelSets: TEpiValueLabelSets;
+    function    GetValueLabelSets: TEpiValueLabelSets;
     function    GetVerified(Index: integer): boolean;
     function    GetSize: Integer;
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);

@@ -8,7 +8,7 @@ interface
 uses
   Classes, sysutils, XMLRead, DOM,
   episettings, epiadmin, epidatafiles,
-  epistudy, epirelations,
+  epistudy, epirelations, epivaluelabels,
   epicustombase;
 
 type
@@ -19,6 +19,7 @@ type
   private
     FAdmin: TEpiAdmin;
     FProjectSettings: TEpiProjectSettings;
+    FValueLabelSets: TEpiValueLabelSets;
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
@@ -42,6 +43,7 @@ type
     property   ProjectSettings: TEpiProjectSettings read FProjectSettings;
     Property   Admin: TEpiAdmin read FAdmin;
     Property   Study: TEpiStudy read FStudy;
+    Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
     Property   Relations: TEpiRelations read FRelations;
     property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
@@ -76,11 +78,13 @@ begin
   FProjectSettings := TEpiProjectSettings.Create(Self);
   FAdmin           := TEpiAdmin.Create(Self);
   FStudy           := TEpiStudy.Create(Self);
+  FValueLabelSets  := TEpiValueLabelSets.Create(Self);
+  FValueLabelSets.ItemOwner := true;
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiRelations.Create(Self);
 
-  RegisterClasses([XMLSettings, ProjectSettings, Admin, Study, DataFiles, Relations]);
+  RegisterClasses([XMLSettings, ProjectSettings, Admin, Study, ValueLabelSets, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.
@@ -146,6 +150,9 @@ begin
 
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node);
+
+  if LoadNode(Node, Root, rsValueLabelSets, false) then
+    ValueLabelSets.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node);

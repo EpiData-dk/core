@@ -2,14 +2,14 @@ const
   // Common constants in the XML tree.
   // - Generic
   rsType = 'Type';
+  rsName = 'Name';
   // - CustomItem
   rsId   = 'id';
-  // - CustomNamedItem
-  rsName = 'Name';
   // - CustomControlItem
   rsTop  = 'Top';
   rsLeft = 'Left';
 
+  // XML Tree structure.
   rsEpiData         = 'EpiData';
    // Settings
    rsSettings        = 'Settings';
@@ -61,18 +61,19 @@ const
     rsTemporal        = 'Temporal';
     rsTitle           = 'Title';
 
+   rsValueLabelSets  = 'ValueLabelSets';
+    rsValueLabelSet   = 'ValueLabelSet';
+     rsInternal        = 'Internal';
+      rsValueLabel      = 'ValueLabel';
+       rsLabel           = 'Label';
+     rsExternal        = 'External';
+      rsFile            = 'File';
+      rsDataFileId      = 'DataFileId';
+      rsValueField      = 'ValueField';
+      rsLabelField      = 'LabelField';
+
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
-     rsValueLabelSets  = 'ValueLabelSets';
-      rsValueLabelSet   = 'ValueLabelSet';
-       rsInternal        = 'Internal';
-        rsValueLabel      = 'ValueLabel';
-         rsLabel           = 'Label';
-       rsExternal        = 'External';
-        rsFile            = 'File';
-        rsDataFileId      = 'DataFileId';
-        rsValueField      = 'ValueField';
-        rsLabelField      = 'LabelField';
      rsScreenInfo      = 'ScreenInfo';
      rsSections        = 'Sections';
       rsSection         = 'Section';
@@ -88,7 +89,6 @@ const
          rsDecimals        = 'Decimals';
          rsColourId        = 'ColourId';
          rsValueLabelId    = 'ValueLabelId';
-//          rsQuestion        = 'Question';
      rsRecords         = 'Records';
       rsRecord          = 'Record';
 

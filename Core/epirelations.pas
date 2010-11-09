@@ -415,7 +415,7 @@ begin
   inherited LoadFromXml(Root);
 
   // Root = <Relate>
-  DFS := TEpiDocument(Owner.Owner.Owner).DataFiles;
+  DFS      := TEpiDocument(RootOwner).DataFiles;
   DataFile := TEpiDataFile(DFS.GetItemById(LoadNodeString(Root, rsDataFileId)));
   Field    := TEpiField(DataFile.Fields.GetItemById(LoadNodeString(Root, rsFieldId)));
   Value    := LoadNodeString(Root, rsValue);

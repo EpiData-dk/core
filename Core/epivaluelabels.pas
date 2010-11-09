@@ -85,7 +85,7 @@ type
   private
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
-    FName: string;
+    FName:      string;
     function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
     function    GetValueLabel(const AValue: variant): string;
@@ -372,7 +372,8 @@ function TEpiValueLabelSet.SaveInternal(Lvl: integer): string;
 var
   S: String;
 begin
-  S := SaveNode(Lvl + 2, rsType, Integer(LabelType));
+  S := SaveNode(Lvl + 2, rsType, Integer(LabelType)) +
+       SaveNode(Lvl + 2, rsName, Name);
   Result := inherited SaveToXml(S, Lvl + 1);
 end;
 
@@ -431,7 +432,10 @@ var
   Node: TDOMNode;
 begin
   inherited LoadFromXml(Root);
+
   // Root = <ValueLabel>
+  Name := LoadNodeString(Root, rsName);
+
   if LoadNode(Node, Root, rsInternal, false) then
     LoadInternal(Node);
 
