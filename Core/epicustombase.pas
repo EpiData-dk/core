@@ -393,10 +393,17 @@ begin
 end;
 
 function TEpiCustomBase.StringToXml(const S: string): string;
+var
+  i: Integer;
+  T: string;
 begin
- result := StringsReplace(S,
-   ['&',     '"',      '<',    '>'],
-   ['&amp;', '&quot;', '&lt;', '&gt;'],
+  T := S;
+  for i := 1 to Length(T) do
+    if Ord(T[i]) < 32 then
+      T[i] := '?';
+  result := StringsReplace(T,
+   ['&',     '"',      '<',    '>',    ''''],
+   ['&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
    [rfReplaceAll]);
 end;
 
