@@ -113,6 +113,10 @@ type
     property    ValueLabel[Const AValue: variant]: string read GetValueLabel;
     property    ValueLabelExists[Const AValue: variant]: boolean read GetValueLabelExists;
     property    IsMissingValue[Const AValue: variant]: boolean read GetIsMissingValue;
+  public
+    { Aux. functions. }
+    function    MissingCount: LongInt;
+    function    MaxValueLength: LongInt;
   end;
 
   { TEpiValueLabelSets }
@@ -135,7 +139,7 @@ type
 implementation
 
 uses
-  strutils, math;
+  strutils, math, LCLProc;
 
 { TEpiCustomValueLabel }
 
@@ -452,6 +456,24 @@ begin
   end;
   result.Order := Count + 1;
   AddItem(result);
+end;
+
+function TEpiValueLabelSet.MissingCount: LongInt;
+var
+  i: Integer;
+begin
+  result := 0;
+  for i := 0 to Count - 1 do
+    if ValueLabels[i].IsMissingValue then Inc(result);
+end;
+
+function TEpiValueLabelSet.MaxValueLength: LongInt;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Count -1 do
+    Result := Max(Result, UTF8Length(ValueLabels[i].ValueAsString));
 end;
 
 { TEpiValueLabelSets }
