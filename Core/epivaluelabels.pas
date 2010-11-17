@@ -133,6 +133,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
+    function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
   end;
 
@@ -409,6 +410,9 @@ end;
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FLabelScope := vlsInternal;
+  FLabelType  := ftInteger;
+  FName       := '';
 end;
 
 destructor TEpiValueLabelSet.Destroy;
@@ -541,6 +545,17 @@ function TEpiValueLabelSets.NewValueLabelSet(ALabelType: TEpiFieldType
 begin
   result := TEpiValueLabelSet(NewItem(TEpiValueLabelSet));
   result.LabelType := ALabelType;
+end;
+
+function TEpiValueLabelSets.GetValueLabelSetByName(const AName: string
+  ): TEpiValueLabelSet;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if ValueLabels[i].Name = AName then
+      Exit(ValueLabels[i]);
+  result := nil;
 end;
 
 end.

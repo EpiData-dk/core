@@ -5,7 +5,8 @@ unit epiimport;
 interface
 
 uses
-  Classes, SysUtils, epidocument,epidatafiles, epidatafilestypes, epiadmin;
+  Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
+  epivaluelabels;
 
 type
 
@@ -428,7 +429,6 @@ var
   TmpField: TEpiField;
   StrBuf: string;
   WideBuf: WideString;
-//  TmpValSet: TValueLabelSet;
 
   // Version specific variables.
   FieldNameLength, StrBaseNum, FileLabelLength,
@@ -443,45 +443,30 @@ var
   VarDataLength: Integer;
 
   FieldList: TFPList;
+  VLSet: TEpiValueLabelSet;
+  VL: TEpiCustomValueLabel;
+  MisVal: Integer;
 
-  function ReadSingleMissing(var MisVal: string): Single;
+  function ReadSingleMissing(var MisVal: Integer): Single;
   var
     Buf: Array[0..3] of Byte absolute Result;
   begin
-    MisVal := '';
+    MisVal := -1;
     Result := ReadSingle(DataStream);
 
-    if (Buf[3]=$7F) then
-    begin
-      if (Buf[0] AND Buf[2]) = 0 then
-      case Buf[1] of
-        $08: MisVal := '9';
-        $10: MisVal := '8';
-        $18: MisVal := '7';
-      else
-        MisVal := '-';
-      end;
-    end;
+    if (Buf[3]=$7F) and ((Buf[0] AND Buf[2]) = 0) then
+      MisVal := Buf[1] div $08
   end;
 
-  function ReadDoubleMissing(var MisVal: string): Double;
+  function ReadDoubleMissing(var MisVal: integer): Double;
   var
     Buf: Array[0..7] of Byte absolute Result;
   begin
-    MisVal := '';
+    MisVal := -1;
     Result := ReadDouble(DataStream);
 
-    if (Buf[6]=$E0) AND (Buf[7]=$7F) then
-    begin
-      if (Buf[0] AND Buf[1] AND Buf[2] AND Buf[3] AND Buf[4]) = 0 then
-      case Buf[5] of
-        $01: MisVal := '9';
-        $02: MisVal := '8';
-        $03: MisVal := '7';
-      else
-        MisVal := '-';
-      end;
-    end;
+    if (Buf[6]=$E0) AND (Buf[7]=$7F) and ((Buf[0] AND Buf[1] AND Buf[2] AND Buf[3] AND Buf[4]) = 0) then
+      MisVal := Buf[5];
   end;
 
 Const
@@ -526,7 +511,7 @@ begin
     FileLabelLength := 32;
     StrBaseNum      := $7F;
     FmtLength       := 12;
-    MissingBaseNum  := 1;
+    MissingBaseNum  := 0;
     ByteChar        := 'b';
     IntChar         := 'i';
     LongChar        := 'l';
@@ -542,7 +527,7 @@ begin
     IF FileVersion >= $71 THEN
     BEGIN
       StrBaseNum := 0;
-      MissingBaseNum := 27;
+      MissingBaseNum := 26;
       ByteChar   := ByteConst;
       IntChar    := IntConst;
       LongChar   := LongConst;
@@ -721,33 +706,31 @@ begin
     // - lbllist: names af value label
     SetLength(CharBuf, FieldNameLength * NVar);
     DataStream.Read(CharBuf[0], FieldNameLength * NVar);
-    // TODO : Stata Value Labels!
-{    FOR i:=0 TO nVar-1 DO
+    FOR i:=0 TO nVar-1 DO
     BEGIN
       TmpField := Fields[i];
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
+
       IF StrBuf <> '' THEN
       BEGIN
-        TmpField.ValueLabelSet := TValueLabelSet.Create(nil, ftInteger);
-        TmpField.ValueLabelSet.Name := StrBuf;
-        TmpField.ValueLabelSet.LabelScope := vlsInternal;
-        ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
+        VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);
+        if not Assigned(VLSet) then
+          VLSet := ValueLabels.NewValueLabelSet(ftInteger);
+        VLSet.Name := StrBuf;
+
+        TmpField.ValueLabelSet := VLSet;
       END;
-    END;  //for i    }
+    END;
 
     // ********************************
-    //      STATA VARIABLE LABELS
+    //      STATA VARIABLE LABELS aka. EpiData Questions.
     // ********************************
     SetLength(CharBuf, FileLabelLength * NVar);
     DataStream.Read(CharBuf[0], FileLabelLength * NVar);
-    J := 0;
     FOR i := 0 TO nVar-1 DO
     BEGIN
       TmpField := TEpiField(FieldList[i]);
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FileLabelLength]), FileLabelLength));
-      IF Length(StrBuf)>50 THEN
-        StrBuf := Copy(StrBuf, 1, 48) + '..';
-      J := Max(J, Length(StrBuf));
       StrBuf := StringReplace(StrBuf, '#', ' ', [rfReplaceAll]);
       StrBuf := StringReplace(StrBuf, '>', ' ', [rfReplaceAll]);
       StrBuf := StringReplace(StrBuf, '<', ' ', [rfReplaceAll]);
@@ -808,59 +791,77 @@ begin
                       J := $7FFFFFFF;
                     end;
                 end;
-                // TODO : ValueLabels and Missing in STATA
-{                // This is a missing value type.
-                if I > (J - MissingBaseNum) then
-                Begin
+                MisVal := (MissingBaseNum - (J - I));
+
+                // This is a missing value type.
+                if MisVal >= 0 then
+                begin
                   // This corresponds to Stata's ".a", ".b", and ".c"
-                  if (I >= (J - 25)) and (I <= (J - 23)) then
+                  if MisVal > 0 then
                   begin
-                    // Write all 9's, 8's or 7's as missing value.
-                    TmpField.AsString[CurRec] := DupeString(IntToStr((J - I) - 16), TmpField.Length);
-                    if not Assigned(TmpField.ValueLabelSet) then
+                    VLSet := TmpField.ValueLabelSet;
+                    if not Assigned(VLSet) then
                     begin
-                      TmpField.ValueLabelSet := TValueLabelSet.Create(nil, ftInteger);
-                      TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
-                      ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
+                      VLSet := ValueLabels.NewValueLabelSet(ftInteger);
+                      VLSet.Name := TmpField.Name + '_MissingLabel';
+                      TmpField.ValueLabelSet := VLSet;
                     end;
-//                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsInteger[CurRec], '', True);
-//                    TmpField.CheckField.MissingValues[] := TmpField.AsString[CurRec];
+
+                    TmpInt := (10 ** TmpField.Length) - MisVal;
+                    if not VLSet.ValueLabelExists[TmpInt] then
+                    begin
+                      VL := TEpiIntValueLabel(VLSet.NewValueLabel);
+                      TEpiIntValueLabel(VL).Value := TmpInt;
+                      VL.TheLabel.Text := '.' + Char(MisVal + 96);
+                      VL.IsMissingValue := true;
+                    end;
+                    TmpField.AsInteger[CurRec] := TmpInt;
                   end else
                     TmpField.IsMissing[CurRec] := true;
-                end else                               }
+                end else
                   TmpField.AsInteger[CurRec] := I;
               end;
             FloatConst,
             DoubleConst:
               Begin
                 if TypeList[CurField] = FloatConst then
-                  TmpFlt := ReadSingleMissing(StrBuf)
+                  TmpFlt := ReadSingleMissing(MisVal)
                 else
-                  TmpFlt := ReadDoubleMissing(StrBuf);
-                if StrBuf <> '' then
-                begin
-                  if StrBuf = '-' then
-                    StrBuf := ''
-                  else begin
-                    TmpField.AsString[CurRec] :=
-                      DupeString(StrBuf, TmpField.Length - (TmpField.Decimals + 1)) + DecS + DupeString(StrBuf, TmpField.Decimals);
+                  TmpFlt := ReadDoubleMissing(MisVal);
 
-{                    if not Assigned(TmpField.ValueLabelSet) then
+                // This is a missing value type.
+                if MisVal >= 0 then
+                begin
+                  // This corresponds to Stata's ".a", ".b", and ".c"
+                  if MisVal > 0 then
+                  begin
+                    VLSet := TmpField.ValueLabelSet;
+                    if not Assigned(VLSet) then
                     begin
-                      TmpField.ValueLabelSet := TValueLabelSet.Create(nil, ftInteger);
-                      TmpField.ValueLabelSet.Name := TmpField.FieldName + '_missinglbl';
-                      ValueLabels.AddValueLabelSet(TmpField.ValueLabelSet);
+                      VLSet := ValueLabels.NewValueLabelSet(ftFloat);
+                      VLSet.Name := TmpField.Name + '_MissingLabel';
+                      TmpField.ValueLabelSet := VLSet;
                     end;
-                    // TODO : ValueLabels in STATA
-//                    TmpField.ValueLabelSet.AddValueLabelPair(TmpField.AsFloat[CurRec], '', True);    }
-                  end;
+
+                    // TODO: What should .a -> .z float missing value be?
+                    TmpFlt := (10 ** 10) - MisVal;
+                    if not VLSet.ValueLabelExists[TmpInt] then
+                    begin
+                      VL := VLSet.NewValueLabel;
+                      TEpiFloatValueLabel(VL).Value := TmpFlt;
+                      VL.TheLabel.Text := '.' + Char(MisVal + 96);
+                      VL.IsMissingValue := true;
+                    end;
+                    TmpField.AsFloat[CurRec] := TmpFlt;
+                  end else
+                    TmpField.IsMissing[CurRec] := true;
                 end else begin
                   {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
                   if TmpField.FieldType in DateFieldTypes then
                     TmpFlt := TmpFlt + 21916;
                   TmpField.AsFloat[CurRec] := TmpFlt;
                 end;
-              End;
+              end;
           else
             // This is a string field.
             // +1 Because we need a termination character in case all bytes in field
@@ -883,31 +884,30 @@ begin
       Exit;
     END;  //try..except
 
-    // TODO : ValueLabels in STATA
-{    IF (ValueLabels.Count > 0) AND (DataStream.Position < DataStream.Size - 4) THEN
+    IF (ValueLabels.Count > 0) AND (DataStream.Position < DataStream.Size - 4) THEN
     BEGIN
       IF FileVersion = $69 THEN
       BEGIN
         {Read value labels definitions - if present}
         WHILE DataStream.Position < DataStream.Size - 2 DO
         BEGIN
-          J := ReadInts(2);  //get number of entries in label
+          J := ReadInts(DataStream, 2);                //get number of entries in label
           SetLength(CharBuf, 10);
           DataStream.Read(CharBuf[0], 10); //Load label definition
-          TmpValSet := ValueLabels.ValueLabelSetByName(string(CharBuf));
+          VLSet := ValueLabels.GetValueLabelSetByName(string(CharBuf));
           SetLength(CharBuf, 8);
           FOR i := 0 TO J - 1 DO
           BEGIN
-            TmpInt := ReadInts(2);
+            TmpInt := ReadInts(DataStream, 2);
             DataStream.Read(CharBuf[0], 8);
-            if Trim(TmpValSet.ValueLabel[IntToStr(TmpInt)]) <> '' then
+            if VLSet.ValueLabelExists[TmpInt] then
             BEGIN
-              ErrorText := Lang(23936, 'Duplicate value label name found');
-              ErrorCode := EPI_FAILED;
-              EpiLogger.AddError(Classname, 'ImportStata', ErrorText, 23936);
+              RaiseError('Duplicate value label name found');
               Exit;
             END;
-            TmpValSet.AddValueLabelPair(IntToStr(TmpInt), EpiUnknownStrToUTF8(string(CharBuf)));
+            VL := VLSet.NewValueLabel;
+            TEpiIntValueLabel(VL).Value := TmpInt;
+            VL.TheLabel.Text := EpiUnknownStrToUTF8(string(CharBuf));
           END;  //for n
         END;  //if not end of DataStream
         //if stataversion 4
@@ -918,13 +918,13 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          TmpValSet := ValueLabels.ValueLabelSetByName(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
+          VLSet := ValueLabels.GetValueLabelSetByName(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
-          J := ReadInts(4);                                               // Number of entries in label
+          J := ReadInts(DataStream, 4);                                               // Number of entries in label
           SetLength(ByteBuf, 4 * J);
           SetLength(ValBuf, 4 * J);
-          NObs := ReadInts(4);                                            // Length of txt[]
+          NObs := ReadInts(DataStream, 4);                                            // Length of txt[]
           SetLength(CharBuf, NObs);
           DataStream.Read(ByteBuf[0], 4 * J);                              // Read Off[]
           DataStream.Read(ValBuf[0], 4 * J);                               // Read Val[]
@@ -938,11 +938,13 @@ begin
             if (TmpInt >= $7FFFFFE5) then                                 // ignore valuelabels
               Continue;
 
-            TmpValSet.AddValueLabelPair(TmpInt, StringFromBuffer(PChar(@CharBuf[CurRec]), 32000));
+            VL := VLSet.NewValueLabel;
+            TEpiIntValueLabel(VL).Value := TmpInt;
+            VL.TheLabel.Text := StringFromBuffer(PChar(@CharBuf[CurRec]), 32000);
           END;  //for i
         END;  //while
-      END;  //if stataversion 6, 7 or 8
-    END;}
+      END;  //if stataversion 6+
+    END;
     // successfully loaded the file.
     Result := true;
   finally
