@@ -9,6 +9,8 @@ uses
 
 type
 
+  TEpiValueLabelChangeEvent = (evceName);
+
   { TEpiCustomValueLabel }
 
   TEpiCustomValueLabel = class(TEpiCustomItem)
@@ -294,6 +296,7 @@ begin
 
   Val := FName;
   FName := AValue;
+  DoChange(eegValueLabels, Word(evceName), @Val);
 end;
 
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): string;
