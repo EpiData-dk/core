@@ -413,7 +413,7 @@ begin
   Create(AOwner, 0);
 end;
 
-function TEpiDataFile.ValidateFieldRename(Field: TEpiField; NewName: string
+function TEpiDataFile.ValidateFieldRename(Field: TEpiField; Const NewName: string
   ): boolean;
 begin
   result := not (Fields.FieldExistsByName(NewName));

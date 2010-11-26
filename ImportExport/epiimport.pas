@@ -42,7 +42,7 @@ implementation
 
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
-  epiqeshandler;
+  epiqeshandler, lclproc;
 
 var
   BigEndian: boolean = false;
@@ -154,6 +154,12 @@ var
   i: Integer;
   Decrypter: TDCP_rijndael;
   LocalDateSeparator: Char;
+  UTmpStr: String;
+  VLName: String;
+  NewVLset: Boolean;
+  VLSet: TEpiValueLabelSet;
+  VL: TEpiCustomValueLabel;
+  Lines: TStringList;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -409,6 +415,80 @@ begin
     end;
 
     // TODO : Import .CHK files.
+    TmpStr := ChangeFileExt(aFileName, '.chk');
+    if Not FileExistsUTF8(TmpStr) then
+      TmpStr := ChangeFileExt(aFileName, '.CHK');
+    if FileExistsUTF8(TmpStr) then
+    try
+      // Import CHK files.
+      Lines := TStringList.Create;
+      Lines.LoadFromFile(UTF8ToSys(TmpStr));
+      EpiUnknownStringsToUTF8(Lines);
+
+      i := 0;
+      while (i < Lines.Count) do
+      begin
+        TmpStr := Trim(Lines[i]);
+        UTmpStr := UTF8UpperCase(TmpStr);
+
+        if Pos('LABELBLOCK', UTmpStr) > 0 then
+        begin
+          // LABELBLOCK found.
+          while true do
+          begin
+            Inc(i);
+            TmpStr := Trim(Lines[i]);
+            UTmpStr := UTF8UpperCase(TmpStr);
+            if Pos('LABEL', UTmpStr) > 0 then
+            begin
+              Copy2SpaceDel(TmpStr);
+              VLName := Trim(TmpStr);
+
+              NewVLset := true;
+              Inc(i);
+              TmpStr := Trim(Lines[i]);
+              UTmpStr := UTF8UpperCase(TmpStr);
+              while Pos('END', UTmpStr) = 0 do
+              begin // Read individual labels.
+                StrBuf := Trim(Copy2SpaceDel(TmpStr));
+
+                if NewVLset then
+                begin
+                  if TryStrToInt(StrBuf, ValCode) then
+                    TmpFieldType := ftInteger
+                  else
+                    TmpFieldType := ftString;
+                  VLSet := ValueLabels.NewValueLabelSet(TmpFieldType);
+                  VLSet.Name := VLName;
+                  NewVLset := false;
+                end;
+
+                VL := VLSet.NewValueLabel;
+                case VLSet.LabelType of
+                  ftInteger: TEpiIntValueLabel(VL).Value := StrToInt(Strbuf);
+                  ftString:  TEpiStringValueLabel(VL).Value := StrBuf;
+                end;
+                VL.TheLabel.Text := AnsiDequotedStr(Trim(TmpStr), '"');
+
+                Inc(i);
+                TmpStr := Trim(Lines[i]);
+                UTmpStr := UTF8UpperCase(TmpStr);
+              end; // while POS
+              Continue;
+            end; // LABEL
+            Break;
+          end; // while true
+          Inc(i);
+        end; {else
+        if Fields.FieldExistsByName(TmpStr) then
+        begin
+          // Field block - try to find simple COMMENT LEGAL USE construct.
+        end;}
+        Inc(i);
+      end;
+    finally
+      Lines.Free;
+    end;
   finally
 //    CloseFile(TxtFile);
     DateSeparator := LocalDateSeparator;

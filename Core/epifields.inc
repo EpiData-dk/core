@@ -67,7 +67,7 @@ begin
   FieldExistsByName(AField.Name);
 end;
 
-function TEpiFields.FieldExistsByName(AName: string): boolean;
+function TEpiFields.FieldExistsByName(Const AName: string): boolean;
 var
   i: Integer;
 begin

@@ -56,7 +56,7 @@ type
   protected
     class function IdString: string; override;
     constructor Create(AOwner: TEpiCustomBase); override;
-    function    ValidateFieldRename(Field: TEpiField; NewName: string): boolean;
+    function    ValidateFieldRename(Field: TEpiField; Const NewName: string): boolean;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;

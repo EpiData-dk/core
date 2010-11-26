@@ -20,7 +20,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
-    function    FieldExistsByName(AName: string): boolean;
+    function    FieldExistsByName(Const AName: string): boolean;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
   end;
