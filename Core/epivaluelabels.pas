@@ -327,7 +327,7 @@ begin
     ftString:
       begin
         for result := 0 to Count - 1 do
-          if SameText(AValue, TEpiStringValueLabel(Items[result]).FValue) then
+          if AnsiSameStr(AValue, TEpiStringValueLabel(Items[result]).FValue) then
             exit;
       end;
     ftFloat:
