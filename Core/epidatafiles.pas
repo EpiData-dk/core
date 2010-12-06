@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, DOM, epicustombase, episettings, epidatafilestypes,
-  epivaluelabels, epiadmin;
+  epivaluelabels, epiadmin, epiranges;
 
 type
   // Forward prototype declaration...

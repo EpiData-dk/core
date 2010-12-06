@@ -29,7 +29,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="5" Release="1"/>
-    <Files Count="24">
+    <Files Count="25">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -126,6 +126,10 @@
         <Filename Value="Utils/epiversionutils.pas"/>
         <UnitName Value="epiversionutils"/>
       </Item24>
+      <Item25>
+        <Filename Value="Core/epiranges.pas"/>
+        <UnitName Value="epiranges"/>
+      </Item25>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

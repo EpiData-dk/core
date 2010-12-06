@@ -35,6 +35,7 @@ type
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
     FName: string;
+    FRanges: TEpiRanges;
     FSize: Integer;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiHeading;
@@ -98,6 +99,7 @@ type
     property    Size:      Integer read GetSize write SetSize;
     property    Question:  TEpiHeading read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
+    property    Ranges:    TEpiRanges read FRanges write FRanges;
 
   { Helper methods }
   public
@@ -185,6 +187,7 @@ type
     class function DefaultMissing: EpiFloat;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    function  FormatString: string;
   end;
 
   { TEpiBoolField }

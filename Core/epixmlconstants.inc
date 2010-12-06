@@ -87,8 +87,12 @@ const
         rsField           = 'Field';
          rsLength          = 'Length';
          rsDecimals        = 'Decimals';
-         rsColourId        = 'ColourId';
          rsValueLabelId    = 'ValueLabelId';
+         rsRages            = 'Ranges';
+          rsRange            = 'Range';
+           rsStart            = 'Start';
+           rsEnd              = 'End';
+
      rsRecords         = 'Records';
       rsRecord          = 'Record';
 

@@ -9,7 +9,7 @@ interface
 uses
     epiadmin, epicustombase, epidatafiles, epidatafilestypes, epidocument, 
   epirelations, episettings, epistudy, epivaluelabels, epiexport, epiimport, 
-  epiqeshandler, epimiscutils, epistringutils, epiversionutils;
+  epiqeshandler, epimiscutils, epistringutils, epiversionutils, epiranges;
 
 implementation
 

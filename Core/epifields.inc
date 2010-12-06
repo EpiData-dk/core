@@ -641,6 +641,11 @@ begin
   AsFloat[j] := TmpFlt;
 end;
 
+function TEpiFloatField.FormatString: string;
+begin
+  result := format('%%%d.%df', [Length - Decimals - 1, Decimals]);
+end;
+
 { TEpiBoolField }
 
 function TEpiBoolField.GetAsBoolean(const index: Integer): EpiBool;
