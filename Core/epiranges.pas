@@ -59,15 +59,15 @@ type
     FStart:    EpiInteger;
     FEnd:      EpiInteger;
   protected
-    function GetAsDate(const Start: boolean): EpiDate; inline;
-    function GetAsFloat(const Start: boolean): EpiFloat; inline;
-    function GetAsInteger(const Start: boolean): EpiInteger; inline;
-    function GetAsString(const Start: boolean): EpiString; inline;
-    function GetAsTime(const Start: boolean): EpiTime; inline;
-    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); inline;
-    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); inline;
-    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); inline;
-    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); inline;
+    function GetAsDate(const Start: boolean): EpiDate; override;
+    function GetAsFloat(const Start: boolean): EpiFloat; override;
+    function GetAsInteger(const Start: boolean): EpiInteger; override;
+    function GetAsString(const Start: boolean): EpiString; override;
+    function GetAsTime(const Start: boolean): EpiTime; override;
+    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); override;
+    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
+    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
   end;
 
   { TEpiFloatRange }
@@ -77,15 +77,15 @@ type
     FStart:    EpiFloat;
     FEnd:      EpiFloat;
   protected
-    function GetAsDate(const Start: boolean): EpiDate; inline;
-    function GetAsFloat(const Start: boolean): EpiFloat; inline;
-    function GetAsInteger(const Start: boolean): EpiInteger; inline;
-    function GetAsString(const Start: boolean): EpiString; inline;
-    function GetAsTime(const Start: boolean): EpiTime; inline;
-    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); inline;
-    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); inline;
-    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); inline;
-    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); inline;
+    function GetAsDate(const Start: boolean): EpiDate; override;
+    function GetAsFloat(const Start: boolean): EpiFloat; override;
+    function GetAsInteger(const Start: boolean): EpiInteger; override;
+    function GetAsString(const Start: boolean): EpiString; override;
+    function GetAsTime(const Start: boolean): EpiTime; override;
+    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); override;
+    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
+    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
   end;
 
   { TEpiDateRange }
@@ -95,15 +95,15 @@ type
     FStart:    EpiDate;
     FEnd:      EpiDate;
   protected
-    function GetAsDate(const Start: boolean): EpiDate; inline;
-    function GetAsFloat(const Start: boolean): EpiFloat; inline;
-    function GetAsInteger(const Start: boolean): EpiInteger; inline;
-    function GetAsString(const Start: boolean): EpiString; inline;
-    function GetAsTime(const Start: boolean): EpiTime; inline;
-    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); inline;
-    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); inline;
-    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); inline;
-    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); inline;
+    function GetAsDate(const Start: boolean): EpiDate; override;
+    function GetAsFloat(const Start: boolean): EpiFloat; override;
+    function GetAsInteger(const Start: boolean): EpiInteger; override;
+    function GetAsString(const Start: boolean): EpiString; override;
+    function GetAsTime(const Start: boolean): EpiTime; override;
+    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); override;
+    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
+    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
   end;
 
   { TEpiTimeRange }
@@ -113,15 +113,15 @@ type
     FStart:    EpiTime;
     FEnd:      EpiTime;
   protected
-    function GetAsDate(const Start: boolean): EpiDate; inline;
-    function GetAsFloat(const Start: boolean): EpiFloat; inline;
-    function GetAsInteger(const Start: boolean): EpiInteger; inline;
-    function GetAsString(const Start: boolean): EpiString; inline;
-    function GetAsTime(const Start: boolean): EpiTime; inline;
-    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); inline;
-    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); inline;
-    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); inline;
-    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); inline;
+    function GetAsDate(const Start: boolean): EpiDate; override;
+    function GetAsFloat(const Start: boolean): EpiFloat; override;
+    function GetAsInteger(const Start: boolean): EpiInteger; override;
+    function GetAsString(const Start: boolean): EpiString; override;
+    function GetAsTime(const Start: boolean): EpiTime; override;
+    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); override;
+    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
+    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
   end;
 
 implementation
