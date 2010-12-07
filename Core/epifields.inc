@@ -258,6 +258,8 @@ begin
     SaveNode(Lvl + 1, rsDecimals, Decimals);
   if Assigned(ValueLabelSet) then
     Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
+  if Assigned(Ranges) then
+    Content += Ranges.SaveToXml('', Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -274,6 +276,12 @@ begin
     ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
   if LoadNode(Node, Root, rsHeading, false) then
     FQuestion.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsRanges, false) then
+  begin
+    Ranges := TEpiRanges.Create(Self);
+    Ranges.ItemOwner := true;
+    Ranges.LoadFromXml(Node);
+  end;
 end;
 
 { TEpiIntField }

@@ -88,10 +88,10 @@ const
          rsLength          = 'Length';
          rsDecimals        = 'Decimals';
          rsValueLabelId    = 'ValueLabelId';
-         rsRages            = 'Ranges';
+         rsRanges           = 'Ranges';
           rsRange            = 'Range';
-           rsStart            = 'Start';
-           rsEnd              = 'End';
+           rsStart            = 'start';
+           rsEnd              = 'end';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

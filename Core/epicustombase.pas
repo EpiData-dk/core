@@ -62,7 +62,9 @@ type
 
   { Save/Load functionality }
   private
-    procedure  RaiseError(const Root: TDOMNode; NodeName: string);
+    procedure  RaiseErrorNode(const Root: TDOMNode; const NodeName: string);
+    procedure  RaiseErrorAttr(const Root: TDOMNode; const AttrName: string);
+    procedure  RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
   protected
     function   StringToXml(const S: string): string;
     Function   Indent(Level: integer): string;
@@ -71,14 +73,22 @@ type
     { Check methods }
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
     { Load methods }
-    function   LoadNode(var Node: TDOMNode; const Root: TDOMNode;
-      NodeName: string; Fatal: boolean): boolean; virtual;
+    function   LoadNode(out Node: TDOMNode; const Root: TDOMNode;
+      const NodeName: string; Fatal: boolean): boolean; virtual;
+    function   LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
+      const AttrName: string; Fatal: boolean): boolean; virtual;
     // Direct loading of node are always fatal, since they must return some value.
     function   LoadNodeInt(const Root: TDOMNode; NodeName: string): integer;
     function   LoadNodeFloat(const Root: TDOMNode; NodeName: string): extended;
     function   LoadNodeString(const Root: TDOMNode; NodeName: string): String;
     function   LoadNodeDateTime(const Root: TDOMNode; NodeName: string): TDateTime;
     function   LoadNodeBool(const Root: TDOMNode; NodeName: string): boolean;
+    // Loading attributes
+    function   LoadAttrInt(const Root: TDOMNode; AttrName: string): integer;
+    function   LoadAttrFloat(const Root: TDOMNode; AttrName: string): extended;
+    function   LoadAttrString(const Root: TDOMNode; AttrName: string): String;
+    function   LoadAttrDateTime(const Root: TDOMNode; AttrName: string): TDateTime;
+    function   LoadAttrBool(const Root: TDOMNode; AttrName: string): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: string): string; overload;
@@ -90,6 +100,7 @@ type
       const Val: TDateTime): string; overload;
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
+    function   SaveAttributesToXml: string; virtual;
   public
     function   XMLName: string; virtual;
     function   SaveToXml(Content: String; Lvl: integer): string; virtual;
@@ -175,6 +186,7 @@ type
     function    GetId: string; virtual;
     procedure   SetId(const AValue: string); virtual;
     class function IdString: string; virtual; abstract;
+    function    SaveAttributesToXml: string; override;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -386,10 +398,23 @@ begin
   Delete(Result, 1, 4);
 end;
 
-procedure TEpiCustomBase.RaiseError(const Root: TDOMNode; NodeName: string) ;
+procedure TEpiCustomBase.RaiseErrorNode(const Root: TDOMNode; const NodeName: string) ;
 begin
   raise Exception.Create('ERROR: A required XML tag was not found.' + LineEnding +
           Format('In section %s the tag "%s" was expected!', [Root.NodeName, NodeName]));
+end;
+
+procedure TEpiCustomBase.RaiseErrorAttr(const Root: TDOMNode; const AttrName: string
+  );
+begin
+  raise Exception.Create('ERROR: A required XML attribute was not found.' + LineEnding +
+          Format('The tag %s expected an attribute with the name "%s"!', [Root.NodeName, AttrName]));
+end;
+
+procedure TEpiCustomBase.RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
+begin
+  raise Exception.CreateFmt('ERROR: An error occured reading tag "%s".' + LineEnding +
+          '%s', [Root.NodeName, Msg]);
 end;
 
 function TEpiCustomBase.StringToXml(const S: string): string;
@@ -421,11 +446,11 @@ procedure TEpiCustomBase.CheckNode(const Node: TDOMNode; const NodeName: string
   );
 begin
   if Node.CompareName(NodeName) <> 0 then
-    RaiseError(Node, NodeName);
+    RaiseErrorNode(Node, NodeName);
 end;
 
-function TEpiCustomBase.LoadNode(var Node: TDOMNode; const Root: TDOMNode;
-  NodeName: string; Fatal: boolean): boolean;
+function TEpiCustomBase.LoadNode(out Node: TDOMNode; const Root: TDOMNode;
+  const NodeName: string; Fatal: boolean): boolean;
 begin
   result := true;
 
@@ -435,7 +460,24 @@ begin
   result := false;
   if not Fatal then exit;
 
-  RaiseError(Root, NodeName);
+  RaiseErrorNode(Root, NodeName);
+end;
+
+function TEpiCustomBase.LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
+  const AttrName: string; Fatal: boolean): boolean;
+begin
+  result := false;
+
+  if not (Root is TDomElement) then
+    RaiseErrorMsg(Root, 'Root node is NOT a TDomElement. Please abort program!');
+
+  Attr := TDOMElement(Root).GetAttributeNode(AttrName);
+  if Assigned(Attr) then exit;
+
+  result := false;
+  if not Fatal then exit;
+
+  RaiseErrorAttr(Root, AttrName);
 end;
 
 function TEpiCustomBase.LoadNodeInt(const Root: TDOMNode;
@@ -489,6 +531,45 @@ begin
   result := WideLowerCase(Node.TextContent) = 'true';
 end;
 
+function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode; AttrName: string
+  ): integer;
+var
+  Attr: TDOMAttr;
+begin
+  LoadAttr(Attr, Root, AttrName, true);
+  Result := StrToInt(Attr.Value);
+end;
+
+function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode; AttrName: string
+  ): extended;
+var
+  Attr: TDOMAttr;
+begin
+  LoadAttr(Attr, Root, AttrName, true);
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+  result := StrToFloat(Attr.Value);
+  RestoreFormatSettings;
+end;
+
+function TEpiCustomBase.LoadAttrString(const Root: TDOMNode; AttrName: string
+  ): String;
+begin
+  RaiseErrorMsg(Root, 'NOT IMPLEMENTED YET!');
+end;
+
+function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode; AttrName: string
+  ): TDateTime;
+begin
+  RaiseErrorMsg(Root, 'NOT IMPLEMENTED YET!');
+end;
+
+function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode; AttrName: string
+  ): boolean;
+begin
+  RaiseErrorMsg(Root, 'NOT IMPLEMENTED YET!');
+end;
+
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: string): string;
 begin
@@ -531,6 +612,11 @@ begin
   result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
 end;
 
+function TEpiCustomBase.SaveAttributesToXml: string;
+begin
+  result := '';
+end;
+
 function TEpiCustomBase.XMLName: string;
 begin
   result := ClassName;
@@ -563,16 +649,23 @@ begin
   if ScrambleXml then
     S := EnCrypt(S) + LineEnding;
 
-  Result :=
-    Indent(Lvl) + '<' + XMLName;
 
-  // For the "id" attribute
+  if S <> '' then
+    Result :=
+      Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '>' + LineEnding +
+      S +
+      Indent(Lvl) + '</' + XMLName + '>' + LineEnding
+  else
+    Result :=
+      Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '/>' + LineEnding;
+
+{  // For the "id" attribute
   if (Self is TEpiCustomItem) and (TEpiCustomItem(Self).Id <> '') then
     Result += ' id="' + TEpiCustomItem(Self).Id + '" ';
 
   Result += '>' + LineEnding +
     S +
-    Indent(Lvl) + '</' + XMLName + '>' + LineEnding;
+    Indent(Lvl) + '</' + XMLName + '>' + LineEnding;    }
   {$IFDEF EPICORETIMING}
   Diff := GetTickCount - St;
   DebugLn('%s%s: time = %d', [Indent(lvl), ClassName, Diff]);
@@ -892,6 +985,13 @@ begin
   DoChange(eegCustomBase, Word(ecceId), @Val);
 end;
 
+function TEpiCustomItem.SaveAttributesToXml: string;
+begin
+  // No inheritance since ancestor return '' (empty string).
+  if Id <> '' then
+    Result := ' id="' + Id + '"';
+end;
+
 destructor TEpiCustomItem.Destroy;
 begin
   FId := '';
@@ -899,8 +999,11 @@ begin
 end;
 
 procedure TEpiCustomItem.LoadFromXml(Root: TDOMNode);
+var
+  Attr: TDOMAttr;
 begin
-  Id := TDOMElement(Root).AttribStrings[rsId];
+  if LoadAttr(Attr, Root, rsId, false) then
+    Id := UTF8Encode(Attr.Value);
 end;
 
 { TEpiCustomControlItem }

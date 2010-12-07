@@ -8,6 +8,8 @@ uses
   Classes, SysUtils, epicustombase, epidatafilestypes, DOM;
 
 type
+  TEpiRange = class;
+
 
   { TEpiRanges }
 
@@ -18,6 +20,8 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    function    XMLName: string; override;
+    function    NewRange: TEpiRange;
     property    FieldType: TEpiFieldType read GetFieldType;
   end;
 
@@ -28,21 +32,22 @@ type
     function GetRanges: TEpiRanges;
     function GetSingle: boolean;
   protected
-    function GetAsDate(const Start: boolean): EpiDate; virtual; abstract;
-    function GetAsFloat(const Start: boolean): EpiFloat; virtual; abstract;
-    function GetAsInteger(const Start: boolean): EpiInteger; virtual; abstract;
-    function GetAsString(const Start: boolean): EpiString; virtual; abstract;
-    function GetAsTime(const Start: boolean): EpiTime; virtual; abstract;
-    procedure SetAsDate(const Start: boolean; const AValue: EpiDate); virtual; abstract;
-    procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); virtual; abstract;
-    procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); virtual; abstract;
-    procedure SetAsTime(const Start: boolean; const AValue: EpiTime); virtual; abstract;
+    function    GetAsDate(const Start: boolean): EpiDate; virtual; abstract;
+    function    GetAsFloat(const Start: boolean): EpiFloat; virtual; abstract;
+    function    GetAsInteger(const Start: boolean): EpiInteger; virtual; abstract;
+    function    GetAsString(const Start: boolean): EpiString; virtual; abstract;
+    function    GetAsTime(const Start: boolean): EpiTime; virtual; abstract;
+    procedure   SetAsDate(const Start: boolean; const AValue: EpiDate); virtual; abstract;
+    procedure   SetAsFloat(const Start: boolean; const AValue: EpiFloat); virtual; abstract;
+    procedure   SetAsInteger(const Start: boolean; const AValue: EpiInteger); virtual; abstract;
+    procedure   SetAsTime(const Start: boolean; const AValue: EpiTime); virtual; abstract;
+    function    SaveAttributesToXml: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    XMLName: string; override;
+    class function IdString: string; override;
     property    AsInteger[const Start: boolean]: EpiInteger read GetAsInteger write SetAsInteger;
     property    AsFloat[const Start: boolean]: EpiFloat read GetAsFloat write SetAsFloat;
     property    AsDate[const Start: boolean]: EpiDate read GetAsDate write SetAsDate;
@@ -173,6 +178,27 @@ begin
 
     Node := Node.NextSibling;
   end;
+end;
+
+function TEpiRanges.XMLName: string;
+begin
+  Result := rsRanges;
+end;
+
+function TEpiRanges.NewRange: TEpiRange;
+var
+  Item:  TEpiCustomItem;
+begin
+  case FieldType of
+    ftInteger: Item := NewItem(TEpiIntRange);
+    ftFloat:   Item := NewItem(TEpiFloatRange);
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate: Item := NewItem(TEpiDateRange);
+    ftTime:    Item := NewItem(TEpiTimeRange);
+  end;
+  Result := TEpiRange(Item);
+  Result.Id := '';
 end;
 
 { TEpiTimeRange }
@@ -368,6 +394,12 @@ begin
   end;
 end;
 
+function TEpiRange.SaveAttributesToXml: string;
+begin
+  Result := inherited SaveAttributesToXml +
+    ' start="' + AsString[true] + '" end="' + AsString[false] + '"';
+end;
+
 constructor TEpiRange.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -388,12 +420,12 @@ begin
   BackupFormatSettings;
   Case Ranges.FieldType of
     ftInteger: begin
-                 AsInteger[true]  := LoadNodeInt(Root, rsStart);
-                 AsInteger[false] := LoadNodeInt(Root, rsEnd);
+                 AsInteger[true]  := LoadAttrInt(Root, rsStart);
+                 AsInteger[false] := LoadAttrInt(Root, rsEnd);
                end;
     ftFloat:   begin
-                 AsFloat[true]  := LoadNodeFloat(Root, rsStart);
-                 AsFloat[false] := LoadNodeFloat(Root, rsEnd);
+                 AsFloat[true]  := LoadAttrFloat(Root, rsStart);
+                 AsFloat[false] := LoadAttrFloat(Root, rsEnd);
                end;
     ftDMYDate,
     ftMDYDate,
@@ -404,28 +436,25 @@ begin
                    ftYMDDate: S := 'YYYY/MM/DD';
                  end;
                  DefaultFormatSettings.ShortDateFormat := S;
-                 AsDate[true] := Trunc(StrToDate(LoadNodeString(Root, rsStart)));
-                 AsDate[false] := Trunc(StrToDate(LoadNodeString(Root, rsEnd)));
+                 AsDate[true] := Trunc(LoadAttrDateTime(Root, rsStart));
+                 AsDate[false] := Trunc(LoadAttrDateTime(Root, rsEnd));
                end;
     ftTime:    begin
-                 AsTime[true]  := LoadNodeDateTime(Root, rsStart);
-                 AsTime[false] := LoadNodeDateTime(Root, rsEnd);
+                 AsTime[true]  := LoadAttrDateTime(Root, rsStart);
+                 AsTime[false] := LoadAttrDateTime(Root, rsEnd);
                end;
   end;
   RestoreFormatSettings;
 end;
 
-function TEpiRange.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Content :=
-    SaveNode(Lvl + 1, rsStart, AsString[true]) +
-    SaveNode(Lvl + 1, rsEnd, AsString[false]);
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
 function TEpiRange.XMLName: string;
 begin
-  Result := inherited XMLName;
+  Result := rsRange;
+end;
+
+class function TEpiRange.IdString: string;
+begin
+  Result := 'range_id';
 end;
 
 { TEpiIntRange }
