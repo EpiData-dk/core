@@ -6,7 +6,7 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, DOM, DCPrijndael;
+  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes;
 
 type
   TEpiCustomBase = class;
@@ -78,17 +78,17 @@ type
     function   LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
       const AttrName: string; Fatal: boolean): boolean; virtual;
     // Direct loading of node are always fatal, since they must return some value.
-    function   LoadNodeInt(const Root: TDOMNode; NodeName: string): integer;
-    function   LoadNodeFloat(const Root: TDOMNode; NodeName: string): extended;
-    function   LoadNodeString(const Root: TDOMNode; NodeName: string): String;
-    function   LoadNodeDateTime(const Root: TDOMNode; NodeName: string): TDateTime;
-    function   LoadNodeBool(const Root: TDOMNode; NodeName: string): boolean;
+    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string): integer;
+    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string): extended;
+    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string): String;
+    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string): TDateTime;
+    function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string): boolean;
     // Loading attributes
-    function   LoadAttrInt(const Root: TDOMNode; AttrName: string): integer;
-    function   LoadAttrFloat(const Root: TDOMNode; AttrName: string): extended;
-    function   LoadAttrString(const Root: TDOMNode; AttrName: string): String;
-    function   LoadAttrDateTime(const Root: TDOMNode; AttrName: string): TDateTime;
-    function   LoadAttrBool(const Root: TDOMNode; AttrName: string): boolean;
+    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string): integer;
+    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string): extended;
+    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string): String;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string): TDateTime;
+    function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: string): string; overload;
@@ -481,7 +481,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeInt(const Root: TDOMNode;
-  NodeName: string): integer;
+  Const NodeName: string): integer;
 var
   Node: TDOMNode;
 begin
@@ -490,7 +490,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeFloat(const Root: TDOMNode;
-  NodeName: string): extended;
+  Const NodeName: string): extended;
 var
   Node: TDOMNode;
 begin
@@ -502,7 +502,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
-  NodeName: string): String;
+  Const NodeName: string): String;
 var
   Node: TDOMNode;
 begin
@@ -510,8 +510,8 @@ begin
   result := UTF8Encode(Node.TextContent);
 end;
 
-function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode; NodeName: string
-  ): TDateTime;
+function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode;
+  Const NodeName: string): TDateTime;
 var
   Node: TDOMNode;
 begin
@@ -523,7 +523,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
-  NodeName: string): boolean;
+  Const NodeName: string): boolean;
 var
   Node: TDOMNode;
 begin
@@ -531,8 +531,8 @@ begin
   result := WideLowerCase(Node.TextContent) = 'true';
 end;
 
-function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode; AttrName: string
-  ): integer;
+function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
+  Const AttrName: string): integer;
 var
   Attr: TDOMAttr;
 begin
@@ -540,8 +540,8 @@ begin
   Result := StrToInt(Attr.Value);
 end;
 
-function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode; AttrName: string
-  ): extended;
+function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
+  Const AttrName: string): extended;
 var
   Attr: TDOMAttr;
 begin
@@ -552,22 +552,31 @@ begin
   RestoreFormatSettings;
 end;
 
-function TEpiCustomBase.LoadAttrString(const Root: TDOMNode; AttrName: string
-  ): String;
+function TEpiCustomBase.LoadAttrString(const Root: TDOMNode;
+  Const AttrName: string): String;
+var
+  Attr: TDOMAttr;
 begin
-  RaiseErrorMsg(Root, 'NOT IMPLEMENTED YET!');
+  LoadAttr(Attr, Root, AttrName, true);
+  Result := UTF8Encode(Attr.Value);
 end;
 
-function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode; AttrName: string
-  ): TDateTime;
+function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
+  Const AttrName: string): TDateTime;
+var
+  Attr: TDOMAttr;
 begin
-  RaiseErrorMsg(Root, 'NOT IMPLEMENTED YET!');
+  LoadAttr(Attr, Root, AttrName, true);
+  Result := StrToDate(Attr.Value);
 end;
 
-function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode; AttrName: string
-  ): boolean;
+function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode;
+  Const AttrName: string): boolean;
+var
+  Attr: TDOMAttr;
 begin
-  RaiseErrorMsg(Root, 'NOT IMPLEMENTED YET!');
+  LoadAttr(Attr, Root, AttrName, true);
+  result := WideLowerCase(Attr.Value) = 'true';
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;

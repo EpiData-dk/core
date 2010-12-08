@@ -22,6 +22,10 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    XMLName: string; override;
     function    NewRange: TEpiRange;
+    function    InRange(const AValue: EpiInteger): boolean; overload;
+    function    InRange(const AValue: EpiFloat): boolean; overload;
+    function    InRange(const AValue: EpiDate): boolean; overload;
+    function    InRange(const AValue: EpiTime): boolean; overload;
     property    FieldType: TEpiFieldType read GetFieldType;
   end;
 
@@ -132,7 +136,7 @@ type
 implementation
 
 uses
-  epidatafiles, math;
+  epidatafiles, math, epidocument;
 
 { TEpiRanges }
 
@@ -160,20 +164,11 @@ begin
   // Root = <Ranges>
   Node := Root.FirstChild;
 
-  case FieldType of
-    ftInteger: ItemClass := TEpiIntRange;
-    ftFloat:   ItemClass := TEpiFloatRange;
-    ftDMYDate,
-    ftMDYDate,
-    ftYMDDate: ItemClass := TEpiDateRange;
-    ftTime:    ItemClass := TEpiTimeRange;
-  end;
-
   while Assigned(Node) do
   begin
     CheckNode(Node, rsRange);
 
-    NRange := TEpiRange(NewItem(ItemClass));
+    NRange := NewRange;
     NRange.LoadFromXml(Node);
 
     Node := Node.NextSibling;
@@ -199,6 +194,50 @@ begin
   end;
   Result := TEpiRange(Item);
   Result.Id := '';
+end;
+
+function TEpiRanges.InRange(const AValue: EpiInteger): boolean;
+var
+  i: Integer;
+begin
+  result := false;
+  for i := 0 to Count - 1 do
+  with TEpiRange(Items[i]) do
+    if (AsInteger[true] <= AValue) and (AValue <= AsInteger[false]) then
+      exit(true);
+end;
+
+function TEpiRanges.InRange(const AValue: EpiFloat): boolean;
+var
+  i: Integer;
+begin
+  result := false;
+  for i := 0 to Count - 1 do
+  with TEpiRange(Items[i]) do
+    if (AsFloat[true] <= AValue) and (AValue <= AsFloat[false]) then
+      exit(true);
+end;
+
+function TEpiRanges.InRange(const AValue: EpiDate): boolean;
+var
+  i: Integer;
+begin
+  result := false;
+  for i := 0 to Count - 1 do
+  with TEpiRange(Items[i]) do
+    if (AsDate[true] <= AValue) and (AValue <= AsDate[false]) then
+      exit(true);
+end;
+
+function TEpiRanges.InRange(const AValue: EpiTime): boolean;
+var
+  i: Integer;
+begin
+  result := false;
+  for i := 0 to Count - 1 do
+  with TEpiRange(Items[i]) do
+    if (AsTime[true] <= AValue) and (AValue <= AsTime[false]) then
+      exit(true);
 end;
 
 { TEpiTimeRange }
@@ -340,7 +379,7 @@ end;
 
 function TEpiFloatRange.GetAsString(const Start: boolean): EpiString;
 begin
-  result := Format(TEpiFloatField(Owner.Owner).FormatString, [AsFloat[Start]]);
+  result := FloatToStr(AsFloat[Start]);
 end;
 
 function TEpiFloatRange.GetAsTime(const Start: boolean): EpiTime;
@@ -396,8 +435,10 @@ end;
 
 function TEpiRange.SaveAttributesToXml: string;
 begin
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Result := inherited SaveAttributesToXml +
     ' start="' + AsString[true] + '" end="' + AsString[false] + '"';
+  RestoreFormatSettings;
 end;
 
 constructor TEpiRange.Create(AOwner: TEpiCustomBase);
@@ -417,7 +458,7 @@ begin
   // Root = <Range>
   inherited LoadFromXml(Root);
 
-  BackupFormatSettings;
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Case Ranges.FieldType of
     ftInteger: begin
                  AsInteger[true]  := LoadAttrInt(Root, rsStart);
