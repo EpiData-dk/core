@@ -26,6 +26,7 @@ type
     function    InRange(const AValue: EpiFloat): boolean; overload;
     function    InRange(const AValue: EpiDate): boolean; overload;
     function    InRange(const AValue: EpiTime): boolean; overload;
+    function    RangesToText: string;
     property    FieldType: TEpiFieldType read GetFieldType;
   end;
 
@@ -238,6 +239,33 @@ begin
   with TEpiRange(Items[i]) do
     if (AsTime[true] <= AValue) and (AValue <= AsTime[false]) then
       exit(true);
+end;
+
+function TEpiRanges.RangesToText: string;
+var
+  i: integer;
+  Field: TEpiField;
+begin
+  result := '';
+
+  Field := TEpiField(Owner);
+  for i := 0 to Count - 1 do
+  with TEpiRange(Items[i]) do
+  begin
+    if FieldType = ftFloat then
+      Result := Result + Format(TEpiFloatField(Field).FormatString, [AsFloat[true]])
+    else
+      Result := Result + AsString[true];
+
+    if not Single then
+      if FieldType = ftFloat then
+        Result := Result + '-' + Format(TEpiFloatField(Field).FormatString, [AsFloat[false]])
+      else
+        Result := Result + '-' + AsString[false];
+    Result := Result + '|';
+  end;
+  if Length(Result) > 0 then
+    Delete(Result, Length(Result), 1);
 end;
 
 { TEpiTimeRange }

@@ -36,6 +36,15 @@ const
      'String', 'Uppercase'
     );
 
+  const EpiTypeNamesShort: array[TEpiFieldType] of string =
+    ('B',
+     'I', 'Ia', 'F',
+     'DMY', 'MDY', 'YMD',
+     'DMYa', 'MDYa', 'YMDa',
+     'T', 'Ta',
+     'S', 'U'
+    );
+
   // File dialog filter functions.
   function GetEpiDialogFilter(ShowEPX, ShowEPZ, ShowREC, ShowText, ShowODS, ShowXLS,
     ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
