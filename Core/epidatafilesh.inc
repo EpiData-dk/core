@@ -56,10 +56,10 @@ type
   protected
     class function IdString: string; override;
     constructor Create(AOwner: TEpiCustomBase); override;
-    function    ValidateFieldRename(Field: TEpiField; Const NewName: string): boolean;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
+    function    ValidateFieldRename(Field: TEpiField; Const NewName: string): boolean;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;

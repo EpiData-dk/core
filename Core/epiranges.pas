@@ -509,6 +509,7 @@ begin
                  AsDate[false] := Trunc(LoadAttrDateTime(Root, rsEnd));
                end;
     ftTime:    begin
+                 ShortDateFormat := 'HH:NN:SS';
                  AsTime[true]  := LoadAttrDateTime(Root, rsStart);
                  AsTime[false] := LoadAttrDateTime(Root, rsEnd);
                end;

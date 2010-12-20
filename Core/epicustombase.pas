@@ -567,7 +567,7 @@ var
   Attr: TDOMAttr;
 begin
   LoadAttr(Attr, Root, AttrName, true);
-  Result := StrToDate(Attr.Value);
+  Result := StrToDateTime(Attr.Value);
 end;
 
 function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode;
