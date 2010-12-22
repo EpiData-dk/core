@@ -61,6 +61,9 @@ const
                    ftDMYToday, ftMDYToday, ftYMDToday,
                    ftTimeNow];
 
+//  RangeFieldTypes:
+//    TEpiFieldTypes = (IntFieldTypes + FloatFieldTypes + DateFieldTypes) - AutoFieldTypes;
+
 type
   TEpiRecordState = (rsNormal, rsVerified, rsDeleted);
 
