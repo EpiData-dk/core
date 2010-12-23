@@ -24,11 +24,12 @@ type
     // Numbers  (1, 2, 3)
     ftInteger, ftAutoInc, ftFloat,
 
-    // Date/time (4, 5, 6)
+    // Date (4, 5, 6)
     ftDMYDate, ftMDYDate, ftYMDDate,
     // (7, 8, 9)
     ftDMYToday, ftMDYToday, ftYMDToday,
-    // (10, 11)
+
+    // Time (10, 11)
     ftTime, ftTimeNow,
 
     // Strings (12, 13)
@@ -37,35 +38,27 @@ type
   TEpiFieldTypes  = Set of TEpiFieldType;
 
 const
-  BoolFieldTypes:
-    TEpiFieldTypes = [ftBoolean];
+  BoolFieldTypes    = [ftBoolean];
 
-  IntFieldTypes:
-    TEpiFieldTypes = [ftInteger, ftAutoInc];
+  IntFieldTypes     = [ftInteger, ftAutoInc];
 
-  FloatFieldTypes:
-    TEpiFieldTypes = [ftFloat];
+  FloatFieldTypes   = [ftFloat];
 
-  DateFieldTypes:
-    TEpiFieldTypes = [ftDMYDate,  ftMDYDate,  ftYMDDate,
-                   ftDMYToday, ftMDYToday, ftYMDToday];
+  DateFieldTypes    = [ftDMYDate,  ftMDYDate,  ftYMDDate,
+                       ftDMYToday, ftMDYToday, ftYMDToday];
 
-  TimeFieldTypes:
-    TEpiFieldTypes = [ftTime, ftTimeNow];
+  TimeFieldTypes    = [ftTime, ftTimeNow];
 
-  StringFieldTypes:
-    TEpiFieldTypes = [ftString, ftUpperString];
+  StringFieldTypes  = [ftString, ftUpperString];
 
-  AutoFieldTypes:
-    TEpiFieldTypes = [ftAutoInc,
-                   ftDMYToday, ftMDYToday, ftYMDToday,
-                   ftTimeNow];
+  AutoFieldTypes    = [ftAutoInc,
+                       ftDMYToday, ftMDYToday, ftYMDToday,
+                       ftTimeNow];
 
-//  RangeFieldTypes:
-//    TEpiFieldTypes = (IntFieldTypes + FloatFieldTypes + DateFieldTypes) - AutoFieldTypes;
+  RangeFieldTypes   = (IntFieldTypes + FloatFieldTypes + DateFieldTypes) - AutoFieldTypes;
 
 type
-  TEpiRecordState = (rsNormal, rsVerified, rsDeleted);
+  TEpiRecordState   = (rsNormal, rsVerified, rsDeleted);
 
 implementation
 
