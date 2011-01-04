@@ -21,6 +21,7 @@ const
     rsMissingStr      = 'MissingString';
 
    rsProjectSettings = 'ProjectSettings';
+    rsAutoIncStart    = 'AutoIncStart';
     rsTimedBackupInterval='TimedBackupInterval';
     rsBackupOnShutdown= 'BackupOnShutdown';
     rsShowFieldNames  = 'ShowFieldNames';

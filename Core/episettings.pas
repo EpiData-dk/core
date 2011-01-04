@@ -6,7 +6,7 @@ unit episettings;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, DOM;
+  Classes, SysUtils, epicustombase, DOM, epidatafilestypes;
 
 type
 
@@ -50,15 +50,17 @@ type
   { TEpiProjectSettings }
 
   TEpiProjectSettingChangeEvent = (
-    epceFieldName, epceFieldBorder, epceBackupInterval, epceBackupShutdown
+    epceFieldName, epceFieldBorder, epceBackupInterval, epceBackupShutdown, epceAutoIncStart
   );
 
   TEpiProjectSettings = class(TEpiCustomBase)
   private
+    FAutoIncStartValue: EpiInteger;
     FBackupInterval: Integer;
     FBackupOnShutdown: Boolean;
     FShowFieldBorders: Boolean;
     FShowFieldNames: Boolean;
+    procedure   SetAutoIncStartValue(const AValue: EpiInteger);
     procedure   SetBackupInterval(const AValue: Integer);
     procedure   SetBackupOnShutdown(const AValue: Boolean);
     procedure   SetShowFieldBorders(const AValue: Boolean);
@@ -74,6 +76,7 @@ type
     property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
     property    BackupInterval: Integer read FBackupInterval write SetBackupInterval;
     property    BackupOnShutdown: Boolean read FBackupOnShutdown write SetBackupOnShutdown;
+    property    AutoIncStartValue: EpiInteger read FAutoIncStartValue write SetAutoIncStartValue;
   end;
 
 implementation
@@ -223,6 +226,16 @@ begin
   DoChange(eegProjectSettings, Word(epceBackupInterval), @Val);
 end;
 
+procedure TEpiProjectSettings.SetAutoIncStartValue(const AValue: EpiInteger);
+var
+  Val: EpiInteger;
+begin
+  if FAutoIncStartValue = AValue then exit;
+  Val := FAutoIncStartValue;
+  FAutoIncStartValue := AValue;
+  DoChange(eegProjectSettings, Word(epceAutoIncStart), @Val);
+end;
+
 procedure TEpiProjectSettings.SetBackupOnShutdown(const AValue: Boolean);
 var
   Val: Boolean;
@@ -250,6 +263,7 @@ begin
   FShowFieldBorders := true;
   FShowFieldNames   := true;
   FBackupInterval   := 10;
+  FAutoIncStartValue := 1;
 end;
 
 destructor TEpiProjectSettings.Destroy;
@@ -265,6 +279,7 @@ end;
 function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Result :=
+    SaveNode(Lvl + 1, rsAutoIncStart,        AutoIncStartValue) +
     SaveNode(Lvl + 1, rsTimedBackupInterval, BackupInterval) +
     SaveNode(Lvl + 1, rsBackupOnShutdown,    BackupOnShutdown) +
     SaveNode(Lvl + 1, rsShowFieldNames,      ShowFieldNames) +
@@ -273,7 +288,11 @@ begin
 end;
 
 procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
 begin
+  if LoadNode(Node, Root, rsAutoIncStart, false) then
+    AutoIncStartValue := LoadNodeInt(Root, rsAutoIncStart);
   BackupInterval   := LoadNodeInt(Root, rsTimedBackupInterval);
   BackupOnShutdown := LoadNodeBool(Root,rsBackupOnShutdown);
   ShowFieldNames   := LoadNodeBool(Root, rsShowFieldNames);

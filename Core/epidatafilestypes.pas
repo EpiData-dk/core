@@ -38,6 +38,7 @@ type
   TEpiFieldTypes  = Set of TEpiFieldType;
 
 const
+  // "Native sets"
   BoolFieldTypes    = [ftBoolean];
 
   IntFieldTypes     = [ftInteger, ftAutoInc];
@@ -51,11 +52,14 @@ const
 
   StringFieldTypes  = [ftString, ftUpperString];
 
+  // Special auto type set.
   AutoFieldTypes    = [ftAutoInc,
                        ftDMYToday, ftMDYToday, ftYMDToday,
                        ftTimeNow];
 
-  RangeFieldTypes   = (IntFieldTypes + FloatFieldTypes + DateFieldTypes) - AutoFieldTypes;
+  // Composed Sets.
+  RangeFieldTypes      = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
+  ValueLabelFieldTypes = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
 
 type
   TEpiRecordState   = (rsNormal, rsVerified, rsDeleted);
