@@ -466,7 +466,7 @@ end;
 function TEpiCustomBase.LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
   const AttrName: string; Fatal: boolean): boolean;
 begin
-  result := false;
+  result := true;
 
   if not (Root is TDomElement) then
     RaiseErrorMsg(Root, 'Root node is NOT a TDomElement. Please abort program!');
