@@ -167,16 +167,15 @@ function TEpiField.GetIsMissingValue(const index: Integer): boolean;
 begin
   result := false;
   if Assigned(ValueLabelSet) then
-//  result := ValueLabelSet.;
-    ;
+    result := ValueLabelSet.IsMissingValue[AsValue[Index]];
 end;
 
 procedure TEpiField.SetIsMissingValue(const index: Integer;
   const AValue: boolean);
 begin
-  if Assigned(ValueLabelSet) then
+{  if Assigned(ValueLabelSet) then
   // ValueLabelSet.;
-    ;
+    ;          }
 end;
 
 procedure TEpiField.CheckIndex(const index: integer);

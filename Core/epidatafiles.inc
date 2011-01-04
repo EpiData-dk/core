@@ -303,7 +303,7 @@ var
      thehash:=0;
      For I:=1 to Length(S) do { 0 terminated }
        begin
-       thehash:=thehash shl 4;
+       thehash:=thehash shl 8;
        inc(theHash,Ord(S[i]));
        g:=thehash and LongWord($f shl 28);
        if g<>0 then
@@ -318,8 +318,6 @@ var
        Hash:=TheHash;
   end;
   {$ENDIF EPIHASH}
-
-
 
 begin
   // Root = <Records>
@@ -336,6 +334,8 @@ begin
   begin
     Val := (Hash(Fields[i].Id) mod P);
     // Collision detection (with Fc^2 size, the collision probability is < 0.00001)
+    if Assigned(FieldList[val]) then
+      raise Exception.Create('COLLISION DETECTION!!!');
     FieldList[Val] := Fields[i];
   end;
 {$ENDIF EPIHASH}
