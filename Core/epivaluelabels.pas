@@ -142,7 +142,7 @@ type
 implementation
 
 uses
-  strutils, math, LCLProc;
+  strutils, math, LCLProc, epidocument;
 
 { TEpiCustomValueLabel }
 
@@ -164,11 +164,13 @@ begin
   end;
 
   // Print order and value:
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Result +=
     Indent(LvL + 1) +
       '<' + rsValueLabel +
          ' order="' + IntToStr(Order) +
         '" value="' + GetValueAsString;
+  RestoreFormatSettings;
 
   // Add missing if set
   if IsMissingValue then
@@ -219,7 +221,10 @@ end;
 procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
+
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Value := StrToFloat(TDOMElement(Root).AttribStrings['value']);
+  RestoreFormatSettings;
 end;
 
 { TEpiStringValueLabel }
