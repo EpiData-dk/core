@@ -13,8 +13,14 @@ const
 { TEpiFields }
 
 function TEpiFields.GetDataFile: TEpiDataFile;
+var
+  AOwner: TEpiCustomBase;
 begin
-  result := TEpiDataFile(Owner);
+  AOwner := Owner;
+  while Assigned(AOwner) and (not (AOwner is TEpiDataFile)) do
+    AOwner := AOwner.Owner;
+
+  result := TEpiDataFile(AOwner);
 end;
 
 function TEpiFields.GetField(index: integer): TEpiField;
@@ -56,10 +62,18 @@ begin
 end;
 
 function TEpiFields.NewField(FieldType: TEpiFieldType): TEpiField;
+var
+  i: Integer;
 begin
   result := TEpiField.CreateField(Self, FieldType);
   Result.Id := GetUniqueItemId(TEpiCustomItemClass(Result.ClassType));
   AddItem(Result);
+
+  if (not TEpiDocument(RootOwner).Loading) and (FieldType = ftAutoInc) then
+  begin
+    for i := 0 to DataFile.Size - 1 do
+      Result.AsInteger[i] := TEpiDocument(RootOwner).ProjectSettings.AutoIncStartValue + i;
+  end;
 end;
 
 function TEpiFields.FieldExists(AField: TEpiField): boolean;

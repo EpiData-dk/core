@@ -18,6 +18,7 @@ type
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
+    FLoading: boolean;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
     FXMLSettings: TEpiXMLSettings;
@@ -47,6 +48,7 @@ type
     Property   DataFiles: TEpiDataFiles read FDataFiles;
     Property   Relations: TEpiRelations read FRelations;
     property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
+    property   Loading: boolean read FLoading;
   end;
 
 implementation
@@ -135,6 +137,7 @@ var
   Node: TDOMElement;
 begin
   // Root = <EpiData>
+  FLoading := true;
 
   // First read XMLSettings!
   // - we need to catch if this is a scrambled file and other important XMLSettings
@@ -160,6 +163,7 @@ begin
   if LoadNode(Node, Root, rsRelations, false) then
     Relations.LoadFromXml(Node);
 
+  FLoading := false;
   Modified := false;
 end;
 
