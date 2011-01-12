@@ -10,7 +10,7 @@ uses
     epiadmin, epicustombase, epidatafiles, epidatafilestypes, epidocument, 
   epiranges, epirelations, episettings, epistudy, epivaluelabels, epiexport, 
   epiimport, epiqeshandler, epiconvertutils, epimiscutils, epistringutils, 
-  epiversionutils;
+  epiversionutils, UniqueInstanceRaw;
 
 implementation
 

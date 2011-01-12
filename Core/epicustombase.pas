@@ -47,6 +47,8 @@ type
 
   TEpiCustomBaseState = set of (ebsDestroying, ebsUpdating);
 
+  TEpiCoreException = class (Exception);
+
   {$static on}
   TEpiCustomBase = class
   { Scrambling }
@@ -400,20 +402,20 @@ end;
 
 procedure TEpiCustomBase.RaiseErrorNode(const Root: TDOMNode; const NodeName: string) ;
 begin
-  raise Exception.Create('ERROR: A required XML tag was not found.' + LineEnding +
+  raise TEpiCoreException.Create('ERROR: A required XML tag was not found.' + LineEnding +
           Format('In section %s the tag "%s" was expected!', [Root.NodeName, NodeName]));
 end;
 
 procedure TEpiCustomBase.RaiseErrorAttr(const Root: TDOMNode; const AttrName: string
   );
 begin
-  raise Exception.Create('ERROR: A required XML attribute was not found.' + LineEnding +
+  raise TEpiCoreException.Create('ERROR: A required XML attribute was not found.' + LineEnding +
           Format('The tag %s expected an attribute with the name "%s"!', [Root.NodeName, AttrName]));
 end;
 
 procedure TEpiCustomBase.RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
 begin
-  raise Exception.CreateFmt('ERROR: An error occured reading tag "%s".' + LineEnding +
+  raise TEpiCoreException.CreateFmt('ERROR: An error occured reading tag "%s".' + LineEnding +
           '%s', [Root.NodeName, Msg]);
 end;
 
