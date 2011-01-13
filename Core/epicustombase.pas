@@ -211,6 +211,7 @@ type
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
   end;
+  TEpiCustomControlItemClass = class of TEpiCustomControlItem;
 
   { TEpiCustomList }
 
