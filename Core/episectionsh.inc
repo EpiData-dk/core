@@ -45,6 +45,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Name: TEpiTranslatedText read FName;
     property    Fields: TEpiFields read FFields;
     property    Field[Index: integer]: TEpiField read GetField;

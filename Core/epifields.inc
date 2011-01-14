@@ -61,6 +61,29 @@ begin
   end;
 end;
 
+procedure TEpiFields.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgFields: TEpiFields absolute AEpiCustomBase;
+  i: Integer;
+  AField: TEpiField;
+begin
+  // Special overriding the normal "class inheritance" since Fields must be
+  // created in this special way.
+  inherited Assign(AEpiCustomBase);
+//  TEpiCustomItem(Self).Assign(AEpiCustomBase);
+
+  BeginUpdate;
+  if OrgFields.Count > 0 then
+  begin
+    for i := 0 to OrgFields.Count - 1 do
+    begin
+      AField := NewField(OrgFields[i].FieldType);
+      AField.Assign(OrgFields[i]);
+    end;
+  end;
+  EndUpdate;
+end;
+
 function TEpiFields.NewField(FieldType: TEpiFieldType): TEpiField;
 var
   i: Integer;
@@ -209,6 +232,30 @@ begin
   if AValue > Capacity then
     Capacity := AValue;
   FSize := AValue;
+end;
+
+procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgField: TEpiField absolute AEpiCustomBase;
+begin
+  // This avoids unnessesary updates during inherited assign.
+  BeginUpdate;
+  inherited Assign(AEpiCustomBase);
+
+  Length        := OrgField.Length;
+  Decimals      := OrgField.Decimals;
+  Size          := OrgField.Size;
+  // TODO : New algorithm for checking which Datafile this field belongs to.
+  //      - blind assignment may cause havock in cases with different DF's.
+  ValueLabelSet := OrgField.ValueLabelSet;
+
+  if Assigned(OrgField.Ranges) then
+  begin
+    Ranges := TEpiRanges.Create(Self);
+    Ranges.ItemOwner := true;
+    Ranges.Assign(OrgField.Ranges);
+  end;
+  EndUpdate;
 end;
 
 constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);

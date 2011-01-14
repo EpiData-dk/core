@@ -18,6 +18,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
     function    FieldExistsByName(Const AName: string): boolean;
@@ -105,6 +106,7 @@ type
   public
     procedure   Exchange(i,j: integer); virtual; abstract;
     function    Compare(i,j: integer): integer; virtual; abstract;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
 
   { Class inheritance, load/save, etc. }
   protected

@@ -149,6 +149,7 @@ type
     property    ClassList: TFPList read FClassList;
   public
     destructor  Destroy; override;
+    procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
     property    Owner: TEpiCustomBase read FOwner;
     property    RootOwner: TEpiCustomBase read GetRootOwner;
     property    State: TEpiCustomBaseState read FState;
@@ -176,6 +177,7 @@ type
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
     property    TextLang[LangCode: string]: string read GetText write SetText;
   end;
@@ -207,6 +209,7 @@ type
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
+    procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
@@ -265,6 +268,7 @@ type
   { Class properties overrides }
   protected
     procedure SetModified(const AValue: Boolean); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -279,7 +283,7 @@ uses
   {$IFDEF EPICORETIMING}
   LCLIntf, LCLProc,
   {$ENDIF}
-  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument;
+  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument, epidatafiles;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
@@ -334,6 +338,17 @@ begin
   Freemem(FOnChangeList);
   Freemem(FOnChangeListIgnoreUpdate);
   inherited Destroy;
+end;
+
+procedure TEpiCustomBase.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgBase: TEpiCustomBase absolute AEpiCustomBase;
+  i: Integer;
+begin
+  BeginUpdate;
+  for i := 0 to OrgBase.ClassList.Count - 1 do
+    TEpiCustomBase(ClassList[i]).Assign(TEpiCustomBase(OrgBase.ClassList[i]));
+  EndUpdate;
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
@@ -957,6 +972,20 @@ begin
   ElemList.Free;
 end;
 
+procedure TEpiTranslatedText.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgText: TEpiTranslatedText absolute AEpiCustomBase;
+  i: Integer;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FXMLName := OrgText.FXMLName;
+  FCurrentText := OrgText.FCurrentText;
+  for i := 0 to OrgText.FTextList.Count - 1 do
+    FTextList.AddObject(OrgText.FTextList[i], TString.Create(TString(OrgText.FTextList.Objects[i]).Str));
+  EndUpdate;
+end;
+
 procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
@@ -1055,6 +1084,17 @@ begin
   Val := Top;
   FTop := AValue;
   DoChange(eegCustomBase, Word(ecceSetTop), @Val);
+end;
+
+procedure TEpiCustomControlItem.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgControlItem: TEpiCustomControlItem absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  Top := OrgControlItem.Top;
+  Left := OrgControlItem.Left;
+  EndUpdate;
 end;
 
 { TEpiCustomList }
@@ -1273,6 +1313,31 @@ begin
   if not AValue then
     for i := 0 to Count - 1 do
       Items[i].Modified := AValue;
+end;
+
+procedure TEpiCustomList.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgList: TEpiCustomList absolute AEpiCustomBase;
+  i: Integer;
+  ItemClass: TEpiCustomItemClass;
+  Item: TEpiCustomItem;
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if Self is TEpiFields then exit;
+
+  BeginUpdate;
+  OnNewItemClass := OrgList.OnNewItemClass;
+  if OrgList.Count > 0 then
+  begin
+    ItemClass := TEpiCustomItemClass(OrgList[0].ClassType);
+    for i := 0 to OrgList.Count - 1 do
+    begin
+      Item := NewItem(ItemClass);
+      Item.Assign(OrgList[i]);
+    end;
+  end;
+  EndUpdate;
 end;
 
 end.

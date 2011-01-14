@@ -16,10 +16,12 @@ type
   TEpiRanges = class(TEpiCustomList)
   private
     function    GetFieldType: TEpiFieldType;
+    function    GetRange(const index: integer): TEpiRange;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    XMLName: string; override;
     function    NewRange: TEpiRange;
     function    InRange(const AValue: EpiInteger): boolean; overload;
@@ -27,6 +29,7 @@ type
     function    InRange(const AValue: EpiDate): boolean; overload;
     function    InRange(const AValue: EpiTime): boolean; overload;
     function    RangesToText: string;
+    property    Range[const index: integer]: TEpiRange read GetRange; default;
     property    FieldType: TEpiFieldType read GetFieldType;
   end;
 
@@ -34,8 +37,8 @@ type
 
   TEpiRange = class(TEpiCustomItem)
   private
-    function GetRanges: TEpiRanges;
-    function GetSingle: boolean;
+    function    GetRanges: TEpiRanges;
+    function    GetSingle: boolean;
   protected
     function    GetAsDate(const Start: boolean): EpiDate; virtual; abstract;
     function    GetAsFloat(const Start: boolean): EpiFloat; virtual; abstract;
@@ -78,6 +81,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
+  public
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
   { TEpiFloatRange }
@@ -96,6 +101,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
+  public
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
   { TEpiDateRange }
@@ -114,6 +121,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
+  public
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
   { TEpiTimeRange }
@@ -132,6 +141,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
+  public
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
 implementation
@@ -144,6 +155,11 @@ uses
 function TEpiRanges.GetFieldType: TEpiFieldType;
 begin
   result := TEpiField(Owner).FieldType;
+end;
+
+function TEpiRanges.GetRange(const index: integer): TEpiRange;
+begin
+  Result := TEpiRange(Items[Index]);
 end;
 
 constructor TEpiRanges.Create(AOwner: TEpiCustomBase);
@@ -174,6 +190,22 @@ begin
 
     Node := Node.NextSibling;
   end;
+end;
+
+procedure TEpiRanges.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgRanges: TEpiRanges absolute AEpiCustomBase;
+  i: Integer;
+  R: TEpiRange;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  for i := 0 to OrgRanges.Count - 1 do
+  begin
+    R := NewRange;
+    R.Assign(OrgRanges[i]);
+  end;
+  EndUpdate;
 end;
 
 function TEpiRanges.XMLName: string;
@@ -323,6 +355,17 @@ begin
     FEnd := AValue;
 end;
 
+procedure TEpiTimeRange.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgRange: TEpiTimeRange absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FStart := OrgRange.FStart;
+  FEnd   := OrgRange.FEnd;
+  EndUpdate;
+end;
+
 { TEpiDateRange }
 
 function TEpiDateRange.GetAsDate(const Start: boolean): EpiDate;
@@ -385,6 +428,17 @@ begin
   AsDate[start] := Trunc(AValue);
 end;
 
+procedure TEpiDateRange.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgRange: TEpiDateRange absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FStart := OrgRange.FStart;
+  FEnd   := OrgRange.FEnd;
+  EndUpdate;
+end;
+
 { TEpiFloatRange }
 
 function TEpiFloatRange.GetAsDate(const Start: boolean): EpiDate;
@@ -440,6 +494,17 @@ procedure TEpiFloatRange.SetAsTime(const Start: boolean; const AValue: EpiTime
   );
 begin
   AsFloat[Start] := AValue;
+end;
+
+procedure TEpiFloatRange.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgRange: TEpiFloatRange absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FStart := OrgRange.FStart;
+  FEnd   := OrgRange.FEnd;
+  EndUpdate;
 end;
 
 { TEpiRange }
@@ -580,6 +645,17 @@ end;
 procedure TEpiIntRange.SetAsTime(const Start: boolean; const AValue: EpiTime);
 begin
   AsFloat[Start] := AValue;
+end;
+
+procedure TEpiIntRange.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgRange: TEpiIntRange absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FStart := OrgRange.FStart;
+  FEnd   := OrgRange.FEnd;
+  EndUpdate;
 end;
 
 end.
