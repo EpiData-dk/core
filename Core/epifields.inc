@@ -238,17 +238,19 @@ procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
 var
   OrgField: TEpiField absolute AEpiCustomBase;
 begin
-  // This avoids unnessesary updates during inherited assign.
-  BeginUpdate;
   inherited Assign(AEpiCustomBase);
 
-  Length        := OrgField.Length;
-  Decimals      := OrgField.Decimals;
-  Size          := OrgField.Size;
+  // Auto Field types can only be assigned inherited things (which includes the
+  // question, etc.). Field specifics such as length, range etc. are irrelevant
+  // for an auto field.
+  BeginUpdate;
+  if (FieldType in AutoFieldTypes) then exit;
+
+  Length := OrgField.Length;
+
   // TODO : New algorithm for checking which Datafile this field belongs to.
   //      - blind assignment may cause havock in cases with different DF's.
   ValueLabelSet := OrgField.ValueLabelSet;
-
   if Assigned(OrgField.Ranges) then
   begin
     Ranges := TEpiRanges.Create(Self);
@@ -712,6 +714,15 @@ end;
 function TEpiFloatField.FormatString: string;
 begin
   result := format('%%%d.%df', [Length - Decimals - 1, Decimals]);
+end;
+
+procedure TEpiFloatField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  if AEpiCustomBase is TEpiFloatField then
+    Decimals := TEpiFloatField(AEpiCustomBase).Decimals
+  else
+    Decimals := 1;
 end;
 
 { TEpiBoolField }

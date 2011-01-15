@@ -1092,8 +1092,10 @@ var
 begin
   inherited Assign(AEpiCustomBase);
   BeginUpdate;
-  Top := OrgControlItem.Top;
-  Left := OrgControlItem.Left;
+  if Top = 0 then
+    Top := OrgControlItem.Top;
+  if Left = 0 then
+    Left := OrgControlItem.Left;
   EndUpdate;
 end;
 

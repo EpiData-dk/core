@@ -190,6 +190,7 @@ type
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString: string;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
   { TEpiBoolField }
