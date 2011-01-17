@@ -93,6 +93,11 @@ const
           rsRange            = 'Range';
            rsStart            = 'start';
            rsEnd              = 'end';
+         rsJumps            = 'Jumps';
+          rsJump             = 'Jump';
+           rsJumpOn           = 'on';
+           rsJumpTo           = 'to';
+           rsJumpReset        = 'reset';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

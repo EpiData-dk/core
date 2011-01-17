@@ -28,10 +28,15 @@ type
   TEpiHeadings = class;
   TEpiHeading = class;
 
+  // Jumps
+  TEpiJumps = class;
+  TEpiJump = class;
+
 {$I epidatafilesh.inc}
 {$I episectionsh.inc}
 {$I epifieldsh.inc}
 {$I epiheadingsh.inc}
+{$I epijumpsh.inc}
 
 implementation
 
@@ -42,6 +47,7 @@ uses
 {$I episections.inc}
 {$I epifields.inc}
 {$I epiheadings.inc}
+{$I epijumps.inc}
 
 end.
 

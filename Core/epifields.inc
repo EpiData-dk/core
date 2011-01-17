@@ -322,6 +322,8 @@ begin
     Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
   if Assigned(Ranges) then
     Content += Ranges.SaveToXml('', Lvl + 1);
+  if Assigned(Jumps) then
+    Content += Jumps.SaveToXml('', Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -343,6 +345,12 @@ begin
     Ranges := TEpiRanges.Create(Self);
     Ranges.ItemOwner := true;
     Ranges.LoadFromXml(Node);
+  end;
+  if LoadNode(Node, Root, rsJumps, false) then
+  begin
+    Jumps := TEpiJumps.Create(Self);
+    Jumps.ItemOwner := true;
+    Jumps.LoadFromXml(Node);
   end;
 end;
 

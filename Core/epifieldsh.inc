@@ -29,25 +29,12 @@ type
   { TEpiField }
 
   TEpiField = class(TEpiCustomControlItem)
+
+  { Data access properties }
   private
-    FCapacity: Integer;
-    FDataFile: TEpiDataFile;
-    FDecimals: Cardinal;
-    FLength: Cardinal;
-    FFieldType: TEpiFieldType;
-    FName: string;
-    FRanges: TEpiRanges;
-    FSize: Integer;
-    FValueLabelSet: TEpiValueLabelSet;
-    FQuestion:  TEpiHeading;
     LocalFmtSettings: TFormatSettings;
-    function    GetSettings: TEpiXMLSettings;
-    procedure   SetDecimals(const AValue: Cardinal);
-    procedure   SetLength(const AValue: Cardinal);
     procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
-    procedure   SetName(const AValue: string);
-    procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
     function    GetIsMissingValue(const index: Integer): boolean;
     procedure   SetIsMissingValue(const index: Integer; const AValue: boolean);
   protected
@@ -62,7 +49,6 @@ type
     function    GetAsValue(const index: Integer): EpiVariant; virtual; abstract;
     function    GetCapacity: Integer; virtual; abstract;
     function    GetIsMissing(const index: Integer): boolean; virtual; abstract;
-    function    GetSize: Integer; virtual;
     procedure   SetAsBoolean(const index: Integer; const AValue: EpiBool); virtual; abstract;
     procedure   SetAsDate(const index: Integer; const AValue: EpiDate); virtual; abstract;
     procedure   SetAsDateTime(const index: Integer; const AValue: EpiDateTime); virtual; abstract;
@@ -73,12 +59,6 @@ type
     procedure   SetAsValue(const index: Integer; const AValue: EpiVariant); virtual; abstract;
     procedure   SetCapacity(AValue: Integer); virtual; abstract;
     procedure   SetIsMissing(const index: Integer; const AValue: boolean); virtual; abstract;
-    procedure   SetSize(const AValue: Integer); virtual;
-
-    property    Capacity: Integer read GetCapacity write SetCapacity;
-    property    Settings: TEpiXMLSettings read GetSettings;
-
-  { Data access properties }
   public
     property    AsBoolean[const index: Integer]: EpiBool read GetAsBoolean write SetAsBoolean;
     property    AsInteger[const index: Integer]: EpiInteger read GetAsInteger write SetAsInteger; default;
@@ -92,21 +72,46 @@ type
     property    IsMissingValue[const index: Integer]: boolean read GetIsMissingValue write SetIsMissingValue;
 
   { Field Properties }
+  private
+    FDecimals: Cardinal;
+    FJumps: TEpiJumps;
+    FLength: Cardinal;
+    FFieldType: TEpiFieldType;
+    FName: string;
+    FRanges: TEpiRanges;
+    FValueLabelSet: TEpiValueLabelSet;
+    FQuestion:  TEpiHeading;
+    procedure   SetDecimals(const AValue: Cardinal);
+    procedure   SetLength(const AValue: Cardinal);
+    procedure   SetName(const AValue: string);
+    procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
   public
     property    Name: string read FName write SetName;
     property    FieldType: TEpiFieldType read FFieldType;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
-    property    Size:      Integer read GetSize write SetSize;
     property    Question:  TEpiHeading read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
+    property    Jumps:     TEpiJumps read FJumps write FJumps;
 
   { Helper methods }
+  private
+    FDataFile: TEpiDataFile;
+    FSize: Integer;
+    FCapacity: Integer;
+    function    GetSettings: TEpiXMLSettings;
+  protected
+    function    GetSize: Integer; virtual;
+    procedure   SetSize(const AValue: Integer); virtual;
+    property    Capacity: Integer read GetCapacity write SetCapacity;
+    property    Settings: TEpiXMLSettings read GetSettings;
   public
     procedure   Exchange(i,j: integer); virtual; abstract;
     function    Compare(i,j: integer): integer; virtual; abstract;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    property    Size:      Integer read GetSize write SetSize;
+    property    DataFile: TEpiDataFile read FDataFile;
 
   { Class inheritance, load/save, etc. }
   protected
@@ -120,7 +125,6 @@ type
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    property    DataFile: TEpiDataFile read FDataFile;
   end;
 
   { TEpiIntField }
