@@ -9,10 +9,14 @@ uses
 
 
 function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean;
+  Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
+function EpiStrToDate(Const Str: string; Const Separator: Char;
+  Const FT: TEpiFieldType; out ErrMsg: string): TDate; overload;
 
 function EpiStrToTime(Const Str: string; Const Separator: Char;
-  out H, M, S: Word; out ErrMsg: string): boolean;
+  out H, M, S: Word; out ErrMsg: string): boolean; overload;
+function EpiStrToTime(Const Str: string; Const Separator: Char;
+  out ErrMsg: string): TTime; overload;
 
 implementation
 
@@ -100,6 +104,17 @@ begin
   Result := true;
 end;
 
+function EpiStrToDate(const Str: string; const Separator: Char;
+  const FT: TEpiFieldType; out ErrMsg: string): TDate;
+var
+  D, M, Y: Word;
+begin
+  if EpiStrToDate(Str, Separator, Ft, D, M, Y, ErrMsg) then
+    Result := EncodeDate(Y, M, D)
+  else
+    Result := 0;
+end;
+
 function EpiStrToTime(const Str: string; const Separator: Char; out H, M,
   S: Word; out ErrMsg: string): boolean;
 var
@@ -131,6 +146,17 @@ begin
   if M > 59 then exit(ValidateError(Format('Incorrect minut: %d', [M])));
   if S > 59 then exit(ValidateError(Format('Incorrect second: %d', [S])));
   Result := true;
+end;
+
+function EpiStrToTime(const Str: string; const Separator: Char; out
+  ErrMsg: string): TTime;
+var
+  H, M, S: Word;
+begin
+  if EpiStrToTime(Str, Separator, H, M, S, ErrMsg) then
+    Result := EncodeTime(H, M, S, 0)
+  else
+    Result := 0;
 end;
 
 end.

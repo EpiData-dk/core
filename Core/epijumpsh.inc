@@ -35,6 +35,8 @@ type
     function    SaveAttributesToXml: string; override;
     property    JumpToField: TEpiField read FJumpToField write SetJumpToField;
     property    ResetOnJump: boolean read FResetOnJump write SetResetOnJump;
+    property    JumpValueAsString: string read GetJumpValueAsString;
+    property    ResetValueAsString: string read GetResetValueAsString;
   end;
 
   { TEpiBoolJump }
