@@ -96,6 +96,7 @@ const
          rsJumps            = 'Jumps';
           rsJump             = 'Jump';
            rsJumpOn           = 'on';
+           rsJumpType         = 'type';
            rsJumpTo           = 'to';
            rsJumpReset        = 'reset';
 

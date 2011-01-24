@@ -75,17 +75,24 @@ begin
   FJumpToField := AValue;
 end;
 
-procedure TEpiJump.SetResetOnJump(const AValue: boolean);
+procedure TEpiJump.SetJumpType(const AValue: TEpiJumpType);
 begin
-  if FResetOnJump = AValue then exit;
-  FResetOnJump := AValue;
+  if FJumpType = AValue then exit;
+  FJumpType := AValue;
+end;
+
+procedure TEpiJump.SetResetType(const AValue: TEpiJumpResetType);
+begin
+  if FResetType = AValue then exit;
+  FResetType := AValue;
 end;
 
 constructor TEpiJump.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FJumpType := jtToField;
+  FResetType := jrLeaveAsIs;
   FJumpToField := nil;
-  FResetOnJump := false;
 end;
 
 class function TEpiJump.IdString: string;
@@ -103,18 +110,24 @@ var
   FieldId: String;
 begin
   inherited LoadFromXml(Root);
-  FieldId := LoadAttrString(Root, rsJumpTo);
-  JumpToField := TEpiField(GetDataFile(Self).Fields.GetItemById(FieldId));
+  JumpType := TEpiJumpType(LoadAttrInt(Root, rsJumpType));
+  ResetType := TEpiJumpResetType(LoadAttrInt(Root, rsJumpReset));
+  if JumpType = jtToField then
+  begin
+    FieldId := LoadAttrString(Root, rsJumpTo);
+    JumpToField := TEpiField(GetDataFile(Self).Fields.GetItemById(FieldId));
+  end;
 end;
 
 function TEpiJump.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
-    Format(' %s="%s" %s="%s"',
+    Format(' %s="%s" %s="%d" %s="%d"',
            [rsJumpOn, GetJumpValueAsString,
-            rsJumpTo, JumpToField.Id]);
-  if ResetOnJump then
-    Result := Result + Format(' %s="%s"', [rsJumpReset, GetResetValueAsString]);
+            rsJumpType, JumpType,
+            rsJumpReset, ResetType]);
+  if JumpType = jtToField then
+    Result := Result + Format(' %s="%s"', [rsJumpTo, JumpToField.Id]);
 end;
 
 { TEpiBoolJump }
@@ -125,20 +138,9 @@ begin
   FJumpValue := AValue;
 end;
 
-procedure TEpiBoolJump.SetResetValue(const AValue: EpiBool);
-begin
-  if FResetValue = AValue then exit;
-  FResetValue := AValue;
-end;
-
 function TEpiBoolJump.GetJumpValueAsString: string;
 begin
   Result := IntToStr(JumpValue);
-end;
-
-function TEpiBoolJump.GetResetValueAsString: string;
-begin
-  Result := IntToStr(ResetValue);
 end;
 
 procedure TEpiBoolJump.LoadFromXml(Root: TDOMNode);
@@ -147,11 +149,6 @@ var
 begin
   inherited LoadFromXml(Root);
   JumpValue := LoadAttrInt(Root, rsJumpReset);
-  if LoadAttr(Attr, Root, rsJumpReset, false) then
-  begin
-    ResetOnJump := true;
-    ResetValue  := LoadAttrInt(Root, rsJumpReset);
-  end;
 end;
 
 { TEpiIntJump }
@@ -162,20 +159,9 @@ begin
   FJumpValue := AValue;
 end;
 
-procedure TEpiIntJump.SetResetValue(const AValue: EpiInteger);
-begin
-  if FResetValue = AValue then exit;
-  FResetValue := AValue;
-end;
-
 function TEpiIntJump.GetJumpValueAsString: string;
 begin
   Result := IntToStr(JumpValue);
-end;
-
-function TEpiIntJump.GetResetValueAsString: string;
-begin
-  Result := IntToStr(ResetValue);
 end;
 
 procedure TEpiIntJump.LoadFromXml(Root: TDOMNode);
@@ -184,11 +170,6 @@ var
 begin
   inherited LoadFromXml(Root);
   JumpValue := LoadAttrInt(Root, rsJumpOn);
-  if LoadAttr(Attr, Root, rsJumpReset, false) then
-  begin
-    ResetOnJump := true;
-    ResetValue  := LoadAttrInt(Root, rsJumpReset);
-  end;
 end;
 
 { TEpiFloatJump }
@@ -199,20 +180,9 @@ begin
   FJumpValue := AValue;
 end;
 
-procedure TEpiFloatJump.SetResetValue(const AValue: EpiFloat);
-begin
-  if FResetValue = AValue then exit;
-  FResetValue := AValue;
-end;
-
 function TEpiFloatJump.GetJumpValueAsString: string;
 begin
   Result := FloatToStr(JumpValue);
-end;
-
-function TEpiFloatJump.GetResetValueAsString: string;
-begin
-  Result := FloatToStr(ResetValue);
 end;
 
 procedure TEpiFloatJump.LoadFromXml(Root: TDOMNode);
@@ -221,11 +191,6 @@ var
 begin
   inherited LoadFromXml(Root);
   JumpValue := LoadAttrFloat(Root, rsJumpOn);
-  if LoadAttr(Attr, Root, rsJumpReset, false) then
-  begin
-    ResetOnJump := true;
-    ResetValue  := LoadAttrFloat(Root, rsJumpReset);
-  end;
 end;
 
 { TEpiStringJump }
@@ -236,20 +201,9 @@ begin
   FJumpValue := AValue;
 end;
 
-procedure TEpiStringJump.SetResetValue(const AValue: EpiString);
-begin
-  if FResetValue = AValue then exit;
-  FResetValue := AValue;
-end;
-
 function TEpiStringJump.GetJumpValueAsString: string;
 begin
   Result := JumpValue;
-end;
-
-function TEpiStringJump.GetResetValueAsString: string;
-begin
-  Result := ResetValue;
 end;
 
 procedure TEpiStringJump.LoadFromXml(Root: TDOMNode);
@@ -258,10 +212,5 @@ var
 begin
   inherited LoadFromXml(Root);
   JumpValue := LoadAttrString(Root, rsJumpOn);
-  if LoadAttr(Attr, Root, rsJumpReset, false) then
-  begin
-    ResetOnJump := true;
-    ResetValue  := LoadAttrString(Root, rsJumpReset);
-  end;
 end;
 

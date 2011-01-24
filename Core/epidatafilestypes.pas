@@ -7,6 +7,10 @@ interface
 uses
   variants;
 
+
+  //===================
+  // FIELD TYPE RELATED
+  //===================
 type
   EpiInteger   = Int64;
   EpiFloat     = Extended;
@@ -60,9 +64,22 @@ const
   // Composed Sets.
   RangeFieldTypes      = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
   ValueLabelFieldTypes = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
+  JumpsFieldTypes      = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
 
+  //================
+  // RECORD RELATED
+  //================
 type
   TEpiRecordState   = (rsNormal, rsVerified, rsDeleted);
+
+
+  //================
+  // JUMPS RELATED
+  //================
+type
+  TEpiJumpType = (jtSaveRecord, jtExitSection, jtSkipNextField, jtToField);
+  TEpiJumpResetType = (jrLeaveAsIs, jrSystemMissing, jrMaxMissing, jr2ndMissing);
+
 
 implementation
 
