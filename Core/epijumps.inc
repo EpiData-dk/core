@@ -7,6 +7,16 @@ begin
   result := TEpiJump(Items[Index]);
 end;
 
+function TEpiJumps.GetJumpFromValue(const Value: string): TEpiJump;
+var
+  i: Integer;
+begin
+  result := nil;
+  for i := 0 to Count - 1 do
+    if Jump[i].JumpValueAsString = Value then
+      Exit(Jump[i]);
+end;
+
 constructor TEpiJumps.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -116,6 +126,11 @@ begin
   begin
     FieldId := LoadAttrString(Root, rsJumpTo);
     JumpToField := TEpiField(GetDataFile(Self).Fields.GetItemById(FieldId));
+
+    // Since (possibly) all jumps to fields are "forward" declared then collect them into
+    // a batch and process the list after all fields are loaded.
+    if not assigned(JumpToField) then
+      JumpList.AddObject(FieldId, Self);
   end;
 end;
 

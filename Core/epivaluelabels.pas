@@ -195,6 +195,7 @@ begin
   Node := TDOMElement(Root);
 
   Order    := StrToIntDef(Node.AttribStrings['order'], -1);
+  IsMissingValue := WideUpperCase(Node.AttribStrings['missing']) = 'TRUE';
   TheLabel.LoadFromXml(Root);
 end;
 

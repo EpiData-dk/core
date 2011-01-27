@@ -100,6 +100,7 @@ type
     FDataFile: TEpiDataFile;
     FSize: Integer;
     FCapacity: Integer;
+    function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
   protected
     function    GetSize: Integer; virtual;
@@ -112,6 +113,7 @@ type
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Size:      Integer read GetSize write SetSize;
     property    DataFile: TEpiDataFile read FDataFile;
+    property    Section:  TEpiSection read GetSection;
 
   { Class inheritance, load/save, etc. }
   protected

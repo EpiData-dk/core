@@ -43,11 +43,24 @@ implementation
 uses
   epidocument, math, epistringutils;
 
+var
+  JumpList: TStringList;
+
 {$I epidatafiles.inc}
 {$I episections.inc}
 {$I epifields.inc}
 {$I epiheadings.inc}
 {$I epijumps.inc}
+
+initialization
+begin
+  JumpList := TStringList.Create;
+end;
+
+finalization
+begin
+  JumpList.Free;
+end;
 
 end.
 

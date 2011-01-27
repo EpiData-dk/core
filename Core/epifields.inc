@@ -47,6 +47,7 @@ procedure TEpiFields.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
   NField: TEpiField;
+  JumpNode: TDOMNode;
 begin
   // Root = <Fields>
   Node := Root.FirstChild;
@@ -200,6 +201,16 @@ begin
   end;
 end;
 
+function TEpiField.GetSection: TEpiSection;
+var
+  AOwner: TEpiCustomBase;
+begin
+  AOwner := Owner;
+  while Assigned(AOwner) and (not (AOwner is TEpiSection)) do
+    AOwner := AOwner.Owner;
+  result := TEpiSection(AOwner);
+end;
+
 function TEpiField.GetIsMissingValue(const index: Integer): boolean;
 begin
   result := false;
@@ -303,6 +314,10 @@ end;
 destructor TEpiField.Destroy;
 begin
   FQuestion.Free;
+  if Assigned(FJumps) then
+    FJumps.Free;
+  if Assigned(FRanges) then
+    FRanges.Free;
   inherited Destroy;
 end;
 

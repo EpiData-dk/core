@@ -7,6 +7,7 @@ type
   TEpiJumps = class(TEpiCustomList)
   private
     function GetJump(index: integer): TEpiJump;
+    function GetJumpFromValue(const Value: string): TEpiJump;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -14,6 +15,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewJump: TEpiJump;
     property    Jump[index: integer]: TEpiJump read GetJump; default;
+    property    JumpFromValue[const Value: string]: TEpiJump read GetJumpFromValue;
   end;
 
   { TEpiJump }

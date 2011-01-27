@@ -469,6 +469,8 @@ end;
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
+  Jump: TEpiJump;
+  i: Integer;
 begin
   // Since the main section is autocreated we remove it during load.
   Sections.RemoveItem(MainSection);
@@ -482,6 +484,14 @@ begin
 
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);
+
+  // Post processing - read jumps so field references are correct.
+  for i := 0 to JumpList.Count - 1 do
+  begin
+    Jump := TEpiJump(JumpList.Objects[i]);
+    Jump.JumpToField := TEpiField(Fields.GetItemById(JumpList[i]));
+  end;
+  JumpList.Clear;
 
   if Sections.ItemExistsById(TEpiSection.IdString + 'main') then
     FMainSection := TEpiSection(Sections.GetItemById(TEpiSection.IdString + 'main'));
