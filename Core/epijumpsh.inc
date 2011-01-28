@@ -36,6 +36,7 @@ type
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    SaveAttributesToXml: string; override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    JumpToField: TEpiField read FJumpToField write SetJumpToField;
     property    JumpType: TEpiJumpType read FJumpType write SetJumpType;
     property    ResetType: TEpiJumpResetType read FResetType write SetResetType;
@@ -52,6 +53,7 @@ type
     function  GetJumpValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property  JumpValue: EpiBool read FJumpValue write SetJumpValue;
   end;
 
@@ -65,6 +67,7 @@ type
     function  GetJumpValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property  JumpValue: EpiInteger read FJumpValue write SetJumpValue;
   end;
 
@@ -78,6 +81,7 @@ type
     function  GetJumpValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property  JumpValue: EpiFloat read FJumpValue write SetJumpValue;
   end;
 
@@ -91,5 +95,6 @@ type
     function  GetJumpValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property  JumpValue: EpiString read FJumpValue write SetJumpValue;
   end;

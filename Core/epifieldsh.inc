@@ -4,7 +4,7 @@ type
 
   TEpiFieldsChangeEventType = (
     efceName, efceSetDecimal, efceSetLeft, efceSetLength,
-    efceSetTop, efceSetSize, efceData
+    efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry
   );
 
   { TEpiFields }
@@ -13,12 +13,13 @@ type
   private
     function GetDataFile: TEpiDataFile;
     function GetField(index: integer): TEpiField;
+  protected
+    procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
     function    FieldExistsByName(Const AName: string): boolean;
@@ -73,7 +74,9 @@ type
 
   { Field Properties }
   private
+    FConfirmEntry: Boolean;
     FDecimals: Cardinal;
+    FEntryMode: TEpiEntryMode;
     FJumps: TEpiJumps;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
@@ -81,7 +84,9 @@ type
     FRanges: TEpiRanges;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiHeading;
+    procedure   SetConfirmEntry(const AValue: Boolean);
     procedure   SetDecimals(const AValue: Cardinal);
+    procedure   SetEntryMode(const AValue: TEpiEntryMode);
     procedure   SetLength(const AValue: Cardinal);
     procedure   SetName(const AValue: string);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
@@ -90,6 +95,8 @@ type
     property    FieldType: TEpiFieldType read FFieldType;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
+    property    EntryMode: TEpiEntryMode read FEntryMode write SetEntryMode;
+    property    ConfirmEntry: Boolean read FConfirmEntry write SetConfirmEntry;
     property    Question:  TEpiHeading read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    Ranges:    TEpiRanges read FRanges write FRanges;

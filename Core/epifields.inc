@@ -28,6 +28,24 @@ begin
   result := TEpiField(Items[index]);
 end;
 
+procedure TEpiFields.DoAssignList(const EpiCustomList: TEpiCustomList);
+var
+  OrgFields: TEpiFields absolute EpiCustomList;
+  i: Integer;
+  AField: TEpiField;
+begin
+  BeginUpdate;
+  if OrgFields.Count > 0 then
+  begin
+    for i := 0 to OrgFields.Count - 1 do
+    begin
+      AField := NewField(OrgFields[i].FieldType);
+      AField.Assign(OrgFields[i]);
+    end;
+  end;
+  EndUpdate;
+end;
+
 constructor TEpiFields.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -60,29 +78,6 @@ begin
 
     Node := Node.NextSibling;
   end;
-end;
-
-procedure TEpiFields.Assign(const AEpiCustomBase: TEpiCustomBase);
-var
-  OrgFields: TEpiFields absolute AEpiCustomBase;
-  i: Integer;
-  AField: TEpiField;
-begin
-  // Special overriding the normal "class inheritance" since Fields must be
-  // created in this special way.
-  inherited Assign(AEpiCustomBase);
-//  TEpiCustomItem(Self).Assign(AEpiCustomBase);
-
-  BeginUpdate;
-  if OrgFields.Count > 0 then
-  begin
-    for i := 0 to OrgFields.Count - 1 do
-    begin
-      AField := NewField(OrgFields[i].FieldType);
-      AField.Assign(OrgFields[i]);
-    end;
-  end;
-  EndUpdate;
 end;
 
 function TEpiFields.NewField(FieldType: TEpiFieldType): TEpiField;
@@ -124,6 +119,26 @@ begin
   Val := Decimals;
   FDecimals := AValue;
   DoChange(eegDataFiles, Word(efceSetDecimal), @Val);
+end;
+
+procedure TEpiField.SetConfirmEntry(const AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FConfirmEntry = AValue then exit;
+  Val := FConfirmEntry;
+  FConfirmEntry := AValue;
+  DoChange(eegFields, word(efceConfirmEntry), @Val);
+end;
+
+procedure TEpiField.SetEntryMode(const AValue: TEpiEntryMode);
+var
+  Val: TEpiEntryMode;
+begin
+  if FEntryMode = AValue then exit;
+  Val := FEntryMode;
+  FEntryMode := AValue;
+  DoChange(eegFields, Word(efceEntryMode), @Val);
 end;
 
 function TEpiField.GetSettings: TEpiXMLSettings;
@@ -258,6 +273,8 @@ begin
   if (FieldType in AutoFieldTypes) then exit;
 
   Length := OrgField.Length;
+  EntryMode := OrgField.EntryMode;
+  ConfirmEntry := OrgField.ConfirmEntry;
 
   // TODO : New algorithm for checking which Datafile this field belongs to.
   //      - blind assignment may cause havock in cases with different DF's.
@@ -267,6 +284,12 @@ begin
     Ranges := TEpiRanges.Create(Self);
     Ranges.ItemOwner := true;
     Ranges.Assign(OrgField.Ranges);
+  end;
+  if Assigned(OrgField.Jumps) then
+  begin
+    Jumps := TEpiJumps.Create(Self);
+    Jumps.ItemOwner := true;
+    Jumps.Assign(OrgField.Jumps);
   end;
   EndUpdate;
 end;
@@ -332,7 +355,11 @@ begin
     SaveNode(Lvl + 1, rsName, Name) +
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
     SaveNode(Lvl + 1, rsLength, Length) +
-    SaveNode(Lvl + 1, rsDecimals, Decimals);
+    SaveNode(Lvl + 1, rsDecimals, Decimals) +
+    SaveNode(Lvl + 1, rsEntryMode, Integer(EntryMode));
+  if ConfirmEntry then
+    Content += SaveNode(Lvl + 1, rsConfirmEntry, ConfirmEntry);
+
   if Assigned(ValueLabelSet) then
     Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
   if Assigned(Ranges) then
@@ -351,6 +378,9 @@ begin
   Name     := LoadNodeString(Root, rsName);
   Length   := LoadNodeInt(Root, rsLength);
   Decimals := LoadNodeInt(Root, rsDecimals);
+  EntryMode := TEpiEntryMode(LoadNodeInt(Root, rsEntryMode));
+  if LoadNode(Node, Root, rsConfirmEntry, false) then
+    ConfirmEntry := LoadNodeBool(Root, rsConfirmEntry);
   if LoadNode(Node, Root, rsValueLabelId, false) then
     ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
   if LoadNode(Node, Root, rsHeading, false) then

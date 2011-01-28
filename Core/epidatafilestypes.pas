@@ -56,6 +56,10 @@ const
 
   StringFieldTypes  = [ftString, ftUpperString];
 
+  // Complete set
+  AllFieldTypes     = BoolFieldTypes + IntFieldTypes + FloatFieldTypes +
+                      DateFieldTypes + TimeFieldTypes + StringFieldTypes;
+
   // Special auto type set.
   AutoFieldTypes    = [ftAutoInc,
                        ftDMYToday, ftMDYToday, ftYMDToday,
@@ -65,6 +69,8 @@ const
   RangeFieldTypes      = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
   ValueLabelFieldTypes = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
   JumpsFieldTypes      = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
+  EntryModeFieldTypes  = AllFieldTypes - AutoFieldTypes;
+  ConfirmEntryFieldTypes = AllFieldTypes - AutoFieldTypes;
 
   //================
   // RECORD RELATED
@@ -72,6 +78,12 @@ const
 type
   TEpiRecordState   = (rsNormal, rsVerified, rsDeleted);
 
+
+  //================
+  // RECORD RELATED
+  //================
+type
+  TEpiEntryMode     = (emDefault, emMustEnter, emNoEnter);
 
   //================
   // JUMPS RELATED

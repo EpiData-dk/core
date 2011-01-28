@@ -268,6 +268,7 @@ type
   { Class properties overrides }
   protected
     procedure SetModified(const AValue: Boolean); override;
+    procedure DoAssignList(Const EpiCustomList: TEpiCustomList); virtual;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
@@ -1317,29 +1318,32 @@ begin
       Items[i].Modified := AValue;
 end;
 
-procedure TEpiCustomList.Assign(const AEpiCustomBase: TEpiCustomBase);
+procedure TEpiCustomList.DoAssignList(const EpiCustomList: TEpiCustomList);
 var
-  OrgList: TEpiCustomList absolute AEpiCustomBase;
   i: Integer;
   ItemClass: TEpiCustomItemClass;
   Item: TEpiCustomItem;
 begin
-  inherited Assign(AEpiCustomBase);
-
-  if Self is TEpiFields then exit;
-
   BeginUpdate;
-  OnNewItemClass := OrgList.OnNewItemClass;
-  if OrgList.Count > 0 then
+  OnNewItemClass := EpiCustomList.OnNewItemClass;
+  if EpiCustomList.Count > 0 then
   begin
-    ItemClass := TEpiCustomItemClass(OrgList[0].ClassType);
-    for i := 0 to OrgList.Count - 1 do
+    ItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
+    for i := 0 to EpiCustomList.Count - 1 do
     begin
       Item := NewItem(ItemClass);
-      Item.Assign(OrgList[i]);
+      Item.Assign(EpiCustomList[i]);
     end;
   end;
   EndUpdate;
+end;
+
+procedure TEpiCustomList.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if AEpiCustomBase is TEpiCustomList then
+    DoAssignList(TEpiCustomList(AEpiCustomBase));
 end;
 
 end.

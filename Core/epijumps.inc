@@ -145,6 +145,19 @@ begin
     Result := Result + Format(' %s="%s"', [rsJumpTo, JumpToField.Id]);
 end;
 
+procedure TEpiJump.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgJump: TEpiJump absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+
+  BeginUpdate;
+  JumpToField := OrgJump.JumpToField;
+  JumpType    := OrgJump.JumpType;
+  ResetType   := OrgJump.ResetType;
+  EndUpdate;
+end;
+
 { TEpiBoolJump }
 
 procedure TEpiBoolJump.SetJumpValue(const AValue: EpiBool);
@@ -164,6 +177,12 @@ var
 begin
   inherited LoadFromXml(Root);
   JumpValue := LoadAttrInt(Root, rsJumpReset);
+end;
+
+procedure TEpiBoolJump.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  JumpValue := TEpiBoolJump(AEpiCustomBase).JumpValue;
 end;
 
 { TEpiIntJump }
@@ -187,6 +206,12 @@ begin
   JumpValue := LoadAttrInt(Root, rsJumpOn);
 end;
 
+procedure TEpiIntJump.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  JumpValue := TEpiIntJump(AEpiCustomBase).JumpValue;
+end;
+
 { TEpiFloatJump }
 
 procedure TEpiFloatJump.SetJumpValue(const AValue: EpiFloat);
@@ -208,6 +233,12 @@ begin
   JumpValue := LoadAttrFloat(Root, rsJumpOn);
 end;
 
+procedure TEpiFloatJump.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  JumpValue := TEpiFloatJump(AEpiCustomBase).JumpValue;
+end;
+
 { TEpiStringJump }
 
 procedure TEpiStringJump.SetJumpValue(const AValue: EpiString);
@@ -227,5 +258,11 @@ var
 begin
   inherited LoadFromXml(Root);
   JumpValue := LoadAttrString(Root, rsJumpOn);
+end;
+
+procedure TEpiStringJump.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  JumpValue := TEpiStringJump(AEpiCustomBase).JumpValue;
 end;
 

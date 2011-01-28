@@ -99,6 +99,8 @@ const
            rsJumpType         = 'type';
            rsJumpTo           = 'to';
            rsJumpReset        = 'reset';
+         rsEntryMode        = 'EntryMode';
+         rsConfirmEntry     = 'ConfirmEntry';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';
