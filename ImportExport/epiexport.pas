@@ -356,7 +356,7 @@ begin
     // ********************************
     FOR i := 0 TO NVar - 1 DO
     WITH Field[i] DO
-        WriteString(DataStream, Trim(EpiUtf8ToAnsi(Question.Caption.Text)), FileLabelLength);
+        WriteString(DataStream, Trim(EpiUtf8ToAnsi(Question.Text)), FileLabelLength);
 
     // ********************************
     //      STATA EXPANSION FIELDS

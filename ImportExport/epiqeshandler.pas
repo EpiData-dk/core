@@ -157,7 +157,7 @@ begin
     Length                := PosEnd - PosStart + 1;
     Top                   := CurY;
     TmpStr                := StringReplace(Copy(CurLine, 1, PosStart - 1), '{', '', [rfIgnoreCase, rfReplaceAll]);
-    Question.Caption.Text := Trim(StringReplace(TmpStr, '}', '', [rfIgnoreCase, rfReplaceAll]));
+    Question.Text         := Trim(StringReplace(TmpStr, '}', '', [rfIgnoreCase, rfReplaceAll]));
 {//    if (Df.FieldNaming = fnFirstWord) and (VariableLabel <> '') then
     begin
       Tmpstr := FirstWord(Question.Caption.Text, System.Length(Question.Caption.Text));

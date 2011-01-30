@@ -88,6 +88,7 @@ const
         rsField           = 'Field';
          rsLength          = 'Length';
          rsDecimals        = 'Decimals';
+         rsQuestion        = 'Question';
          rsValueLabelId    = 'ValueLabelId';
          rsRanges           = 'Ranges';
           rsRange            = 'Range';

@@ -83,7 +83,7 @@ type
     FName: string;
     FRanges: TEpiRanges;
     FValueLabelSet: TEpiValueLabelSet;
-    FQuestion:  TEpiHeading;
+    FQuestion:  TEpiTranslatedText;
     procedure   SetConfirmEntry(const AValue: Boolean);
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetEntryMode(const AValue: TEpiEntryMode);
@@ -97,7 +97,7 @@ type
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
     property    EntryMode: TEpiEntryMode read FEntryMode write SetEntryMode;
     property    ConfirmEntry: Boolean read FConfirmEntry write SetConfirmEntry;
-    property    Question:  TEpiHeading read FQuestion;
+    property    Question:  TEpiTranslatedText read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;

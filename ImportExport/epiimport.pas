@@ -330,14 +330,11 @@ begin
 
         with Question do
         begin
-          Left        := TmpQuestX;
-          Top         := TmpQuestY;
-
           VariableLabel := EpiUnknownStrToUTF8(StringReplace(TmpLabel, '_', '-', [rfReplaceAll]));
           // In old style .REC files, first word in label is the name of the field. Remove it.
           if Pos(TmpName, VariableLabel) > 0 then
             VariableLabel := Trim(Copy(VariableLabel, System.Length(TmpName)+1, System.Length(VariableLabel)));
-          Caption.Text := VariableLabel;
+          Text := VariableLabel;
         end;
         // Ensure valid variable name.
         Name := TmpName;
@@ -815,7 +812,7 @@ begin
       StrBuf := StringReplace(StrBuf, '>', ' ', [rfReplaceAll]);
       StrBuf := StringReplace(StrBuf, '<', ' ', [rfReplaceAll]);
       StrBuf := StringReplace(StrBuf, '_', ' ', [rfReplaceAll]);
-      TmpField.Question.Caption.Text := StrBuf;
+      TmpField.Question.Text := StrBuf;
 
       // No more field information exists. The update may complete.
       TmpField.EndUpdate;

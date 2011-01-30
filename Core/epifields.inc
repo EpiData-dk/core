@@ -298,7 +298,7 @@ constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
   FFieldType := AFieldType;
-  FQuestion := TEpiHeading.Create(Self);
+  FQuestion := TEpiTranslatedText.Create(Self, rsQuestion);
 
   RegisterClasses([FQuestion]);
 end;
@@ -383,8 +383,8 @@ begin
     ConfirmEntry := LoadNodeBool(Root, rsConfirmEntry);
   if LoadNode(Node, Root, rsValueLabelId, false) then
     ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
-  if LoadNode(Node, Root, rsHeading, false) then
-    FQuestion.LoadFromXml(Node);
+  if LoadNode(Node, Root, rsQuestion, false) then
+    FQuestion.LoadFromXml(Root);
   if LoadNode(Node, Root, rsRanges, false) then
   begin
     Ranges := TEpiRanges.Create(Self);
