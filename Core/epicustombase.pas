@@ -418,7 +418,8 @@ begin
 end;
 
 procedure TEpiCustomBase.RaiseErrorNode(const Root: TDOMNode; const NodeName: string) ;
-begin  raise TEpiCoreException.Create('ERROR: A required XML tag was not found.' + LineEnding +
+begin
+  raise TEpiCoreException.Create('ERROR: A required XML tag was not found.' + LineEnding +
           Format('In section %s the tag "%s" was expected!', [Root.NodeName, NodeName]));
 end;
 
