@@ -195,6 +195,16 @@ begin
   DoChange(eegFields, Word(efceName), @Val);
 end;
 
+procedure TEpiField.SetShowValueLabel(const AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FShowValueLabel = AValue then exit;
+  Val := FShowValueLabel;
+  FShowValueLabel := AValue;
+  DoChange(eegFields, word(efceShowValueLabel), @Val);
+end;
+
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
 begin
   if Assigned(FValueLabelSet) then
@@ -359,6 +369,8 @@ begin
     SaveNode(Lvl + 1, rsEntryMode, Integer(EntryMode));
   if ConfirmEntry then
     Content += SaveNode(Lvl + 1, rsConfirmEntry, ConfirmEntry);
+  if ShowValueLabel then
+    Content += SaveNode(Lvl + 1, rsShowValueLabel, ShowValueLabel);
 
   if Assigned(ValueLabelSet) then
     Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
@@ -381,6 +393,8 @@ begin
   EntryMode := TEpiEntryMode(LoadNodeInt(Root, rsEntryMode));
   if LoadNode(Node, Root, rsConfirmEntry, false) then
     ConfirmEntry := LoadNodeBool(Root, rsConfirmEntry);
+  if LoadNode(Node, Root, rsShowValueLabel, false) then
+    ShowValueLabel := LoadNodeBool(Root, rsShowValueLabel);
   if LoadNode(Node, Root, rsValueLabelId, false) then
     ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
   if LoadNode(Node, Root, rsQuestion, false) then

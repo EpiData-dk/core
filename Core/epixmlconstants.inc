@@ -102,6 +102,7 @@ const
            rsJumpReset        = 'reset';
          rsEntryMode        = 'EntryMode';
          rsConfirmEntry     = 'ConfirmEntry';
+         rsShowValueLabel   = 'ShowValueLabel';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

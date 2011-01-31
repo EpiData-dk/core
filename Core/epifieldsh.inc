@@ -4,7 +4,8 @@ type
 
   TEpiFieldsChangeEventType = (
     efceName, efceSetDecimal, efceSetLeft, efceSetLength,
-    efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry
+    efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
+    efceShowValueLabel
   );
 
   { TEpiFields }
@@ -82,6 +83,7 @@ type
     FFieldType: TEpiFieldType;
     FName: string;
     FRanges: TEpiRanges;
+    FShowValueLabel: Boolean;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiTranslatedText;
     procedure   SetConfirmEntry(const AValue: Boolean);
@@ -89,6 +91,7 @@ type
     procedure   SetEntryMode(const AValue: TEpiEntryMode);
     procedure   SetLength(const AValue: Cardinal);
     procedure   SetName(const AValue: string);
+    procedure   SetShowValueLabel(const AValue: Boolean);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
   public
     property    Name: string read FName write SetName;
@@ -99,6 +102,7 @@ type
     property    ConfirmEntry: Boolean read FConfirmEntry write SetConfirmEntry;
     property    Question:  TEpiTranslatedText read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
+    property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;
 
