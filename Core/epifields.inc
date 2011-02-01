@@ -285,6 +285,7 @@ begin
   Length := OrgField.Length;
   EntryMode := OrgField.EntryMode;
   ConfirmEntry := OrgField.ConfirmEntry;
+  ShowValueLabel := OrgField.ShowValueLabel;
 
   // TODO : New algorithm for checking which Datafile this field belongs to.
   //      - blind assignment may cause havock in cases with different DF's.
