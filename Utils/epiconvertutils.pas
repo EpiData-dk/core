@@ -11,12 +11,12 @@ uses
 function EpiStrToDate(Const Str: string; Const Separator: Char;
   Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
 function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out ErrMsg: string): TDate; overload;
+  Const FT: TEpiFieldType; out ErrMsg: string): EpiDate; overload;
 
 function EpiStrToTime(Const Str: string; Const Separator: Char;
   out H, M, S: Word; out ErrMsg: string): boolean; overload;
 function EpiStrToTime(Const Str: string; Const Separator: Char;
-  out ErrMsg: string): TTime; overload;
+  out ErrMsg: string): EpiTime; overload;
 
 implementation
 
@@ -105,12 +105,12 @@ begin
 end;
 
 function EpiStrToDate(const Str: string; const Separator: Char;
-  const FT: TEpiFieldType; out ErrMsg: string): TDate;
+  const FT: TEpiFieldType; out ErrMsg: string): EpiDate;
 var
   D, M, Y: Word;
 begin
   if EpiStrToDate(Str, Separator, Ft, D, M, Y, ErrMsg) then
-    Result := EncodeDate(Y, M, D)
+    Result := Trunc(EncodeDate(Y, M, D))
   else
     Result := 0;
 end;
@@ -149,7 +149,7 @@ begin
 end;
 
 function EpiStrToTime(const Str: string; const Separator: Char; out
-  ErrMsg: string): TTime;
+  ErrMsg: string): EpiTime;
 var
   H, M, S: Word;
 begin
