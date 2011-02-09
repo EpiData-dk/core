@@ -16,6 +16,7 @@ type
     BuildNo:   Integer;
   end;
 
+  function GetCoreRevision: string;
   function GetCoreVersionInfo: string;
   function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
   function CheckVersionOnline(Const ProgramName: String;
@@ -28,6 +29,12 @@ implementation
 uses
   strutils;
 
+{$IFDEF EPI_SHOWREVISION}
+  {$I corerevision.inc}
+{$ELSE}
+  const RevisionStr = '(DEBUG)';
+{$ENDIF}
+
 const
   CoreVersion: TEpiVersionInfo = (
     VersionNo: 0;
@@ -37,6 +44,11 @@ const
   );
 
   EpiDataURL = 'http://www.epidata.dk/version/checkversion.php';
+
+function GetCoreRevision: string;
+begin
+  result := RevisionStr;
+end;
 
 function GetCoreVersionInfo: string;
 begin
