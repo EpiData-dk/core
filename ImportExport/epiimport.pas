@@ -710,7 +710,8 @@ begin
       if StrBuf[Length(StrBuf)] <> 'S' then
       begin
         Case Char(StrBuf[2+j]) of
-          // Date (and time formats) (Time not supported by EpiData yet).
+          // Date (and time formats)
+          // TODO : (Time not supported by EpiData yet).
           'T',
           'D':
             Begin
@@ -896,6 +897,9 @@ begin
                   end else
                     TmpField.IsMissing[CurRec] := true;
                 end else
+                  {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
+                  if TmpField.FieldType in DateFieldTypes then
+                    I := I + 21916;
                   TmpField.AsInteger[CurRec] := I;
               end;
             FloatConst,

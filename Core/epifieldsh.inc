@@ -34,7 +34,6 @@ type
 
   { Data access properties }
   private
-    LocalFmtSettings: TFormatSettings;
     procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
     function    GetIsMissingValue(const index: Integer): boolean;
