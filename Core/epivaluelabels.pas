@@ -88,9 +88,10 @@ type
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
     FName:      string;
+    function    GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
     function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
-    function    GetValueLabel(const AValue: variant): string;
+    function    GetValueLabelString(const AValue: variant): string;
     function    GetValueLabelExists(const AValue: variant): boolean;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
     procedure   SetLabelType(const AValue: TEpiFieldType);
@@ -112,7 +113,8 @@ type
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
     property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
-    property    ValueLabel[Const AValue: variant]: string read GetValueLabel;
+    property    ValueLabel[Const AValue: variant]: TEpiCustomValueLabel read GetValueLabel;
+    property    ValueLabelString[Const AValue: variant]: string read GetValueLabelString;
     property    ValueLabelExists[Const AValue: variant]: boolean read GetValueLabelExists;
     property    IsMissingValue[Const AValue: variant]: boolean read GetIsMissingValue;
   public
@@ -305,7 +307,7 @@ begin
   DoChange(eegValueLabels, Word(evceName), @Val);
 end;
 
-function TEpiValueLabelSet.GetValueLabel(const AValue: variant): string;
+function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
 var
   i: Integer;
 begin
@@ -325,6 +327,17 @@ function TEpiValueLabelSet.GetValueLabels(const index: integer
   ): TEpiCustomValueLabel;
 begin
   result := TEpiCustomValueLabel(Items[index]);
+end;
+
+function TEpiValueLabelSet.GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
+var
+  I: LongInt;
+begin
+  result := nil;
+
+  I := GetValueLabelIndex(AValue);
+  if I <> -1 then
+    Result := ValueLabels[I];
 end;
 
 function TEpiValueLabelSet.GetValueLabelIndex(const AValue: variant): integer;

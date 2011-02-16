@@ -13,7 +13,9 @@ type
   TEpiFields = class(TEpiCustomList)
   private
     function GetDataFile: TEpiDataFile;
+    function GetFieldIndexByName(Const AName: string): integer;
     function GetField(index: integer): TEpiField;
+    function GetFieldByName(const AName: string): TEpiField;
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
   public
@@ -26,6 +28,7 @@ type
     function    FieldExistsByName(Const AName: string): boolean;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
+    property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;
   end;
 
   { TEpiField }

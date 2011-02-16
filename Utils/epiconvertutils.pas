@@ -12,11 +12,15 @@ function EpiStrToDate(Const Str: string; Const Separator: Char;
   Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
 function EpiStrToDate(Const Str: string; Const Separator: Char;
   Const FT: TEpiFieldType; out ErrMsg: string): EpiDate; overload;
+function EpiStrToDate(Const Str: string; Const Separator: Char;
+  Const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean; overload;
 
 function EpiStrToTime(Const Str: string; Const Separator: Char;
   out H, M, S: Word; out ErrMsg: string): boolean; overload;
 function EpiStrToTime(Const Str: string; Const Separator: Char;
   out ErrMsg: string): EpiTime; overload;
+function EpiStrToTime(Const Str: string; Const Separator: Char;
+  out TheTime: EpiTime; out ErrMsg: string): boolean; overload;
 
 implementation
 
@@ -115,6 +119,16 @@ begin
     Result := 0;
 end;
 
+function EpiStrToDate(const Str: string; const Separator: Char;
+  const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean;
+var
+  D, M, Y: Word;
+begin
+  result := EpiStrToDate(Str, Separator, Ft, D, M, Y, ErrMsg);
+  if result then
+    TheDate := Trunc(EncodeDate(Y, M, D));
+end;
+
 function EpiStrToTime(const Str: string; const Separator: Char; out H, M,
   S: Word; out ErrMsg: string): boolean;
 var
@@ -157,6 +171,16 @@ begin
     Result := EncodeTime(H, M, S, 0)
   else
     Result := 0;
+end;
+
+function EpiStrToTime(const Str: string; const Separator: Char;
+  out TheTime: EpiTime; out ErrMsg: string): boolean;
+var
+  H, M, S: Word;
+begin
+  result := EpiStrToTime(Str, Separator, H, M, S, ErrMsg);
+  if result then
+    TheTime := EncodeTime(H, M, S, 0);
 end;
 
 end.

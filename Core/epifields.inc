@@ -23,9 +23,26 @@ begin
   result := TEpiDataFile(AOwner);
 end;
 
+function TEpiFields.GetFieldIndexByName(const AName: string): integer;
+begin
+  for result := 0 to Count - 1 do
+    if CompareStr(Field[result].Name, AName) = 0 then exit;
+  Result := -1;
+end;
+
 function TEpiFields.GetField(index: integer): TEpiField;
 begin
   result := TEpiField(Items[index]);
+end;
+
+function TEpiFields.GetFieldByName(const AName: string): TEpiField;
+var
+  I: LongInt;
+begin
+  result := nil;
+  I := GetFieldIndexByName(AName);
+  if I <> -1 then
+    Result := Field[I];
 end;
 
 procedure TEpiFields.DoAssignList(const EpiCustomList: TEpiCustomList);
@@ -97,16 +114,12 @@ end;
 
 function TEpiFields.FieldExists(AField: TEpiField): boolean;
 begin
-  FieldExistsByName(AField.Name);
+  result := ItemExistsById(AField.Id);
 end;
 
 function TEpiFields.FieldExistsByName(Const AName: string): boolean;
-var
-  i: Integer;
 begin
-  result := false;
-  for i := 0 to Count - 1 do
-    if CompareStr(Field[i].Name, AName) = 0 then exit(true);
+  result := GetFieldIndexByName(AName) <> -1;
 end;
 
 { TEpiField }
