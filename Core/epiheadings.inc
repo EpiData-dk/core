@@ -44,6 +44,16 @@ end;
 
 { TEpiHeading }
 
+function TEpiHeading.GetSection: TEpiSection;
+var
+  AOwner: TEpiCustomBase;
+begin
+  AOwner := Owner;
+  while Assigned(AOwner) and (not (AOwner is TEpiSection)) do
+    AOwner := AOwner.Owner;
+  result := TEpiSection(AOwner);
+end;
+
 constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);

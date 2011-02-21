@@ -131,7 +131,7 @@ type
   { Class inheritance, load/save, etc. }
   protected
     // Never ever create a field directly!
-    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
     class function IdString: string; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
@@ -203,6 +203,8 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
@@ -239,6 +241,8 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
@@ -273,6 +277,8 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
@@ -308,6 +314,8 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
@@ -342,6 +350,8 @@ type
      procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
      procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
      procedure SetCapacity(AValue: Integer); override;
+     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+        override;
   public
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;

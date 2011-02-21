@@ -324,6 +324,13 @@ begin
   FFieldType := AFieldType;
   FQuestion := TEpiTranslatedText.Create(Self, rsQuestion);
 
+  FConfirmEntry := false;
+  FDecimals     := 0;
+  FEntryMode    := emDefault;
+  FLength       := 2;
+  FName         := '';
+  FShowValueLabel := false;
+
   RegisterClasses([FQuestion]);
 end;
 
@@ -768,6 +775,13 @@ begin
   FCapacity := AValue;
 end;
 
+constructor TEpiFloatField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  FDecimals := 2;
+end;
+
 class function TEpiFloatField.CheckMissing(AValue: EpiFloat): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -980,6 +994,13 @@ begin
   FCapacity := AValue;
 end;
 
+constructor TEpiBoolField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  FLength := 1;
+end;
+
 class function TEpiBoolField.CheckMissing(AValue: EpiBool): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -1162,6 +1183,13 @@ begin
   System.SetLength(FData, AValue);
   // We do not want to initialize string, this is costly and should be avoided.
   FCapacity := AValue;
+end;
+
+constructor TEpiStringField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  FLength := 20;
 end;
 
 class function TEpiStringField.CheckMissing(AValue: EpiString): boolean;
@@ -1387,6 +1415,13 @@ begin
   FCapacity := AValue;
 end;
 
+constructor TEpiDateField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  FLength := 10;
+end;
+
 { TEpiDateTimeField }
 
 function TEpiDateTimeField.GetAsBoolean(const index: Integer): EpiBool;
@@ -1540,6 +1575,13 @@ begin
   for i := FCapacity to AValue-1 do
     FData[i] := DefaultMissing;
   FCapacity := AValue;
+end;
+
+constructor TEpiDateTimeField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  FLength := 8;
 end;
 
 class function TEpiDateTimeField.CheckMissing(AValue: EpiDateTime): boolean;

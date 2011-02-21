@@ -20,6 +20,8 @@ type
   TEpiHeading = class(TEpiCustomControlItem)
   private
     FCaption:   TEpiTranslatedText;
+    FDataFile: TEpiDataFile;
+    function   GetSection: TEpiSection;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -28,5 +30,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
   public
     property    Caption: TEpiTranslatedText read FCaption;
+    property    DataFile: TEpiDataFile read FDataFile;
+    property    Section:  TEpiSection read GetSection;
   end;
 
