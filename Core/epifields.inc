@@ -289,11 +289,7 @@ var
 begin
   inherited Assign(AEpiCustomBase);
 
-  // Auto Field types can only be assigned inherited things (which includes the
-  // question, etc.). Field specifics such as length, range etc. are irrelevant
-  // for an auto field.
   BeginUpdate;
-  if (FieldType in AutoFieldTypes) then exit;
 
   Length := OrgField.Length;
   EntryMode := OrgField.EntryMode;

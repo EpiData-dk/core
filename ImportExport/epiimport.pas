@@ -837,7 +837,7 @@ begin
 
     if not ImportData then
     begin
-      DataStream.Seek(NVar * VarDataLength, soCurrent);
+      DataStream.Seek(NObs * NVar * VarDataLength, soCurrent);
     end else try
       // ********************************
       //          STATA DATA
