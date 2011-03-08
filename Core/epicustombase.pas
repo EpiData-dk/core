@@ -137,6 +137,7 @@ type
   private
     FClassList: TFPList;
     FModified: Boolean;
+    FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
     FState:     TEpiCustomBaseState;
@@ -155,6 +156,11 @@ type
     property    State: TEpiCustomBaseState read FState;
     property    Modified: Boolean read FModified write SetModified;
     property    OnModified: TNotifyEvent read FOnModified write SetOnModified;
+    // ObjectData is a custom property that can be used freely to store some data
+    // along with the object. It is NEVER used by the internals of Core, hence will
+    // not be copied/assigned/freed etc.
+    // It is entirely up to the user to keep track of it's use throught a program.
+    property    ObjectData: PtrUInt read FObjectData write FObjectData;
   end;
   {$static off}
 
@@ -219,6 +225,7 @@ type
   { TEpiCustomList }
 
   TEpiOnNewItemClass = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
+  TEpiOnItemAssign = procedure(Sender: TEpiCustomList; NewItem, OldItem: TEpiCustomItem) of object;
   TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;

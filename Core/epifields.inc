@@ -286,6 +286,7 @@ end;
 procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
 var
   OrgField: TEpiField absolute AEpiCustomBase;
+  VLSet: TEpiValueLabelSet;
 begin
   inherited Assign(AEpiCustomBase);
 
@@ -296,15 +297,17 @@ begin
   ConfirmEntry := OrgField.ConfirmEntry;
   ShowValueLabel := OrgField.ShowValueLabel;
 
-  // TODO : New algorithm for checking which Datafile this field belongs to.
-  //      - blind assignment may cause havock in cases with different DF's.
-  ValueLabelSet := OrgField.ValueLabelSet;
+  // Valuelabels are NEVER copied - it's up to users manually to
+  // copy/assign them correctly when assigning field to each other.
+  ValueLabelSet := nil;
+
   if Assigned(OrgField.Ranges) then
   begin
     Ranges := TEpiRanges.Create(Self);
     Ranges.ItemOwner := true;
     Ranges.Assign(OrgField.Ranges);
   end;
+
   if Assigned(OrgField.Jumps) then
   begin
     Jumps := TEpiJumps.Create(Self);

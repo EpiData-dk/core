@@ -28,7 +28,7 @@ uses
   epimiscutils, dateutils;
 
 function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean;
+  Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
 var
   A, B, C: String;
   Al, Bl, Cl: Integer;

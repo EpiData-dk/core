@@ -24,6 +24,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Order: integer read FOrder write FOrder;
     property TheLabel: TEpiTranslatedText read FLabel write FLabel;
     property IsMissingValue: boolean read FIsMissingValue write FIsMissingValue;
@@ -40,6 +41,7 @@ type
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiInteger read FValue write FValue;
   end;
 
@@ -52,6 +54,7 @@ type
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiFloat read FValue write FValue;
   end;
 
@@ -64,6 +67,7 @@ type
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiString read FValue write FValue;
   end;
 
@@ -102,6 +106,7 @@ type
     procedure   LoadExternal(Root: TDOMNode); virtual;
     function    SaveExternal(Lvl: integer): string; virtual;
     class function IdString: string; override;
+    procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -109,6 +114,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Name: string read FName write SetName;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
@@ -201,6 +207,18 @@ begin
   TheLabel.LoadFromXml(Root);
 end;
 
+procedure TEpiCustomValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgVL: TEpiCustomValueLabel absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FIsMissingValue := OrgVL.FIsMissingValue;
+  FOrder          := OrgVL.FOrder;
+  FLabel.Assign(OrgVL.FLabel);
+  EndUpdate;
+end;
+
 { TEpiIntValueLabel }
 
 function TEpiIntValueLabel.GetValueAsString: string;
@@ -212,6 +230,14 @@ procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
   Value := StrToInt(TDOMElement(Root).AttribStrings['value']);
+end;
+
+procedure TEpiIntValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FValue := TEpiIntValueLabel(AEpiCustomBase).FValue;
+  EndUpdate;
 end;
 
 { TEpiFloatValueLabel }
@@ -230,6 +256,14 @@ begin
   RestoreFormatSettings;
 end;
 
+procedure TEpiFloatValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FValue := TEpiFloatValueLabel(AEpiCustomBase).FValue;
+  EndUpdate;
+end;
+
 { TEpiStringValueLabel }
 
 function TEpiStringValueLabel.GetValueAsString: string;
@@ -241,6 +275,14 @@ procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
   Value := UTF8Encode(TDOMElement(Root).AttribStrings['value']);
+end;
+
+procedure TEpiStringValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FValue := TEpiStringValueLabel(AEpiCustomBase).FValue;
+  EndUpdate;
 end;
 
 { TEpiValueLabelSet }
@@ -429,6 +471,23 @@ begin
   Result := 'valuelabelset_id_';
 end;
 
+procedure TEpiValueLabelSet.DoAssignList(const EpiCustomList: TEpiCustomList);
+var
+  Item: TEpiCustomValueLabel;
+  i: Integer;
+begin
+  BeginUpdate;
+  if EpiCustomList.Count > 0 then
+  begin
+    for i := 0 to EpiCustomList.Count - 1 do
+    begin
+      Item := NewValueLabel;
+      Item.Assign(EpiCustomList[i]);
+    end;
+  end;
+  EndUpdate;
+end;
+
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -482,6 +541,23 @@ begin
   end;
   result.Order := Count + 1;
   AddItem(result);
+end;
+
+procedure TEpiValueLabelSet.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgVL: TEpiValueLabelSet absolute AEpiCustomBase;
+  i: Integer;
+  AName: String;
+begin
+  inherited Assign(AEpiCustomBase);
+  AName := OrgVL.Name;
+  i := 1;
+  if not TEpiValueLabelSets(Owner).ValidateRename(Self, AName) then
+    repeat
+      AName := OrgVL.Name + IntToStr(i);
+      Inc(i);
+    until TEpiValueLabelSets(Owner).ValidateRename(Self, AName);
+  Name := AName;
 end;
 
 function TEpiValueLabelSet.MissingCount: LongInt;
