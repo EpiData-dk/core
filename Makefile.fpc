@@ -7,7 +7,7 @@ name=epidatacore
 version=0.5
 
 [compiler]
-options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Schi -dEPI_SHOWREVISION
+options=-dLCL -dLCL$(LCL_PLATFORM) -MObjFPC -Schi -dEPI_SHOWREVISION -CX
 unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
 unitdir=Core \
 	Utils \
