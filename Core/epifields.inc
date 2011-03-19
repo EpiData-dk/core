@@ -189,25 +189,6 @@ begin
   end;
 end;
 
-procedure TEpiField.SetName(const AValue: string);
-var
-  Val: String;
-begin
-  if FName = AValue then exit;
-
-  // Validate identifier
-  if not ValidateIdentifierUTF8(AValue) then
-    Exit;
-
-  // Validate against Datafile.
-  if (Assigned(DataFile)) and
-     not DataFile.ValidateFieldRename(Self, AValue) then exit;
-
-  Val := FName;
-  FName := AValue;
-  DoChange(eegFields, Word(efceName), @Val);
-end;
-
 procedure TEpiField.SetShowValueLabel(const AValue: Boolean);
 var
   Val: Boolean;
@@ -327,7 +308,6 @@ begin
   FDecimals     := 0;
   FEntryMode    := emDefault;
   FLength       := 2;
-  FName         := '';
   FShowValueLabel := false;
 
   RegisterClasses([FQuestion]);
@@ -382,7 +362,6 @@ end;
 function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content :=
-    SaveNode(Lvl + 1, rsName, Name) +
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
     SaveNode(Lvl + 1, rsLength, Length) +
     SaveNode(Lvl + 1, rsDecimals, Decimals) +
@@ -407,7 +386,6 @@ var
 begin
   // Root = <Field>
   inherited LoadFromXml(Root);
-  Name     := LoadNodeString(Root, rsName);
   Length   := LoadNodeInt(Root, rsLength);
   Decimals := LoadNodeInt(Root, rsDecimals);
   EntryMode := TEpiEntryMode(LoadNodeInt(Root, rsEntryMode));

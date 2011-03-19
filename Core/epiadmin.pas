@@ -25,7 +25,7 @@ type
 
   TEpiAdminChangeEventType = (
     // User related events:
-    eaceUserSetLogin,
+    eaceUserSetFirstName, eaceUserSetLastName,
     eaceUserSetPassword, eaceUserSetGroup,
     eaceUserSetExpireDate,eaceUserSetLastLogin,
     // Group related events:
@@ -88,18 +88,18 @@ type
 
   { TEpiUser }
 
-  TEpiUser = class(TEpiCustomItem)
+  TEpiUser = class(TEpiCustomNamedItem)
   private
-    FExpireDate: TDateTime;
     FGroup: TEpiGroup;
+    FExpireDate: TDateTime;
     FLastLogin: TDateTime;
-    FLogin: string;
+    FFirstName: string;
+    FLastName: string;
     // Master password as stored in file:
     // - Base64( AES ( CleearTextPassword ))
     FMasterPassword: string;
-    FName: string;
     // Users password as stored in file:
-    // - '$' + Base64(Salt) + '$' + Base64( SHA1 ( Salt + CleearTextPassword + Login ))
+    // - '$' + Base64(Salt) + '$' + Base64( SHA1 ( Salt + ClearTextPassword + Login ))
     FPassword: string;
     // a 4-byte string used for scrambling the password.
     // - is reset every time the user changes password (even if it is the same password).
@@ -107,11 +107,11 @@ type
     FSalt: string;
     function GetAdmin: TEpiAdmin;
     procedure SetExpireDate(const AValue: TDateTime);
+    procedure SetFirstName(const AValue: string);
     procedure SetGroup(const AValue: TEpiGroup);
     procedure SetLastLogin(const AValue: TDateTime);
-    procedure SetLogin(const AValue: string);
+    procedure SetLastName(const AValue: string);
     procedure SetMasterPassword(const AValue: string);
-    procedure SetName(const AValue: string);
     procedure SetPassword(const AValue: string);
   protected
     class function IdString: string; override;
@@ -119,20 +119,21 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    function XMLName: string; override;
+    function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
-    // Unscrambles data:
-    Property   Login: string read FLogin write SetLogin;
+    // Unscrambled data:
+    Property   Login: string read GetName write SetName;
     Property   Password: string read FPassword write SetPassword;
     Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     // Scrambled data (in UserInfo section):
     Property   Group: TEpiGroup read FGroup write SetGroup;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
-    property   Name: string read FName write SetName;
+    property   FirstName: string read FFirstName write SetFirstName;
+    property   LastName: string read FLastName write SetLastName;
   public
     Property   Id;
   end;
@@ -156,9 +157,9 @@ type
 
   { TEpiGroup }
 
-  TEpiGroup = class(TEpiCustomItem)
+  TEpiGroup = class(TEpiCustomNamedItem)
   private
-    FName: TEpiTranslatedText;
+    FCaption: TEpiTranslatedText;
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
   protected
@@ -169,7 +170,7 @@ type
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
-    property   Name: TEpiTranslatedText read FName;
+    property   Caption: TEpiTranslatedText read FCaption;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
   end;
 
@@ -373,7 +374,7 @@ begin
     CheckNode(Node, rsUser);
 
     NUser := NewUser;
-    NUser.Login := LoadNodeString(Node, rsLogin);
+    NUser.Login := LoadNodeString(Node, rsName);
     // Set password directly here, since the SetPassword method hash'es it and reencrypts the master password.
     NUser.FPassword := LoadNodeString(Node, rsPassword);
     NUser.FSalt := Base64DecodeStr(ExtractStrBetween(NUser.FPassword, '$', '$'));
@@ -399,11 +400,11 @@ begin
   begin
     CheckNode(Node, rsUser);
 
-    NUser := GetUserByLogin(LoadNodeString(Node, rsLogin));
+    NUser := GetUserByLogin(LoadNodeString(Node, rsName));
     if not Assigned(NUser) then
     begin
       NUser := NewUser;
-      NUser.Login := LoadNodeString(Node, rsLogin);
+      NUser.Login := LoadNodeString(Node, rsName);
       NUser.FPassword := LoadNodeString(Node, rsPassword);
       NUser.MasterPassword := LoadNodeString(Node, rsMasterPassword);
     end;
@@ -435,6 +436,16 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetExpireDate), @Val);
 end;
 
+procedure TEpiUser.SetFirstName(const AValue: string);
+var
+  Val: String;
+begin
+  if FFirstName = AValue then exit;
+  Val := FFirstName;
+  FFirstName := AValue;
+  DoChange(eegAdmin, Word(eaceUserSetFirstName), @Val);
+end;
+
 function TEpiUser.GetAdmin: TEpiAdmin;
 begin
   result := TEpiAdmin(TEpiUsers(Owner).Owner);
@@ -450,14 +461,14 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetLastLogin), @Val);
 end;
 
-procedure TEpiUser.SetLogin(const AValue: string);
+procedure TEpiUser.SetLastName(const AValue: string);
 var
   Val: String;
 begin
-  if FLogin = AValue then exit;
-  Val := FLogin;
-  FLogin := AValue;
-  DoChange(eegAdmin, Word(eaceUserSetLogin), @Val);
+  if FLastName = AValue then exit;
+  Val := FLastName;
+  FLastName := AValue;
+  DoChange(eegAdmin, Word(eaceUserSetLastName), @Val);
 end;
 
 procedure TEpiUser.SetMasterPassword(const AValue: string);
@@ -466,18 +477,12 @@ begin
   FMasterPassword := AValue;
 end;
 
-procedure TEpiUser.SetName(const AValue: string);
-begin
-  if FName = AValue then exit;
-  FName := AValue;
-end;
-
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   SaltInt: LongInt;
   SaltByte: array[0..3] of char absolute SaltInt;
 begin
-  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;
+  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
   FSalt := String(SaltByte);
 
   // Sha1 the new password and Base64 it..
@@ -504,7 +509,8 @@ end;
 
 destructor TEpiUser.Destroy;
 begin
-  FLogin := '';
+  FFirstName := '';
+  FLastName := '';
   FMasterPassword := '';
   FPassword := '';
   FSalt := '';
@@ -522,13 +528,13 @@ var
 begin
   Inc(Lvl);
   Content :=
-    SaveNode(Lvl, rsLogin, Login) +
     SaveNode(Lvl, rsPassword, Password) +
     SaveNode(Lvl, rsMasterPassword, BoolToStr(Admin.Settings.Scrambled, MasterPassword, ''));
 
   // TODO : NAME MUST NOT BE SAVED UNSCRAMBLED!!!
   S :=
-    SaveNode(Lvl, rsName, Name) +
+    SaveNode(Lvl, rsFirstName, FirstName) +
+    SaveNode(Lvl, rsLastName, LastName) +
     SaveNode(Lvl, rsGroupId, Group.Id) +
     SaveNode(Lvl, rsLastLogin, LastLogin) +
     SaveNode(Lvl, rsExpireDate, ExpireDate);
@@ -553,7 +559,8 @@ begin
   else
     NewRoot := Root;
 
-  Name       := LoadNodeString(NewRoot, rsName);
+  FirstName  := LoadNodeString(NewRoot, rsFirstName);
+  LastName   := LoadNodeString(NewRoot, rsLastName);
   LastLogin  := LoadNodeDateTime(NewRoot, rsLastLogin);
   ExpireDate := LoadNodeDateTime(NewRoot, rsExpireDate);
   Group      := TEpiGroup(Admin.Groups.GetItemById(LoadNodeString(NewRoot, rsGroupId)));
@@ -650,13 +657,13 @@ constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
 
-  FName := TEpiTranslatedText.Create(Self, rsName);
-  RegisterClasses([Name]);
+  FCaption := TEpiTranslatedText.Create(Self, rsName);
+  RegisterClasses([Caption]);
 end;
 
 destructor TEpiGroup.Destroy;
 begin
-  FName.Free;
+  FCaption.Free;
   inherited Destroy;
 end;
 
@@ -678,7 +685,7 @@ begin
   inherited LoadFromXml(Root);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Name.LoadFromXml(Root);
+  Caption.LoadFromXml(Root);
   Rights := TEpiAdminRights(LoadNodeInt(Root, rsRights));
 end;
 

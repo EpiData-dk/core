@@ -83,7 +83,6 @@ type
     FJumps: TEpiJumps;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
-    FName: string;
     FRanges: TEpiRanges;
     FShowValueLabel: Boolean;
     FValueLabelSet: TEpiValueLabelSet;
@@ -92,11 +91,9 @@ type
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetEntryMode(const AValue: TEpiEntryMode);
     procedure   SetLength(const AValue: Cardinal);
-    procedure   SetName(const AValue: string);
     procedure   SetShowValueLabel(const AValue: Boolean);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
   public
-    property    Name: string read FName write SetName;
     property    FieldType: TEpiFieldType read FFieldType;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;

@@ -31,7 +31,8 @@ const
     // User
     rsUsers           = 'Users';
      rsUser            = 'User';
-      rsLogin           = 'Login';
+      rsFirstName       = 'FirstName';
+      rsLastName        = 'LastName';
       rsPassword        = 'Password';
       rsMasterPassword  = 'MasterPassword';
       rsLastLogin       = 'LastLogin';

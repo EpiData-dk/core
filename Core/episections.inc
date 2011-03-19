@@ -88,7 +88,7 @@ end;
 constructor TEpiSection.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  FName := TEpiTranslatedText.Create(Self, rsName);
+  FCaption := TEpiTranslatedText.Create(Self, rsCaption);
 
   FFields := TEpiFields.Create(self);
   FFields.ItemOwner := true;
@@ -98,7 +98,7 @@ begin
 
   FGroups := TEpiGroups.Create(Self);
 
-  RegisterClasses([Name, Fields, Headings]);
+  RegisterClasses([Caption, Fields, Headings]);
 end;
 
 destructor TEpiSection.Destroy;
@@ -106,7 +106,7 @@ begin
   FGroups.Free;
   FHeadings.Free;
   FFields.Free;
-  FName.Free;
+  FCaption.Free;
   inherited Destroy;
 end;
 
@@ -144,7 +144,7 @@ begin
   inherited LoadFromXml(Root);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Name.LoadFromXml(Root);
+  Caption.LoadFromXml(Root);
 
   Width := LoadNodeInt(Root, rsWidth);
   Height := LoadNodeInt(Root, rsHeight);

@@ -41,7 +41,7 @@ type
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
     ecceDestroy, ecceUpdate, ecceId, ecceAddItem, ecceDelItem, ecceSetItem,
-    ecceSetTop, ecceSetLeft, ecceText
+    ecceSetTop, ecceSetLeft, ecceText, ecceName
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
 
@@ -204,9 +204,26 @@ type
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
+  { TEpiCustomNamedItem }
+
+  TEpiCustomNamedItem = class(TEpiCustomItem)
+  private
+    FName: string;
+  protected
+    function  GetName: string; virtual;
+    procedure SetName(const AValue: string); virtual;
+    function  DoValidateRename(Const NewName: string): boolean; virtual;
+  public
+    destructor Destroy; override;
+    function   SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
+    function   ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean;
+    property   Name: string read GetName write SetName;
+  end;
+
   { TEpiCustomControlItem }
 
-  TEpiCustomControlItem = class(TEpiCustomItem)
+  TEpiCustomControlItem = class(TEpiCustomNamedItem)
   private
     FLeft: integer;
     FTop: integer;
@@ -225,7 +242,6 @@ type
   { TEpiCustomList }
 
   TEpiOnNewItemClass = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
-  TEpiOnItemAssign = procedure(Sender: TEpiCustomList; NewItem, OldItem: TEpiCustomItem) of object;
   TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
@@ -243,7 +259,7 @@ type
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem;
+    function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; virtual;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
@@ -277,6 +293,23 @@ type
     procedure SetModified(const AValue: Boolean); override;
     procedure DoAssignList(Const EpiCustomList: TEpiCustomList); virtual;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  end;
+
+
+  { TEpiCustomNamedItemList }
+  TEpiValidateRenameEvent = function(Const NewName: string): boolean of object;
+  TEpiCustomNamedItemList = class(TEpiCustomList)
+  private
+    FOnValidateRename: TEpiValidateRenameEvent;
+  public
+    function  NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; override;
+    procedure AddItem(Item: TEpiCustomItem); override;
+    procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function  GetUniqueName: string;
+    function  GetItemByName(Const AName: string): TEpiCustomNamedItem;
+    function  GetItemIndexByName(Const AName: string): Integer;
+    function  ValidateRename(Const NewName: string): boolean;
+    property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
   end;
 
 {$I epixmlconstants.inc}
@@ -1055,6 +1088,62 @@ begin
     Id := UTF8Encode(Attr.Value);
 end;
 
+{ TEpiCustomNamedItem }
+
+function TEpiCustomNamedItem.GetName: string;
+begin
+  result := FName;
+end;
+
+procedure TEpiCustomNamedItem.SetName(const AValue: string);
+var
+  Val: String;
+begin
+  if FName = AValue then exit;
+
+  // Validate identifier
+  if not DoValidateRename(AValue) then Exit;
+
+  Val := FName;
+  FName := AValue;
+  DoChange(eegCustomBase, Word(ecceName), @Val);
+end;
+
+function TEpiCustomNamedItem.DoValidateRename(const NewName: string): boolean;
+begin
+  result :=
+    ValidateIdentifierUTF8(NewName) and
+    (Owner is TEpiCustomNamedItemList) and
+    (not TEpiCustomNamedItemList(Owner).ValidateRename(NewName));
+end;
+
+destructor TEpiCustomNamedItem.Destroy;
+begin
+  inherited Destroy;
+end;
+
+function TEpiCustomNamedItem.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content :=
+    SaveNode(Lvl + 1, rsName, Name) +
+    Content;
+  Result := inherited SaveToXml(Content, Lvl);
+end;
+
+procedure TEpiCustomNamedItem.LoadFromXml(Root: TDOMNode);
+begin
+  inherited LoadFromXml(Root);
+  Name := LoadNodeString(Root, rsName);
+end;
+
+function TEpiCustomNamedItem.ValidateRename(const NewName: string;
+  RenameOnSuccess: boolean): boolean;
+begin
+  result := DoValidateRename(NewName);
+
+  if Result then Name := NewName;
+end;
+
 { TEpiCustomControlItem }
 
 function TEpiCustomControlItem.SaveToXml(Content: String; Lvl: integer
@@ -1351,6 +1440,62 @@ begin
 
   if AEpiCustomBase is TEpiCustomList then
     DoAssignList(TEpiCustomList(AEpiCustomBase));
+end;
+
+{ TEpiCustomNamedItemList }
+
+function TEpiCustomNamedItemList.NewItem(ItemClass: TEpiCustomItemClass
+  ): TEpiCustomItem;
+begin
+  raise Exception.Create('Function not implemedted');
+//  Result := inherited NewItem(ItemClass);
+end;
+
+procedure TEpiCustomNamedItemList.AddItem(Item: TEpiCustomItem);
+begin
+  raise Exception.Create('Function not implemedted');
+//  inherited AddItem(Item);
+end;
+
+procedure TEpiCustomNamedItemList.InsertItem(const Index: integer;
+  Item: TEpiCustomItem);
+begin
+  raise Exception.Create('Function not implemedted');
+//  inherited InsertItem(Index, Item);
+end;
+
+function TEpiCustomNamedItemList.GetUniqueName: string;
+begin
+  raise Exception.Create('Function not implemedted');
+end;
+
+function TEpiCustomNamedItemList.GetItemByName(const AName: string
+  ): TEpiCustomNamedItem;
+var
+  Idx: LongInt;
+begin
+  Result := nil;
+  Idx := GetItemIndexByName(AName);
+  if Idx <> -1 then
+    Result := TEpiCustomNamedItem(Items[Idx]);
+end;
+
+function TEpiCustomNamedItemList.GetItemIndexByName(const AName: string
+  ): Integer;
+begin
+  for result := 0 to Count - 1 do
+    if TEpiCustomNamedItem(Items[result]).Name = AName then
+      exit;
+  Result := -1;
+end;
+
+function TEpiCustomNamedItemList.ValidateRename(const NewName: string
+  ): boolean;
+begin
+  result :=
+    (GetItemIndexByName(NewName) <> -1) and
+    Assigned(OnValidateRename) and
+    OnValidateRename(NewName);
 end;
 
 end.
