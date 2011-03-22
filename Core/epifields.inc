@@ -23,26 +23,14 @@ begin
   result := TEpiDataFile(AOwner);
 end;
 
-function TEpiFields.GetFieldIndexByName(const AName: string): integer;
-begin
-  for result := 0 to Count - 1 do
-    if CompareStr(Field[result].Name, AName) = 0 then exit;
-  Result := -1;
-end;
-
 function TEpiFields.GetField(index: integer): TEpiField;
 begin
   result := TEpiField(Items[index]);
 end;
 
 function TEpiFields.GetFieldByName(const AName: string): TEpiField;
-var
-  I: LongInt;
 begin
-  result := nil;
-  I := GetFieldIndexByName(AName);
-  if I <> -1 then
-    Result := Field[I];
+  result := TEpiField(GetItemByName(AName));
 end;
 
 procedure TEpiFields.DoAssignList(const EpiCustomList: TEpiCustomList);
@@ -61,6 +49,11 @@ begin
     end;
   end;
   EndUpdate;
+end;
+
+function TEpiFields.NamePrefix: string;
+begin
+  Result := 'V';
 end;
 
 constructor TEpiFields.Create(AOwner: TEpiCustomBase);
@@ -103,6 +96,7 @@ var
 begin
   result := TEpiField.CreateField(Self, FieldType);
   Result.Id := GetUniqueItemId(TEpiCustomItemClass(Result.ClassType));
+  Result.Name := GetUniqueName;
   AddItem(Result);
 
   if (not TEpiDocument(RootOwner).Loading) and (FieldType = ftAutoInc) then
@@ -115,11 +109,6 @@ end;
 function TEpiFields.FieldExists(AField: TEpiField): boolean;
 begin
   result := ItemExistsById(AField.Id);
-end;
-
-function TEpiFields.FieldExistsByName(Const AName: string): boolean;
-begin
-  result := GetFieldIndexByName(AName) <> -1;
 end;
 
 { TEpiField }

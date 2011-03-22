@@ -8,15 +8,18 @@ type
 
   { TEpiSections }
 
-  TEpiSections = class(TEpiCustomList)
+  TEpiSections = class(TEpiCustomNamedItemList)
   private
     function GetSection(Index: integer): TEpiSection;
+  protected
+    function NamePrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewSection: TEpiSection;
+    function    GetSectionByName(Const AName: string): TEpiSection;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
   end;
 

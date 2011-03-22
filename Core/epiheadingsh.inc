@@ -4,15 +4,16 @@ type
 
   { TEpiHeadings }
 
-  TEpiHeadings = class(TEpiCustomList)
-  private
-
+  TEpiHeadings = class(TEpiCustomNamedItemList)
+  protected
+    function NamePrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     function   NewHeading: TEpiHeading;
+    function   GetHeadingByName(Const AName: string): TEpiHeading;
   end;
 
   { TEpiHeading }

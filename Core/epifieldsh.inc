@@ -10,14 +10,14 @@ type
 
   { TEpiFields }
 
-  TEpiFields = class(TEpiCustomList)
+  TEpiFields = class(TEpiCustomNamedItemList)
   private
     function GetDataFile: TEpiDataFile;
-    function GetFieldIndexByName(Const AName: string): integer;
     function GetField(index: integer): TEpiField;
     function GetFieldByName(const AName: string): TEpiField;
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
+    function    NamePrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -25,7 +25,6 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
-    function    FieldExistsByName(Const AName: string): boolean;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
     property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;

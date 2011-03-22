@@ -298,18 +298,25 @@ type
 
   { TEpiCustomNamedItemList }
   TEpiValidateRenameEvent = function(Const NewName: string): boolean of object;
+  TEpiNamePrefixEvent     = function: string of object;
   TEpiCustomNamedItemList = class(TEpiCustomList)
   private
+    FOnGetNamePrefix: TEpiNamePrefixEvent;
     FOnValidateRename: TEpiValidateRenameEvent;
+    function  DoNamePrefix: string;
+  protected
+    function  NamePrefix: string; virtual;
   public
-    function  NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; override;
+    function NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; override;
     procedure AddItem(Item: TEpiCustomItem); override;
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  GetUniqueName: string;
     function  GetItemByName(Const AName: string): TEpiCustomNamedItem;
     function  GetItemIndexByName(Const AName: string): Integer;
+    function  ItemExistsByName(Const AName: string): boolean;
     function  ValidateRename(Const NewName: string): boolean;
     property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
+    property  OnGetNamePrefix: TEpiNamePrefixEvent read FOnGetNamePrefix write FOnGetNamePrefix;
   end;
 
 {$I epixmlconstants.inc}
@@ -1111,10 +1118,9 @@ end;
 
 function TEpiCustomNamedItem.DoValidateRename(const NewName: string): boolean;
 begin
-  result :=
-    ValidateIdentifierUTF8(NewName) and
-    (Owner is TEpiCustomNamedItemList) and
-    (not TEpiCustomNamedItemList(Owner).ValidateRename(NewName));
+  result := ValidateIdentifierUTF8(NewName);
+  if (Owner is TEpiCustomNamedItemList) then
+    result := result and (TEpiCustomNamedItemList(Owner).ValidateRename(NewName));
 end;
 
 destructor TEpiCustomNamedItem.Destroy;
@@ -1444,29 +1450,60 @@ end;
 
 { TEpiCustomNamedItemList }
 
+function TEpiCustomNamedItemList.DoNamePrefix: string;
+begin
+  if Assigned(OnGetNamePrefix) then
+    result := OnGetNamePrefix()
+  else
+    result := NamePrefix;
+end;
+
+function TEpiCustomNamedItemList.NamePrefix: string;
+begin
+  result := 'Name';
+end;
+
 function TEpiCustomNamedItemList.NewItem(ItemClass: TEpiCustomItemClass
   ): TEpiCustomItem;
 begin
-  raise Exception.Create('Function not implemedted');
-//  Result := inherited NewItem(ItemClass);
+  if Assigned(OnNewItemClass) then
+    ItemClass := OnNewItemClass(Self, ItemClass);
+  if not Assigned(ItemClass) then
+    Exception.Create('');
+  Result := ItemClass.Create(Self);
+  Result.Id := GetUniqueItemId(ItemClass);
+  TEpiCustomNamedItem(Result).Name := GetUniqueName;
+  AddItem(Result);
 end;
 
 procedure TEpiCustomNamedItemList.AddItem(Item: TEpiCustomItem);
 begin
-  raise Exception.Create('Function not implemedted');
-//  inherited AddItem(Item);
+  if (Item is TEpiCustomNamedItem) and
+     (not ValidateRename(TEpiCustomNamedItem(Item).Name)) then
+    raise TEpiCoreException.Create('Item "' + TEpiCustomNamedItem(Item).Name + '" already exist in list');
+
+  inherited AddItem(Item);
 end;
 
 procedure TEpiCustomNamedItemList.InsertItem(const Index: integer;
   Item: TEpiCustomItem);
 begin
-  raise Exception.Create('Function not implemedted');
-//  inherited InsertItem(Index, Item);
+  if (Item is TEpiCustomNamedItem) and
+     (not ValidateRename(TEpiCustomNamedItem(Item).Name)) then
+    raise TEpiCoreException.Create('Item "' + TEpiCustomNamedItem(Item).Name + '" already exist in list');
+
+  inherited InsertItem(Index, Item);
 end;
 
 function TEpiCustomNamedItemList.GetUniqueName: string;
+var
+  I: Integer;
 begin
-  raise Exception.Create('Function not implemedted');
+  I := Count;
+  repeat
+    Inc(i);
+    Result := DoNamePrefix + IntToStr(I);
+  until ValidateRename(Result);
 end;
 
 function TEpiCustomNamedItemList.GetItemByName(const AName: string
@@ -1489,13 +1526,18 @@ begin
   Result := -1;
 end;
 
+function TEpiCustomNamedItemList.ItemExistsByName(const AName: string
+  ): boolean;
+begin
+  result := GetItemIndexByName(AName) <> -1;
+end;
+
 function TEpiCustomNamedItemList.ValidateRename(const NewName: string
   ): boolean;
 begin
-  result :=
-    (GetItemIndexByName(NewName) <> -1) and
-    Assigned(OnValidateRename) and
-    OnValidateRename(NewName);
+  result := (GetItemIndexByName(NewName) = -1);
+  if Assigned(OnValidateRename) then
+    result := result and OnValidateRename(NewName);
 end;
 
 end.

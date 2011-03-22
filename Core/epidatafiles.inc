@@ -157,7 +157,9 @@ begin
               begin
                 FDataFile := Self;
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
+                Fields.OnValidateRename := @Self.ValidateRename;
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
+                Headings.OnValidateRename := @Self.ValidateRename;
               end;
             end;
 
@@ -176,7 +178,9 @@ begin
               begin
                 if (ebsDestroying in State) then exit;
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
+                Fields.OnValidateRename := nil;
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
+                Headings.OnValidateRename := nil;
               end;
             end;
         end;
@@ -413,12 +417,6 @@ begin
   Create(AOwner, 0);
 end;
 
-function TEpiDataFile.ValidateFieldRename(Field: TEpiField; Const NewName: string
-  ): boolean;
-begin
-  result := not (Fields.FieldExistsByName(NewName));
-end;
-
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
@@ -430,6 +428,7 @@ begin
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
   FSections.RegisterOnChangeHook(@LocalEventHook, true);
+  FSections.OnValidateRename := @ValidateRename;
 
   // The "all" containers.
   FAllFields := TEpiFields.Create(Self);
@@ -437,6 +436,7 @@ begin
 
   // The special main section...
   FMainSection := NewSection;
+  FMainSection.Name := 'MAIN';
   FMainSection.Id := FMainSection.IdString + 'main';
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
@@ -453,6 +453,14 @@ begin
   FAllHeadings.Free;
   FName.Free;
   inherited Destroy;
+end;
+
+function TEpiDataFile.ValidateRename(const NewName: string): boolean;
+begin
+  result :=
+    (not Fields.ItemExistsByName(NewName))  and
+    (not Headings.ItemExistsByName(NewName)) and
+    (not Sections.ItemExistsByName(NewName));
 end;
 
 function TEpiDataFile.XMLName: string;
@@ -493,8 +501,8 @@ begin
   end;
   JumpList.Clear;
 
-  if Sections.ItemExistsById(TEpiSection.IdString + 'main') then
-    FMainSection := TEpiSection(Sections.GetItemById(TEpiSection.IdString + 'main'));
+  if Sections.ItemExistsByName('MAIN') then
+    FMainSection := TEpiSection(Sections.GetItemByName('MAIN'));
 
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);

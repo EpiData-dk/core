@@ -70,14 +70,16 @@ type
 
   { TEpiUsers }
 
-  TEpiUsers = class(TEpiCustomList)
+  TEpiUsers = class(TEpiCustomNamedItemList)
   private
     function GetAdmin: TEpiAdmin;
     function GetUsers(Index: integer): TEpiUser;
+  protected
+    function NamePrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    function XMLName: string; override;
+    function   XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  PreLoadFromXml(Root: TDOMNode);
@@ -140,10 +142,12 @@ type
 
   { TEpiGroups }
 
-  TEpiGroups = class(TEpiCustomList)
+  TEpiGroups = class(TEpiCustomNamedItemList)
   private
     function    GetAdmin: TEpiAdmin;
     function    GetGroup(Index: integer): TEpiGroup;
+  protected
+    function    NamePrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -328,6 +332,11 @@ end;
 function TEpiUsers.GetUsers(Index: integer): TEpiUser;
 begin
   result := TEpiUser(Items[Index]);
+end;
+
+function TEpiUsers.NamePrefix: string;
+begin
+  Result := 'User';
 end;
 
 constructor TEpiUsers.Create(AOwner: TEpiCustomBase);
@@ -579,6 +588,11 @@ end;
 function TEpiGroups.GetGroup(Index: integer): TEpiGroup;
 begin
   Result := TEpiGroup(Items[Index]);
+end;
+
+function TEpiGroups.NamePrefix: string;
+begin
+  Result := 'Group';
 end;
 
 constructor TEpiGroups.Create(AOwner: TEpiCustomBase);

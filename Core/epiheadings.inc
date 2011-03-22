@@ -2,6 +2,11 @@
 
 { TEpiHeadings }
 
+function TEpiHeadings.NamePrefix: string;
+begin
+  Result := 'H';
+end;
+
 constructor TEpiHeadings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -40,6 +45,11 @@ end;
 function TEpiHeadings.NewHeading: TEpiHeading;
 begin
   result := TEpiHeading(NewItem(TEpiHeading));
+end;
+
+function TEpiHeadings.GetHeadingByName(const AName: string): TEpiHeading;
+begin
+  result := TEpiHeading(GetItemByName(AName));
 end;
 
 { TEpiHeading }

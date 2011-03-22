@@ -8,6 +8,11 @@ begin
   result := TEpiSection(Items[Index]);
 end;
 
+function TEpiSections.NamePrefix: string;
+begin
+  Result := 'S';
+end;
+
 constructor TEpiSections.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -46,6 +51,11 @@ end;
 function TEpiSections.NewSection: TEpiSection;
 begin
   result := TEpiSection(NewItem(TEpiSection));
+end;
+
+function TEpiSections.GetSectionByName(const AName: string): TEpiSection;
+begin
+  result := TEpiSection(GetItemByName(AName));
 end;
 
 { TEpiSection }
