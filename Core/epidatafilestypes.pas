@@ -66,11 +66,15 @@ const
                        ftTimeNow];
 
   // Composed Sets.
-  RangeFieldTypes      = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
-  ValueLabelFieldTypes = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
-  JumpsFieldTypes      = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
-  EntryModeFieldTypes  = AllFieldTypes - AutoFieldTypes;
+  AutoUpdateFieldTypes   = AutoFieldTypes - [ftAutoInc];
+  RangeFieldTypes        = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
+  ValueLabelFieldTypes   = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
+  JumpsFieldTypes        = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
+  EntryModeFieldTypes    = AllFieldTypes - AutoFieldTypes;
   ConfirmEntryFieldTypes = AllFieldTypes - AutoFieldTypes;
+  RepeatValueFieldTypes  = AllFieldTypes - AutoFieldTypes;
+  NotesFieldTypes        = AllFieldTypes - AutoFieldTypes;
+  DefaultValueFieldTypes = AllFieldTypes - AutoFieldTypes;
 
   //================
   // RECORD RELATED

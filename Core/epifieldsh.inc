@@ -3,9 +3,9 @@
 type
 
   TEpiFieldsChangeEventType = (
-    efceName, efceSetDecimal, efceSetLeft, efceSetLength,
+    efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
-    efceShowValueLabel
+    efceShowValueLabel, efceRepeatValue, efceDefaultValue, efceValueLabelWriteTo
   );
 
   { TEpiFields }
@@ -82,25 +82,45 @@ type
     FJumps: TEpiJumps;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
+    FNotes: TEpiTranslatedText;
     FRanges: TEpiRanges;
+    FRepeatValue: boolean;
     FShowValueLabel: Boolean;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiTranslatedText;
+    FValueLabelWriteField: TEpiField;
+    function    GetDefaultValueAsString: string;
     procedure   SetConfirmEntry(const AValue: Boolean);
     procedure   SetDecimals(const AValue: Cardinal);
+    procedure   SetDefaultValueAsString(const AValue: string);
     procedure   SetEntryMode(const AValue: TEpiEntryMode);
     procedure   SetLength(const AValue: Cardinal);
+    procedure   SetRepeatValue(const AValue: boolean);
     procedure   SetShowValueLabel(const AValue: Boolean);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
+    procedure   SetValueLabelWriteField(const AValue: TEpiField);
+  protected
+    function    DoGetDefaultValueAsString: string; virtual; abstract;
+    procedure   DoSetDefaultValueAsString(const AValue: string); virtual; abstract;
+    function    GetHasDefaultValue: boolean; virtual; abstract;
+    procedure   SetHasDefaultValue(Const AValue: boolean); virtual; abstract;
   public
+    procedure   ResetDefaultValue; virtual; abstract;
     property    FieldType: TEpiFieldType read FFieldType;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;
     property    EntryMode: TEpiEntryMode read FEntryMode write SetEntryMode;
     property    ConfirmEntry: Boolean read FConfirmEntry write SetConfirmEntry;
+    property    RepeatValue: boolean read FRepeatValue write SetRepeatValue;
+    // Since DefaultValue is Type Specific - it's implemented in sub-classes
+//    property    DefaultValue: Variant read FDefaultValue write SetDefaultValue;
+    property    DefaultValueAsString: string read GetDefaultValueAsString write SetDefaultValueAsString;
+    property    HasDefaultValue: boolean read GetHasDefaultValue write SetHasDefaultValue;
+    property    Notes: TEpiTranslatedText read FNotes;
     property    Question:  TEpiTranslatedText read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
+    property    ValueLabelWriteField: TEpiField read FValueLabelWriteField write SetValueLabelWriteField;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;
 
@@ -144,7 +164,11 @@ type
   TEpiIntField = class(TEpiField)
   private
     FData: array of EpiInteger;
+    FDefaultValue: EpiInteger;
+    procedure SetDefaultValue(const AValue: EpiInteger);
   protected
+    function DoGetDefaultValueAsString: string; override;
+    procedure DoSetDefaultValueAsString(const AValue: string); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -154,6 +178,7 @@ type
     function GetAsTime(const index: Integer): EpiTime; override;
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
+    function GetHasDefaultValue: boolean; override;
     function GetIsMissing(const index: Integer): boolean; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
@@ -165,11 +190,13 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetHasDefaultValue(const AValue: boolean); override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
   end;
 
   { TEpiFloatField }
@@ -177,8 +204,12 @@ type
   // ftFloat
   TEpiFloatField = class(TEpiField)
   private
-     FData: array of EpiFloat;
+    FData: array of EpiFloat;
+    FDefaultValue: EpiFloat;
+    procedure SetDefaultValue(const AValue: EpiFloat);
   protected
+    function DoGetDefaultValueAsString: string; override;
+    procedure DoSetDefaultValueAsString(const AValue: string); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -189,6 +220,7 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
+    function GetHasDefaultValue: boolean; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
     procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
@@ -199,6 +231,7 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
   public
@@ -208,6 +241,7 @@ type
     procedure Exchange(i, j: integer); override;
     function  FormatString: string;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    property  DefaultValue: EpiFloat read FDefaultValue write SetDefaultValue;
   end;
 
   { TEpiBoolField }
@@ -215,8 +249,12 @@ type
   // ftBoolean
   TEpiBoolField = class(TEpiField)
   private
-     FData: array of EpiBool;
+    FData: array of EpiBool;
+    FDefaultValue: EpiBool;
+    procedure SetDefaultValue(const AValue: EpiBool);
   protected
+    function DoGetDefaultValueAsString: string; override;
+    procedure DoSetDefaultValueAsString(const AValue: string); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -227,6 +265,7 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
+    function GetHasDefaultValue: boolean; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
     procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
@@ -237,6 +276,7 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
   public
@@ -244,6 +284,7 @@ type
     class function DefaultMissing: EpiBool;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
   end;
 
   { TEpiStringField }
@@ -252,7 +293,11 @@ type
   TEpiStringField = class(TEpiField)
   private
     FData: array of EpiString;
+    FDefaultValue: EpiString;
+    procedure SetDefaultValue(const AValue: EpiString);
   protected
+    function DoGetDefaultValueAsString: string; override;
+    procedure DoSetDefaultValueAsString(const AValue: string); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -263,6 +308,7 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
+    function GetHasDefaultValue: boolean; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
     procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
@@ -273,6 +319,7 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
   public
@@ -280,16 +327,37 @@ type
     class function DefaultMissing: EpiString;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
   end;
+
+
+  { TEpiCustomAutoField }
+
+  // State indication whether to update value on creation or on update/save.
+  TEpiAutoUpdateMode = (umCreated, umUpdated);
+  TEpiCustomAutoField = class(TEpiField)
+  private
+    FAutoMode: TEpiAutoUpdateMode;
+    procedure SetAutoMode(const AValue: TEpiAutoUpdateMode);
+  public
+    function SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure LoadFromXml(Root: TDOMNode); override;
+    property AutoMode: TEpiAutoUpdateMode read FAutoMode write SetAutoMode;
+  end;
+
 
   { TEpiDateField }
   // Handles following field types:
   // ftDMYDate, ftDMYToday, ftMDYDate, ftMDYToday, ftYMDDate, ftYMDToday
   // - note: this is very much subject to change as we introduce time/timedate fields.
-  TEpiDateField = class(TEpiField)
+  TEpiDateField = class(TEpiCustomAutoField)
   private
     FData: array of EpiDate;
+    FDefaultValue: EpiDate;
+    procedure SetDefaultValue(const AValue: EpiDate);
   protected
+    function DoGetDefaultValueAsString: string; override;
+    procedure DoSetDefaultValueAsString(const AValue: string); override;
     function GetAsBoolean(const index: Integer): EpiBool; override;
     function GetAsDate(const index: Integer): EpiDate; override;
     function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -300,6 +368,7 @@ type
     function GetAsValue(const index: Integer): EpiVariant; override;
     function GetCapacity: Integer; override;
     function GetIsMissing(const index: Integer): boolean; override;
+    function GetHasDefaultValue: boolean; override;
     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
     procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
@@ -310,6 +379,7 @@ type
     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetCapacity(AValue: Integer); override;
+    procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
   public
@@ -317,15 +387,21 @@ type
     class function DefaultMissing: EpiDate;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    function  FormatString: string;
+    property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
   end;
 
   { TEpiDateTimeField }
   // Handles following field types:
   // ftTime, ftTimeNow
-  TEpiDateTimeField = class(TEpiField)
+  TEpiDateTimeField = class(TEpiCustomAutoField)
   private
      FData: array of EpiDateTime;
+     FDefaultValue: EpiTime;
+     procedure SetDefaultValue(const AValue: EpiTime);
   protected
+     function DoGetDefaultValueAsString: string; override;
+     procedure DoSetDefaultValueAsString(const AValue: string); override;
      function GetAsBoolean(const index: Integer): EpiBool; override;
      function GetAsDate(const index: Integer): EpiDate; override;
      function GetAsDateTime(const index: Integer): EpiDateTime; override;
@@ -336,6 +412,7 @@ type
      function GetAsValue(const index: Integer): EpiVariant; override;
      function GetCapacity: Integer; override;
      function GetIsMissing(const index: Integer): boolean; override;
+     function GetHasDefaultValue: boolean; override;
      procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
      procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
      procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
@@ -346,6 +423,7 @@ type
      procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
      procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
      procedure SetCapacity(AValue: Integer); override;
+     procedure SetHasDefaultValue(const AValue: boolean); override;
      constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
         override;
   public
@@ -353,5 +431,7 @@ type
     class function DefaultMissing: EpiDateTime;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    function  FormatString: string;
+    property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;
   end;
 

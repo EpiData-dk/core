@@ -479,6 +479,7 @@ var
   Node: TDOMNode;
   Jump: TEpiJump;
   i: Integer;
+  AField: TEpiField;
 begin
   // Since the main section is autocreated we remove it during load.
   Sections.RemoveItem(MainSection);
@@ -500,6 +501,13 @@ begin
     Jump.JumpToField := TEpiField(Fields.GetItemById(JumpList[i]));
   end;
   JumpList.Clear;
+  // Post processing - do the same for ValueLabelWriteRefs
+  for i := 0 to ValueLabelWriteList.Count - 1 do
+  begin
+    AField := TEpiField(ValueLabelWriteList.Objects[i]);
+    AField.ValueLabelWriteField := TEpiField(Fields.GetItemById(ValueLabelWriteList[i]));
+  end;
+  ValueLabelWriteList.Clear;
 
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := TEpiSection(Sections.GetItemByName('MAIN'));

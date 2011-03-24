@@ -2,11 +2,10 @@
 {%MainUnit epidatafiles.pas}
 
 const
-  NA_INT       = $7FFFFFFFFFFFFFFF;
+  NA_INT       = High(EpiInteger); //  $7FFFFFFFFFFFFFFF;
   NA_FLOAT     = MaxFloat;
   NA_DATE      = NA_INT;
   NA_TIME      = $FFFFFFFF; //MaxDouble;
-//  NA_DATETIME  = NA_TIME;
   NA_STRING    = '.';
   NA_BOOL      = $7F;
 
@@ -123,6 +122,14 @@ begin
   DoChange(eegDataFiles, Word(efceSetDecimal), @Val);
 end;
 
+procedure TEpiField.SetDefaultValueAsString(const AValue: string);
+begin
+  if AValue = '' then
+    HasDefaultValue := false
+  else
+    DoSetDefaultValueAsString(AValue);
+end;
+
 procedure TEpiField.SetConfirmEntry(const AValue: Boolean);
 var
   Val: Boolean;
@@ -131,6 +138,14 @@ begin
   Val := FConfirmEntry;
   FConfirmEntry := AValue;
   DoChange(eegFields, word(efceConfirmEntry), @Val);
+end;
+
+function TEpiField.GetDefaultValueAsString: string;
+begin
+  if HasDefaultValue then
+    result := DoGetDefaultValueAsString
+  else
+    result := '';
 end;
 
 procedure TEpiField.SetEntryMode(const AValue: TEpiEntryMode);
@@ -160,21 +175,37 @@ begin
   DoChange(eegDataFiles, Word(efceSetLength), @Val);
 end;
 
+procedure TEpiField.SetRepeatValue(const AValue: boolean);
+var
+  Val: Boolean;
+begin
+  if FRepeatValue = AValue then exit;
+  Val := FRepeatValue;
+  FRepeatValue := AValue;
+  DoChange(eegFields, word(efceRepeatValue), @Val);
+end;
+
 procedure TEpiField.LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
   EventType: Word; Data: Pointer);
 begin
-  if (Sender is TEpiValueLabelSet) then
+  if (Sender is TEpiValueLabelSet) or (Sender is TEpiField) then
   begin
     if (EventGroup = eegCustomBase) and (EventType = word(ecceDestroy)) then
-      FValueLabelSet := nil;
+      if Sender is TEpiValueLabelSet then
+        FValueLabelSet := nil
+      else
+        FValueLabelWriteField := nil;
   end;
 
-  if (Sender is TEpiValueLabelSets) then
+  if (Sender is TEpiValueLabelSets) or (Sender is TEpiFields) then
   begin
     if (EventGroup = eegCustomBase) and
-       (EventType = word(ecceDelItem)) and
-       (FValueLabelSet = TEpiValueLabelSet(Data)) then
-      FValueLabelSet := nil;
+       (EventType = word(ecceDelItem)) then
+      if (Sender is TEpiValueLabelSets) and (FValueLabelSet = TEpiValueLabelSet(Data)) then
+        FValueLabelSet := nil
+      else
+      if (Sender is TEpiFields) and (FValueLabelWriteField = TEpiField(Data)) then
+        FValueLabelWriteField := nil;
   end;
 end;
 
@@ -190,6 +221,8 @@ end;
 
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
 begin
+  if FValueLabelSet = AValue then exit;
+
   if Assigned(FValueLabelSet) then
   begin
     // UnRegister our hook on the previous valuelabel set.
@@ -207,6 +240,33 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
   end;
+end;
+
+procedure TEpiField.SetValueLabelWriteField(const AValue: TEpiField);
+var
+  Val: TEpiField;
+begin
+  if FValueLabelWriteField = AValue then exit;
+
+  if Assigned(FValueLabelWriteField) then
+  begin
+    // UnRegister our hook on the previous field set.
+    FValueLabelWriteField.UnRegisterOnChangeHook(@LocalEventHook);
+    // also do the same with the parent.
+    if Assigned(FValueLabelWriteField.Owner) then
+      FValueLabelWriteField.Owner.UnRegisterOnChangeHook(@LocalEventHook);
+  end;
+
+  Val := FValueLabelWriteField;
+  FValueLabelWriteField := AValue;
+
+  if Assigned(FValueLabelWriteField) then
+  begin
+    FValueLabelWriteField.RegisterOnChangeHook(@LocalEventHook, true);
+    if Assigned(FValueLabelWriteField.Owner) then
+      FValueLabelWriteField.Owner.RegisterOnChangeHook(@LocalEventHook, true);
+  end;
+  DoChange(eegFields, Word(efceValueLabelWriteTo), Val);
 end;
 
 function TEpiField.GetSection: TEpiSection;
@@ -292,14 +352,17 @@ begin
   inherited Create(AOwner);
   FFieldType := AFieldType;
   FQuestion := TEpiTranslatedText.Create(Self, rsQuestion);
+  FNotes    := TEpiTranslatedText.Create(Self, rsNotes);
 
   FConfirmEntry := false;
   FDecimals     := 0;
   FEntryMode    := emDefault;
   FLength       := 2;
   FShowValueLabel := false;
+  FRepeatValue  := false;
+  HasDefaultValue := false;
 
-  RegisterClasses([FQuestion]);
+  RegisterClasses([Question, Notes]);
 end;
 
 class function TEpiField.IdString: string;
@@ -350,18 +413,24 @@ end;
 
 function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Content :=
+  Content +=
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
     SaveNode(Lvl + 1, rsLength, Length) +
     SaveNode(Lvl + 1, rsDecimals, Decimals) +
     SaveNode(Lvl + 1, rsEntryMode, Integer(EntryMode));
   if ConfirmEntry then
     Content += SaveNode(Lvl + 1, rsConfirmEntry, ConfirmEntry);
+  if RepeatValue then
+    Content += SaveNode(Lvl + 1, rsRepeatValue, RepeatValue);
   if ShowValueLabel then
     Content += SaveNode(Lvl + 1, rsShowValueLabel, ShowValueLabel);
+  if HasDefaultValue then
+    Content += SaveNode(Lvl + 1, rsDefaultValue, DefaultValueAsString);
 
   if Assigned(ValueLabelSet) then
     Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
+  if Assigned(ValueLabelWriteField) then
+    Content += SaveNode(Lvl + 1, rsValueLabelWriteRef, ValueLabelWriteField.Id);
   if Assigned(Ranges) then
     Content += Ranges.SaveToXml('', Lvl + 1);
   if Assigned(Jumps) then
@@ -372,6 +441,7 @@ end;
 procedure TEpiField.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
+  VLFieldId: String;
 begin
   // Root = <Field>
   inherited LoadFromXml(Root);
@@ -380,12 +450,29 @@ begin
   EntryMode := TEpiEntryMode(LoadNodeInt(Root, rsEntryMode));
   if LoadNode(Node, Root, rsConfirmEntry, false) then
     ConfirmEntry := LoadNodeBool(Root, rsConfirmEntry);
+  if LoadNode(Node, Root, rsRepeatValue, false) then
+    RepeatValue := LoadNodeBool(Root, rsRepeatValue);
+  if LoadNode(Node, Root, rsDefaultValue, false) then
+    DefaultValueAsString := LoadNodeString(Root, rsDefaultValue);
   if LoadNode(Node, Root, rsShowValueLabel, false) then
     ShowValueLabel := LoadNodeBool(Root, rsShowValueLabel);
   if LoadNode(Node, Root, rsValueLabelId, false) then
     ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
-  if LoadNode(Node, Root, rsQuestion, false) then
-    FQuestion.LoadFromXml(Root);
+
+  if LoadNode(Node, Root, rsValueLabelWriteRef, false) then
+  begin
+    VLFieldId := LoadNodeString(Root, rsValueLabelWriteRef);
+    ValueLabelWriteField := TEpiField(DataFile.Fields.GetItemById(VLFieldId));
+    // Since (possibly) all ValueLabelWriteRef to fields are "forward" declared then collect them into
+    // a batch and process the list after all fields are loaded.
+    if not Assigned(ValueLabelWriteField) then
+      ValueLabelWriteList.AddObject(VLFieldId, Self);
+  end;
+
+  // If not present this is handled within TEpiTranslatedText;
+  FQuestion.LoadFromXml(Root);
+  FNotes.LoadFromXml(Root);
+
   if LoadNode(Node, Root, rsRanges, false) then
   begin
     Ranges := TEpiRanges.Create(Self);
@@ -401,6 +488,16 @@ begin
 end;
 
 { TEpiIntField }
+
+procedure TEpiIntField.SetDefaultValue(const AValue: EpiInteger);
+var
+  Val: LongInt;
+begin
+  if FDefaultValue = AValue then exit;
+  Val := FDefaultValue;
+  FDefaultValue := AValue;
+  DoChange(eegFields, Word(efceDefaultValue), @Val);
+end;
 
 function TEpiIntField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -460,9 +557,29 @@ begin
   Result := AsInteger[Index];
 end;
 
+function TEpiIntField.DoGetDefaultValueAsString: string;
+begin
+  Result := IntToStr(DefaultValue);
+end;
+
+procedure TEpiIntField.DoSetDefaultValueAsString(const AValue: string);
+var
+  I: int64;
+begin
+  if TryStrToInt64(AValue, I) then
+    DefaultValue := I
+  else
+    HasDefaultValue := false;
+end;
+
 function TEpiIntField.GetCapacity: Integer;
 begin
   result := System.Length(FData);
+end;
+
+function TEpiIntField.GetHasDefaultValue: boolean;
+begin
+  Result := FDefaultValue <> DefaultMissing;
 end;
 
 function TEpiIntField.GetIsMissing(const index: Integer): boolean;
@@ -557,6 +674,11 @@ begin
   AsInteger[index] := DefaultMissing;
 end;
 
+procedure TEpiIntField.SetHasDefaultValue(const AValue: boolean);
+begin
+  if not AValue then FDefaultValue := DefaultMissing;
+end;
+
 class function TEpiIntField.CheckMissing(AValue: EpiInteger): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -582,6 +704,26 @@ begin
 end;
 
 { TEpiFloatField }
+
+procedure TEpiFloatField.SetDefaultValue(const AValue: EpiFloat);
+var
+  Val: EpiFloat;
+begin
+  if FDefaultValue = AValue then exit;
+  Val := FDefaultValue;
+  FDefaultValue := AValue;
+  DoChange(eegFields, Word(efceDefaultValue), @Val);
+end;
+
+procedure TEpiFloatField.DoSetDefaultValueAsString(const AValue: string);
+var
+  F: Extended;
+begin
+  if TryStrToFloat(AValue, F) then
+    DefaultValue := F
+  else
+    HasDefaultValue := false;
+end;
 
 function TEpiFloatField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -648,9 +790,19 @@ begin
   result := System.Length(FData);
 end;
 
+function TEpiFloatField.DoGetDefaultValueAsString: string;
+begin
+  Result := FloatToStr(DefaultValue);
+end;
+
 function TEpiFloatField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsFloat[index] = DefaultMissing;
+end;
+
+function TEpiFloatField.GetHasDefaultValue: boolean;
+begin
+  Result := FDefaultValue <> DefaultMissing;
 end;
 
 procedure TEpiFloatField.SetAsBoolean(const index: Integer;
@@ -741,6 +893,11 @@ begin
   FCapacity := AValue;
 end;
 
+procedure TEpiFloatField.SetHasDefaultValue(const AValue: boolean);
+begin
+  if not AValue then FDefaultValue := DefaultMissing;
+end;
+
 constructor TEpiFloatField.Create(AOwner: TEpiCustomBase;
   AFieldType: TEpiFieldType);
 begin
@@ -787,6 +944,26 @@ begin
 end;
 
 { TEpiBoolField }
+
+procedure TEpiBoolField.SetDefaultValue(const AValue: EpiBool);
+var
+  Val: EpiBool;
+begin
+  if FDefaultValue = AValue then exit;
+  Val := FDefaultValue;
+  FDefaultValue := AValue;
+  DoChange(eegFields, Word(efceDefaultValue), @Val);
+end;
+
+procedure TEpiBoolField.DoSetDefaultValueAsString(const AValue: string);
+var
+  I: integer;
+begin
+  if TryStrToInt(AValue, I) then
+    DefaultValue := I
+  else
+    HasDefaultValue := false;
+end;
 
 function TEpiBoolField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -852,9 +1029,19 @@ begin
   result := System.Length(FData);
 end;
 
+function TEpiBoolField.DoGetDefaultValueAsString: string;
+begin
+  Result := IntToStr(DefaultValue);
+end;
+
 function TEpiBoolField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsBoolean[index] = DefaultMissing;
+end;
+
+function TEpiBoolField.GetHasDefaultValue: boolean;
+begin
+  Result := FDefaultValue <> DefaultMissing;
 end;
 
 procedure TEpiBoolField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -960,6 +1147,11 @@ begin
   FCapacity := AValue;
 end;
 
+procedure TEpiBoolField.SetHasDefaultValue(const AValue: boolean);
+begin
+  if not AValue then FDefaultValue := DefaultMissing;
+end;
+
 constructor TEpiBoolField.Create(AOwner: TEpiCustomBase;
   AFieldType: TEpiFieldType);
 begin
@@ -992,6 +1184,16 @@ begin
 end;
 
 { TEpiStringField }
+
+procedure TEpiStringField.SetDefaultValue(const AValue: EpiString);
+var
+  Val: EpiString;
+begin
+  if FDefaultValue = AValue then exit;
+  Val := FDefaultValue;
+  FDefaultValue := AValue;
+  DoChange(eegFields, Word(efceDefaultValue), @Val);
+end;
 
 function TEpiStringField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -1059,9 +1261,27 @@ begin
   result := System.Length(FData);
 end;
 
+function TEpiStringField.DoGetDefaultValueAsString: string;
+begin
+  Result := DefaultValue;
+end;
+
+procedure TEpiStringField.DoSetDefaultValueAsString(const AValue: string);
+begin
+  if AValue <> '' then
+    FDefaultValue := AValue
+  else
+    HasDefaultValue := false;
+end;
+
 function TEpiStringField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsString[index] = DefaultMissing;
+end;
+
+function TEpiStringField.GetHasDefaultValue: boolean;
+begin
+  Result := FDefaultValue <> DefaultMissing;
 end;
 
 procedure TEpiStringField.SetAsBoolean(const index: Integer;
@@ -1151,6 +1371,11 @@ begin
   FCapacity := AValue;
 end;
 
+procedure TEpiStringField.SetHasDefaultValue(const AValue: boolean);
+begin
+  if not AValue then FDefaultValue := DefaultMissing;
+end;
+
 constructor TEpiStringField.Create(AOwner: TEpiCustomBase;
   AFieldType: TEpiFieldType);
 begin
@@ -1182,7 +1407,39 @@ begin
   AsString[j] := TmpStr;
 end;
 
+{ TEpiCustomAutoField }
+
+procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
+begin
+  if FAutoMode = AValue then exit;
+  FAutoMode := AValue;
+end;
+
+function TEpiCustomAutoField.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  if FieldType in AutoUpdateFieldTypes then
+    Content += SaveNode(Lvl + 1, rsAutoUpdateMode, Integer(AutoMode));
+  Result := inherited SaveToXml(Content, Lvl);
+end;
+
+procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode);
+begin
+  if FieldType in AutoUpdateFieldTypes then
+    AutoMode := TEpiAutoUpdateMode(LoadNodeInt(Root, rsAutoUpdateMode));
+  inherited LoadFromXml(Root);
+end;
+
 { TEpiDateField }
+
+procedure TEpiDateField.SetDefaultValue(const AValue: EpiDate);
+var
+  Val: EpiDate;
+begin
+  if FDefaultValue = AValue then exit;
+  Val := FDefaultValue;
+  FDefaultValue := AValue;
+  DoChange(eegFields, Word(efceDefaultValue), @Val);
+end;
 
 function TEpiDateField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -1256,9 +1513,30 @@ begin
   result := System.Length(FData);
 end;
 
+function TEpiDateField.DoGetDefaultValueAsString: string;
+begin
+  Result := FormatDateTime(FormatString, DefaultValue);
+end;
+
+procedure TEpiDateField.DoSetDefaultValueAsString(const AValue: string);
+var
+  D: EpiDate;
+  S: string;
+begin
+  if EpiStrToDate(AValue, DateSeparator, FieldType, D, S) then
+    DefaultValue := D
+  else
+    HasDefaultValue := false;
+end;
+
 function TEpiDateField.GetIsMissing(const index: Integer): boolean;
 begin
   result := AsDate[index] = DefaultMissing;
+end;
+
+function TEpiDateField.GetHasDefaultValue: boolean;
+begin
+  Result := FDefaultValue <> DefaultMissing;
 end;
 
 class function TEpiDateField.CheckMissing(AValue: EpiDate): boolean;
@@ -1283,6 +1561,15 @@ begin
   TmpDate := AsDate[i];
   AsDate[i] := AsDate[j];
   AsDate[j] := TmpDate;
+end;
+
+function TEpiDateField.FormatString: string;
+begin
+  case FieldType of
+    ftDMYDate, ftDMYToday: result := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYToday: result := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDToday: result := 'YYYY/MM/DD';
+  end;
 end;
 
 procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -1381,6 +1668,11 @@ begin
   FCapacity := AValue;
 end;
 
+procedure TEpiDateField.SetHasDefaultValue(const AValue: boolean);
+begin
+  if not AValue then FDefaultValue := DefaultMissing;
+end;
+
 constructor TEpiDateField.Create(AOwner: TEpiCustomBase;
   AFieldType: TEpiFieldType);
 begin
@@ -1389,6 +1681,16 @@ begin
 end;
 
 { TEpiDateTimeField }
+
+procedure TEpiDateTimeField.SetDefaultValue(const AValue: EpiTime);
+var
+  Val: EpiTime;
+begin
+  if FDefaultValue = AValue then exit;
+  Val := FDefaultValue;
+  FDefaultValue := AValue;
+  DoChange(eegFields, Word(efceDefaultValue), @Val);
+end;
 
 function TEpiDateTimeField.GetAsBoolean(const index: Integer): EpiBool;
 begin
@@ -1453,9 +1755,30 @@ begin
   Result := System.Length(FData);
 end;
 
+function TEpiDateTimeField.DoGetDefaultValueAsString: string;
+begin
+  Result := FormatDateTime(FormatString, DefaultValue);
+end;
+
+procedure TEpiDateTimeField.DoSetDefaultValueAsString(const AValue: string);
+var
+  T: EpiTime;
+  S: string;
+begin
+  if EpiStrToTime(AValue, TimeSeparator, T, S) then
+    DefaultValue := T
+  else
+    HasDefaultValue := false;
+end;
+
 function TEpiDateTimeField.GetIsMissing(const index: Integer): boolean;
 begin
   Result := AsDateTime[index] = DefaultMissing;
+end;
+
+function TEpiDateTimeField.GetHasDefaultValue: boolean;
+begin
+  Result := FDefaultValue <> DefaultMissing;
 end;
 
 procedure TEpiDateTimeField.SetAsBoolean(const index: Integer;
@@ -1543,6 +1866,11 @@ begin
   FCapacity := AValue;
 end;
 
+procedure TEpiDateTimeField.SetHasDefaultValue(const AValue: boolean);
+begin
+  if not AValue then FDefaultValue := DefaultMissing;
+end;
+
 constructor TEpiDateTimeField.Create(AOwner: TEpiCustomBase;
   AFieldType: TEpiFieldType);
 begin
@@ -1572,5 +1900,10 @@ begin
   TmpDateTime := AsDateTime[i];
   AsDateTime[i] := AsDateTime[j];
   AsDateTime[j] := TmpDateTime;
+end;
+
+function TEpiDateTimeField.FormatString: string;
+begin
+  result := 'HH:NN:SS';
 end;
 

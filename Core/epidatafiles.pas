@@ -41,10 +41,11 @@ type
 implementation
 
 uses
-  epidocument, math, epistringutils;
+  epidocument, math, epistringutils, epiconvertutils;
 
 var
   JumpList: TStringList;
+  ValueLabelWriteList: TStringList;
 
 {$I epidatafiles.inc}
 {$I episections.inc}
@@ -55,11 +56,13 @@ var
 initialization
 begin
   JumpList := TStringList.Create;
+  ValueLabelWriteList := TStringList.Create;
 end;
 
 finalization
 begin
   JumpList.Free;
+  ValueLabelWriteList.Free;
 end;
 
 end.

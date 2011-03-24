@@ -90,7 +90,9 @@ const
          rsLength          = 'Length';
          rsDecimals        = 'Decimals';
          rsQuestion        = 'Question';
+         rsNotes           = 'Notes';
          rsValueLabelId    = 'ValueLabelId';
+         rsValueLabelWriteRef = 'ValueLabelWriteRef';
          rsRanges           = 'Ranges';
           rsRange            = 'Range';
            rsStart            = 'start';
@@ -104,6 +106,9 @@ const
          rsEntryMode        = 'EntryMode';
          rsConfirmEntry     = 'ConfirmEntry';
          rsShowValueLabel   = 'ShowValueLabel';
+         rsRepeatValue      = 'Repeat';
+         rsDefaultValue     = 'DefaultValue';
+         rsAutoUpdateMode   = 'AutoUpdateMode';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

@@ -490,7 +490,8 @@ var
 begin
   T := S;
   for i := 1 to Length(T) do
-    if Ord(T[i]) < 32 then
+    if (Ord(T[i]) < 32) and
+       (not (Ord(T[i]) in [10,13])) then
       T[i] := '?';
   result := StringsReplace(T,
    ['&',     '"',      '<',    '>',    ''''],
@@ -534,7 +535,7 @@ function TEpiCustomBase.LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
 begin
   result := true;
 
-  if not (Root is TDomElement) then
+  if not (Root is TDOMElement) then
     RaiseErrorMsg(Root, 'Root node is NOT a TDomElement. Please abort program!');
 
   Attr := TDOMElement(Root).GetAttributeNode(AttrName);
@@ -1145,6 +1146,7 @@ end;
 function TEpiCustomNamedItem.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
+  if NewName = Name then exit(true);
   result := DoValidateRename(NewName);
 
   if Result then Name := NewName;
@@ -1499,7 +1501,7 @@ function TEpiCustomNamedItemList.GetUniqueName: string;
 var
   I: Integer;
 begin
-  I := Count;
+  I := 0;
   repeat
     Inc(i);
     Result := DoNamePrefix + IntToStr(I);
