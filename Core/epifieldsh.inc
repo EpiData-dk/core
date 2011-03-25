@@ -76,6 +76,7 @@ type
 
   { Field Properties }
   private
+    FCalculation: TEpiCalculation;
     FConfirmEntry: Boolean;
     FDecimals: Cardinal;
     FEntryMode: TEpiEntryMode;
@@ -123,6 +124,7 @@ type
     property    ValueLabelWriteField: TEpiField read FValueLabelWriteField write SetValueLabelWriteField;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;
+    property    Calculation: TEpiCalculation read FCalculation write FCalculation;
 
   { Helper methods }
   private

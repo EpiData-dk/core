@@ -1345,7 +1345,8 @@ end;
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
   FList.Remove(Item);
-  Item.UnRegisterOnChangeHook(@OnChangeHook);
+  if not (ebsDestroying in Item.State) then
+    Item.UnRegisterOnChangeHook(@OnChangeHook);
   if ItemOwner then Item.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
 end;
@@ -1354,7 +1355,8 @@ function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := TEpiCustomItem(FList[Index]);
   FList.Delete(Index);
-  Result.UnRegisterOnChangeHook(@OnChangeHook);
+  if not (ebsDestroying in Result.State) then
+    Result.UnRegisterOnChangeHook(@OnChangeHook);
   if ItemOwner then Result.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Result);
 end;

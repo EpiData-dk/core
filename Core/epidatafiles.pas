@@ -32,11 +32,15 @@ type
   TEpiJumps = class;
   TEpiJump = class;
 
+  // Calculations
+  TEpiCalculation = class;
+
 {$I epidatafilesh.inc}
 {$I episectionsh.inc}
 {$I epifieldsh.inc}
 {$I epiheadingsh.inc}
 {$I epijumpsh.inc}
+{$I epicalculationsh.inc}
 
 implementation
 
@@ -52,6 +56,7 @@ var
 {$I epifields.inc}
 {$I epiheadings.inc}
 {$I epijumps.inc}
+{$I epicalculations.inc}
 
 initialization
 begin
