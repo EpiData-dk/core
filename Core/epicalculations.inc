@@ -10,6 +10,13 @@ begin
   FResultField := AValue;
 end;
 
+function TEpiCalculation.GetOwnerField: TEpiField;
+begin
+  Result := nil;
+  if Owner is TEpiField then
+    result := TEpiField(Owner);
+end;
+
 procedure TEpiCalculation.RegisterFieldHook(NewField: TEpiField;
   OldField: TEpiField);
 begin
@@ -34,6 +41,38 @@ constructor TEpiCalculation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FResultField := nil;
+end;
+
+function TEpiCalculation.XMLName: string;
+begin
+  Result := rsCalculation;
+end;
+
+procedure TEpiCalculation.LoadFromXml(Root: TDOMNode);
+var
+  ResultFieldId: String;
+begin
+  inherited LoadFromXml(Root);
+  ResultFieldId := LoadNodeString(Root, rsResultField);
+  if Assigned(OwnerField) then
+    ResultField := TEpiField(OwnerField.DataFile.Fields.GetItemById(ResultFieldId));
+
+  if not Assigned(ResultField) then
+    LinkMap.AddLink(ltCalcResField, Self, ResultFieldId);
+end;
+
+function TEpiCalculation.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content +=
+    SaveNode(Lvl + 1, rsResultField, ResultField.Id);
+  Result := inherited SaveToXml(Content, Lvl);
+end;
+
+function TEpiCalculation.SaveAttributesToXml: string;
+begin
+  Result :=
+    ' type="' + IntToStr(Integer(CalcType)) + '"' +
+    inherited SaveAttributesToXml;
 end;
 
 { TEpiTimeCalc }
@@ -66,6 +105,12 @@ begin
   FStartTime := AValue;
 end;
 
+procedure TEpiTimeCalc.SetTimeCalcType(const AValue: TEpiTimeCalcType);
+begin
+  if FTimeCalcType = AValue then exit;
+  FTimeCalcType := AValue;
+end;
+
 function TEpiTimeCalc.GetCalcType: TEpiCalcType;
 begin
   Result := ctTimeDiff;
@@ -82,6 +127,45 @@ begin
   if Sender = FEndDate   then FEndDate   := nil;
   if Sender = FStartTime then FStartTime := nil;
   if Sender = FEndTime   then FEndTime   := nil;
+end;
+
+procedure TEpiTimeCalc.LoadFromXml(Root: TDOMNode);
+var
+  StartDateId: String;
+  EndDateId: String;
+  StartTimeId: String;
+  EndTimeId: String;
+begin
+  inherited LoadFromXml(Root);
+
+  TimeCalcType := TEpiTimeCalcType(LoadNodeInt(Root, rsTimeCalcType));
+
+  StartDateId := LoadNodeString(Root, rsStartDate);
+  StartDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(StartDateId));
+  if not Assigned(StartDate) then LinkMap.AddLink(ltCalcStartDate, Self, StartDateId);
+
+  EndDateId := LoadNodeString(Root, rsEndDate);
+  EndDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(EndDateId));
+  if not Assigned(EndDate) then LinkMap.AddLink(ltCalcEndDate, Self, EndDateId);
+
+  StartTimeId := LoadNodeString(Root, rsStartTime);
+  StartTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(StartTimeId));
+  if not Assigned(StartTime) then LinkMap.AddLink(ltCalcStartTime, Self, StartTimeId);
+
+  EndTimeId := LoadNodeString(Root, rsEndTime);
+  EndTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(EndTimeId));
+  if not Assigned(EndTime) then LinkMap.AddLink(ltCalcEndTime, Self, EndTimeId);
+end;
+
+function TEpiTimeCalc.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content +=
+    SaveNode(Lvl + 1, rsTimeCalcType, Integer(TimeCalcType)) +
+    SaveNode(Lvl + 1, rsStartDate, StartDate.Id) +
+    SaveNode(Lvl + 1, rsStartTime, StartTime.Id) +
+    SaveNode(Lvl + 1, rsEndDate,   EndDate.Id) +
+    SaveNode(Lvl + 1, rsEndTime,   EndTime.Id);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 { TEpiCombineDateCalc }
@@ -122,6 +206,36 @@ begin
   if Sender = FDay   then FDay   := nil;
   if Sender = FMonth then FMonth := nil;
   if Sender = FYear  then FYear  := nil;
+end;
+
+procedure TEpiCombineDateCalc.LoadFromXml(Root: TDOMNode);
+var
+  DayId: String;
+  MonthId: String;
+  YearId: String;
+begin
+  inherited LoadFromXml(Root);
+
+  DayId := LoadNodeString(Root, rsDayField);
+  Day := TEpiIntField(OwnerField.DataFile.Fields.GetItemById(DayId));
+  if not Assigned(Day) then LinkMap.AddLink(ltCalcDayField, Self, DayId);
+
+  MonthId := LoadNodeString(Root, rsMonthField);
+  Month := TEpiIntField(OwnerField.DataFile.Fields.GetItemById(MonthId));
+  if not Assigned(Month) then LinkMap.AddLink(ltCalcMonthField, Self, MonthId);
+
+  YearId := LoadNodeString(Root, rsYearField);
+  Year := TEpiIntField(OwnerField.DataFile.Fields.GetItemById(YearId));
+  if not Assigned(Year) then LinkMap.AddLink(ltCalcYearField, Self, YearId);
+end;
+
+function TEpiCombineDateCalc.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content +=
+    SaveNode(Lvl + 1, rsDayField,   Day.Id) +
+    SaveNode(Lvl + 1, rsMonthField, Month.Id) +
+    SaveNode(Lvl + 1, rsYearField,  Year.Id);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 { TEpiCombineStringCalc }
@@ -174,5 +288,41 @@ begin
   if Sender = FField1 then FField1 := nil;
   if Sender = FField2 then FField2 := nil;
   if Sender = FField3 then FField3 := nil;
+end;
+
+procedure TEpiCombineStringCalc.LoadFromXml(Root: TDOMNode);
+var
+  Field1Id: String;
+  Field2Id: String;
+  Field3Id: String;
+begin
+  inherited LoadFromXml(Root);
+
+  Field1Id := LoadNodeString(Root, rsField1);
+  Field1 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field1Id));
+  if not Assigned(Field1) then LinkMap.AddLink(ltCalcField1, Self, Field1Id);
+
+  Field2Id := LoadNodeString(Root, rsField2);
+  Field2 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field2Id));
+  if not Assigned(Field2) then LinkMap.AddLink(ltCalcField2, Self, Field2Id);
+
+  Field3Id := LoadNodeString(Root, rsField3);
+  Field3 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field3Id));
+  if not Assigned(Field3) then LinkMap.AddLink(ltCalcField3, Self, Field3Id);
+
+  Delim1 := LoadNodeString(Root, rsDelim1);
+  Delim2 := LoadNodeString(Root, rsDelim2);
+end;
+
+function TEpiCombineStringCalc.SaveToXml(Content: String; Lvl: integer
+  ): string;
+begin
+  Content +=
+    SaveNode(Lvl + 1, rsField1, Field1.Id) +
+    SaveNode(Lvl + 1, rsField2, Field2.Id) +
+    SaveNode(Lvl + 1, rsField3, Field3.Id) +
+    SaveNode(Lvl + 1, rsDelim1, Delim1) +
+    SaveNode(Lvl + 1, rsDelim2, Delim2);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 

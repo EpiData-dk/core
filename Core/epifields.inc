@@ -435,6 +435,8 @@ begin
     Content += Ranges.SaveToXml('', Lvl + 1);
   if Assigned(Jumps) then
     Content += Jumps.SaveToXml('', Lvl + 1);
+  if Assigned(Calculation) then
+    Content += Calculation.SaveToXml('', Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -466,7 +468,7 @@ begin
     // Since (possibly) all ValueLabelWriteRef to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
     if not Assigned(ValueLabelWriteField) then
-      ValueLabelWriteList.AddObject(VLFieldId, Self);
+      LinkMap.AddLink(ltValueLabelWrite, Self, VLFieldId);
   end;
 
   // If not present this is handled within TEpiTranslatedText;
@@ -484,6 +486,15 @@ begin
     Jumps := TEpiJumps.Create(Self);
     Jumps.ItemOwner := true;
     Jumps.LoadFromXml(Node);
+  end;
+  if LoadNode(Node, Root, rsCalculation, false) then
+  begin
+    Case TEpiCalcType(LoadAttrInt(Node, 'type')) of
+      ctTimeDiff:      Calculation := TEpiTimeCalc.Create(Self);
+      ctCombineDate:   Calculation := TEpiCombineDateCalc.Create(Self);
+      ctCombineString: Calculation := TEpiCombineStringCalc.Create(Self);
+    end;
+    Calculation.LoadFromXml(Node);
   end;
 end;
 

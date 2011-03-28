@@ -254,7 +254,7 @@ begin
     StrBuf := '';
     if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
       StrBuf :=  EpiUnknownStrToUTF8(Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine)));
-    Name.Text := StrBuf;
+    Caption.Text := StrBuf;
 
     // - Header lines:
     TempInt := Pos(' ', TxtLine)-1;
@@ -643,7 +643,7 @@ begin
     // data_label \0 terminated.
     SetLength(CharBuf, FileLabelLength);
     DataStream.Read(CharBuf[0], FileLabelLength);
-    Name.Text := StringFromBuffer(PChar(@CharBuf[0]), FileLabelLength);
+    Caption.Text := StringFromBuffer(PChar(@CharBuf[0]), FileLabelLength);
 
     // time_stamp \0 terminated (not used in epidata)
     DataStream.Read(CharBuf[0], 18);

@@ -47,10 +47,7 @@ implementation
 uses
   epidocument, math, epistringutils, epiconvertutils;
 
-var
-  JumpList: TStringList;
-  ValueLabelWriteList: TStringList;
-
+{$I epidatafiles_helper.inc}
 {$I epidatafiles.inc}
 {$I episections.inc}
 {$I epifields.inc}
@@ -60,14 +57,12 @@ var
 
 initialization
 begin
-  JumpList := TStringList.Create;
-  ValueLabelWriteList := TStringList.Create;
+  LinkMap := TLinkMap.Create;
 end;
 
 finalization
 begin
-  JumpList.Free;
-  ValueLabelWriteList.Free;
+  LinkMap.Free;
 end;
 
 end.

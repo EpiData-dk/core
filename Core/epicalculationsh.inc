@@ -8,39 +8,50 @@ type
   TEpiCalculation = class(TEpiCustomBase)
   private
     FResultField: TEpiField;
+    function GetOwnerField: TEpiField;
     procedure SetResultField(const AValue: TEpiField);
   protected
     function GetCalcType: TEpiCalcType; virtual; abstract;
     procedure RegisterFieldHook(NewField: TEpiField; OldField: TEpiField);
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
+    property OwnerField: TEpiField read GetOwnerField;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    function XMLName: string; override;
+    procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
+    function SaveAttributesToXml: string; override;
     property CalcType: TEpiCalcType read GetCalcType;
     property ResultField: TEpiField read FResultField write SetResultField;
   end;
 
   { TEpiTimeCalc }
-
+  TEpiTimeCalcType = (ctAsYear, ctAsMonths, ctAsWeeks, ctAsDays, ctAsDayFraction);
   TEpiTimeCalc = class(TEpiCalculation)
   private
     FEndDate: TEpiDateField;
     FEndTime: TEpiDateTimeField;
     FStartDate: TEpiDateField;
     FStartTime: TEpiDateTimeField;
+    FTimeCalcType: TEpiTimeCalcType;
     procedure SetEndDate(const AValue: TEpiDateField);
     procedure SetEndTime(const AValue: TEpiDateTimeField);
     procedure SetStartDate(const AValue: TEpiDateField);
     procedure SetStartTime(const AValue: TEpiDateTimeField);
+    procedure SetTimeCalcType(const AValue: TEpiTimeCalcType);
   protected
     function GetCalcType: TEpiCalcType; override;
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
        EventType: Word; Data: Pointer); override;
   public
+    procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
     property StartDate: TEpiDateField read FStartDate write SetStartDate;
     property StartTime: TEpiDateTimeField read FStartTime write SetStartTime;
     property EndDate: TEpiDateField read FEndDate write SetEndDate;
     property EndTime: TEpiDateTimeField read FEndTime write SetEndTime;
+    property TimeCalcType: TEpiTimeCalcType read FTimeCalcType write SetTimeCalcType;
   end;
 
   { TEpiCombineDateCalc }
@@ -58,6 +69,8 @@ type
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
        EventType: Word; Data: Pointer); override;
   public
+    procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
     property Day: TEpiIntField read FDay write SetDay;
     property Month: TEpiIntField read FMonth write SetMonth;
     property Year: TEpiIntField read FYear write SetYear;
@@ -82,11 +95,11 @@ type
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
        EventType: Word; Data: Pointer); override;
   public
+    procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
     property Field1: TEpiField read FField1 write SetField1;
     property Delim1: string read FDelim1 write SetDelim1;
     property Field2: TEpiField read FField2 write SetField2;
     property Delim2: string read FDelim2 write SetDelim2;
     property Field3: TEpiField read FField3 write SetField3;
   end;
-
-

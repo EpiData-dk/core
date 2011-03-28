@@ -30,7 +30,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="6"/>
-    <Files Count="31">
+    <Files Count="32">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -155,6 +155,10 @@
         <Filename Value="Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
       </Item31>
+      <Item32>
+        <Filename Value="Core/epidatafiles_helper.inc"/>
+        <Type Value="Binary"/>
+      </Item32>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

@@ -407,6 +407,12 @@ begin
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
 end;
 
+procedure TEpiDataFile.SetVersion(const AValue: string);
+begin
+  if FVersion = AValue then exit;
+  FVersion := AValue;
+end;
+
 class function TEpiDataFile.IdString: string;
 begin
   Result := 'datafile_id_';
@@ -421,8 +427,10 @@ constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
 
-  // Name...
-  FName := TEpiTranslatedText.Create(Self, rsName);
+  // Caption
+  FCaption := TEpiTranslatedText.Create(Self, rsCaption);
+  FVersion := '';
+  FCreated := Now;
 
   // Sections
   FSections := TEpiSections.Create(Self);
@@ -442,7 +450,7 @@ begin
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
 
-  RegisterClasses([Name, Sections]);
+  RegisterClasses([Caption, Sections]);
 end;
 
 destructor TEpiDataFile.Destroy;
@@ -451,7 +459,7 @@ begin
   FSections.Free;
   FAllFields.Free;
   FAllHeadings.Free;
-  FName.Free;
+  FCaption.Free;
   inherited Destroy;
 end;
 
@@ -470,7 +478,10 @@ end;
 
 function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Content := SaveRecords(Lvl + 1);
+  Content +=
+    SaveNode(Lvl + 1, rsVersion, Version) +
+    SaveNode(Lvl + 1, rsCreated, Created) +
+    SaveRecords(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -489,13 +500,50 @@ begin
   inherited LoadFromXml(Root);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Name.LoadFromXml(Root);
+  Caption.LoadFromXml(Root);
+  FVersion := LoadNodeString(Root, rsVersion);
+  FCreated := LoadNodeDateTime(Root, rsCreated);
 
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);
 
+  // Post Processing!
+  for i := 0 to LinkMap.Count - 1 do
+  begin
+    AField := TEpiField(Fields.GetItemById(LinkMap.RefObjId[i]));
+    Case LinkMap.LinkTypes[i] of
+      ltJump:
+        TEpiJump(LinkMap.Objects[i]).JumpToField := AField;
+      ltValueLabelWrite:
+        TEpiField(LinkMap.Objects[i]).ValueLabelWriteField := AField;
+      ltCalcResField:
+        TEpiCalculation(LinkMap.Objects[i]).ResultField := AField;
+      ltCalcStartDate:
+        TEpiTimeCalc(LinkMap.Objects[i]).StartDate := TEpiDateField(AField);
+      ltCalcEndDate:
+        TEpiTimeCalc(LinkMap.Objects[i]).EndDate := TEpiDateField(AField);
+      ltCalcStartTime:
+        TEpiTimeCalc(LinkMap.Objects[i]).StartTime := TEpiDateTimeField(AField);
+      ltCalcEndTime:
+        TEpiTimeCalc(LinkMap.Objects[i]).EndTime := TEpiDateTimeField(AField);
+      ltCalcDayField:
+        TEpiCombineDateCalc(LinkMap.Objects[i]).Day := TEpiIntField(AField);
+      ltCalcMonthField:
+        TEpiCombineDateCalc(LinkMap.Objects[i]).Month := TEpiIntField(AField);
+      ltCalcYearField:
+        TEpiCombineDateCalc(LinkMap.Objects[i]).Year := TEpiIntField(AField);
+      ltCalcField1:
+        TEpiCombineStringCalc(LinkMap.Objects[i]).Field1 := AField;
+      ltCalcField2:
+        TEpiCombineStringCalc(LinkMap.Objects[i]).Field2 := AField;
+      ltCalcField3:
+        TEpiCombineStringCalc(LinkMap.Objects[i]).Field3 := AField;
+    end;
+  end;
+
+
   // Post processing - read jumps so field references are correct.
-  for i := 0 to JumpList.Count - 1 do
+{  for i := 0 to JumpList.Count - 1 do
   begin
     Jump := TEpiJump(JumpList.Objects[i]);
     Jump.JumpToField := TEpiField(Fields.GetItemById(JumpList[i]));
@@ -508,7 +556,7 @@ begin
     AField.ValueLabelWriteField := TEpiField(Fields.GetItemById(ValueLabelWriteList[i]));
   end;
   ValueLabelWriteList.Clear;
-
+ }
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := TEpiSection(Sections.GetItemByName('MAIN'));
 

@@ -214,8 +214,8 @@ begin
     WriteInt(DataStream,  NObs);                                       // Number of records
 
 
-    IF trim(Name.Text) <> '' THEN
-      TmpStr := Trim(Name.Text)
+    IF trim(Caption.Text) <> '' THEN
+      TmpStr := Trim(Caption.Text)
     ELSE
       TmpStr := Format('Datafile created by EpiData based on %s', [SysToUTF8(ExtractFilename(UTF8ToSys(aFilename)))]);
 

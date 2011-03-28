@@ -31,7 +31,6 @@ type
   TEpiDataFile = class(TEpiCustomItem)
   private
     { Data containers }
-    FName: TEpiTranslatedText;
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
     FSections: TEpiSections;
@@ -67,7 +66,6 @@ type
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
     procedure   NewRecords(Const Count: Cardinal = 1);
-    property    Name: TEpiTranslatedText read FName;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;
@@ -80,8 +78,20 @@ type
     Property    Size: Integer read GetSize write SetSize;
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
+
+  { DataFile properties }
+  private
+    FCaption: TEpiTranslatedText;
+    FCreated: TDateTime;
+    FVersion: string;
+    procedure   SetVersion(const AValue: string);
   public
-    { Update Overrides}
+    property    Caption: TEpiTranslatedText read FCaption;
+    property    Created: TDateTime read FCreated;
+    property    Version: string read FVersion write SetVersion;
+
+  { Update Overrides}
+  public
     procedure BeginUpdate; override;
     procedure EndUpdate; override;
   end;

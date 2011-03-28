@@ -45,22 +45,19 @@ const
       rsRights          = 'Rights';
 
    rsStudy           = 'Study';
-    rsProtocol        = 'Protocol';
     rsAbstract        = 'Abstract';
     rsAuthor          = 'Author';
-    rsOwner           = 'Owner';
+    rsCitations       = 'Citations';
     rsCreated         = 'Created';
-    rsCreator         = 'Creator';
-    rsDescription     = 'Description';
+    rsFunding         = 'Funding';
+    rsGeoCoverage     = 'GeographicalCoverage';
+    rsIdentifier      = 'Identifier';
     rsLanguage        = 'Language';
     rsModified        = 'Modified';
-    rsProvenance      = 'Provenance';
-    rsReferences      = 'References';
-    rsRightsholder    = 'Rightsholder';
-    rsSource          = 'Source';
-    rsSpatial         = 'Spatial';
-    rsSubject         = 'Subject';
-    rsTemporal        = 'Temporal';
+    rsOtherLanguages  = 'OtherLanguages';
+    rsPublisher       = 'Publisher';
+    rsPurpose         = 'Purpose';
+    rsTimeCoverage    = 'TimeCoverage';
     rsTitle           = 'Title';
 
    rsValueLabelSets  = 'ValueLabelSets';
@@ -109,6 +106,21 @@ const
          rsRepeatValue      = 'Repeat';
          rsDefaultValue     = 'DefaultValue';
          rsAutoUpdateMode   = 'AutoUpdateMode';
+         rsCalculation      = 'Calculation';
+          rsResultField      = 'ResultField';
+          rsTimeCalcType     = 'TimeCalcType';
+          rsStartDate        = 'StartDate';
+          rsStartTime        = 'StartTime';
+          rsEndDate          = 'EndDate';
+          rsEndTime          = 'EndTime';
+          rsDayField         = 'DayField';
+          rsMonthField       = 'MonthField';
+          rsYearField        = 'YearField';
+          rsField1           = 'Field1';
+          rsField2           = 'Field2';
+          rsField3           = 'Field3';
+          rsDelim1           = 'Delimiter1';
+          rsDelim2           = 'Delimiter2';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

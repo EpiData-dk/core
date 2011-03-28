@@ -11,60 +11,53 @@ type
 
   { TEpiStudy }
 
-  TEpiStudyChangeEventType = (
-    esceSetAbstract, esceSetAuthor, esceSetCreator,
-    esceSetDesc, esceSetLanguage, esceSetModified, esceSetOwner,
-    esceSetProtocol, esceSetProv, esceSetRef, esceSetRightsHolder,
-    esceSetSource, esceSetSpatial, esceSetSubject,
-    esceSetTemporal, esceSetTitle
-  );
-
-
+//  TEpiStudyChangeEventType = ();
   TEpiStudy = class(TEpiCustomBase)
   private
     FAbstractText: TEpiTranslatedText;
     FAuthor: string;
+    FCitations: TEpiTranslatedText;
     FCreated: TDateTime;
-    FCreator: TEpiTranslatedText;
-    FDescription: TEpiTranslatedText;
+    FFunding: TEpiTranslatedText;
+    FGeographicalCoverage: TEpiTranslatedText;
+    FIdentifier: string;
     FLanguage: string;
     FModifiedDate: TDateTime;
-    FStudyOwner: TEpiTranslatedText;
-    FProtocol: TEpiTranslatedText;
-    FProvenance: TEpiTranslatedText;
-    FReferences: TEpiTranslatedText;
-    FRightsHolder: TEpiTranslatedText;
-    FSource: TEpiTranslatedText;
-    FSpatial: TEpiTranslatedText;
-    FSubject: TEpiTranslatedText;
-    FTemporal: TEpiTranslatedText;
+    FOtherLanguages: string;
+    FPublisher: TEpiTranslatedText;
+    FPurpose: TEpiTranslatedText;
+    FRights: TEpiTranslatedText;
+    FTimeCoverage: TEpiTranslatedText;
     FTitle: TEpiTranslatedText;
+    FVersion: string;
     procedure SetAuthor(const AValue: string);
+    procedure SetIdentifier(const AValue: string);
     procedure SetLanguage(const AValue: string);
     procedure SetModifiedDate(const AValue: TDateTime);
+    procedure SetOtherLanguages(const AValue: string);
+    procedure SetVersion(const AValue: string);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
-    Property   Protocol: TEpiTranslatedText read FProtocol;
     Property   AbstractText: TEpiTranslatedText read FAbstractText;
     Property   Author: string read FAuthor write SetAuthor;
-    Property   StudyOwner: TEpiTranslatedText read FStudyOwner;
+    property   Citations: TEpiTranslatedText read FCitations;
     Property   Created: TDateTime read FCreated;
-    Property   Creator: TEpiTranslatedText read FCreator;
-    Property   Description: TEpiTranslatedText read FDescription;
+    property   Funding: TEpiTranslatedText read FFunding;
+    property   GeographicalCoverage: TEpiTranslatedText read FGeographicalCoverage;
+    property   Identifier: string read FIdentifier write SetIdentifier;
     Property   Language: string read FLanguage write SetLanguage;
     Property   ModifiedDate: TDateTime read FModifiedDate write SetModifiedDate;
-    Property   Provenance: TEpiTranslatedText read FProvenance;
-    Property   References: TEpiTranslatedText read FReferences;
-    Property   RightsHolder: TEpiTranslatedText read FRightsHolder;
-    Property   Source: TEpiTranslatedText read FSource;
-    Property   Spatial: TEpiTranslatedText read FSpatial;
-    Property   Subject: TEpiTranslatedText read FSubject;
-    Property   Temporal: TEpiTranslatedText read FTemporal;
+    property   OtherLanguages: string read FOtherLanguages write SetOtherLanguages;
+    property   Publisher: TEpiTranslatedText read FPublisher;
+    property   Purpose: TEpiTranslatedText read FPurpose;
+    property   Rights: TEpiTranslatedText read FRights;
+    property   TimeCoverage: TEpiTranslatedText read FTimeCoverage;
     Property   Title: TEpiTranslatedText read FTitle;
+    property   Version: string read FVersion write SetVersion;
   end;
 
 implementation
@@ -75,75 +68,78 @@ uses
 { TEpiStudy }
 
 procedure TEpiStudy.SetAuthor(const AValue: string);
-var
-  Val: String;
 begin
   if FAuthor = AValue then exit;
-  Val := FAuthor;
   FAuthor := AValue;
-  DoChange(eegStudy, Word(esceSetAuthor), @Val);
+end;
+
+procedure TEpiStudy.SetIdentifier(const AValue: string);
+begin
+  if FIdentifier = AValue then exit;
+  FIdentifier := AValue;
 end;
 
 procedure TEpiStudy.SetLanguage(const AValue: string);
-var
-  Val: String;
 begin
   if FLanguage = AValue then exit;
-  Val := FLanguage;
   FLanguage := AValue;
-  DoChange(eegStudy, Word(esceSetLanguage), @Val);
 end;
 
 procedure TEpiStudy.SetModifiedDate(const AValue: TDateTime);
-var
-  Val: Double;
 begin
   if FModifiedDate = AValue then exit;
-  Val := FModifiedDate;
   FModifiedDate := AValue;
-  DoChange(eegStudy, Word(esceSetModified), @Val);
+end;
+
+procedure TEpiStudy.SetOtherLanguages(const AValue: string);
+begin
+  if FOtherLanguages = AValue then exit;
+  FOtherLanguages := AValue;
+end;
+
+procedure TEpiStudy.SetVersion(const AValue: string);
+begin
+  if FVersion = AValue then exit;
+  FVersion := AValue;
 end;
 
 constructor TEpiStudy.Create(AOwner: TEpiCustomBase);
 begin
   Inherited Create(AOwner);
 
-  FAbstractText := TEpiTranslatedText.Create(Self, rsAbstract);
-  FCreator      := TEpiTranslatedText.Create(Self, rsCreator);
-  FDescription  := TEpiTranslatedText.Create(Self, rsDescription);
-  FStudyOwner   := TEpiTranslatedText.Create(Self, rsOwner);
-  FProtocol     := TEpiTranslatedText.Create(Self, rsProtocol);
-  FProvenance   := TEpiTranslatedText.Create(Self, rsProvenance);
-  FReferences   := TEpiTranslatedText.Create(Self, rsReferences);
-  FRightsHolder := TEpiTranslatedText.Create(Self, rsRightsholder);
-  FSource       := TEpiTranslatedText.Create(Self, rsSource);
-  FSpatial      := TEpiTranslatedText.Create(Self, rsSpatial);
-  FSubject      := TEpiTranslatedText.Create(Self, rsSubject);
-  FTemporal     := TEpiTranslatedText.Create(Self, rsTemporal);
-  FTitle        := TEpiTranslatedText.Create(Self, rsTitle);
+  FAuthor               := '';
+  FAbstractText         := TEpiTranslatedText.Create(Self, rsAbstract);
+  FCitations            := TEpiTranslatedText.Create(Self, rsCitations);
+  FFunding              := TEpiTranslatedText.Create(Self, rsFunding);
+  FGeographicalCoverage := TEpiTranslatedText.Create(Self, rsGeoCoverage);
+  FIdentifier           := '';
+  FLanguage             := '';
+  FOtherLanguages       := '';
+  FPublisher            := TEpiTranslatedText.Create(Self, rsPublisher);
+  FPurpose              := TEpiTranslatedText.Create(Self, rsPurpose);
+  FRights               := TEpiTranslatedText.Create(Self, rsRights);
+  FTimeCoverage         := TEpiTranslatedText.Create(Self, rsTimeCoverage);
+  FTitle                := TEpiTranslatedText.Create(Self, rsTitle);
+  FVersion              := '';
 
   FCreated := Now;
   FModifiedDate := FCreated;
 
-  RegisterClasses([FAbstractText, FCreator, FDescription,
-    FStudyOwner, FProtocol, FProvenance, FReferences, FRightsHolder,
-    FSource, FSpatial, FSubject, FTemporal, FTitle]);
+  RegisterClasses([FAbstractText, FCitations, FFunding,
+    FGeographicalCoverage, FPublisher, FPurpose, FRights, FTimeCoverage,
+    FTitle]);
 end;
 
 destructor TEpiStudy.Destroy;
 begin
   FAbstractText.Free;
-  FCreator.Free;
-  FDescription.Free;
-  FStudyOwner.Free;
-  FProtocol.Free;
-  FProvenance.Free;
-  FReferences.Free;
-  FRightsHolder.Free;
-  FSource.Free;
-  FSpatial.Free;
-  FSubject.Free;
-  FTemporal.Free;
+  FCitations.Free;
+  FFunding.Free;
+  FGeographicalCoverage.Free;
+  FPublisher.Free;
+  FPurpose.Free;
+  FRights.Free;
+  FTimeCoverage.Free;
   FTitle.Free;
   inherited Destroy;
 end;
@@ -158,31 +154,33 @@ begin
   Content :=
     SaveNode(Lvl + 1, rsAuthor, Author) +
     SaveNode(Lvl + 1, rsCreated, Created) +
+    SaveNode(Lvl + 1, rsIdentifier, Identifier) +
     SaveNode(Lvl + 1, rsLanguage, Language) +
-    SaveNode(Lvl + 1, rsModified, ModifiedDate);
+    SaveNode(Lvl + 1, rsModified, ModifiedDate) +
+    SaveNode(Lvl + 1, rsOtherLanguages, OtherLanguages) +
+    SaveNode(Lvl + 1, rsVersion, Version);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiStudy.LoadFromXml(Root: TDOMNode);
 begin
   // Root = <Study>
-  Protocol.LoadFromXml(Root);
-  AbstractText.LoadFromXml(Root);
-  Author       := LoadNodeString(Root, rsAuthor);
-  StudyOwner.LoadFromXml(Root);
-  // Access FCreated directly.
-  FCreated     := LoadNodeDateTime(Root, rsCreated);
-  Creator.LoadFromXml(Root);
-  Description.LoadFromXml(Root);
-  Language     := LoadNodeString(Root, rsLanguage);
-  ModifiedDate := LoadNodeDateTime(Root, rsModified);
-  Provenance.LoadFromXml(Root);
-  References.LoadFromXml(Root);
-  Rightsholder.LoadFromXml(Root);
-  Source.LoadFromXml(Root);
-  Subject.LoadFromXml(Root);
-  Temporal.LoadFromXml(Root);
-  Title.LoadFromXml(Root);
+  FAbstractText.LoadFromXml(Root);
+  FAuthor       := LoadNodeString(Root, rsAuthor);
+  FCitations.LoadFromXml(Root);
+  FCreated      := LoadNodeDateTime(Root, rsCreated);
+  FFunding.LoadFromXml(Root);
+  FGeographicalCoverage.LoadFromXml(Root);
+  FIdentifier   := LoadNodeString(Root, rsIdentifier);
+  FLanguage     := LoadNodeString(Root, rsLanguage);
+  FModifiedDate := LoadNodeDateTime(Root, rsModified);
+  FOtherLanguages := LoadNodeString(Root, rsOtherLanguages);
+  FPublisher.LoadFromXml(Root);
+  FPurpose.LoadFromXml(Root);
+  FRights.LoadFromXml(Root);
+  FTimeCoverage.LoadFromXml(Root);
+  FTitle.LoadFromXml(Root);
+  FVersion := LoadNodeString(Root, rsVersion);
 end;
 
 end.

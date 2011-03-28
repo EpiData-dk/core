@@ -130,7 +130,7 @@ begin
     // Since (possibly) all jumps to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
     if not assigned(JumpToField) then
-      JumpList.AddObject(FieldId, Self);
+      LinkMap.AddLink(ltJump, Self, FieldId);
   end;
 end;
 
