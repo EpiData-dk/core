@@ -62,7 +62,7 @@ end;
 
 procedure TLinkMap.AddLink(LinkType: TLinkType; Obj: TObject; RefObjId: string);
 begin
-  FLinkTypes.Add(TObject(LinkType));
+  FLinkTypes.Add(Pointer(PtrUInt(LinkType)));
   FLink.AddObject(RefObjId, Obj);
 end;
 
