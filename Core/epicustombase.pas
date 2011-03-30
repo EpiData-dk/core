@@ -937,13 +937,22 @@ procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
   const DefaultLanguage: boolean);
 var
   Idx:  integer;
+  Val: String;
 begin
   // First seek "new" language
   if FTextList.Find(LangCode, Idx) then
-    FCurrentText := TString(FTextList.Objects[Idx]).Str
+  begin
+    Val := FCurrentText;
+    FCurrentText := TString(FTextList.Objects[Idx]).Str;
+    DoChange(eegCustomBase, Word(ecceText), @Val);
+  end
   // Fallback to default language
-  else if FTextList.Find(FDefaultLang, Idx) then
-    FCurrentText := TString(FTextList.Objects[Idx]).Str
+  else if (FTextList.Find(FDefaultLang, Idx)) and (not DefaultLanguage) then
+  begin
+    Val := FCurrentText;
+    FCurrentText := TString(FTextList.Objects[Idx]).Str;
+    DoChange(eegCustomBase, Word(ecceText), @Val);
+  end
   // If new default language does not exists create empty entry.
   else if DefaultLanguage then
   begin

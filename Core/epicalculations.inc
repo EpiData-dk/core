@@ -135,36 +135,53 @@ var
   EndDateId: String;
   StartTimeId: String;
   EndTimeId: String;
+  Node: TDOMNode;
 begin
   inherited LoadFromXml(Root);
 
   TimeCalcType := TEpiTimeCalcType(LoadNodeInt(Root, rsTimeCalcType));
 
-  StartDateId := LoadNodeString(Root, rsStartDate);
-  StartDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(StartDateId));
-  if not Assigned(StartDate) then LinkMap.AddLink(ltCalcStartDate, Self, StartDateId);
+  if LoadNode(Node, Root, rsStartDate, false) then
+  begin
+    StartDateId := LoadNodeString(Root, rsStartDate);
+    StartDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(StartDateId));
+    if not Assigned(StartDate) then LinkMap.AddLink(ltCalcStartDate, Self, StartDateId);
+  end;
 
-  EndDateId := LoadNodeString(Root, rsEndDate);
-  EndDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(EndDateId));
-  if not Assigned(EndDate) then LinkMap.AddLink(ltCalcEndDate, Self, EndDateId);
+  if LoadNode(Node, Root, rsEndDate, false) then
+  begin
+    EndDateId := LoadNodeString(Root, rsEndDate);
+    EndDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(EndDateId));
+    if not Assigned(EndDate) then LinkMap.AddLink(ltCalcEndDate, Self, EndDateId);
+  end;
 
-  StartTimeId := LoadNodeString(Root, rsStartTime);
-  StartTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(StartTimeId));
-  if not Assigned(StartTime) then LinkMap.AddLink(ltCalcStartTime, Self, StartTimeId);
+  if LoadNode(Node, Root, rsStartTime, false) then
+  begin
+    StartTimeId := LoadNodeString(Root, rsStartTime);
+    StartTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(StartTimeId));
+    if not Assigned(StartTime) then LinkMap.AddLink(ltCalcStartTime, Self, StartTimeId);
+  end;
 
-  EndTimeId := LoadNodeString(Root, rsEndTime);
-  EndTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(EndTimeId));
-  if not Assigned(EndTime) then LinkMap.AddLink(ltCalcEndTime, Self, EndTimeId);
+  if LoadNode(Node, Root, rsEndTime, false) then
+  begin
+    EndTimeId := LoadNodeString(Root, rsEndTime);
+    EndTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(EndTimeId));
+    if not Assigned(EndTime) then LinkMap.AddLink(ltCalcEndTime, Self, EndTimeId);
+  end;
 end;
 
 function TEpiTimeCalc.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
-    SaveNode(Lvl + 1, rsTimeCalcType, Integer(TimeCalcType)) +
-    SaveNode(Lvl + 1, rsStartDate, StartDate.Id) +
-    SaveNode(Lvl + 1, rsStartTime, StartTime.Id) +
-    SaveNode(Lvl + 1, rsEndDate,   EndDate.Id) +
-    SaveNode(Lvl + 1, rsEndTime,   EndTime.Id);
+    SaveNode(Lvl + 1, rsTimeCalcType, Integer(TimeCalcType));
+  if Assigned(StartDate) then
+    Content += SaveNode(Lvl + 1, rsStartDate, StartDate.Id);
+  if Assigned(StartTime) then
+    Content += SaveNode(Lvl + 1, rsStartTime, StartTime.Id);
+  if Assigned(EndDate) then
+    Content += SaveNode(Lvl + 1, rsEndDate,   EndDate.Id);
+  if Assigned(EndTime) then
+    Content += SaveNode(Lvl + 1, rsEndTime,   EndTime.Id);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
