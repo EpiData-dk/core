@@ -643,6 +643,7 @@ function TEpiValueLabelSets.NewValueLabelSet(ALabelType: TEpiFieldType
 begin
   result := TEpiValueLabelSet(NewItem(TEpiValueLabelSet));
   result.LabelType := ALabelType;
+  result.ItemOwner := true;
 end;
 
 function TEpiValueLabelSets.GetValueLabelSetByName(const AName: string
