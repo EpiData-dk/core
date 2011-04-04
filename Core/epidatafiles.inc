@@ -540,23 +540,8 @@ begin
         TEpiCombineStringCalc(LinkMap.Objects[i]).Field3 := AField;
     end;
   end;
+  LinkMap.Clear;
 
-
-  // Post processing - read jumps so field references are correct.
-{  for i := 0 to JumpList.Count - 1 do
-  begin
-    Jump := TEpiJump(JumpList.Objects[i]);
-    Jump.JumpToField := TEpiField(Fields.GetItemById(JumpList[i]));
-  end;
-  JumpList.Clear;
-  // Post processing - do the same for ValueLabelWriteRefs
-  for i := 0 to ValueLabelWriteList.Count - 1 do
-  begin
-    AField := TEpiField(ValueLabelWriteList.Objects[i]);
-    AField.ValueLabelWriteField := TEpiField(Fields.GetItemById(ValueLabelWriteList[i]));
-  end;
-  ValueLabelWriteList.Clear;
- }
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := TEpiSection(Sections.GetItemByName('MAIN'));
 

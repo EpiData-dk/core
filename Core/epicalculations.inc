@@ -312,20 +312,30 @@ var
   Field1Id: String;
   Field2Id: String;
   Field3Id: String;
+  Node: TDOMNode;
 begin
   inherited LoadFromXml(Root);
 
-  Field1Id := LoadNodeString(Root, rsField1);
-  Field1 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field1Id));
-  if not Assigned(Field1) then LinkMap.AddLink(ltCalcField1, Self, Field1Id);
+  if LoadNode(Node, Root, rsField1, false) then
+  begin
+    Field1Id := LoadNodeString(Root, rsField1);
+    Field1 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field1Id));
+    if not Assigned(Field1) then LinkMap.AddLink(ltCalcField1, Self, Field1Id);
+  end;
 
-  Field2Id := LoadNodeString(Root, rsField2);
-  Field2 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field2Id));
-  if not Assigned(Field2) then LinkMap.AddLink(ltCalcField2, Self, Field2Id);
+  if LoadNode(Node, Root, rsField2, false) then
+  begin
+    Field2Id := LoadNodeString(Root, rsField2);
+    Field2 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field2Id));
+    if not Assigned(Field2) then LinkMap.AddLink(ltCalcField2, Self, Field2Id);
+  end;
 
-  Field3Id := LoadNodeString(Root, rsField3);
-  Field3 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field3Id));
-  if not Assigned(Field3) then LinkMap.AddLink(ltCalcField3, Self, Field3Id);
+  if LoadNode(Node, Root, rsField3, false) then
+  begin
+    Field3Id := LoadNodeString(Root, rsField3);
+    Field3 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field3Id));
+    if not Assigned(Field3) then LinkMap.AddLink(ltCalcField3, Self, Field3Id);
+  end;
 
   Delim1 := LoadNodeString(Root, rsDelim1);
   Delim2 := LoadNodeString(Root, rsDelim2);
@@ -334,10 +344,14 @@ end;
 function TEpiCombineStringCalc.SaveToXml(Content: String; Lvl: integer
   ): string;
 begin
+  if Assigned(Field1) then
+    Content += SaveNode(Lvl + 1, rsField1, Field1.Id);
+  if Assigned(Field2) then
+    Content += SaveNode(Lvl + 1, rsField2, Field2.Id);
+  if Assigned(Field3) then
+    Content += SaveNode(Lvl + 1, rsField3, Field3.Id);
+
   Content +=
-    SaveNode(Lvl + 1, rsField1, Field1.Id) +
-    SaveNode(Lvl + 1, rsField2, Field2.Id) +
-    SaveNode(Lvl + 1, rsField3, Field3.Id) +
     SaveNode(Lvl + 1, rsDelim1, Delim1) +
     SaveNode(Lvl + 1, rsDelim2, Delim2);
   Result := inherited SaveToXml(Content, Lvl);
