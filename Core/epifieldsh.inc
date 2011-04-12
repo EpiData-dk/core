@@ -126,6 +126,11 @@ type
     property    Jumps:     TEpiJumps read FJumps write FJumps;
     property    Calculation: TEpiCalculation read FCalculation write FCalculation;
 
+
+  { Pack Data}
+  protected
+    procedure   MovePackData(Const SrcIdx, DstIdx, Count: integer); virtual; abstract;
+
   { Helper methods }
   private
     FDataFile: TEpiDataFile;
@@ -193,6 +198,7 @@ type
     procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetHasDefaultValue(const AValue: boolean); override;
+    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
@@ -236,6 +242,7 @@ type
     procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
+    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
@@ -281,6 +288,7 @@ type
     procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
+    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
@@ -324,6 +332,7 @@ type
     procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
+    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
@@ -384,6 +393,7 @@ type
     procedure SetHasDefaultValue(const AValue: boolean); override;
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
+    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
@@ -398,36 +408,37 @@ type
   // ftTime, ftTimeNow
   TEpiDateTimeField = class(TEpiCustomAutoField)
   private
-     FData: array of EpiDateTime;
-     FDefaultValue: EpiTime;
-     procedure SetDefaultValue(const AValue: EpiTime);
+    FData: array of EpiTime;
+    FDefaultValue: EpiTime;
+    procedure SetDefaultValue(const AValue: EpiTime);
   protected
-     function DoGetDefaultValueAsString: string; override;
-     procedure DoSetDefaultValueAsString(const AValue: string); override;
-     function GetAsBoolean(const index: Integer): EpiBool; override;
-     function GetAsDate(const index: Integer): EpiDate; override;
-     function GetAsDateTime(const index: Integer): EpiDateTime; override;
-     function GetAsFloat(const index: Integer): EpiFloat; override;
-     function GetAsInteger(const index: Integer): EpiInteger; override;
-     function GetAsString(const index: Integer): EpiString; override;
-     function GetAsTime(const index: Integer): EpiTime; override;
-     function GetAsValue(const index: Integer): EpiVariant; override;
-     function GetCapacity: Integer; override;
-     function GetIsMissing(const index: Integer): boolean; override;
-     function GetHasDefaultValue: boolean; override;
-     procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
-     procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-     procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
-     procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
-     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
-     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
-     procedure SetAsTime(const index: Integer; const AValue: EpiTime); override;
-     procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
-     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
-     procedure SetCapacity(AValue: Integer); override;
-     procedure SetHasDefaultValue(const AValue: boolean); override;
-     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
-        override;
+    function DoGetDefaultValueAsString: string; override;
+    procedure DoSetDefaultValueAsString(const AValue: string); override;
+    function GetAsBoolean(const index: Integer): EpiBool; override;
+    function GetAsDate(const index: Integer): EpiDate; override;
+    function GetAsDateTime(const index: Integer): EpiDateTime; override;
+    function GetAsFloat(const index: Integer): EpiFloat; override;
+    function GetAsInteger(const index: Integer): EpiInteger; override;
+    function GetAsString(const index: Integer): EpiString; override;
+    function GetAsTime(const index: Integer): EpiTime; override;
+    function GetAsValue(const index: Integer): EpiVariant; override;
+    function GetCapacity: Integer; override;
+    function GetIsMissing(const index: Integer): boolean; override;
+    function GetHasDefaultValue: boolean; override;
+    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
+    procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
+    procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
+    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
+    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
+    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
+    procedure SetAsTime(const index: Integer; const AValue: EpiTime); override;
+    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
+    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
+    procedure SetCapacity(AValue: Integer); override;
+    procedure SetHasDefaultValue(const AValue: boolean); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
+    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
   public
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;

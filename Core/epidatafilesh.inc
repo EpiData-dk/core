@@ -66,6 +66,7 @@ type
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
     procedure   NewRecords(Const Count: Cardinal = 1);
+    procedure   Pack; // Removes records for deletion.
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;

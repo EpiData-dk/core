@@ -690,6 +690,11 @@ begin
   if not AValue then FDefaultValue := DefaultMissing;
 end;
 
+procedure TEpiIntField.MovePackData(const SrcIdx, DstIdx, Count: integer);
+begin
+  Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiInteger));
+end;
+
 class function TEpiIntField.CheckMissing(AValue: EpiInteger): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -914,6 +919,11 @@ constructor TEpiFloatField.Create(AOwner: TEpiCustomBase;
 begin
   inherited Create(AOwner, AFieldType);
   FDecimals := 2;
+end;
+
+procedure TEpiFloatField.MovePackData(const SrcIdx, DstIdx, Count: integer);
+begin
+  Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiFloat));
 end;
 
 class function TEpiFloatField.CheckMissing(AValue: EpiFloat): boolean;
@@ -1170,6 +1180,11 @@ begin
   FLength := 1;
 end;
 
+procedure TEpiBoolField.MovePackData(const SrcIdx, DstIdx, Count: integer);
+begin
+  Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiBool));
+end;
+
 class function TEpiBoolField.CheckMissing(AValue: EpiBool): boolean;
 begin
   result := AValue = DefaultMissing;
@@ -1392,6 +1407,15 @@ constructor TEpiStringField.Create(AOwner: TEpiCustomBase;
 begin
   inherited Create(AOwner, AFieldType);
   FLength := 20;
+end;
+
+procedure TEpiStringField.MovePackData(const SrcIdx, DstIdx, Count: integer);
+var
+  i: LongInt;
+begin
+  // This is string - cannot use Move function, strings are ref. counted.
+  for i := 0 to Count - 1 do
+   FData[DstIdx + i] := FData[SrcIdx + i];
 end;
 
 class function TEpiStringField.CheckMissing(AValue: EpiString): boolean;
@@ -1691,6 +1715,11 @@ begin
   FLength := 10;
 end;
 
+procedure TEpiDateField.MovePackData(const SrcIdx, DstIdx, Count: integer);
+begin
+  Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiDate));
+end;
+
 { TEpiDateTimeField }
 
 procedure TEpiDateTimeField.SetDefaultValue(const AValue: EpiTime);
@@ -1887,6 +1916,11 @@ constructor TEpiDateTimeField.Create(AOwner: TEpiCustomBase;
 begin
   inherited Create(AOwner, AFieldType);
   FLength := 8;
+end;
+
+procedure TEpiDateTimeField.MovePackData(const SrcIdx, DstIdx, Count: integer);
+begin
+  Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiTime));
 end;
 
 class function TEpiDateTimeField.CheckMissing(AValue: EpiDateTime): boolean;

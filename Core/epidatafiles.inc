@@ -597,6 +597,40 @@ begin
   end;
 end;
 
+procedure TEpiDataFile.Pack;
+var
+  L: array of Integer;
+  C: Integer;
+  i, j: Integer;
+  S: Integer;
+  D: Integer;
+begin
+  C := 0;
+  for i := 0 to Size - 1 do
+    if Deleted[i] then
+    begin
+      Inc(C);
+      SetLength(L, C);
+      L[C-1] := I;
+    end;
+  Inc(C);
+  SetLength(L, C);
+  L[C-1] := Size;
+
+  for i := 1 to High(L) do
+  begin
+    S := L[i-1] + 1;          // Source Index
+    D := L[i-1] - (i-1);      // Destination Index
+    C := (L[i] - L[i-1]) - 1; // Count
+    if C = 0 then continue;
+
+    for j := 0 to Fields.Count - 1 do
+      Field[j].MovePackData(S, D, C);
+    FRecordStatus.MovePackData(S, D, C);
+  end;
+  Size := Size - (Length(L) - 1);
+end;
+
 procedure TEpiDataFile.BeginUpdate;
 begin
   inherited BeginUpdate;
