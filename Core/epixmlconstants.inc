@@ -121,6 +121,9 @@ const
           rsField3           = 'Field3';
           rsDelim1           = 'Delimiter1';
           rsDelim2           = 'Delimiter2';
+         rsCompare          = 'Compare';
+          rsCompareTo        = 'to';
+          rsCompareType      = 'type';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

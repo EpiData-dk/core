@@ -77,6 +77,7 @@ type
   { Field Properties }
   private
     FCalculation: TEpiCalculation;
+    FComparison: TEpiComparison;
     FConfirmEntry: Boolean;
     FDecimals: Cardinal;
     FEntryMode: TEpiEntryMode;
@@ -125,7 +126,7 @@ type
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;
     property    Calculation: TEpiCalculation read FCalculation write FCalculation;
-
+    property    Comparison:  TEpiComparison read FComparison write FComparison;
 
   { Pack Data}
   protected

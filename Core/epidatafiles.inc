@@ -538,6 +538,8 @@ begin
         TEpiCombineStringCalc(LinkMap.Objects[i]).Field2 := AField;
       ltCalcField3:
         TEpiCombineStringCalc(LinkMap.Objects[i]).Field3 := AField;
+      ltCompare:
+        TEpiComparison(LinkMap.Objects[i]).CompareField := AField;
     end;
   end;
   LinkMap.Clear;

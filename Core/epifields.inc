@@ -437,6 +437,9 @@ begin
     Content += Jumps.SaveToXml('', Lvl + 1);
   if Assigned(Calculation) then
     Content += Calculation.SaveToXml('', Lvl + 1);
+  if Assigned(Comparison) then
+    Content += Comparison.SaveToXml('', Lvl + 1);
+
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -495,6 +498,11 @@ begin
       ctCombineString: Calculation := TEpiCombineStringCalc.Create(Self);
     end;
     Calculation.LoadFromXml(Node);
+  end;
+  if LoadNode(Node, Root, rsCompare, false) then
+  begin
+    Comparison := TEpiComparison.Create(Self);
+    Comparison.LoadFromXml(Node);
   end;
 end;
 

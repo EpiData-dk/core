@@ -35,12 +35,16 @@ type
   // Calculations
   TEpiCalculation = class;
 
+  // Comparison
+  TEpiComparison = class;
+
 {$I epidatafilesh.inc}
 {$I episectionsh.inc}
 {$I epifieldsh.inc}
 {$I epiheadingsh.inc}
 {$I epijumpsh.inc}
 {$I epicalculationsh.inc}
+{$I epicomparisonh.inc}
 
 implementation
 
@@ -54,6 +58,7 @@ uses
 {$I epiheadings.inc}
 {$I epijumps.inc}
 {$I epicalculations.inc}
+{$I epicomparison.inc}
 
 initialization
 begin

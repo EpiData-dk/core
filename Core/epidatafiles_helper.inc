@@ -12,7 +12,9 @@ type
     // - combine date...
     ltCalcDayField, ltCalcMonthField, ltCalcYearField,
     // - combine string...
-    ltCalcField1, ltCalcField2, ltCalcField3
+    ltCalcField1, ltCalcField2, ltCalcField3,
+    // TEpiComparison
+    ltCompare
     );
 
   { TLinkMap }

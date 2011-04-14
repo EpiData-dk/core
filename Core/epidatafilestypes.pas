@@ -70,6 +70,7 @@ const
   RangeFieldTypes        = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
   ValueLabelFieldTypes   = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
   JumpsFieldTypes        = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
+  CompareFieldTypes      = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
   EntryModeFieldTypes    = AllFieldTypes - AutoFieldTypes;
   ConfirmEntryFieldTypes = AllFieldTypes - AutoFieldTypes;
   RepeatValueFieldTypes  = AllFieldTypes - AutoFieldTypes;
@@ -97,7 +98,29 @@ type
   TEpiJumpResetType = (jrLeaveAsIs, jrSystemMissing, jrMaxMissing, jr2ndMissing);
 
 
+function NativeFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
+
 implementation
+
+function NativeFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
+begin
+  case Ft of
+    ftBoolean:  result := BoolFieldTypes;
+    ftInteger,
+    ftAutoInc:  result := IntFieldTypes;
+    ftFloat:    result := FloatFieldTypes;
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate,
+    ftDMYToday,
+    ftMDYToday,
+    ftYMDToday: result := DateFieldTypes;
+    ftTime,
+    ftTimeNow:  result := TimeFieldTypes;
+    ftString,
+    ftUpperString: result := StringFieldTypes;
+  end;
+end;
 
 end.
 
