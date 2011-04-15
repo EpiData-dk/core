@@ -158,6 +158,16 @@ begin
   DoChange(eegFields, Word(efceEntryMode), @Val);
 end;
 
+procedure TEpiField.SetForcePickList(const AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FForcePickList = AValue then exit;
+  Val := FForcePickList;
+  FForcePickList := AValue;
+  DoChange(eegFields, word(efceForcePickList), @Val);
+end;
+
 function TEpiField.GetSettings: TEpiXMLSettings;
 begin
   Result := nil;
@@ -424,6 +434,8 @@ begin
     Content += SaveNode(Lvl + 1, rsRepeatValue, RepeatValue);
   if ShowValueLabel then
     Content += SaveNode(Lvl + 1, rsShowValueLabel, ShowValueLabel);
+  if ForcePickList then
+    Content += SaveNode(Lvl + 1, rsForcePickList, ForcePickList);
   if HasDefaultValue then
     Content += SaveNode(Lvl + 1, rsDefaultValue, DefaultValueAsString);
 
@@ -461,6 +473,8 @@ begin
     DefaultValueAsString := LoadNodeString(Root, rsDefaultValue);
   if LoadNode(Node, Root, rsShowValueLabel, false) then
     ShowValueLabel := LoadNodeBool(Root, rsShowValueLabel);
+  if LoadNode(Node, Root, rsForcePickList, false) then
+    ForcePickList := LoadNodeBool(Root, rsForcePickList);
   if LoadNode(Node, Root, rsValueLabelId, false) then
     ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
 
@@ -727,6 +741,14 @@ begin
   AsInteger[j] := TmpInt;
 end;
 
+function TEpiIntField.FormatString(const FillSpace: boolean): string;
+begin
+  if FillSpace then
+    result := format('%%%dd', [Length])
+  else
+    result := '%d';
+end;
+
 { TEpiFloatField }
 
 procedure TEpiFloatField.SetDefaultValue(const AValue: EpiFloat);
@@ -958,9 +980,12 @@ begin
   AsFloat[j] := TmpFlt;
 end;
 
-function TEpiFloatField.FormatString: string;
+function TEpiFloatField.FormatString(const FillSpace: boolean): string;
 begin
-  result := format('%%%d.%df', [Length - Decimals - 1, Decimals]);
+  if FillSpace then
+    result := format('%%%d.%df', [Length - Decimals - 1, Decimals])
+  else
+    result := format('%%%d.%df', [Length - Decimals - 1, Decimals]);
 end;
 
 procedure TEpiFloatField.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -1217,6 +1242,11 @@ begin
   AsBoolean[j] := TmpBool;
 end;
 
+function TEpiBoolField.FormatString(const FillSpace: boolean): string;
+begin
+  Result := '%d';
+end;
+
 { TEpiStringField }
 
 procedure TEpiStringField.SetDefaultValue(const AValue: EpiString);
@@ -1450,6 +1480,14 @@ begin
   AsString[j] := TmpStr;
 end;
 
+function TEpiStringField.FormatString(const FillSpace: boolean): string;
+begin
+  if FillSpace then
+    result := '%' + IntToStr(Length) + 's'
+  else
+    Result := '%s';
+end;
+
 { TEpiCustomAutoField }
 
 procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
@@ -1606,7 +1644,7 @@ begin
   AsDate[j] := TmpDate;
 end;
 
-function TEpiDateField.FormatString: string;
+function TEpiDateField.FormatString(const FillSpace: boolean): string;
 begin
   case FieldType of
     ftDMYDate, ftDMYToday: result := 'DD/MM/YYYY';
@@ -1955,7 +1993,7 @@ begin
   AsDateTime[j] := TmpDateTime;
 end;
 
-function TEpiDateTimeField.FormatString: string;
+function TEpiDateTimeField.FormatString(const FillSpace: boolean): string;
 begin
   result := 'HH:NN:SS';
 end;

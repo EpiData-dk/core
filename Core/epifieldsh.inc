@@ -5,7 +5,8 @@ type
   TEpiFieldsChangeEventType = (
     efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
-    efceShowValueLabel, efceRepeatValue, efceDefaultValue, efceValueLabelWriteTo
+    efceShowValueLabel, efceRepeatValue, efceDefaultValue, efceValueLabelWriteTo,
+    efceForcePickList
   );
 
   { TEpiFields }
@@ -81,6 +82,7 @@ type
     FConfirmEntry: Boolean;
     FDecimals: Cardinal;
     FEntryMode: TEpiEntryMode;
+    FForcePickList: Boolean;
     FJumps: TEpiJumps;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
@@ -96,6 +98,7 @@ type
     procedure   SetDecimals(const AValue: Cardinal);
     procedure   SetDefaultValueAsString(const AValue: string);
     procedure   SetEntryMode(const AValue: TEpiEntryMode);
+    procedure   SetForcePickList(const AValue: Boolean);
     procedure   SetLength(const AValue: Cardinal);
     procedure   SetRepeatValue(const AValue: boolean);
     procedure   SetShowValueLabel(const AValue: Boolean);
@@ -122,6 +125,7 @@ type
     property    Question:  TEpiTranslatedText read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
+    property    ForcePickList: Boolean read FForcePickList write SetForcePickList;
     property    ValueLabelWriteField: TEpiField read FValueLabelWriteField write SetValueLabelWriteField;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;
@@ -147,7 +151,7 @@ type
   public
     procedure   Exchange(i,j: integer); virtual; abstract;
     function    Compare(i,j: integer): integer; virtual; abstract;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    function    FormatString(Const FillSpace: boolean = false): string; virtual; abstract;
     property    Size:      Integer read GetSize write SetSize;
     property    DataFile: TEpiDataFile read FDataFile;
     property    Section:  TEpiSection read GetSection;
@@ -164,6 +168,7 @@ type
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
   { TEpiIntField }
@@ -205,6 +210,7 @@ type
     class function DefaultMissing: EpiInteger;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    function  FormatString(Const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
   end;
 
@@ -249,7 +255,7 @@ type
     class function DefaultMissing: EpiFloat;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
-    function  FormatString: string;
+    function  FormatString(Const FillSpace: boolean = false): string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property  DefaultValue: EpiFloat read FDefaultValue write SetDefaultValue;
   end;
@@ -295,6 +301,7 @@ type
     class function DefaultMissing: EpiBool;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    function FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
   end;
 
@@ -339,6 +346,7 @@ type
     class function DefaultMissing: EpiString;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
+    function FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
   end;
 
@@ -400,7 +408,7 @@ type
     class function DefaultMissing: EpiDate;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
-    function  FormatString: string;
+    function  FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
   end;
 
@@ -445,7 +453,7 @@ type
     class function DefaultMissing: EpiDateTime;
     function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
-    function  FormatString: string;
+    function  FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;
   end;
 

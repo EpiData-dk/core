@@ -103,6 +103,7 @@ const
          rsEntryMode        = 'EntryMode';
          rsConfirmEntry     = 'ConfirmEntry';
          rsShowValueLabel   = 'ShowValueLabel';
+         rsForcePickList    = 'ForcePickList';
          rsRepeatValue      = 'Repeat';
          rsDefaultValue     = 'DefaultValue';
          rsAutoUpdateMode   = 'AutoUpdateMode';

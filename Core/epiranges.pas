@@ -285,13 +285,13 @@ begin
   with TEpiRange(Items[i]) do
   begin
     if FieldType = ftFloat then
-      Result := Result + Format(TEpiFloatField(Field).FormatString, [AsFloat[true]])
+      Result := Result + Format(Field.FormatString, [AsFloat[true]])
     else
       Result := Result + AsString[true];
 
     if not Single then
       if FieldType = ftFloat then
-        Result := Result + '-' + Format(TEpiFloatField(Field).FormatString, [AsFloat[false]])
+        Result := Result + '-' + Format(Field.FormatString, [AsFloat[false]])
       else
         Result := Result + '-' + AsString[false];
     Result := Result + '|';
