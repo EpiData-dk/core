@@ -280,6 +280,7 @@ begin
       begin
         // Type > 100 => float field
         TmpFieldType := ftFloat;
+        // Old Float field with 0 decimals (Type = 100) are converted to Integers.
         if TmpFieldTypeInt = 100 then
           TmpFieldType := ftInteger;
       end else begin
