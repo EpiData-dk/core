@@ -235,7 +235,7 @@ var
   TmpField: TEpiField;
   {$IFDEF EPIHASH}
   FieldList: Array of TEpiField;
-  Fc, P, Val: LongInt;
+  Fc, P, Val, C: LongInt;
   {$ENDIF EPIHASH}
   NN: WideString;
 
@@ -331,16 +331,25 @@ begin
 
 {$IFDEF EPIHASH}
   // This improves speed by 10-15%.
-  Fc := Fields.Count;
-  P := NextPrime(Fc ** 2);
-  SetLength(FieldList, P);
-  for i := 0 to Fc -1 do
+  C := 0;
+  while true do
   begin
-    Val := (Hash(Fields[i].Id) mod P);
-    // Collision detection (with Fc^2 size, the collision probability is < 0.00001)
-    if Assigned(FieldList[val]) then
-      raise Exception.Create('COLLISION DETECTION!!!');
-    FieldList[Val] := Fields[i];
+    Fc := Fields.Count;
+    P := NextPrime((Fc + C) ** 2);
+    SetLength(FieldList, P);
+    for i := 0 to Fc -1 do
+    begin
+      Val := (Hash(Fields[i].Id) mod P);
+      // Collision detection (with Fc^2 size, the collision probability is < 0.00001)
+      if Assigned(FieldList[val]) then
+      begin
+        // Collision detection!!! Try new Prime number.
+        Inc(C);
+        Continue;
+      end;
+      FieldList[Val] := Fields[i];
+    end;
+    Break;
   end;
 {$ENDIF EPIHASH}
 
