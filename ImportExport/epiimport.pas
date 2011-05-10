@@ -876,7 +876,8 @@ begin
                 if MisVal >= 0 then
                 begin
                   // This corresponds to Stata's ".a", ".b", and ".c"
-                  if MisVal > 0 then
+                  if (MisVal > 0) and
+                     (not (TmpField.FieldType in DateFieldTypes)) then
                   begin
                     VLSet := TmpField.ValueLabelSet;
                     if not Assigned(VLSet) then
@@ -897,11 +898,12 @@ begin
                     TmpField.AsInteger[CurRec] := TmpInt;
                   end else
                     TmpField.IsMissing[CurRec] := true;
-                end else
+                end else begin
                   {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
                   if TmpField.FieldType in DateFieldTypes then
                     I := I + 21916;
                   TmpField.AsInteger[CurRec] := I;
+                end;
               end;
             FloatConst,
             DoubleConst:
@@ -915,7 +917,8 @@ begin
                 if MisVal >= 0 then
                 begin
                   // This corresponds to Stata's ".a", ".b", and ".c"
-                  if MisVal > 0 then
+                  if (MisVal > 0) and
+                     (not (TmpField.FieldType in DateFieldTypes)) then
                   begin
                     VLSet := TmpField.ValueLabelSet;
                     if not Assigned(VLSet) then

@@ -842,7 +842,8 @@ begin
   Idx := 0;
   while Idx <= FOnChangeListCountIgnoreUpdate -1 do
   begin
-    if FOnChangeListIgnoreUpdate[Idx] = Event then
+    if (TMethod(FOnChangeListIgnoreUpdate[Idx]).Code = TMethod(Event).Code) and
+       (TMethod(FOnChangeListIgnoreUpdate[Idx]).Data = TMethod(Event).Data) then
       break;
     Inc(Idx)
   end;
@@ -857,7 +858,8 @@ begin
   Idx := 0;
   while Idx <= FOnChangeListCount -1 do
   begin
-    if FOnChangeList[Idx] = Event then
+    if (TMethod(FOnChangeList[Idx]).Code = TMethod(Event).Code) and
+       (TMethod(FOnChangeList[Idx]).Data = TMethod(Event).Data) then
       break;
     Inc(Idx)
   end;
