@@ -173,6 +173,8 @@ begin
   FGeographicalCoverage.LoadFromXml(Root);
   FIdentifier   := LoadNodeString(Root, rsIdentifier);
   FLanguage     := LoadNodeString(Root, rsLanguage);
+  RootOwner.SetLanguage(FLanguage, true);
+
   FModifiedDate := LoadNodeDateTime(Root, rsModified);
   FOtherLanguages := LoadNodeString(Root, rsOtherLanguages);
   FPublisher.LoadFromXml(Root);
