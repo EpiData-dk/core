@@ -624,6 +624,8 @@ begin
       SetLength(L, C);
       L[C-1] := I;
     end;
+  if C = 0 then exit;
+
   Inc(C);
   SetLength(L, C);
   L[C-1] := Size;
