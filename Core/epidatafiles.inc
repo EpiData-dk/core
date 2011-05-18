@@ -238,6 +238,7 @@ var
   Fc, P, Val, C: LongInt;
   {$ENDIF EPIHASH}
   NN: WideString;
+  Collision: Boolean;
 
   {$IFDEF EPIHASH}
   function NextPrime(const AValue: integer): cardinal;
@@ -334,6 +335,7 @@ begin
   C := 0;
   while true do
   begin
+    Collision := false;
     Fc := Fields.Count;
     P := NextPrime((Fc + C) ** 2);
     SetLength(FieldList, P);
@@ -345,11 +347,13 @@ begin
       begin
         // Collision detection!!! Try new Prime number.
         Inc(C);
-        Continue;
+        Collision := true;
+        SetLength(FieldList,0);
+        Break;
       end;
       FieldList[Val] := Fields[i];
     end;
-    Break;
+    if not Collision then Break;
   end;
 {$ENDIF EPIHASH}
 
