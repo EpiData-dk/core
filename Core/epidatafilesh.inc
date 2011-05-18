@@ -43,9 +43,11 @@ type
     { Private housekeeping }
     FRecordStatus: TEpiField;
     function    GetDeleted(Index: integer): boolean;
+    function    GetDeletedCount: Integer;
     function    GetValueLabelSets: TEpiValueLabelSets;
     function    GetVerified(Index: integer): boolean;
     function    GetSize: Integer;
+    function    GetVerifiedCount: Integer;
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
@@ -77,6 +79,8 @@ type
     property    ValueLabels: TEpiValueLabelSets read GetValueLabelSets;
     property    ValueLabelSet[Index: integer]: TEpiValueLabelSet read GetValueLabelSet;
     Property    Size: Integer read GetSize write SetSize;
+    property    DeletedCount: Integer read GetDeletedCount;
+    property    VerifiedCount: Integer read GetVerifiedCount;
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
 

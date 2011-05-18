@@ -101,6 +101,18 @@ begin
   result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
 end;
 
+function TEpiDataFile.GetDeletedCount: Integer;
+var
+  FSize: Integer;
+  i: Integer;
+begin
+  Result := 0;
+
+  FSize := Size;
+  for i := 0 to FSize - 1 do
+    if Deleted[i] then inc(Result);
+end;
+
 function TEpiDataFile.GetValueLabelSets: TEpiValueLabelSets;
 begin
   result := TEpiDocument(RootOwner).ValueLabelSets;
@@ -114,6 +126,18 @@ end;
 function TEpiDataFile.GetSize: Integer;
 begin
   result := FRecordStatus.Size;
+end;
+
+function TEpiDataFile.GetVerifiedCount: Integer;
+var
+  FSize: Integer;
+  i: Integer;
+begin
+  Result := 0;
+
+  FSize := Size;
+  for i := 0 to FSize - 1 do
+    if Verified[i] then inc(Result);
 end;
 
 procedure TEpiDataFile.LocalEventHook(Sender: TObject;
