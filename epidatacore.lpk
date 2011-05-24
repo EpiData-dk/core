@@ -155,8 +155,8 @@
         <UnitName Value="epireport_base"/>
       </Item30>
       <Item31>
-        <Filename Value="Reports/epireport_projectoverview.pas"/>
-        <UnitName Value="epireport_projectoverview"/>
+        <Filename Value="Reports/epireport_codebook.pas"/>
+        <UnitName Value="epireport_codebook"/>
       </Item31>
       <Item32>
         <Filename Value="Utils/epiconvertutils.pas"/>

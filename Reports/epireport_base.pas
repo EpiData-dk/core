@@ -33,6 +33,7 @@ type
     FOnTableCell: TEpiReportTableCell;
     FOnTableFooter: TEpiReportTableFooter;
     FOnTableHeader: TEpiReportTableHeader;
+    FReportText: string;
     procedure SetOnHeading(const AValue: TEpiReportHeading);
     procedure SetOnLineText(const AValue: TEpiReportLineText);
     procedure SetOnSection(const AValue: TEpiReportSection);
@@ -47,6 +48,8 @@ type
     procedure DoHeadign(Const Text: string);
     procedure DoLineText(Const Text: string);
   public
+    procedure RunReport; virtual;
+    property ReportText: string read FReportText;
     property OnTableHeader: TEpiReportTableHeader read FOnTableHeader write SetOnTableHeader;
     property OnTableFooter: TEpiReportTableFooter read FOnTableFooter write SetOnTableFooter;
     property OnTableCell:   TEpiReportTableCell read FOnTableCell write SetOnTableCell;
@@ -129,6 +132,11 @@ procedure TEpiReportBase.DoLineText(Const Text: string);
 begin
   if Assigned(OnLineText) then
     OnLineText(Self, Text);
+end;
+
+procedure TEpiReportBase.RunReport;
+begin
+  // Do nothing, should be overriden.
 end;
 
 end.
