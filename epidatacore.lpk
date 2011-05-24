@@ -6,7 +6,7 @@
       <Version Value="10"/>
       <SearchPaths>
         <IncludeFiles Value="Core"/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -33,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="7"/>
-    <Files Count="34">
+    <Files Count="36">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -151,25 +151,33 @@
         <UnitName Value="epiqeshandler"/>
       </Item29>
       <Item30>
-        <Filename Value="Utils/epiconvertutils.pas"/>
-        <UnitName Value="epiconvertutils"/>
+        <Filename Value="Reports/epireport_base.pas"/>
+        <UnitName Value="epireport_base"/>
       </Item30>
       <Item31>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
+        <Filename Value="Reports/epireport_projectoverview.pas"/>
+        <UnitName Value="epireport_projectoverview"/>
       </Item31>
       <Item32>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
+        <Filename Value="Utils/epiconvertutils.pas"/>
+        <UnitName Value="epiconvertutils"/>
       </Item32>
       <Item33>
-        <Filename Value="Utils/epiversionutils.pas"/>
-        <UnitName Value="epiversionutils"/>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
       </Item33>
       <Item34>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item34>
+      <Item35>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
+      </Item35>
+      <Item36>
         <Filename Value="Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
-      </Item34>
+      </Item36>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
