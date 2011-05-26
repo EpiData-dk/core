@@ -12,6 +12,7 @@ unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)
 unitdir=Core \
 	Utils \
 	ImportExport \
+	Reports \
 	$(DCPCRYPT_PATH)/lib/$(CPU_TARGET)-$(OS_TARGET) \
 	$(LAZ_PATH)/lcl/units/$(CPU_TARGET)-$(OS_TARGET) \
 	$(LAZ_PATH)/lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) \
@@ -33,6 +34,10 @@ files=$(wildcard $(COMPILER_UNITTARGETDIR)/*$(OEXT)) \
       $(wildcard $(COMPILER_UNITTARGETDIR)/*.lfm) \
       $(wildcard $(COMPILER_UNITTARGETDIR)/*.res) \
       $(wildcard $(COMPILER_UNITTARGETDIR)/*.compiled) \
+      $(wildcard ./Core/*$(OEXT)) $(wildcard ./Core/*$(PPUEXT)) \
+      $(wildcard ./Utils/*$(OEXT)) $(wildcard ./Utils/*$(PPUEXT)) \
+      $(wildcard ./ImportExport/*$(OEXT)) $(wildcard ./ImportExport/*$(PPUEXT)) \
+      $(wildcard ./Reports/*$(OEXT)) $(wildcard ./Reports/*$(PPUEXT)) \
       $(wildcard *$(OEXT)) $(wildcard *$(PPUEXT)) $(wildcard *$(RSTEXT))
 [prerules]
 # Include to find paths to required packages.
