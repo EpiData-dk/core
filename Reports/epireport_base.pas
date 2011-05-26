@@ -25,7 +25,6 @@ type
   { TEpiReportBase }
 
   TEpiReportBase = class
-
   private
     FOnHeading: TEpiReportHeading;
     FOnLineText: TEpiReportLineText;
@@ -33,7 +32,6 @@ type
     FOnTableCell: TEpiReportTableCell;
     FOnTableFooter: TEpiReportTableFooter;
     FOnTableHeader: TEpiReportTableHeader;
-    FReportText: string;
     procedure SetOnHeading(const AValue: TEpiReportHeading);
     procedure SetOnLineText(const AValue: TEpiReportLineText);
     procedure SetOnSection(const AValue: TEpiReportSection);
@@ -41,15 +39,16 @@ type
     procedure SetOnTableFooter(const AValue: TEpiReportTableFooter);
     procedure SetOnTableHeader(const AValue: TEpiReportTableHeader);
   protected
+    function GetReportText: string; virtual;
     procedure DoTableHeader(Const Text: string);
     procedure DoTableFooter(Const Text: string);
     procedure DoTableCell(Const Col, Row: Integer; Const Text: string);
     procedure DoSection(Const Text: string);
-    procedure DoHeadign(Const Text: string);
+    procedure DoHeading(Const Text: string);
     procedure DoLineText(Const Text: string);
   public
     procedure RunReport; virtual;
-    property ReportText: string read FReportText;
+    property ReportText: string read GetReportText;
     property OnTableHeader: TEpiReportTableHeader read FOnTableHeader write SetOnTableHeader;
     property OnTableFooter: TEpiReportTableFooter read FOnTableFooter write SetOnTableFooter;
     property OnTableCell:   TEpiReportTableCell read FOnTableCell write SetOnTableCell;
@@ -98,6 +97,12 @@ begin
   FOnTableHeader := AValue;
 end;
 
+function TEpiReportBase.GetReportText: string;
+begin
+  // Empty result - must be implemented in sub-classes.
+  result := '';
+end;
+
 procedure TEpiReportBase.DoTableHeader(Const Text: string);
 begin
   if Assigned(OnTableHeader) then
@@ -122,7 +127,7 @@ begin
     OnSection(Self, Text);
 end;
 
-procedure TEpiReportBase.DoHeadign(Const Text: string);
+procedure TEpiReportBase.DoHeading(const Text: string);
 begin
   if Assigned(OnHeading) then
     OnHeading(Self, Text);
