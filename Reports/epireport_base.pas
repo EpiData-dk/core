@@ -5,7 +5,7 @@ unit epireport_base;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epidocument;
 
 type
   TEpiReportBase = class;
@@ -16,16 +16,18 @@ type
   TEpiReportLineText    = procedure(Sender: TEpiReportBase; Const Text: string) of object;
 
   // Table
-  TEpiReportTableHeader = procedure(Sender: TEpiReportBase; Const Text: string) of object;
+  TEpiReportTableHeader = procedure(Sender: TEpiReportBase; Const Text: string;
+    Const ColCount, RowCount: Integer) of object;
   TEpiReportTableFooter = procedure(Sender: TEpiReportBase; Const Text: string) of object;
-  TEpiReportTableCell   = procedure(Sender: TEpiReportBase;
-    Const Col, Row: Integer; Const Text: string) of object;
+  TEpiReportTableCell   = procedure(Sender: TEpiReportBase; Const Text: string;
+    Const Col, Row: Integer) of object;
 
 
   { TEpiReportBase }
 
   TEpiReportBase = class
   private
+    FEpiDocument: TEpiDocument;
     FOnHeading: TEpiReportHeading;
     FOnLineText: TEpiReportLineText;
     FOnSection: TEpiReportSection;
@@ -40,13 +42,15 @@ type
     procedure SetOnTableHeader(const AValue: TEpiReportTableHeader);
   protected
     function GetReportText: string; virtual;
-    procedure DoTableHeader(Const Text: string);
+    procedure DoTableHeader(Const Text: string;
+      Const ColCount, RowCount: integer);
     procedure DoTableFooter(Const Text: string);
     procedure DoTableCell(Const Col, Row: Integer; Const Text: string);
     procedure DoSection(Const Text: string);
     procedure DoHeading(Const Text: string);
     procedure DoLineText(Const Text: string);
   public
+    constructor Create(Const AEpiDocument: TEpiDocument); virtual;
     procedure RunReport; virtual;
     property ReportText: string read GetReportText;
     property OnTableHeader: TEpiReportTableHeader read FOnTableHeader write SetOnTableHeader;
@@ -55,6 +59,7 @@ type
     property OnSection:     TEpiReportSection read FOnSection write SetOnSection;
     property OnHeading:     TEpiReportHeading read FOnHeading write SetOnHeading;
     property OnLineText:    TEpiReportLineText read FOnLineText write SetOnLineText;
+    property EpiDocument:   TEpiDocument read FEpiDocument;
   end;
 
 implementation
@@ -103,10 +108,11 @@ begin
   result := '';
 end;
 
-procedure TEpiReportBase.DoTableHeader(Const Text: string);
+procedure TEpiReportBase.DoTableHeader(const Text: string; const ColCount,
+  RowCount: integer);
 begin
-  if Assigned(OnTableHeader) then
-    OnTableHeader(Self, Text);
+  if Assigned(FOnTableHeader) then
+    FOnTableHeader(Self, Text, ColCount, RowCount);
 end;
 
 procedure TEpiReportBase.DoTableFooter(Const Text: string);
@@ -117,8 +123,8 @@ end;
 
 procedure TEpiReportBase.DoTableCell(Const Col, Row: Integer; Const Text: string);
 begin
-  if Assigned(OnTableCell) then
-    OnTableCell(Self, Col, Row, Text);
+  if Assigned(FOnTableCell) then
+    FOnTableCell(Self, Text, Col, Row);
 end;
 
 procedure TEpiReportBase.DoSection(Const Text: string);
@@ -137,6 +143,11 @@ procedure TEpiReportBase.DoLineText(Const Text: string);
 begin
   if Assigned(OnLineText) then
     OnLineText(Self, Text);
+end;
+
+constructor TEpiReportBase.Create(const AEpiDocument: TEpiDocument);
+begin
+  FEpiDocument := AEpiDocument;
 end;
 
 procedure TEpiReportBase.RunReport;
