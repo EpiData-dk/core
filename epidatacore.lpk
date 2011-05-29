@@ -33,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="7"/>
-    <Files Count="36">
+    <Files Count="39">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -155,29 +155,41 @@
         <UnitName Value="epireport_base"/>
       </Item30>
       <Item31>
-        <Filename Value="Reports/epireport_valuelabels.pas"/>
-        <UnitName Value="epireport_valuelabels"/>
+        <Filename Value="Reports/epireport_databasegrid.pas"/>
+        <UnitName Value="epireport_databasegrid"/>
       </Item31>
       <Item32>
-        <Filename Value="Utils/epiconvertutils.pas"/>
-        <UnitName Value="epiconvertutils"/>
+        <Filename Value="Reports/epireport_htmlgenerator.pas"/>
+        <UnitName Value="epireport_htmlgenerator"/>
       </Item32>
       <Item33>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
+        <Filename Value="Reports/epireport_valuelabels.pas"/>
+        <UnitName Value="epireport_valuelabels"/>
       </Item33>
       <Item34>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
+        <Filename Value="Utils/epiconvertutils.pas"/>
+        <UnitName Value="epiconvertutils"/>
       </Item34>
       <Item35>
-        <Filename Value="Utils/epiversionutils.pas"/>
-        <UnitName Value="epiversionutils"/>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
       </Item35>
       <Item36>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item36>
+      <Item37>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
+      </Item37>
+      <Item38>
         <Filename Value="Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
-      </Item36>
+      </Item38>
+      <Item39>
+        <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
+        <UnitName Value="epireport_fieldlist_simple"/>
+      </Item39>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
