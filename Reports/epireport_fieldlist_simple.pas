@@ -65,11 +65,11 @@ var
 
   function SectionTop(Const F: TEpiField): integer;
   begin
-    result := F.Section.Top + F.Top;
+    result := F.Section.Top{ + F.Top};
   end;
   function SectionLeft(Const F: TEpiField): integer;
   begin
-    result := F.Section.Left + F.Left;
+    result := F.Section.Left{ + F.Left};
   end;
 
 begin
