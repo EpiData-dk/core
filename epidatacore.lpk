@@ -33,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="7"/>
-    <Files Count="39">
+    <Files Count="40">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -190,6 +190,10 @@
         <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
         <UnitName Value="epireport_fieldlist_simple"/>
       </Item39>
+      <Item40>
+        <Filename Value="Reports/epireport_filelist.pas"/>
+        <UnitName Value="epireport_filelist"/>
+      </Item40>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

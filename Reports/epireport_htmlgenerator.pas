@@ -38,10 +38,10 @@ type
     constructor Create(Const Report: TEpiReportBase);
     destructor  Destroy; override;
     function    GetReportText: string;
-    procedure   InitHtml;
+    procedure   InitHtml(Const Title: string);
     procedure   CloseHtml;
   public
-    class function HtmlHeader: string;
+    class function HtmlHeader(const Title: string): string;
     class function HtmlFooter: string;
   end;
 
@@ -155,9 +155,9 @@ begin
   result := FReportText.Text;
 end;
 
-procedure TEpiReportHTMLGenerator.InitHtml;
+procedure TEpiReportHTMLGenerator.InitHtml(const Title: string);
 begin
-  AddLine(HtmlHeader);
+  AddLine(HtmlHeader(Title));
 end;
 
 procedure TEpiReportHTMLGenerator.CloseHtml;
@@ -165,7 +165,7 @@ begin
   AddLine(HtmlFooter);
 end;
 
-class function TEpiReportHTMLGenerator.HtmlHeader: string;
+class function TEpiReportHTMLGenerator.HtmlHeader(Const Title: string): string;
 begin
   result :=
     '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">' + LineEnding +
@@ -192,7 +192,7 @@ begin
     '  .info {color: green; font-size: 1.0em; font-weight: normal; font-family: monospace ;}' + LineEnding +
     '  .error {color: red; font-family: monospace}' + LineEnding +
     '' + LineEnding +
-    'table.simple  {color: black; font-size: 1.0em; font-family: proportional; font-weight: normal; border-left: none; border-right: none; border-bottom: solid 2px red; border-spacing: 0; margin-top: 1.25cm; }' + LineEnding +
+    'table.simple  {color: black; font-size: 1.0em; font-family: proportional; font-weight: normal; border-left: none; border-right: none; border-bottom: solid 2px black; border-spacing: 0; margin-top: 1.25cm; }' + LineEnding +
     'table.simple th,' + LineEnding +
     'table.simple tr {border-bottom: double 2px black; padding: 0.2em}' + LineEnding +
     'table.simple td {text-align: right; vertical-align: top; padding: 0.2em}' + LineEnding +
@@ -213,7 +213,7 @@ begin
     '</STYLE>' + LineEnding +
     '' + LineEnding +
     '' + LineEnding +
-    '<TITLE>Codebook</TITLE>' + LineEnding +
+    '<TITLE>'+Title+'</TITLE>' + LineEnding +
     '</HEAD>' + LineEnding +
     '<BODY class=body>' + LineEnding;
 end;

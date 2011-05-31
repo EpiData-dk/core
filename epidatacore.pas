@@ -12,7 +12,7 @@ uses
   epiimport, epiqeshandler, epireport_base, epireport_databasegrid, 
   epireport_htmlgenerator, epireport_valuelabels, epiconvertutils, 
   epimiscutils, epistringutils, epiversionutils, UniqueInstanceRaw, 
-  epireport_fieldlist_simple;
+  epireport_fieldlist_simple, epireport_filelist;
 
 implementation
 

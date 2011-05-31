@@ -105,7 +105,7 @@ end;
 procedure TEpiReportDataSetsGridHtml.RunReport;
 begin
   if FCompleteHtml then
-    FHtmlGenerator.InitHtml;
+    FHtmlGenerator.InitHtml('List of Datesets');
   inherited RunReport;
   if FCompleteHtml then
     FHtmlGenerator.CloseHtml;

@@ -113,7 +113,7 @@ end;
 procedure TEpiReportValueLabelsHtml.RunReport;
 begin
   if FCompleteHtml then
-    FHtmlGenerator.InitHtml;
+    FHtmlGenerator.InitHtml('List of Valuelabels');
 
   inherited RunReport;
 

@@ -36,7 +36,7 @@ type
   public
     constructor Create(const AEpiDocument: TEpiDocument;
       Const ASortType: TEpiReportSimpleFieldListSortType = stCreation;
-      Const CompleteHtml: boolean = true);
+      Const CompleteHtml: boolean = false);
     destructor Destroy; override;
     procedure RunReport; override;
   end;
@@ -188,7 +188,7 @@ end;
 procedure TEpiReportSimpleFieldListHtml.RunReport;
 begin
   if FCompleteHtml then
-    FHtmlGenerator.InitHtml;
+    FHtmlGenerator.InitHtml('List of fields');
 
   inherited RunReport;
 
