@@ -41,8 +41,9 @@ type
     procedure   InitHtml(Const Title: string);
     procedure   CloseHtml;
   public
-    class function HtmlHeader(const Title: string): string;
+    class function HtmlHeader(const Title: string; const StyleSheet: string = ''): string;
     class function HtmlFooter: string;
+    class function HtmlStyleSheet: string;
   end;
 
 implementation
@@ -165,7 +166,8 @@ begin
   AddLine(HtmlFooter);
 end;
 
-class function TEpiReportHTMLGenerator.HtmlHeader(Const Title: string): string;
+class function TEpiReportHTMLGenerator.HtmlHeader(const Title: string;
+  const StyleSheet: string): string;
 begin
   result :=
     '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">' + LineEnding +
@@ -179,7 +181,32 @@ begin
     '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' + LineEnding +
     '' + LineEnding +
     '<STYLE type="text/css">' + LineEnding +
-    '<!--' + LineEnding +
+    '<!--' + LineEnding;
+
+
+  if StyleSheet <> '' then
+    Result += StyleSheet
+  else
+    Result += HtmlStyleSheet;
+
+  result +=
+    '-->' + LineEnding +
+    '</STYLE>' + LineEnding +
+    '<TITLE>'+Title+'</TITLE>' + LineEnding +
+    '</HEAD>' + LineEnding +
+    '<BODY class=body>' + LineEnding;
+end;
+
+class function TEpiReportHTMLGenerator.HtmlFooter: string;
+begin
+  result :=
+    '</BODY>' + LineEnding +
+    '</HTML>';
+end;
+
+class function TEpiReportHTMLGenerator.HtmlStyleSheet: string;
+begin
+  result :=
     '  .body {color: black; background-color: white;  font-size: 1.0em; font-weight: normal}' + LineEnding +
     '' + LineEnding +
     '   p {color: black ;font-size: 1.0em; font-family: proportional,monospace; font-weight: normal; margin: 0em }' + LineEnding +
@@ -208,21 +235,7 @@ begin
     '   v1.0' + LineEnding +
     '   Use the design table.system as a template for a new design. To be safe, define all styles for a design.' + LineEnding +
     '   Note that a style followed by a comma will take the attributes at the end of the group, so do not sort this file.' + LineEnding +
-    '*/' + LineEnding +
-    '-->' + LineEnding +
-    '</STYLE>' + LineEnding +
-    '' + LineEnding +
-    '' + LineEnding +
-    '<TITLE>'+Title+'</TITLE>' + LineEnding +
-    '</HEAD>' + LineEnding +
-    '<BODY class=body>' + LineEnding;
-end;
-
-class function TEpiReportHTMLGenerator.HtmlFooter: string;
-begin
-  result :=
-    '</BODY>' + LineEnding +
-    '</HTML>';
+    '*/' + LineEnding;
 end;
 
 end.

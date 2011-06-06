@@ -32,6 +32,7 @@ type
       Const CompleteHtml: boolean = false);
     destructor Destroy; override;
     procedure RunReport; override;
+    property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
   end;
 
 
