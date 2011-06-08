@@ -73,6 +73,15 @@ begin
     rsCompareType + '="' + IntToStr(Integer(CompareType)) + '"';
 end;
 
+procedure TEpiComparison.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  OrgComparison: TEpiComparison absolute AEpiCustomBase;
+begin
+  inherited Assign(AEpiCustomBase);
+  FCompareField := OrgComparison.CompareField;
+  FCompareType  := OrgComparison.CompareType;
+end;
+
 function ComparisonTypeToString(ct: TEpiComparisonType): string;
 begin
   case ct of

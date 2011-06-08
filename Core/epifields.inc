@@ -336,6 +336,11 @@ begin
   EntryMode := OrgField.EntryMode;
   ConfirmEntry := OrgField.ConfirmEntry;
   ShowValueLabel := OrgField.ShowValueLabel;
+  RepeatValue := OrgField.RepeatValue;
+  if OrgField.HasDefaultValue then
+    DefaultValueAsString := OrgField.DefaultValueAsString;
+  ShowValueLabel := OrgField.ShowValueLabel;
+  ForcePickList := OrgField.ForcePickList;
 
   // Valuelabels are NEVER copied - it's up to users manually to
   // copy/assign them correctly when assigning field to each other.
@@ -353,6 +358,12 @@ begin
     Jumps := TEpiJumps.Create(Self);
     Jumps.ItemOwner := true;
     Jumps.Assign(OrgField.Jumps);
+  end;
+
+  if Assigned(OrgField.Comparison) then
+  begin
+    Comparison := TEpiComparison.Create(Self);
+    Comparison.Assign(OrgField.Comparison);
   end;
   EndUpdate;
 end;

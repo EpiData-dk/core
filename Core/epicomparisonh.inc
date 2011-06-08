@@ -22,6 +22,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    CompareField: TEpiField read FCompareField write SetCompareField;
     property    CompareType: TEpiComparisonType read FCompareType write SetCompareType;
   end;
