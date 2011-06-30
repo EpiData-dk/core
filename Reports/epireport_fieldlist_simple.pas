@@ -5,24 +5,23 @@ unit epireport_fieldlist_simple;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epireport_htmlgenerator,
+  Classes, SysUtils, epireport_base, epireport_types, epireport_htmlgenerator,
   epidocument, epidatafiles;
 
 type
 
   { TEpiReportSimpleFieldList }
-  TEpiReportSimpleFieldListSortType = (stCreation, stFieldName, stEntryFlow);
   TEpiReportSimpleFieldList = class(TEpiReportBase)
   private
     FEpiDataFiles: TEpiDataFiles;
-    FSortType: TEpiReportSimpleFieldListSortType;
+    FSortType:  TEpiReportFieldListSortType;
     procedure   PrintDatafile(Const DataFile: TEpiDataFile);
   public
     constructor Create(const AEpiDocument: TEpiDocument;
-      Const ASortType: TEpiReportSimpleFieldListSortType = stCreation);
+      Const ASortType: TEpiReportFieldListSortType = stCreation);
     procedure   RunReport; override;
     property    EpiDataFiles: TEpiDataFiles read FEpiDataFiles;
-    property    SortType: TEpiReportSimpleFieldListSortType read FSortType write FSortType;
+    property    SortType: TEpiReportFieldListSortType read FSortType write FSortType;
   end;
 
   { TEpiReportSimpleFieldListHtml }
@@ -35,7 +34,7 @@ type
     function GetReportText: string; override;
   public
     constructor Create(const AEpiDocument: TEpiDocument;
-      Const ASortType: TEpiReportSimpleFieldListSortType = stCreation;
+      Const ASortType: TEpiReportFieldListSortType = stCreation;
       Const CompleteHtml: boolean = false);
     destructor Destroy; override;
     procedure RunReport; override;
@@ -146,7 +145,7 @@ begin
 end;
 
 constructor TEpiReportSimpleFieldList.Create(const AEpiDocument: TEpiDocument;
-  const ASortType: TEpiReportSimpleFieldListSortType);
+  const ASortType: TEpiReportFieldListSortType);
 begin
   inherited Create(AEpiDocument);
   FEpiDataFiles := AEpiDocument.DataFiles;
@@ -172,8 +171,7 @@ end;
 
 constructor TEpiReportSimpleFieldListHtml.Create(
   const AEpiDocument: TEpiDocument;
-  const ASortType: TEpiReportSimpleFieldListSortType;
-  const CompleteHtml: boolean);
+  const ASortType: TEpiReportFieldListSortType; const CompleteHtml: boolean);
 begin
   inherited Create(AEpiDocument, ASortType);
   FHtmlGenerator := TEpiReportHTMLGenerator.Create(Self);

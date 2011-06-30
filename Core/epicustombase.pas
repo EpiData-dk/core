@@ -735,13 +735,6 @@ begin
     Result :=
       Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '/>' + LineEnding;
 
-{  // For the "id" attribute
-  if (Self is TEpiCustomItem) and (TEpiCustomItem(Self).Id <> '') then
-    Result += ' id="' + TEpiCustomItem(Self).Id + '" ';
-
-  Result += '>' + LineEnding +
-    S +
-    Indent(Lvl) + '</' + XMLName + '>' + LineEnding;    }
   {$IFDEF EPICORETIMING}
   Diff := GetTickCount - St;
   DebugLn('%s%s: time = %d', [Indent(lvl), ClassName, Diff]);

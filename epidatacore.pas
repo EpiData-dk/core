@@ -10,9 +10,10 @@ uses
   epiadmin, epicustombase, epidatafiles, epidatafilestypes, epidocument, 
   epiranges, epirelations, episettings, epistudy, epivaluelabels, epiexport, 
   epiimport, epiqeshandler, epireport_base, epireport_databasegrid, 
-  epireport_fieldlist_simple, epireport_filelist, epireport_htmlgenerator, 
+  epireport_fieldlist_extended, epireport_fieldlist_simple, 
+  epireport_filelist, epireport_htmlgenerator, epireport_types, 
   epireport_valuelabels, epiconvertutils, epimiscutils, epistringutils, 
-  epiversionutils, UniqueInstanceRaw;
+  epiversionutils, UniqueInstanceRaw, epireport_project_overview;
 
 implementation
 

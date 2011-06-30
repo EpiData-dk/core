@@ -21,6 +21,7 @@ type
 
     // Misc
     procedure InternalInit;
+    function  HtmlString(Const Txt: String): String;
     procedure AddLine(Const Txt: string);
 
     // Lines
@@ -48,6 +49,9 @@ type
 
 implementation
 
+uses
+  strutils;
+
 { TEpiReportHTMLGenerator }
 
 procedure TEpiReportHTMLGenerator.InternalInit;
@@ -64,6 +68,22 @@ begin
   end;
 end;
 
+function TEpiReportHTMLGenerator.HtmlString(const Txt: String): String;
+var
+  S: String;
+  i: Integer;
+begin
+  S := Txt;
+  for i := 1 to Length(S) do
+    if (Ord(S[i]) < 32) and
+       (not (Ord(S[i]) in [10,13])) then
+      S[i] := '?';
+  Result := StringsReplace(S,
+   [LineEnding, '&',     '"',      '<',    '>',    ''''],
+   ['<br>',   '&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
+   [rfReplaceAll]);
+end;
+
 procedure TEpiReportHTMLGenerator.AddLine(const Txt: string);
 begin
   FReportText.Add(Txt);
@@ -72,19 +92,19 @@ end;
 procedure TEpiReportHTMLGenerator.Section(Sender: TEpiReportBase;
   const Text: string);
 begin
-  AddLine('<h1>' + Text + '</h1>');
+  AddLine('<h1>' + HtmlString(Text) + '</h1>');
 end;
 
 procedure TEpiReportHTMLGenerator.Heading(Sender: TEpiReportBase;
   const Text: string);
 begin
-  AddLine('<h2>' + Text + '</h2>');
+  AddLine('<h2>' + HtmlString(Text) + '</h2>');
 end;
 
 procedure TEpiReportHTMLGenerator.Line(Sender: TEpiReportBase;
   const Text: string);
 begin
-  AddLine(Text + '<br>');
+  AddLine(HtmlString(Text) + '<br>');
 end;
 
 procedure TEpiReportHTMLGenerator.TableHeader(Sender: TEpiReportBase;
@@ -97,8 +117,7 @@ begin
   FRowCount := RowCount;
 
   AddLine('<TABLE cellspacing=0 class=simple>');
-//  if Text <> '' then
-    AddLine('<CAPTION class=caption>' + Text + '</CAPTION>');
+  AddLine('<CAPTION class=caption>' + HtmlString(Text) + '</CAPTION>');
 end;
 
 procedure TEpiReportHTMLGenerator.TableFooter(Sender: TEpiReportBase;
@@ -127,7 +146,7 @@ begin
   else
     S += '<TD class=cell>';
 
-  S += Text + '</TD>';
+  S += HtmlString(Text) + '</TD>';
 
 
   if (Col = (FColCount - 1)) then
@@ -192,7 +211,7 @@ begin
   result +=
     '-->' + LineEnding +
     '</STYLE>' + LineEnding +
-    '<TITLE>'+Title+'</TITLE>' + LineEnding +
+    '<TITLE>' + HtmlString(Title) + '</TITLE>' + LineEnding +
     '</HEAD>' + LineEnding +
     '<BODY class=body>' + LineEnding;
 end;
