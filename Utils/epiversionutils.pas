@@ -169,45 +169,55 @@ var
   URL: String;
   List: TStringList;
 begin
-  FillByte(StableVersion, SizeOf(TEpiVersionInfo), 0);
-  FillByte(TestVersion, SizeOf(TEpiVersionInfo), 0);
+  result := false;
+  try
+    FillByte(StableVersion, SizeOf(TEpiVersionInfo), 0);
+    FillByte(TestVersion, SizeOf(TEpiVersionInfo), 0);
 
-  URL := EpiDataURL +
-    '?program=' + LowerCase(ProgramName) +
-    '&os=' + LowerCase({$I %FPCTARGETOS%}) +
-    '&arch=' + LowerCase({$I %FPCTARGETCPU%});
+    URL := EpiDataURL +
+      '?program=' + LowerCase(ProgramName) +
+      '&os=' + LowerCase({$I %FPCTARGETOS%}) +
+      '&arch=' + LowerCase({$I %FPCTARGETCPU%});
 
-  VersionChecker := TEpiVersionChecker.Create;
-  Result := VersionChecker.CheckVersionOnline(URL, StableVersion, TestVersion);
-  Response := VersionChecker.Response;
-  VersionChecker.Free;
+    VersionChecker := TEpiVersionChecker.Create;
+    Result := VersionChecker.CheckVersionOnline(URL, StableVersion, TestVersion);
+    Response := VersionChecker.Response;
 
-  if (Pos(LowerCase(Response), 'error') > 0) or (not result) then exit(false);
+    if (Pos(LowerCase(Response), 'error') > 0) or (not result) then exit(false);
 
-  List := TStringList.Create;
-  List.DelimitedText := Response;
+    List := TStringList.Create;
+    List.DelimitedText := Response;
 
-  if List.Count >= 1 then
-  With StableVersion do
-  begin
-    URL := List[0];
-    VersionNo := StrToInt(Copy2SymbDel(URL, '.'));
-    MajorRev  := StrToInt(Copy2SymbDel(URL, '.'));
-    MinorRev  := StrToInt(Copy2SymbDel(URL, '.'));
-    BuildNo   := StrToInt(URL);
+    try
+      if List.Count >= 1 then
+      With StableVersion do
+      begin
+        URL := List[0];
+        VersionNo := StrToInt(Copy2SymbDel(URL, '.'));
+        MajorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+        MinorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+        BuildNo   := StrToInt(URL);
+      end;
+
+      if List.Count >= 2 then
+      With TestVersion do
+      begin
+        URL := List[1];
+        VersionNo := StrToInt(Copy2SymbDel(URL, '.'));
+        MajorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+        MinorRev  := StrToInt(Copy2SymbDel(URL, '.'));
+        BuildNo   := StrToInt(URL);
+      end;
+    except
+      Response := 'Invalid response from server:' + LineEnding +
+        Response;
+      Exit;
+    end;
+    Response := '';
+    result := true;
+  finally
+    VersionChecker.Free;
   end;
-
-  if List.Count >= 2 then
-  With TestVersion do
-  begin
-    URL := List[1];
-    VersionNo := StrToInt(Copy2SymbDel(URL, '.'));
-    MajorRev  := StrToInt(Copy2SymbDel(URL, '.'));
-    MinorRev  := StrToInt(Copy2SymbDel(URL, '.'));
-    BuildNo   := StrToInt(URL);
-  end;
-  Response := '';
-  result := true;
 end;
 
 end.
