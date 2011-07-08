@@ -55,7 +55,11 @@ begin
     ftDMYDate, ftDMYToday,
     ftMDYDate, ftMDYToday:
       begin
-        if (Al > 2) or (Bl > 2) or (Cl > 4) then exit(false);
+        if (Al > 2) or (Bl > 2) or (Cl > 4) then
+        begin
+          ErrMsg := Str + ' is not a valid date.' + LineEnding + 'Forgot separators?';
+          exit(false);
+        end;
 
         if Ft in [ftDMYDate, ftDMYToday] then
         begin
@@ -71,7 +75,11 @@ begin
       end;
     ftYMDDate, ftYMDToday:
       begin
-        if (Al > 4) or (Bl > 2) or (Cl > 2) then exit(false);
+        if (Al > 4) or (Bl > 2) or (Cl > 2) then
+        begin
+          ErrMsg := Str + ' is not a valid date.' + LineEnding + 'Forgot separators?';
+          exit(false);
+        end;
         if (Al > 0) and (Al <= 2) and (Bl+Cl = 0) then
           D := StrToInt(A)
         else begin
