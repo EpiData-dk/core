@@ -55,13 +55,21 @@ end;
 function TEpiJumps.NewJump: TEpiJump;
 var
   ItemClass: TEpiCustomItemClass;
+  Ft: TEpiFieldType;
 begin
-  case TEpiField(Owner).FieldType of
-    ftBoolean: ItemClass := TEpiBoolJump;
-    ftInteger: ItemClass := TEpiIntJump;
-    ftFloat:   ItemClass := TEpiFloatJump;
-    ftString:  ItemClass := TEpiStringJump;
-  end;
+  Ft := TEpiField(Owner).FieldType;
+
+  if Ft in AutoFieldTypes then
+    Raise Exception.CreateFmt(
+            'Field "%s" does not support jumps! (Auto Type)' + LineEnding +
+            'Please Contact EpiData',
+            [TEpiCustomNamedItem(Owner).Name]);
+
+  if Ft in BoolFieldTypes   then ItemClass := TEpiBoolJump;
+  if Ft in IntFieldTypes    then ItemClass := TEpiIntJump;
+  if Ft in FloatFieldTypes  then ItemClass := TEpiFloatJump;
+  if Ft in StringFieldTypes then ItemClass := TEpiStringJump;
+
   Result := TEpiJump(NewItem(ItemClass));
   Result.Id := '';
 end;
