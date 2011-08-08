@@ -21,7 +21,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    XMLName: string; override;
     function    NewRange: TEpiRange;
     function    InRange(const AValue: EpiInteger): boolean; overload;
@@ -49,11 +48,11 @@ type
     procedure   SetAsFloat(const Start: boolean; const AValue: EpiFloat); virtual; abstract;
     procedure   SetAsInteger(const Start: boolean; const AValue: EpiInteger); virtual; abstract;
     procedure   SetAsTime(const Start: boolean; const AValue: EpiTime); virtual; abstract;
-    function    SaveAttributesToXml: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    function    SaveAttributesToXml: string; override;
     function    XMLName: string; override;
     class function IdString: string; override;
     property    AsInteger[const Start: boolean]: EpiInteger read GetAsInteger write SetAsInteger;
@@ -190,22 +189,6 @@ begin
 
     Node := Node.NextSibling;
   end;
-end;
-
-procedure TEpiRanges.Assign(const AEpiCustomBase: TEpiCustomBase);
-var
-  OrgRanges: TEpiRanges absolute AEpiCustomBase;
-  i: Integer;
-  R: TEpiRange;
-begin
-  inherited Assign(AEpiCustomBase);
-  BeginUpdate;
-  for i := 0 to OrgRanges.Count - 1 do
-  begin
-    R := NewRange;
-    R.Assign(OrgRanges[i]);
-  end;
-  EndUpdate;
 end;
 
 function TEpiRanges.XMLName: string;
@@ -589,7 +572,7 @@ end;
 
 class function TEpiRange.IdString: string;
 begin
-  Result := 'range_id';
+  Result := 'range_id_';
 end;
 
 { TEpiIntRange }
