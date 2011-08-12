@@ -148,8 +148,9 @@ begin
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node);
 
-  LoadNode(Node, Root, rsAdmin, true);
-  Admin.LoadFromXml(Node);
+  // TODO : Include in later versions.
+//  LoadNode(Node, Root, rsAdmin, true);
+//  Admin.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsProjectSettings, false) then
     ProjectSettings.LoadFromXml(Node);

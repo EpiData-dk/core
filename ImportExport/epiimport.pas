@@ -573,11 +573,12 @@ begin
 
     // ds_format: NumBuff[0]
     //  Stata Version 4    = $69;
-    //  Stata Version 6    = $6C;
-    //  Stata Version 7    = $6E;
-    //  Stata Version 8+9  = $71;
-    //  Stata Version 10   = $72;
-    if not (FileVersion in [$69, $6C, $6E, $71, $72]) then
+    //  Stata Version 6    = $6C; // dta_108
+    //  Stata Version 7    = $6E; // dta_110
+    //  Stata Version 8+9  = $71; // dta_113
+    //  Stata Version 10   = $72; // dta_114
+    //  Stata Version 12   = $73; // dta_115
+    if not (FileVersion in [$69, $6C, $6E, $71, $72, $73]) then
     BEGIN
       RaiseError('Unknown Stata Version');
       Exit;
@@ -596,13 +597,13 @@ begin
     FloatChar       := 'f';
     DoubleChar      := 'd';
     // - changed in Ver. 6
-    if FileVersion >= $6C THEN
+    if FileVersion >= $6C THEN     // dta_108
       FileLabelLength := 81;
     // - change in Ver. 7
-    IF FileVersion >= $6E THEN
+    IF FileVersion >= $6E THEN     // dta_110
       FieldNameLength := 33;
     // - changed in Ver. 8
-    IF FileVersion >= $71 THEN
+    IF FileVersion >= $71 THEN     // dta_113
     BEGIN
       StrBaseNum := 0;
       MissingBaseNum := 26;
@@ -613,7 +614,7 @@ begin
       DoubleChar := DoubleConst;
     END;
     // - changed in Ver. 10
-    if FileVersion >= $72 THEN
+    if FileVersion >= $72 THEN     // dta_114
       FmtLength := 49;
 
     // byteorder: NumBuff[1]
@@ -712,7 +713,7 @@ begin
       begin
         Case Char(StrBuf[2+j]) of
           // Date (and time formats)
-          // TODO : (Time not supported by EpiData yet).
+          // TODO : Time  supported by EpiData.
           'T',
           'D':
             Begin
