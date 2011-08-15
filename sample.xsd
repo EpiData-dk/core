@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/>
+  <xs:element name="EpiData">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Settings"/>
+        <xs:element ref="ProjectSettings"/>
+        <xs:element ref="Study"/>
+        <xs:element ref="ValueLabelSets"/>
+        <xs:element ref="DataFiles"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Settings">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Version"/>
+        <xs:element ref="Scrambled"/>
+        <xs:element ref="DateSeparator"/>
+        <xs:element ref="TimeSeparator"/>
+        <xs:element ref="DecimalSeparator"/>
+        <xs:element ref="MissingString"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Scrambled" type="xs:boolean"/>
+  <xs:element name="DateSeparator" type="xs:string"/>
+  <xs:element name="TimeSeparator" type="xs:string"/>
+  <xs:element name="DecimalSeparator" type="xs:string"/>
+  <xs:element name="MissingString" type="xs:string"/>
+  <xs:element name="ProjectSettings">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="AutoIncStart"/>
+        <xs:element ref="TimedBackupInterval"/>
+        <xs:element ref="BackupOnShutdown"/>
+        <xs:element ref="ShowFieldNames"/>
+        <xs:element ref="ShowFieldBorders"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AutoIncStart" type="xs:integer"/>
+  <xs:element name="TimedBackupInterval" type="xs:integer"/>
+  <xs:element name="BackupOnShutdown" type="xs:boolean"/>
+  <xs:element name="ShowFieldNames" type="xs:boolean"/>
+  <xs:element name="ShowFieldBorders" type="xs:boolean"/>
+  <xs:element name="Admin">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Groups"/>
+        <xs:element ref="Users"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Groups">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="Users">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="Study">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Author"/>
+        <xs:element ref="Created"/>
+        <xs:element ref="Identifier"/>
+        <xs:element ref="Language"/>
+        <xs:element ref="Modified"/>
+        <xs:element ref="OtherLanguages"/>
+        <xs:element ref="Version"/>
+        <xs:element ref="Abstract" maxOccurs="unbounded"/>
+        <xs:element ref="Citations" maxOccurs="unbounded"/>
+        <xs:element ref="Funding" maxOccurs="unbounded"/>
+        <xs:element ref="GeographicalCoverage" maxOccurs="unbounded"/>
+        <xs:element ref="Publisher" maxOccurs="unbounded"/>
+        <xs:element ref="Purpose" maxOccurs="unbounded"/>
+        <xs:element maxOccurs="unbounded" ref="Rights"/>
+        <xs:element ref="TimeCoverage" maxOccurs="unbounded"/>
+        <xs:element maxOccurs="unbounded" ref="Title"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Author" type="xs:string"/>
+  <xs:element name="Identifier" type="xs:string"/>
+  <xs:element name="Language" type="xs:language"/>
+  <xs:element name="Modified" type="xs:dateTime"/>
+  <xs:element name="OtherLanguages" type="xs:string"> </xs:element>
+  <xs:element name="Abstract">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Citations">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Funding">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GeographicalCoverage">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Publisher">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Purpose">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Rights">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="TimeCoverage">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Title">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ValueLabelSets">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="ValueLabelSet"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ValueLabelSet">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Type"/>
+        <xs:element ref="Name"/>
+        <xs:element ref="Internal"/>
+      </xs:sequence>
+      <xs:attribute name="id" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Internal">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="ValueLabel"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="ValueLabel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Label" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="missing" type="xs:boolean"/>
+      <xs:attribute name="order" use="required" type="xs:integer"/>
+      <xs:attribute name="value" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Label">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DataFiles">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="DataFile" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DataFile">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Version"/>
+        <xs:element ref="Created"/>
+        <xs:element maxOccurs="unbounded" minOccurs="0" ref="Caption"/>
+        <xs:element ref="Records"/>
+        <xs:element ref="Sections"/>
+      </xs:sequence>
+      <xs:attribute name="id" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Records">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="Record"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Record">
+    <xs:complexType>
+      <xs:attribute name="f0" use="required" type="xs:integer"/>
+      <xs:attribute name="f1" use="required" type="xs:integer"/>
+      <xs:attribute name="f10" use="required"/>
+      <xs:attribute name="f11" use="required"/>
+      <xs:attribute name="f12" use="required" type="xs:NMTOKEN"/>
+      <xs:attribute name="f13" use="required" type="xs:NMTOKEN"/>
+      <xs:attribute name="f14" use="required" type="xs:integer"/>
+      <xs:attribute name="f15" use="required" type="xs:NCName"/>
+      <xs:attribute name="f16" use="required" type="xs:NCName"/>
+      <xs:attribute name="f17" use="required" type="xs:integer"/>
+      <xs:attribute name="f18" use="required" type="xs:integer"/>
+      <xs:attribute name="f19" type="xs:integer"/>
+      <xs:attribute name="f2" use="required"/>
+      <xs:attribute name="f20" type="xs:integer"/>
+      <xs:attribute name="f21"/>
+      <xs:attribute name="f23" type="xs:integer"/>
+      <xs:attribute name="f24" type="xs:integer"/>
+      <xs:attribute name="f25" use="required" type="xs:integer"/>
+      <xs:attribute name="f26" use="required" type="xs:integer"/>
+      <xs:attribute name="f27" use="required" type="xs:integer"/>
+      <xs:attribute name="f28" use="required" type="xs:integer"/>
+      <xs:attribute name="f29" use="required" type="xs:integer"/>
+      <xs:attribute name="f3" use="required"/>
+      <xs:attribute name="f30" use="required" type="xs:integer"/>
+      <xs:attribute name="f31" use="required"/>
+      <xs:attribute name="f32" use="required" type="xs:integer"/>
+      <xs:attribute name="f4" use="required"/>
+      <xs:attribute name="f5" use="required"/>
+      <xs:attribute name="f6" use="required"/>
+      <xs:attribute name="f7" use="required"/>
+      <xs:attribute name="f8" use="required"/>
+      <xs:attribute name="f9" use="required"/>
+      <xs:attribute name="st" use="required" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Sections">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="Section"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Section">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Name"/>
+        <xs:element ref="Top"/>
+        <xs:element ref="Left"/>
+        <xs:element ref="Width"/>
+        <xs:element ref="Height"/>
+        <xs:element minOccurs="0" ref="Caption" maxOccurs="unbounded"/>
+        <xs:element ref="Fields"/>
+        <xs:element ref="Headings"/>
+      </xs:sequence>
+      <xs:attribute name="id" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Width" type="xs:integer"/>
+  <xs:element name="Height" type="xs:integer"/>
+  <xs:element name="Fields">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="Field" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Field">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Name"/>
+        <xs:element ref="Top"/>
+        <xs:element ref="Left"/>
+        <xs:element minOccurs="0" ref="AutoUpdateMode"/>
+        <xs:element ref="Type"/>
+        <xs:element ref="Length"/>
+        <xs:element ref="Decimals"/>
+        <xs:element ref="EntryMode"/>
+        <xs:choice minOccurs="0">
+          <xs:element ref="Calculation"/>
+          <xs:element ref="ConfirmEntry"/>
+          <xs:element ref="DefaultValue"/>
+          <xs:sequence>
+            <xs:element ref="ShowValueLabel"/>
+            <xs:element ref="ValueLabelId"/>
+          </xs:sequence>
+        </xs:choice>
+        <xs:element minOccurs="0" ref="Ranges"/>
+        <xs:choice minOccurs="0">
+          <xs:element ref="Compare"/>
+          <xs:element ref="Jumps"/>
+        </xs:choice>
+        <xs:element ref="Question" maxOccurs="unbounded"/>
+        <xs:element minOccurs="0" ref="Notes" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="id" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AutoUpdateMode" type="xs:integer"/>
+  <xs:element name="Length" type="xs:integer"/>
+  <xs:element name="Decimals" type="xs:integer"/>
+  <xs:element name="EntryMode" type="xs:integer"/>
+  <xs:element name="Calculation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="DayField"/>
+        <xs:element ref="MonthField"/>
+        <xs:element ref="YearField"/>
+        <xs:element ref="ResultField"/>
+      </xs:sequence>
+      <xs:attribute name="type" use="required" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DayField" type="xs:NCName"/>
+  <xs:element name="MonthField" type="xs:NCName"/>
+  <xs:element name="YearField" type="xs:NCName"/>
+  <xs:element name="ResultField" type="xs:NCName"/>
+  <xs:element name="ConfirmEntry" type="xs:boolean"/>
+  <xs:element name="DefaultValue" type="xs:integer"/>
+  <xs:element name="ShowValueLabel" type="xs:boolean"/>
+  <xs:element name="ValueLabelId" type="xs:NCName"/>
+  <xs:element name="Ranges">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Range"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Range">
+    <xs:complexType>
+      <xs:attribute name="end" use="required" type="xs:string"/>
+      <xs:attribute name="start" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Compare">
+    <xs:complexType>
+      <xs:attribute name="to" use="required" type="xs:NCName"/>
+      <xs:attribute name="type" use="required" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Jumps">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="Jump"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Jump">
+    <xs:complexType>
+      <xs:attribute name="on" use="required" type="xs:string"/>
+      <xs:attribute name="reset" use="required" type="xs:string"/>
+      <xs:attribute name="to" type="xs:string"/>
+      <xs:attribute name="type" use="required" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Question">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Notes">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Headings">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Heading"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Heading">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="Name"/>
+        <xs:element ref="Top"/>
+        <xs:element ref="Left"/>
+        <xs:element ref="Caption" maxOccurs="unbounded" minOccurs="1"/>
+      </xs:sequence>
+      <xs:attribute name="id" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Version" type="xs:integer"/>
+  <xs:element name="Created" type="xs:dateTime"/>
+  <xs:element name="Type" type="xs:integer"/>
+  <xs:element name="Name" type="xs:string"/>
+  <xs:element name="Top" type="xs:integer"/>
+  <xs:element name="Left" type="xs:integer"/>
+  <xs:element name="Caption">
+    <xs:complexType mixed="true">
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
