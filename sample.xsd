@@ -7,7 +7,7 @@
         <xs:element ref="Settings"/>
         <xs:element ref="ProjectSettings"/>
         <xs:element ref="Study"/>
-        <xs:element ref="ValueLabelSets"/>
+        <xs:element ref="ValueLabelSets" minOccurs="0"/>
         <xs:element ref="DataFiles"/>
       </xs:sequence>
     </xs:complexType>
@@ -134,7 +134,7 @@
   <xs:element name="ValueLabelSets">
     <xs:complexType>
       <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="ValueLabelSet"/>
+        <xs:element maxOccurs="unbounded" ref="ValueLabelSet" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -173,7 +173,7 @@
   <xs:element name="DataFiles">
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="DataFile" maxOccurs="unbounded"/>
+        <xs:element ref="DataFile" maxOccurs="1"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -183,7 +183,7 @@
         <xs:element ref="Version"/>
         <xs:element ref="Created"/>
         <xs:element maxOccurs="unbounded" minOccurs="0" ref="Caption"/>
-        <xs:element ref="Records"/>
+        <xs:element ref="Records" minOccurs="0"/>
         <xs:element ref="Sections"/>
       </xs:sequence>
       <xs:attribute name="id" use="required" type="xs:NCName"/>
@@ -192,7 +192,7 @@
   <xs:element name="Records">
     <xs:complexType>
       <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="Record"/>
+        <xs:element maxOccurs="unbounded" ref="Record" minOccurs="1"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -270,25 +270,24 @@
         <xs:element ref="Name"/>
         <xs:element ref="Top"/>
         <xs:element ref="Left"/>
-        <xs:element minOccurs="0" ref="AutoUpdateMode"/>
         <xs:element ref="Type"/>
         <xs:element ref="Length"/>
         <xs:element ref="Decimals"/>
         <xs:element ref="EntryMode"/>
-        <xs:choice minOccurs="0">
-          <xs:element ref="Calculation"/>
-          <xs:element ref="ConfirmEntry"/>
-          <xs:element ref="DefaultValue"/>
-          <xs:sequence>
-            <xs:element ref="ShowValueLabel"/>
-            <xs:element ref="ValueLabelId"/>
-          </xs:sequence>
-        </xs:choice>
+        <xs:element ref="ConfirmEntry" minOccurs="0"/>
+        <xs:element minOccurs="0" ref="Repeat"/>
+        <xs:element minOccurs="0" ref="AutoUpdateMode"/>
+        <xs:element ref="DefaultValue" minOccurs="0"/>
+        <xs:sequence minOccurs="0">
+          <xs:element ref="ValueLabelId"/>
+          <xs:element ref="ShowValueLabel" minOccurs="0"/>
+          <xs:element minOccurs="0" ref="ValueLabelWriteRef"/>
+          <xs:element minOccurs="0" ref="ForcePickList"/>
+        </xs:sequence>
+        <xs:element ref="Calculation" minOccurs="0"/>
         <xs:element minOccurs="0" ref="Ranges"/>
-        <xs:choice minOccurs="0">
-          <xs:element ref="Compare"/>
-          <xs:element ref="Jumps"/>
-        </xs:choice>
+        <xs:element ref="Compare" minOccurs="0"/>
+        <xs:element ref="Jumps" minOccurs="0"/>
         <xs:element ref="Question" maxOccurs="unbounded"/>
         <xs:element minOccurs="0" ref="Notes" maxOccurs="unbounded"/>
       </xs:sequence>
@@ -302,10 +301,27 @@
   <xs:element name="Calculation">
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="DayField"/>
-        <xs:element ref="MonthField"/>
-        <xs:element ref="YearField"/>
         <xs:element ref="ResultField"/>
+        <xs:choice>
+          <xs:sequence>
+            <xs:element ref="DayField"/>
+            <xs:element ref="MonthField"/>
+            <xs:element ref="YearField"/>
+          </xs:sequence>
+          <xs:sequence>
+            <xs:element minOccurs="0" ref="StartDate"/>
+            <xs:element minOccurs="0" ref="StartTime"/>
+            <xs:element minOccurs="0" ref="EndDate"/>
+            <xs:element minOccurs="0" ref="EndTime"/>
+          </xs:sequence>
+          <xs:sequence>
+            <xs:element minOccurs="0" ref="Field1"/>
+            <xs:element minOccurs="0" ref="Delim1"/>
+            <xs:element minOccurs="0" ref="Field2"/>
+            <xs:element minOccurs="0" ref="Delim2"/>
+            <xs:element minOccurs="0" ref="Field3"/>
+          </xs:sequence>
+        </xs:choice>
       </xs:sequence>
       <xs:attribute name="type" use="required" type="xs:integer"/>
     </xs:complexType>
@@ -315,7 +331,7 @@
   <xs:element name="YearField" type="xs:NCName"/>
   <xs:element name="ResultField" type="xs:NCName"/>
   <xs:element name="ConfirmEntry" type="xs:boolean"/>
-  <xs:element name="DefaultValue" type="xs:integer"/>
+  <xs:element name="DefaultValue" type="xs:string"/>
   <xs:element name="ShowValueLabel" type="xs:boolean"/>
   <xs:element name="ValueLabelId" type="xs:NCName"/>
   <xs:element name="Ranges">
@@ -391,4 +407,16 @@
       <xs:attribute ref="xml:lang" use="required"/>
     </xs:complexType>
   </xs:element>
+  <xs:element name="Repeat" type="xs:boolean"/>
+  <xs:element name="ValueLabelWriteRef" type="xs:NCName"/>
+  <xs:element name="ForcePickList" type="xs:boolean"/>
+  <xs:element name="StartDate" type="xs:NCName"/>
+  <xs:element name="StartTime" type="xs:NCName"/>
+  <xs:element name="EndDate" type="xs:NCName"/>
+  <xs:element name="EndTime" type="xs:NCName"/>
+  <xs:element name="Field1" type="xs:NCName"/>
+  <xs:element name="Delim1" type="xs:string"/>
+  <xs:element name="Field2" type="xs:NCName"/>
+  <xs:element name="Delim2" type="xs:string"/>
+  <xs:element name="Field3" type="xs:NCName"/>
 </xs:schema>
