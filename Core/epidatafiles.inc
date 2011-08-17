@@ -465,7 +465,7 @@ begin
   inherited Create(AOwner);
 
   // Caption
-  FCaption := TEpiTranslatedText.Create(Self, rsCaption);
+  FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FVersion := '';
   FCreated := Now;
 

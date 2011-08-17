@@ -163,7 +163,7 @@ type
 
   TEpiGroup = class(TEpiCustomNamedItem)
   private
-    FCaption: TEpiTranslatedText;
+    FCaption: TEpiTranslatedTextWrapper;
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
   protected
@@ -174,7 +174,7 @@ type
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
-    property   Caption: TEpiTranslatedText read FCaption;
+    property   Caption: TEpiTranslatedTextWrapper read FCaption;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
   end;
 
@@ -671,7 +671,7 @@ constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
 
-  FCaption := TEpiTranslatedText.Create(Self, rsName);
+  FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   RegisterClasses([Caption]);
 end;
 

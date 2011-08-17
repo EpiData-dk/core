@@ -372,8 +372,8 @@ constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
   FFieldType := AFieldType;
-  FQuestion := TEpiTranslatedText.Create(Self, rsQuestion);
-  FNotes    := TEpiTranslatedText.Create(Self, rsNotes);
+  FQuestion := TEpiTranslatedTextWrapper.Create(Self, rsQuestion, rsText);
+  FNotes    := TEpiTranslatedTextWrapper.Create(Self, rsNotes, rsText);
 
   FConfirmEntry := false;
   FDecimals     := 0;

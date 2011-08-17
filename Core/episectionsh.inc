@@ -32,7 +32,7 @@ type
     FGroups: TEpiGroups;
     FHeadings: TEpiHeadings;
     FHeight: integer;
-    FCaption: TEpiTranslatedText;
+    FCaption: TEpiTranslatedTextWrapper;
     FWidth: integer;
     function    GetField(Index: integer): TEpiField;
     function    GetHeading(Index: integer): TEpiHeading;
@@ -49,7 +49,7 @@ type
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    property    Caption: TEpiTranslatedText read FCaption;
+    property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Fields: TEpiFields read FFields;
     property    Field[Index: integer]: TEpiField read GetField;
     property    Headings: TEpiHeadings read FHeadings;

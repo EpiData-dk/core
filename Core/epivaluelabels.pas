@@ -112,6 +112,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
+    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -514,6 +515,13 @@ begin
     vlsInternal:
       Result := SaveInternal(Lvl - 1);
   end;
+end;
+
+function TEpiValueLabelSet.SaveAttributesToXml: string;
+begin
+  Result := inherited SaveAttributesToXml +
+    SaveAttr(rsType, Integer(LabelType)) +
+    SaveAttr(rsName, Name);
 end;
 
 procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);

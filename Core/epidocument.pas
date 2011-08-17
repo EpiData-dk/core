@@ -86,7 +86,7 @@ begin
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiRelations.Create(Self);
 
-  RegisterClasses([XMLSettings, ProjectSettings, Admin, Study, ValueLabelSets, DataFiles, Relations]);
+  RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.

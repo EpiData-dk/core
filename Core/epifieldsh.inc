@@ -86,12 +86,12 @@ type
     FJumps: TEpiJumps;
     FLength: Cardinal;
     FFieldType: TEpiFieldType;
-    FNotes: TEpiTranslatedText;
+    FNotes: TEpiTranslatedTextWrapper;
     FRanges: TEpiRanges;
     FRepeatValue: boolean;
     FShowValueLabel: Boolean;
     FValueLabelSet: TEpiValueLabelSet;
-    FQuestion:  TEpiTranslatedText;
+    FQuestion:  TEpiTranslatedTextWrapper;
     FValueLabelWriteField: TEpiField;
     function    GetDefaultValueAsString: string;
     procedure   SetConfirmEntry(const AValue: Boolean);
@@ -121,8 +121,8 @@ type
 //    property    DefaultValue: Variant read FDefaultValue write SetDefaultValue;
     property    DefaultValueAsString: string read GetDefaultValueAsString write SetDefaultValueAsString;
     property    HasDefaultValue: boolean read GetHasDefaultValue write SetHasDefaultValue;
-    property    Notes: TEpiTranslatedText read FNotes;
-    property    Question:  TEpiTranslatedText read FQuestion;
+    property    Notes: TEpiTranslatedTextWrapper read FNotes;
+    property    Question:  TEpiTranslatedTextWrapper read FQuestion;
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
     property    ForcePickList: Boolean read FForcePickList write SetForcePickList;

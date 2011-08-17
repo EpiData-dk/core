@@ -102,6 +102,12 @@ type
       const Val: TDateTime): string; overload;
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
+    // Attributes save
+    function   SaveAttr(const AttrName: string; const Val: string): string; overload;
+    function   SaveAttr(const AttrName: string; const Val: integer): string; overload;
+    function   SaveAttr(const AttrName: string; const Val: extended): string; overload;
+    function   SaveAttr(const AttrName: string; const Val: TDateTime): string; overload;
+    function   SaveAttr(const AttrName: string; const Val: boolean): string; overload;
     function   SaveAttributesToXml: string; virtual;
   public
     function   XMLName: string; virtual;
@@ -179,13 +185,24 @@ type
       Const DefaultLanguage: boolean); override;
     function    XMLName: string; override;
   public
-    constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string);
+    constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string); virtual;
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
     property    TextLang[LangCode: string]: string read GetText write SetText;
+  end;
+
+  { TEpiTranslatedTextWrapper }
+
+  TEpiTranslatedTextWrapper = class(TEpiTranslatedText)
+  private
+    FNodeName: string;
+  public
+    constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
   end;
 
   { TEpiCustomItem }
@@ -688,6 +705,36 @@ begin
   result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
 end;
 
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: string
+  ): string;
+begin
+  result := Format(' %s="%s"', [AttrName, Val]);
+end;
+
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: integer
+  ): string;
+begin
+  result := SaveAttr(AttrName, IntToStr(Val));
+end;
+
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
+  ): string;
+begin
+  result := SaveAttr(AttrName, FloatToStr(Val));
+end;
+
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
+  ): string;
+begin
+  result := SaveAttr(AttrName, DateToStr(Val));
+end;
+
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: boolean
+  ): string;
+begin
+  result := SaveAttr(AttrName, BoolToStr(Val, 'true', 'false'));
+end;
+
 function TEpiCustomBase.SaveAttributesToXml: string;
 begin
   result := '';
@@ -702,25 +749,10 @@ function TEpiCustomBase.SaveToXml(Content: String; Lvl: integer): string;
 var
   i: Integer;
   S: String;
-  {$IFDEF EPICORETIMING}
-  St, St1, Diff: LongWord;
-  {$ENDIF}
 begin
-  {$IFDEF EPICORETIMING}
-  St := GetTickCount;
-  {$ENDIF}
   S := Content;
   for i := 0 to ClassList.Count - 1 do
-  {$IFDEF EPICORETIMING}
-  begin
-    St1 := GetTickCount;
-  {$ENDIF}
     S += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
-  {$IFDEF EPICORETIMING}
-    Diff := GetTickCount - St1;
-    DebugLn('*%s(%s): time = %d', [Indent(lvl), TEpiCustomBase(ClassList[i]).ClassName, Diff]);
-  end;
-  {$ENDIF}
 
   if ScrambleXml then
     S := EnCrypt(S) + LineEnding;
@@ -734,11 +766,6 @@ begin
   else
     Result :=
       Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '/>' + LineEnding;
-
-  {$IFDEF EPICORETIMING}
-  Diff := GetTickCount - St;
-  DebugLn('%s%s: time = %d', [Indent(lvl), ClassName, Diff]);
-  {$ENDIF}
 end;
 
 procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode);
@@ -1060,6 +1087,36 @@ begin
     FTextList.Find(FDefaultLang, Idx);
     Result := TString(FTextList.Objects[Idx]).Str;
   end;
+end;
+
+{ TEpiTranslatedTextWrapper }
+
+constructor TEpiTranslatedTextWrapper.Create(AOwner: TEpiCustomBase;
+  const NodeName, TextName: string);
+begin
+  inherited Create(AOwner, TextName);
+  FNodeName := NodeName;
+end;
+
+function TEpiTranslatedTextWrapper.SaveToXml(Content: String; Lvl: integer
+  ): string;
+begin
+  Result := inherited SaveToXml(Content, Lvl + 1);
+
+  if Result <> '' then
+    Result :=
+      Indent(Lvl) + '<' + FNodeName + '>' + LineEnding +
+      Result +
+      Indent(Lvl) + '</' + FNodeName + '>' + LineEnding;
+end;
+
+procedure TEpiTranslatedTextWrapper.LoadFromXml(Root: TDOMNode);
+var
+  NRoot: TDOMNode;
+begin
+  // Root = Parent for FNodeName (since this is a wrapped object.
+  if LoadNode(NRoot, Root, FNodeName, false) then
+    inherited LoadFromXml(NRoot);
 end;
 
 { TEpiCustomItem }

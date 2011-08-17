@@ -3,6 +3,7 @@ const
   // - Generic
   rsType = 'Type';
   rsName = 'Name';
+  rsText = 'Text';
   // - CustomItem
   rsId   = 'id';
   // - CustomControlItem

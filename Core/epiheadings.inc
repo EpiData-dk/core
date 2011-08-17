@@ -67,7 +67,7 @@ end;
 constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  FCaption := TEpiTranslatedText.Create(Self, rsCaption);
+  FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   RegisterClasses([FCaption]);
 end;
 
