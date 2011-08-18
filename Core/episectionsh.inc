@@ -45,6 +45,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
+    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;

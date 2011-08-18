@@ -129,19 +129,23 @@ function TEpiSection.SaveToXml(Content: String; Lvl: integer): string;
 var
   i: Integer;
 begin
-  Content := '';
+{  Content := '';
   For i := 0 to Groups.Count - 1 do
     Content += ',' + Groups[i].Id;
   if Length(Content) > 0 then
   begin
     Delete(Content, 1, 1);
     Content := SaveNode(Lvl + 1, rsGroupIdList, Content);
-  end;
-  Content :=
-    SaveNode(Lvl + 1, rsWidth, Width) +
-    SaveNode(Lvl + 1, rsHeight, Height) +
-    Content;
+  end;    }
   Result := inherited SaveToXml(Content, Lvl);
+end;
+
+function TEpiSection.SaveAttributesToXml: string;
+begin
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsWidth, Width) +
+    SaveAttr(rsHeight, Height);
 end;
 
 procedure TEpiSection.LoadFromXml(Root: TDOMNode);
@@ -156,16 +160,16 @@ begin
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
 
-  Width := LoadNodeInt(Root, rsWidth);
-  Height := LoadNodeInt(Root, rsHeight);
+  Width := LoadAttrInt(Root, rsWidth);
+  Height := LoadAttrInt(Root, rsHeight);
 
-  GroupList := nil;
+{  GroupList := nil;
   if LoadNode(Node, Root, rsGroupIdList, false) then
   begin
     SplitString(LoadNodeString(Root, rsGroupIdList), GroupList, [',']);
     for i := 0 to GroupList.Count - 1 do
       Groups.AddItem(TEpiDocument(RootOwner).Admin.Groups.GetItemById(GroupList[i]));
-  end;
+  end;    }
 
   if LoadNode(Node, Root, rsFields, false) then
     Fields.LoadFromXml(Node);

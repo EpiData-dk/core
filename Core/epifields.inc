@@ -82,7 +82,7 @@ begin
   begin
     CheckNode(Node, rsField);
 
-    NField := NewField(TEpiFieldType(LoadNodeInt(Node, rsType)));
+    NField := NewField(TEpiFieldType(LoadAttrInt(Node, rsType)));
     NField.LoadFromXml(Node);
 
     Node := Node.NextSibling;
@@ -434,7 +434,7 @@ end;
 
 function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Content +=
+{  Content +=
     SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
     SaveNode(Lvl + 1, rsLength, Length) +
     SaveNode(Lvl + 1, rsDecimals, Decimals) +
@@ -449,11 +449,11 @@ begin
     Content += SaveNode(Lvl + 1, rsForcePickList, ForcePickList);
   if HasDefaultValue then
     Content += SaveNode(Lvl + 1, rsDefaultValue, DefaultValueAsString);
-
   if Assigned(ValueLabelSet) then
     Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
   if Assigned(ValueLabelWriteField) then
-    Content += SaveNode(Lvl + 1, rsValueLabelWriteRef, ValueLabelWriteField.Id);
+    Content += SaveNode(Lvl + 1, rsValueLabelWriteRef, ValueLabelWriteField.Id);   }
+
   if Assigned(Ranges) then
     Content += Ranges.SaveToXml('', Lvl + 1);
   if Assigned(Jumps) then
@@ -466,32 +466,57 @@ begin
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
+function TEpiField.SaveAttributesToXml: string;
+begin
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsType, Integer(FieldType)) +
+    SaveAttr(rsLength, Length) +
+    SaveAttr(rsDecimals, Decimals) +
+    SaveAttr(rsEntryMode, Integer(EntryMode));
+  if ConfirmEntry then
+    Result += SaveAttr(rsConfirmEntry, ConfirmEntry);
+  if RepeatValue then
+    Result += SaveAttr(rsRepeatValue, RepeatValue);
+  if ShowValueLabel then
+    Result += SaveAttr(rsShowValueLabel, ShowValueLabel);
+  if ForcePickList then
+    Result += SaveAttr(rsForcePickList, ForcePickList);
+  if HasDefaultValue then
+    Result += SaveAttr(rsDefaultValue, DefaultValueAsString);
+  if Assigned(ValueLabelSet) then
+    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Id);
+  if Assigned(ValueLabelWriteField) then
+    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Id);
+end;
+
 procedure TEpiField.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
+  Attr: TDOMAttr;
   VLFieldId: String;
 begin
   // Root = <Field>
   inherited LoadFromXml(Root);
-  Length   := LoadNodeInt(Root, rsLength);
-  Decimals := LoadNodeInt(Root, rsDecimals);
-  EntryMode := TEpiEntryMode(LoadNodeInt(Root, rsEntryMode));
-  if LoadNode(Node, Root, rsConfirmEntry, false) then
-    ConfirmEntry := LoadNodeBool(Root, rsConfirmEntry);
-  if LoadNode(Node, Root, rsRepeatValue, false) then
-    RepeatValue := LoadNodeBool(Root, rsRepeatValue);
-  if LoadNode(Node, Root, rsDefaultValue, false) then
-    DefaultValueAsString := LoadNodeString(Root, rsDefaultValue);
-  if LoadNode(Node, Root, rsShowValueLabel, false) then
-    ShowValueLabel := LoadNodeBool(Root, rsShowValueLabel);
-  if LoadNode(Node, Root, rsForcePickList, false) then
-    ForcePickList := LoadNodeBool(Root, rsForcePickList);
-  if LoadNode(Node, Root, rsValueLabelId, false) then
-    ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadNodeString(Root, rsValueLabelId)));
+  Length   := LoadAttrInt(Root, rsLength);
+  Decimals := LoadAttrInt(Root, rsDecimals);
+  EntryMode := TEpiEntryMode(LoadAttrInt(Root, rsEntryMode));
+  if LoadAttr(Attr, Root, rsConfirmEntry, false) then
+    ConfirmEntry := LoadAttrBool(Root, rsConfirmEntry);
+  if LoadAttr(Attr, Root, rsRepeatValue, false) then
+    RepeatValue := LoadAttrBool(Root, rsRepeatValue);
+  if LoadAttr(Attr, Root, rsDefaultValue, false) then
+    DefaultValueAsString := LoadAttrString(Root, rsDefaultValue);
+  if LoadAttr(Attr, Root, rsShowValueLabel, false) then
+    ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel);
+  if LoadAttr(Attr, Root, rsForcePickList, false) then
+    ForcePickList := LoadAttrBool(Root, rsForcePickList);
+  if LoadAttr(Attr, Root, rsValueLabelId, false) then
+    ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadAttrString(Root, rsValueLabelId)));
 
-  if LoadNode(Node, Root, rsValueLabelWriteRef, false) then
+  if LoadAttr(Attr, Root, rsValueLabelWriteRef, false) then
   begin
-    VLFieldId := LoadNodeString(Root, rsValueLabelWriteRef);
+    VLFieldId := LoadAttrString(Root, rsValueLabelWriteRef);
     ValueLabelWriteField := TEpiField(DataFile.Fields.GetItemById(VLFieldId));
     // Since (possibly) all ValueLabelWriteRef to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.

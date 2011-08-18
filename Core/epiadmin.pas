@@ -172,7 +172,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
+    function   SaveAttributesToXml: string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     property   Caption: TEpiTranslatedTextWrapper read FCaption;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
@@ -686,11 +686,11 @@ begin
   Result := rsGroup;
 end;
 
-function TEpiGroup.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiGroup.SaveAttributesToXml: string;
 begin
-  Content :=
-    SaveNode(Lvl + 1, rsRights, LongInt(Rights));
-  Result := inherited SaveToXml(Content, Lvl);
+  Result:=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsRights, Integer(Rights));
 end;
 
 procedure TEpiGroup.LoadFromXml(Root: TDOMNode);
@@ -700,7 +700,7 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
-  Rights := TEpiAdminRights(LoadNodeInt(Root, rsRights));
+  Rights := TEpiAdminRights(LoadAttrInt(Root, rsRights));
 end;
 
 end.

@@ -15,10 +15,6 @@
   <ShowFieldNames>false</ShowFieldNames>
   <ShowFieldBorders>true</ShowFieldBorders>
  </ProjectSettings>
- <Admin>
-  <Groups/>
-  <Users/>
- </Admin>
  <Study>
   <Author>Torsten Bonde Christiansen
 Jens M. Lauritsen</Author>
@@ -26,9 +22,10 @@ Jens M. Lauritsen</Author>
   <Identifier>EpiData Sample File #1</Identifier>
   <Language>en</Language>
   <Modified>2011/07/06 13.44.43</Modified>
-  <OtherLanguages></OtherLanguages>
+  <OtherLanguages/>
   <Version>1</Version>
-  <Abstract xml:lang="en">Sample file showing a wide range of constructs possible with fields, sections and headings.</Abstract>
+  <Abstract xml:lang="en">Sample file showing a wide range of constructs possible with fields,
+   sections and headings.</Abstract>
   <Citations xml:lang="en">None so far.</Citations>
   <Funding xml:lang="en">N/A</Funding>
   <GeographicalCoverage xml:lang="en">Denmark</GeographicalCoverage>
@@ -101,21 +98,34 @@ Jens M. Lauritsen</Author>
  </ValueLabelSets>
  <DataFiles>
   <DataFile id="datafile_id_0">
-   <Version></Version>
+   <Version>0</Version>
    <Created>2011/04/05 10.16.04</Created>
    <Records>
-    <Record f19="1" f23="1234" f24="1" f14="100" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.22.55" f0="10" f2="1,11" f16="AAA" f8="THIS IS A SAMPLE TEXT" f4="This is a sample text" f15="English" f1="12345678" f3="1234,5678" f17="50" f5="12/09/2010" f6="12/09/2010" f12="12.00.00" f7="1912/09/10" f18="0" f20="10" f21="1,11" f26="5" f25="2" f27="6" f32="1" f28="1" f29="1" f30="11" f31="2011/01/01" st="0"/>
-    <Record f19="2" f23="2" f24="2" f14="101" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.25.36" f0="20" f2="2,22" f16="CCC" f8="DETTE ER EN PRØVE TEKST" f4="Dette er en prøve tekst" f15="Dansk" f1="23456789" f3="2345,6789" f17="51" f5="11/09/2011" f6="11/09/2011" f12="11.00.00" f7="2011/09/11" f18="1" f21="9,99" f26="10" f25="3" f27="11" f32="3" f28="2" f29="2" f30="20" f31="1920/02/02" st="0"/>
-    <Record f19="3" f23="3" f24="3" f14="102" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.26.38" f0="30" f2="3,33" f16="CCC" f8="هذا هو نص عينة" f4="هذا هو نص عينة" f15="العربية" f1="34567890" f3="3456,789" f17="52" f5="10/09/2010" f6="10/09/2010" f12="10.00.00" f7="2010/09/10" f18="2" f20="99" f21="9,99" f26="1" f25="3" f27="2" f32="0" f28="3" f29="3" f30="3" f31="2003/03/03" st="0"/>
-    <Record f19="4" f14="103" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.27.40" f0="99" f2="9,99" f16="ZZZ" f8="这是一个示例文本" f4="这是一个示例文本" f15="中文" f1="45678901" f3="4567,8901" f17="53" f5="09/09/2009" f6="09/09/2009" f12="09.00.00" f7="2009/09/09" f18="3" f21="8,88" f26="100" f25="3" f27="111" f32="2" f28="4" f29="4" f30="4" f31="2004/04/04" st="0"/>
-    <Record f14="104" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.28.23" f0="10" f2="1,11" f16="AAA" f8="ÐETTA ER A SÝNISHORN" f4="Þetta er sýnishorn" f15="Íslenska" f1="56789012" f3="5678,9012" f17="54" f5="08/08/2008" f6="08/08/2008" f12="08.00.00" f7="2008/08/08" f18="4" f26="5" f25="5" f27="6" f32="1" f28="5" f29="5" f30="5" f31="2005/05/05" st="0"/>
-    <Record f19="6" f23="6" f24="6" f14="105" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.30.54" f0="20" f2="2,22" f16="BBB" f8="Πρόκειται για ένα κείμενο ΔΕΙΓΜΑ" f4="Αυτό είναι ένα δείγμα κειμένου" f15="Ελληνικά" f1="78901234" f3="7890,1234" f17="55" f5="06/06/2006" f6="06/06/2006" f12="06.00.00" f7="2006/06/06" f18="0" f20="10" f21="1,11" f26="5" f25="5" f27="6" f32="2" f28="6" f29="6" f30="6" f31="2006/06/06" st="0"/>
-    <Record f19="7" f23="7" f24="7" f14="106" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.31.38" f0="30" f2="3,33" f16="CCC" f8="สำหรับไฟล์" f4="นี้คือข้อความตัวอย่าง" f15="ภาษาไทย" f1="89012345" f3="8901,2345" f17="56" f5="05/05/2005" f6="05/05/2005" f12="05.00.00" f7="2005/05/05" f18="2" f20="99" f21="9,99" f26="7" f25="7" f27="8" f32="1" f28="7" f29="7" f30="7" f31="2007/07/07" st="0"/>
-    <Record f19="8" f23="8" f24="8" f14="107" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.32.56" f0="99" f2="9,99" f16="ZZZ" f8="Это пример ТЕКСТ" f4="Это образец текста" f15="Русский" f1="90123456" f3="9012,3456" f17="57" f5="04/04/2004" f6="04/04/2004" f12="04.00.00" f7="2004/04/04" f18="0" f26="6" f25="6" f27="7" f32="1" f28="8" f29="8" f30="8" f31="2008/08/08" st="0"/>
-    <Record f19="9" f23="9" f24="9" f14="108" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.33.50" f0="10" f2="1,11" f16="AAA" f8="Đây là một văn bản mẫu" f4="Đây là một văn bản mẫu" f15="Việt" f1="1234567" f3="123,4567" f17="58" f5="03/03/2003" f6="03/03/2003" f12="03.00.00" f7="2003/03/03" f18="0" f20="10" f26="8" f25="9" f27="9" f32="4" f28="9" f29="9" f30="9" f31="2009/09/09" st="0"/>
-    <Record f19="10" f14="109" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.35.31" f0="10" f2="1,11" f16="CCC" f8="ÉCHANTILLON DE TEXTE" f4="échantillon de texte" f15="Français" f1="42" f3="42" f17="59" f5="02/02/2002" f6="02/02/2002" f12="02.00.00" f7="2002/02/02" f18="3" f21="8,88" f26="1" f25="7" f27="2" f32="3" f28="25" f29="4" f30="11" f31="2011/04/25" st="0"/>
-    <Record f19="11" f23="11" f24="11" f14="110" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.36.56" f0="99" f2="9,99" f16="ZZZ" f8="EJEMPLO DE UN TEXTO" f4="ejemplo de un texto" f15="Español" f1="1866" f3="25,02" f17="120" f5="01/01/2001" f6="01/01/2001" f12="01.00.00" f7="2001/01/01" f18="0" f26="9" f25="4" f27="10" f32="2" f28="22" f29="3" f30="3" f31="2003/03/22" st="0"/>
-    <Record f19="12" f23="12" f24="12" f14="111" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.37.54" f0="99" f2="9,99" f16="ZZZ" f8="דאָס איז אַ מוסטער טעקסט" f4="דאס איז אַ מוסטער טעקסט" f15="ייִדיש" f1="8448" f3="84,48" f17="250" f5="13/01/2011" f6="01/13/2011" f12="23.59.59" f7="2011/01/13" f18="4" f20="99" f21="8,88" f26="2" f25="4" f27="3" f32="1" f28="13" f29="12" f30="2012" f31="2012/12/13" st="0"/>
+    <Record>f19="1" f23="1234" f24="1" f14="100" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05"
+     f13="14.22.55" f0="10" f2="1,11" f16="AAA" f8="THIS IS A SAMPLE TEXT"
+     f4="This is a sample text" f15="English" f1="12345678" f3="1234,5678" f17="50" f5="12/09/2010"
+     f6="12/09/2010" f12="12.00.00" f7="1912/09/10" f18="0" f20="10" f21="1,11" f26="5" f25="2"
+     f27="6" f32="1" f28="1" f29="1" f30="11" f31="2011/01/01" st="0"</Record>
+    <Record>f19="2" f23="2" f24="2" f14="101" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05"
+     f13="14.25.36" f0="20" f2="2,22" f16="CCC" f8="DETTE ER EN PRØVE TEKST"
+     f4="Dette er en prøve tekst" f15="Dansk" f1="23456789" f3="2345,6789" f17="51" f5="11/09/2011"
+     f6="11/09/2011" f12="11.00.00" f7="2011/09/11" f18="1" f21="9,99" f26="10" f25="3" f27="11"
+     f32="3" f28="2" f29="2" f30="20" f31="1920/02/02" st="0"</Record>
+    <Record>f19="3" f23="3" f24="3" f14="102" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05"
+     f13="14.26.38" f0="30" f2="3,33" f16="CCC" f8="هذا هو نص عينة" f4="هذا هو نص عينة"
+     f15="العربية" f1="34567890" f3="3456,789" f17="52" f5="10/09/2010" f6="10/09/2010"
+     f12="10.00.00" f7="2010/09/10" f18="2" f20="99" f21="9,99" f26="1" f25="3" f27="2" f32="0"
+     f28="3" f29="3" f30="3" f31="2003/03/03" st="0"</Record> 
+    <Record>f14="104" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05" f13="14.28.23" f0="10"
+     f2="1,11" f16="AAA" f8="ÐETTA ER A SÝNISHORN" f4="Þetta er sýnishorn" f15="Íslenska"
+     f1="56789012" f3="5678,9012" f17="54" f5="08/08/2008" f6="08/08/2008" f12="08.00.00"
+     f7="2008/08/08" f18="4" f26="5" f25="5" f27="6" f32="1" f28="5" f29="5" f30="5"
+     f31="2005/05/05" st="0"</Record>
+    <Record>f19="6" f23="6" f24="6" f14="105" f9="05/01/2011" f10="01/05/2011" f11="2011/01/05"
+     f13="14.30.54" f0="20" f2="2,22" f16="BBB" f8="Πρόκειται για ένα κείμενο ΔΕΙΓΜΑ"
+     f4="Αυτό είναι ένα δείγμα κειμένου" f15="Ελληνικά" f1="78901234" f3="7890,1234" f17="55"
+     f5="06/06/2006" f6="06/06/2006" f12="06.00.00" f7="2006/06/06" f18="0" f20="10" f21="1,11"
+     f26="5" f25="5" f27="6" f32="2" f28="6" f29="6" f30="6" f31="2006/06/06" st="0"</Record> 
    </Records>
    <Sections>
     <Section id="section_id_main">
@@ -172,13 +182,15 @@ Jens M. Lauritsen</Author>
        <Name>Mh2</Name>
        <Top>38</Top>
        <Left>25</Left>
-       <Caption xml:lang="en">This sample file was created with EpiData Manager. (see http://www.epidata.dk)</Caption>
+       <Caption xml:lang="en">This sample file was created with EpiData Manager. (see
+        http://www.epidata.dk)</Caption>
       </Heading>
       <Heading id="heading_id_2">
        <Name>Mh3</Name>
        <Top>57</Top>
        <Left>25</Left>
-       <Caption xml:lang="en">Random data contained - only for testing and demonstration. See all sections.</Caption>
+       <Caption xml:lang="en">Random data contained - only for testing and demonstration. See all
+        sections.</Caption>
       </Heading>
       <Heading id="heading_id_3">
        <Name>Mh1</Name>
@@ -196,7 +208,8 @@ Jens M. Lauritsen</Author>
        <Name>Mh4</Name>
        <Top>77</Top>
        <Left>25</Left>
-       <Caption xml:lang="en">Notice the different national characters used in the string field section</Caption>
+       <Caption xml:lang="en">Notice the different national characters used in the string field
+        section</Caption>
       </Heading>
      </Headings>
     </Section>
@@ -222,11 +235,11 @@ Jens M. Lauritsen</Author>
        <Name>A2</Name>
        <Top>35</Top>
        <Left>221</Left>
-       <AutoUpdateMode>0</AutoUpdateMode>
        <Type>7</Type>
        <Length>10</Length>
        <Decimals>0</Decimals>
        <EntryMode>0</EntryMode>
+       <AutoUpdateMode>0</AutoUpdateMode>
        <Question xml:lang="en">Date Field Auto (dmy)</Question>
       </Field>
       <Field id="f10">
@@ -608,9 +621,8 @@ Jens M. Lauritsen</Author>
        <Decimals>0</Decimals>
        <EntryMode>0</EntryMode>
        <Question xml:lang="en">Notes field</Question>
-       <Notes xml:lang="en">This field has notes attached.
-
-Use this to write helpfull comment for persons entering data in EpiData EntryClient.</Notes>
+       <Notes xml:lang="en">This field has notes attached. Use this to write helpfull comment for
+        persons entering data in EpiData EntryClient.</Notes>
       </Field>
      </Fields>
      <Headings>

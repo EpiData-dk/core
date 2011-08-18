@@ -230,10 +230,10 @@ type
     function  GetName: string; virtual;
     procedure SetName(const AValue: string); virtual;
     function  DoValidateRename(Const NewName: string): boolean; virtual;
+    function  SaveAttributesToXml: string; override;
+    procedure  LoadFromXml(Root: TDOMNode); override;
   public
     destructor Destroy; override;
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
     function   ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean;
     property   Name: string read GetName write SetName;
   end;
@@ -245,7 +245,7 @@ type
     FLeft: integer;
     FTop: integer;
   protected
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
+    function   SaveAttributesToXml: string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
@@ -345,9 +345,6 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  {$IFDEF EPICORETIMING}
-  LCLIntf, LCLProc,
-  {$ENDIF}
   StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument, epidatafiles;
 
 var
@@ -1138,9 +1135,9 @@ end;
 
 function TEpiCustomItem.SaveAttributesToXml: string;
 begin
-  // No inheritance since ancestor return '' (empty string).
+  Result := inherited SaveAttributesToXml;
   if Id <> '' then
-    Result := ' id="' + Id + '"';
+    Result += SaveAttr(rsId, Id);
 end;
 
 destructor TEpiCustomItem.Destroy;
@@ -1154,7 +1151,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, rsId, false) then
-    Id := UTF8Encode(Attr.Value);
+    Id := LoadAttrString(Root, rsId);
 end;
 
 { TEpiCustomNamedItem }
@@ -1185,23 +1182,22 @@ begin
     result := result and (TEpiCustomNamedItemList(Owner).ValidateRename(NewName));
 end;
 
+function TEpiCustomNamedItem.SaveAttributesToXml: string;
+begin
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsName, Name);
+end;
+
 destructor TEpiCustomNamedItem.Destroy;
 begin
   inherited Destroy;
 end;
 
-function TEpiCustomNamedItem.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Content :=
-    SaveNode(Lvl + 1, rsName, Name) +
-    Content;
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
 procedure TEpiCustomNamedItem.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
-  Name := LoadNodeString(Root, rsName);
+  Name := LoadAttrString(Root, rsName);
 end;
 
 function TEpiCustomNamedItem.ValidateRename(const NewName: string;
@@ -1215,21 +1211,19 @@ end;
 
 { TEpiCustomControlItem }
 
-function TEpiCustomControlItem.SaveToXml(Content: String; Lvl: integer
-  ): string;
+function TEpiCustomControlItem.SaveAttributesToXml: string;
 begin
-  Content :=
-    SaveNode(Lvl + 1, rsTop, Top) +
-    SaveNode(Lvl + 1, rsLeft, Left) +
-    Content;
-  Result := inherited SaveToXml(Content, Lvl);
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsTop, Top) +
+    SaveAttr(rsLeft, Left);
 end;
 
 procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
-  Top := LoadNodeInt(Root, rsTop);
-  Left := LoadNodeInt(Root, rsLeft);
+  Top := LoadAttrInt(Root, rsTop);
+  Left := LoadAttrInt(Root, rsLeft);
 end;
 
 procedure TEpiCustomControlItem.SetLeft(const AValue: Integer);

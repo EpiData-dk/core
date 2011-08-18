@@ -218,6 +218,7 @@ var
   Fc: LongInt;
   CurRec: Integer;
   CurField: Integer;
+  S: String;
 begin
   Result :=
     Indent(Lvl) + '<' + rsRecords + '>' + LineEnding;
@@ -228,21 +229,24 @@ begin
   for CurRec := 0 to Sz - 1 do
   begin
     Result += Indent(Lvl + 1) + '<' + rsRecord;
-
-    for CurField := 0 to Fc - 1 do
-    with Fields[CurField] do
-      if not IsMissing[CurRec] then
-        if FieldType in StringFieldTypes then
-          Result += ' ' + Id + '="' + StringToXml(AsString[CurRec]) + '"'
-        else
-          Result += ' ' + Id + '="' + AsString[CurRec] + '"';
     if Verified[CurRec] then
       Result += ' st="2"'
     else if Deleted[CurRec] then
       Result += ' st="1"'
     else
       Result += ' st="0"';
-    Result += '/>' + LineEnding;
+    Result += '>';
+
+    S := '';
+    for CurField := 0 to Fc - 1 do
+    with Fields[CurField] do
+      if not IsMissing[CurRec] then
+        if FieldType in StringFieldTypes then
+          S += ',' + Id + '="' + StringToXml(AsString[CurRec]) + '"'
+        else
+          S += ',' + Id + '="' + AsString[CurRec] + '"';
+    Delete(S, 1, 1);
+    Result += S + '</' + rsRecord + '>' + LineEnding;
   end;
   RestoreFormatSettings;
 
@@ -263,6 +267,7 @@ var
   {$ENDIF EPIHASH}
   NN: WideString;
   Collision: Boolean;
+  DataList: TStringList;
 
   {$IFDEF EPIHASH}
   function NextPrime(const AValue: integer): cardinal;
@@ -366,7 +371,7 @@ begin
     for i := 0 to Fc -1 do
     begin
       Val := (Hash(Fields[i].Id) mod P);
-      // Collision detection (with Fc^2 size, the collision probability is < 0.00001)
+      // Collision detection (with Fc^2 size)
       if Assigned(FieldList[val]) then
       begin
         // Collision detection!!! Try new Prime number.
@@ -381,12 +386,32 @@ begin
   end;
 {$ENDIF EPIHASH}
 
+  DataList := TStringList.Create;
+
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
   begin
     CheckNode(Node, rsRecord);
 
+    case LoadAttrInt(Node, 'st') of
+      0: ; // Do nothing
+      1: Deleted[CurRec] := true;
+      2: Verified[CurRec] := true;
+    end;
+
+    DataList.CommaText := UTF8Encode(Node.TextContent);
+    for i := 0 to DataList.Count - 1 do
+    begin
+      NN := DataList.Names[i];
+      {$IFDEF EPIHASH}
+      TmpField := FieldList[Hash(NN) mod P];
+      {$ELSE}
+      TmpField := TEpiField(Fields.GetItemById(NN));
+      {$ENDIF EPIHASH}
+      TmpField.AsString[CurRec] := DataList.ValueFromIndex[i];
+    end;
+{
     for i := 0 to Node.Attributes.Length - 1 do
     with Node.Attributes[i] do
     begin
@@ -405,7 +430,7 @@ begin
         {$ENDIF EPIHASH}
         TmpField.AsString[CurRec] := UTF8Encode(NodeValue);
       end;
-    end;
+    end;                       }
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
@@ -516,10 +541,17 @@ end;
 function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
-    SaveNode(Lvl + 1, rsVersion, Version) +
-    SaveNode(Lvl + 1, rsCreated, Created) +
+//    SaveNode(Lvl + 1, rsVersion, Version) +
+//    SaveNode(Lvl + 1, rsCreated, Created) +
     SaveRecords(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
+end;
+
+function TEpiDataFile.SaveAttributesToXml: string;
+begin
+  Result := inherited SaveAttributesToXml +
+    SaveAttr(rsVersion, Version) +
+    SaveAttr(rsCreated, Created);
 end;
 
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
@@ -538,8 +570,8 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
-  FVersion := LoadNodeString(Root, rsVersion);
-  FCreated := LoadNodeDateTime(Root, rsCreated);
+  FVersion := LoadAttrString(Root, rsVersion);
+  FCreated := LoadAttrDateTime(Root, rsCreated);
 
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);

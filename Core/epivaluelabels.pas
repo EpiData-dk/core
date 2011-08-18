@@ -199,12 +199,14 @@ end;
 procedure TEpiCustomValueLabel.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMElement;
+  Attr: TDOMAttr;
 begin
   // Root = <ValueLabel>
   Node := TDOMElement(Root);
 
-  Order    := StrToIntDef(Node.AttribStrings['order'], -1);
-  IsMissingValue := WideUpperCase(Node.AttribStrings['missing']) = 'TRUE';
+  Order    := LoadAttrInt(Root, rsOrder);
+  if LoadAttr(Attr, Root, rsMissing, false) then
+    IsMissingValue := LoadAttrBool(Root, rsMissing);
   TheLabel.LoadFromXml(Root);
 end;
 
@@ -230,7 +232,7 @@ end;
 procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
-  Value := StrToInt(TDOMElement(Root).AttribStrings['value']);
+  Value := LoadAttrInt(Root, rsValue);
 end;
 
 procedure TEpiIntValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -253,7 +255,7 @@ begin
   inherited LoadFromXml(Root);
 
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  Value := StrToFloat(TDOMElement(Root).AttribStrings['value']);
+  Value := LoadAttrFloat(Root, rsValue);
   RestoreFormatSettings;
 end;
 
@@ -275,7 +277,7 @@ end;
 procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
-  Value := UTF8Encode(TDOMElement(Root).AttribStrings['value']);
+  Value := LoadAttrString(Root, rsValue);
 end;
 
 procedure TEpiStringValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -442,8 +444,8 @@ function TEpiValueLabelSet.SaveInternal(Lvl: integer): string;
 var
   S: String;
 begin
-  S := SaveNode(Lvl + 2, rsType, Integer(LabelType)) +
-       SaveNode(Lvl + 2, rsName, Name);
+//  S := SaveNode(Lvl + 2, rsType, Integer(LabelType)) +
+//       SaveNode(Lvl + 2, rsName, Name);
   Result := inherited SaveToXml(S, Lvl + 1);
 end;
 
@@ -531,7 +533,7 @@ begin
   inherited LoadFromXml(Root);
 
   // Root = <ValueLabel>
-  Name := LoadNodeString(Root, rsName);
+  Name := LoadAttrString(Root, rsName);
 
   if LoadNode(Node, Root, rsInternal, false) then
     LoadInternal(Node);
@@ -639,7 +641,7 @@ begin
   begin
     CheckNode(Node, rsValueLabelSet);
 
-    NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadNodeInt(Node, rsType)));
+    NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrInt(Node, rsType)));
     NValueLabelSet.LoadFromXml(Node);
 
     Node := Node.NextSibling;

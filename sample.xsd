@@ -196,43 +196,7 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  <xs:element name="Record">
-    <xs:complexType>
-      <xs:attribute name="f0" use="required" type="xs:integer"/>
-      <xs:attribute name="f1" use="required" type="xs:integer"/>
-      <xs:attribute name="f10" use="required"/>
-      <xs:attribute name="f11" use="required"/>
-      <xs:attribute name="f12" use="required" type="xs:NMTOKEN"/>
-      <xs:attribute name="f13" use="required" type="xs:NMTOKEN"/>
-      <xs:attribute name="f14" use="required" type="xs:integer"/>
-      <xs:attribute name="f15" use="required" type="xs:NCName"/>
-      <xs:attribute name="f16" use="required" type="xs:NCName"/>
-      <xs:attribute name="f17" use="required" type="xs:integer"/>
-      <xs:attribute name="f18" use="required" type="xs:integer"/>
-      <xs:attribute name="f19" type="xs:integer"/>
-      <xs:attribute name="f2" use="required"/>
-      <xs:attribute name="f20" type="xs:integer"/>
-      <xs:attribute name="f21"/>
-      <xs:attribute name="f23" type="xs:integer"/>
-      <xs:attribute name="f24" type="xs:integer"/>
-      <xs:attribute name="f25" use="required" type="xs:integer"/>
-      <xs:attribute name="f26" use="required" type="xs:integer"/>
-      <xs:attribute name="f27" use="required" type="xs:integer"/>
-      <xs:attribute name="f28" use="required" type="xs:integer"/>
-      <xs:attribute name="f29" use="required" type="xs:integer"/>
-      <xs:attribute name="f3" use="required"/>
-      <xs:attribute name="f30" use="required" type="xs:integer"/>
-      <xs:attribute name="f31" use="required"/>
-      <xs:attribute name="f32" use="required" type="xs:integer"/>
-      <xs:attribute name="f4" use="required"/>
-      <xs:attribute name="f5" use="required"/>
-      <xs:attribute name="f6" use="required"/>
-      <xs:attribute name="f7" use="required"/>
-      <xs:attribute name="f8" use="required"/>
-      <xs:attribute name="f9" use="required"/>
-      <xs:attribute name="st" use="required" type="xs:integer"/>
-    </xs:complexType>
-  </xs:element>
+  <xs:element name="Record" type="xs:string"/>  
   <xs:element name="Sections">
     <xs:complexType>
       <xs:sequence>

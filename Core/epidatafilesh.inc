@@ -63,12 +63,13 @@ type
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
+    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
     procedure   NewRecords(Const Count: Cardinal = 1);
-    procedure   Pack; // Removes records for deletion.
+    procedure   Pack; // Removes records marked for deletion.
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;

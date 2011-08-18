@@ -1,8 +1,8 @@
 const
   // Common constants in the XML tree.
   // - Generic
-  rsType = 'Type';
-  rsName = 'Name';
+  rsType = 'type';
+  rsName = 'name';
   rsText = 'Text';
   // - CustomItem
   rsId   = 'id';
@@ -66,6 +66,9 @@ const
      rsInternal        = 'Internal';
       rsValueLabel      = 'ValueLabel';
        rsLabel           = 'Label';
+       rsValue           = 'value';
+       rsOrder           = 'order';
+       rsMissing         = 'missing';
      rsExternal        = 'External';
       rsFile            = 'File';
       rsDataFileId      = 'DataFileId';
@@ -137,6 +140,6 @@ const
     rsRelates         = 'Relates';
      rsRelate          = 'Relate';
       rsFieldId         = 'FieldId';
-      rsValue           = 'Value';
+      rsRelateValue     = 'RelateValue';
       rsDestDataFileId  = 'DestDataFileId';
 
