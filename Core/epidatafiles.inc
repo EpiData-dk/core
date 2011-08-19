@@ -242,9 +242,9 @@ begin
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes then
-          S += ',' + Id + '="' + StringToXml(AsString[CurRec]) + '"'
+          S += ',"' + Id + '=' + StringToXml(StringReplace(AsString[CurRec], '"', '\"', [rfReplaceAll])) + '"'
         else
-          S += ',' + Id + '="' + AsString[CurRec] + '"';
+          S += ',"' + Id + '=' + AsString[CurRec] + '"';
     Delete(S, 1, 1);
     Result += S + '</' + rsRecord + '>' + LineEnding;
   end;
@@ -268,6 +268,7 @@ var
   NN: WideString;
   Collision: Boolean;
   DataList: TStringList;
+  FN: String;
 
   {$IFDEF EPIHASH}
   function NextPrime(const AValue: integer): cardinal;
@@ -353,6 +354,19 @@ var
   end;
   {$ENDIF EPIHASH}
 
+const
+  DummyString = #243#176#80#80;  // Unicode private area: http://www.utf8-chartable.de/unicode-utf8-table.pl?start=983040
+
+  function Dummyfy(Const S: string): string;
+  begin
+    result := StringReplace(S, '\"', DummyString, [rfReplaceAll]);
+  end;
+
+  function UnDummyfy(Const S: string): string;
+  begin
+    result := StringReplace(S, DummyString, '"', [rfReplaceAll]);
+  end;
+
 begin
   // Root = <Records>
 
@@ -400,16 +414,16 @@ begin
       2: Verified[CurRec] := true;
     end;
 
-    DataList.CommaText := UTF8Encode(Node.TextContent);
+    DataList.CommaText := Dummyfy(UTF8Encode(Node.TextContent));
     for i := 0 to DataList.Count - 1 do
     begin
-      NN := DataList.Names[i];
+      FN := DataList.Names[i];
       {$IFDEF EPIHASH}
-      TmpField := FieldList[Hash(NN) mod P];
+      TmpField := FieldList[Hash(FN) mod P];
       {$ELSE}
       TmpField := TEpiField(Fields.GetItemById(NN));
       {$ENDIF EPIHASH}
-      TmpField.AsString[CurRec] := DataList.ValueFromIndex[i];
+       TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
 {
     for i := 0 to Node.Attributes.Length - 1 do
