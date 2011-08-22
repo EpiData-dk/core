@@ -228,23 +228,23 @@ begin
   Fc := Fields.Count;
   for CurRec := 0 to Sz - 1 do
   begin
-    Result += Indent(Lvl + 1) + '<' + rsRecord;
+    Result += Indent(Lvl + 1) + '<' + rsRecord + ' ';
     if Verified[CurRec] then
-      Result += ' st="2"'
+      Result += rsRecordStatus + '="2"'
     else if Deleted[CurRec] then
-      Result += ' st="1"'
+      Result += rsRecordStatus + '="1"'
     else
-      Result += ' st="0"';
+      Result += rsRecordStatus + '="0"';
     Result += '>';
 
     S := '';
     for CurField := 0 to Fc - 1 do
     with Fields[CurField] do
       if not IsMissing[CurRec] then
-        if FieldType in StringFieldTypes then
-          S += ',"' + Id + '=' + StringToXml(StringReplace(AsString[CurRec], '"', '\"', [rfReplaceAll])) + '"'
+        if FieldType in StringFieldTypes + FloatFieldTypes then
+          S += ',' + Id + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll]))
         else
-          S += ',"' + Id + '=' + AsString[CurRec] + '"';
+          S += ',' + Id + '=' + AsString[CurRec];
     Delete(S, 1, 1);
     Result += S + '</' + rsRecord + '>' + LineEnding;
   end;
@@ -359,12 +359,12 @@ const
 
   function Dummyfy(Const S: string): string;
   begin
-    result := StringReplace(S, '\"', DummyString, [rfReplaceAll]);
+    result := StringReplace(S, '\,', DummyString, [rfReplaceAll]);
   end;
 
   function UnDummyfy(Const S: string): string;
   begin
-    result := StringReplace(S, DummyString, '"', [rfReplaceAll]);
+    result := StringReplace(S, DummyString, DecimalSeparator, [rfReplaceAll]);
   end;
 
 begin
@@ -408,7 +408,7 @@ begin
   begin
     CheckNode(Node, rsRecord);
 
-    case LoadAttrInt(Node, 'st') of
+    case LoadAttrInt(Node, rsRecordStatus) of
       0: ; // Do nothing
       1: Deleted[CurRec] := true;
       2: Verified[CurRec] := true;
@@ -555,17 +555,15 @@ end;
 function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
-//    SaveNode(Lvl + 1, rsVersion, Version) +
-//    SaveNode(Lvl + 1, rsCreated, Created) +
-    SaveRecords(Lvl + 1);
+    SaveRecords(Lvl + 1) +
+    SaveNode(Lvl + 1, rsVersion, Version);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
 function TEpiDataFile.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
-    SaveAttr(rsVersion, Version) +
-    SaveAttr(rsCreated, Created);
+    SaveAttr(rsCreatedAttr, Created);
 end;
 
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
@@ -584,8 +582,8 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
-  FVersion := LoadAttrString(Root, rsVersion);
-  FCreated := LoadAttrDateTime(Root, rsCreated);
+  FVersion := LoadNodeString(Root, rsVersion);
+  FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
 
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);

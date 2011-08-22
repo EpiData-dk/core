@@ -28,7 +28,8 @@ type
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
   protected
-    procedure SetModified(const AValue: Boolean); override;
+    procedure  SetModified(const AValue: Boolean); override;
+    function   SaveAttributesToXml: string; override;
   public
     constructor Create(Const LangCode: string);
     destructor Destroy; override;
@@ -68,9 +69,13 @@ end;
 procedure TEpiDocument.SetModified(const AValue: Boolean);
 begin
   inherited SetModified(AValue);
-//  State;
-//  if Assigned(Study) then
-//    Study.ModifiedDate := now;
+end;
+
+function TEpiDocument.SaveAttributesToXml: string;
+begin
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsVersionAttr, XMLSettings.Version);
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -139,7 +144,10 @@ begin
   // Root = <EpiData>
   FLoading := true;
 
-  // First read XMLSettings!
+  // First read version no!
+  XMLSettings.Version := LoadAttrInt(Root, rsVersionAttr);
+
+  // Second read XMLSettings!
   // - we need to catch if this is a scrambled file and other important XMLSettings
   // - such as version of the file, formatsettings, etc...
   LoadNode(Node, Root, rsSettings, true);

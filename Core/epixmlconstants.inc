@@ -3,18 +3,21 @@ const
   // - Generic
   rsType = 'type';
   rsName = 'name';
-  rsText = 'Text';
+  rsCaption     = 'Caption';
+  rsText        = 'Text';
+  rsVersionAttr = 'version';
+  rsCreatedAttr = 'created';
+
   // - CustomItem
   rsId   = 'id';
   // - CustomControlItem
-  rsTop  = 'Top';
-  rsLeft = 'Left';
+  rsTop  = 'top';
+  rsLeft = 'left';
 
   // XML Tree structure.
   rsEpiData         = 'EpiData';
    // Settings
    rsSettings        = 'Settings';
-    rsVersion         = 'Version';
     rsScrambled       = 'Scrambled';
     rsDateSep         = 'DateSeparator';
     rsTimeSep         = 'TimeSeparator';
@@ -40,7 +43,7 @@ const
       rsExpireDate      = 'ExpireDate';
       rsGroupId         = 'GroupId';
 
-      // Group
+    // Group
     rsGroups          = 'Groups';
      rsGroup           = 'Group';
       rsRights          = 'Rights';
@@ -60,6 +63,7 @@ const
     rsPurpose         = 'Purpose';
     rsTimeCoverage    = 'TimeCoverage';
     rsTitle           = 'Title';
+    rsVersion         = 'Version';
 
    rsValueLabelSets  = 'ValueLabelSets';
     rsValueLabelSet   = 'ValueLabelSet';
@@ -77,61 +81,59 @@ const
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
-     rsScreenInfo      = 'ScreenInfo';
      rsSections        = 'Sections';
       rsSection         = 'Section';
-       rsWidth           = 'Width';
-       rsHeight          = 'Height';
-       rsGroupIdList     = 'GroupIdList';
+       rsWidth           = 'width';
+       rsHeight          = 'height';
        rsHeadings        = 'Headings';
         rsHeading         = 'Heading';
-         rsCaption         = 'Caption';
        rsFields          = 'Fields';
         rsField           = 'Field';
-         rsLength          = 'Length';
-         rsDecimals        = 'Decimals';
+         rsLength          = 'length';
+         rsDecimals        = 'decimals';
+         rsEntryMode       = 'entrymode';
+         rsConfirmEntry    = 'confirmentry';
+         rsValueLabelId    = 'valuelabelref';
+         rsValueLabelWriteRef = 'valuelabelwriteref';
+         rsShowValueLabel  = 'showvaluelabel';
+         rsForcePickList   = 'forcepicklist';
+         rsRepeatValue     = 'repeat';
+         rsDefaultValue    = 'defaultvalue';
+         rsAutoUpdateMode  = 'autoupdatemode';
          rsQuestion        = 'Question';
          rsNotes           = 'Notes';
-         rsValueLabelId    = 'ValueLabelId';
-         rsValueLabelWriteRef = 'ValueLabelWriteRef';
          rsRanges           = 'Ranges';
           rsRange            = 'Range';
            rsStart            = 'start';
            rsEnd              = 'end';
-         rsJumps            = 'Jumps';
-          rsJump             = 'Jump';
-           rsJumpOn           = 'on';
-           rsJumpType         = 'type';
-           rsJumpTo           = 'to';
-           rsJumpReset        = 'reset';
-         rsEntryMode        = 'EntryMode';
-         rsConfirmEntry     = 'ConfirmEntry';
-         rsShowValueLabel   = 'ShowValueLabel';
-         rsForcePickList    = 'ForcePickList';
-         rsRepeatValue      = 'Repeat';
-         rsDefaultValue     = 'DefaultValue';
-         rsAutoUpdateMode   = 'AutoUpdateMode';
-         rsCalculation      = 'Calculation';
-          rsResultField      = 'ResultField';
-          rsTimeCalcType     = 'TimeCalcType';
-          rsStartDate        = 'StartDate';
-          rsStartTime        = 'StartTime';
-          rsEndDate          = 'EndDate';
-          rsEndTime          = 'EndTime';
-          rsDayField         = 'DayField';
-          rsMonthField       = 'MonthField';
-          rsYearField        = 'YearField';
-          rsField1           = 'Field1';
-          rsField2           = 'Field2';
-          rsField3           = 'Field3';
-          rsDelim1           = 'Delimiter1';
-          rsDelim2           = 'Delimiter2';
-         rsCompare          = 'Compare';
-          rsCompareTo        = 'to';
-          rsCompareType      = 'type';
+         rsJumps           = 'Jumps';
+          rsJump            = 'Jump';
+           rsJumpOn          = 'on';
+           rsJumpType        = 'type';
+           rsJumpTo          = 'to';
+           rsJumpReset       = 'reset';
+         rsCalculation     = 'Calculation';
+          rsResultField     = 'ResultField';
+          rsTimeCalcType    = 'TimeCalcType';
+          rsStartDate       = 'StartDate';
+          rsStartTime       = 'StartTime';
+          rsEndDate         = 'EndDate';
+          rsEndTime         = 'EndTime';
+          rsDayField        = 'DayField';
+          rsMonthField      = 'MonthField';
+          rsYearField       = 'YearField';
+          rsField1          = 'Field1';
+          rsField2          = 'Field2';
+          rsField3          = 'Field3';
+          rsDelim1          = 'Delimiter1';
+          rsDelim2          = 'Delimiter2';
+         rsCompare         = 'Compare';
+          rsCompareTo       = 'to';
+          rsCompareType     = 'type';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';
+       rsRecordStatus    = 'st';
 
    rsRelations       = 'Relations';
     rsPrimaryKeys     = 'PrimaryKeys';

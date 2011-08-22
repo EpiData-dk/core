@@ -434,26 +434,6 @@ end;
 
 function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
-{  Content +=
-    SaveNode(Lvl + 1, rsType, Integer(FieldType)) +
-    SaveNode(Lvl + 1, rsLength, Length) +
-    SaveNode(Lvl + 1, rsDecimals, Decimals) +
-    SaveNode(Lvl + 1, rsEntryMode, Integer(EntryMode));
-  if ConfirmEntry then
-    Content += SaveNode(Lvl + 1, rsConfirmEntry, ConfirmEntry);
-  if RepeatValue then
-    Content += SaveNode(Lvl + 1, rsRepeatValue, RepeatValue);
-  if ShowValueLabel then
-    Content += SaveNode(Lvl + 1, rsShowValueLabel, ShowValueLabel);
-  if ForcePickList then
-    Content += SaveNode(Lvl + 1, rsForcePickList, ForcePickList);
-  if HasDefaultValue then
-    Content += SaveNode(Lvl + 1, rsDefaultValue, DefaultValueAsString);
-  if Assigned(ValueLabelSet) then
-    Content += SaveNode(Lvl + 1, rsValueLabelId, ValueLabelSet.Id);
-  if Assigned(ValueLabelWriteField) then
-    Content += SaveNode(Lvl + 1, rsValueLabelWriteRef, ValueLabelWriteField.Id);   }
-
   if Assigned(Ranges) then
     Content += Ranges.SaveToXml('', Lvl + 1);
   if Assigned(Jumps) then
@@ -1532,17 +1512,19 @@ begin
   FAutoMode := AValue;
 end;
 
-function TEpiCustomAutoField.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiCustomAutoField.SaveAttributesToXml: string;
 begin
   if FieldType in AutoUpdateFieldTypes then
-    Content += SaveNode(Lvl + 1, rsAutoUpdateMode, Integer(AutoMode));
-  Result := inherited SaveToXml(Content, Lvl);
+    Result := SaveAttr(rsAutoUpdateMode, Integer(AutoMode));
+  Result :=
+    inherited SaveAttributesToXml +
+    Result;
 end;
 
 procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode);
 begin
   if FieldType in AutoUpdateFieldTypes then
-    AutoMode := TEpiAutoUpdateMode(LoadNodeInt(Root, rsAutoUpdateMode));
+    AutoMode := TEpiAutoUpdateMode(LoadAttrInt(Root, rsAutoUpdateMode));
   inherited LoadFromXml(Root);
 end;
 

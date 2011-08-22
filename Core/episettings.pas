@@ -180,7 +180,6 @@ end;
 function TEpiXMLSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Result :=
-    SaveNode(Lvl + 1, rsVersion,    Version) +
     SaveNode(Lvl + 1, rsScrambled,  Scrambled) +
     SaveNode(Lvl + 1, rsDateSep,    DateSeparator) +
     SaveNode(Lvl + 1, rsTimeSep,    TimeSeparator) +
@@ -194,9 +193,6 @@ var
   Node: TDOMNode;
 begin
   // Root = <Settings>
-
-  // Version: so far we only got ver. 0
-  Version          := LoadNodeInt(Root, rsVersion);
   Scrambled        := LoadNodeBool(Root, rsScrambled);
   DateSeparator    := LoadNodeString(Root, rsDateSep)[1];
   TimeSeparator    := LoadNodeString(Root, rsTimeSep)[1];

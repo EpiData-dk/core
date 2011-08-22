@@ -360,8 +360,9 @@ type
   private
     FAutoMode: TEpiAutoUpdateMode;
     procedure SetAutoMode(const AValue: TEpiAutoUpdateMode);
+  protected
+    function  SaveAttributesToXml: string; override;
   public
-    function SaveToXml(Content: String; Lvl: integer): string; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     property AutoMode: TEpiAutoUpdateMode read FAutoMode write SetAutoMode;
   end;

@@ -648,7 +648,12 @@ var
   Attr: TDOMAttr;
 begin
   LoadAttr(Attr, Root, AttrName, true);
+//  LoadNode(Node, Root, NodeName, true);
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Result := StrToDateTime(Attr.Value);
+//  result := StrToDateTime(Node.TextContent);
+  RestoreFormatSettings;
 end;
 
 function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode;
@@ -723,7 +728,15 @@ end;
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
   ): string;
 begin
-  result := SaveAttr(AttrName, DateToStr(Val));
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    result := SaveAttr(AttrName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
+    RestoreFormatSettings;
+  end else
+    result := SaveAttr(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
+//  result := SaveAttr(AttrName, DateToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: boolean
