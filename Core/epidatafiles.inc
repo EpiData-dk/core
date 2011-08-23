@@ -220,17 +220,19 @@ var
   CurField: Integer;
   S: String;
 
+  {$IFNDEF EPIOLDSAVE}
   Lst: TStringList;
+  R: String;
+  {$ENDIF}
   {$IFDEF EPICORETIMING}
   T: TDateTime;
-  R: String;
   {$ENDIF}
 begin
   {$IFDEF EPICORETIMING}
   T := Now;
   {$ENDIF}
 
-  {$IFDEF EPINEWSAVE}
+  {$IFNDEF EPIOLDSAVE}
   Lst := TStringList.Create;
   Lst.Add(Indent(Lvl) + '<' + rsRecords + '>');
   {$ELSE}
@@ -240,7 +242,7 @@ begin
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
-  {$IFDEF EPINEWSAVE}
+  {$IFNDEF EPIOLDSAVE}
   for CurRec := 0 to Sz - 1 do
   begin
     R := Indent(Lvl + 1) + '<' + rsRecord + ' ';
@@ -288,7 +290,7 @@ begin
   {$ENDIF}
   RestoreFormatSettings;
 
-  {$IFDEF EPINEWSAVE}
+  {$IFNDEF EPIOLDSAVE}
   Lst.Add( Indent(Lvl) + '</' + rsRecords + '>' + LineEnding );
   Result := Lst.Text;
   Lst.Free;

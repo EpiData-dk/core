@@ -25,12 +25,10 @@
         <CompilerMessages>
           <UseMsgFile Value="True"/>
         </CompilerMessages>
-        <CustomOptions Value="-dEPICORETIMING
--dEPINEWSAVE"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Minor="7"/>
+    <Version Minor="8"/>
     <Files Count="43">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
