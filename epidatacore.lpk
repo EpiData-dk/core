@@ -15,11 +15,6 @@
           <AllowLabel Value="False"/>
         </SyntaxOptions>
       </Parsing>
-      <CodeGeneration>
-        <Optimizations>
-          <OptimizationLevel Value="0"/>
-        </Optimizations>
-      </CodeGeneration>
       <Linking>
         <Debugging>
           <GenerateDebugInfo Value="True"/>
@@ -30,6 +25,8 @@
         <CompilerMessages>
           <UseMsgFile Value="True"/>
         </CompilerMessages>
+        <CustomOptions Value="-dEPICORETIMING
+-dEPINEWSAVE"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>

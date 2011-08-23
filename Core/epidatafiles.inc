@@ -219,13 +219,50 @@ var
   CurRec: Integer;
   CurField: Integer;
   S: String;
+
+  Lst: TStringList;
+  {$IFDEF EPICORETIMING}
+  T: TDateTime;
+  R: String;
+  {$ENDIF}
 begin
-  Result :=
-    Indent(Lvl) + '<' + rsRecords + '>' + LineEnding;
+  {$IFDEF EPICORETIMING}
+  T := Now;
+  {$ENDIF}
+
+  {$IFDEF EPINEWSAVE}
+  Lst := TStringList.Create;
+  Lst.Add(Indent(Lvl) + '<' + rsRecords + '>');
+  {$ELSE}
+  result := Indent(Lvl) + '<' + rsRecords + '>' + LineEnding;
+  {$ENDIF}
 
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
+  {$IFDEF EPINEWSAVE}
+  for CurRec := 0 to Sz - 1 do
+  begin
+    R := Indent(Lvl + 1) + '<' + rsRecord + ' ';
+    if Verified[CurRec] then
+      R += rsRecordStatus + '="2">'
+    else if Deleted[CurRec] then
+      R += rsRecordStatus + '="1">'
+    else
+      R += rsRecordStatus + '="0">';
+
+    S := '';
+    for CurField := 0 to Fc - 1 do
+    with Fields[CurField] do
+      if not IsMissing[CurRec] then
+        if FieldType in StringFieldTypes + FloatFieldTypes then
+          S += Id + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
+        else
+          S += Id + '=' + AsString[CurRec] + ',';
+    Delete(S, Length(S), 1);
+    Lst.Add(R + S + '</' + rsRecord + '>');
+  end;
+  {$ELSE}
   for CurRec := 0 to Sz - 1 do
   begin
     Result += Indent(Lvl + 1) + '<' + rsRecord + ' ';
@@ -248,10 +285,21 @@ begin
     Delete(S, 1, 1);
     Result += S + '</' + rsRecord + '>' + LineEnding;
   end;
+  {$ENDIF}
   RestoreFormatSettings;
 
-  Result +=
-    Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
+  {$IFDEF EPINEWSAVE}
+  Lst.Add( Indent(Lvl) + '</' + rsRecords + '>' + LineEnding );
+  Result := Lst.Text;
+  Lst.Free;
+  {$ELSE}
+  Result += Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
+  {$ENDIF}
+
+  {$IFDEF EPICORETIMING}
+  T := Now - T;
+  WriteLn('Save Records: ', FormatDateTime('NN:SS:ZZZZ', T));
+  {$ENDIF}
 end;
 
 {$DEFINE EPIHASH}

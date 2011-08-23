@@ -345,6 +345,9 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
+  {$IFDEF EPICORETIMING}
+  LCLIntf, LCLProc,
+  {$ENDIF}
   StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument, epidatafiles;
 
 var
@@ -759,13 +762,28 @@ function TEpiCustomBase.SaveToXml(Content: String; Lvl: integer): string;
 var
   i: Integer;
   S: String;
+  {$IFDEF EPICORETIMING}
+  St, St1, Diff: LongWord;
+  {$ENDIF}
 begin
+  {$IFDEF EPICORETIMING}
+  St := GetTickCount;
+  {$ENDIF}
   S := Content;
   for i := 0 to ClassList.Count - 1 do
+  {$IFDEF EPICORETIMING}
+  begin
+    St1 := GetTickCount;
+  {$ENDIF}
     S += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
+  {$IFDEF EPICORETIMING}
+    Diff := GetTickCount - St1;
+//    DebugLn('*%s(%s): time = %d', [Indent(lvl), TEpiCustomBase(ClassList[i]).ClassName, Diff]);
+  end;
+  {$ENDIF}
 
-  if ScrambleXml then
-    S := EnCrypt(S) + LineEnding;
+//  if ScrambleXml then
+    //S := EnCrypt(S) + LineEnding;
 
 
   if S <> '' then
@@ -776,6 +794,11 @@ begin
   else
     Result :=
       Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '/>' + LineEnding;
+
+  {$IFDEF EPICORETIMING}
+  Diff := GetTickCount - St;
+//  DebugLn('%s%s: time = %d', [Indent(lvl), ClassName, Diff]);
+  {$ENDIF}
 end;
 
 procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode);
