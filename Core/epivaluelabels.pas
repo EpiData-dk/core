@@ -253,10 +253,7 @@ end;
 procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
-
-  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Value := LoadAttrFloat(Root, rsValue);
-  RestoreFormatSettings;
 end;
 
 procedure TEpiFloatValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);

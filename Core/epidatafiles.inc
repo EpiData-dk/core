@@ -291,7 +291,7 @@ begin
   RestoreFormatSettings;
 
   {$IFNDEF EPIOLDSAVE}
-  Lst.Add( Indent(Lvl) + '</' + rsRecords + '>' + LineEnding );
+  Lst.Add(Indent(Lvl) + '</' + rsRecords + '>');
   Result := Lst.Text;
   Lst.Free;
   {$ELSE}
@@ -451,6 +451,9 @@ begin
 {$ENDIF EPIHASH}
 
   DataList := TStringList.Create;
+  DataList.Delimiter := ',';
+  DataList.QuoteChar := '"';
+  DataList.StrictDelimiter := true;
 
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
@@ -464,7 +467,7 @@ begin
       2: Verified[CurRec] := true;
     end;
 
-    DataList.CommaText := Dummyfy(UTF8Encode(Node.TextContent));
+    DataList.DelimitedText := Dummyfy(UTF8Encode(Node.TextContent));
     for i := 0 to DataList.Count - 1 do
     begin
       FN := DataList.Names[i];
@@ -475,26 +478,6 @@ begin
       {$ENDIF EPIHASH}
        TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
-{
-    for i := 0 to Node.Attributes.Length - 1 do
-    with Node.Attributes[i] do
-    begin
-      NN := NodeName;
-      if NN = 'st' then
-      begin
-        if NodeValue = '1' then
-          Deleted[CurRec] := true
-        else if NodeValue = '2' then
-          Verified[CurRec] := true;
-      end else begin
-        {$IFDEF EPIHASH}
-        TmpField := FieldList[Hash(NN) mod P];
-        {$ELSE}
-        TmpField := TEpiField(Fields.GetItemById(NN));
-        {$ENDIF EPIHASH}
-        TmpField.AsString[CurRec] := UTF8Encode(NodeValue);
-      end;
-    end;                       }
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
