@@ -5,7 +5,7 @@ unit epiexport;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles, epidatafilestypes;
+  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels;
 
 type
 
@@ -113,6 +113,7 @@ var
   FieldNames: TStrings;
   DataStream: TFileStream;
   FileVersion: Integer;
+  VLblSet: TEpiValueLabelSet;
 
 Const
   ByteConst   = #251;
@@ -137,11 +138,11 @@ Const
   end;
 
 
-  function UniqueValueLabelName(Str: string; Const Count: Integer): string;
+  function UniqueValueLabelName(Const Str: string; Const Count: Integer): string;
   var
     i, j: integer;
   begin
-    result := copy(Str, 1, Count-1);
+    result := copy(StringReplace(EpiUtf8ToAnsi(Str), ' ', '_', [rfReplaceAll]), 1, Count-1);
     i := 1;
     while UniqueValueLabels.Find(result, j) do
     begin
@@ -320,11 +321,7 @@ begin
     END;  //for - with
 
     // - lbllist: names af value label
-    SetLength(ByteBuf, 33*NVar);
-    FillByte(ByteBuf[0], 33*NVar, 0);
-    DataStream.Write(ByteBuf[0], 33*NVar);
-    // TODO : VALUELABELS
-{    WritenValueLabels := TStringList.Create();
+    WritenValueLabels := TStringList.Create();
     WritenValueLabels.Sorted := true;
     UniqueValueLabels := TStringList.Create();
     UniqueValueLabels.Sorted := true;
@@ -336,20 +333,18 @@ begin
       begin
         TmpStr := ValueLabelSet.Name;
         if WritenValueLabels.Find(TmpStr, j) then
-          TmpStr := ''
-        else
+          // ValuelabelSet already made unique and prepared for finale write.
+          TmpStr := UniqueValueLabels[j]
+        else begin
+          // ValuelabelSet not seen before...
           WritenValueLabels.Add(TmpStr);
-
-        // Only for interger fields.
-        if not (FieldType = ftInteger) then
-          TmpStr := '';
-
-        TmpStr := UniqueValueLabelName(TmpStr, FieldNameLength);
-        if TmpStr <> '' then
-          UniqueValueLabels.Add(TmpStr);
+          TmpStr := UniqueValueLabelName(TmpStr, FieldNameLength);
+          if TmpStr <> '' then
+            UniqueValueLabels.Add(TmpStr);
+        end;
       end;
-      WriteString(TmpStr, FieldNameLength);
-    end;}
+      WriteString(DataStream, TmpStr, FieldNameLength);
+    end;
 
     // ********************************
     //      STATA VARIABLE LABELS
@@ -508,10 +503,9 @@ begin
     END;  //try..Except
 
     {Write VALUE-LABELS}
-    // TODO : VALUELABELS
-(*    IF FileVersion = $69 THEN
+    IF FileVersion = $69 THEN
     BEGIN
-      //write value labels in Stata ver. 4/5 format
+{      //write value labels in Stata ver. 4/5 format
       FOR I := 0 TO WritenValueLabels.Count - 1 DO
       BEGIN
         {Fill out value label header}
@@ -526,13 +520,13 @@ begin
           WriteInts(0 {StrToInt(VLblSet.Values[j])}, 2);
           WriteString(''{VLblSet.Labels[j]}, 8);
         END;  //for j
-      END;
+      END;       }
     END ELSE BEGIN
       //write value labels in Stata ver. 6+ format
       SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
       FOR I := 0 TO WritenValueLabels.Count - 1 DO
       BEGIN
-        VLblSet := ValueLabels.ValueLabelSetByName(WritenValueLabels[i]);
+        VLblSet := ValueLabels.GetValueLabelSetByName(WritenValueLabels[i]);
         NObs := VLblSet.Count;
         SetLength(ByteBuf, 4 * NObs);   // Write Off[]
         SetLength(ValBuf,  4 * NObs);   // Write Val[]
@@ -543,10 +537,10 @@ begin
         begin
           Move(CurRec, ByteBuf[J * 4], 4);
           // TODO : ValueLabels in STATA
-          TmpInt := 0; //StrToInt(VLblSet.Values[J]);
+          TmpInt := TEpiIntValueLabel(VLblSet.ValueLabels[J]).Value;
           Move(TmpInt, ValBuf[J * 4], 4);
           // TODO : ValueLabels in STATA
-          TmpStr := ' '; //EpiUtf8ToAnsi(VLblSet.Labels[J]);
+          TmpStr := EpiUtf8ToAnsi(VLblSet.ValueLabels[J].TheLabel.Text);
           Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
           Inc(CurRec, Length(TmpStr) + 1);
         end;
@@ -557,24 +551,24 @@ begin
                   (4 * NObs) +          // val[]
                   CurRec;               // txt[]
 
-        WriteInts(TmpInt, 4);                                   // len
-        WriteString(UniqueValueLabels[I], FieldNameLength);     // labname
-        WriteInts(0, 3);                                        // padding...
+        WriteInt(DataStream, TmpInt);                                     // len
+        WriteString(DataStream, UniqueValueLabels[I], FieldNameLength);   // labname
+        DataStream.Write(#0#0#0, 3);                                      // padding...
 
         {Fill out value_label_table}
-        WriteInts(NObs, 4);                                     // n
-        WriteInts(CurRec, 4);                                   // txtlen
-        DataStream.Write(ByteBuf[0], 4 * NObs);                  // off[]
-        DataStream.Write(ValBuf[0], 4 * NObs);                   // val[]
-        DataStream.Write(CharBuf[0], CurRec);                    // txt[]
+        WriteInt(DataStream, NObs);                                       // n
+        WriteInt(DataStream, CurRec);                                     // txtlen
+        DataStream.Write(ByteBuf[0], 4 * NObs);                           // off[]
+        DataStream.Write(ValBuf[0], 4 * NObs);                            // val[]
+        DataStream.Write(CharBuf[0], CurRec);                             // txt[]
       END;  //write value labels in stata 6 version
-    END;  //for i*)
+    END;  //for i
 
     Result := true;
   finally
     if Assigned(DataStream) then FreeAndNil(DataStream);
-//    if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
-//    if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
+    if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
+    if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
   end;
 end;
 
