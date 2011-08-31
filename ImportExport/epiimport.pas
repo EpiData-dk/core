@@ -10,6 +10,9 @@ uses
 
 type
 
+  // Import exceptions
+  EIncorrectPasswordException = Exception;
+
   TEpiClipBoardReadHook = procedure (ClipBoardLine: TStrings) of object;
 
   { TEpiImport }
@@ -18,7 +21,7 @@ type
   private
     FOnClipBoardRead: TEpiClipBoardReadHook;
     FOnRequestPassword: TRequestPasswordEvent;
-    procedure   RaiseError(Const Msg: string);
+    procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
     procedure   ReadBuf(Const St: TStream; var Buf: Array of Byte; Count: Integer);
     function    ReadInts(Const St: TStream; Count: Integer): Integer;
     function    ReadSingle(Const St: TStream): Single;
@@ -49,9 +52,9 @@ var
 
 { TEpiImport }
 
-procedure TEpiImport.RaiseError(const Msg: string);
+procedure TEpiImport.RaiseError(EClass: ExceptClass; const Msg: string);
 begin
-  raise Exception.Create(Msg);
+  raise EClass.Create(Msg);
 end;
 
 procedure TEpiImport.ReadBuf(const St: TStream; var Buf: array of Byte;
@@ -223,10 +226,11 @@ const
 
 begin
   result := false;
+  DataStream := nil;
 
   if aFilename = '' then exit;
   if not FileExistsUTF8(aFilename) then
-    RaiseError('File does not exists');
+    RaiseError(EOSError, 'File does not exists');
 
   if not Assigned(DataFile) then
     DataFile := TEpiDataFile.Create(nil);
@@ -239,7 +243,7 @@ begin
     System.Reset(TxtFile);
     {$POP}
     if IOResult() > 0 then
-      RaiseError(Format('Data file %s could not be opened.',[AFilename]));
+      RaiseError(Exception, Format('Data file %s could not be opened.',[AFilename]));
     // --- Read "First Line" header ---
     ReadLn(TxtFile, TxtLine);
 
@@ -247,7 +251,7 @@ begin
     TempInt := Pos('~KQ:', AnsiUpperCase(TxtLine));
     if TempInt > 0 then
       if not RequestPassword(Copy(TxtLine, TempInt + 4, Pos(':KQ~', AnsiUpperCase(TxtLine)) - (TempInt + 4))) then
-        RaiseError('Incorrect Password');
+        RaiseError(EIncorrectPasswordException, 'Incorrect Password');
 
     // - FileLabel
     StrBuf := '';
@@ -260,7 +264,7 @@ begin
     if TempInt = -1 then TempInt := Length(TxtLine);
     Val(Copy(TxtLine, 1, TempInt), HeaderLineCount, ValCode);
     if ValCode > 0 then
-      RaiseError(Format('Incorrect format of file: %S', [aFilename]));
+      RaiseError(Exception, Format('Incorrect format of file: %S', [aFilename]));
 
     // Read field defining header lines.
     TotFieldLength := 0;
@@ -349,7 +353,6 @@ begin
     TotFieldLength := TotFieldLength + (((TotFieldLength - 1) DIV 78) + 1) * 3; { MaxRecLineLength = 78 }
     TmpLength := TextPos(TxtFile);
     CloseFile(TxtFile);
-    DataStream := nil;
 
     LocalDateSeparator := DateSeparator;
     DateSeparator := '/';  // This was standard in old .rec files.
@@ -579,7 +582,7 @@ begin
     //  Stata Version 12   = $73; // dta_115
     if not (FileVersion in [$69, $6C, $6E, $71, $72, $73]) then
     BEGIN
-      RaiseError('Unknown Stata Version');
+      RaiseError(Exception, 'Unknown Stata Version');
       Exit;
     END;
 
@@ -619,7 +622,7 @@ begin
     // byteorder: NumBuff[1]
     IF not (ByteBuf[1] in [1, 2]) THEN
     BEGIN
-      RaiseError('Unknown Stata Byte Order');
+      RaiseError(Exception, 'Unknown Stata Byte Order');
       Exit;
     END;
     if ByteBuf[1] = 1 then
@@ -628,7 +631,7 @@ begin
     // filetype: NumBuff[2] (always 1)   -  NumBuff[3] not used.
     IF ByteBuf[2]<>1 THEN
     BEGIN
-      RaiseError('Stata Error: NumBuf[2] MUST be "1"');
+      RaiseError(Exception, 'Stata Error: NumBuf[2] MUST be "1"');
       Exit;
     END;
 
@@ -689,7 +692,7 @@ begin
       BEGIN
         if (Ord(TypeList[i]) - StrBaseNum) < 0 then
         BEGIN
-          RaiseError('Unknown variable type found in Stata-file');
+          RaiseError(Exception, 'Unknown variable type found in Stata-file');
           Exit;
         END;
         TmpFieldType := ftString;
@@ -699,7 +702,7 @@ begin
       StrBuf := Trim(AnsiUpperCase(StringFromBuffer(PChar(@ByteBuf[i * FmtLength]), FmtLength)));
       if not (StrBuf[1] = '%') then
       BEGIN
-        RaiseError(Format('Unknown format specified for variable no: %d', [i+1]));
+        RaiseError(Exception, Format('Unknown format specified for variable no: %d', [i+1]));
         Exit;
       END;
 
@@ -729,7 +732,7 @@ begin
           // Number
           '0'..'9': ;
         else
-          RaiseError(Format('Unknown format specified for variable no: %d', [i+1]));
+          RaiseError(Exception, Format('Unknown format specified for variable no: %d', [i+1]));
           Exit;
         end;
       end;
@@ -965,7 +968,7 @@ begin
         END;  //for CurField
       END;  //for CurRec
     EXCEPT
-      RaiseError('Error reading data from Stata-file');
+      RaiseError(Exception, 'Error reading data from Stata-file');
       Exit;
     END;  //try..except
 
@@ -987,7 +990,7 @@ begin
             DataStream.Read(CharBuf[0], 8);
             if VLSet.ValueLabelExists[TmpInt] then
             BEGIN
-              RaiseError('Duplicate value label name found');
+              RaiseError(Exception, 'Duplicate value label name found');
               Exit;
             END;
             VL := VLSet.NewValueLabel;
