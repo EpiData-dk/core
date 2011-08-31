@@ -199,7 +199,6 @@ const
       FOnRequestPassword(Self, S, FPassword);
     try
       S := Base64DecodeStr(EncryptedString);
-      FPassword := 'fakepass';
       Decrypter := TDCP_rijndael.Create(nil);
       DeCrypter.InitStr(FPassword, TDCP_sha1);
       DeCrypter.DecryptCFB8bit(S[1], S[1], Length(S));
