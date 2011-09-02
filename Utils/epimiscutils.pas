@@ -45,9 +45,17 @@ const
      'S', 'U'
     );
 
+type
+  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfCollection, dfAll);
+  TEpiDialogFilters = set of TEpiDialogFilter;
+
+const
+  dfImport = [dfEPX, dfEPZ, dfREC, dfDTA];
+  dfExport = [dfDTA];
+
+
   // File dialog filter functions.
-  function GetEpiDialogFilter(ShowEPX, ShowEPZ, ShowREC, ShowText, ShowODS, ShowXLS,
-    ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
+  function GetEpiDialogFilter(DialogFilter: TEpiDialogFilters): string;
 
   procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
   procedure ZipFileToStream(Var St: TStream;   Const ZipFileName: string);
@@ -111,19 +119,13 @@ const
     FilterExt:  '*.dbf';
   );
 
-  EpiDialogFilterQES: TEpiDialogFilterPair = (
-    FilterName: 'QES file (*.qes)';
-    FilterExt:  '*.qes';
-  );
-
   EpiDialogFilterAll: TEpiDialogFilterPair = (
     FilterName: 'Show All (*.*)';
     FilterExt:  '*.*';
   );
 
 
-function GetEpiDialogFilter(ShowEPX, ShowEPZ, ShowREC, ShowText, ShowODS,
-  ShowXLS, ShowDTA, ShowDBF, ShowQES, ShowCollection, ShowAll: boolean): string;
+function GetEpiDialogFilter(DialogFilter: TEpiDialogFilters): string;
 var
   CollectedExt: string;
 
@@ -136,30 +138,28 @@ var
 begin
   Result := '';
   CollectedExt := '';
-  if ShowEPX then
+  if dfEPX in DialogFilter then
     Result += AddFilter(EpiDialogFilterEPX);
-  if ShowEPZ then
+  if dfEPZ in DialogFilter then
     Result += AddFilter(EpiDialogFilterEPZ);
-  if ShowREC then
+  if dfREC in DialogFilter then
     Result += AddFilter(EpiDialogFilterREC);
-  if ShowText then
+  if dfText in DialogFilter then
     Result += AddFilter(EpiDialogFilterText);
-  if ShowODS then
+  if dfODS in DialogFilter then
     Result += AddFilter(EpiDialogFilterODS);
-  if ShowXLS then
+  if dfXLS in DialogFilter then
     Result += AddFilter(EpiDialogFilterXLS);
-  if ShowDTA then
+  if dfDTA in DialogFilter then
     Result += AddFilter(EpiDialogFilterDTA);
-  if ShowDBF then
+  if dfDBF in DialogFilter then
     Result += AddFilter(EpiDialogFilterDBF);
-  if ShowQES then
-    Result += AddFilter(EpiDialogFilterQES);
 
-  if ShowCollection then
+  if dfCollection in DialogFilter then
     Result := EpiDialogFilterCollection.FilterName + '|' +
               CollectedExt + '|' + Result;
 
-  if ShowAll then
+  if dfAll in DialogFilter then
     Result += AddFilter(EpiDialogFilterAll);
 end;
 
