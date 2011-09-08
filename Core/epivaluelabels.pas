@@ -135,14 +135,13 @@ type
   TEpiValueLabelSets = class(TEpiCustomList)
   private
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
-  protected
-    function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
