@@ -9,7 +9,7 @@ uses
 
 type
 
-  TEpiValueLabelChangeEvent = (evceName);
+  TEpiValueLabelChangeEvent = (evceValue, evceMissing);
 
   { TEpiCustomValueLabel }
 
@@ -18,17 +18,18 @@ type
     FIsMissingValue: boolean;
     FOrder: Integer;
     FLabel: TEpiTranslatedText;
+    procedure SetIsMissingValue(AValue: boolean);
   protected
     function GetValueAsString: string; virtual; abstract;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
-    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    property Order: integer read FOrder write FOrder;
-    property TheLabel: TEpiTranslatedText read FLabel write FLabel;
-    property IsMissingValue: boolean read FIsMissingValue write FIsMissingValue;
-    property ValueAsString: string read GetValueAsString;
+    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    property    Order: integer read FOrder write FOrder;
+    property    TheLabel: TEpiTranslatedText read FLabel write FLabel;
+    property    IsMissingValue: boolean read FIsMissingValue write SetIsMissingValue;
+    property    ValueAsString: string read GetValueAsString;
   end;
   TEpiCustomValueLabelClass = class of TEpiCustomValueLabel;
 
@@ -37,12 +38,13 @@ type
   TEpiIntValueLabel = class(TEpiCustomValueLabel)
   private
     FValue: EpiInteger;
+    procedure SetValue(AValue: EpiInteger);
   protected
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    property Value: EpiInteger read FValue write FValue;
+    property Value: EpiInteger read FValue write SetValue;
   end;
 
   { TEpiFloatValueLabel }
@@ -50,12 +52,13 @@ type
   TEpiFloatValueLabel = class(TEpiCustomValueLabel)
   private
     FValue: EpiFloat;
+    procedure SetValue(AValue: EpiFloat);
   protected
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    property Value: EpiFloat read FValue write FValue;
+    property Value: EpiFloat read FValue write SetValue;
   end;
 
   { TEpiStringValueLabel }
@@ -63,12 +66,13 @@ type
   TEpiStringValueLabel = class(TEpiCustomValueLabel)
   private
     FValue: EpiString;
+    procedure SetValue(AValue: EpiString);
   protected
     function GetValueAsString: string; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    property Value: EpiString read FValue write FValue;
+    property Value: EpiString read FValue write SetValue;
   end;
 
 
@@ -154,6 +158,16 @@ uses
 
 { TEpiCustomValueLabel }
 
+procedure TEpiCustomValueLabel.SetIsMissingValue(AValue: boolean);
+var
+  Val: Boolean;
+begin
+  if FIsMissingValue = AValue then Exit;
+  Val := FIsMissingValue;
+  FIsMissingValue := AValue;
+  DoChange(eegValueLabels, Word(evceMissing), @Val);
+end;
+
 constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -223,6 +237,16 @@ end;
 
 { TEpiIntValueLabel }
 
+procedure TEpiIntValueLabel.SetValue(AValue: EpiInteger);
+var
+  Val: EpiInteger;
+begin
+  if FValue = AValue then Exit;
+  Val := FValue;
+  FValue := AValue;
+  DoChange(eegValueLabels, Word(evceValue), @Val);
+end;
+
 function TEpiIntValueLabel.GetValueAsString: string;
 begin
   Result := IntToStr(Value);
@@ -244,6 +268,16 @@ end;
 
 { TEpiFloatValueLabel }
 
+procedure TEpiFloatValueLabel.SetValue(AValue: EpiFloat);
+var
+  Val: EpiFloat;
+begin
+  if FValue = AValue then Exit;
+  Val := FValue;
+  FValue := AValue;
+  DoChange(eegValueLabels, Word(evceValue), @Val);
+end;
+
 function TEpiFloatValueLabel.GetValueAsString: string;
 begin
   Result := FloatToStr(Value);
@@ -264,6 +298,16 @@ begin
 end;
 
 { TEpiStringValueLabel }
+
+procedure TEpiStringValueLabel.SetValue(AValue: EpiString);
+var
+  Val: EpiString;
+begin
+  if FValue = AValue then Exit;
+  Val := FValue;
+  FValue := AValue;
+  DoChange(eegValueLabels, Word(evceValue), @Val);
+end;
 
 function TEpiStringValueLabel.GetValueAsString: string;
 begin
@@ -345,7 +389,7 @@ begin
 
   Val := FName;
   FName := AValue;
-  DoChange(eegValueLabels, Word(evceName), @Val);
+  DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
 function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
