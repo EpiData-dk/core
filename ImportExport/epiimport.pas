@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
-  epivaluelabels;
+  epivaluelabels, epieximtypes;
 
 type
 
@@ -43,7 +43,7 @@ implementation
 
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
-  lclproc;
+  lclproc, dateutils;
 
 var
   BigEndian: boolean = false;
@@ -497,10 +497,13 @@ end;
 
 function TEpiImport.ImportStata(const aFilename: string;
   var DataFile: TEpiDataFile; ImportData: boolean): Boolean;
+type
+  DateType = (tnone, tc, td, tw, tm, tq, th, ty);
 var
   ByteBuf, ValBuf: Array of Byte;
   TypeList,
   CharBuf: Array of Char;
+  DateTypeList: Array of DateType;
   NVar, NObs, CurRec, CurField,
   Sum, I, J, TmpInt: integer;
   TmpFlt: Double;
@@ -517,7 +520,7 @@ var
   DecS: Char;
   TmpFieldType: TEpiFieldType;
   DataStream: TFileStream;
-  FileVersion: Byte;
+  FileVersion: TEpiStataVersion;
   VarDataLength: Integer;
 
   FieldList: TFPList;
@@ -547,13 +550,6 @@ var
       MisVal := Buf[5];
   end;
 
-Const
-  ByteConst   = #251;
-  IntConst    = #252;
-  LongConst   = #253;
-  FloatConst  = #254;
-  DoubleConst = #255;
-
 begin
   result := false;
 
@@ -569,16 +565,9 @@ begin
     // ********************************
     SetLength(ByteBuf, 4);
     DataStream.Read(ByteBuf[0], 4);
-    FileVersion := ByteBuf[0];
+    FileVersion := TEpiStataVersion(ByteBuf[0]);
 
-    // ds_format: NumBuff[0]
-    //  Stata Version 4    = $69;
-    //  Stata Version 6    = $6C; // dta_108
-    //  Stata Version 7    = $6E; // dta_110
-    //  Stata Version 8+9  = $71; // dta_113
-    //  Stata Version 10   = $72; // dta_114
-    //  Stata Version 12   = $73; // dta_115
-    if not (FileVersion in [$69, $6C, $6E, $71, $72, $73]) then
+    if not (FileVersion in [dta4..dta12]) then
     BEGIN
       RaiseError(Exception, 'Unknown Stata Version');
       Exit;
@@ -597,24 +586,24 @@ begin
     FloatChar       := 'f';
     DoubleChar      := 'd';
     // - changed in Ver. 6
-    if FileVersion >= $6C THEN     // dta_108
+    if FileVersion >= dta6 THEN     // dta_108
       FileLabelLength := 81;
     // - change in Ver. 7
-    IF FileVersion >= $6E THEN     // dta_110
+    IF FileVersion >= dta7 THEN     // dta_110
       FieldNameLength := 33;
     // - changed in Ver. 8
-    IF FileVersion >= $71 THEN     // dta_113
+    IF FileVersion >= dta8 THEN     // dta_113
     BEGIN
       StrBaseNum := 0;
       MissingBaseNum := 26;
-      ByteChar   := ByteConst;
-      IntChar    := IntConst;
-      LongChar   := LongConst;
-      FloatChar  := FloatConst;
-      DoubleChar := DoubleConst;
+      ByteChar   := StataByteConst;
+      IntChar    := StataIntConst;
+      LongChar   := StataLongConst;
+      FloatChar  := StataFloatConst;
+      DoubleChar := StataDoubleConst;
     END;
     // - changed in Ver. 10
-    if FileVersion >= $72 THEN     // dta_114
+    if FileVersion >= dta10 THEN     // dta_114
       FmtLength := 49;
 
     // byteorder: NumBuff[1]
@@ -655,6 +644,7 @@ begin
     // ********************************
     // - typlist: the variable's types
     SetLength(TypeList, NVar);
+    SetLength(DateTypeList, NVar);
     DataStream.Read(TypeList[0], nVar);
 
     // - varlist: variable names
@@ -675,16 +665,17 @@ begin
     FOR i := 0 TO NVar - 1 DO
     BEGIN
       // Update typelist to consts...
-      if TypeList[i] = ByteChar then   TypeList[i] := ByteConst;
-      if TypeList[i] = IntChar then    TypeList[i] := IntConst;
-      if TypeList[i] = LongChar then   TypeList[i] := LongConst;
-      if TypeList[i] = FloatChar then  TypeList[i] := FloatConst;
-      if TypeList[i] = DoubleChar then TypeList[i] := DoubleConst;
+      if TypeList[i] = ByteChar then   TypeList[i] := StataByteConst;
+      if TypeList[i] = IntChar then    TypeList[i] := StataIntConst;
+      if TypeList[i] = LongChar then   TypeList[i] := StataLongConst;
+      if TypeList[i] = FloatChar then  TypeList[i] := StataFloatConst;
+      if TypeList[i] = DoubleChar then TypeList[i] := StataDoubleConst;
 
-
-      IF (TypeList[i] in [FloatConst, DoubleConst]) THEN
+      // As default - expect that FloatConst and DoubleConst are floating points.
+      // - detect if this is a time/date format later on.
+      IF (TypeList[i] in [StataFloatConst, StataDoubleConst]) THEN
         TmpFieldType := ftFloat
-      ELSE IF (TypeList[i] in [ByteConst, IntConst, LongConst]) THEN
+      ELSE IF (TypeList[i] in [StataByteConst, StataIntConst, StataLongConst]) THEN
         TmpFieldType := ftInteger
       ELSE
       BEGIN
@@ -697,7 +688,7 @@ begin
       END;
 
       {Handle formats...}
-      StrBuf := Trim(AnsiUpperCase(StringFromBuffer(PChar(@ByteBuf[i * FmtLength]), FmtLength)));
+      StrBuf := Trim(UpperCase(StringFromBuffer(PChar(@ByteBuf[i * FmtLength]), FmtLength)));
       if not (StrBuf[1] = '%') then
       BEGIN
         RaiseError(Exception, Format('Unknown format specified for variable no: %d', [i+1]));
@@ -706,27 +697,39 @@ begin
 
       j := 0;
       if StrBuf[2] = '-' then
-        j := 1;
+        Inc(j);
 
+      DateTypeList[i] := tnone;
       // Strings have already been defined in <typlist>.
       if StrBuf[Length(StrBuf)] <> 'S' then
       begin
+        if StrBuf[2+j] = 'T' then
+          Inc(j);
+
         Case Char(StrBuf[2+j]) of
           // Date (and time formats)
-          // TODO : Time  supported by EpiData.
-          'T',
-          'D':
-            Begin
+          'C': // Time - count of millisecs since 1/1-1960 00:00:00.000
+            begin
+              TmpFieldType := ftTime;
+              DateTypeList[i] := tc;
+            end;
+          'D', // Date - count of days:       since 1/1-1960
+          'W', //      - count of weeks
+          'M', //      - count of months
+          'Q', //      - count of quartes
+          'H', //      - count of half years
+          'Y': // Year - count of years:      since 0 AD.
+            begin
               TmpFieldType := ftDMYDate;
-              // Detailed format.
-              if Length(StrBuf) > (2+j) then
-              begin
-                if (Pos('D', StrBuf) > Pos('M', StrBuf)) or
-                   (Pos('D', StrBuf) > Pos('N', StrBuf)) or
-                   (Pos('D', StrBuf) > Pos('L', StrBuf)) then
-                  TmpFieldType := ftMDYDate;
+              Case Char(StrBuf[2+j]) of
+                'D': DateTypeList[i] := td;
+                'W': DateTypeList[i] := tw;
+                'M': DateTypeList[i] := tm;
+                'Q': DateTypeList[i] := tq;
+                'H': DateTypeList[i] := th;
+                'Y': DateTypeList[i] := ty;
               end;
-            End;
+            end;
           // Number
           '0'..'9': ;
         else
@@ -747,24 +750,24 @@ begin
 
       // - typelist
       case TypeList[i] of
-        ByteConst: begin
+        StataByteConst: begin
                      TmpField.Length := 3;
                      Inc(VarDataLength, 1);
                    end;
-        IntConst:  begin
+        StataIntConst:  begin
                      TmpField.Length := 5;
                      Inc(VarDataLength, 2);
                    end;
-        LongConst: begin
+        StataLongConst: begin
                      TmpField.Length := 10;
                      Inc(VarDataLength, 4);
                    end;
-        FloatConst,
-        DoubleConst:
+        StataFloatConst,
+        StataDoubleConst:
           Begin
             TmpField.Length := 18;
             TmpField.Decimals := 4;
-            if TypeList[i] = FloatConst then
+            if TypeList[i] = StataFloatConst then
               Inc(VarDataLength, 4)
             else
               Inc(VarDataLength, 8);
@@ -777,6 +780,9 @@ begin
       // Dates:
       if TmpField.FieldType in DateFieldTypes then
         TmpField.Length := 10;
+
+      if TmpField.FieldType in TimeFieldTypes then
+        TmpField.Length := 8;
 
       // - varlist
       StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);
@@ -828,7 +834,7 @@ begin
     SetLength(ByteBuf, 1);
     REPEAT
       DataStream.Read(ByteBuf[0], 1); //data type code
-      IF FileVersion >= $6E THEN
+      IF FileVersion >= dta7 THEN
         I := ReadInts(DataStream, 4)
       ELSE
         I := ReadInts(DataStream, 2);
@@ -850,22 +856,22 @@ begin
         BEGIN
           TmpField := Field[Curfield];
           Case TypeList[CurField] of
-            ByteConst,
-            IntConst,
-            LongConst:
+            StataByteConst,
+            StataIntConst,
+            StataLongConst:
               begin
                 Case TypeList[CurField] of
-                  ByteConst:
+                  StataByteConst:
                     begin
                       I := ReadInts(DataStream, 1);
                       J := $7F;
                     end;
-                  IntConst:
+                  StataIntConst:
                     begin
                       I := ReadInts(DataStream, 2);
                       J := $7FFF;
                     end;
-                  LongConst:
+                  StataLongConst:
                     begin
                       I := ReadInts(DataStream, 4);
                       J := $7FFFFFFF;
@@ -878,7 +884,7 @@ begin
                 begin
                   // This corresponds to Stata's ".a", ".b", and ".c"
                   if (MisVal > 0) and
-                     (not (TmpField.FieldType in DateFieldTypes)) then
+                     (not (TmpField.FieldType in DateFieldTypes+TimeFieldTypes)) then
                   begin
                     VLSet := TmpField.ValueLabelSet;
                     if not Assigned(VLSet) then
@@ -901,15 +907,22 @@ begin
                     TmpField.IsMissing[CurRec] := true;
                 end else begin
                   {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
-                  if TmpField.FieldType in DateFieldTypes then
-                    I := I + 21916;
-                  TmpField.AsInteger[CurRec] := I;
+                  case DateTypeList[CurField] of
+                    tnone: TmpField.AsInteger[CurRec]  := I;                                  // Do nothing - conversion is not needed.
+                    tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, I);       // I - measured in ms. since 1960.
+                    td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   I);
+                    tw:    TmpField.AsDateTime[CurRec] := IncWeek(StataBaseDateTime,  I);
+                    tm:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, I);
+                    tq:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, I * 3);
+                    th:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, I * 6);
+                    ty:    TmpField.AsDateTime[CurRec] := IncYear(StataBaseDateTime,  I);
+                  end;
                 end;
               end;
-            FloatConst,
-            DoubleConst:
+            StataFloatConst,
+            StataDoubleConst:
               Begin
-                if TypeList[CurField] = FloatConst then
+                if TypeList[CurField] = StataFloatConst then
                   TmpFlt := ReadSingleMissing(MisVal)
                 else
                   TmpFlt := ReadDoubleMissing(MisVal);
@@ -919,7 +932,7 @@ begin
                 begin
                   // This corresponds to Stata's ".a", ".b", and ".c"
                   if (MisVal > 0) and
-                     (not (TmpField.FieldType in DateFieldTypes)) then
+                     (not (TmpField.FieldType in DateFieldTypes+TimeFieldTypes)) then
                   begin
                     VLSet := TmpField.ValueLabelSet;
                     if not Assigned(VLSet) then
@@ -943,9 +956,16 @@ begin
                     TmpField.IsMissing[CurRec] := true;
                 end else begin
                   {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
-                  if TmpField.FieldType in DateFieldTypes then
-                    TmpFlt := TmpFlt + 21916;
-                  TmpField.AsFloat[CurRec] := TmpFlt;
+                  case DateTypeList[CurField] of
+                    tnone: TmpField.AsFloat[CurRec]    := TmpFlt;                                  // Do nothing - conversion is not needed.
+                    tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, trunc(TmpFlt));       // I - measured in ms. since 1960.
+                    td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   TruncToInt(TmpFlt));
+                    tw:    TmpField.AsDateTime[CurRec] := IncWeek(StataBaseDateTime,  TruncToInt(TmpFlt));
+                    tm:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, TruncToInt(TmpFlt));
+                    tq:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, TruncToInt(TmpFlt) * 3);
+                    th:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, TruncToInt(TmpFlt) * 6);
+                    ty:    TmpField.AsDateTime[CurRec] := IncYear(StataBaseDateTime,  TruncToInt(TmpFlt));
+                  end;
                 end;
               end;
           else
@@ -972,7 +992,7 @@ begin
 
     IF (ValueLabels.Count > 0) AND (DataStream.Position < DataStream.Size - 4) THEN
     BEGIN
-      IF FileVersion = $69 THEN
+      IF FileVersion = dta7 THEN
       BEGIN
         {Read value labels definitions - if present}
         WHILE DataStream.Position < DataStream.Size - 2 DO
