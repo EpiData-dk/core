@@ -5,7 +5,8 @@ unit epiexport;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels;
+  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels,
+  epieximtypes;
 
 type
 
@@ -13,25 +14,35 @@ type
 
   TEpiExport = class(TObject)
   private
+    FExportEncoding: TEpiEncoding;
+    function    EncodeString(Const Str: string): string;
     procedure   RaiseError(Const Msg: string);
     procedure   WriteByte(St: TStream; Val: ShortInt);
     procedure   WriteWord(St: TStream; Val: SmallInt);
     procedure   WriteInt(St: TStream; Val: LongInt);
     procedure   WriteSingle(St: TStream; Val: Single);
     procedure   WriteDouble(St: TStream; Val: Double);
+    procedure   WriteEncString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
     procedure   WriteString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
   public
     constructor Create;
     destructor  Destroy; override;
     function    ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
+    property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding;
   end;
 
 implementation
 
 uses
-  FileUtil, epistringutils, math;
+  FileUtil, epistringutils, math, LConvEncoding, dateutils;
+
 
 { TEpiExport }
+
+function TEpiExport.EncodeString(const Str: string): string;
+begin
+  result := ConvertEncoding(Str, 'utf8', EpiEncodingToString[ExportEncoding]);
+end;
 
 procedure TEpiExport.RaiseError(const Msg: string);
 begin
@@ -65,6 +76,12 @@ begin
   St.Write(Val, 8);
 end;
 
+procedure TEpiExport.WriteEncString(St: TStream; const Str: string;
+  const Count: Integer; Terminate: Boolean);
+begin
+  WriteString(St, EncodeString(Str), Count, Terminate);
+end;
+
 procedure TEpiExport.WriteString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
 var
   StrBuf: PChar;
@@ -72,14 +89,14 @@ var
 begin
   if Terminate then z := 0 else z := 1;
   StrBuf := StrAlloc(Count + z);
-  StrPLCopy(PChar(@StrBuf[0]), EpiUtf8ToAnsi(Str), Count - 1 + z);
+  StrPLCopy(PChar(@StrBuf[0]), Str, Count - 1 + z);
   St.Write(StrBuf[0], Count);
   StrDispose(StrBuf);
 end;
 
 constructor TEpiExport.Create;
 begin
-
+  FExportEncoding := eeUTF8;
 end;
 
 destructor TEpiExport.Destroy;
@@ -112,15 +129,8 @@ var
   MissingBaseNum: Cardinal;
   FieldNames: TStrings;
   DataStream: TFileStream;
-  FileVersion: Integer;
+  FileVersion: TEpiStataVersion;
   VLblSet: TEpiValueLabelSet;
-
-Const
-  ByteConst   = #251;
-  IntConst    = #252;
-  LongConst   = #253;
-  FloatConst  = #254;
-  DoubleConst = #255;
 
   procedure WriteFloat(Val: Double; Const MisVal: string);
   var
@@ -161,10 +171,7 @@ begin
   with DataFile do
   try
     DataStream := TFileStream.Create(aFileName, fmCreate);
-    FileVersion := 0; //ExpSetting^.FileVersion;
-
-    if not (FileVersion in [$69, $6C, $6E, $71, $72]) then
-      FileVersion := $71;                    // Default to Version 8
+    FileVersion := dta8;                    // Default to Version 8
 
     // Version specific settings:
     // - "original" setting from Ver. 4
@@ -179,24 +186,24 @@ begin
     FloatChar       := 'f';
     DoubleChar      := 'd';
     // - changed in Ver. 6
-    if FileVersion >= $6C THEN
+    if FileVersion >= dta6 THEN
       FileLabelLength := 81;
     // - change in Ver. 7
-    IF FileVersion >= $6E THEN
+    IF FileVersion >= dta7 THEN
       FieldNameLength := 33;
     // - changed in Ver. 8
-    IF FileVersion >= $71 THEN
+    IF FileVersion >= dta8 THEN
     BEGIN
       StrBaseNum := 0;
       MissingBaseNum := 27;
-      ByteChar   := ByteConst;
-      IntChar    := IntConst;
-      LongChar   := LongConst;
-      FloatChar  := FloatConst;
-      DoubleChar := DoubleConst;
+      ByteChar   := StataByteConst;
+      IntChar    := StataIntConst;
+      LongChar   := StataLongConst;
+      FloatChar  := StataFloatConst;
+      DoubleChar := StataDoubleConst;
     END;
     // - changed in Ver. 10
-    if FileVersion >= $72 THEN
+    if FileVersion >= dta10 THEN
       FmtLength := 49;
 
     NVar := Fields.Count;
@@ -206,7 +213,7 @@ begin
     //           STATA HEADER
     // ********************************
     SetLength(ByteBuf, 4);
-    ByteBuf[0] := FileVersion;
+    ByteBuf[0] := Byte(FileVersion);
     ByteBuf[1] := 2;                                          // Use LOHI order of data
     ByteBuf[2] := 1;                                          // Filetype - only 1 is legal value
     ByteBuf[3] := 0;                                          // Unused
@@ -220,11 +227,8 @@ begin
     ELSE
       TmpStr := Format('Datafile created by EpiData based on %s', [SysToUTF8(ExtractFilename(UTF8ToSys(aFilename)))]);
 
-    IF Length(TmpStr) > (FileLabelLength - 1) THEN
-      TmpStr := Copy(TmpStr, 1, FileLabelLength - 1);
-
     // data_label \0 terminated.
-    WriteString(DataStream, TmpStr, FileLabelLength);
+    WriteEncString(DataStream, TmpStr, FileLabelLength);
 
     // time_stamp \0 terminated (not used in epidata)
     TmpStr := FormatDateTime('dd mmm yyyy hh":"nn', Now);
@@ -257,26 +261,23 @@ begin
             // We do this to maximize the use of UTF8 charaters. Users can then manually adjust dataset in
             // Stata to get a smaller file size.
             TmpChar := Chr(207);
- {            IF Length > 80 THEN
-              TmpChar := Chr(207)
-            ELSE
-              TmpChar := Chr(StrBaseNum + FieldLength);}
           ftBoolean:
             TmpChar := ByteChar;
           ftDMYDate, ftMDYDate, ftYMDDate,
           ftDMYToday, ftMDYToday, ftYMDToday:
              TmpChar := LongChar;
+          ftTime, ftTimeNow,
           ftFloat:
              TmpChar := DoubleChar;
         END;  //Case
         ByteBuf[i] := Ord(TmpChar);
         TypeList[i] := TmpChar;
         // update typelist to consts.
-        if TypeList[i] = ByteChar then   TypeList[i] := ByteConst;
-        if TypeList[i] = IntChar then    TypeList[i] := IntConst;
-        if TypeList[i] = LongChar then   TypeList[i] := LongConst;
-        if TypeList[i] = FloatChar then  TypeList[i] := FloatConst;
-        if TypeList[i] = DoubleChar then TypeList[i] := DoubleConst;
+        if TypeList[i] = ByteChar then   TypeList[i] := StataByteConst;
+        if TypeList[i] = IntChar then    TypeList[i] := StataIntConst;
+        if TypeList[i] = LongChar then   TypeList[i] := StataLongConst;
+        if TypeList[i] = FloatChar then  TypeList[i] := StataFloatConst;
+        if TypeList[i] = DoubleChar then TypeList[i] := StataDoubleConst;
       END;  //with
     END;  //for
 
@@ -316,6 +317,12 @@ begin
         ftDMYDate, ftMDYDate, ftYMDDate,
         ftDMYToday, ftMDYToday, ftYMDToday:
           TmpStr := '%d';
+        ftTime, ftTimeNow:
+          if FileVersion >= dta10 then
+            // Stata 10 supports a new time format!
+            TmpStr := '%tcHH:NN:SS'
+          else
+            TmpStr := '%6.5f';
       END;   //case FeltType
       WriteString(DataStream, TmpStr, FmtLength);
     END;  //for - with
@@ -351,7 +358,7 @@ begin
     // ********************************
     FOR i := 0 TO NVar - 1 DO
     WITH Field[i] DO
-        WriteString(DataStream, Trim(EpiUtf8ToAnsi(Question.Text)), FileLabelLength);
+      WriteEncString(DataStream, Trim(Question.Text), FileLabelLength);
 
     // ********************************
     //      STATA EXPANSION FIELDS
@@ -359,7 +366,7 @@ begin
     // - skip expansion fields
     WriteWord(DataStream, 0);
     WriteByte(DataStream, 0); // 3 bytes....
-    if FileVersion >= $6E then
+    if FileVersion >= dta7 then  // Expansion field is 5 bytes from version 7
       WriteWord(DataStream, 0); // 5 bytes in total...
 
     // ********************************
@@ -371,130 +378,48 @@ begin
         FOR CurField := 0 TO NVar - 1 DO
         With Field[CurField] do
         Case TypeList[CurField] of
-          ByteConst:   begin
-                          // Specific missing values
-                          // TODO : MissingValues (STATA)
-                          {
-                          IF (FileVersion >= $71) AND (FieldType in [ftInteger, ftIDNUM, ftFloat]) AND
-                             (FieldDecimals = 0) AND (FieldLength < 10) THEN
-                          BEGIN
-                            if Assigned(CheckField) then
-                            begin
-                              IF TmpStr = CheckField.MissingValues[0] THEN TmpStr := '.a';
-                              IF TmpStr = CheckField.MissingValues[1] THEN TmpStr := '.b';
-                              IF TmpStr = CheckField.MissingValues[2] THEN TmpStr := '.c';
-                            end;
-                            IF TmpStr = FileProperties.GlobalMissingVal[0] THEN TmpStr := '.a';
-                            IF TmpStr = FileProperties.GlobalMissingVal[1] THEN TmpStr := '.b';
-                            IF TmpStr = FileProperties.GlobalMissingVal[2] THEN TmpStr := '.c';
-                          END;     }
-                         if IsMissing[CurRec] then
-                           WriteByte(DataStream, $7F)
-                         else
-                           WriteByte(DataStream, AsInteger[CurRec]);
-                       end;
-          IntConst:    begin
-                         if IsMissing[CurRec] then
-                           WriteWord(DataStream, $7FFF)
-                         else
-                           WriteWord(DataStream, AsInteger[CurRec]);
-                       end;
-          LongConst:   begin
-                         if IsMissing[CurRec] then
-                           WriteInt(DataStream, $7FFFFFFF)
-                         else
-                           {Date is converted from Delphi's/Lazarus 30/12-1899 base
-                            to Stata's 1/1-1960 base by substracting 21916 days}
-                           If (FieldType in DateFieldTypes) then
-                             WriteInt(DataStream, AsDate[CurRec] - 21916)
-                           else
-                             WriteInt(DataStream, AsInteger[CurRec]);
-                       end;
-          DoubleConst: begin
-                         if IsMissing[CurRec] then
-                           WriteDouble(DataStream, Power(2, 1023))
-                         else
-                           WriteDouble(DataStream, AsFloat[CurRec]);
-                       end
+          StataByteConst:
+            begin
+              // Specific missing values
+              // TODO : MissingValues (STATA)
+              if IsMissing[CurRec] then
+                WriteByte(DataStream, $7F)
+              else
+                WriteByte(DataStream, AsInteger[CurRec]);
+            end;
+          StataIntConst:
+            begin
+              if IsMissing[CurRec] then
+                WriteWord(DataStream, $7FFF)
+              else
+                WriteWord(DataStream, AsInteger[CurRec]);
+            end;
+          StataLongConst:
+            begin
+              if IsMissing[CurRec] then
+                WriteInt(DataStream, $7FFFFFFF)
+              else
+                {Date is converted from Delphi's/Lazarus 30/12-1899 base
+                 to Stata's 1/1-1960 base by substracting 21916 days}
+                If (FieldType in DateFieldTypes) then
+                  WriteInt(DataStream, AsDate[CurRec] - StataBaseDate)
+                else
+                  WriteInt(DataStream, AsInteger[CurRec]);
+            end;
+          StataDoubleConst:
+            begin
+              if IsMissing[CurRec] then
+                WriteDouble(DataStream, Power(2, 1023))
+              else
+                if (FieldType in TimeFieldTypes) and
+                   (FileVersion >= dta10) then
+                  WriteDouble(DataStream, MilliSecondsBetween(StataBaseDate + AsDate[CurRec], StataBaseDateTime))
+                else
+                  WriteDouble(DataStream, AsFloat[CurRec]);
+            end
         else
           WriteString(DataStream, AsString[CurRec], 207);
         end;
-
-
-
-(*
-
-
-          TmpStr := AsString[CurRec-1];
-
-          IF trim(TmpStr)='' THEN
-            TmpStr := '..';
-
-
-          Case TypeList[CurField] of
-            ByteConst,
-            IntConst,
-            LongConst:
-              begin
-                Case TypeList[CurField] of
-                  ByteConst:
-                    begin
-                      I := $7F;
-                      J := 1;
-                    end;
-                  IntConst:
-                    Begin
-                      I := $7FFF;
-                      J := 2;
-                    end;
-                  LongConst:
-                    Begin
-                      I := $7FFFFFFF;
-                      J := 4;
-                    end;
-                end;
-                if TmpStr[1] = TEpiStringField.DefaultMissing[1] then
-                begin
-                  TmpInt := I - MissingBaseNum + 1;
-                  case TmpStr[2] of
-                    'a': Inc(TmpInt);
-                    'b': Inc(TmpInt, 2);
-                    'c': Inc(TmpInt, 3);
-                  end;
-                end else begin
-                  // Dates can be encoded as LongInts.
-                  If (FieldType in DateFieldTypes) then
-                    {Date is converted from Delphi's/Lazarus 30/12-1899 base
-                     to Stata's 1/1-1960 base by substracting 21916 days}
-                    TmpInt := AsDate[CurRec-1] - 21916
-                  else if FieldType = ftBoolean then
-                    TmpInt := Integer(StrToBool(TmpStr))
-                  else
-                    TmpInt := StrToInt(TmpStr);
-                end;
-                WriteInts(TmpInt, J);
-              end; // Byte, Int and Long.
-//          FloatConst: ( We never export to Float type.)
-            DoubleConst:
-              Begin
-                if TmpStr = TEpiStringField.DefaultMissing then
-                  WriteFloat(Power(2, 1023), TmpStr)
-                else
-                  WriteFloat(StrToFloat(TmpStr), '-');
-              End;
-          else
-{           if (FieldType in DateFieldTypes) and not
-               EpiIsDate(TmpStr, FieldType) then
-            begin
-              ErrorCode := EPI_EXPORT_FAILED;
-              ErrorText := Format(Lang(22306, 'Illegal date found in record # %d, field %s~Export terminates.'), [CurRec, FieldName]);
-              EpiLogger.AddError(Classname, 'ExportStata', ErrorText, 22306);
-              Exit;
-            end;}
-            if TmpStr = '..' then TmpStr := '';
-            WriteString(TmpStr, Length, False);
-          end;
-        END;  //for CurField      *)
       END;  //for CurObs
     EXCEPT
 
@@ -503,7 +428,7 @@ begin
     END;  //try..Except
 
     {Write VALUE-LABELS}
-    IF FileVersion = $69 THEN
+    IF FileVersion = dta4 THEN
     BEGIN
 {      //write value labels in Stata ver. 4/5 format
       FOR I := 0 TO WritenValueLabels.Count - 1 DO
@@ -536,11 +461,9 @@ begin
         for J := 0 to NObs - 1 do
         begin
           Move(CurRec, ByteBuf[J * 4], 4);
-          // TODO : ValueLabels in STATA
           TmpInt := TEpiIntValueLabel(VLblSet.ValueLabels[J]).Value;
           Move(TmpInt, ValBuf[J * 4], 4);
-          // TODO : ValueLabels in STATA
-          TmpStr := EpiUtf8ToAnsi(VLblSet.ValueLabels[J].TheLabel.Text);
+          TmpStr := EncodeString(VLblSet.ValueLabels[J].TheLabel.Text);
           Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
           Inc(CurRec, Length(TmpStr) + 1);
         end;

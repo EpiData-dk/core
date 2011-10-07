@@ -18,7 +18,7 @@
       <Linking>
         <Debugging>
           <GenerateDebugInfo Value="True"/>
-          <GenerateDwarf Value="True"/>
+          <DebugInfoType Value="dsDwarf2Set"/>
         </Debugging>
       </Linking>
       <Other>
@@ -29,7 +29,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="8"/>
-    <Files Count="42">
+    <Files Count="43">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -135,69 +135,73 @@
         <UnitName Value="epixmlconstants"/>
       </Item26>
       <Item27>
-        <Filename Value="ImportExport/epiexport.pas"/>
-        <UnitName Value="epiexport"/>
+        <Filename Value="ImportExport/epieximtypes.pas"/>
+        <UnitName Value="epieximtypes"/>
       </Item27>
       <Item28>
-        <Filename Value="ImportExport/epiimport.pas"/>
-        <UnitName Value="epiimport"/>
+        <Filename Value="ImportExport/epiexport.pas"/>
+        <UnitName Value="epiexport"/>
       </Item28>
       <Item29>
-        <Filename Value="Reports/epireport_base.pas"/>
-        <UnitName Value="epireport_base"/>
+        <Filename Value="ImportExport/epiimport.pas"/>
+        <UnitName Value="epiimport"/>
       </Item29>
       <Item30>
-        <Filename Value="Reports/epireport_databasegrid.pas"/>
-        <UnitName Value="epireport_databasegrid"/>
+        <Filename Value="Reports/epireport_base.pas"/>
+        <UnitName Value="epireport_base"/>
       </Item30>
       <Item31>
-        <Filename Value="Reports/epireport_fieldlist_extended.pas"/>
-        <UnitName Value="epireport_fieldlist_extended"/>
+        <Filename Value="Reports/epireport_databasegrid.pas"/>
+        <UnitName Value="epireport_databasegrid"/>
       </Item31>
       <Item32>
-        <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
-        <UnitName Value="epireport_fieldlist_simple"/>
+        <Filename Value="Reports/epireport_fieldlist_extended.pas"/>
+        <UnitName Value="epireport_fieldlist_extended"/>
       </Item32>
       <Item33>
-        <Filename Value="Reports/epireport_filelist.pas"/>
-        <UnitName Value="epireport_filelist"/>
+        <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
+        <UnitName Value="epireport_fieldlist_simple"/>
       </Item33>
       <Item34>
-        <Filename Value="Reports/epireport_htmlgenerator.pas"/>
-        <UnitName Value="epireport_htmlgenerator"/>
+        <Filename Value="Reports/epireport_filelist.pas"/>
+        <UnitName Value="epireport_filelist"/>
       </Item34>
       <Item35>
-        <Filename Value="Reports/epireport_types.pas"/>
-        <UnitName Value="epireport_types"/>
+        <Filename Value="Reports/epireport_htmlgenerator.pas"/>
+        <UnitName Value="epireport_htmlgenerator"/>
       </Item35>
       <Item36>
-        <Filename Value="Reports/epireport_valuelabels.pas"/>
-        <UnitName Value="epireport_valuelabels"/>
-      </Item36>
-      <Item37>
-        <Filename Value="Utils/epiconvertutils.pas"/>
-        <UnitName Value="epiconvertutils"/>
-      </Item37>
-      <Item38>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
-      </Item38>
-      <Item39>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
-      </Item39>
-      <Item40>
-        <Filename Value="Utils/epiversionutils.pas"/>
-        <UnitName Value="epiversionutils"/>
-      </Item40>
-      <Item41>
-        <Filename Value="Utils/uniqueinstanceraw.pas"/>
-        <UnitName Value="UniqueInstanceRaw"/>
-      </Item41>
-      <Item42>
         <Filename Value="Reports/epireport_project_overview.pas"/>
         <UnitName Value="epireport_project_overview"/>
+      </Item36>
+      <Item37>
+        <Filename Value="Reports/epireport_types.pas"/>
+        <UnitName Value="epireport_types"/>
+      </Item37>
+      <Item38>
+        <Filename Value="Reports/epireport_valuelabels.pas"/>
+        <UnitName Value="epireport_valuelabels"/>
+      </Item38>
+      <Item39>
+        <Filename Value="Utils/epiconvertutils.pas"/>
+        <UnitName Value="epiconvertutils"/>
+      </Item39>
+      <Item40>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
+      </Item40>
+      <Item41>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item41>
+      <Item42>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
       </Item42>
+      <Item43>
+        <Filename Value="Utils/uniqueinstanceraw.pas"/>
+        <UnitName Value="UniqueInstanceRaw"/>
+      </Item43>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
