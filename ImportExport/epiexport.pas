@@ -5,7 +5,7 @@ unit epiexport;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels,
+  Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
   epieximtypes;
 
 type
@@ -15,6 +15,7 @@ type
   TEpiExport = class(TObject)
   private
     FExportEncoding: TEpiEncoding;
+    FExportLines: TStrings;
     function    EncodeString(Const Str: string): string;
     procedure   RaiseError(Const Msg: string);
     procedure   WriteByte(St: TStream; Val: ShortInt);
@@ -27,8 +28,11 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ExportStata(Const aFilename: string; Const DataFile: TEpiDataFile): Boolean;
-    property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding;
+    function    ExportStata(Const aFilename: string; Const Doc: TEpiDocument;
+      Const DatafileIndex: integer = 0;
+      Const StataVersion: TEpiStataVersion = dta8): Boolean;
+    property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding default eeUTF8;
+    property    ExportLines: TStrings read FExportLines;
   end;
 
 implementation
@@ -97,15 +101,18 @@ end;
 constructor TEpiExport.Create;
 begin
   FExportEncoding := eeUTF8;
+  FExportLines := TStringList.Create;
 end;
 
 destructor TEpiExport.Destroy;
 begin
+  FExportLines.Free;
   inherited Destroy;
 end;
 
 function TEpiExport.ExportStata(const aFilename: string;
-  const DataFile: TEpiDataFile): Boolean;
+  const Doc: TEpiDocument; const DatafileIndex: integer;
+  const StataVersion: TEpiStataVersion): Boolean;
 var
   ValBuf,
   ByteBuf: Array of Byte;
@@ -119,7 +126,7 @@ var
   UniqueValueLabels: TStringList;
   CurRec: Integer;
   CurField: Integer;
-//  VLblSet: TValueLabelSet;
+  DataFile: TEpiDataFile;
 
   // Version specific variables.
   FieldNameLength, StrBaseNum, FileLabelLength,
@@ -129,8 +136,8 @@ var
   MissingBaseNum: Cardinal;
   FieldNames: TStrings;
   DataStream: TFileStream;
-  FileVersion: TEpiStataVersion;
   VLblSet: TEpiValueLabelSet;
+  TimeFields: TStringList;
 
   procedure WriteFloat(Val: Double; Const MisVal: string);
   var
@@ -166,12 +173,11 @@ begin
   // Sanity checks:
   if Trim(aFilename) = '' then Exit;
 
-  if not Assigned(DataFile) then Exit;
+  if not Assigned(Doc) then Exit;
 
-  with DataFile do
+  with Doc.DataFiles[DatafileIndex] do
   try
     DataStream := TFileStream.Create(aFileName, fmCreate);
-    FileVersion := dta8;                    // Default to Version 8
 
     // Version specific settings:
     // - "original" setting from Ver. 4
@@ -186,13 +192,13 @@ begin
     FloatChar       := 'f';
     DoubleChar      := 'd';
     // - changed in Ver. 6
-    if FileVersion >= dta6 THEN
+    if StataVersion >= dta6 THEN
       FileLabelLength := 81;
     // - change in Ver. 7
-    IF FileVersion >= dta7 THEN
+    IF StataVersion >= dta7 THEN
       FieldNameLength := 33;
     // - changed in Ver. 8
-    IF FileVersion >= dta8 THEN
+    IF StataVersion >= dta8 THEN
     BEGIN
       StrBaseNum := 0;
       MissingBaseNum := 27;
@@ -203,7 +209,7 @@ begin
       DoubleChar := StataDoubleConst;
     END;
     // - changed in Ver. 10
-    if FileVersion >= dta10 THEN
+    if StataVersion >= dta10 THEN
       FmtLength := 49;
 
     NVar := Fields.Count;
@@ -213,7 +219,7 @@ begin
     //           STATA HEADER
     // ********************************
     SetLength(ByteBuf, 4);
-    ByteBuf[0] := Byte(FileVersion);
+    ByteBuf[0] := Byte(StataVersion);
     ByteBuf[1] := 2;                                          // Use LOHI order of data
     ByteBuf[2] := 1;                                          // Filetype - only 1 is legal value
     ByteBuf[3] := 0;                                          // Unused
@@ -272,7 +278,8 @@ begin
         END;  //Case
         ByteBuf[i] := Ord(TmpChar);
         TypeList[i] := TmpChar;
-        // update typelist to consts.
+        // update typelist to consts. - bytebuf[] is written,
+        // typelist is used later on for Case Typelist[i] of...
         if TypeList[i] = ByteChar then   TypeList[i] := StataByteConst;
         if TypeList[i] = IntChar then    TypeList[i] := StataIntConst;
         if TypeList[i] = LongChar then   TypeList[i] := StataLongConst;
@@ -302,6 +309,7 @@ begin
     DataStream.Write(ByteBuf[0], 2 * (NVar + 1));
 
     // - Fmtlist: list of formats of the variables
+    TimeFields := TStringList.Create;
     FOR i := 0 TO NVar - 1 DO
     WITH Field[i] DO
     BEGIN
@@ -318,9 +326,12 @@ begin
         ftDMYToday, ftMDYToday, ftYMDToday:
           TmpStr := '%d';
         ftTime, ftTimeNow:
-          if FileVersion >= dta10 then
+          if StataVersion >= dta10 then
+          begin
             // Stata 10 supports a new time format!
-            TmpStr := '%tcHH:NN:SS'
+            TmpStr := '%tcHH:MM:SS';
+            TimeFields.AddObject(Name, Field[i]);
+          end
           else
             TmpStr := '%6.5f';
       END;   //case FeltType
@@ -363,11 +374,67 @@ begin
     // ********************************
     //      STATA EXPANSION FIELDS
     // ********************************
-    // - skip expansion fields
-    WriteWord(DataStream, 0);
-    WriteByte(DataStream, 0); // 3 bytes....
-    if FileVersion >= dta7 then  // Expansion field is 5 bytes from version 7
-      WriteWord(DataStream, 0); // 5 bytes in total...
+    if StataVersion < dta7 then
+    begin
+      // Expansion field is 3 bytes before version 7
+      // Skip expansion field - since we don't know the format (documents no
+      // longer exists on how they are formatted).
+      WriteByte(DataStream, 0); // 3 bytes....
+      WriteWord(DataStream, 0);
+    end;
+    if StataVersion >= dta7 then
+    begin
+      // Expansion field is 5 bytes from version 7
+      if ExportLines.Count > 0 then
+      begin
+        // We start out by writing the length of the notes in a "special" characteristic called 'note0'
+        WriteByte(DataStream, 1);
+        TmpStr := IntToStr(ExportLines.Count);
+        // TmpInt = len  (sum of 2 * 33 + length(TmpStr)
+        TmpInt := 2*33 + Length(TmpStr) + 1;
+        WriteInt(DataStream, TmpInt);
+        WriteString(DataStream, '_dta', 33);
+        WriteString(DataStream, 'note0', 33);
+        WriteString(DataStream, TmpStr, Length(TmpStr) + 1);
+      end;
+      for i := 0 to ExportLines.Count - 1 do
+      begin
+        TmpStr := ExportLines[i];
+        WriteByte(DataStream, 1);
+        // TmpInt = len  (sum of 2 * 33 + length(TmpStr)
+        TmpInt := 33 +                 // First variable name or _dta for notes regarding the dataset.
+                  33 +                 // Character name, in our case 'noteX'
+                  Length(TmpStr) + 1;
+        WriteInt(DataStream, TmpInt);
+        WriteString(DataStream, '_dta', 33);
+        WriteString(DataStream, 'note' + IntToStr(i+1), 33);
+        WriteString(DataStream, TmpStr, Length(TmpStr) + 1);
+      end;
+
+      for i := 0 to TimeFields.Count -1 do
+      with TimeFields do
+      begin
+        WriteByte(DataStream, 1);
+        TmpInt := 2*33 + 2;  // 2 = 1 char for "1" and 1 char for #0;
+        WriteInt(DataStream, TmpInt);
+        WriteString(DataStream, Strings[i], 33);
+        WriteString(DataStream, 'note0', 33);
+        WriteString(DataStream, '1', 2);
+
+        TmpStr := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)" for details. Date coded as Jan. 1st 1960.';
+        WriteByte(DataStream, 1);
+        TmpInt := 2*33 + Length(TmpStr) + 1;
+        WriteInt(DataStream, TmpInt);
+        WriteString(DataStream, Strings[i], 33);
+        WriteString(DataStream, 'note1', 33);
+        WriteString(DataStream, TmpStr, Length(TmpStr) + 1);
+      end;
+
+
+      // End expansion field
+      WriteByte(DataStream, 0);
+      WriteInt(DataStream, 0); // 5 bytes in total...
+    end;
 
     // ********************************
     //          STATA DATA
@@ -412,8 +479,8 @@ begin
                 WriteDouble(DataStream, Power(2, 1023))
               else
                 if (FieldType in TimeFieldTypes) and
-                   (FileVersion >= dta10) then
-                  WriteDouble(DataStream, MilliSecondsBetween(StataBaseDate + AsDate[CurRec], StataBaseDateTime))
+                   (StataVersion >= dta10) then
+                  WriteDouble(DataStream, round(MilliSecondSpan(StataBaseDate + AsDateTime[CurRec], StataBaseDateTime)))
                 else
                   WriteDouble(DataStream, AsFloat[CurRec]);
             end
@@ -428,7 +495,7 @@ begin
     END;  //try..Except
 
     {Write VALUE-LABELS}
-    IF FileVersion = dta4 THEN
+    IF StataVersion = dta4 THEN
     BEGIN
 {      //write value labels in Stata ver. 4/5 format
       FOR I := 0 TO WritenValueLabels.Count - 1 DO

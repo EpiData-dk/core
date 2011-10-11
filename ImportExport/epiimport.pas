@@ -19,6 +19,7 @@ type
 
   TEpiImport = class(TObject)
   private
+    FImportEncoding: TEpiEncoding;
     FOnClipBoardRead: TEpiClipBoardReadHook;
     FOnRequestPassword: TRequestPasswordEvent;
     procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
@@ -32,11 +33,13 @@ type
     destructor  Destroy; override;
     function    ImportRec(Const aFileName: string; var DataFile: TEpiDataFile;
       ImportData: boolean = true): boolean;
-    function    ImportStata(Const aFilename: string; var DataFile: TEpiDataFile;
+    function    ImportStata(Const aFilename: string; Const Doc: TEpiDocument;
+      var DataFile: TEpiDataFile;
       ImportData: boolean = true): Boolean;
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
+    property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
   end;
 
 implementation
@@ -115,7 +118,7 @@ end;
 
 constructor TEpiImport.Create;
 begin
-
+  FImportEncoding := eeGuess;
 end;
 
 destructor TEpiImport.Destroy;
@@ -496,7 +499,8 @@ begin
 end;
 
 function TEpiImport.ImportStata(const aFilename: string;
-  var DataFile: TEpiDataFile; ImportData: boolean): Boolean;
+  const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean
+  ): Boolean;
 type
   DateType = (tnone, tc, td, tw, tm, tq, th, ty);
 var
@@ -554,7 +558,7 @@ begin
   result := false;
 
   if not Assigned(DataFile) then
-    DataFile := TEpiDataFile.Create(nil);
+    DataFile := Doc.DataFiles.NewDataFile;
 
   With DataFile do
   try
