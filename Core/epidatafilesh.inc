@@ -87,14 +87,16 @@ type
 
   { DataFile properties }
   private
-    FCaption: TEpiTranslatedTextWrapper;
-    FCreated: TDateTime;
-    FVersion: string;
+    FCaption:   TEpiTranslatedTextWrapper;
+    FCreated:   TDateTime;
+    FNotes:     TEpiTranslatedText;
+    FVersion:   string;
     procedure   SetVersion(const AValue: string);
   public
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Created: TDateTime read FCreated;
     property    Version: string read FVersion write SetVersion;
+    property    Notes: TEpiTranslatedText read FNotes;
 
   { Update Overrides}
   public

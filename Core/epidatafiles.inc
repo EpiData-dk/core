@@ -538,6 +538,7 @@ begin
 
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
+  FNotes := TEpiTranslatedText.Create(Self, rsNotes);
   FVersion := '';
   FCreated := Now;
 
@@ -559,7 +560,7 @@ begin
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
 
-  RegisterClasses([Caption, Sections]);
+  RegisterClasses([Caption, Notes, Sections]);
 end;
 
 destructor TEpiDataFile.Destroy;
