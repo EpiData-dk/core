@@ -19,6 +19,7 @@ type
 
   TEpiImport = class(TObject)
   private
+    FImportEncoding: TEpiEncoding;
     FOnClipBoardRead: TEpiClipBoardReadHook;
     FOnRequestPassword: TRequestPasswordEvent;
     procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
@@ -32,11 +33,13 @@ type
     destructor  Destroy; override;
     function    ImportRec(Const aFileName: string; var DataFile: TEpiDataFile;
       ImportData: boolean = true): boolean;
-    function    ImportStata(Const aFilename: string; var DataFile: TEpiDataFile;
+    function    ImportStata(Const aFilename: string; Const Doc: TEpiDocument;
+      var DataFile: TEpiDataFile;
       ImportData: boolean = true): Boolean;
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
+    property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
   end;
 
 implementation
@@ -115,7 +118,7 @@ end;
 
 constructor TEpiImport.Create;
 begin
-
+  FImportEncoding := eeGuess;
 end;
 
 destructor TEpiImport.Destroy;
@@ -496,7 +499,8 @@ begin
 end;
 
 function TEpiImport.ImportStata(const aFilename: string;
-  var DataFile: TEpiDataFile; ImportData: boolean): Boolean;
+  const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean
+  ): Boolean;
 type
   DateType = (tnone, tc, td, tw, tm, tq, th, ty);
 var
@@ -527,6 +531,11 @@ var
   VLSet: TEpiValueLabelSet;
   VL: TEpiCustomValueLabel;
   MisVal: Integer;
+  ExpType: Integer;
+  VarName: String;
+  Character: String;
+  DFNotes: TStringList;
+  FieldNotes: TStringList;
 
   function ReadSingleMissing(var MisVal: Integer): Single;
   var
@@ -554,7 +563,7 @@ begin
   result := false;
 
   if not Assigned(DataFile) then
-    DataFile := TEpiDataFile.Create(nil);
+    DataFile := Doc.DataFiles.NewDataFile;
 
   With DataFile do
   try
@@ -830,17 +839,81 @@ begin
     // ********************************
     //      STATA EXPANSION FIELDS
     // ********************************
-    // - skip expansion fields
-    SetLength(ByteBuf, 1);
-    REPEAT
-      DataStream.Read(ByteBuf[0], 1); //data type code
-      IF FileVersion >= dta7 THEN
-        I := ReadInts(DataStream, 4)
-      ELSE
+    if FileVersion < dta7 then
+    begin
+      // - skip expansion fields for Stata < v7 (the format is unknown and without any documentation)
+      repeat
+        ExpType := ReadInts(DataStream, 1);
         I := ReadInts(DataStream, 2);
-      IF (ByteBuf[0] > 0) OR (I > 0) THEN
-        DataStream.Seek(I, soCurrent);
-    UNTIL (DataStream.Position >= DataStream.Size-1) OR ((I=0) AND (ByteBuf[0]=0));
+        if (ExpType > 0) then
+          DataStream.Seek(I, soCurrent);
+      until (ExpType = 0);
+    end else begin
+      DFNotes := TStringList.Create;
+      FieldNotes := TStringList.Create;
+      FieldNotes.OwnsObjects := true;
+      FieldNotes.Sorted := true;
+
+      repeat
+        ExpType := ReadInts(DataStream, 1);
+        I := ReadInts(DataStream, 4);
+
+        case ExpType of
+          0: ; // DO not thing, we break in "until"
+          1:   // Stata characteristics... read for notes.
+            begin
+              SetLength(CharBuf, I);
+              DataStream.Read(CharBuf[0], I);
+
+              VarName   := StringFromBuffer(@CharBuf[0], 33);
+              Character := StringFromBuffer(@CharBuf[33], 33);
+              StrBuf    := StringFromBuffer(@CharBuf[66], I - 66);
+
+              // We do not handle other characteristics about fields/dataset
+              // than notes!
+              if LeftStr(Character, 4) <> 'note' then continue;
+              if (VarName <> '_dta') and (not Fields.ItemExistsByName(VarName)) then continue;  // TODO : Give warning feedback that note exists for unknown field.
+              // TmpInt = Note number. Note0 is the actual count of notes, but since there is no order to which the notes are placed in
+              // the expansion fields section, we really do not care!
+              Delete(Character, 1, 4);
+              TmpInt := StrToInt(Character);
+              if TmpInt = 0 then continue;
+
+              if VarName = '_dta' then
+              begin
+                // Note for the dataset
+                if TmpInt > DFNotes.Count then for J := (DFNotes.Count + 1) to TmpInt do DFNotes.Add('');
+                DFNotes[TmpInt-1] := StrBuf;
+              end else begin
+                // Note for a field.
+                if not FieldNotes.Find(VarName, I) then
+                  I := FieldNotes.AddObject(VarName, TStringList.Create);
+                with TStringList(FieldNotes.Objects[I]) do
+                begin
+                  if TmpInt > Count then for J := (Count + 1) to TmpInt do Add('');
+                  Strings[TmpInt-1] := StrBuf;
+                end;
+              end;
+            end
+        else
+          // Skip expansion, this is a non-documented vender expansion.
+          DataStream.Seek(I, soCurrent);
+        end;
+      until ExpType = 0;
+
+      for I := 0 to DFNotes.Count - 1 do
+        Notes.Text := Notes.Text + DFNotes[I] + LineEnding;
+
+      for i := 0 to FieldNotes.Count - 1 do
+      begin
+        TmpField := Fields.FieldByName[FieldNotes[i]];
+        for j := 0 to TStringList(FieldNotes.Objects[i]).Count -1 do
+          TmpField.Notes.Text := TmpField.Notes.Text + LineEnding + TStringList(FieldNotes.Objects[i]).Strings[J];
+      end;
+      DFNotes.Free;
+      FieldNotes.Clear;
+      FieldNotes.Free;
+    end;
 
     I := DataStream.Position;
     if not ImportData then
