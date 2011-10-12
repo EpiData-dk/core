@@ -429,7 +429,7 @@ begin
         WriteString(DataStream, 'note1', 33);
         WriteString(DataStream, TmpStr, Length(TmpStr) + 1);
       end;
-
+      TimeFields.Free;
 
       // End expansion field
       WriteByte(DataStream, 0);
