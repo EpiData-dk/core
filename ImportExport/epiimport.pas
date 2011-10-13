@@ -1,4 +1,4 @@
-unit epiimport; 
+unit epiimport;
 
 {$mode objfpc}{$H+}
 
@@ -796,11 +796,14 @@ begin
       end;
 
       // Dates:
-      if TmpField.FieldType in DateFieldTypes then
-        TmpField.Length := 10;
-
-      if TmpField.FieldType in TimeFieldTypes then
-        TmpField.Length := 8;
+      if TmpField.FieldType in DateFieldTypes + TimeFieldTypes then
+      begin
+        if TmpField.FieldType in TimeFieldTypes then
+          TmpField.Length := 8
+        else
+          TmpField.Length := 10;
+        TmpField.Decimals := 0;
+      end;
 
       // - varlist
       StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);

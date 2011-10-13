@@ -263,10 +263,10 @@ begin
                 TmpChar := DoubleChar;  //&&
             END;
           ftString, ftUpperString:
-            // Using stringlength of 207 is maximun covered by Stata file format (at least) since version #4
-            // We do this to maximize the use of UTF8 charaters. Users can then manually adjust dataset in
-            // Stata to get a smaller file size.
-            TmpChar := Chr(207);
+            if ExportEncoding = eeUTF8 then
+              TmpChar := Chr(207)      // Since UTF-8 is multibyte there is no definit length to the #bytes used in a string.
+            else
+              TmpChar := Chr(Length);  // Userchosen ansi encoding, here 1 char = 1 byte! Always.
           ftBoolean:
             TmpChar := ByteChar;
           ftDMYDate, ftMDYDate, ftYMDDate,
@@ -321,7 +321,7 @@ begin
         ftBoolean:
           TmpStr := '%1.0f';
         ftString, ftUpperString:
-          TmpStr := '%' + IntToStr(207) + 's';
+          TmpStr := '%' + IntToStr(Ord(TypeList[i])) + 's';
         ftDMYDate, ftMDYDate, ftYMDDate,
         ftDMYToday, ftMDYToday, ftYMDToday:
           TmpStr := '%d';
