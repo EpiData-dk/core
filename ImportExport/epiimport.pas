@@ -1,4 +1,4 @@
-unit epiimport; 
+unit epiimport;
 
 {$mode objfpc}{$H+}
 
@@ -27,6 +27,7 @@ type
     function    ReadInts(Const St: TStream; Count: Integer): Integer;
     function    ReadSingle(Const St: TStream): Single;
     function    ReadDouble(Const St: TStream): Double;
+    function    ReEncodeString(Const Str: string): string;
     function    StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
   public
     constructor Create;
@@ -46,7 +47,7 @@ implementation
 
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
-  lclproc, dateutils;
+  lclproc, dateutils, LConvEncoding;
 
 var
   BigEndian: boolean = false;
@@ -100,6 +101,14 @@ begin
   Result := Double(Buf);
 end;
 
+function TEpiImport.ReEncodeString(const Str: string): string;
+begin
+  if ImportEncoding = eeGuess then
+    Result := EpiUnknownStrToUTF8(Str)
+  else
+    Result := ConvertEncoding(Str, EpiEncodingToString[ImportEncoding], 'utf8')
+end;
+
 function TEpiImport.StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
 var
   I: integer;
@@ -113,7 +122,7 @@ begin
     Result := Result + Src[i];
     Inc(i);
   end;
-  Result := EpiUnknownStrToUTF8(Result);
+  Result := ReEncodeString(Result);
 end;
 
 constructor TEpiImport.Create;
@@ -787,11 +796,14 @@ begin
       end;
 
       // Dates:
-      if TmpField.FieldType in DateFieldTypes then
-        TmpField.Length := 10;
-
-      if TmpField.FieldType in TimeFieldTypes then
-        TmpField.Length := 8;
+      if TmpField.FieldType in DateFieldTypes + TimeFieldTypes then
+      begin
+        if TmpField.FieldType in TimeFieldTypes then
+          TmpField.Length := 8
+        else
+          TmpField.Length := 10;
+        TmpField.Decimals := 0;
+      end;
 
       // - varlist
       StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);
@@ -1065,7 +1077,7 @@ begin
 
     IF (ValueLabels.Count > 0) AND (DataStream.Position < DataStream.Size - 4) THEN
     BEGIN
-      IF FileVersion = dta7 THEN
+      IF FileVersion = dta4 THEN
       BEGIN
         {Read value labels definitions - if present}
         WHILE DataStream.Position < DataStream.Size - 2 DO

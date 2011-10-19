@@ -11,7 +11,6 @@ type
 
   { TEpiStudy }
 
-//  TEpiStudyChangeEventType = ();
   TEpiStudy = class(TEpiCustomBase)
   private
     FAbstractText: TEpiTranslatedTextWrapper;
@@ -23,6 +22,7 @@ type
     FIdentifier: string;
     FLanguage: string;
     FModifiedDate: TDateTime;
+    FNotes: string;
     FOtherLanguages: string;
     FPublisher: TEpiTranslatedTextWrapper;
     FPurpose: TEpiTranslatedTextWrapper;
@@ -34,6 +34,7 @@ type
     procedure SetIdentifier(const AValue: string);
     procedure SetLanguage(const AValue: string);
     procedure SetModifiedDate(const AValue: TDateTime);
+    procedure SetNotes(AValue: string);
     procedure SetOtherLanguages(const AValue: string);
     procedure SetVersion(const AValue: string);
   public
@@ -51,6 +52,7 @@ type
     property   Identifier: string read FIdentifier write SetIdentifier;
     Property   Language: string read FLanguage write SetLanguage;
     Property   ModifiedDate: TDateTime read FModifiedDate write SetModifiedDate;
+    property   Notes: string read FNotes write SetNotes;
     property   OtherLanguages: string read FOtherLanguages write SetOtherLanguages;
     property   Publisher: TEpiTranslatedTextWrapper read FPublisher;
     property   Purpose: TEpiTranslatedTextWrapper read FPurpose;
@@ -89,6 +91,12 @@ procedure TEpiStudy.SetModifiedDate(const AValue: TDateTime);
 begin
   if FModifiedDate = AValue then exit;
   FModifiedDate := AValue;
+end;
+
+procedure TEpiStudy.SetNotes(AValue: string);
+begin
+  if FNotes = AValue then Exit;
+  FNotes := AValue;
 end;
 
 procedure TEpiStudy.SetOtherLanguages(const AValue: string);
@@ -157,12 +165,15 @@ begin
     SaveNode(Lvl + 1, rsIdentifier, Identifier) +
     SaveNode(Lvl + 1, rsLanguage, Language) +
     SaveNode(Lvl + 1, rsModified, ModifiedDate) +
+    SaveNode(Lvl + 1, rsNotes, Notes) +
     SaveNode(Lvl + 1, rsOtherLanguages, OtherLanguages) +
     SaveNode(Lvl + 1, rsVersion, Version);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiStudy.LoadFromXml(Root: TDOMNode);
+var
+  Node: TDOMNode;
 begin
   // Root = <Study>
   FAbstractText.LoadFromXml(Root);
@@ -171,6 +182,8 @@ begin
   FCreated      := LoadNodeDateTime(Root, rsCreated);
   FFunding.LoadFromXml(Root);
   FGeographicalCoverage.LoadFromXml(Root);
+  if LoadNode(Node, Root, rsNotes, false) then
+    FNotes := LoadNodeString(Root, rsNotes);
   FIdentifier   := LoadNodeString(Root, rsIdentifier);
   FLanguage     := LoadNodeString(Root, rsLanguage);
   RootOwner.SetLanguage(FLanguage, true);
