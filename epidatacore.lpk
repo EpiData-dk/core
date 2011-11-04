@@ -4,10 +4,10 @@
     <Name Value="epidatacore"/>
     <AddToProjectUsesSection Value="True"/>
     <CompilerOptions>
-      <Version Value="10"/>
+      <Version Value="11"/>
       <SearchPaths>
         <IncludeFiles Value="Core"/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Services"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -22,7 +22,6 @@
       </CodeGeneration>
       <Linking>
         <Debugging>
-          <GenerateDebugInfo Value="True"/>
           <DebugInfoType Value="dsDwarf2Set"/>
         </Debugging>
       </Linking>
@@ -34,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="8"/>
-    <Files Count="43">
+    <Files Count="45">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -188,25 +187,33 @@
         <UnitName Value="epireport_valuelabels"/>
       </Item38>
       <Item39>
-        <Filename Value="Utils/epiconvertutils.pas"/>
-        <UnitName Value="epiconvertutils"/>
+        <Filename Value="Services/episervice_ipc.pas"/>
+        <UnitName Value="episervice_ipc"/>
       </Item39>
       <Item40>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
+        <Filename Value="Utils/epiconvertutils.pas"/>
+        <UnitName Value="epiconvertutils"/>
       </Item40>
       <Item41>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
       </Item41>
       <Item42>
-        <Filename Value="Utils/epiversionutils.pas"/>
-        <UnitName Value="epiversionutils"/>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
       </Item42>
       <Item43>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
+      </Item43>
+      <Item44>
         <Filename Value="Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
-      </Item43>
+      </Item44>
+      <Item45>
+        <Filename Value="Services/episervice_ipctypes.pas"/>
+        <UnitName Value="episervice_ipctypes"/>
+      </Item45>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

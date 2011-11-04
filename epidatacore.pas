@@ -12,8 +12,9 @@ uses
   epieximtypes, epiexport, epiimport, epireport_base, epireport_databasegrid, 
   epireport_fieldlist_extended, epireport_fieldlist_simple, 
   epireport_filelist, epireport_htmlgenerator, epireport_project_overview, 
-  epireport_types, epireport_valuelabels, epiconvertutils, epimiscutils, 
-  epistringutils, epiversionutils, UniqueInstanceRaw;
+  epireport_types, epireport_valuelabels, episervice_ipc, epiconvertutils, 
+  epimiscutils, epistringutils, epiversionutils, UniqueInstanceRaw, 
+  episervice_ipctypes;
 
 implementation
 
