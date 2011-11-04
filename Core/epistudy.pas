@@ -122,6 +122,7 @@ begin
   FGeographicalCoverage := TEpiTranslatedTextWrapper.Create(Self, rsGeoCoverage, rsText);
   FIdentifier           := '';
   FLanguage             := '';
+  FNotes                := '';
   FOtherLanguages       := '';
   FPublisher            := TEpiTranslatedTextWrapper.Create(Self, rsPublisher, rsText);
   FPurpose              := TEpiTranslatedTextWrapper.Create(Self, rsPurpose, rsText);

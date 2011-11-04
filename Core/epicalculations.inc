@@ -63,8 +63,9 @@ end;
 
 function TEpiCalculation.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Content +=
-    SaveNode(Lvl + 1, rsResultField, ResultField.Id);
+  Content :=
+    SaveNode(Lvl + 1, rsResultField, ResultField.Id) +
+    Content;
   Result := inherited SaveToXml(Content, Lvl);
 end;
 

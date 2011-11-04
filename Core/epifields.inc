@@ -383,7 +383,7 @@ begin
   FRepeatValue  := false;
   HasDefaultValue := false;
 
-  RegisterClasses([Question, Notes]);
+  RegisterClasses([Notes, Question]);
 end;
 
 class function TEpiField.IdString: string;
@@ -434,14 +434,14 @@ end;
 
 function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  if Assigned(Ranges) then
-    Content += Ranges.SaveToXml('', Lvl + 1);
-  if Assigned(Jumps) then
-    Content += Jumps.SaveToXml('', Lvl + 1);
   if Assigned(Calculation) then
     Content += Calculation.SaveToXml('', Lvl + 1);
   if Assigned(Comparison) then
     Content += Comparison.SaveToXml('', Lvl + 1);
+  if Assigned(Jumps) then
+    Content += Jumps.SaveToXml('', Lvl + 1);
+  if Assigned(Ranges) then
+    Content += Ranges.SaveToXml('', Lvl + 1);
 
   Result := inherited SaveToXml(Content, Lvl);
 end;
