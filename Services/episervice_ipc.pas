@@ -13,65 +13,96 @@ type
 
   TEpiIPC = class(TComponent)
   private
+    FOnRequest: TEpiIPCRequest;
     Timer:      TFPTimer;
     IPCServer:  TSimpleIPCServer;
     IPCClient:  TSimpleIPCClient;
+    FAppName:   string;
+    FWaitForMsg: boolean;
+    FFileIsOpen: boolean;
+    procedure   SetOnRequest(AValue: TEpiIPCRequest);
     procedure   TimerEvent(Sender: TObject);
     procedure   ServerEvent(Sender: TObject);
     procedure   SendMsg(Const MsgType: TMessageType; Const MsgText: string);
   public
     constructor Create(Const AppName: string; AOwner: TComponent);
-    procedure   SendFileOpenMsg(Const FileName: string);
+    destructor  Destroy; override;
+    function    IsFileOpenMsg(Const FileName: string): boolean;
+    property    OnRequest: TEpiIPCRequest read FOnRequest write SetOnRequest;
   end;
 
 implementation
+
+type
+  TMsgListEntry = record
+    MsgType: TMessageType;
+    MsgData: string;
+  end;
+  PMsgListEntry = ^TMsgListEntry;
 
 { TEpiIPC }
 
 procedure TEpiIPC.TimerEvent(Sender: TObject);
 begin
    // TODO: Create list of sent events and loop through msg. with a timestamp larger than thresshold.
-  IPCServer.PeekMessage(-1, true);
+  if not Timer.Enabled then exit;
+  IPCServer.PeekMessage(0, true);
+end;
+
+procedure TEpiIPC.SetOnRequest(AValue: TEpiIPCRequest);
+begin
+  if FOnRequest = AValue then Exit;
+  FOnRequest := AValue;
 end;
 
 procedure TEpiIPC.ServerEvent(Sender: TObject);
+var
+  Ack: TMessageType;
 begin
+  // Stop timer - we do not want to read messages while processing one.
+//  Timer.Enabled := false;
+
+  FWaitForMsg := false;
   with IPCServer do
   case MsgType of
-    epiIPC_Ack_Ok:
-      // Do nothign since our (un)register request was completed. No further actions required.
-      ;
-    epiIPC_Ack_Fail:
+    epiIPC_Req_IsFileOpen:
       begin
-        // MsgData contains out failed request.
-        Case MsgData.ReadDWord of
-          epiIPC_Req_Register:
-            // TODO : Registration failed!
-            ;
-          epiIPC_Req_Unregister:
-            // TODO : UnRegistration failed!
-            ;
-        end;
+        if Assigned(FOnRequest) then
+          FOnRequest(MsgType, StringMessage, Ack);
+
+        IPCClient.Connect;
+        IPCClient.SendStringMessage(Ack, StringMessage);
       end;
     epiIPC_Ack_FileNotOpen:
-      // TODO : File not open reply
-      ;
+      FFileIsOpen := false;
     epiIPC_Ack_FileIsOpen:
-      // TODO : File is open reply
-      ;
+      FFileIsOpen := true;
   end;
+
+  // Start timer again.
+//  Timer.StartTimer;
 end;
 
 procedure TEpiIPC.SendMsg(const MsgType: TMessageType; const MsgText: string);
+var
+  MsgEntry: PMsgListEntry;
+  i: Integer;
 begin
-  // TODO: Create list of sent events and loop through msg. with a timestamp larger than thresshold.
-  IPCClient.SendStringMessage(MsgType, MsgText);
+  if IPCClient.ServerRunning then
+  begin
+    IPCClient.Connect;
+    IPCClient.SendStringMessage(MsgType, MsgText)
+  end
+  else
+    FWaitForMsg := false;
 end;
 
 constructor TEpiIPC.Create(const AppName: string; AOwner: TComponent);
 begin
+  FAppName := AppName;
+
   IPCServer := TSimpleIPCServer.Create(self);
-  IPCServer.ServerID := AppName;
+  IPCServer.ServerID := epiIPCprefix + AppName;
   IPCServer.Global := true;
   IPCServer.OnMessage := @ServerEvent;
   IPCServer.Active := true;
@@ -82,18 +113,23 @@ begin
   Timer.Enabled := true;
 
   IPCClient := TSimpleIPCClient.Create(self);
-  IPCClient.ServerID := epiIPCCentralName;
-  if not IPCClient.ServerRunning then
-  begin
-    // Central server not running - start it.
-  end;
-  IPCClient.Active := true;
-  IPCClient.SendStringMessage(epiIPC_Req_Register, AppName);
+  IPCClient.ServerID := BoolToStr(AppName = epiIPCNames[0], epiIPCprefix + epiIPCNames[1], epiIPCprefix + epiIPCNames[0]);
 end;
 
-procedure TEpiIPC.SendFileOpenMsg(const FileName: string);
+destructor TEpiIPC.Destroy;
 begin
+  inherited Destroy;
+end;
+
+function TEpiIPC.IsFileOpenMsg(const FileName: string): boolean;
+begin
+  FFileIsOpen := false;
+
+  FWaitForMsg := true;
   SendMsg(epiIPC_Req_IsFileOpen, FileName);
+  while FWaitForMsg do IPCServer.PeekMessage(50, true);
+
+  Result := FFileIsOpen;
 end;
 
 end.
