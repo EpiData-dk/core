@@ -324,7 +324,7 @@ type
   protected
     function  NamePrefix: string; virtual;
   public
-    function NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; override;
+    function  NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; override;
     procedure AddItem(Item: TEpiCustomItem); override;
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  GetUniqueName: string;
@@ -334,6 +334,19 @@ type
     function  ValidateRename(Const NewName: string): boolean;
     property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
     property  OnGetNamePrefix: TEpiNamePrefixEvent read FOnGetNamePrefix write FOnGetNamePrefix;
+  end;
+
+  { TEpiCustomControlItemList }
+
+  TEpiCustomControlItemList = class(TEpiCustomNamedItemList)
+  private
+    procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure Sort;
+  public
+    procedure   AddItem(Item: TEpiCustomItem); override;
+    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function    DeleteItem(Index: integer): TEpiCustomItem; override;
+    procedure   RemoveItem(Item: TEpiCustomItem); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -1634,6 +1647,76 @@ begin
   result := (GetItemIndexByName(NewName) = -1);
   if Assigned(OnValidateRename) then
     result := result and OnValidateRename(NewName);
+end;
+
+{ TEpiCustomControlItemList }
+
+function SortControlItems(Item1, Item2: Pointer): Integer;
+var
+  CI1: TEpiCustomControlItem absolute Item1;
+  CI2: TEpiCustomControlItem absolute Item2;
+begin
+  // The same pointers is also the same object!
+  if CI1.Equals(CI2) then exit(0);
+
+  result := CI1.Top - CI2.Top;
+  if result = 0 then
+    result := CI1.Left - CI2.Left;
+
+  // If two ControlItems are placed on eachother - the "highest" is the biggest pointer value.
+  if result = 0 then
+    result := Item1 - Item2;
+end;
+
+procedure TEpiCustomControlItemList.ChangeHook(Sender: TObject;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  if (EventGroup <> eegCustomBase) then exit;
+
+  case TEpiCustomChangeEventType(EventType) of
+    ecceDestroy: ;
+    ecceUpdate,
+    ecceId, ecceAddItem,
+    ecceDelItem, ecceSetItem,
+    ecceText, ecceName:
+      Exit;
+    ecceSetTop:  Sort;
+    ecceSetLeft: Sort;
+  end;
+end;
+
+procedure TEpiCustomControlItemList.Sort;
+begin
+  FList.Sort(@SortControlItems);
+end;
+
+procedure TEpiCustomControlItemList.AddItem(Item: TEpiCustomItem);
+begin
+  inherited AddItem(Item);
+  Item.RegisterOnChangeHook(@ChangeHook, true);
+  Sort;
+end;
+
+procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
+  Item: TEpiCustomItem);
+begin
+  inherited InsertItem(Index, Item);
+  Item.RegisterOnChangeHook(@ChangeHook, true);
+  Sort;
+end;
+
+function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
+begin
+  Result := inherited DeleteItem(Index);
+  Result.UnRegisterOnChangeHook(@ChangeHook);
+  Sort;
+end;
+
+procedure TEpiCustomControlItemList.RemoveItem(Item: TEpiCustomItem);
+begin
+  inherited RemoveItem(Item);
+  Item.UnRegisterOnChangeHook(@ChangeHook);
+  Sort;
 end;
 
 end.

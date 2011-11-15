@@ -8,7 +8,7 @@ type
 
   { TEpiSections }
 
-  TEpiSections = class(TEpiCustomNamedItemList)
+  TEpiSections = class(TEpiCustomControlItemList)
   private
     function GetSection(Index: integer): TEpiSection;
   protected

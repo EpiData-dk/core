@@ -11,7 +11,7 @@ type
 
   { TEpiFields }
 
-  TEpiFields = class(TEpiCustomNamedItemList)
+  TEpiFields = class(TEpiCustomControlItemList)
   private
     function GetDataFile: TEpiDataFile;
     function GetField(index: integer): TEpiField;

@@ -1,5 +1,22 @@
 {%MainUnit epidatafiles.pas}
 
+type
+
+  { FAllItemsList }
+
+  TAllItemsList = class (TEpiCustomControlItemList)
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+  end;
+
+{ FAllItemsList }
+
+constructor TAllItemsList.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+end;
+
+
 { TEpiDataFiles }
 
 function TEpiDataFiles.GetDataFile(Index: integer): TEpiDataFile;
@@ -101,6 +118,11 @@ begin
   result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
 end;
 
+function TEpiDataFile.GetControlItem(Index: integer): TEpiCustomControlItem;
+begin
+  result := TEpiCustomControlItem(FControlItems[Index]);
+end;
+
 function TEpiDataFile.GetDeletedCount: Integer;
 var
   FSize: Integer;
@@ -153,6 +175,10 @@ begin
           // On AddItem "data" is a pointer to the added item.
           ecceAddItem:
             begin
+              // Insert Item into AllItemsList. This also goes for sections!
+              if Sender.InheritsFrom(TEpiCustomControlItemList) then
+                FControlItems.AddItem(TEpiCustomControlItem(Data));
+
               // Here we make sure that fields added to any section is also added
               // to the global list of fields.
               if (Sender is TEpiFields) then
@@ -180,9 +206,9 @@ begin
               with TEpiSection(Data) do
               begin
                 FDataFile := Self;
-                Fields.RegisterOnChangeHook(@LocalEventHook, true);
+//                Fields.RegisterOnChangeHook(@LocalEventHook, true);
                 Fields.OnValidateRename := @Self.ValidateRename;
-                Headings.RegisterOnChangeHook(@LocalEventHook, true);
+//                Headings.RegisterOnChangeHook(@LocalEventHook, true);
                 Headings.OnValidateRename := @Self.ValidateRename;
               end;
             end;
@@ -190,6 +216,10 @@ begin
           // On DelIetem "data" is a pointer to the now deleted item.
           ecceDelItem:
             begin
+              // Remove from AllItemsList.
+              if Sender.InheritsFrom(TEpiCustomControlItemList) then
+                FControlItems.RemoveItem(TEpiCustomControlItem(Data));
+
               if (Sender is TEpiFields) then
                 Fields.RemoveItem(TEpiField(Data));
               if (Sender is TEpiHeadings) then
@@ -549,6 +579,7 @@ begin
   FSections.OnValidateRename := @ValidateRename;
 
   // The "all" containers.
+  FControlItems := TAllItemsList.Create(Self);
   FAllFields := TEpiFields.Create(Self);
   FAllHeadings := TEpiHeadings.Create(Self);
 
@@ -556,6 +587,7 @@ begin
   FMainSection := NewSection;
   FMainSection.Name := 'MAIN';
   FMainSection.Id := FMainSection.IdString + 'main';
+//  FMainSection.RegisterOnChangeHook(@LocalEventHook, true);
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;

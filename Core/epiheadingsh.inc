@@ -4,7 +4,7 @@ type
 
   { TEpiHeadings }
 
-  TEpiHeadings = class(TEpiCustomNamedItemList)
+  TEpiHeadings = class(TEpiCustomControlItemList)
   protected
     function NamePrefix: string; override;
   public
