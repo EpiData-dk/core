@@ -118,11 +118,6 @@ begin
   result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
 end;
 
-function TEpiDataFile.GetControlItem(Index: integer): TEpiCustomControlItem;
-begin
-  result := TEpiCustomControlItem(FControlItems[Index]);
-end;
-
 function TEpiDataFile.GetDeletedCount: Integer;
 var
   FSize: Integer;
@@ -175,10 +170,6 @@ begin
           // On AddItem "data" is a pointer to the added item.
           ecceAddItem:
             begin
-              // Insert Item into AllItemsList. This also goes for sections!
-              if Sender.InheritsFrom(TEpiCustomControlItemList) then
-                FControlItems.AddItem(TEpiCustomControlItem(Data));
-
               // Here we make sure that fields added to any section is also added
               // to the global list of fields.
               if (Sender is TEpiFields) then
@@ -206,9 +197,9 @@ begin
               with TEpiSection(Data) do
               begin
                 FDataFile := Self;
-//                Fields.RegisterOnChangeHook(@LocalEventHook, true);
+                Fields.RegisterOnChangeHook(@LocalEventHook, true);
                 Fields.OnValidateRename := @Self.ValidateRename;
-//                Headings.RegisterOnChangeHook(@LocalEventHook, true);
+                Headings.RegisterOnChangeHook(@LocalEventHook, true);
                 Headings.OnValidateRename := @Self.ValidateRename;
               end;
             end;
@@ -216,9 +207,6 @@ begin
           // On DelIetem "data" is a pointer to the now deleted item.
           ecceDelItem:
             begin
-              // Remove from AllItemsList.
-              if Sender.InheritsFrom(TEpiCustomControlItemList) then
-                FControlItems.RemoveItem(TEpiCustomControlItem(Data));
 
               if (Sender is TEpiFields) then
                 Fields.RemoveItem(TEpiField(Data));
@@ -562,6 +550,60 @@ begin
   Create(AOwner, 0);
 end;
 
+function ControlItemListSort(Item1, Item2: Pointer): integer;
+var
+  C1: TEpiCustomControlItem;
+  C2: TEpiCustomControlItem;
+  S1: TEpiSection;
+  S2: TEpiSection;
+  M: TEpiSection;
+
+  function Compare(CI1, CI2: TEpiCustomControlItem): integer;
+  begin
+    result := CI1.Top - CI2.Top;
+    if result <> 0 then exit;
+
+    result := CI1.Left - CI2.Left;
+    if result <> 0 then exit;
+
+    // if both top and left are the same and not same pointer.
+    // The two ControlItems must be placed on top of each other.
+    // Just do a pointer diff...
+    result := Pointer(CI1) - Pointer(CI2);
+  end;
+
+begin
+  if Item1 = Item2 then exit(0);  // Same pointer = same object!
+
+  C1 := TEpiCustomControlItem(Item1);
+  C2 := TEpiCustomControlItem(Item2);
+  S1 := TEpiSection(C1.Owner.Owner);
+  S2 := TEpiSection(C2.Owner.Owner);
+  M  := S1.DataFile.MainSection;
+
+  // Same section! Regular compare
+  if S1 = S2 then
+  begin
+    Result := Compare(C1, C2);
+    Exit;
+  end else
+
+  // One section is main
+  if (S1 = M) or (S2 = M) then
+  begin
+    if S1 = M then C2 := S2;
+    if S2 = M then C1 := S1;
+  end else
+
+  // Two different sections - none is main.
+  begin
+    C1 := S1;
+    C2 := S2;
+  end;
+
+  Result := Compare(C1, C2);
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
@@ -579,15 +621,15 @@ begin
   FSections.OnValidateRename := @ValidateRename;
 
   // The "all" containers.
-  FControlItems := TAllItemsList.Create(Self);
   FAllFields := TEpiFields.Create(Self);
+  FAllFields.OnSort := @ControlItemListSort;
   FAllHeadings := TEpiHeadings.Create(Self);
+  FAllHeadings.OnSort := @ControlItemListSort;
 
   // The special main section...
   FMainSection := NewSection;
   FMainSection.Name := 'MAIN';
   FMainSection.Id := FMainSection.IdString + 'main';
-//  FMainSection.RegisterOnChangeHook(@LocalEventHook, true);
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;

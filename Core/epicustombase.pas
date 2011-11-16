@@ -340,6 +340,7 @@ type
 
   TEpiCustomControlItemList = class(TEpiCustomNamedItemList)
   private
+    FOnSort: TListSortCompare;
     procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
     procedure Sort;
   public
@@ -347,6 +348,7 @@ type
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function    DeleteItem(Index: integer): TEpiCustomItem; override;
     procedure   RemoveItem(Item: TEpiCustomItem); override;
+    property    OnSort: TListSortCompare read FOnSort write FOnSort;
   end;
 
 {$I epixmlconstants.inc}
@@ -1687,7 +1689,10 @@ end;
 
 procedure TEpiCustomControlItemList.Sort;
 begin
-  FList.Sort(@SortControlItems);
+  if Assigned(FOnSort) then
+    FList.Sort(FOnSort)
+  else
+    FList.Sort(@SortControlItems);
 end;
 
 procedure TEpiCustomControlItemList.AddItem(Item: TEpiCustomItem);
