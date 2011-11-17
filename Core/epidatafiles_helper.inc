@@ -28,6 +28,7 @@ type
     function GetRefObject(const Index: integer): String;
   public
     constructor Create;
+    destructor Destroy; override;
     procedure AddLink(LinkType: TLinkType; Obj: TObject; RefObjId: string);
     function Count: integer;
     procedure Clear;
@@ -60,6 +61,14 @@ constructor TLinkMap.Create;
 begin
   FLinkTypes := TList.Create;
   FLink      := TStringList.Create;
+end;
+
+destructor TLinkMap.Destroy;
+begin
+  Clear;
+  FLink.Free;
+  FLinkTypes.Free;
+  inherited Destroy;
 end;
 
 procedure TLinkMap.AddLink(LinkType: TLinkType; Obj: TObject; RefObjId: string);
