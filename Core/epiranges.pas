@@ -54,7 +54,6 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    SaveAttributesToXml: string; override;
     function    XMLName: string; override;
-    class function IdString: string; override;
     property    AsInteger[const Start: boolean]: EpiInteger read GetAsInteger write SetAsInteger;
     property    AsFloat[const Start: boolean]: EpiFloat read GetAsFloat write SetAsFloat;
     property    AsDate[const Start: boolean]: EpiDate read GetAsDate write SetAsDate;
@@ -568,11 +567,6 @@ end;
 function TEpiRange.XMLName: string;
 begin
   Result := rsRange;
-end;
-
-class function TEpiRange.IdString: string;
-begin
-  Result := 'range_id_';
 end;
 
 { TEpiIntRange }

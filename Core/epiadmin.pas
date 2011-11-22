@@ -70,12 +70,12 @@ type
 
   { TEpiUsers }
 
-  TEpiUsers = class(TEpiCustomNamedItemList)
+  TEpiUsers = class(TEpiCustomList)
   private
     function GetAdmin: TEpiAdmin;
     function GetUsers(Index: integer): TEpiUser;
   protected
-    function NamePrefix: string; override;
+    function IdPrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -90,7 +90,7 @@ type
 
   { TEpiUser }
 
-  TEpiUser = class(TEpiCustomNamedItem)
+  TEpiUser = class(TEpiCustomItem)
   private
     FGroup: TEpiGroup;
     FExpireDate: TDateTime;
@@ -116,7 +116,6 @@ type
     procedure SetMasterPassword(const AValue: string);
     procedure SetPassword(const AValue: string);
   protected
-    class function IdString: string; override;
     property  Salt: string read FSalt;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -127,7 +126,7 @@ type
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
     // Unscrambled data:
-    Property   Login: string read GetName write SetName;
+    Property   Login: string read GetId write SetId;
     Property   Password: string read FPassword write SetPassword;
     Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     // Scrambled data (in UserInfo section):
@@ -142,12 +141,12 @@ type
 
   { TEpiGroups }
 
-  TEpiGroups = class(TEpiCustomNamedItemList)
+  TEpiGroups = class(TEpiCustomList)
   private
     function    GetAdmin: TEpiAdmin;
     function    GetGroup(Index: integer): TEpiGroup;
   protected
-    function    NamePrefix: string; override;
+    function    IdPrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -161,13 +160,11 @@ type
 
   { TEpiGroup }
 
-  TEpiGroup = class(TEpiCustomNamedItem)
+  TEpiGroup = class(TEpiCustomItem)
   private
     FCaption: TEpiTranslatedTextWrapper;
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
-  protected
-    class function IdString: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -334,7 +331,7 @@ begin
   result := TEpiUser(Items[Index]);
 end;
 
-function TEpiUsers.NamePrefix: string;
+function TEpiUsers.IdPrefix: string;
 begin
   Result := 'User';
 end;
@@ -505,11 +502,6 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
 
-class function TEpiUser.IdString: string;
-begin
-  Result := 'user_id_';
-end;
-
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -590,7 +582,7 @@ begin
   Result := TEpiGroup(Items[Index]);
 end;
 
-function TEpiGroups.NamePrefix: string;
+function TEpiGroups.IdPrefix: string;
 begin
   Result := 'Group';
 end;
@@ -660,11 +652,6 @@ begin
   Val := FRights;
   FRights := AValue;
   DoChange(eegAdmin, Word(eaceGroupSetRights), @Val);
-end;
-
-class function TEpiGroup.IdString: string;
-begin
-  Result := 'group_id_';
 end;
 
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);

@@ -180,7 +180,6 @@ end;
 function TEpiXMLSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Result :=
-    SaveNode(Lvl + 1, rsScrambled,  Scrambled) +
     SaveNode(Lvl + 1, rsDateSep,    DateSeparator) +
     SaveNode(Lvl + 1, rsTimeSep,    TimeSeparator) +
     SaveNode(Lvl + 1, rsDecSep,     DecimalSeparator) +
@@ -193,7 +192,6 @@ var
   Node: TDOMNode;
 begin
   // Root = <Settings>
-  Scrambled        := LoadNodeBool(Root, rsScrambled);
   DateSeparator    := LoadNodeString(Root, rsDateSep)[1];
   TimeSeparator    := LoadNodeString(Root, rsTimeSep)[1];
   DecimalSeparator := LoadNodeString(Root, rsDecSep)[1];

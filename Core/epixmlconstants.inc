@@ -50,6 +50,7 @@ const
 
    rsStudy           = 'Study';
     rsAbstract        = 'Abstract';
+    rsAgency          = 'Agency';
     rsAuthor          = 'Author';
     rsCitations       = 'Citations';
     rsCreated         = 'Created';
@@ -63,6 +64,7 @@ const
     rsPurpose         = 'Purpose';
     rsTimeCoverage    = 'TimeCoverage';
     rsTitle           = 'Title';
+    rsTopicalCoverage = 'TopicalCoverage';
     rsVersion         = 'Version';
 
    rsValueLabelSets  = 'ValueLabelSets';
@@ -94,7 +96,7 @@ const
          rsEntryMode       = 'entrymode';
          rsConfirmEntry    = 'confirmentry';
          rsValueLabelId    = 'valuelabelref';
-         rsValueLabelWriteRef = 'valuelabelwriteref';
+         rsValueLabelWriteRef = 'valuelabelwritefieldref';
          rsShowValueLabel  = 'showvaluelabel';
          rsForcePickList   = 'forcepicklist';
          rsRepeatValue     = 'repeat';
@@ -110,30 +112,30 @@ const
           rsJump            = 'Jump';
            rsJumpOn          = 'on';
            rsJumpType        = 'type';
-           rsJumpTo          = 'to';
+           rsJumpTo          = 'tofieldref';
            rsJumpReset       = 'reset';
          rsCalculation     = 'Calculation';
-          rsResultField     = 'ResultField';
-          rsTimeCalcType    = 'TimeCalcType';
-          rsStartDate       = 'StartDate';
-          rsStartTime       = 'StartTime';
-          rsEndDate         = 'EndDate';
-          rsEndTime         = 'EndTime';
-          rsDayField        = 'DayField';
-          rsMonthField      = 'MonthField';
-          rsYearField       = 'YearField';
-          rsField1          = 'Field1';
-          rsField2          = 'Field2';
-          rsField3          = 'Field3';
+          rsResultField     = 'ResultFieldRef';
+          rsTimeCalcType    = 'TimeCalcTypeRef';
+          rsStartDate       = 'StartDateRef';
+          rsStartTime       = 'StartTimeRef';
+          rsEndDate         = 'EndDateRef';
+          rsEndTime         = 'EndTimeRef';
+          rsDayField        = 'DayFieldRef';
+          rsMonthField      = 'MonthFieldRef';
+          rsYearField       = 'YearFieldRef';
+          rsField1          = 'Field1Ref';
+          rsField2          = 'Field2Ref';
+          rsField3          = 'Field3Ref';
           rsDelim1          = 'Delimiter1';
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
-          rsCompareTo       = 'to';
+          rsCompareTo       = 'tofieldref';
           rsCompareType     = 'type';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';
-       rsRecordStatus    = 'st';
+       rsRecordStatus    = 'status';
 
    rsRelations       = 'Relations';
     rsPrimaryKeys     = 'PrimaryKeys';

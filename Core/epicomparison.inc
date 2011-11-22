@@ -68,9 +68,9 @@ end;
 
 function TEpiComparison.SaveAttributesToXml: string;
 begin
-  Result := ' ' +
-    rsCompareTo   + '="' + CompareField.Id + '" ' +
-    rsCompareType + '="' + IntToStr(Integer(CompareType)) + '"';
+  Result := inherited SaveAttributesToXml +
+    SaveAttr(rsCompareTo, CompareField.Id) +
+    SaveAttrEnum(rsCompareType, Integer(CompareType), TypeInfo(TEpiComparisonType));
 end;
 
 procedure TEpiComparison.Assign(const AEpiCustomBase: TEpiCustomBase);

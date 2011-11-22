@@ -50,7 +50,7 @@ procedure TEpiReportValueLabels.PrintValueLabelSet(
 var
   i: Integer;
 begin
-  DoTableHeader(VLSet.Name + ': (' + EpiTypeNames[VLSet.LabelType] + ')', 3, VLSet.Count + 1);
+  DoTableHeader(VLSet.Id + ': (' + EpiTypeNames[VLSet.LabelType] + ')', 3, VLSet.Count + 1);
 
   DoTableCell(0, 0, 'Category');
   DoTableCell(1, 0, 'Label');
@@ -82,7 +82,7 @@ begin
   LabelList := TStringList.Create;
   LabelList.Sorted := true;
   for i := 0 to EpiValueLabels.Count - 1 do
-    LabelList.AddObject(EpiValueLabels[i].Name, EpiValueLabels[i]);
+    LabelList.AddObject(EpiValueLabels[i].Id, EpiValueLabels[i]);
 
   DoSection('ValueLabels');
 

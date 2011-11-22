@@ -54,7 +54,7 @@ var
   Field1: TEpiField absolute Item1;
   Field2: TEpiField absolute Item2;
 begin
-  result:= AnsiCompareStr(Field1.Name, Field2.Name);
+  result:= AnsiCompareStr(Field1.Id, Field2.Id);
 end;
 
 function EntryFlowSort(Item1, Item2: Pointer): integer;
@@ -133,10 +133,10 @@ begin
   for i := 0 to FieldList.Count - 1 do
   with TEpiField(FieldList[i]) do
   begin
-    DoTableCell(0, i+1, Name);
+    DoTableCell(0, i+1, Id);
     DoTableCell(1, i+1, EpiTypeNames[FieldType]);
     if Assigned(ValueLabelSet) then
-      DoTableCell(2, i+1, ValueLabelSet.Name)
+      DoTableCell(2, i+1, ValueLabelSet.Id)
     else
       DoTableCell(2, i+1, '');
     DoTableCell(3, i+1, Question.Text);

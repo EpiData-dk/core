@@ -8,18 +8,18 @@ type
 
   { TEpiSections }
 
-  TEpiSections = class(TEpiCustomNamedItemList)
+  TEpiSections = class(TEpiCustomList)
   private
     function GetSection(Index: integer): TEpiSection;
   protected
-    function NamePrefix: string; override;
+    function IdPrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewSection: TEpiSection;
-    function    GetSectionByName(Const AName: string): TEpiSection;
+    function    GetSectionById(Const AId: string): TEpiSection;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
   end;
 
@@ -38,8 +38,6 @@ type
     function    GetHeading(Index: integer): TEpiHeading;
     procedure   SetHeight(const AValue: integer);
     procedure   SetWidth(const AValue: integer);
-  protected
-    class function IdString: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;

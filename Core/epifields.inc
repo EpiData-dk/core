@@ -27,9 +27,9 @@ begin
   result := TEpiField(Items[index]);
 end;
 
-function TEpiFields.GetFieldByName(const AName: string): TEpiField;
+function TEpiFields.GetFieldById(const AId: string): TEpiField;
 begin
-  result := TEpiField(GetItemByName(AName));
+  result := TEpiField(GetItemById(AId));
 end;
 
 procedure TEpiFields.DoAssignList(const EpiCustomList: TEpiCustomList);
@@ -50,7 +50,7 @@ begin
   EndUpdate;
 end;
 
-function TEpiFields.NamePrefix: string;
+function TEpiFields.IdPrefix: string;
 begin
   Result := 'V';
 end;
@@ -82,7 +82,7 @@ begin
   begin
     CheckNode(Node, rsField);
 
-    NField := NewField(TEpiFieldType(LoadAttrInt(Node, rsType)));
+    NField := NewField(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
     NField.LoadFromXml(Node);
 
     Node := Node.NextSibling;
@@ -95,7 +95,6 @@ var
 begin
   result := TEpiField.CreateField(Self, FieldType);
   Result.Id := GetUniqueItemId(TEpiCustomItemClass(Result.ClassType));
-  Result.Name := GetUniqueName;
   AddItem(Result);
 
   if (not TEpiDocument(RootOwner).Loading) and (FieldType = ftAutoInc) then
@@ -386,11 +385,6 @@ begin
   RegisterClasses([Notes, Question]);
 end;
 
-class function TEpiField.IdString: string;
-begin
-  Result := 'f';
-end;
-
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
 begin
   case AFieldType of
@@ -450,7 +444,7 @@ function TEpiField.SaveAttributesToXml: string;
 begin
   Result :=
     inherited SaveAttributesToXml +
-    SaveAttr(rsType, Integer(FieldType)) +
+    SaveAttrEnum(rsType, Integer(FieldType), TypeInfo(TEpiFieldType)) +
     SaveAttr(rsLength, Length) +
     SaveAttr(rsDecimals, Decimals) +
     SaveAttr(rsEntryMode, Integer(EntryMode));
@@ -1515,7 +1509,7 @@ end;
 function TEpiCustomAutoField.SaveAttributesToXml: string;
 begin
   if FieldType in AutoUpdateFieldTypes then
-    Result := SaveAttr(rsAutoUpdateMode, Integer(AutoMode));
+    Result := SaveAttrEnum(rsAutoUpdateMode, Integer(AutoMode), TypeInfo(TEpiAutoUpdateMode));
   Result :=
     inherited SaveAttributesToXml +
     Result;
@@ -1524,7 +1518,7 @@ end;
 procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode);
 begin
   if FieldType in AutoUpdateFieldTypes then
-    AutoMode := TEpiAutoUpdateMode(LoadAttrInt(Root, rsAutoUpdateMode));
+    AutoMode := TEpiAutoUpdateMode(LoadAttrEnum(Root, rsAutoUpdateMode, TypeInfo(TEpiAutoUpdateMode)));
   inherited LoadFromXml(Root);
 end;
 

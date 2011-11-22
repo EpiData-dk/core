@@ -63,7 +63,7 @@ begin
     Raise Exception.CreateFmt(
             'Field "%s" does not support jumps! (Auto Type)' + LineEnding +
             'Please Contact EpiData',
-            [TEpiCustomNamedItem(Owner).Name]);
+            [TEpiCustomItem(Owner).Id]);
 
   if Ft in BoolFieldTypes   then ItemClass := TEpiBoolJump;
   if Ft in IntFieldTypes    then ItemClass := TEpiIntJump;
@@ -113,11 +113,6 @@ begin
   FJumpToField := nil;
 end;
 
-class function TEpiJump.IdString: string;
-begin
-  Result := 'jump_id_';
-end;
-
 function TEpiJump.XMLName: string;
 begin
   Result := rsJump;
@@ -128,8 +123,8 @@ var
   FieldId: String;
 begin
   inherited LoadFromXml(Root);
-  JumpType := TEpiJumpType(LoadAttrInt(Root, rsJumpType));
-  ResetType := TEpiJumpResetType(LoadAttrInt(Root, rsJumpReset));
+  JumpType := TEpiJumpType(LoadAttrEnum(Root, rsJumpType, TypeInfo(TEpiJumpType)));
+  ResetType := TEpiJumpResetType(LoadAttrEnum(Root, rsJumpReset, TypeInfo(TEpiJumpResetType)));
   if JumpType = jtToField then
   begin
     FieldId := LoadAttrString(Root, rsJumpTo);
@@ -144,13 +139,15 @@ end;
 
 function TEpiJump.SaveAttributesToXml: string;
 begin
-  Result := inherited SaveAttributesToXml +
-    Format(' %s="%s" %s="%d" %s="%d"',
-           [rsJumpOn, GetJumpValueAsString,
-            rsJumpType, JumpType,
-            rsJumpReset, ResetType]);
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsJumpOn, GetJumpValueAsString) +
+    SaveAttrEnum(rsJumpType, Integer(JumpType), TypeInfo(TEpiJumpType)) +
+    SaveAttrEnum(rsJumpReset, Integer(ResetType), TypeInfo(TEpiJumpResetType));
+
   if JumpType = jtToField then
-    Result := Result + Format(' %s="%s"', [rsJumpTo, JumpToField.Id]);
+    Result := Result +
+    SaveAttr(rsJumpTo, JumpToField.Id);
 end;
 
 procedure TEpiJump.Assign(const AEpiCustomBase: TEpiCustomBase);

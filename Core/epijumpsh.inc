@@ -31,7 +31,6 @@ type
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     function    GetJumpValueAsString: string; virtual; abstract;
-    class function IdString: string; override;
   public
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;

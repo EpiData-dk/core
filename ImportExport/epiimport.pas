@@ -351,7 +351,7 @@ begin
           Text := VariableLabel;
         end;
         // Ensure valid variable name.
-        Name := TmpName;
+        Id := TmpName;
 
         // Summerize field findings.
         TotFieldLength := TotFieldLength + Length;
@@ -469,7 +469,7 @@ begin
                   else
                     TmpFieldType := ftString;
                   VLSet := ValueLabels.NewValueLabelSet(TmpFieldType);
-                  VLSet.Name := VLName;
+                  VLSet.Id := VLName;
                   NewVLset := false;
                 end;
 
@@ -807,7 +807,7 @@ begin
 
       // - varlist
       StrBuf := StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength);
-      TmpField.Name := Trim(StrBuf);
+      TmpField.Id := Trim(StrBuf);
     END;
 
     // - lbllist: names af value label
@@ -820,10 +820,10 @@ begin
 
       IF StrBuf <> '' THEN
       BEGIN
-        VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);
+        VLSet := ValueLabels.GetValueLabelSetById(StrBuf);
         if not Assigned(VLSet) then
           VLSet := ValueLabels.NewValueLabelSet(ftInteger);
-        VLSet.Name := StrBuf;
+        VLSet.Id := StrBuf;
 
         TmpField.ValueLabelSet := VLSet;
       END;
@@ -884,7 +884,7 @@ begin
               // We do not handle other characteristics about fields/dataset
               // than notes!
               if LeftStr(Character, 4) <> 'note' then continue;
-              if (VarName <> '_dta') and (not Fields.ItemExistsByName(VarName)) then continue;  // TODO : Give warning feedback that note exists for unknown field.
+              if (VarName <> '_dta') and (not Fields.ItemExistsById(VarName)) then continue;  // TODO : Give warning feedback that note exists for unknown field.
               // TmpInt = Note number. Note0 is the actual count of notes, but since there is no order to which the notes are placed in
               // the expansion fields section, we really do not care!
               Delete(Character, 1, 4);
@@ -918,7 +918,7 @@ begin
 
       for i := 0 to FieldNotes.Count - 1 do
       begin
-        TmpField := Fields.FieldByName[FieldNotes[i]];
+        TmpField := Fields.FieldById[FieldNotes[i]];
         for j := 0 to TStringList(FieldNotes.Objects[i]).Count -1 do
           TmpField.Notes.Text := TmpField.Notes.Text + LineEnding + TStringList(FieldNotes.Objects[i]).Strings[J];
       end;
@@ -975,7 +975,7 @@ begin
                     if not Assigned(VLSet) then
                     begin
                       VLSet := ValueLabels.NewValueLabelSet(ftInteger);
-                      VLSet.Name := TmpField.Name + '_MissingLabel';
+                      VLSet.Id := TmpField.Id + '_MissingLabel';
                       TmpField.ValueLabelSet := VLSet;
                     end;
 
@@ -1023,7 +1023,7 @@ begin
                     if not Assigned(VLSet) then
                     begin
                       VLSet := ValueLabels.NewValueLabelSet(ftFloat);
-                      VLSet.Name := TmpField.Name + '_MissingLabel';
+                      VLSet.Id := TmpField.Id + '_MissingLabel';
                       TmpField.ValueLabelSet := VLSet;
                     end;
 
@@ -1085,7 +1085,7 @@ begin
           J := ReadInts(DataStream, 2);                //get number of entries in label
           SetLength(CharBuf, 10);
           DataStream.Read(CharBuf[0], 10); //Load label definition
-          VLSet := ValueLabels.GetValueLabelSetByName(string(CharBuf));
+          VLSet := ValueLabels.GetValueLabelSetById(string(CharBuf));
           SetLength(CharBuf, 8);
           FOR i := 0 TO J - 1 DO
           BEGIN
@@ -1109,7 +1109,7 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          VLSet := ValueLabels.GetValueLabelSetByName(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
+          VLSet := ValueLabels.GetValueLabelSetById(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(DataStream, 4);                                               // Number of entries in label

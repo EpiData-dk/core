@@ -2,7 +2,7 @@
 
 { TEpiHeadings }
 
-function TEpiHeadings.NamePrefix: string;
+function TEpiHeadings.IdPrefix: string;
 begin
   Result := 'H';
 end;
@@ -47,9 +47,9 @@ begin
   result := TEpiHeading(NewItem(TEpiHeading));
 end;
 
-function TEpiHeadings.GetHeadingByName(const AName: string): TEpiHeading;
+function TEpiHeadings.GetHeadingById(const AId: string): TEpiHeading;
 begin
-  result := TEpiHeading(GetItemByName(AName));
+  result := TEpiHeading(GetItemById(AId));
 end;
 
 { TEpiHeading }
@@ -75,11 +75,6 @@ destructor TEpiHeading.Destroy;
 begin
   FCaption.Free;
   inherited Destroy;
-end;
-
-class function TEpiHeading.IdString: string;
-begin
-  Result := 'heading_id_';
 end;
 
 function TEpiHeading.XMLName: string;

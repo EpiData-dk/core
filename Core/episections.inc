@@ -8,7 +8,7 @@ begin
   result := TEpiSection(Items[Index]);
 end;
 
-function TEpiSections.NamePrefix: string;
+function TEpiSections.IdPrefix: string;
 begin
   Result := 'S';
 end;
@@ -53,9 +53,9 @@ begin
   result := TEpiSection(NewItem(TEpiSection));
 end;
 
-function TEpiSections.GetSectionByName(const AName: string): TEpiSection;
+function TEpiSections.GetSectionById(const AId: string): TEpiSection;
 begin
-  result := TEpiSection(GetItemByName(AName));
+  result := TEpiSection(GetItemById(AId));
 end;
 
 { TEpiSection }
@@ -88,11 +88,6 @@ begin
   Val := FWidth;
   FWidth := AValue;
   DoChange(eegSections, Word(esceWidth), @Val);
-end;
-
-class function TEpiSection.IdString: string;
-begin
-  Result := 'section_id_'
 end;
 
 constructor TEpiSection.Create(AOwner: TEpiCustomBase);

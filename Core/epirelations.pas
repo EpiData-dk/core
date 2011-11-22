@@ -55,8 +55,6 @@ type
  private
    FDataFile: TEpiDataFile;
    FFields: TEpiFields;
- protected
-   class function IdString: string; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
@@ -95,8 +93,6 @@ type
    procedure SetField(const AValue: TEpiField);
    procedure SetRelateType(const AValue: integer);
    procedure SetValue(const AValue: EpiVariant);
- protected
-   class function IdString: string; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor Destroy; override;
@@ -227,11 +223,6 @@ begin
   Result := TEpiPrimaryKey.Create(Self);
   Result.Id := GetUniqueItemId(TEpiPrimaryKey);
   AddItem(Result);
-end;
-
-class function TEpiPrimaryKey.IdString: string;
-begin
-  Result := 'primarykey_id_';
 end;
 
 { TEpiPrimaryKey }
@@ -375,11 +366,6 @@ begin
   Val := FValue;
   FValue := AValue;
   DoChange(eegRelates, Word(ercaSetValue), @Val);
-end;
-
-class function TEpiRelate.IdString: string;
-begin
-  Result := 'relate_id_';
 end;
 
 constructor TEpiRelate.Create(AOwner: TEpiCustomBase);

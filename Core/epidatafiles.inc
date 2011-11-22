@@ -22,6 +22,11 @@ begin
   Result := Settings.Scrambled;
 end;
 
+function TEpiDataFiles.IdPrefix: string;
+begin
+  Result := 'datafile_id_';
+end;
+
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -181,9 +186,9 @@ begin
               begin
                 FDataFile := Self;
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
-                Fields.OnValidateRename := @Self.ValidateRename;
+                Fields.OnValidateRenameId := @Self.ValidateRename;
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
-                Headings.OnValidateRename := @Self.ValidateRename;
+                Headings.OnValidateRenameId := @Self.ValidateRename;
               end;
             end;
 
@@ -202,9 +207,9 @@ begin
               begin
                 if (ebsDestroying in State) then exit;
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
-                Fields.OnValidateRename := nil;
+                Fields.OnValidateRenameId := nil;
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
-                Headings.OnValidateRename := nil;
+                Headings.OnValidateRenameId := nil;
               end;
             end;
         end;
@@ -245,13 +250,14 @@ begin
   {$IFNDEF EPIOLDSAVE}
   for CurRec := 0 to Sz - 1 do
   begin
-    R := Indent(Lvl + 1) + '<' + rsRecord + ' ';
-    if Verified[CurRec] then
+    R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
+
+{    if Verified[CurRec] then
       R += rsRecordStatus + '="2">'
     else if Deleted[CurRec] then
       R += rsRecordStatus + '="1">'
     else
-      R += rsRecordStatus + '="0">';
+      R += rsRecordStatus + '="0">';}
 
     S := '';
     for CurField := 0 to Fc - 1 do
@@ -522,11 +528,6 @@ begin
   FVersion := AValue;
 end;
 
-class function TEpiDataFile.IdString: string;
-begin
-  Result := 'datafile_id_';
-end;
-
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
 begin
   Create(AOwner, 0);
@@ -546,7 +547,7 @@ begin
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
   FSections.RegisterOnChangeHook(@LocalEventHook, true);
-  FSections.OnValidateRename := @ValidateRename;
+  FSections.OnValidateRenameId := @ValidateRename;
 
   // The "all" containers.
   FAllFields := TEpiFields.Create(Self);
@@ -554,8 +555,7 @@ begin
 
   // The special main section...
   FMainSection := NewSection;
-  FMainSection.Name := 'MAIN';
-  FMainSection.Id := FMainSection.IdString + 'main';
+  FMainSection.Id := 'MAIN';
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
@@ -573,12 +573,12 @@ begin
   inherited Destroy;
 end;
 
-function TEpiDataFile.ValidateRename(const NewName: string): boolean;
+function TEpiDataFile.ValidateRename(const NewId: string): boolean;
 begin
   result :=
-    (not Fields.ItemExistsByName(NewName))  and
-    (not Headings.ItemExistsByName(NewName)) and
-    (not Sections.ItemExistsByName(NewName));
+    (not Fields.ItemExistsById(NewId))  and
+    (not Headings.ItemExistsById(NewId)) and
+    (not Sections.ItemExistsById(NewId));
 end;
 
 function TEpiDataFile.XMLName: string;
@@ -659,8 +659,8 @@ begin
   end;
   LinkMap.Clear;
 
-  if Sections.ItemExistsByName('MAIN') then
-    FMainSection := TEpiSection(Sections.GetItemByName('MAIN'));
+  if Sections.ItemExistsById('MAIN') then
+    FMainSection := TEpiSection(Sections.GetItemById('MAIN'));
 
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
@@ -681,7 +681,7 @@ begin
   result := MainSection.NewHeading;
 end;
 
-procedure TEpiDataFile.NewRecords(const Count: Cardinal = 1);
+procedure TEpiDataFile.NewRecords(const Count: Cardinal);
 const
   Field_Growth_Factor = 1.25;
 var

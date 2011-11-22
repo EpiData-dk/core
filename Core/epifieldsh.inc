@@ -11,14 +11,14 @@ type
 
   { TEpiFields }
 
-  TEpiFields = class(TEpiCustomNamedItemList)
+  TEpiFields = class(TEpiCustomList)
   private
     function GetDataFile: TEpiDataFile;
     function GetField(index: integer): TEpiField;
-    function GetFieldByName(const AName: string): TEpiField;
+    function GetFieldById(const AId: string): TEpiField;
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
-    function    NamePrefix: string; override;
+    function    IdPrefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -28,7 +28,7 @@ type
     function    FieldExists(AField: TEpiField): boolean;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
-    property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;
+    property    FieldById[Const AId: string]: TEpiField read GetFieldById;
   end;
 
   { TEpiField }
@@ -160,7 +160,6 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
-    class function IdString: string; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;
