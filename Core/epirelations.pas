@@ -41,10 +41,12 @@ type
  { TEpiPrimaryKeys }
 
  TEpiPrimaryKeys = class(TEpiCustomList)
+ protected
+   function Prefix: string; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
-   function XMLName: string; override;
+   function    XMLName: string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    function    NewPrimaryKey: TEpiPrimaryKey;
  end;
@@ -55,6 +57,8 @@ type
  private
    FDataFile: TEpiDataFile;
    FFields: TEpiFields;
+ protected
+   function WriteNameToXml: boolean; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
@@ -71,6 +75,8 @@ type
  );
 
  TEpiRelates = class(TEpiCustomList)
+ protected
+   function Prefix: string; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor  Destroy; override;
@@ -93,6 +99,8 @@ type
    procedure SetField(const AValue: TEpiField);
    procedure SetRelateType(const AValue: integer);
    procedure SetValue(const AValue: EpiVariant);
+ protected
+   function WriteNameToXml: boolean; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
    destructor Destroy; override;
@@ -184,6 +192,11 @@ end;
 
 { TEpiPrimaryKeys }
 
+function TEpiPrimaryKeys.Prefix: string;
+begin
+  Result := 'primary_key_';
+end;
+
 constructor TEpiPrimaryKeys.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -220,12 +233,15 @@ end;
 
 function TEpiPrimaryKeys.NewPrimaryKey: TEpiPrimaryKey;
 begin
-  Result := TEpiPrimaryKey.Create(Self);
-  Result.Id := GetUniqueItemId(TEpiPrimaryKey);
-  AddItem(Result);
+  Result := TEpiPrimaryKey(NewItem(TEpiPrimaryKey));
 end;
 
 { TEpiPrimaryKey }
+
+function TEpiPrimaryKey.WriteNameToXml: boolean;
+begin
+  Result := false;
+end;
 
 constructor TEpiPrimaryKey.Create(AOwner: TEpiCustomBase);
 begin
@@ -248,11 +264,11 @@ function TEpiPrimaryKey.SaveToXml(Content: String; Lvl: integer): string;
 var
   i: Integer;
 begin
-  Content := Fields[0].Id;
+  Content := Fields[0].Name;
   for i := 1 to Fields.Count - 1 do
-    Content += ',' + Fields[i].Id;
+    Content += ',' + Fields[i].Name;
   Content :=
-    SaveNode(Lvl + 1, rsDataFileId, DataFile.Id) +
+    SaveNode(Lvl + 1, rsDataFileId, DataFile.Name) +
     SaveNode(Lvl + 1, rsFieldIdList, Content);
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -264,15 +280,20 @@ var
 begin
   inherited LoadFromXml(Root);
 
-  DataFile := TEpiDataFile(TEpiDocument(Owner.Owner.Owner).DataFiles.GetItemById(LoadNodeString(Root, rsDataFileId)));
+  DataFile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(LoadNodeString(Root, rsDataFileId)));
 
   FieldList := nil;
   SplitString(LoadNodeString(Root, rsFieldIdList), FieldList, [',']);
   for i := 0 to FieldList.Count - 1 do
-    Fields.AddItem(DataFile.Fields.GetItemById(FieldList[i]));
+    Fields.AddItem(DataFile.Fields.GetItemByName(FieldList[i]));
 end;
 
 { TEpiRelates }
+
+function TEpiRelates.Prefix: string;
+begin
+  Result := 'relate_id_';
+end;
 
 constructor TEpiRelates.Create(AOwner: TEpiCustomBase);
 begin
@@ -311,9 +332,7 @@ end;
 
 function TEpiRelates.NewRelate: TEpiRelate;
 begin
-  result := TEpiRelate.Create(Self);
-  Result.Id := GetUniqueItemId(TEpiRelate);
-  AddItem(Result);
+  result := TEpiRelate(NewItem(TEpiRelate));
 end;
 
 { TEpiRelate }
@@ -368,6 +387,11 @@ begin
   DoChange(eegRelates, Word(ercaSetValue), @Val);
 end;
 
+function TEpiRelate.WriteNameToXml: boolean;
+begin
+  Result := false;
+end;
+
 constructor TEpiRelate.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -386,10 +410,10 @@ end;
 function TEpiRelate.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content :=
-    SaveNode(Lvl + 1, rsDataFileId, DataFile.Id) +
-    SaveNode(Lvl + 1, rsFieldId, Field.Id) +
+    SaveNode(Lvl + 1, rsDataFileId, DataFile.Name) +
+    SaveNode(Lvl + 1, rsFieldId, Field.Name) +
     SaveNode(Lvl + 1, rsValue, String(Value)) +
-    SaveNode(Lvl + 1, rsDestDataFileId, Destination.Id) +
+    SaveNode(Lvl + 1, rsDestDataFileId, Destination.Name) +
     SaveNode(Lvl + 1, rsType, RelateType);
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -402,11 +426,11 @@ begin
 
   // Root = <Relate>
   DFS      := TEpiDocument(RootOwner).DataFiles;
-  DataFile := TEpiDataFile(DFS.GetItemById(LoadNodeString(Root, rsDataFileId)));
-  Field    := TEpiField(DataFile.Fields.GetItemById(LoadNodeString(Root, rsFieldId)));
+  DataFile := TEpiDataFile(DFS.GetItemByName(LoadNodeString(Root, rsDataFileId)));
+  Field    := TEpiField(DataFile.Fields.GetItemByName(LoadNodeString(Root, rsFieldId)));
   Value    := LoadNodeString(Root, rsValue);
 
-  Destination := TEpiDataFile(DFS.GetItemById(LoadNodeString(Root, rsDestDataFileId)));
+  Destination := TEpiDataFile(DFS.GetItemByName(LoadNodeString(Root, rsDestDataFileId)));
   RelateType  := LoadNodeInt(Root, rsType);
 end;
 

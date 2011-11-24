@@ -40,7 +40,7 @@ type
     );
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
-    ecceDestroy, ecceUpdate, ecceId, ecceAddItem, ecceDelItem, ecceSetItem,
+    ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
     ecceSetTop, ecceSetLeft, ecceText
   );
   TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
@@ -90,7 +90,8 @@ type
     function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo): integer;
     function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string): extended;
     function   LoadAttrString(const Root: TDOMNode; Const AttrName: string): String;
-    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string): TDateTime;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string): TDateTime; overload;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string): TDateTime; overload;
     function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
@@ -211,17 +212,17 @@ type
 
   TEpiCustomItem = class(TEpiCustomBase)
   protected
-    FId: string;
-    function    GetId: string; virtual;
-    procedure   SetId(const AValue: string); virtual;
+    FName: string;
+    function    GetName: string; virtual;
+    procedure   SetName(const AValue: string); virtual;
     function    SaveAttributesToXml: string; override;
-    function    DoValidateRenameId(Const NewName: string): boolean; virtual;
-    function    WriteIdToXml: boolean; virtual;
+    function    DoValidateRename(Const NewName: string): boolean; virtual;
+    function    WriteNameToXml: boolean; virtual;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    function    ValidateRenameId(Const NewId: string; RenameOnSuccess: boolean): boolean; virtual;
-    property    Id: string read GetId write SetId;
+    function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
+    property    Name: string read GetName write SetName;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -246,8 +247,8 @@ type
   { TEpiCustomList }
 
   TEpiOnNewItemClass      = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
-  TEpiValidateRenameIdEvent = function(Const NewName: string): boolean of object;
-  TEpiIdPrefixEvent     = function: string of object;
+  TEpiValidateRenameEvent = function(Const NewName: string): boolean of object;
+  TEpiPrefixEvent         = function: string of object;
   TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
@@ -260,7 +261,7 @@ type
     function    GetCount: Integer; virtual;
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
-    function WriteIdToXml: boolean; override;
+    function    WriteNameToXml: boolean; override;
     property    List: TFPList read FList;
   public
     destructor  Destroy; override;
@@ -270,25 +271,25 @@ type
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
-    function    GetItemById(aId: string): TEpiCustomItem; virtual;
-    function    ItemExistsById(aId: string): boolean; virtual;
+    function    GetItemByName(AName: string): TEpiCustomItem; virtual;
+    function    ItemExistsByName(AName: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
-    function    GetUniqueItemId(AClass: TEpiCustomItemClass): string; virtual;
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
 
   { Naming and Validation }
   private
-    FOnGetIdPrefix: TEpiIdPrefixEvent;
-    FOnValidateRenameId: TEpiValidateRenameIdEvent;
-    function  DoIdPrefix: string;
+    FOnGetPrefix: TEpiPrefixEvent;
+    FOnValidateRename: TEpiValidateRenameEvent;
+    function  DoPrefix: string;
   protected
-    function  IdPrefix: string; virtual;
+    function  Prefix: string; virtual;
   public
-    function  ValidateRenameId(Const NewId: string; RenameOnSuccess: boolean): boolean; override;
-    property  OnValidateRenameId: TEpiValidateRenameIdEvent read FOnValidateRenameId write FOnValidateRenameId;
-    property  OnGetIdPrefix: TEpiIdPrefixEvent read FOnGetIdPrefix write FOnGetIdPrefix;
+    function  GetUniqueItemName(AClass: TEpiCustomItemClass): string; virtual;
+    function  ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; override;
+    property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
+    property  OnGetPrefix: TEpiPrefixEvent read FOnGetPrefix write FOnGetPrefix;
 
   { New Item Hook }
   private
@@ -461,9 +462,20 @@ begin
 end;
 
 procedure TEpiCustomBase.RaiseErrorNode(const Root: TDOMNode; const NodeName: string) ;
+var
+  R: TDOMNode;
+  S: DOMString;
 begin
+  S := R.NodeName;
+  R := Root.ParentNode;
+  while Assigned(R) do
+  begin
+    S := R.NodeName + '->' + s;
+    R := R.ParentNode;
+  end;
+
   raise TEpiCoreException.Create('ERROR: A required XML tag was not found.' + LineEnding +
-          Format('In section %s the tag "%s" was expected!', [Root.NodeName, NodeName]));
+          Format('In section %s the tag "%s" was expected!', [S, NodeName]));
 end;
 
 procedure TEpiCustomBase.RaiseErrorAttr(const Root: TDOMNode; const AttrName: string
@@ -636,11 +648,22 @@ var
   Attr: TDOMAttr;
 begin
   LoadAttr(Attr, Root, AttrName, true);
-//  LoadNode(Node, Root, NodeName, true);
   if (RootOwner is TEpiDocument) then
     BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Result := StrToDateTime(Attr.Value);
-//  result := StrToDateTime(Node.TextContent);
+  RestoreFormatSettings;
+end;
+
+function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
+  const AttrName: string; const Format: string): TDateTime;
+var
+  Attr: TDOMAttr;
+begin
+  LoadAttr(Attr, Root, AttrName, true);
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+  DefaultFormatSettings.ShortDateFormat := Format;
+  Result := StrToDateTime(Attr.Value);
   RestoreFormatSettings;
 end;
 
@@ -1146,47 +1169,48 @@ end;
 
 { TEpiCustomItem }
 
-function TEpiCustomItem.GetId: string;
+function TEpiCustomItem.GetName: string;
 begin
-  result := FId;
+  result := FName;
 end;
 
-procedure TEpiCustomItem.SetId(const AValue: string);
+procedure TEpiCustomItem.SetName(const AValue: string);
 var
   Val: String;
 begin
-  if FId = AValue then exit;
+  if FName = AValue then exit;
 
   // Validate identifier
-  if not DoValidateRenameId(AValue) then Exit;
+  if not DoValidateRename(AValue) then Exit;
 
-  Val := FId;
-  FId := AValue;
-  DoChange(eegCustomBase, Word(ecceId), @Val);
+  Val := FName;
+  FName := AValue;
+  DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
 function TEpiCustomItem.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml;
-  if WriteIdToXml then
-    Result += SaveAttr(rsId, Id);
+  if WriteNameToXml then
+    // We use name in program but present it as "id=...." in the XML.
+    Result += SaveAttr(rsId, Name);
 end;
 
-function TEpiCustomItem.DoValidateRenameId(const NewName: string): boolean;
+function TEpiCustomItem.DoValidateRename(const NewName: string): boolean;
 begin
   result := ValidateIdentifierUTF8(NewName);
   if (Owner is TEpiCustomList) then
-    result := result and (TEpiCustomList(Owner).ValidateRenameId(NewName, false));
+    result := result and (TEpiCustomList(Owner).ValidateRename(NewName, false));
 end;
 
-function TEpiCustomItem.WriteIdToXml: boolean;
+function TEpiCustomItem.WriteNameToXml: boolean;
 begin
   result := true;
 end;
 
 destructor TEpiCustomItem.Destroy;
 begin
-  FId := '';
+  FName := '';
   inherited Destroy;
 end;
 
@@ -1195,14 +1219,17 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, rsId, false) then
-    Id := LoadAttrString(Root, rsId);
+    FName := LoadAttrString(Root, rsId)
+  else if WriteNameToXml then
+    // This class was supposed to write an ID -> hence it also expects one! Error!
+    RaiseErrorAttr(Root, rsId);
 end;
 
-function TEpiCustomItem.ValidateRenameId(const NewId: string;
+function TEpiCustomItem.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
-  if NewId = Id then exit(true);
-  result := DoValidateRenameId(NewId);
+  if NewName = Name then exit(true);
+  result := DoValidateRename(NewName);
 end;
 
 { TEpiCustomControlItem }
@@ -1303,41 +1330,41 @@ begin
   DoChange(eegCustomBase, Word(ecceSetItem), Val);
 end;
 
-function TEpiCustomList.WriteIdToXml: boolean;
+function TEpiCustomList.WriteNameToXml: boolean;
 begin
   Result := false;
 end;
 
-function TEpiCustomList.GetUniqueItemId(AClass: TEpiCustomItemClass): string;
+function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
 var
   i: Integer;
 begin
   i := Count;
   repeat
-    result := DoIdPrefix + IntToStr(i);
+    result := DoPrefix + IntToStr(i);
     Inc(i);
-  until (not ItemExistsById(result));
+  until ValidateRename(result, false);
 end;
 
-function TEpiCustomList.DoIdPrefix: string;
+function TEpiCustomList.DoPrefix: string;
 begin
-  if Assigned(OnGetIdPrefix) then
-    result := OnGetIdPrefix()
+  if Assigned(OnGetPrefix) then
+    result := OnGetPrefix()
   else
-    result := IdPrefix;
+    result := Prefix;
 end;
 
-function TEpiCustomList.IdPrefix: string;
+function TEpiCustomList.Prefix: string;
 begin
-  result := 'Id';
+  result := 'id_';
 end;
 
-function TEpiCustomList.ValidateRenameId(const NewId: string;
+function TEpiCustomList.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
-  result := not ItemExistsById(NewId);
-  if Assigned(OnValidateRenameId) then
-    result := result and OnValidateRenameId(NewId);
+  result := not ItemExistsByName(NewName);
+  if Assigned(OnValidateRename) then
+    result := result and OnValidateRename(NewName);
 end;
 
 destructor TEpiCustomList.Destroy;
@@ -1379,14 +1406,14 @@ begin
   if not Assigned(ItemClass) then
     Exception.Create('');
   Result := ItemClass.Create(Self);
-  Result.Id := GetUniqueItemId(ItemClass);
+  Result.Name := GetUniqueItemName(ItemClass);
   AddItem(Result);
 end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
-  if (not ValidateRenameId(Item.Id, false)) then
-    raise TEpiCoreException.Create('Item "' + Item.Id + '" already exist in list');
+  if (not ValidateRename(Item.Name, false)) then
+    raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
 
   if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
@@ -1404,8 +1431,8 @@ end;
 procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
   );
 begin
-  if (not ValidateRenameId(Item.Id, false)) then
-    raise TEpiCoreException.Create('Item "' + Item.Id + '" already exist in list');
+  if (not ValidateRename(Item.Name, false)) then
+    raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
 
   if ItemOwner then Item.FOwner := Self;
   FList.Insert(Index, Item);
@@ -1439,14 +1466,14 @@ begin
   DoChange(eegCustomBase, Word(ecceDelItem), Result);
 end;
 
-function TEpiCustomList.GetItemById(aId: string): TEpiCustomItem;
+function TEpiCustomList.GetItemByName(AName: string): TEpiCustomItem;
 var
   i: Integer;
 begin
   Result := nil;
   for i := 0 to Count - 1 do
   begin
-    if TEpiCustomItem(FList[i]).Id = aId then
+    if TEpiCustomItem(FList[i]).Name = AName then
     begin
       Result := TEpiCustomItem(FList[i]);
       Exit;
@@ -1454,9 +1481,9 @@ begin
   end;
 end;
 
-function TEpiCustomList.ItemExistsById(aId: string): boolean;
+function TEpiCustomList.ItemExistsByName(AName: string): boolean;
 begin
-  result := Assigned(GetItemById(aId));
+  result := Assigned(GetItemByName(AName));
 end;
 
 function TEpiCustomList.IndexOf(Item: TEpiCustomItem): integer;

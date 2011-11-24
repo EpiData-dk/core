@@ -8,7 +8,7 @@ begin
   result := TEpiSection(Items[Index]);
 end;
 
-function TEpiSections.IdPrefix: string;
+function TEpiSections.Prefix: string;
 begin
   Result := 'S';
 end;
@@ -53,9 +53,9 @@ begin
   result := TEpiSection(NewItem(TEpiSection));
 end;
 
-function TEpiSections.GetSectionById(const AId: string): TEpiSection;
+function TEpiSections.GetSectionByName(const AName: string): TEpiSection;
 begin
-  result := TEpiSection(GetItemById(AId));
+  result := TEpiSection(GetItemByName(AName));
 end;
 
 { TEpiSection }
@@ -126,7 +126,7 @@ var
 begin
 {  Content := '';
   For i := 0 to Groups.Count - 1 do
-    Content += ',' + Groups[i].Id;
+    Content += ',' + Groups[i].Name;
   if Length(Content) > 0 then
   begin
     Delete(Content, 1, 1);

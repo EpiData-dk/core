@@ -54,7 +54,7 @@ var
   Field1: TEpiField absolute Item1;
   Field2: TEpiField absolute Item2;
 begin
-  result:= AnsiCompareStr(Field1.Id, Field2.Id);
+  result:= AnsiCompareStr(Field1.Name, Field2.Name);
 end;
 
 function EntryFlowSort(Item1, Item2: Pointer): integer;
@@ -149,11 +149,11 @@ begin
   for i := 0 to FieldList.Count - 1 do
   with TEpiField(FieldList[i]) do
     begin
-    DoTableCell(0, i+1, Id);
+    DoTableCell(0, i+1, Name);
     DoTableCell(1, i+1, EpiTypeNames[FieldType]);
 
     if Assigned(ValueLabelSet) then
-      DoTableCell(2, i+1, ValueLabelSet.Id)
+      DoTableCell(2, i+1, ValueLabelSet.Name)
     else
       DoTableCell(2, i+1, '');
     DoTableCell(3, i+1, Question.Text);
@@ -178,7 +178,7 @@ begin
     DoTableCell(10, i+1, BoolToStr(ShowValueLabel, 'x', ''));
     DoTableCell(11, i+1, BoolToStr(ForcePickList, 'x', ''));
     if Assigned(ValueLabelWriteField) then
-      DoTableCell(12, i+1, ValueLabelWriteField.Id)
+      DoTableCell(12, i+1, ValueLabelWriteField.Name)
     else
       DoTableCell(12, i+1, '');
 
@@ -203,7 +203,7 @@ begin
     if Assigned(Calculation) then inc(j);
     if (Notes.Text <> '')    then inc(j);
 
-    DoTableHeader(Id, 2, j + 1);
+    DoTableHeader(Name, 2, j + 1);
     DoTableCell(0, 0, 'Extension:');
     DoTableCell(1, 0, 'Value:');
 
@@ -211,14 +211,14 @@ begin
     if Assigned(Comparison)  then
     begin
       DoTableCell(0, j, 'Comparison');
-      S := Id;
+      S := Name;
       case Comparison.CompareType of
         fcLT:  S += '<';
         fcLEq: S += '<=';
         fcGEq: S += '>=';
         fcGT:  S += '>';
       end;
-      S += Comparison.CompareField.Id;
+      S += Comparison.CompareField.Name;
       DoTableCell(1, j, S);
       Inc(j);
     end;
@@ -235,7 +235,7 @@ begin
           jtSaveRecord:    S += 'Save Record';
           jtExitSection:   S += 'Exit Section';
           jtSkipNextField: S += 'Skip Next Field';
-          jtToField:       S += JumpToField.Id;
+          jtToField:       S += JumpToField.Name;
         end;
         S += LineEnding;
       end;
@@ -252,33 +252,33 @@ begin
           with TEpiTimeCalc(Calculation) do
           begin
             S := 'Time Difference:' + LineEnding +
-                 ResultField.Id + '=(';
-            if Assigned(StartDate) then S += StartDate.Id + '+';
-            if Assigned(StartTime) then S += StartTime.Id;
+                 ResultField.Name + '=(';
+            if Assigned(StartDate) then S += StartDate.Name + '+';
+            if Assigned(StartTime) then S += StartTime.Name;
             S += ')-(';
-            if Assigned(EndDate) then S += EndDate.Id + '+';
-            if Assigned(EndTime) then S += EndTime.Id;
+            if Assigned(EndDate) then S += EndDate.Name + '+';
+            if Assigned(EndTime) then S += EndTime.Name;
             S += ')';
           end;
         ctCombineDate:
           with TEpiCombineDateCalc(Calculation) do
           begin
             S := 'Create Date:' + LineEnding +
-                 ResultField.Id + '=DMY(';
-            S += Day.Id + ',';
-            S += Month.Id + ',';
-            S += Year.Id + ')';
+                 ResultField.Name + '=DMY(';
+            S += Day.Name + ',';
+            S += Month.Name + ',';
+            S += Year.Name + ')';
           end;
         ctCombineString:
           with TEpiCombineStringCalc(Calculation) do
           begin
             S := 'Combine String:' + LineEnding +
-                 ResultField.Id + '=';
-            if Assigned(Field1) then S += Field1.Id + ' + ';
+                 ResultField.Name + '=';
+            if Assigned(Field1) then S += Field1.Name + ' + ';
             S += Delim1 + ' + ';
-            if Assigned(Field2) then S += Field2.Id + ' + ';
+            if Assigned(Field2) then S += Field2.Name + ' + ';
             S += Delim2 + ' + ';
-            if Assigned(Field3) then S += Field3.Id;
+            if Assigned(Field3) then S += Field3.Name;
           end;
       end;
 

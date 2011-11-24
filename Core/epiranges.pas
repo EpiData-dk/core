@@ -17,6 +17,8 @@ type
   private
     function    GetFieldType: TEpiFieldType;
     function    GetRange(const index: integer): TEpiRange;
+  protected
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -39,6 +41,7 @@ type
     function    GetRanges: TEpiRanges;
     function    GetSingle: boolean;
   protected
+    function    WriteNameToXml: boolean; override;
     function    GetAsDate(const Start: boolean): EpiDate; virtual; abstract;
     function    GetAsFloat(const Start: boolean): EpiFloat; virtual; abstract;
     function    GetAsInteger(const Start: boolean): EpiInteger; virtual; abstract;
@@ -160,6 +163,11 @@ begin
   Result := TEpiRange(Items[Index]);
 end;
 
+function TEpiRanges.Prefix: string;
+begin
+  Result := 'range_id_'
+end;
+
 constructor TEpiRanges.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -208,7 +216,6 @@ begin
     ftTime:    Item := NewItem(TEpiTimeRange);
   end;
   Result := TEpiRange(Item);
-  Result.Id := '';
 end;
 
 function TEpiRanges.InRange(const AValue: EpiInteger): boolean;
@@ -508,6 +515,11 @@ begin
   end;
 end;
 
+function TEpiRange.WriteNameToXml: boolean;
+begin
+  Result := false;
+end;
+
 function TEpiRange.SaveAttributesToXml: string;
 begin
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
@@ -533,7 +545,6 @@ begin
   // Root = <Range>
   inherited LoadFromXml(Root);
 
-  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Case Ranges.FieldType of
     ftInteger: begin
                  AsInteger[true]  := LoadAttrInt(Root, rsStart);
@@ -552,16 +563,15 @@ begin
                    ftYMDDate: S := 'YYYY/MM/DD';
                  end;
                  DefaultFormatSettings.ShortDateFormat := S;
-                 AsDate[true] := Trunc(LoadAttrDateTime(Root, rsStart));
-                 AsDate[false] := Trunc(LoadAttrDateTime(Root, rsEnd));
+                 AsDate[true] := Trunc(LoadAttrDateTime(Root, rsStart, S));
+                 AsDate[false] := Trunc(LoadAttrDateTime(Root, rsEnd, S));
                end;
     ftTime:    begin
                  ShortDateFormat := 'HH:NN:SS';
-                 AsTime[true]  := LoadAttrDateTime(Root, rsStart);
-                 AsTime[false] := LoadAttrDateTime(Root, rsEnd);
+                 AsTime[true]  := LoadAttrDateTime(Root, rsStart, S);
+                 AsTime[false] := LoadAttrDateTime(Root, rsEnd, S);
                end;
   end;
-  RestoreFormatSettings;
 end;
 
 function TEpiRange.XMLName: string;

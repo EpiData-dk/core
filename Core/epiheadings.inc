@@ -2,7 +2,7 @@
 
 { TEpiHeadings }
 
-function TEpiHeadings.IdPrefix: string;
+function TEpiHeadings.Prefix: string;
 begin
   Result := 'H';
 end;
@@ -47,9 +47,9 @@ begin
   result := TEpiHeading(NewItem(TEpiHeading));
 end;
 
-function TEpiHeadings.GetHeadingById(const AId: string): TEpiHeading;
+function TEpiHeadings.GetHeadingByName(const AName: string): TEpiHeading;
 begin
-  result := TEpiHeading(GetItemById(AId));
+  result := TEpiHeading(GetItemByName(AName));
 end;
 
 { TEpiHeading }

@@ -17,6 +17,11 @@ begin
       Exit(Jump[i]);
 end;
 
+function TEpiJumps.Prefix: string;
+begin
+  Result := 'jump_id_'
+end;
+
 constructor TEpiJumps.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -63,7 +68,7 @@ begin
     Raise Exception.CreateFmt(
             'Field "%s" does not support jumps! (Auto Type)' + LineEnding +
             'Please Contact EpiData',
-            [TEpiCustomItem(Owner).Id]);
+            [TEpiCustomItem(Owner).Name]);
 
   if Ft in BoolFieldTypes   then ItemClass := TEpiBoolJump;
   if Ft in IntFieldTypes    then ItemClass := TEpiIntJump;
@@ -71,7 +76,6 @@ begin
   if Ft in StringFieldTypes then ItemClass := TEpiStringJump;
 
   Result := TEpiJump(NewItem(ItemClass));
-  Result.Id := '';
 end;
 
 { TEpiJump }
@@ -113,6 +117,11 @@ begin
   FJumpToField := nil;
 end;
 
+function TEpiJump.WriteNameToXml: boolean;
+begin
+  Result := false;
+end;
+
 function TEpiJump.XMLName: string;
 begin
   Result := rsJump;
@@ -128,7 +137,7 @@ begin
   if JumpType = jtToField then
   begin
     FieldId := LoadAttrString(Root, rsJumpTo);
-    JumpToField := TEpiField(GetDataFile(Self).Fields.GetItemById(FieldId));
+    JumpToField := GetDataFile(Self).Fields.GetFieldByName(FieldId);
 
     // Since (possibly) all jumps to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
@@ -147,7 +156,7 @@ begin
 
   if JumpType = jtToField then
     Result := Result +
-    SaveAttr(rsJumpTo, JumpToField.Id);
+    SaveAttr(rsJumpTo, JumpToField.Name);
 end;
 
 procedure TEpiJump.Assign(const AEpiCustomBase: TEpiCustomBase);

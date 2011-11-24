@@ -75,7 +75,7 @@ type
     function GetAdmin: TEpiAdmin;
     function GetUsers(Index: integer): TEpiUser;
   protected
-    function IdPrefix: string; override;
+    function Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -126,7 +126,7 @@ type
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
     // Unscrambled data:
-    Property   Login: string read GetId write SetId;
+    Property   Login: string read GetName write SetName;
     Property   Password: string read FPassword write SetPassword;
     Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     // Scrambled data (in UserInfo section):
@@ -135,8 +135,6 @@ type
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
     property   FirstName: string read FFirstName write SetFirstName;
     property   LastName: string read FLastName write SetLastName;
-  public
-    Property   Id;
   end;
 
   { TEpiGroups }
@@ -146,7 +144,7 @@ type
     function    GetAdmin: TEpiAdmin;
     function    GetGroup(Index: integer): TEpiGroup;
   protected
-    function    IdPrefix: string; override;
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -331,7 +329,7 @@ begin
   result := TEpiUser(Items[Index]);
 end;
 
-function TEpiUsers.IdPrefix: string;
+function TEpiUsers.Prefix: string;
 begin
   Result := 'User';
 end;
@@ -536,7 +534,7 @@ begin
   S :=
     SaveNode(Lvl, rsFirstName, FirstName) +
     SaveNode(Lvl, rsLastName, LastName) +
-    SaveNode(Lvl, rsGroupId, Group.Id) +
+    SaveNode(Lvl, rsGroupId, Group.Name) +
     SaveNode(Lvl, rsLastLogin, LastLogin) +
     SaveNode(Lvl, rsExpireDate, ExpireDate);
   if Admin.Settings.Scrambled then
@@ -564,7 +562,7 @@ begin
   LastName   := LoadNodeString(NewRoot, rsLastName);
   LastLogin  := LoadNodeDateTime(NewRoot, rsLastLogin);
   ExpireDate := LoadNodeDateTime(NewRoot, rsExpireDate);
-  Group      := TEpiGroup(Admin.Groups.GetItemById(LoadNodeString(NewRoot, rsGroupId)));
+  Group      := TEpiGroup(Admin.Groups.GetItemByName(LoadNodeString(NewRoot, rsGroupId)));
 
   if Admin.Settings.Scrambled then
     NewRoot.Free;
@@ -582,7 +580,7 @@ begin
   Result := TEpiGroup(Items[Index]);
 end;
 
-function TEpiGroups.IdPrefix: string;
+function TEpiGroups.Prefix: string;
 begin
   Result := 'Group';
 end;

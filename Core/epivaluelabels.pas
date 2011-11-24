@@ -95,7 +95,6 @@ type
   private
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
-    FName:      string;
     function    GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
     function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
@@ -108,7 +107,7 @@ type
     function    SaveInternal(Lvl: integer): string; virtual;
     procedure   LoadExternal(Root: TDOMNode); virtual;
     function    SaveExternal(Lvl: integer): string; virtual;
-    function    WriteIdToXml: boolean; override;
+    function    WriteNameToXml: boolean; override;
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -136,7 +135,7 @@ type
   TEpiValueLabelSets = class(TEpiCustomList)
   private
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
-    function    IdPrefix: string; override;
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -145,7 +144,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
-    function    GetValueLabelSetById(Const AId: string): TEpiValueLabelSet;
+    function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
   end;
 
@@ -492,7 +491,7 @@ begin
   result := TEpiCustomItem(Self).SaveToXml(Result, Lvl);
 end;
 
-function TEpiValueLabelSet.WriteIdToXml: boolean;
+function TEpiValueLabelSet.WriteNameToXml: boolean;
 begin
   Result := true;
 end;
@@ -600,7 +599,7 @@ begin
   result := TEpiValueLabelSet(Items[Index]);
 end;
 
-function TEpiValueLabelSets.IdPrefix: string;
+function TEpiValueLabelSets.Prefix: string;
 begin
   Result := 'valuelabel_id_';
 end;
@@ -611,9 +610,9 @@ var
   i: Integer;
 begin
   result := false;
-{  for i := 0 to Count - 1 do
+  for i := 0 to Count - 1 do
     if CompareStr(ValueLabels[i].Name, NewName) = 0 then
-      exit;}
+      exit;
   result := true;
 end;
 
@@ -666,10 +665,10 @@ begin
   result.ItemOwner := true;
 end;
 
-function TEpiValueLabelSets.GetValueLabelSetById(const AId: string
+function TEpiValueLabelSets.GetValueLabelSetByName(const AName: string
   ): TEpiValueLabelSet;
 begin
-  result := TEpiValueLabelSet(GetItemById(Aid));
+  result := TEpiValueLabelSet(GetItemByName(AName));
 end;
 
 end.

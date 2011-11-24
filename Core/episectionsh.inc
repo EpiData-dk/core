@@ -12,14 +12,14 @@ type
   private
     function GetSection(Index: integer): TEpiSection;
   protected
-    function IdPrefix: string; override;
+    function Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewSection: TEpiSection;
-    function    GetSectionById(Const AId: string): TEpiSection;
+    function    GetSectionByName(Const AName: string): TEpiSection;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
   end;
 

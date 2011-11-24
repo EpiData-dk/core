@@ -296,7 +296,7 @@ begin
     BEGIN
       WITH Field[i] DO
       BEGIN
-        TmpStr := Trim(Id);
+        TmpStr := Trim(Name);
         TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength - 1, FieldNames);
         WriteString(DataStream, TmpStr, FieldNameLength);
       END;   //with
@@ -330,7 +330,7 @@ begin
           begin
             // Stata 10 supports a new time format!
             TmpStr := '%tcHH:MM:SS';
-            TimeFields.AddObject(Id, Field[i]);
+            TimeFields.AddObject(Name, Field[i]);
           end
           else
             TmpStr := '%6.5f';
@@ -349,7 +349,7 @@ begin
       TmpStr := '';
       if Assigned(ValueLabelSet) and (FieldType = ftInteger) then
       begin
-        TmpStr := ValueLabelSet.Id;
+        TmpStr := ValueLabelSet.Name;
         if WritenValueLabels.Find(TmpStr, j) then
           // ValuelabelSet already made unique and prepared for finale write.
           TmpStr := UniqueValueLabels[j]
@@ -518,7 +518,7 @@ begin
       SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
       FOR I := 0 TO WritenValueLabels.Count - 1 DO
       BEGIN
-        VLblSet := ValueLabels.GetValueLabelSetById(WritenValueLabels[i]);
+        VLblSet := ValueLabels.GetValueLabelSetByName(WritenValueLabels[i]);
         NObs := VLblSet.Count;
         SetLength(ByteBuf, 4 * NObs);   // Write Off[]
         SetLength(ValBuf,  4 * NObs);   // Write Val[]

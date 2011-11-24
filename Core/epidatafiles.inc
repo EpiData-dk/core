@@ -22,7 +22,7 @@ begin
   Result := Settings.Scrambled;
 end;
 
-function TEpiDataFiles.IdPrefix: string;
+function TEpiDataFiles.Prefix: string;
 begin
   Result := 'datafile_id_';
 end;
@@ -164,8 +164,8 @@ begin
               begin
                 F := TEpiField(Data);
                 // Check that id is not in conflict with others.
-                if Fields.ItemExistsById(F.Id) then
-                  F.Id := Fields.GetUniqueItemId(TEpiField);
+                if Fields.ItemExistsByName(F.Name) then
+                  F.Name := Fields.GetUniqueItemName(TEpiField);
                 Fields.AddItem(F);
                 F.Size := Size;
                 F.FDataFile := Self;
@@ -175,8 +175,8 @@ begin
               begin
                 H := TEpiHeading(Data);
                 // Check that id is not in conflict with others.
-                if Headings.ItemExistsById(H.Id) then
-                  H.Id := Headings.GetUniqueItemId(TEpiHeading);
+                if Headings.ItemExistsByName(H.Name) then
+                  H.Name := Headings.GetUniqueItemName(TEpiHeading);
                 Headings.AddItem(TEpiHeading(Data));
               end;
 
@@ -186,9 +186,9 @@ begin
               begin
                 FDataFile := Self;
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
-                Fields.OnValidateRenameId := @Self.ValidateRename;
+                Fields.OnValidateRename := @Self.ValidateRename;
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
-                Headings.OnValidateRenameId := @Self.ValidateRename;
+                Headings.OnValidateRename := @Self.ValidateRename;
               end;
             end;
 
@@ -207,9 +207,9 @@ begin
               begin
                 if (ebsDestroying in State) then exit;
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
-                Fields.OnValidateRenameId := nil;
+                Fields.OnValidateRename := nil;
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
-                Headings.OnValidateRenameId := nil;
+                Headings.OnValidateRename := nil;
               end;
             end;
         end;
@@ -264,9 +264,9 @@ begin
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes + FloatFieldTypes then
-          S += Id + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
+          S += Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
         else
-          S += Id + '=' + AsString[CurRec] + ',';
+          S += Name + '=' + AsString[CurRec] + ',';
     Delete(S, Length(S), 1);
     Lst.Add(R + S + '</' + rsRecord + '>');
   end;
@@ -287,9 +287,9 @@ begin
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes + FloatFieldTypes then
-          S += ',' + Id + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll]))
+          S += ',' + Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll]))
         else
-          S += ',' + Id + '=' + AsString[CurRec];
+          S += ',' + Name + '=' + AsString[CurRec];
     Delete(S, 1, 1);
     Result += S + '</' + rsRecord + '>' + LineEnding;
   end;
@@ -440,7 +440,7 @@ begin
     SetLength(FieldList, P);
     for i := 0 to Fc -1 do
     begin
-      Val := (Hash(Fields[i].Id) mod P);
+      Val := (Hash(Fields[i].Name) mod P);
       // Collision detection (with Fc^2 size)
       if Assigned(FieldList[val]) then
       begin
@@ -480,7 +480,7 @@ begin
       {$IFDEF EPIHASH}
       TmpField := FieldList[Hash(FN) mod P];
       {$ELSE}
-      TmpField := TEpiField(Fields.GetItemById(NN));
+      TmpField := Fields.FieldByName[NN];
       {$ENDIF EPIHASH}
        TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
@@ -547,7 +547,7 @@ begin
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
   FSections.RegisterOnChangeHook(@LocalEventHook, true);
-  FSections.OnValidateRenameId := @ValidateRename;
+  FSections.OnValidateRename := @ValidateRename;
 
   // The "all" containers.
   FAllFields := TEpiFields.Create(Self);
@@ -555,7 +555,7 @@ begin
 
   // The special main section...
   FMainSection := NewSection;
-  FMainSection.Id := 'MAIN';
+  FMainSection.Name := 'MAIN';
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
@@ -573,12 +573,12 @@ begin
   inherited Destroy;
 end;
 
-function TEpiDataFile.ValidateRename(const NewId: string): boolean;
+function TEpiDataFile.ValidateRename(const NewName: string): boolean;
 begin
   result :=
-    (not Fields.ItemExistsById(NewId))  and
-    (not Headings.ItemExistsById(NewId)) and
-    (not Sections.ItemExistsById(NewId));
+    (not Fields.ItemExistsByName(NewName))  and
+    (not Headings.ItemExistsByName(NewName)) and
+    (not Sections.ItemExistsByName(NewName));
 end;
 
 function TEpiDataFile.XMLName: string;
@@ -625,7 +625,7 @@ begin
   // Post Processing!
   for i := 0 to LinkMap.Count - 1 do
   begin
-    AField := TEpiField(Fields.GetItemById(LinkMap.RefObjId[i]));
+    AField := Fields.FieldByName[LinkMap.RefObjId[i]];
     Case LinkMap.LinkTypes[i] of
       ltJump:
         TEpiJump(LinkMap.Objects[i]).JumpToField := AField;
@@ -659,8 +659,8 @@ begin
   end;
   LinkMap.Clear;
 
-  if Sections.ItemExistsById('MAIN') then
-    FMainSection := TEpiSection(Sections.GetItemById('MAIN'));
+  if Sections.ItemExistsByName('MAIN') then
+    FMainSection := Sections.GetSectionByName('MAIN');
 
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);

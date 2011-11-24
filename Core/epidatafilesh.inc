@@ -16,7 +16,7 @@ type
   protected
     Property    Settings: TEpiXMLSettings read GetSettings;
     function    ScrambleXml: boolean; override;
-    function    IdPrefix: string; override;
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -60,7 +60,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
-    function    ValidateRename(Const NewId: string): boolean;
+    function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;

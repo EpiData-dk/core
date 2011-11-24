@@ -57,14 +57,15 @@ const
     rsFunding         = 'Funding';
     rsGeoCoverage     = 'GeographicalCoverage';
     rsIdentifier      = 'Identifier';
+    rsKeyWords        = 'KeyWords';
     rsLanguage        = 'Language';
     rsModified        = 'Modified';
     rsOtherLanguages  = 'OtherLanguages';
     rsPublisher       = 'Publisher';
     rsPurpose         = 'Purpose';
+    rsPopulation      = 'Population';
     rsTimeCoverage    = 'TimeCoverage';
     rsTitle           = 'Title';
-    rsTopicalCoverage = 'TopicalCoverage';
     rsVersion         = 'Version';
 
    rsValueLabelSets  = 'ValueLabelSets';

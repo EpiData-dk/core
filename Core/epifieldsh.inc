@@ -15,10 +15,10 @@ type
   private
     function GetDataFile: TEpiDataFile;
     function GetField(index: integer): TEpiField;
-    function GetFieldById(const AId: string): TEpiField;
+    function GetFieldByName(const AName: string): TEpiField;
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
-    function    IdPrefix: string; override;
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -28,7 +28,7 @@ type
     function    FieldExists(AField: TEpiField): boolean;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
-    property    FieldById[Const AId: string]: TEpiField read GetFieldById;
+    property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;
   end;
 
   { TEpiField }

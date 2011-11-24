@@ -27,9 +27,9 @@ begin
   result := TEpiField(Items[index]);
 end;
 
-function TEpiFields.GetFieldById(const AId: string): TEpiField;
+function TEpiFields.GetFieldByName(const AName: string): TEpiField;
 begin
-  result := TEpiField(GetItemById(AId));
+  result := TEpiField(GetItemByName(AName));
 end;
 
 procedure TEpiFields.DoAssignList(const EpiCustomList: TEpiCustomList);
@@ -50,7 +50,7 @@ begin
   EndUpdate;
 end;
 
-function TEpiFields.IdPrefix: string;
+function TEpiFields.Prefix: string;
 begin
   Result := 'V';
 end;
@@ -94,7 +94,7 @@ var
   i: Integer;
 begin
   result := TEpiField.CreateField(Self, FieldType);
-  Result.Id := GetUniqueItemId(TEpiCustomItemClass(Result.ClassType));
+  Result.Name := GetUniqueItemName(TEpiCustomItemClass(Result.ClassType));
   AddItem(Result);
 
   if (not TEpiDocument(RootOwner).Loading) and (FieldType = ftAutoInc) then
@@ -106,7 +106,7 @@ end;
 
 function TEpiFields.FieldExists(AField: TEpiField): boolean;
 begin
-  result := ItemExistsById(AField.Id);
+  result := ItemExistsByName(AField.Name);
 end;
 
 { TEpiField }
@@ -459,9 +459,9 @@ begin
   if HasDefaultValue then
     Result += SaveAttr(rsDefaultValue, DefaultValueAsString);
   if Assigned(ValueLabelSet) then
-    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Id);
+    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Name);
   if Assigned(ValueLabelWriteField) then
-    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Id);
+    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Name);
 end;
 
 procedure TEpiField.LoadFromXml(Root: TDOMNode);
@@ -486,12 +486,12 @@ begin
   if LoadAttr(Attr, Root, rsForcePickList, false) then
     ForcePickList := LoadAttrBool(Root, rsForcePickList);
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
-    ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadAttrString(Root, rsValueLabelId)));
+    ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
 
   if LoadAttr(Attr, Root, rsValueLabelWriteRef, false) then
   begin
     VLFieldId := LoadAttrString(Root, rsValueLabelWriteRef);
-    ValueLabelWriteField := TEpiField(DataFile.Fields.GetItemById(VLFieldId));
+    ValueLabelWriteField := DataFile.Fields.FieldByName[VLFieldId];
     // Since (possibly) all ValueLabelWriteRef to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
     if not Assigned(ValueLabelWriteField) then
