@@ -108,6 +108,8 @@ begin
   FStudy.Free;
   FAdmin.Free;
   FXMLSettings.Free;
+  FProjectSettings.Free;
+  FValueLabelSets.Free;
   inherited Destroy;
 end;
 
