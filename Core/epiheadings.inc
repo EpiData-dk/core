@@ -2,7 +2,7 @@
 
 { TEpiHeadings }
 
-function TEpiHeadings.NamePrefix: string;
+function TEpiHeadings.Prefix: string;
 begin
   Result := 'H';
 end;
@@ -75,11 +75,6 @@ destructor TEpiHeading.Destroy;
 begin
   FCaption.Free;
   inherited Destroy;
-end;
-
-class function TEpiHeading.IdString: string;
-begin
-  Result := 'heading_id_';
 end;
 
 function TEpiHeading.XMLName: string;

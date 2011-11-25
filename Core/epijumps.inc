@@ -17,6 +17,11 @@ begin
       Exit(Jump[i]);
 end;
 
+function TEpiJumps.Prefix: string;
+begin
+  Result := 'jump_id_'
+end;
+
 constructor TEpiJumps.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -63,7 +68,7 @@ begin
     Raise Exception.CreateFmt(
             'Field "%s" does not support jumps! (Auto Type)' + LineEnding +
             'Please Contact EpiData',
-            [TEpiCustomNamedItem(Owner).Name]);
+            [TEpiCustomItem(Owner).Name]);
 
   if Ft in BoolFieldTypes   then ItemClass := TEpiBoolJump;
   if Ft in IntFieldTypes    then ItemClass := TEpiIntJump;
@@ -71,7 +76,6 @@ begin
   if Ft in StringFieldTypes then ItemClass := TEpiStringJump;
 
   Result := TEpiJump(NewItem(ItemClass));
-  Result.Id := '';
 end;
 
 { TEpiJump }

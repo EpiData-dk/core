@@ -55,7 +55,7 @@ begin
   inherited LoadFromXml(Root);
   ResultFieldId := LoadNodeString(Root, rsResultField);
   if Assigned(OwnerField) then
-    ResultField := TEpiField(OwnerField.DataFile.Fields.GetItemById(ResultFieldId));
+    ResultField := OwnerField.DataFile.Fields.FieldByName[ResultFieldId];
 
   if not Assigned(ResultField) then
     LinkMap.AddLink(ltCalcResField, Self, ResultFieldId);
@@ -64,7 +64,7 @@ end;
 function TEpiCalculation.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content :=
-    SaveNode(Lvl + 1, rsResultField, ResultField.Id) +
+    SaveNode(Lvl + 1, rsResultField, ResultField.Name) +
     Content;
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -145,28 +145,28 @@ begin
   if LoadNode(Node, Root, rsStartDate, false) then
   begin
     StartDateId := LoadNodeString(Root, rsStartDate);
-    StartDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(StartDateId));
+    StartDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemByName(StartDateId));
     if not Assigned(StartDate) then LinkMap.AddLink(ltCalcStartDate, Self, StartDateId);
   end;
 
   if LoadNode(Node, Root, rsEndDate, false) then
   begin
     EndDateId := LoadNodeString(Root, rsEndDate);
-    EndDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemById(EndDateId));
+    EndDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemByName(EndDateId));
     if not Assigned(EndDate) then LinkMap.AddLink(ltCalcEndDate, Self, EndDateId);
   end;
 
   if LoadNode(Node, Root, rsStartTime, false) then
   begin
     StartTimeId := LoadNodeString(Root, rsStartTime);
-    StartTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(StartTimeId));
+    StartTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemByName(StartTimeId));
     if not Assigned(StartTime) then LinkMap.AddLink(ltCalcStartTime, Self, StartTimeId);
   end;
 
   if LoadNode(Node, Root, rsEndTime, false) then
   begin
     EndTimeId := LoadNodeString(Root, rsEndTime);
-    EndTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemById(EndTimeId));
+    EndTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemByName(EndTimeId));
     if not Assigned(EndTime) then LinkMap.AddLink(ltCalcEndTime, Self, EndTimeId);
   end;
 end;
@@ -176,13 +176,13 @@ begin
   Content +=
     SaveNode(Lvl + 1, rsTimeCalcType, Integer(TimeCalcType));
   if Assigned(StartDate) then
-    Content += SaveNode(Lvl + 1, rsStartDate, StartDate.Id);
+    Content += SaveNode(Lvl + 1, rsStartDate, StartDate.Name);
   if Assigned(StartTime) then
-    Content += SaveNode(Lvl + 1, rsStartTime, StartTime.Id);
+    Content += SaveNode(Lvl + 1, rsStartTime, StartTime.Name);
   if Assigned(EndDate) then
-    Content += SaveNode(Lvl + 1, rsEndDate,   EndDate.Id);
+    Content += SaveNode(Lvl + 1, rsEndDate,   EndDate.Name);
   if Assigned(EndTime) then
-    Content += SaveNode(Lvl + 1, rsEndTime,   EndTime.Id);
+    Content += SaveNode(Lvl + 1, rsEndTime,   EndTime.Name);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -235,24 +235,24 @@ begin
   inherited LoadFromXml(Root);
 
   DayId := LoadNodeString(Root, rsDayField);
-  Day := TEpiIntField(OwnerField.DataFile.Fields.GetItemById(DayId));
+  Day := TEpiIntField(OwnerField.DataFile.Fields.GetItemByName(DayId));
   if not Assigned(Day) then LinkMap.AddLink(ltCalcDayField, Self, DayId);
 
   MonthId := LoadNodeString(Root, rsMonthField);
-  Month := TEpiIntField(OwnerField.DataFile.Fields.GetItemById(MonthId));
+  Month := TEpiIntField(OwnerField.DataFile.Fields.GetItemByName(MonthId));
   if not Assigned(Month) then LinkMap.AddLink(ltCalcMonthField, Self, MonthId);
 
   YearId := LoadNodeString(Root, rsYearField);
-  Year := TEpiIntField(OwnerField.DataFile.Fields.GetItemById(YearId));
+  Year := TEpiIntField(OwnerField.DataFile.Fields.GetItemByName(YearId));
   if not Assigned(Year) then LinkMap.AddLink(ltCalcYearField, Self, YearId);
 end;
 
 function TEpiCombineDateCalc.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
-    SaveNode(Lvl + 1, rsDayField,   Day.Id) +
-    SaveNode(Lvl + 1, rsMonthField, Month.Id) +
-    SaveNode(Lvl + 1, rsYearField,  Year.Id);
+    SaveNode(Lvl + 1, rsDayField,   Day.Name) +
+    SaveNode(Lvl + 1, rsMonthField, Month.Name) +
+    SaveNode(Lvl + 1, rsYearField,  Year.Name);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -320,21 +320,21 @@ begin
   if LoadNode(Node, Root, rsField1, false) then
   begin
     Field1Id := LoadNodeString(Root, rsField1);
-    Field1 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field1Id));
+    Field1 := OwnerField.DataFile.Fields.FieldByName[Field1Id];
     if not Assigned(Field1) then LinkMap.AddLink(ltCalcField1, Self, Field1Id);
   end;
 
   if LoadNode(Node, Root, rsField2, false) then
   begin
     Field2Id := LoadNodeString(Root, rsField2);
-    Field2 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field2Id));
+    Field2 := OwnerField.DataFile.Fields.FieldByName[Field2Id];
     if not Assigned(Field2) then LinkMap.AddLink(ltCalcField2, Self, Field2Id);
   end;
 
   if LoadNode(Node, Root, rsField3, false) then
   begin
     Field3Id := LoadNodeString(Root, rsField3);
-    Field3 := TEpiField(OwnerField.DataFile.Fields.GetItemById(Field3Id));
+    Field3 := OwnerField.DataFile.Fields.FieldByName[Field2Id];
     if not Assigned(Field3) then LinkMap.AddLink(ltCalcField3, Self, Field3Id);
   end;
 
@@ -346,11 +346,11 @@ function TEpiCombineStringCalc.SaveToXml(Content: String; Lvl: integer
   ): string;
 begin
   if Assigned(Field1) then
-    Content += SaveNode(Lvl + 1, rsField1, Field1.Id);
+    Content += SaveNode(Lvl + 1, rsField1, Field1.Name);
   if Assigned(Field2) then
-    Content += SaveNode(Lvl + 1, rsField2, Field2.Id);
+    Content += SaveNode(Lvl + 1, rsField2, Field2.Name);
   if Assigned(Field3) then
-    Content += SaveNode(Lvl + 1, rsField3, Field3.Id);
+    Content += SaveNode(Lvl + 1, rsField3, Field3.Name);
 
   Content +=
     SaveNode(Lvl + 1, rsDelim1, Delim1) +

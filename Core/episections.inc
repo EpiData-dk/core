@@ -8,7 +8,7 @@ begin
   result := TEpiSection(Items[Index]);
 end;
 
-function TEpiSections.NamePrefix: string;
+function TEpiSections.Prefix: string;
 begin
   Result := 'S';
 end;
@@ -90,11 +90,6 @@ begin
   DoChange(eegSections, Word(esceWidth), @Val);
 end;
 
-class function TEpiSection.IdString: string;
-begin
-  Result := 'section_id_'
-end;
-
 constructor TEpiSection.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -131,7 +126,7 @@ var
 begin
 {  Content := '';
   For i := 0 to Groups.Count - 1 do
-    Content += ',' + Groups[i].Id;
+    Content += ',' + Groups[i].Name;
   if Length(Content) > 0 then
   begin
     Delete(Content, 1, 1);

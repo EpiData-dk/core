@@ -12,7 +12,7 @@ type
   private
     function GetSection(Index: integer): TEpiSection;
   protected
-    function NamePrefix: string; override;
+    function Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -38,8 +38,6 @@ type
     function    GetHeading(Index: integer): TEpiHeading;
     procedure   SetHeight(const AValue: integer);
     procedure   SetWidth(const AValue: integer);
-  protected
-    class function IdString: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;

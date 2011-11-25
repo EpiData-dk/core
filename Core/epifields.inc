@@ -50,7 +50,7 @@ begin
   EndUpdate;
 end;
 
-function TEpiFields.NamePrefix: string;
+function TEpiFields.Prefix: string;
 begin
   Result := 'V';
 end;
@@ -82,7 +82,7 @@ begin
   begin
     CheckNode(Node, rsField);
 
-    NField := NewField(TEpiFieldType(LoadAttrInt(Node, rsType)));
+    NField := NewField(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
     NField.LoadFromXml(Node);
 
     Node := Node.NextSibling;
@@ -94,8 +94,7 @@ var
   i: Integer;
 begin
   result := TEpiField.CreateField(Self, FieldType);
-  Result.Id := GetUniqueItemId(TEpiCustomItemClass(Result.ClassType));
-  Result.Name := GetUniqueName;
+  Result.Name := GetUniqueItemName(TEpiCustomItemClass(Result.ClassType));
   AddItem(Result);
 
   if (not TEpiDocument(RootOwner).Loading) and (FieldType = ftAutoInc) then
@@ -107,7 +106,7 @@ end;
 
 function TEpiFields.FieldExists(AField: TEpiField): boolean;
 begin
-  result := ItemExistsById(AField.Id);
+  result := ItemExistsByName(AField.Name);
 end;
 
 { TEpiField }
@@ -386,11 +385,6 @@ begin
   RegisterClasses([Notes, Question]);
 end;
 
-class function TEpiField.IdString: string;
-begin
-  Result := 'f';
-end;
-
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
 begin
   case AFieldType of
@@ -450,7 +444,7 @@ function TEpiField.SaveAttributesToXml: string;
 begin
   Result :=
     inherited SaveAttributesToXml +
-    SaveAttr(rsType, Integer(FieldType)) +
+    SaveAttrEnum(rsType, Integer(FieldType), TypeInfo(TEpiFieldType)) +
     SaveAttr(rsLength, Length) +
     SaveAttr(rsDecimals, Decimals) +
     SaveAttr(rsEntryMode, Integer(EntryMode));
@@ -465,9 +459,9 @@ begin
   if HasDefaultValue then
     Result += SaveAttr(rsDefaultValue, DefaultValueAsString);
   if Assigned(ValueLabelSet) then
-    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Id);
+    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Name);
   if Assigned(ValueLabelWriteField) then
-    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Id);
+    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Name);
 end;
 
 procedure TEpiField.LoadFromXml(Root: TDOMNode);
@@ -492,12 +486,12 @@ begin
   if LoadAttr(Attr, Root, rsForcePickList, false) then
     ForcePickList := LoadAttrBool(Root, rsForcePickList);
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
-    ValueLabelSet := TEpiValueLabelSet(DataFile.ValueLabels.GetItemById(LoadAttrString(Root, rsValueLabelId)));
+    ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
 
   if LoadAttr(Attr, Root, rsValueLabelWriteRef, false) then
   begin
     VLFieldId := LoadAttrString(Root, rsValueLabelWriteRef);
-    ValueLabelWriteField := TEpiField(DataFile.Fields.GetItemById(VLFieldId));
+    ValueLabelWriteField := DataFile.Fields.FieldByName[VLFieldId];
     // Since (possibly) all ValueLabelWriteRef to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
     if not Assigned(ValueLabelWriteField) then
@@ -1515,7 +1509,7 @@ end;
 function TEpiCustomAutoField.SaveAttributesToXml: string;
 begin
   if FieldType in AutoUpdateFieldTypes then
-    Result := SaveAttr(rsAutoUpdateMode, Integer(AutoMode));
+    Result := SaveAttrEnum(rsAutoUpdateMode, Integer(AutoMode), TypeInfo(TEpiAutoUpdateMode));
   Result :=
     inherited SaveAttributesToXml +
     Result;
@@ -1524,7 +1518,7 @@ end;
 procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode);
 begin
   if FieldType in AutoUpdateFieldTypes then
-    AutoMode := TEpiAutoUpdateMode(LoadAttrInt(Root, rsAutoUpdateMode));
+    AutoMode := TEpiAutoUpdateMode(LoadAttrEnum(Root, rsAutoUpdateMode, TypeInfo(TEpiAutoUpdateMode)));
   inherited LoadFromXml(Root);
 end;
 

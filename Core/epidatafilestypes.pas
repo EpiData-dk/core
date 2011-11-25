@@ -23,7 +23,7 @@ type
 
   TEpiFieldType = (
     // Bool  (0)
-    ftBoolean = 0,
+    ftBoolean,
 
     // Numbers  (1, 2, 3)
     ftInteger, ftAutoInc, ftFloat,

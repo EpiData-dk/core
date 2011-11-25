@@ -8,6 +8,8 @@ type
   private
     function GetJump(index: integer): TEpiJump;
     function GetJumpFromValue(const Value: string): TEpiJump;
+  protected
+    function Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -31,7 +33,7 @@ type
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     function    GetJumpValueAsString: string; virtual; abstract;
-    class function IdString: string; override;
+    function    WriteNameToXml: boolean; override;
   public
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;

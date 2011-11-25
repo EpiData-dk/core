@@ -16,6 +16,7 @@ type
   protected
     Property    Settings: TEpiXMLSettings read GetSettings;
     function    ScrambleXml: boolean; override;
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -55,7 +56,6 @@ type
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
   protected
-    class function IdString: string; override;
     constructor Create(AOwner: TEpiCustomBase); override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);

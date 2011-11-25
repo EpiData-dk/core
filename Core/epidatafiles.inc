@@ -39,6 +39,11 @@ begin
   Result := Settings.Scrambled;
 end;
 
+function TEpiDataFiles.Prefix: string;
+begin
+  Result := 'datafile_id_';
+end;
+
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -176,8 +181,8 @@ begin
               begin
                 F := TEpiField(Data);
                 // Check that id is not in conflict with others.
-                if Fields.ItemExistsById(F.Id) then
-                  F.Id := Fields.GetUniqueItemId(TEpiField);
+                if Fields.ItemExistsByName(F.Name) then
+                  F.Name := Fields.GetUniqueItemName(TEpiField);
                 Fields.AddItem(F);
                 F.Size := Size;
                 F.FDataFile := Self;
@@ -187,8 +192,8 @@ begin
               begin
                 H := TEpiHeading(Data);
                 // Check that id is not in conflict with others.
-                if Headings.ItemExistsById(H.Id) then
-                  H.Id := Headings.GetUniqueItemId(TEpiHeading);
+                if Headings.ItemExistsByName(H.Name) then
+                  H.Name := Headings.GetUniqueItemName(TEpiHeading);
                 Headings.AddItem(TEpiHeading(Data));
               end;
 
@@ -263,22 +268,23 @@ begin
   {$IFNDEF EPIOLDSAVE}
   for CurRec := 0 to Sz - 1 do
   begin
-    R := Indent(Lvl + 1) + '<' + rsRecord + ' ';
-    if Verified[CurRec] then
+    R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
+
+{    if Verified[CurRec] then
       R += rsRecordStatus + '="2">'
     else if Deleted[CurRec] then
       R += rsRecordStatus + '="1">'
     else
-      R += rsRecordStatus + '="0">';
+      R += rsRecordStatus + '="0">';}
 
     S := '';
     for CurField := 0 to Fc - 1 do
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes + FloatFieldTypes then
-          S += Id + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
+          S += Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
         else
-          S += Id + '=' + AsString[CurRec] + ',';
+          S += Name + '=' + AsString[CurRec] + ',';
     Delete(S, Length(S), 1);
     Lst.Add(R + S + '</' + rsRecord + '>');
   end;
@@ -299,9 +305,9 @@ begin
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes + FloatFieldTypes then
-          S += ',' + Id + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll]))
+          S += ',' + Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll]))
         else
-          S += ',' + Id + '=' + AsString[CurRec];
+          S += ',' + Name + '=' + AsString[CurRec];
     Delete(S, 1, 1);
     Result += S + '</' + rsRecord + '>' + LineEnding;
   end;
@@ -452,7 +458,7 @@ begin
     SetLength(FieldList, P);
     for i := 0 to Fc -1 do
     begin
-      Val := (Hash(Fields[i].Id) mod P);
+      Val := (Hash(Fields[i].Name) mod P);
       // Collision detection (with Fc^2 size)
       if Assigned(FieldList[val]) then
       begin
@@ -492,7 +498,7 @@ begin
       {$IFDEF EPIHASH}
       TmpField := FieldList[Hash(FN) mod P];
       {$ELSE}
-      TmpField := TEpiField(Fields.GetItemById(NN));
+      TmpField := Fields.FieldByName[NN];
       {$ENDIF EPIHASH}
        TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
@@ -538,11 +544,6 @@ procedure TEpiDataFile.SetVersion(const AValue: string);
 begin
   if FVersion = AValue then exit;
   FVersion := AValue;
-end;
-
-class function TEpiDataFile.IdString: string;
-begin
-  Result := 'datafile_id_';
 end;
 
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
@@ -699,7 +700,7 @@ begin
   // Post Processing!
   for i := 0 to LinkMap.Count - 1 do
   begin
-    AField := TEpiField(Fields.GetItemById(LinkMap.RefObjId[i]));
+    AField := Fields.FieldByName[LinkMap.RefObjId[i]];
     Case LinkMap.LinkTypes[i] of
       ltJump:
         TEpiJump(LinkMap.Objects[i]).JumpToField := AField;
@@ -734,7 +735,7 @@ begin
   LinkMap.Clear;
 
   if Sections.ItemExistsByName('MAIN') then
-    FMainSection := TEpiSection(Sections.GetItemByName('MAIN'));
+    FMainSection := Sections.GetSectionByName('MAIN');
 
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
@@ -755,7 +756,7 @@ begin
   result := MainSection.NewHeading;
 end;
 
-procedure TEpiDataFile.NewRecords(const Count: Cardinal = 1);
+procedure TEpiDataFile.NewRecords(const Count: Cardinal);
 const
   Field_Growth_Factor = 1.25;
 var

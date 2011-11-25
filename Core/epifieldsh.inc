@@ -18,7 +18,7 @@ type
     function GetFieldByName(const AName: string): TEpiField;
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
-    function    NamePrefix: string; override;
+    function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -160,7 +160,6 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
-    class function IdString: string; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;

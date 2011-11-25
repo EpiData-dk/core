@@ -75,7 +75,10 @@ function TEpiDocument.SaveAttributesToXml: string;
 begin
   Result :=
     inherited SaveAttributesToXml +
-    SaveAttr(rsVersionAttr, XMLSettings.Version);
+    SaveAttr(rsVersionAttr, XMLSettings.Version) +
+    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.0') +
+    SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
+    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk ./docs/samples/sample.xsd');
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
