@@ -630,7 +630,6 @@ begin
   // The special main section...
   FMainSection := NewSection;
   FMainSection.Name := 'MAIN';
-  FMainSection.Id := FMainSection.IdString + 'main';
 
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;

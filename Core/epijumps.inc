@@ -117,9 +117,9 @@ begin
   FJumpToField := nil;
 end;
 
-class function TEpiJump.IdString: string;
+function TEpiJump.WriteNameToXml: boolean;
 begin
-  Result := 'jump_id_';
+  Result := false;
 end;
 
 function TEpiJump.XMLName: string;
@@ -132,12 +132,12 @@ var
   FieldId: String;
 begin
   inherited LoadFromXml(Root);
-  JumpType := TEpiJumpType(LoadAttrInt(Root, rsJumpType));
-  ResetType := TEpiJumpResetType(LoadAttrInt(Root, rsJumpReset));
+  JumpType := TEpiJumpType(LoadAttrEnum(Root, rsJumpType, TypeInfo(TEpiJumpType)));
+  ResetType := TEpiJumpResetType(LoadAttrEnum(Root, rsJumpReset, TypeInfo(TEpiJumpResetType)));
   if JumpType = jtToField then
   begin
     FieldId := LoadAttrString(Root, rsJumpTo);
-    JumpToField := TEpiField(GetDataFile(Self).Fields.GetItemById(FieldId));
+    JumpToField := GetDataFile(Self).Fields.GetFieldByName(FieldId);
 
     // Since (possibly) all jumps to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
@@ -148,13 +148,15 @@ end;
 
 function TEpiJump.SaveAttributesToXml: string;
 begin
-  Result := inherited SaveAttributesToXml +
-    Format(' %s="%s" %s="%d" %s="%d"',
-           [rsJumpOn, GetJumpValueAsString,
-            rsJumpType, JumpType,
-            rsJumpReset, ResetType]);
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttr(rsJumpOn, GetJumpValueAsString) +
+    SaveAttrEnum(rsJumpType, Integer(JumpType), TypeInfo(TEpiJumpType)) +
+    SaveAttrEnum(rsJumpReset, Integer(ResetType), TypeInfo(TEpiJumpResetType));
+
   if JumpType = jtToField then
-    Result := Result + Format(' %s="%s"', [rsJumpTo, JumpToField.Id]);
+    Result := Result +
+    SaveAttr(rsJumpTo, JumpToField.Name);
 end;
 
 procedure TEpiJump.Assign(const AEpiCustomBase: TEpiCustomBase);

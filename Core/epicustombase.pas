@@ -317,7 +317,7 @@ type
 
   { TEpiCustomControlItemList }
 
-  TEpiCustomControlItemList = class(TEpiCustomNamedItemList)
+  TEpiCustomControlItemList = class(TEpiCustomList)
   private
     FOnSort: TListSortCompare;
     procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
@@ -1584,7 +1584,7 @@ begin
   case TEpiCustomChangeEventType(EventType) of
     ecceDestroy: ;
     ecceUpdate,
-    ecceId, ecceAddItem,
+    ecceAddItem,
     ecceDelItem, ecceSetItem,
     ecceText, ecceName:
       Exit;
