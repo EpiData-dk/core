@@ -65,7 +65,7 @@ const
 implementation
 
 uses
-  zipper, FileUtil, LCLProc;
+  zipper, FileUtil;
 
 type
   TEpiDialogFilterPair = record

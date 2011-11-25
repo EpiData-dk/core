@@ -47,7 +47,7 @@ type
 implementation
 
 uses
-  LConvEncoding, FileUtil, math, LCLProc;
+  LConvEncoding, FileUtil, math, LazUTF8, lazutf16;
 
 function CountChar(const UTF8String: string; Const WChar: WideChar): integer;
 var

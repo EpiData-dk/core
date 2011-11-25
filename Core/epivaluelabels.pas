@@ -154,7 +154,7 @@ type
 implementation
 
 uses
-  strutils, math, LCLProc, epidocument;
+  strutils, math, LazUTF8, epidocument;
 
 { TEpiCustomValueLabel }
 

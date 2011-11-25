@@ -29,6 +29,8 @@ type
     function    ReadDouble(Const St: TStream): Double;
     function    ReEncodeString(Const Str: string): string;
     function    StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
+  private
+    function    TruncToInt(e: Extended): integer;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -47,7 +49,7 @@ implementation
 
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
-  lclproc, dateutils, LConvEncoding;
+  LazUTF8, dateutils, LConvEncoding;
 
 var
   BigEndian: boolean = false;
@@ -123,6 +125,11 @@ begin
     Inc(i);
   end;
   Result := ReEncodeString(Result);
+end;
+
+function TEpiImport.TruncToInt(e: Extended): integer;
+begin
+  Result:=integer(Trunc(e));
 end;
 
 constructor TEpiImport.Create;
