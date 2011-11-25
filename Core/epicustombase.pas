@@ -64,6 +64,7 @@ type
 
   { Save/Load functionality }
   private
+    function   NodePath(Const Root: TDOMNode): string;
     procedure  RaiseErrorNode(const Root: TDOMNode; const NodeName: string);
     procedure  RaiseErrorAttr(const Root: TDOMNode; const AttrName: string);
     procedure  RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
@@ -461,28 +462,38 @@ begin
   Delete(Result, 1, 4);
 end;
 
-procedure TEpiCustomBase.RaiseErrorNode(const Root: TDOMNode; const NodeName: string) ;
+function TEpiCustomBase.NodePath(const Root: TDOMNode): string;
 var
   R: TDOMNode;
-  S: DOMString;
+
+  function GetId(Const Node: TDOMNode): string;
+  begin
+    Result := '';
+    if (Node.HasAttributes) and (TDOMElement(Node).AttribStrings['id'] <> '') then
+      Result := Result + '(' + TDOMElement(Node).AttribStrings['id'] + ')';
+  end;
+
 begin
-  S := R.NodeName;
+  Result := Root.NodeName + GetId(Root);
   R := Root.ParentNode;
   while Assigned(R) do
   begin
-    S := R.NodeName + '->' + s;
+    Result := R.NodeName + GetId(R) +  '->' + Result;
     R := R.ParentNode;
   end;
+end;
 
+procedure TEpiCustomBase.RaiseErrorNode(const Root: TDOMNode; const NodeName: string) ;
+begin
   raise TEpiCoreException.Create('ERROR: A required XML tag was not found.' + LineEnding +
-          Format('In section %s the tag "%s" was expected!', [S, NodeName]));
+          Format('In section %s the tag "%s" was expected!', [NodePath(Root), NodeName]));
 end;
 
 procedure TEpiCustomBase.RaiseErrorAttr(const Root: TDOMNode; const AttrName: string
   );
 begin
   raise TEpiCoreException.Create('ERROR: A required XML attribute was not found.' + LineEnding +
-          Format('The tag %s expected an attribute with the name "%s"!', [Root.NodeName, AttrName]));
+          Format('The tag %s expected an attribute with the name "%s"!', [NodePath(Root), AttrName]));
 end;
 
 procedure TEpiCustomBase.RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
