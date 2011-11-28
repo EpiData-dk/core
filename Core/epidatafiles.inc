@@ -467,10 +467,10 @@ begin
   begin
     CheckNode(Node, rsRecord);
 
-    case LoadAttrInt(Node, rsRecordStatus) of
-      0: ; // Do nothing
-      1: Deleted[CurRec] := true;
-      2: Verified[CurRec] := true;
+    case TEpiRecordState(LoadAttrEnum(Node, rsRecordStatus, TypeInfo(TEpiRecordState))) of
+      rsNormal:   ; // Do nothing
+      rsDeleted:  Deleted[CurRec] := true;
+      rsVerified: Verified[CurRec] := true;
     end;
 
     DataList.DelimitedText := Dummyfy(UTF8Encode(Node.TextContent));
@@ -482,7 +482,10 @@ begin
       {$ELSE}
       TmpField := Fields.FieldByName[NN];
       {$ENDIF EPIHASH}
-       TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
+      // Do not crash if reading bash entry/line.
+      if not Assigned(TmpField) then
+        continue;
+      TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);

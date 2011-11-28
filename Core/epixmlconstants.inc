@@ -18,18 +18,18 @@ const
   rsEpiData         = 'EpiData';
    // Settings
    rsSettings        = 'Settings';
-    rsScrambled       = 'Scrambled';
-    rsDateSep         = 'DateSeparator';
-    rsTimeSep         = 'TimeSeparator';
-    rsDecSep          = 'DecimalSeparator';
-    rsMissingStr      = 'MissingString';
+//    rsScrambled       = 'Scrambled';
+    rsDateSep         = 'dateSeparator';
+    rsTimeSep         = 'timeSeparator';
+    rsDecSep          = 'decimalSeparator';
+    rsMissingStr      = 'missingString';
 
    rsProjectSettings = 'ProjectSettings';
-    rsAutoIncStart    = 'AutoIncStart';
-    rsTimedBackupInterval='TimedBackupInterval';
-    rsBackupOnShutdown= 'BackupOnShutdown';
-    rsShowFieldNames  = 'ShowFieldNames';
-    rsShowFieldBorders= 'ShowFieldBorders';
+    rsAutoIncStart    = 'autoIncStart';
+    rsTimedBackupInterval='timedBackupInterval';
+    rsBackupOnShutdown= 'backupOnShutdown';
+    rsShowFieldNames  = 'showFieldNames';
+    rsShowFieldBorders= 'showFieldBorders';
 
    rsAdmin           = 'Admin';
     // User
@@ -48,7 +48,7 @@ const
      rsGroup           = 'Group';
       rsRights          = 'Rights';
 
-   rsStudy           = 'Study';
+   rsStudy           = 'StudyInfo';
     rsAbstract        = 'Abstract';
     rsAgency          = 'Agency';
     rsAuthor          = 'Author';

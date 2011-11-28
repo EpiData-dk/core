@@ -516,7 +516,7 @@ begin
   end;
   if LoadNode(Node, Root, rsCalculation, false) then
   begin
-    Case TEpiCalcType(LoadAttrInt(Node, 'type')) of
+    Case TEpiCalcType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiCalcType))) of
       ctTimeDiff:      Calculation := TEpiTimeCalc.Create(Self);
       ctCombineDate:   Calculation := TEpiCombineDateCalc.Create(Self);
       ctCombineString: Calculation := TEpiCombineStringCalc.Create(Self);
