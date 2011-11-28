@@ -57,7 +57,7 @@ const
     rsFunding         = 'Funding';
     rsGeoCoverage     = 'GeographicalCoverage';
     rsIdentifier      = 'Identifier';
-    rsKeyWords        = 'KeyWords';
+    rsKeywords        = 'Keywords';
     rsLanguage        = 'Language';
     rsModified        = 'Modified';
     rsOtherLanguages  = 'OtherLanguages';

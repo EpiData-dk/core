@@ -265,7 +265,7 @@ begin
   inherited Create(AOwner);
 
   FShowFieldBorders := true;
-  FShowFieldNames   := true;
+  FShowFieldNames   := false;
   FBackupInterval   := 10;
   FAutoIncStartValue := 1;
 end;
@@ -290,15 +290,11 @@ var
   I: Integer;
   B: Boolean;
 begin
-  if LoadAttr(I, Root, rsAutoIncStart, false) then
-    AutoIncStartValue := I;
-  if LoadAttr(I, Root, rsTimedBackupInterval, false) then
-    BackupInterval := I;
-//  AutoIncStartValue := LoadAttrInt(Root, rsAutoIncStart);
-//  BackupInterval   := LoadAttrInt(Root, rsTimedBackupInterval);
-  BackupOnShutdown := LoadAttrBool(Root,rsBackupOnShutdown);
-  ShowFieldNames   := LoadAttrBool(Root, rsShowFieldNames);
-  ShowFieldBorders := LoadAttrBool(Root, rsShowFieldBorders);
+  AutoIncStartValue := LoadAttrInt(Root, rsAutoIncStart, AutoIncStartValue, false);
+  BackupInterval    := LoadAttrInt(Root, rsTimedBackupInterval, BackupInterval, false);
+  BackupOnShutdown  := LoadAttrBool(Root,rsBackupOnShutdown, BackupOnShutdown, false);
+  ShowFieldNames    := LoadAttrBool(Root, rsShowFieldNames, ShowFieldNames, false);
+  ShowFieldBorders  := LoadAttrBool(Root, rsShowFieldBorders, ShowFieldBorders, false);
 end;
 
 function TEpiProjectSettings.ScrambleXml: boolean;
