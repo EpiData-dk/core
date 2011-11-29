@@ -592,15 +592,15 @@ end;
 function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
-    SaveRecords(Lvl + 1) +
-    SaveNode(Lvl + 1, rsVersion, Version);
+    SaveRecords(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
 function TEpiDataFile.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
-    SaveAttr(rsCreatedAttr, Created);
+    SaveAttr(rsCreatedAttr, Created) +
+    SaveAttr(rsVersionAttr, Version);
 end;
 
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
@@ -619,7 +619,7 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
-  FVersion := LoadNodeString(Root, rsVersion);
+  FVersion := LoadAttrString(Root, rsVersion, FVersion, false);
   FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
 
   if LoadNode(Node, Root, rsSections, false) then

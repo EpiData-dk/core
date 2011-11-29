@@ -58,7 +58,7 @@ begin
   if not Assigned(CompareField) then
     LinkMap.AddLink(ltCompare, Self, CompareId);
 
-  CompareType := TEpiComparisonType(LoadAttrEnum(Root, rsCompareType, TypeInfo(TEpiComparisonType)));
+  CompareType := TEpiComparisonType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiComparisonType)));
 end;
 
 function TEpiComparison.SaveToXml(Content: String; Lvl: integer): string;
@@ -70,7 +70,7 @@ function TEpiComparison.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
     SaveAttr(rsCompareTo, CompareField.Name) +
-    SaveAttrEnum(rsCompareType, Integer(CompareType), TypeInfo(TEpiComparisonType));
+    SaveAttrEnum(rsType, Integer(CompareType), TypeInfo(TEpiComparisonType));
 end;
 
 procedure TEpiComparison.Assign(const AEpiCustomBase: TEpiCustomBase);

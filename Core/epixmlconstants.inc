@@ -94,15 +94,15 @@ const
         rsField           = 'Field';
          rsLength          = 'length';
          rsDecimals        = 'decimals';
-         rsEntryMode       = 'entrymode';
-         rsConfirmEntry    = 'confirmentry';
-         rsValueLabelId    = 'valuelabelref';
-         rsValueLabelWriteRef = 'valuelabelwritefieldref';
-         rsShowValueLabel  = 'showvaluelabel';
-         rsForcePickList   = 'forcepicklist';
+         rsEntryMode       = 'entryMode';
+         rsConfirmEntry    = 'confirmEntry';
+         rsValueLabelId    = 'valueLabelRef';
+         rsValueLabelWriteRef = 'valueLabelWriteFieldRef';
+         rsShowValueLabel  = 'showValueLabel';
+         rsForcePickList   = 'forcePickList';
          rsRepeatValue     = 'repeat';
-         rsDefaultValue    = 'defaultvalue';
-         rsAutoUpdateMode  = 'autoupdatemode';
+         rsDefaultValue    = 'defaultValue';
+         rsAutoUpdateMode  = 'autoUpdateMode';
          rsQuestion        = 'Question';
          rsNotes           = 'Notes';
          rsRanges           = 'Ranges';
@@ -113,7 +113,7 @@ const
           rsJump            = 'Jump';
            rsJumpOn          = 'on';
            rsJumpType        = 'type';
-           rsJumpTo          = 'tofieldref';
+           rsJumpTo          = 'toFieldRef';
            rsJumpReset       = 'reset';
          rsCalculation     = 'Calculation';
           rsResultField     = 'ResultFieldRef';
@@ -131,8 +131,7 @@ const
           rsDelim1          = 'Delimiter1';
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
-          rsCompareTo       = 'tofieldref';
-          rsCompareType     = 'type';
+          rsCompareTo       = 'toFieldRef';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';

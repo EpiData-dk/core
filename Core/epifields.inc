@@ -474,17 +474,13 @@ begin
   inherited LoadFromXml(Root);
   Length   := LoadAttrInt(Root, rsLength);
   Decimals := LoadAttrInt(Root, rsDecimals);
-  EntryMode := TEpiEntryMode(LoadAttrInt(Root, rsEntryMode));
-  if LoadAttr(Attr, Root, rsConfirmEntry, false) then
-    ConfirmEntry := LoadAttrBool(Root, rsConfirmEntry);
-  if LoadAttr(Attr, Root, rsRepeatValue, false) then
-    RepeatValue := LoadAttrBool(Root, rsRepeatValue);
-  if LoadAttr(Attr, Root, rsDefaultValue, false) then
-    DefaultValueAsString := LoadAttrString(Root, rsDefaultValue);
-  if LoadAttr(Attr, Root, rsShowValueLabel, false) then
-    ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel);
-  if LoadAttr(Attr, Root, rsForcePickList, false) then
-    ForcePickList := LoadAttrBool(Root, rsForcePickList);
+  EntryMode := TEpiEntryMode(LoadAttrEnum(Root, rsEntryMode, TypeInfo(TEpiEntryMode)));
+
+  ConfirmEntry := LoadAttrBool(Root, rsConfirmEntry, ConfirmEntry, false);
+  RepeatValue := LoadAttrBool(Root, rsRepeatValue, RepeatValue, false);
+  DefaultValueAsString := LoadAttrString(Root, rsDefaultValue, DefaultValueAsString, false);
+  ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel, ShowValueLabel, false);
+  ForcePickList := LoadAttrBool(Root, rsForcePickList, ForcePickList, false);
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
     ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
 
