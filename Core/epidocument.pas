@@ -21,6 +21,7 @@ type
     FLoading: boolean;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
+    FVersion: integer;
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
@@ -50,6 +51,7 @@ type
     Property   Relations: TEpiRelations read FRelations;
     property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   Loading: boolean read FLoading;
+    Property   Version: integer read FVersion;
   end;
 
 implementation
@@ -75,10 +77,11 @@ function TEpiDocument.SaveAttributesToXml: string;
 begin
   Result :=
     inherited SaveAttributesToXml +
-    SaveAttr(rsVersionAttr, XMLSettings.Version) +
     SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.0') +
     SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk ./docs/samples/sample.xsd');
+    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk ./docs/samples/sample.xsd') +
+    SaveAttr(rsVersionAttr, Version) +
+    SaveAttr('xml:lang', DefaultLang);
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -150,11 +153,10 @@ begin
   FLoading := true;
 
   // First read version no!
-  XMLSettings.Version := LoadAttrInt(Root, rsVersionAttr);
-
-  // Second read XMLSettings!
-  // - we need to catch if this is a scrambled file and other important XMLSettings
-  // - such as version of the file, formatsettings, etc...
+  FVersion := LoadAttrInt(Root, rsVersionAttr);
+  // Then language!
+  SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
+  // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
   XMLSettings.LoadFromXml(Node);
 

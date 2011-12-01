@@ -14,7 +14,7 @@ type
 
   // esce = Epi Setting Change Event
   TEpiSettingChangeEvent = (
-    esceVersion, esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
+    esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
   );
 
   TEpiXMLSettings = class(TEpiCustomBase)
@@ -25,13 +25,11 @@ type
     FMissingString: string;
     FScrambled: boolean;
     FTimeSeparator: string;
-    FVersion: integer;
     procedure SetDateSeparator(const AValue: string);
     procedure SetDecimalSeparator(const AValue: string);
     procedure SetMissingString(const AValue: string);
     procedure SetScrambled(const AValue: boolean);
     procedure SetTimeSeparator(const AValue: string);
-    procedure SetVersion(const AValue: integer);
   protected
     function SaveAttributesToXml: string; override;
   public
@@ -39,7 +37,6 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    property    Version: integer read FVersion write SetVersion;
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
@@ -142,16 +139,6 @@ begin
   DoChange(eegXMLSetting, Word(esceTimeSep), @Val);
 end;
 
-procedure TEpiXMLSettings.SetVersion(const AValue: integer);
-var
-  Val: LongInt;
-begin
-  if FVersion = AValue then exit;
-  Val := FVersion;
-  FVersion := AValue;
-  DoChange(eegXMLSetting, Word(esceVersion), @Val);
-end;
-
 function TEpiXMLSettings.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
@@ -164,7 +151,6 @@ end;
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  Version := 0;
   Scrambled := false;
 
   FFormatSettings := DefaultFormatSettings;

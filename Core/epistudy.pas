@@ -22,10 +22,8 @@ type
     FGeographicalCoverage: TEpiTranslatedTextWrapper;
     FIdentifier: string;
     FKeywords: string;
-    FLanguage: string;
     FModifiedDate: TDateTime;
     FNotes: string;
-    FOtherLanguages: string;
     FPopulation: TEpiTranslatedTextWrapper;
     FPublisher: TEpiTranslatedTextWrapper;
     FPurpose: TEpiTranslatedTextWrapper;
@@ -37,10 +35,8 @@ type
     procedure SetAuthor(const AValue: string);
     procedure SetIdentifier(const AValue: string);
     procedure SetKeywords(AValue: string);
-    procedure SetLanguage(const AValue: string);
     procedure SetModifiedDate(const AValue: TDateTime);
     procedure SetNotes(AValue: string);
-    procedure SetOtherLanguages(const AValue: string);
     procedure SetVersion(const AValue: string);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -56,10 +52,8 @@ type
     property   Funding: TEpiTranslatedTextWrapper read FFunding;
     property   GeographicalCoverage: TEpiTranslatedTextWrapper read FGeographicalCoverage;
     property   Identifier: string read FIdentifier write SetIdentifier;
-    Property   Language: string read FLanguage write SetLanguage;
     Property   ModifiedDate: TDateTime read FModifiedDate write SetModifiedDate;
     property   Notes: string read FNotes write SetNotes;
-    property   OtherLanguages: string read FOtherLanguages write SetOtherLanguages;
     property   Publisher: TEpiTranslatedTextWrapper read FPublisher;
     property   Purpose: TEpiTranslatedTextWrapper read FPurpose;
     property   Population: TEpiTranslatedTextWrapper read FPopulation;
@@ -101,12 +95,6 @@ begin
   FKeywords := AValue;
 end;
 
-procedure TEpiStudy.SetLanguage(const AValue: string);
-begin
-  if FLanguage = AValue then exit;
-  FLanguage := AValue;
-end;
-
 procedure TEpiStudy.SetModifiedDate(const AValue: TDateTime);
 begin
   if FModifiedDate = AValue then exit;
@@ -117,12 +105,6 @@ procedure TEpiStudy.SetNotes(AValue: string);
 begin
   if FNotes = AValue then Exit;
   FNotes := AValue;
-end;
-
-procedure TEpiStudy.SetOtherLanguages(const AValue: string);
-begin
-  if FOtherLanguages = AValue then exit;
-  FOtherLanguages := AValue;
 end;
 
 procedure TEpiStudy.SetVersion(const AValue: string);
@@ -142,9 +124,7 @@ begin
   FGeographicalCoverage := TEpiTranslatedTextWrapper.Create(Self, rsGeoCoverage, rsText);
   FIdentifier           := '';
   FKeyWords             := '';
-  FLanguage             := '';
   FNotes                := '';
-  FOtherLanguages       := '';
   FPublisher            := TEpiTranslatedTextWrapper.Create(Self, rsPublisher, rsText);
   FPurpose              := TEpiTranslatedTextWrapper.Create(Self, rsPurpose, rsText);
   FPopulation           := TEpiTranslatedTextWrapper.Create(Self, rsPopulation, rsText);
@@ -189,10 +169,8 @@ begin
     SaveNode(Lvl + 1, rsCreated, Created) +
     SaveNode(Lvl + 1, rsIdentifier, Identifier) +
     SaveNode(Lvl + 1, rsKeywords, Keywords) +
-    SaveNode(Lvl + 1, rsLanguage, Language) +
     SaveNode(Lvl + 1, rsModified, ModifiedDate) +
     SaveNode(Lvl + 1, rsNotes, Notes) +
-    SaveNode(Lvl + 1, rsOtherLanguages, OtherLanguages) +
     SaveNode(Lvl + 1, rsVersion, Version);
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -201,9 +179,6 @@ procedure TEpiStudy.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
-  FLanguage        := LoadNodeString(Root, rsLanguage);
-  RootOwner.SetLanguage(FLanguage, true);
-
   FAuthor          := LoadNodeString(Root, rsAuthor);
   FAgency          := LoadNodeString(Root, rsAgency, FAgency, false);
   FCreated         := LoadNodeDateTime(Root, rsCreated);
@@ -211,7 +186,6 @@ begin
   FKeywords        := LoadNodeString(Root, rsKeywords, FKeywords, false);
   FModifiedDate    := LoadNodeDateTime(Root, rsModified);
   FNotes           := LoadNodeString(Root, rsNotes, FNotes, false);
-  FOtherLanguages  := LoadNodeString(Root, rsOtherLanguages);
   FVersion         := LoadNodeString(Root, rsVersion, FVersion, false);
 
   // Root = <Study>

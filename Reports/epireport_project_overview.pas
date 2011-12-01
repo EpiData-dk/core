@@ -52,7 +52,7 @@ procedure TEpiReportProjectOverView.RunReport;
 var
   i: Integer;
 begin
-  DoTableHeader('Study information:', 2, 16);
+  DoTableHeader('Study information:', 2, 15);
 
   DoTableCell(0, 0, 'Name:');
   DoTableCell(1, 0, 'Value:');
@@ -78,31 +78,28 @@ begin
     DoTableCell(1, 6, Identifier);
 
     DoTableCell(0, 7, 'Language');
-    DoTableCell(1, 7, Language);
+    DoTableCell(1, 7, DefaultLang);
 
     DoTableCell(0, 8, 'Modified');
     DoTableCell(1, 8, DateToStr(ModifiedDate));
 
-    DoTableCell(0, 9, 'Other Languages');
-    DoTableCell(1, 9, OtherLanguages);
+    DoTableCell(0, 9, 'Publisher');
+    DoTableCell(1, 9, Publisher.Text);
 
-    DoTableCell(0, 10, 'Publisher');
-    DoTableCell(1, 10, Publisher.Text);
+    DoTableCell(0, 10, 'Purpose');
+    DoTableCell(1, 10, Purpose.Text);
 
-    DoTableCell(0, 11, 'Purpose');
-    DoTableCell(1, 11, Purpose.Text);
+    DoTableCell(0, 11, 'Rights');
+    DoTableCell(1, 11, Rights.Text);
 
-    DoTableCell(0, 12, 'Rights');
-    DoTableCell(1, 12, Rights.Text);
+    DoTableCell(0, 12, 'TimeCoverage');
+    DoTableCell(1, 12, TimeCoverage.Text);
 
-    DoTableCell(0, 13, 'TimeCoverage');
-    DoTableCell(1, 13, TimeCoverage.Text);
+    DoTableCell(0, 13, 'Title');
+    DoTableCell(1, 13, Title.Text);
 
-    DoTableCell(0, 14, 'Title');
-    DoTableCell(1, 14, Title.Text);
-
-    DoTableCell(0, 15, 'Version');
-    DoTableCell(1, 15, Version);
+    DoTableCell(0, 14, 'Version');
+    DoTableCell(1, 14, Version);
   end;
   DoTableFooter('');
 

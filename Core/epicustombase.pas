@@ -141,11 +141,13 @@ type
   public
     procedure   SetLanguage(Const LangCode: string;
       const DefaultLanguage: boolean); virtual;
+    property    CurrentLang: string read FCurrentLang;
+    property    DefaultLang: string read FDefaultLang;
 
   { Class properties / inheritance }
   private
     FClassList: TFPList;
-    FModified: Boolean;
+    FModified:  Boolean;
     FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
