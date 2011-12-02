@@ -392,10 +392,10 @@ begin
       Result := TEpiIntField.Create(AOwner, AFieldType);
 
     ftDMYDate,  ftMDYDate,  ftYMDDate,
-    ftDMYToday, ftMDYToday, ftYMDToday:
+    ftDMYAuto, ftMDYAuto, ftYMDAuto:
       Result := TEpiDateField.Create(AOwner, AFieldType);
 
-    ftTime, ftTimeNow:
+    ftTime, ftTimeAuto:
       result := TEpiDateTimeField.Create(AOwner, AFieldType);
 
     ftFloat:
@@ -1577,9 +1577,9 @@ begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
   case FieldType of
-    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+    ftDMYDate, ftDMYAuto: S := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYAuto: S := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDAuto: S := 'YYYY/MM/DD';
   end;
   result := FormatDateTime(S, AsDate[index]);
 end;
@@ -1655,9 +1655,9 @@ end;
 function TEpiDateField.FormatString(const FillSpace: boolean): string;
 begin
   case FieldType of
-    ftDMYDate, ftDMYToday: result := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: result := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: result := 'YYYY/MM/DD';
+    ftDMYDate, ftDMYAuto: result := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYAuto: result := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDAuto: result := 'YYYY/MM/DD';
   end;
 end;
 
@@ -1718,9 +1718,9 @@ begin
     exit;
   end;
   case FieldType of
-    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+    ftDMYDate, ftDMYAuto: S := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYAuto: S := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDAuto: S := 'YYYY/MM/DD';
   end;
   DefaultFormatSettings.ShortDateFormat := S;
   AsDate[index] := Trunc(StrToDateDef(AValue, DefaultMissing));

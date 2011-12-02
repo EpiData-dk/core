@@ -191,15 +191,15 @@ const
 
   //   10          11           12          13             14
   //   ftToday,    ftEuroDate,  ftIDNUM,    ftRes4,        ftRes5,
-       ftMDYToday, ftDMYDate,   ftAutoInc,  ftString,      ftString,
+       ftMDYAuto, ftDMYDate,   ftAutoInc,  ftString,      ftString,
 
   //   15          16           17          18             19
   //   ftQuestion, ftEuroToday, ftSoundex,  ftCrypt,       ftYMDDate,
-       ftString,   ftDMYToday,  ftString,   ftString,      ftYMDDate,
+       ftString,   ftDMYAuto,  ftString,   ftString,      ftYMDDate,
 
   //   20
-  //   ftYMDToday);
-       ftYMDToday
+  //   ftYMDAuto);
+       ftYMDAuto
   );
 
 

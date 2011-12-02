@@ -31,10 +31,10 @@ type
     // Date (4, 5, 6)
     ftDMYDate, ftMDYDate, ftYMDDate,
     // (7, 8, 9)
-    ftDMYToday, ftMDYToday, ftYMDToday,
+    ftDMYAuto, ftMDYAuto, ftYMDAuto,
 
     // Time (10, 11)
-    ftTime, ftTimeNow,
+    ftTime, ftTimeAuto,
 
     // Strings (12, 13)
     ftString, ftUpperString
@@ -50,9 +50,9 @@ const
   FloatFieldTypes   = [ftFloat];
 
   DateFieldTypes    = [ftDMYDate,  ftMDYDate,  ftYMDDate,
-                       ftDMYToday, ftMDYToday, ftYMDToday];
+                       ftDMYAuto, ftMDYAuto, ftYMDAuto];
 
-  TimeFieldTypes    = [ftTime, ftTimeNow];
+  TimeFieldTypes    = [ftTime, ftTimeAuto];
 
   StringFieldTypes  = [ftString, ftUpperString];
 
@@ -62,8 +62,8 @@ const
 
   // Special auto type set.
   AutoFieldTypes    = [ftAutoInc,
-                       ftDMYToday, ftMDYToday, ftYMDToday,
-                       ftTimeNow];
+                       ftDMYAuto, ftMDYAuto, ftYMDAuto,
+                       ftTimeAuto];
 
   // Composed Sets.
   AutoUpdateFieldTypes   = AutoFieldTypes - [ftAutoInc];
@@ -112,11 +112,11 @@ begin
     ftDMYDate,
     ftMDYDate,
     ftYMDDate,
-    ftDMYToday,
-    ftMDYToday,
-    ftYMDToday: result := DateFieldTypes;
+    ftDMYAuto,
+    ftMDYAuto,
+    ftYMDAuto: result := DateFieldTypes;
     ftTime,
-    ftTimeNow:  result := TimeFieldTypes;
+    ftTimeAuto:  result := TimeFieldTypes;
     ftString,
     ftUpperString: result := StringFieldTypes;
   end;
