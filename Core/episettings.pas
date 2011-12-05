@@ -27,7 +27,6 @@ type
     FTimeSeparator: string;
     procedure SetDateSeparator(const AValue: string);
     procedure SetDecimalSeparator(const AValue: string);
-    procedure SetMissingString(const AValue: string);
     procedure SetScrambled(const AValue: boolean);
     procedure SetTimeSeparator(const AValue: string);
   protected
@@ -40,7 +39,6 @@ type
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
-    property    MissingString: string read FMissingString write SetMissingString;
     property    Scrambled: boolean read FScrambled write SetScrambled;
     property    FormatSettings: TFormatSettings read FFormatSettings;
   end;
@@ -108,16 +106,6 @@ begin
   DoChange(eegXMLSetting, Word(esceDecSep), @Val);
 end;
 
-procedure TEpiXMLSettings.SetMissingString(const AValue: string);
-var
-  Val: String;
-begin
-  if FMissingString = AValue then exit;
-  Val := FMissingString;
-  FMissingString := AValue;
-  DoChange(eegXMLSetting, Word(esceMissing), @Val);
-end;
-
 procedure TEpiXMLSettings.SetScrambled(const AValue: boolean);
 var
   Val: Boolean;
@@ -144,8 +132,7 @@ begin
   Result := inherited SaveAttributesToXml +
     SaveAttr(rsDateSep,    DateSeparator) +
     SaveAttr(rsTimeSep,    TimeSeparator) +
-    SaveAttr(rsDecSep,     DecimalSeparator) +
-    SaveAttr(rsMissingStr, MissingString);
+    SaveAttr(rsDecSep,     DecimalSeparator);
 end;
 
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
@@ -160,7 +147,6 @@ begin
   DateSeparator := '/';
   TimeSeparator := '.';
   DecimalSeparator := ',';
-  MissingString := '.';
 end;
 
 destructor TEpiXMLSettings.Destroy;
@@ -181,7 +167,6 @@ begin
   DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
   TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
   DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
-  MissingString    := LoadAttrString(Root, rsMissingStr);
 end;
 
 { TEpiProjectSettings }
