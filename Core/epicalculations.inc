@@ -72,8 +72,8 @@ end;
 function TEpiCalculation.SaveAttributesToXml: string;
 begin
   Result :=
-    ' type="' + IntToStr(Integer(CalcType)) + '"' +
-    inherited SaveAttributesToXml;
+    inherited SaveAttributesToXml +
+    SaveAttrEnum(rsType, Integer(CalcType), TypeInfo(TEpiCalcType));
 end;
 
 { TEpiTimeCalc }

@@ -14,7 +14,7 @@ type
 
   // esce = Epi Setting Change Event
   TEpiSettingChangeEvent = (
-    esceVersion, esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
+    esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
   );
 
   TEpiXMLSettings = class(TEpiCustomBase)
@@ -25,24 +25,20 @@ type
     FMissingString: string;
     FScrambled: boolean;
     FTimeSeparator: string;
-    FVersion: integer;
     procedure SetDateSeparator(const AValue: string);
     procedure SetDecimalSeparator(const AValue: string);
-    procedure SetMissingString(const AValue: string);
     procedure SetScrambled(const AValue: boolean);
     procedure SetTimeSeparator(const AValue: string);
-    procedure SetVersion(const AValue: integer);
+  protected
+    function SaveAttributesToXml: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
-    property    Version: integer read FVersion write SetVersion;
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
-    property    MissingString: string read FMissingString write SetMissingString;
     property    Scrambled: boolean read FScrambled write SetScrambled;
     property    FormatSettings: TFormatSettings read FFormatSettings;
   end;
@@ -65,6 +61,8 @@ type
     procedure   SetBackupOnShutdown(const AValue: Boolean);
     procedure   SetShowFieldBorders(const AValue: Boolean);
     procedure   SetShowFieldNames(const AValue: Boolean);
+  protected
+    function SaveAttributesToXml: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -108,16 +106,6 @@ begin
   DoChange(eegXMLSetting, Word(esceDecSep), @Val);
 end;
 
-procedure TEpiXMLSettings.SetMissingString(const AValue: string);
-var
-  Val: String;
-begin
-  if FMissingString = AValue then exit;
-  Val := FMissingString;
-  FMissingString := AValue;
-  DoChange(eegXMLSetting, Word(esceMissing), @Val);
-end;
-
 procedure TEpiXMLSettings.SetScrambled(const AValue: boolean);
 var
   Val: Boolean;
@@ -139,24 +127,19 @@ begin
   DoChange(eegXMLSetting, Word(esceTimeSep), @Val);
 end;
 
-procedure TEpiXMLSettings.SetVersion(const AValue: integer);
-var
-  Val: LongInt;
+function TEpiXMLSettings.SaveAttributesToXml: string;
 begin
-  if FVersion = AValue then exit;
-  Val := FVersion;
-  FVersion := AValue;
-  DoChange(eegXMLSetting, Word(esceVersion), @Val);
+  Result := inherited SaveAttributesToXml +
+    SaveAttr(rsDateSep,    DateSeparator) +
+    SaveAttr(rsTimeSep,    TimeSeparator) +
+    SaveAttr(rsDecSep,     DecimalSeparator);
 end;
 
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  Version := 0;
   Scrambled := false;
 
-//  DefaultFormatSettings.ShortTimeFormat := 'HH:NN';
-//  DefaultFormatSettings.LongTimeFormat := 'HH:NN:SS';
   FFormatSettings := DefaultFormatSettings;
   FFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN:SS';
   FFormatSettings.LongDateFormat  := 'YYYY/MM/DD HH:NN:SS';
@@ -164,7 +147,6 @@ begin
   DateSeparator := '/';
   TimeSeparator := '.';
   DecimalSeparator := ',';
-  MissingString := '.';
 end;
 
 destructor TEpiXMLSettings.Destroy;
@@ -177,25 +159,14 @@ begin
   Result := rsSettings;
 end;
 
-function TEpiXMLSettings.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Result :=
-    SaveNode(Lvl + 1, rsDateSep,    DateSeparator) +
-    SaveNode(Lvl + 1, rsTimeSep,    TimeSeparator) +
-    SaveNode(Lvl + 1, rsDecSep,     DecimalSeparator) +
-    SaveNode(Lvl + 1, rsMissingStr, MissingString);
-  result := inherited SaveToXml(Result, Lvl);
-end;
-
 procedure TEpiXMLSettings.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
 begin
   // Root = <Settings>
-  DateSeparator    := LoadNodeString(Root, rsDateSep)[1];
-  TimeSeparator    := LoadNodeString(Root, rsTimeSep)[1];
-  DecimalSeparator := LoadNodeString(Root, rsDecSep)[1];
-  MissingString    := LoadNodeString(Root, rsMissingStr);
+  DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
+  TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
+  DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
 end;
 
 { TEpiProjectSettings }
@@ -250,12 +221,22 @@ begin
   DoChange(eegProjectSettings, Word(epceFieldName), @Val);
 end;
 
+function TEpiProjectSettings.SaveAttributesToXml: string;
+begin
+  Result := inherited SaveAttributesToXml +
+    SaveAttr(rsAutoIncStart,        AutoIncStartValue) +
+    SaveAttr(rsTimedBackupInterval, BackupInterval) +
+    SaveAttr(rsBackupOnShutdown,    BackupOnShutdown) +
+    SaveAttr(rsShowFieldNames,      ShowFieldNames) +
+    SaveAttr(rsShowFieldBorders,    ShowFieldBorders);
+end;
+
 constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
 
   FShowFieldBorders := true;
-  FShowFieldNames   := true;
+  FShowFieldNames   := false;
   FBackupInterval   := 10;
   FAutoIncStartValue := 1;
 end;
@@ -272,25 +253,19 @@ end;
 
 function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Result :=
-    SaveNode(Lvl + 1, rsAutoIncStart,        AutoIncStartValue) +
-    SaveNode(Lvl + 1, rsTimedBackupInterval, BackupInterval) +
-    SaveNode(Lvl + 1, rsBackupOnShutdown,    BackupOnShutdown) +
-    SaveNode(Lvl + 1, rsShowFieldNames,      ShowFieldNames) +
-    SaveNode(Lvl + 1, rsShowFieldBorders,    ShowFieldBorders);
-  Result := inherited SaveToXml(Result, Lvl);
+  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode);
 var
-  Node: TDOMNode;
+  I: Integer;
+  B: Boolean;
 begin
-  if LoadNode(Node, Root, rsAutoIncStart, false) then
-    AutoIncStartValue := LoadNodeInt(Root, rsAutoIncStart);
-  BackupInterval   := LoadNodeInt(Root, rsTimedBackupInterval);
-  BackupOnShutdown := LoadNodeBool(Root,rsBackupOnShutdown);
-  ShowFieldNames   := LoadNodeBool(Root, rsShowFieldNames);
-  ShowFieldBorders := LoadNodeBool(Root, rsShowFieldBorders);
+  AutoIncStartValue := LoadAttrInt(Root, rsAutoIncStart, AutoIncStartValue, false);
+  BackupInterval    := LoadAttrInt(Root, rsTimedBackupInterval, BackupInterval, false);
+  BackupOnShutdown  := LoadAttrBool(Root,rsBackupOnShutdown, BackupOnShutdown, false);
+  ShowFieldNames    := LoadAttrBool(Root, rsShowFieldNames, ShowFieldNames, false);
+  ShowFieldBorders  := LoadAttrBool(Root, rsShowFieldBorders, ShowFieldBorders, false);
 end;
 
 function TEpiProjectSettings.ScrambleXml: boolean;

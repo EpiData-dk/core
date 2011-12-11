@@ -270,9 +270,9 @@ begin
           ftBoolean:
             TmpChar := ByteChar;
           ftDMYDate, ftMDYDate, ftYMDDate,
-          ftDMYToday, ftMDYToday, ftYMDToday:
+          ftDMYAuto, ftMDYAuto, ftYMDAuto:
              TmpChar := LongChar;
-          ftTime, ftTimeNow,
+          ftTime, ftTimeAuto,
           ftFloat:
              TmpChar := DoubleChar;
         END;  //Case
@@ -323,9 +323,9 @@ begin
         ftString, ftUpperString:
           TmpStr := '%' + IntToStr(Ord(TypeList[i])) + 's';
         ftDMYDate, ftMDYDate, ftYMDDate,
-        ftDMYToday, ftMDYToday, ftYMDToday:
+        ftDMYAuto, ftMDYAuto, ftYMDAuto:
           TmpStr := '%d';
-        ftTime, ftTimeNow:
+        ftTime, ftTimeAuto:
           if StataVersion >= dta10 then
           begin
             // Stata 10 supports a new time format!

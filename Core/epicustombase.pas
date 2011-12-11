@@ -77,23 +77,22 @@ type
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
     { Load methods }
     function   LoadNode(out Node: TDOMNode; const Root: TDOMNode;
-      const NodeName: string; Fatal: boolean): boolean; virtual;
+      const NodeName: string; Fatal: boolean): boolean;
     function   LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
-      const AttrName: string; Fatal: boolean): boolean; virtual;
+      const AttrName: string; Fatal: boolean): boolean; overload;
     // Direct loading of node are always fatal, since they must return some value.
-    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string): integer;
-    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string): extended;
-    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string): String;
-    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string): TDateTime;
-    function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string): boolean;
+    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: Integer = 0; Fatal: boolean = true): integer;
+    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: extended = 0; Fatal: boolean = true): extended;
+    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: string = ''; Fatal: boolean = true): String;
+    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: TDateTime = 0; Fatal: boolean = true): TDateTime;
+    function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string; DefaultVal: Boolean = false; Fatal: boolean = true): boolean;
     // Loading attributes
-    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string): integer;
-    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo): integer;
-    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string): extended;
-    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string): String;
-    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string): TDateTime; overload;
-    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string): TDateTime; overload;
-    function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string): boolean;
+    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
+    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
+    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: Extended = 0; Fatal: Boolean = true): extended;
+    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: String = ''; Fatal: Boolean = true): String;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: TDateTime = 0; Fatal: Boolean = true): TDateTime; overload;
+    function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string; DefaultVal: Boolean = false; Fatal: Boolean = true): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: string): string; overload;
@@ -142,11 +141,13 @@ type
   public
     procedure   SetLanguage(Const LangCode: string;
       const DefaultLanguage: boolean); virtual;
+    property    CurrentLang: string read FCurrentLang;
+    property    DefaultLang: string read FDefaultLang;
 
   { Class properties / inheritance }
   private
     FClassList: TFPList;
-    FModified: Boolean;
+    FModified:  Boolean;
     FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
@@ -577,124 +578,140 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeInt(const Root: TDOMNode;
-  Const NodeName: string): integer;
+  Const NodeName: string; DefaultVal: Integer; Fatal: boolean = true): integer;
 var
   Node: TDOMNode;
 begin
-  LoadNode(Node, Root, NodeName, true);
-  result := StrToInt(Node.TextContent);
+  if LoadNode(Node, Root, NodeName, Fatal) then
+    result := StrToInt(Node.TextContent)
+  else
+    result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeFloat(const Root: TDOMNode;
-  Const NodeName: string): extended;
+  const NodeName: string; DefaultVal: extended; Fatal: boolean): extended;
 var
   Node: TDOMNode;
 begin
-  LoadNode(Node, Root, NodeName, true);
-  if (RootOwner is TEpiDocument) then
-    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  result := StrToFloat(Node.TextContent);
-  RestoreFormatSettings;
+  if LoadNode(Node, Root, NodeName, Fatal) then
+  begin
+    if (RootOwner is TEpiDocument) then
+      BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+    result := StrToFloat(Node.TextContent);
+    RestoreFormatSettings;
+  end else
+    result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
-  Const NodeName: string): String;
+  const NodeName: string; DefaultVal: string; Fatal: boolean): String;
 var
   Node: TDOMNode;
 begin
-  LoadNode(Node, Root, NodeName, true);
-  result := UTF8Encode(Node.TextContent);
+  if LoadNode(Node, Root, NodeName, Fatal) then
+    result := UTF8Encode(Node.TextContent)
+  else
+    result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode;
-  Const NodeName: string): TDateTime;
+  Const NodeName: string; DefaultVal: TDateTime; Fatal: boolean = true): TDateTime;
 var
   Node: TDOMNode;
 begin
-  LoadNode(Node, Root, NodeName, true);
-  if (RootOwner is TEpiDocument) then
-    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  result := StrToDateTime(Node.TextContent);
-  RestoreFormatSettings;
+  if LoadNode(Node, Root, NodeName, Fatal) then
+  begin
+    if (RootOwner is TEpiDocument) then
+      BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+    result := StrToDateTime(Node.TextContent);
+    RestoreFormatSettings;
+  end else
+    result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
-  Const NodeName: string): boolean;
+  Const NodeName: string; DefaultVal: Boolean; Fatal: boolean = true): boolean;
 var
   Node: TDOMNode;
 begin
-  LoadNode(Node, Root, NodeName, true);
-  result := WideLowerCase(Node.TextContent) = 'true';
+  if LoadNode(Node, Root, NodeName, Fatal) then
+    result := WideLowerCase(Node.TextContent) = 'true'
+  else
+    result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
-  Const AttrName: string): integer;
+  const AttrName: string; DefaultVal: Integer; Fatal: Boolean): integer;
 var
   Attr: TDOMAttr;
 begin
-  LoadAttr(Attr, Root, AttrName, true);
-  Result := StrToInt(Attr.Value);
+  if LoadAttr(Attr, Root, AttrName, Fatal) then
+    Result := StrToInt(Attr.Value)
+  else
+    Result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrEnum(const Root: TDOMNode;
-  const AttrName: string; TypeInfo: PTypeInfo): integer;
+  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer;
+  Fatal: Boolean): integer;
 begin
-  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName));
+  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, '', Fatal));
 end;
 
 function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
-  Const AttrName: string): extended;
+  const AttrName: string; DefaultVal: Extended; Fatal: Boolean): extended;
 var
   Attr: TDOMAttr;
 begin
-  LoadAttr(Attr, Root, AttrName, true);
-  if (RootOwner is TEpiDocument) then
-    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  result := StrToFloat(Attr.Value);
-  RestoreFormatSettings;
+  if LoadAttr(Attr, Root, AttrName, Fatal) then
+  begin
+    if (RootOwner is TEpiDocument) then
+      BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+    result := StrToFloat(Attr.Value);
+    RestoreFormatSettings;
+  end else
+    Result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrString(const Root: TDOMNode;
-  Const AttrName: string): String;
+  const AttrName: string; DefaultVal: String; Fatal: Boolean): String;
 var
   Attr: TDOMAttr;
 begin
-  LoadAttr(Attr, Root, AttrName, true);
-  Result := UTF8Encode(Attr.Value);
+  if LoadAttr(Attr, Root, AttrName, Fatal) then
+    Result := UTF8Encode(Attr.Value)
+  else
+    Result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
-  Const AttrName: string): TDateTime;
+  const AttrName: string; const Format: string; DefaultVal: TDateTime;
+  Fatal: Boolean): TDateTime;
 var
   Attr: TDOMAttr;
 begin
-  LoadAttr(Attr, Root, AttrName, true);
-  if (RootOwner is TEpiDocument) then
-    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  Result := StrToDateTime(Attr.Value);
-  RestoreFormatSettings;
-end;
-
-function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
-  const AttrName: string; const Format: string): TDateTime;
-var
-  Attr: TDOMAttr;
-begin
-  LoadAttr(Attr, Root, AttrName, true);
-  if (RootOwner is TEpiDocument) then
-    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  DefaultFormatSettings.ShortDateFormat := Format;
-  Result := StrToDateTime(Attr.Value);
-  RestoreFormatSettings;
+  if LoadAttr(Attr, Root, AttrName, Fatal) then
+  begin
+    if (RootOwner is TEpiDocument) then
+      BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+    if Format <> '' then
+      DefaultFormatSettings.ShortDateFormat := Format;
+    Result := StrToDateTime(Attr.Value);
+    if (RootOwner is TEpiDocument) then
+      RestoreFormatSettings;
+  end else
+    Result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode;
-  Const AttrName: string): boolean;
+  const AttrName: string; DefaultVal: Boolean; Fatal: Boolean): boolean;
 var
   Attr: TDOMAttr;
 begin
-  LoadAttr(Attr, Root, AttrName, true);
-  result := WideLowerCase(Attr.Value) = 'true';
+  if LoadAttr(Attr, Root, AttrName, Fatal) then
+    result := WideLowerCase(Attr.Value) = 'true'
+  else
+    Result := DefaultVal;
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;

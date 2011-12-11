@@ -52,8 +52,8 @@ begin
   DecodeDate(Date, Y, M, D);
 
   case Ft of
-    ftDMYDate, ftDMYToday,
-    ftMDYDate, ftMDYToday:
+    ftDMYDate, ftDMYAuto,
+    ftMDYDate, ftMDYAuto:
       begin
         if (Al > 2) or (Bl > 2) or (Cl > 4) then
         begin
@@ -61,7 +61,7 @@ begin
           exit(false);
         end;
 
-        if Ft in [ftDMYDate, ftDMYToday] then
+        if Ft in [ftDMYDate, ftDMYAuto] then
         begin
           if (Al > 0) then D := StrToInt(A);
           if (Bl > 0) then M := StrToInt(B);
@@ -73,7 +73,7 @@ begin
         end;
         if (Cl > 0) then Y := StrToInt(C);
       end;
-    ftYMDDate, ftYMDToday:
+    ftYMDDate, ftYMDAuto:
       begin
         if (Al > 4) or (Bl > 2) or (Cl > 2) then
         begin

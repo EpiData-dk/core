@@ -392,10 +392,10 @@ begin
       Result := TEpiIntField.Create(AOwner, AFieldType);
 
     ftDMYDate,  ftMDYDate,  ftYMDDate,
-    ftDMYToday, ftMDYToday, ftYMDToday:
+    ftDMYAuto, ftMDYAuto, ftYMDAuto:
       Result := TEpiDateField.Create(AOwner, AFieldType);
 
-    ftTime, ftTimeNow:
+    ftTime, ftTimeAuto:
       result := TEpiDateTimeField.Create(AOwner, AFieldType);
 
     ftFloat:
@@ -474,17 +474,13 @@ begin
   inherited LoadFromXml(Root);
   Length   := LoadAttrInt(Root, rsLength);
   Decimals := LoadAttrInt(Root, rsDecimals);
-  EntryMode := TEpiEntryMode(LoadAttrInt(Root, rsEntryMode));
-  if LoadAttr(Attr, Root, rsConfirmEntry, false) then
-    ConfirmEntry := LoadAttrBool(Root, rsConfirmEntry);
-  if LoadAttr(Attr, Root, rsRepeatValue, false) then
-    RepeatValue := LoadAttrBool(Root, rsRepeatValue);
-  if LoadAttr(Attr, Root, rsDefaultValue, false) then
-    DefaultValueAsString := LoadAttrString(Root, rsDefaultValue);
-  if LoadAttr(Attr, Root, rsShowValueLabel, false) then
-    ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel);
-  if LoadAttr(Attr, Root, rsForcePickList, false) then
-    ForcePickList := LoadAttrBool(Root, rsForcePickList);
+  EntryMode := TEpiEntryMode(LoadAttrEnum(Root, rsEntryMode, TypeInfo(TEpiEntryMode)));
+
+  ConfirmEntry := LoadAttrBool(Root, rsConfirmEntry, ConfirmEntry, false);
+  RepeatValue := LoadAttrBool(Root, rsRepeatValue, RepeatValue, false);
+  DefaultValueAsString := LoadAttrString(Root, rsDefaultValue, DefaultValueAsString, false);
+  ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel, ShowValueLabel, false);
+  ForcePickList := LoadAttrBool(Root, rsForcePickList, ForcePickList, false);
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
     ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
 
@@ -516,7 +512,7 @@ begin
   end;
   if LoadNode(Node, Root, rsCalculation, false) then
   begin
-    Case TEpiCalcType(LoadAttrInt(Node, 'type')) of
+    Case TEpiCalcType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiCalcType))) of
       ctTimeDiff:      Calculation := TEpiTimeCalc.Create(Self);
       ctCombineDate:   Calculation := TEpiCombineDateCalc.Create(Self);
       ctCombineString: Calculation := TEpiCombineStringCalc.Create(Self);
@@ -1581,9 +1577,9 @@ begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
   case FieldType of
-    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+    ftDMYDate, ftDMYAuto: S := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYAuto: S := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDAuto: S := 'YYYY/MM/DD';
   end;
   result := FormatDateTime(S, AsDate[index]);
 end;
@@ -1659,9 +1655,9 @@ end;
 function TEpiDateField.FormatString(const FillSpace: boolean): string;
 begin
   case FieldType of
-    ftDMYDate, ftDMYToday: result := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: result := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: result := 'YYYY/MM/DD';
+    ftDMYDate, ftDMYAuto: result := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYAuto: result := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDAuto: result := 'YYYY/MM/DD';
   end;
 end;
 
@@ -1722,9 +1718,9 @@ begin
     exit;
   end;
   case FieldType of
-    ftDMYDate, ftDMYToday: S := 'DD/MM/YYYY';
-    ftMDYDate, ftMDYToday: S := 'MM/DD/YYYY';
-    ftYMDDate, ftYMDToday: S := 'YYYY/MM/DD';
+    ftDMYDate, ftDMYAuto: S := 'DD/MM/YYYY';
+    ftMDYDate, ftMDYAuto: S := 'MM/DD/YYYY';
+    ftYMDDate, ftYMDAuto: S := 'YYYY/MM/DD';
   end;
   DefaultFormatSettings.ShortDateFormat := S;
   AsDate[index] := Trunc(StrToDateDef(AValue, DefaultMissing));

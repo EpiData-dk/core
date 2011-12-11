@@ -18,18 +18,18 @@ const
   rsEpiData         = 'EpiData';
    // Settings
    rsSettings        = 'Settings';
-    rsScrambled       = 'Scrambled';
-    rsDateSep         = 'DateSeparator';
-    rsTimeSep         = 'TimeSeparator';
-    rsDecSep          = 'DecimalSeparator';
-    rsMissingStr      = 'MissingString';
+//    rsScrambled       = 'Scrambled';
+    rsDateSep         = 'dateSeparator';
+    rsTimeSep         = 'timeSeparator';
+    rsDecSep          = 'decimalSeparator';
+    rsMissingStr      = 'missingString';
 
    rsProjectSettings = 'ProjectSettings';
-    rsAutoIncStart    = 'AutoIncStart';
-    rsTimedBackupInterval='TimedBackupInterval';
-    rsBackupOnShutdown= 'BackupOnShutdown';
-    rsShowFieldNames  = 'ShowFieldNames';
-    rsShowFieldBorders= 'ShowFieldBorders';
+    rsAutoIncStart    = 'autoIncStart';
+    rsTimedBackupInterval='timedBackupInterval';
+    rsBackupOnShutdown= 'backupOnShutdown';
+    rsShowFieldNames  = 'showFieldNames';
+    rsShowFieldBorders= 'showFieldBorders';
 
    rsAdmin           = 'Admin';
     // User
@@ -48,7 +48,7 @@ const
      rsGroup           = 'Group';
       rsRights          = 'Rights';
 
-   rsStudy           = 'Study';
+   rsStudy           = 'StudyInfo';
     rsAbstract        = 'Abstract';
     rsAgency          = 'Agency';
     rsAuthor          = 'Author';
@@ -57,7 +57,7 @@ const
     rsFunding         = 'Funding';
     rsGeoCoverage     = 'GeographicalCoverage';
     rsIdentifier      = 'Identifier';
-    rsKeyWords        = 'KeyWords';
+    rsKeywords        = 'Keywords';
     rsLanguage        = 'Language';
     rsModified        = 'Modified';
     rsOtherLanguages  = 'OtherLanguages';
@@ -94,15 +94,15 @@ const
         rsField           = 'Field';
          rsLength          = 'length';
          rsDecimals        = 'decimals';
-         rsEntryMode       = 'entrymode';
-         rsConfirmEntry    = 'confirmentry';
-         rsValueLabelId    = 'valuelabelref';
-         rsValueLabelWriteRef = 'valuelabelwritefieldref';
-         rsShowValueLabel  = 'showvaluelabel';
-         rsForcePickList   = 'forcepicklist';
+         rsEntryMode       = 'entryMode';
+         rsConfirmEntry    = 'confirmEntry';
+         rsValueLabelId    = 'valueLabelRef';
+         rsValueLabelWriteRef = 'valueLabelWriteFieldRef';
+         rsShowValueLabel  = 'showValueLabel';
+         rsForcePickList   = 'forcePickList';
          rsRepeatValue     = 'repeat';
-         rsDefaultValue    = 'defaultvalue';
-         rsAutoUpdateMode  = 'autoupdatemode';
+         rsDefaultValue    = 'defaultValue';
+         rsAutoUpdateMode  = 'autoUpdateMode';
          rsQuestion        = 'Question';
          rsNotes           = 'Notes';
          rsRanges           = 'Ranges';
@@ -113,7 +113,7 @@ const
           rsJump            = 'Jump';
            rsJumpOn          = 'on';
            rsJumpType        = 'type';
-           rsJumpTo          = 'tofieldref';
+           rsJumpTo          = 'toFieldRef';
            rsJumpReset       = 'reset';
          rsCalculation     = 'Calculation';
           rsResultField     = 'ResultFieldRef';
@@ -131,8 +131,7 @@ const
           rsDelim1          = 'Delimiter1';
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
-          rsCompareTo       = 'tofieldref';
-          rsCompareType     = 'type';
+          rsCompareTo       = 'toFieldRef';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';
