@@ -59,9 +59,7 @@ function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
 begin
   with VersionInfo do
   begin
-    result := IntToStr(VersionNo);
-    if MajorRev + MinorRev + BuildNo > 0 then
-      result := result + '.' + IntToStr(MajorRev);
+    result := IntToStr(VersionNo) + '.' + IntToStr(MajorRev);
     if MinorRev + BuildNo > 0 then
       result := result + '.' + IntToStr(MinorRev);
     if BuildNo > 0 then
