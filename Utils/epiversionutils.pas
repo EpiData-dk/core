@@ -37,8 +37,8 @@ uses
 
 const
   CoreVersion: TEpiVersionInfo = (
-    VersionNo: 0;
-    MajorRev:  8;
+    VersionNo: 1;
+    MajorRev:  0;
     MinorRev:  0;
     BuildNo:   0;
   );
