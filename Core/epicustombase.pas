@@ -1109,7 +1109,7 @@ begin
     if ElemList[i].ParentNode <> Root then continue;
     LangCode := UTF8Encode(TDOMElement(ElemList[i]).AttribStrings['xml:lang']);
     Val := UTF8Encode(ElemList[i].TextContent);
-    if LangCode = FCurrentLang then
+    if (LangCode = FCurrentLang) or (LangCode = '') then
       SetCurrentText(Val)
     else
       SetText(LangCode, Val);

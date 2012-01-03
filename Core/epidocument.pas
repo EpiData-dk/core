@@ -79,7 +79,7 @@ begin
     inherited SaveAttributesToXml +
     SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.0') +
     SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk ./docs/samples/sample.xsd') +
+    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd') +
     SaveAttr(rsVersionAttr, Version) +
     SaveAttr('xml:lang', DefaultLang);
 end;
