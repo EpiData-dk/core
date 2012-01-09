@@ -159,8 +159,9 @@ var
   var
     i, j: integer;
   begin
-    result := copy(StringReplace(EpiUtf8ToAnsi(Str), ' ', '_', [rfReplaceAll]), 1, Count-1);
+    result := copy(StringReplace(Str, ' ', '_', [rfReplaceAll]), 1, Count-1);
     i := 1;
+    if result = '' then result := 'ValueLabel';
     while UniqueValueLabels.Find(result, j) do
     begin
       result := Copy(result, 1, Count - Length(IntToStr(i - 1))) + IntToStr(i);
@@ -356,7 +357,7 @@ begin
         else begin
           // ValuelabelSet not seen before...
           WritenValueLabels.Add(TmpStr);
-          TmpStr := UniqueValueLabelName(TmpStr, FieldNameLength);
+          TmpStr := UniqueValueLabelName(EncodeString(TmpStr), FieldNameLength);
           if TmpStr <> '' then
             UniqueValueLabels.Add(TmpStr);
         end;
