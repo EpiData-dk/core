@@ -55,7 +55,8 @@ const
 
 
   // File dialog filter functions.
-  function GetEpiDialogFilter(DialogFilter: TEpiDialogFilters): string;
+  function GetEpiDialogFilter(DialogFilters: TEpiDialogFilters): string;
+  function GetEpiDialogFilterExt(DialogFilters: TEpiDialogFilters): string;
 
   procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
   procedure ZipFileToStream(St: TStream;   Const ZipFileName: string);
@@ -72,6 +73,7 @@ type
     FilterName: string;
     FilterExt:  string;
   end;
+  PEpiDialogFilterPair = ^TEpiDialogFilterPair;
 
 const
   EpiDialogFilterCollection: TEpiDialogFilterPair = (
@@ -96,7 +98,7 @@ const
 
   EpiDialogFilterText: TEpiDialogFilterPair = (
     FilterName: 'Text file (*.txt,*.csv)';
-    FilterExt:  '*.txt;*.csv';
+    FilterExt:  '*.csv;*.txt';
   );
 
   EpiDialogFilterODS: TEpiDialogFilterPair = (
@@ -124,43 +126,54 @@ const
     FilterExt:  '*.*';
   );
 
+  EpiDialogFilters: array[TEpiDialogFilter] of PEpiDialogFilterPair =
+  ( @EpiDialogFilterEPX,
+    @EpiDialogFilterEPZ,
+    @EpiDialogFilterREC,
+    @EpiDialogFilterText,
+    @EpiDialogFilterODS,
+    @EpiDialogFilterXLS,
+    @EpiDialogFilterDTA,
+    @EpiDialogFilterDBF,
+    @EpiDialogFilterCollection,
+    @EpiDialogFilterAll
+    );
 
-function GetEpiDialogFilter(DialogFilter: TEpiDialogFilters): string;
+function GetEpiDialogFilter(DialogFilters: TEpiDialogFilters): string;
 var
   CollectedExt: string;
+  Filter: TEpiDialogFilter;
 
-  function AddFilter(Filter: TEpiDialogFilterPair): string;
+  function AddFilter(Filter: PEpiDialogFilterPair): string;
   begin
-    result := Filter.FilterName + '|' + Filter.FilterExt + '|';
-    CollectedExt += Filter.FilterExt + ';';
+    result := Filter^.FilterName + '|' + Filter^.FilterExt + '|';
+    CollectedExt += Filter^.FilterExt + ';';
   end;
 
 begin
   Result := '';
   CollectedExt := '';
-  if dfEPX in DialogFilter then
-    Result += AddFilter(EpiDialogFilterEPX);
-  if dfEPZ in DialogFilter then
-    Result += AddFilter(EpiDialogFilterEPZ);
-  if dfREC in DialogFilter then
-    Result += AddFilter(EpiDialogFilterREC);
-  if dfText in DialogFilter then
-    Result += AddFilter(EpiDialogFilterText);
-  if dfODS in DialogFilter then
-    Result += AddFilter(EpiDialogFilterODS);
-  if dfXLS in DialogFilter then
-    Result += AddFilter(EpiDialogFilterXLS);
-  if dfDTA in DialogFilter then
-    Result += AddFilter(EpiDialogFilterDTA);
-  if dfDBF in DialogFilter then
-    Result += AddFilter(EpiDialogFilterDBF);
 
-  if dfCollection in DialogFilter then
+  for Filter in DialogFilters do
+  begin
+    if Filter in [dfCollection] then continue;
+    result += AddFilter(EpiDialogFilters[Filter]);
+  end;
+
+  if dfCollection in DialogFilters then
     Result := EpiDialogFilterCollection.FilterName + '|' +
               CollectedExt + '|' + Result;
+end;
 
-  if dfAll in DialogFilter then
-    Result += AddFilter(EpiDialogFilterAll);
+function GetEpiDialogFilterExt(DialogFilters: TEpiDialogFilters): string;
+var
+  Filter: TEpiDialogFilter;
+begin
+  for Filter in DialogFilters do
+  begin
+    if Filter in [dfCollection, dfAll] then continue;
+    result += EpiDialogFilters[Filter]^.FilterExt;
+  end;
 end;
 
 procedure StreamToZipFile(const St: TStream; const ZipFileName: string);

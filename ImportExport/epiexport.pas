@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes;
+  epieximtypes, epiexportsettings;
 
 type
 
@@ -16,7 +16,7 @@ type
   private
     FExportEncoding: TEpiEncoding;
     FExportLines: TStrings;
-    function    EncodeString(Const Str: string): string;
+    function    EncodeString(Const Str: string; Encoding: TEpiEncoding): string;
     procedure   RaiseError(Const Msg: string);
     procedure   WriteByte(St: TStream; Val: ShortInt);
     procedure   WriteWord(St: TStream; Val: SmallInt);
@@ -31,6 +31,7 @@ type
     function    ExportStata(Const aFilename: string; Const Doc: TEpiDocument;
       Const DatafileIndex: integer = 0;
       Const StataVersion: TEpiStataVersion = dta8): Boolean;
+    function    ExportCSV(Const Settings: TEpiCSVExportSetting): boolean;
     property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding default eeUTF8;
     property    ExportLines: TStrings read FExportLines;
   end;
@@ -43,9 +44,10 @@ uses
 
 { TEpiExport }
 
-function TEpiExport.EncodeString(const Str: string): string;
+function TEpiExport.EncodeString(const Str: string; Encoding: TEpiEncoding
+  ): string;
 begin
-  result := ConvertEncoding(Str, 'utf8', EpiEncodingToString[ExportEncoding]);
+  result := ConvertEncoding(Str, 'utf8', EpiEncodingToString[Encoding]);
 end;
 
 procedure TEpiExport.RaiseError(const Msg: string);
@@ -83,7 +85,7 @@ end;
 procedure TEpiExport.WriteEncString(St: TStream; const Str: string;
   const Count: Integer; Terminate: Boolean);
 begin
-  WriteString(St, EncodeString(Str), Count, Terminate);
+  WriteString(St, EncodeString(Str, ExportEncoding), Count, Terminate);
 end;
 
 procedure TEpiExport.WriteString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
@@ -357,7 +359,7 @@ begin
         else begin
           // ValuelabelSet not seen before...
           WritenValueLabels.Add(TmpStr);
-          TmpStr := UniqueValueLabelName(EncodeString(TmpStr), FieldNameLength);
+          TmpStr := UniqueValueLabelName(EncodeString(TmpStr, ExportEncoding), FieldNameLength);
           if TmpStr <> '' then
             UniqueValueLabels.Add(TmpStr);
         end;
@@ -531,7 +533,7 @@ begin
           Move(CurRec, ByteBuf[J * 4], 4);
           TmpInt := TEpiIntValueLabel(VLblSet.ValueLabels[J]).Value;
           Move(TmpInt, ValBuf[J * 4], 4);
-          TmpStr := EncodeString(VLblSet.ValueLabels[J].TheLabel.Text);
+          TmpStr := EncodeString(VLblSet.ValueLabels[J].TheLabel.Text, ExportEncoding);
           Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
           Inc(CurRec, Length(TmpStr) + 1);
         end;
@@ -560,6 +562,83 @@ begin
     if Assigned(DataStream) then FreeAndNil(DataStream);
     if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
     if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
+  end;
+end;
+
+function TEpiExport.ExportCSV(const Settings: TEpiCSVExportSetting): boolean;
+var
+  Df: TEpiDataFile;
+  DataStream: TFileStream;
+  FieldSep: String;
+  DateSep: String;
+  DecSep: String;
+  QuoteCh: String;
+  i: Integer;
+  NewLine: String;
+  TmpStr: String;
+  NObs: Integer;
+  FieldCount: Integer;
+  BackUpSettings: TFormatSettings;
+  TimeSep: String;
+  CurRec: Integer;
+begin
+  Result := false;
+
+  // Sanity checks:
+  if not Assigned(Settings) then Exit;
+  if not Settings.SanetyCheck then Exit;
+
+  Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+
+  with Df do
+  try
+    DataStream := TFileStream.Create(Settings.ExportFileName, fmCreate);
+
+    FieldSep := Settings.FieldSeparator;
+    QuoteCh  := Settings.QuoteChar;
+    NewLine  := Settings.NewLine;
+    FieldCount := Settings.Fields.Count;
+
+    {Write Field Names}
+    if Settings.ExportFieldNames then
+    begin
+      TmpStr := '';
+      for i := 0 to FieldCount - 1do
+        TmpStr += TEpiField(Settings.Fields[i]).Name + FieldSep;
+      Delete(TmpStr, Length(TmpStr), 1);
+      TmpStr += NewLine;
+      TmpStr := EncodeString(TmpStr, Settings.Encoding);
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+    end;
+
+    BackUpSettings := FormatSettings;
+    FormatSettings.DateSeparator := Settings.DateSeparator[1];
+    FormatSettings.TimeSeparator := Settings.TimeSeparator[1];
+    FormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
+
+    { Write Data }
+    for CurRec := Settings.FromRecord to Settings.ToRecord do
+    begin
+      TmpStr := '';
+
+      // TODO : Condition checking!
+
+      // Using AsString should take care of formatting since it uses FormatSettings.
+      for i := 0 to FieldCount - 1 do
+        if Field[i].FieldType in StringFieldTypes then
+          TmpStr += AnsiQuotedStr(TEpiField(Settings.Fields[i]).AsString[CurRec], QuoteCh[1]) + FieldSep
+        else
+          TmpStr += TEpiField(Settings.Fields[i]).AsString[CurRec] + FieldSep;
+
+      Delete(TmpStr, Length(TmpStr), 1);
+      TmpStr += NewLine;
+      TmpStr := EncodeString(TmpStr, Settings.Encoding);
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+    end;
+    result := true;
+  finally
+    DataStream.Free;
+    FormatSettings := BackUpSettings;
   end;
 end;
 

@@ -25,7 +25,8 @@ type
      eeCP950,            // Chinese complex
      eeCP949,            // korean
      eeCP932,            // japanes
-     eeGuess             // Used for guess encoding during text read.
+     eeGuess,            // Used for guess encoding during text read.
+     eeSystemDefault     // Used for export/import using current system setting.
     );
 
 //  Stata Version 4    = $69;
@@ -61,8 +62,9 @@ const
      'CP950',            // Chinese complex
      'CP949',            // korean
      'CP932',            // japanes
-     'Guess'             //  Used for guess encoding during text read.
-    );
+     'Guess',            // Used for guess encoding during text read.
+     'System'            // Used for export/import using current system setting.
+     );
 
   // 21916 days after 30 dec. 1899 = 1/1/1960 Stata base date.
   StataBaseDate = 21916;

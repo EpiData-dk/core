@@ -9,12 +9,12 @@ interface
 uses
   epiadmin, epicustombase, epidatafiles, epidatafilestypes, epidocument, 
   epiranges, epirelations, episettings, epistudy, epivaluelabels, 
-  epieximtypes, epiexport, epiimport, epireport_base, epireport_databasegrid, 
-  epireport_fieldlist_extended, epireport_fieldlist_simple, 
-  epireport_filelist, epireport_htmlgenerator, epireport_project_overview, 
-  epireport_types, epireport_valuelabels, episervice_ipc, epiconvertutils, 
-  epimiscutils, epistringutils, epiversionutils, UniqueInstanceRaw, 
-  episervice_ipctypes;
+  epieximtypes, epiexport, epiexportsettings, epiimport, epireport_base, 
+  epireport_databasegrid, epireport_fieldlist_extended, 
+  epireport_fieldlist_simple, epireport_filelist, epireport_htmlgenerator, 
+  epireport_project_overview, epireport_types, epireport_valuelabels, 
+  episervice_ipc, episervice_ipctypes, epiconvertutils, epimiscutils, 
+  epistringutils, epiversionutils, UniqueInstanceRaw;
 
 implementation
 
