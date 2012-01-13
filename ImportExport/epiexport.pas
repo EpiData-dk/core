@@ -28,6 +28,7 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
+    function    Export(Const Settings: TEpiExportSetting): boolean;
     function    ExportStata(Const aFilename: string; Const Doc: TEpiDocument;
       Const DatafileIndex: integer = 0;
       Const StataVersion: TEpiStataVersion = dta8): Boolean;
@@ -110,6 +111,13 @@ destructor TEpiExport.Destroy;
 begin
   FExportLines.Free;
   inherited Destroy;
+end;
+
+function TEpiExport.Export(const Settings: TEpiExportSetting): boolean;
+begin
+  if Settings is TEpiCSVExportSetting then
+    Exit(ExportCSV(TEpiCSVExportSetting(Settings)));
+
 end;
 
 function TEpiExport.ExportStata(const aFilename: string;
@@ -616,12 +624,16 @@ begin
     FormatSettings.TimeSeparator := Settings.TimeSeparator[1];
     FormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
 
+    if Settings.FromRecord = -1 then Settings.FromRecord := 0;
+    if Settings.ToRecord = -1 then Settings.ToRecord := DF.Size - 1;
+
     { Write Data }
     for CurRec := Settings.FromRecord to Settings.ToRecord do
     begin
       TmpStr := '';
 
       // TODO : Condition checking!
+      if Df.Deleted[CurRec] then continue;
 
       // Using AsString should take care of formatting since it uses FormatSettings.
       for i := 0 to FieldCount - 1 do

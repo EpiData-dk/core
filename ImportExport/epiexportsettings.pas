@@ -113,8 +113,8 @@ begin
     (DataFileIndex < Doc.DataFiles.Count) and
     (ExportFileName <> '') and
     (Fields.Count > 0) and
-    (FromRecord >= 0) and
-    (ToRecord < Doc.DataFiles[DataFileIndex].Size)
+    (FromRecord >= -1) and
+    (ToRecord < Doc.DataFiles[DataFileIndex].Size);
 end;
 
 { TEpiStataExportSetting }
