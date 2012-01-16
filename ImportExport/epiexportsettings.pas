@@ -45,6 +45,7 @@ type
   public
     FieldNameCase: TEpiStataFieldNamingCase;
     Version:       TEpiStataVersion;
+    ExportLines:   TStrings;
 
     // Helper
     constructor Create; override;
@@ -123,6 +124,7 @@ constructor TEpiStataExportSetting.Create;
 begin
   inherited Create;
 
+  ExportLines   := TStringList.Create;
   FieldNameCase := fncAsIs;
   Version       := dta10;
 end;
