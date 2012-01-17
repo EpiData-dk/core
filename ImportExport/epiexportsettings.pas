@@ -109,12 +109,16 @@ end;
 
 function TEpiExportSetting.SanetyCheck: boolean;
 begin
+  if not (Assigned(Doc)) and
+     not ((DataFileIndex >= 0) and (DataFileIndex < Doc.DataFiles.Count)) then exit(False);
+
+  if FromRecord = -1 then FromRecord := 0;
+  if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
+
   result :=
-    Assigned(Doc) and
-    (DataFileIndex < Doc.DataFiles.Count) and
     (ExportFileName <> '') and
     (Fields.Count > 0) and
-    (FromRecord >= -1) and
+    (FromRecord >= 0) and
     (ToRecord < Doc.DataFiles[DataFileIndex].Size);
 end;
 

@@ -187,7 +187,6 @@ var
 begin
   Result := false;
 
-
   // Sanity checks:
   if not Assigned(ExportSettings) then exit;
   if not ExportSettings.SanetyCheck then exit;
@@ -235,7 +234,7 @@ begin
       FmtLength := 49;
 
     NVar := Flds.Count;
-    NObs := Size;
+    NObs := (ExportSettings.ToRecord - ExportSettings.FromRecord) + 1;
 
     // ********************************
     //           STATA HEADER
@@ -323,8 +322,8 @@ begin
       WITH TEpiField(Flds[i]) DO
       BEGIN
         case ExportSettings.FieldNameCase of
-          fncUpper: TmpStr := UTF8LowerCase(Trim(Name));
-          fncLower: TmpStr := UTF8UpperCase(Trim(Name));
+          fncUpper: TmpStr := UTF8UpperCase(Trim(Name));
+          fncLower: TmpStr := UTF8LowerCase(Trim(Name));
           fncAsIs:  TmpStr := Trim(Name);
         end;
         TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength - 1, FieldNames);
@@ -474,7 +473,7 @@ begin
     TRY
       RecCount := 0;
 
-      FOR CurRec := 0 TO NObs-1 DO
+      FOR CurRec := ExportSettings.FromRecord TO ExportSettings.ToRecord DO
       BEGIN
         if Deleted[CurRec] then continue;
         Inc(RecCount);
@@ -536,7 +535,7 @@ begin
     begin
       DataStream.Seek(NObsPos, soBeginning);
       WriteInt(DataStream, RecCount);
-      DataStream.Seek(soFromEnd, 0);
+      DataStream.Position := DataStream.Size;
     end;
 
     {Write VALUE-LABELS}
@@ -660,9 +659,6 @@ begin
     FormatSettings.DateSeparator := Settings.DateSeparator[1];
     FormatSettings.TimeSeparator := Settings.TimeSeparator[1];
     FormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
-
-    if Settings.FromRecord = -1 then Settings.FromRecord := 0;
-    if Settings.ToRecord = -1 then Settings.ToRecord := DF.Size - 1;
 
     { Write Data }
     for CurRec := Settings.FromRecord to Settings.ToRecord do
