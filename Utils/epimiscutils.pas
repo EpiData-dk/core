@@ -46,7 +46,7 @@ const
     );
 
 type
-  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfCollection, dfAll);
+  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfCollection, dfAll);
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
@@ -121,6 +121,11 @@ const
     FilterExt:  '*.dbf';
   );
 
+  EpiDialogFilterSPSS: TEpiDialogFilterPair = (
+    FilterName: 'SPSS Command File (*.sps)';
+    FilterExt:  '*.sps';
+  );
+
   EpiDialogFilterAll: TEpiDialogFilterPair = (
     FilterName: 'Show All (*.*)';
     FilterExt:  '*.*';
@@ -135,6 +140,7 @@ const
     @EpiDialogFilterXLS,
     @EpiDialogFilterDTA,
     @EpiDialogFilterDBF,
+    @EpiDialogFilterSPSS,
     @EpiDialogFilterCollection,
     @EpiDialogFilterAll
     );

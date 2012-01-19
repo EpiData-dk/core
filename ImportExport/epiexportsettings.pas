@@ -28,13 +28,17 @@ type
 
     // Helpers
     constructor Create; virtual;
+    procedure   Assign(Const ASettings: TEpiExportSetting); virtual;
     function SanetyCheck: boolean; virtual;
   end;
   TEpiExportSettingClass = class of TEpiExportSetting;
 
+  { TEpiCustomValueLabelExportSetting }
+
   TEpiCustomValueLabelExportSetting = class(TEpiExportSetting)
   public
     ExportValueLabels: boolean;
+    procedure Assign(Const ASettings: TEpiExportSetting); override;
   end;
 
   TEpiStataFieldNamingCase = (fncUpper, fncLower, fncAsIs);
@@ -49,10 +53,13 @@ type
 
     // Helper
     constructor Create; override;
+    procedure Assign(Const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
   end;
 
-  TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
+  { TEpiSASExportSetting }
+
+  TEpiSPSSExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
 
   end;
@@ -65,6 +72,7 @@ type
     QuoteChar: string;
 
     constructor Create; override;
+    procedure Assign(const ASettings: TEpiExportSetting); override;
   end;
 
   { TEpiCSVExportSetting }
@@ -76,17 +84,30 @@ type
     TimeSeparator: string;
     DecimalSeparator: string;
     NewLine: string;
+    FixedFormat: boolean;
 
     constructor Create; override;
+    procedure Assign(const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
   end;
 
-  TEpiSpreadSheetExportSetting = class(TEpiCustomTextExportSettings)
+{  TEpiSpreadSheetExportSetting = class(TEpiCustomTextExportSettings)
   public
     SpreadSheetVersion: byte;  //TODO: Export to spreadsheet using TFPSpreadSheet.
-  end;
+  end;}
 
 implementation
+
+{ TEpiCustomValueLabelExportSetting }
+
+procedure TEpiCustomValueLabelExportSetting.Assign(
+  const ASettings: TEpiExportSetting);
+begin
+  inherited Assign(ASettings);
+  if not (ASettings is TEpiCustomTextExportSettings) then exit;
+
+  ExportValueLabels := TEpiCustomValueLabelExportSetting(ASettings).ExportValueLabels;
+end;
 
 { TEpiExportSetting }
 
@@ -105,6 +126,22 @@ begin
   Encoding       := eeUTF8;
   Condition      := '';
   ExportDeleted  := false;
+end;
+
+procedure TEpiExportSetting.Assign(const ASettings: TEpiExportSetting);
+begin
+  if not Assigned(ASettings) then exit;
+  ExportFileName := ASettings.ExportFileName;
+  Doc            := ASettings.Doc;
+  DataFileIndex  := ASettings.DataFileIndex;
+
+  // Filters
+  FromRecord     := ASettings.FromRecord;
+  ToRecord       := ASettings.ToRecord;
+  Encoding       := ASettings.Encoding;
+  Condition      := ASettings.Condition;
+  ExportDeleted  := ASettings.ExportDeleted;
+  Fields.Assign(ASettings.Fields);
 end;
 
 function TEpiExportSetting.SanetyCheck: boolean;
@@ -133,6 +170,17 @@ begin
   Version       := dta10;
 end;
 
+procedure TEpiStataExportSetting.Assign(const ASettings: TEpiExportSetting);
+begin
+  inherited Assign(ASettings);
+
+  if not (ASettings is TEpiStataExportSetting) then exit;
+
+  FieldNameCase := TEpiStataExportSetting(ASettings).FieldNameCase;
+  Version       := TEpiStataExportSetting(ASettings).Version;
+  ExportLines.Assign(TEpiStataExportSetting(ASettings).ExportLines);
+end;
+
 function TEpiStataExportSetting.SanetyCheck: boolean;
 begin
   Result := inherited SanetyCheck;
@@ -146,6 +194,16 @@ begin
   QuoteChar := '"';
 end;
 
+procedure TEpiCustomTextExportSettings.Assign(const ASettings: TEpiExportSetting
+  );
+begin
+  inherited Assign(ASettings);
+  if not (ASettings is TEpiCustomTextExportSettings) then exit;
+
+  ExportFieldNames := TEpiCustomTextExportSettings(ASettings).ExportFieldNames;
+  QuoteChar        := TEpiCustomTextExportSettings(ASettings).QuoteChar;
+end;
+
 { TEpiCSVExportSetting }
 
 constructor TEpiCSVExportSetting.Create;
@@ -157,6 +215,22 @@ begin
   TimeSeparator     := DefaultFormatSettings.TimeSeparator;
   DecimalSeparator  := DefaultFormatSettings.DecimalSeparator;
   NewLine           := LineEnding;
+end;
+
+procedure TEpiCSVExportSetting.Assign(const ASettings: TEpiExportSetting);
+begin
+  inherited Assign(ASettings);
+  if not (ASettings is TEpiCSVExportSetting) then exit;
+
+  with (TEpiCSVExportSetting(ASettings)) do
+  begin
+    Self.FieldSeparator   := FieldSeparator;
+    Self.DateSeparator    := DateSeparator;
+    Self.TimeSeparator    := TimeSeparator;
+    Self.DecimalSeparator := DecimalSeparator;
+    Self.NewLine          := NewLine;
+    Self.FixedFormat      := FixedFormat;
+  end;
 end;
 
 function TEpiCSVExportSetting.SanetyCheck: boolean;

@@ -31,6 +31,7 @@ type
     function    Export(Const Settings: TEpiExportSetting): boolean;
     function    ExportStata(Const ExportSettings: TEpiStataExportSetting): Boolean;
     function    ExportCSV(Const Settings: TEpiCSVExportSetting): boolean;
+    function    ExportSPSS(Const Settings: TEpiSPSSExportSetting): boolean;
     property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding default eeUTF8;
   end;
 
@@ -119,6 +120,11 @@ begin
   // Stata
   if Settings is TEpiStataExportSetting then
     Exit(ExportStata(TEpiStataExportSetting(Settings)));
+
+  // SPSS
+  if Settings is TEpiSPSSExportSetting then
+    Exit(ExportSPSS(TEpiSPSSExportSetting(Settings)));
+
 end;
 
 function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting
@@ -611,7 +617,6 @@ end;
 
 function TEpiExport.ExportCSV(const Settings: TEpiCSVExportSetting): boolean;
 var
-  Df: TEpiDataFile;
   DataStream: TFileStream;
   FieldSep: String;
   DateSep: String;
@@ -619,12 +624,14 @@ var
   QuoteCh: String;
   i: Integer;
   NewLine: String;
-  TmpStr: String;
+  TmpStr, S: String;
   NObs: Integer;
   FieldCount: Integer;
   BackUpSettings: TFormatSettings;
   TimeSep: String;
   CurRec: Integer;
+  L: Cardinal;
+  Df: TEpiDataFile;
 begin
   Result := false;
 
@@ -634,7 +641,6 @@ begin
 
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
 
-  with Df do
   try
     DataStream := TFileStream.Create(Settings.ExportFileName, fmCreate);
 
@@ -670,10 +676,25 @@ begin
 
       // Using AsString should take care of formatting since it uses FormatSettings.
       for i := 0 to FieldCount - 1 do
-        if Field[i].FieldType in StringFieldTypes then
-          TmpStr += AnsiQuotedStr(TEpiField(Settings.Fields[i]).AsString[CurRec], QuoteCh[1]) + FieldSep
+      with TEpiField(Settings.Fields[i]) do
+      begin
+        if (FieldType in StringFieldTypes) and (QuoteCh <> '') then
+          S := AnsiQuotedStr(AsString[CurRec], QuoteCh[1])
         else
-          TmpStr += TEpiField(Settings.Fields[i]).AsString[CurRec] + FieldSep;
+          S := AsString[CurRec];
+
+        L := Length;
+        if (FieldType in StringFieldTypes) then
+          L *= 3;  // This should cover MOST instances of UTF-8 and not be too long.
+                   // TODO : some day an exact calculation of MaxByteLenght would be great!
+
+        if Settings.FixedFormat then
+          S := Format('%-' + IntToStr(L) + '.' + IntToStr(L) + 's', [S])
+        else
+          S += FieldSep;
+
+        TmpStr += S;
+      end;
 
       Delete(TmpStr, Length(TmpStr), 1);
       TmpStr += NewLine;
@@ -685,6 +706,155 @@ begin
     DataStream.Free;
     FormatSettings := BackUpSettings;
   end;
+end;
+
+function TEpiExport.ExportSPSS(const Settings: TEpiSPSSExportSetting): boolean;
+var
+  CSVSetting: TEpiCSVExportSetting;
+  ExpLines: TStringList;
+  S: String;
+  Col: Integer;
+  i: Integer;
+  Df: TEpiDataFile;
+  TmpLines: TStringList;
+begin
+  Result := false;
+
+  // Sanity checks:
+  if not Assigned(Settings) then Exit;
+  if not Settings.SanetyCheck then Exit;
+
+  // First export the data:
+  CSVSetting := TEpiCSVExportSetting.Create;
+  CSVSetting.Assign(Settings);
+  with CSVSetting do begin
+    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+
+    // CSV Settings
+    QuoteChar        := '';
+    FixedFormat      := true;
+    ExportFieldNames := false;
+    DateSeparator    := '/';
+    TimeSeparator    := ':';
+    DecimalSeparator := '.';
+  end;
+
+  if not ExportCSV(CSVSetting) then exit;
+  Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+
+
+  // HEADER INFORMATION:
+  TmpLines := TStringList.Create;
+  ExpLines := TStringList.Create;
+  ExpLines.Append('* EpiData created two files during export');
+  ExpLines.Append('* .');
+  ExpLines.Append('* 1. ' + Settings.ExportFileName + ' .');
+  ExpLines.append('*    is this SPSS command file');
+  ExpLines.Append('* 2. ' + CSVSetting.ExportFileName + ' .');
+  ExpLines.Append('*    is an ASCII text file with the raw data');
+  ExpLines.Append('*');
+  ExpLines.Append('* You may modify the commands before running it');
+  ExpLines.Append('* Uncomment (remove the *) the last command (SAVE) if the');
+  ExpLines.Append('* command file should save the data as a SPSS datafile');
+  ExpLines.Append('');
+  // Currently we ALWAYS export in unicode... this could be changed in the future.
+  ExpLines.Append('SET UNICODE=yes.');
+  // Always export using "." as decimal separator. SPSS only supports "." and ","
+  // so we go for safe option and make exporting to CSV easier.
+  ExpLines.Append('SET DECIMAL=dot.');
+  // Define the entire dataset.
+  ExpLines.Append('DATA LIST');
+  // The CSV file.
+  ExpLines.append('  FILE = "' + CSVSetting.ExportFileName + '"');
+  // RECORDS is basically the number of lines used to define a single record (in epidata).
+  // SPSS does not seem to have a max character count on the length of lines in the CSV file
+  // so we export: 1 .epx record -> 1 .csv line.
+  ExpLines.Append('  RECORDS = 1');
+
+  // Field name and position information!
+  S := '  / ';
+  Col := 1;
+  for i := 0 to Settings.Fields.Count - 1 do
+  with TEpiField(Settings.Fields[i]) do
+  begin
+    // The SPSS command file should not all too difficult to read.. ;)
+    // - hence we break somewhere after 80 characters.
+    if System.Length(S) > 80 then
+    begin
+      ExpLines.Append(S);
+      S := '    '
+    end;
+
+    {
+      Fieldname formatting in SPSS looks like this:
+        / varname {col location  [(format)]} [varname...]
+    }
+    // varname {col "start"}
+    S += Copy(Name, 1, 64) + ' ' + IntToStr(Col);
+    //  col "end"
+    if Length > 1 then
+      S += '-' + IntToStr(Col+Length);
+
+    // [(format)]
+    case FieldType of
+      ftBoolean,
+      ftInteger,
+      ftAutoInc:
+        ; // Do nothing since length defines the format by itself.
+      ftFloat:
+        S += '(' + IntToStr(Decimals) + ')';
+      ftDMYDate,
+      ftDMYAuto:
+        S += '(EDATE)';
+      ftMDYDate,
+      ftMDYAuto:
+        S += '(ADATE)';
+      ftYMDDate,
+      ftYMDAuto:
+        S += '(SDATE)';
+      ftTime,
+      ftTimeAuto:
+        S += '(TIME)';
+      ftString,
+      ftUpperString:
+        S += '(A)';
+    end;
+    S += ' ';
+    Inc(Col, Length);
+  end;
+  // Write the last line along with the trailing "."
+  ExpLines.Append(S + '.');
+  ExpLines.Strings[ExpLines.Count - 1];
+
+  // Dataset Label
+  //  FILE LABEL <text>
+  if Df.Caption.Text <> '' then
+  begin
+    ExpLines.Append('FILE LABEL ' + AnsiQuotedStr(Df.Caption.Text));
+    ExpLines.Append('');
+  end;
+
+  // Variable Labels
+  TmpLines.Clear;
+  for i := 0 to Settings.Fields.Count - 1 do
+  with TEpiField(Settings.Fields[i]) do
+    if Question.Text <> '' then
+      TmpLines.Append('  ' + Name + ' ' + AnsiQuotedStr(Question.Text));
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add('.');
+    ExpLines.Append('VARIABLE LABELS');
+    ExpLines.AddStrings(TmpLines);
+  end;
+
+
+  // Value Labels
+  TmpLines.Clear;
+
+
+  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  result := true;
 end;
 
 end.
