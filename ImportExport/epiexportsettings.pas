@@ -57,9 +57,17 @@ type
     function SanetyCheck: boolean; override;
   end;
 
-  { TEpiSASExportSetting }
+
+  { TEpiSPSSExportSetting }
 
   TEpiSPSSExportSetting = class(TEpiCustomValueLabelExportSetting)
+  public
+
+  end;
+
+  { TEpiSASExportSetting }
+
+  TEpiSASExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
 
   end;

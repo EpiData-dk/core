@@ -32,6 +32,7 @@ type
     function    ExportStata(Const ExportSettings: TEpiStataExportSetting): Boolean;
     function    ExportCSV(Const Settings: TEpiCSVExportSetting): boolean;
     function    ExportSPSS(Const Settings: TEpiSPSSExportSetting): boolean;
+    function    ExportSAS(Const Settings: TEpiSASExportSetting): boolean;
     property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding default eeUTF8;
   end;
 
@@ -204,7 +205,7 @@ begin
 
   with Df do
   try
-    DataStream := TFileStream.Create(Fn, fmCreate);
+    DataStream := TFileStream.Create(UTF8ToSys(Fn), fmCreate);
 
     // Version specific settings:
     // - "original" setting from Ver. 4
@@ -642,7 +643,7 @@ begin
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
 
   try
-    DataStream := TFileStream.Create(Settings.ExportFileName, fmCreate);
+    DataStream := TFileStream.Create(UTF8ToSys(Settings.ExportFileName), fmCreate);
 
     FieldSep := Settings.FieldSeparator;
     QuoteCh  := Settings.QuoteChar;
@@ -717,6 +718,7 @@ var
   i: Integer;
   Df: TEpiDataFile;
   TmpLines: TStringList;
+  j: Integer;
 begin
   Result := false;
 
@@ -793,7 +795,7 @@ begin
     S += Copy(Name, 1, 64) + ' ' + IntToStr(Col);
     //  col "end"
     if Length > 1 then
-      S += '-' + IntToStr(Col+Length);
+      S += '-' + IntToStr(Col+Length-1);
 
     // [(format)]
     case FieldType of
@@ -830,7 +832,7 @@ begin
   //  FILE LABEL <text>
   if Df.Caption.Text <> '' then
   begin
-    ExpLines.Append('FILE LABEL ' + AnsiQuotedStr(Df.Caption.Text));
+    ExpLines.Append('FILE LABEL ' + AnsiQuotedStr(Df.Caption.Text, '"'));
     ExpLines.Append('');
   end;
 
@@ -839,7 +841,7 @@ begin
   for i := 0 to Settings.Fields.Count - 1 do
   with TEpiField(Settings.Fields[i]) do
     if Question.Text <> '' then
-      TmpLines.Append('  ' + Name + ' ' + AnsiQuotedStr(Question.Text));
+      TmpLines.Append('  ' + Name + ' ' + AnsiQuotedStr(Question.Text, '"'));
 
   if TmpLines.Count > 0 then
   begin
@@ -849,12 +851,88 @@ begin
   end;
 
 
-  // Value Labels
+  // Value Labels:
+  //
+  // VALUE LABELS
+  //    <varname(s)>
+  //       <value>  <"label">
+  //       <value>  <"label">..
+  //  / <varname(s)> ...
   TmpLines.Clear;
+  S := '  ';
+  for i := 0 to Settings.Fields.Count - 1 do
+  with TEpiField(Settings.Fields[i]) do
+  begin
+    if not (Assigned(ValueLabelSet)) then continue;
+    if not (FieldType in IntFieldTypes + StringFieldTypes) then continue;
 
+    // [/] <varname>
+    TmpLines.Add(' ' + S + Name);
+
+    // <value> <"label">
+    for j := 0 to ValueLabelSet.Count - 1 do
+      if FieldType in StringFieldTypes then
+        TmpLines.Add('    ' + AnsiQuotedStr(ValueLabelSet[j].ValueAsString, '"') + ' ' + AnsiQuotedStr(ValueLabelSet[j].TheLabel.Text, '"'))
+      else
+        TmpLines.Add('    ' + ValueLabelSet[j].ValueAsString + ' ' + AnsiQuotedStr(ValueLabelSet[j].TheLabel.Text, '"'));
+    S := '/ ';
+  end;
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add('.');
+    ExpLines.Append('VALUE LABELS');
+    ExpLines.AddStrings(TmpLines);
+  end;
+
+  ExpLines.Append('execute.');
+  ExpLines.Append('*********** Uncomment next line to save file ******************.');
+  ExpLines.Append('* SAVE OUTFILE="' + ChangeFileExt(Settings.ExportFileName,'.sav') + '".');
+  ExpLines.Append('***************************************************************.');
+  ExpLines.Append('*.');
 
   ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   result := true;
+end;
+
+function TEpiExport.ExportSAS(const Settings: TEpiSASExportSetting): boolean;
+begin
+{  Result := false;
+
+  // Sanity checks:
+  if not Assigned(Settings) then Exit;
+  if not Settings.SanetyCheck then Exit;
+
+  // First export the data:
+  CSVSetting := TEpiCSVExportSetting.Create;
+  CSVSetting.Assign(Settings);
+  with CSVSetting do begin
+    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+
+    // CSV Settings
+    QuoteChar        := '';
+    FixedFormat      := true;
+    ExportFieldNames := false;
+    DateSeparator    := '/';
+    TimeSeparator    := ':';
+    DecimalSeparator := '.';
+  end;
+
+  if not ExportCSV(CSVSetting) then exit;
+  Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+
+  // HEADER INFORMATION:
+  TmpLines := TStringList.Create;
+  ExpLines := TStringList.Create;
+  ExpLines.Append('* EpiData created two files during export');
+  ExpLines.Append('* .');
+  ExpLines.Append('* 1. ' + Settings.ExportFileName + ' .');
+  ExpLines.append('*    is this SAS command file');
+  ExpLines.Append('* 2. ' + CSVSetting.ExportFileName + ' .');
+  ExpLines.Append('*    is an ASCII text file with the raw data');
+  ExpLines.Append('*');
+  ExpLines.Append('* You may modify the commands before running it;');
+  ExpLines.Append('');         }
 end;
 
 end.
