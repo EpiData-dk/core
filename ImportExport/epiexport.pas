@@ -126,6 +126,9 @@ begin
   if Settings is TEpiSPSSExportSetting then
     Exit(ExportSPSS(TEpiSPSSExportSetting(Settings)));
 
+  // SAS
+  if Settings is TEpiSASExportSetting then
+    Exit(ExportSAS(TEpiSASExportSetting(Settings)));
 end;
 
 function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting
@@ -906,8 +909,18 @@ begin
 end;
 
 function TEpiExport.ExportSAS(const Settings: TEpiSASExportSetting): boolean;
+var
+  CSVSetting: TEpiCSVExportSetting;
+  Df: TEpiDataFile;
+  TmpLines: TStringList;
+  ExpLines: TStringList;
+  Flds: TList;
+  VLList: TStringList;
+  i: Integer;
+  Idx: Integer;
+  j: Integer;
 begin
-{  Result := false;
+  Result := false;
 
   // Sanity checks:
   if not Assigned(Settings) then Exit;
@@ -930,6 +943,7 @@ begin
 
   if not ExportCSV(CSVSetting) then exit;
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+  Flds := Settings.Fields;
 
   // HEADER INFORMATION:
   TmpLines := TStringList.Create;
@@ -942,7 +956,46 @@ begin
   ExpLines.Append('*    is an ASCII text file with the raw data');
   ExpLines.Append('*');
   ExpLines.Append('* You may modify the commands before running it;');
-  ExpLines.Append('');         }
+  ExpLines.Append('');
+
+
+  // Preliminary ValueLabel Sets are printed.
+  if Settings.ExportValueLabels then
+  begin
+    VLList := TStringList.Create;
+
+    // first build list of used VLSets.
+    for i := 0 to Flds.Count - 1 do
+    with TEpiField(Flds[i]) do
+    begin
+      if Assigned(ValueLabelSet) and
+         not (VLList.Find(ValueLabelSet.Name, Idx))
+      then
+        VLList.AddObject(ValueLabelSet.Name, ValueLabelSet);
+    end;
+
+    // The output content
+    TmpLines.Clear;
+    for i := 0 to VLList.Count - 1 do
+    with TEpiValueLabelSet(VLLIst.Objects[i]) do
+    begin
+      // Name the Valuelabel set.
+      TmpLines.Add('  VALUE ' + Name);
+
+      // Print the labels.
+      for j := 0 to Count - 1 do
+      with ValueLabels[j] do
+        TmpLines.Add('   ' + ValueAsString + ' = "' + TheLabel.Text + '"' + BoolToStr(j = (Count-1), ';', ''));
+    end;
+
+    if TmpLines.Count > 0 then
+    begin
+      ExpLines.Add('PROC FORMAT;');
+      ExpLines.AddStrings(TmpLines);
+    end;
+  end;
+
+  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
 end;
 
 end.
