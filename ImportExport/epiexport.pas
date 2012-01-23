@@ -633,6 +633,7 @@ var
   CurRec: Integer;
   L: Cardinal;
   Df: TEpiDataFile;
+  Fixed: Boolean;
 begin
   Result := false;
 
@@ -649,6 +650,7 @@ begin
     QuoteCh  := Settings.QuoteChar;
     NewLine  := Settings.NewLine;
     FieldCount := Settings.Fields.Count;
+    Fixed      := Settings.FixedFormat;
 
     {Write Field Names}
     if Settings.ExportFieldNames then
@@ -679,17 +681,20 @@ begin
       for i := 0 to FieldCount - 1 do
       with TEpiField(Settings.Fields[i]) do
       begin
-        if (FieldType in StringFieldTypes) and (QuoteCh <> '') then
-          S := AnsiQuotedStr(AsString[CurRec], QuoteCh[1])
+        if IsMissing[CurRec] then
+          S := ''
         else
-          S := AsString[CurRec];
+          if (FieldType in StringFieldTypes) and (QuoteCh <> '') then
+            S := AnsiQuotedStr(AsString[CurRec], QuoteCh[1])
+          else
+            S := AsString[CurRec];
 
         L := Length;
         if (FieldType in StringFieldTypes) then
           L *= 3;  // This should cover MOST instances of UTF-8 and not be too long.
                    // TODO : some day an exact calculation of MaxByteLenght would be great!
 
-        if Settings.FixedFormat then
+        if Fixed then
           S := Format('%-' + IntToStr(L) + '.' + IntToStr(L) + 's', [S])
         else
           S += FieldSep;
@@ -794,8 +799,10 @@ begin
     // varname {col "start"}
     S += Copy(Name, 1, 64) + ' ' + IntToStr(Col);
     //  col "end"
-    if Length > 1 then
-      S += '-' + IntToStr(Col+Length-1);
+    if (FieldType in StringFieldTypes) then
+      S += '-' + IntToStr(Col + (Length * 3) - 1)   // To cover up for UTF-8 lengths.
+    else if Length > 1 then
+      S += '-' + IntToStr(Col + Length - 1);
 
     // [(format)]
     case FieldType of
@@ -822,7 +829,10 @@ begin
         S += '(A)';
     end;
     S += ' ';
-    Inc(Col, Length);
+    if (FieldType in StringFieldTypes) then
+      Inc(Col, Length * 3)
+    else
+      Inc(Col, Length);
   end;
   // Write the last line along with the trailing "."
   ExpLines.Append(S + '.');
