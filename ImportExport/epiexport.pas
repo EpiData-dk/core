@@ -623,16 +623,12 @@ function TEpiExport.ExportCSV(const Settings: TEpiCSVExportSetting): boolean;
 var
   DataStream: TFileStream;
   FieldSep: String;
-  DateSep: String;
-  DecSep: String;
   QuoteCh: String;
   i: Integer;
   NewLine: String;
   TmpStr, S: String;
-  NObs: Integer;
   FieldCount: Integer;
   BackUpSettings: TFormatSettings;
-  TimeSep: String;
   CurRec: Integer;
   L: Cardinal;
   Df: TEpiDataFile;
@@ -919,6 +915,8 @@ var
   i: Integer;
   Idx: Integer;
   j: Integer;
+  S: String;
+  Col: Integer;
 begin
   Result := false;
 
@@ -992,10 +990,107 @@ begin
     begin
       ExpLines.Add('PROC FORMAT;');
       ExpLines.AddStrings(TmpLines);
+      ExpLines.Add('run;');
+      ExpLines.Add('');
     end;
   end;
 
+  ExpLines.Add('DATA ' + Df.Name + '(LABEL="' + Df.Caption.Text + '");');
+  ExpLines.Add('  INFILE "' + CSVSetting.ExportFileName + '";');
+  ExpLines.Add('  INPUT');
+
+  S := '   ';
+  Col := 1;
+  for i := 0 to Flds.Count - 1 do
+  with TEpiField(Flds[i]) do
+  begin
+    // The SAS command file should not all too difficult to read.. ;)
+    // - hence we break somewhere after 80 characters.
+    if System.Length(S) > 80 then
+    begin
+      ExpLines.Append(S);
+      S := '   '
+    end;
+
+    {
+      Fieldname formatting in SAS looks like this:
+        varname {[$] col location  [Informat]} [varname...]
+    }
+    // varname
+    S += Name;
+
+    // {[$]
+    if FieldType in StringFieldTypes then
+      S += ' $';
+
+    // col "start"
+    S += ' ' + IntToStr(Col);
+
+    //  col "end"
+    if (FieldType in StringFieldTypes) then
+      S += '-' + IntToStr(Col + (Length * 3) - 1)   // To cover up for UTF-8 lengths.
+    else if Length > 1 then
+      S += '-' + IntToStr(Col + Length - 1);
+
+    case FieldType of
+      ftFloat:
+        S += ' .' + IntToStr(Decimals);
+      ftDMYDate,
+      ftDMYAuto:
+        S += ' ddmmyy10.';
+      ftMDYDate,
+      ftMDYAuto:
+        S += ' mmddyy10.';
+      ftYMDDate,
+      ftYMDAuto:
+        S += ' yymmdd10.';
+      ftTime: ;
+      ftTimeAuto: ;
+    end;
+    S += ' ';
+    if (FieldType in StringFieldTypes) then
+      Inc(Col, Length * 3)
+    else
+      Inc(Col, Length);
+  end;
+  // Write the last line along with the trailing ";"
+  ExpLines.Append(S + ';');
+  ExpLines.Add('');
+
+  // Variable Labels
+  TmpLines.Clear;
+  for i := 0 to Flds.Count - 1 do
+  with TEpiField(Flds[i]) do
+    if Question.Text <> '' then
+      TmpLines.Append('  ' + Name + ' = ' + AnsiQuotedStr(Question.Text, '"'));
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add(';');
+    ExpLines.Append('LABEL');
+    ExpLines.AddStrings(TmpLines);
+    ExpLines.Add('');
+  end;
+
+
+  // Fields <-> ValueLabels association
+  TmpLines.Clear;
+  for i := 0 to Flds.Count - 1 do
+  with TEpiField(Flds[i]) do
+  begin
+    if Assigned(ValueLabelSet) then
+      TmpLines.Add('  ' + Name + ' ' + ValueLabelSet.Name + '.');
+  end;
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add(';');
+    ExpLines.Add('FORMAT');
+    ExpLines.AddStrings(TmpLines);
+  end;
+
   ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  Result := true;
 end;
 
 end.
