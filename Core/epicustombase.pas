@@ -8,6 +8,9 @@ interface
 uses
   Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo;
 
+const
+  EPI_XML_DATAFILE_VERSION = 1;
+
 type
   TEpiCustomBase = class;
   TEpiCustomItem = class;

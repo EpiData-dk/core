@@ -87,6 +87,7 @@ end;
 constructor TEpiDocument.Create(const LangCode: string);
 begin
   inherited Create(nil);
+  FVersion         := EPI_XML_DATAFILE_VERSION;
   FXMLSettings     := TEpiXMLSettings.Create(Self);
   FProjectSettings := TEpiProjectSettings.Create(Self);
   FAdmin           := TEpiAdmin.Create(Self);
