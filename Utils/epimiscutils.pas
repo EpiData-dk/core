@@ -58,7 +58,7 @@ const
   function GetEpiDialogFilter(DialogFilter: TEpiDialogFilters): string;
 
   procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
-  procedure ZipFileToStream(Var St: TStream;   Const ZipFileName: string);
+  procedure ZipFileToStream(St: TStream;   Const ZipFileName: string);
 
 
 
@@ -197,7 +197,7 @@ type
       AStream := TMemoryStream.Create;
   end;
 
-procedure ZipFileToStream(var St: TStream; const ZipFileName: string);
+procedure ZipFileToStream(St: TStream; const ZipFileName: string);
 var
   TheUnZipper: TUnZipper;
   StHandler: TTmpStreamHandler;
