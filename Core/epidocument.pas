@@ -148,7 +148,7 @@ end;
 
 procedure TEpiDocument.LoadFromXml(Root: TDOMNode);
 var
-  Node: TDOMElement;
+  Node: TDOMNode;
 begin
   // Root = <EpiData>
   FLoading := true;

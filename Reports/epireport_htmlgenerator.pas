@@ -21,7 +21,6 @@ type
 
     // Misc
     procedure InternalInit;
-    function  HtmlString(Const Txt: String): String;
     procedure AddLine(Const Txt: string);
 
     // Lines
@@ -47,10 +46,28 @@ type
     class function HtmlStyleSheet: string;
   end;
 
+function  HtmlString(Const Txt: String): String;
+
 implementation
 
 uses
   strutils;
+
+function HtmlString(const Txt: String): String;
+var
+  S: String;
+  i: Integer;
+begin
+  S := Txt;
+  for i := 1 to Length(S) do
+    if (Ord(S[i]) < 32) and
+       (not (Ord(S[i]) in [10,13])) then
+      S[i] := '?';
+  Result := StringsReplace(S,
+   [LineEnding, '&',     '"',      '<',    '>',    ''''],
+   ['<br>',   '&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
+   [rfReplaceAll]);
+end;
 
 { TEpiReportHTMLGenerator }
 
@@ -66,22 +83,6 @@ begin
     OnTableFooter := @TableFooter;
     OnTableHeader := @TableHeader;
   end;
-end;
-
-function TEpiReportHTMLGenerator.HtmlString(const Txt: String): String;
-var
-  S: String;
-  i: Integer;
-begin
-  S := Txt;
-  for i := 1 to Length(S) do
-    if (Ord(S[i]) < 32) and
-       (not (Ord(S[i]) in [10,13])) then
-      S[i] := '?';
-  Result := StringsReplace(S,
-   [LineEnding, '&',     '"',      '<',    '>',    ''''],
-   ['<br>',   '&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
-   [rfReplaceAll]);
 end;
 
 procedure TEpiReportHTMLGenerator.AddLine(const Txt: string);
