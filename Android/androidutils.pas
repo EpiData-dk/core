@@ -5,7 +5,7 @@ unit androidutils;
 interface
 
 uses
-  log;
+  jni, log;
 
 procedure ALogDef(Const Txt: string);
 procedure ALogVerb(Const Txt: string);
@@ -16,7 +16,15 @@ procedure ALogErr(Const Txt: string);
 procedure ALogFtl(Const Txt: string);
 procedure ALogSlnc(Const Txt: string);
 
+function NewJNIString(Env: PJNIEnv; S: string): jstring;
+function GetJNIString(Env: PJNIEnv; S: jstring): string;
+function GetJNIStringNoRelease(Env: PJNIEnv; S: jstring; out Handle: pchar): string;
+procedure ReleaseString(Env: PJNIEnv; S: jstring; Handle: pchar);
+
 implementation
+
+uses
+  sysutils;
 
 procedure _ALog(Prio: Longint; Const Txt: string);
 begin
@@ -61,6 +69,38 @@ end;
 procedure ALogSlnc(const Txt: string);
 begin
   _ALog(ANDROID_LOG_SILENT, Txt);
+end;
+
+function NewJNIString(Env: PJNIEnv; S: string): jstring;
+var
+  P: PChar;
+begin
+  P := StrAlloc(Length(S) + 1);
+  result := Env^^.NewStringUTF(Env, StrPCopy(P, S));
+  StrDispose(P);
+end;
+
+function GetJNIString(Env: PJNIEnv; S: jstring): string;
+var
+  IsCopy: jboolean;
+  P: PChar;
+begin
+  P := Env^^.GetStringUTFChars(Env, S, IsCopy);
+  result := StrPas(P);
+  Env^^.ReleaseStringUTFChars(Env, S, P);
+end;
+
+function GetJNIStringNoRelease(Env: PJNIEnv; S: jstring; out Handle: pchar): string;
+var
+  IsCopy: jboolean;
+begin
+  Handle := Env^^.GetStringUTFChars(Env, S, IsCopy);
+  result := StrPas(Handle);
+end;
+
+procedure ReleaseString(Env: PJNIEnv; S: jstring; Handle: pchar);
+begin
+  Env^^.ReleaseStringUTFChars(Env, S, Handle);
 end;
 
 end.

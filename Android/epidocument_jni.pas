@@ -7,6 +7,10 @@ interface
 uses
   epidocument, jni, sysutils;
 
+const
+  DocumentJNI = 'Java_dk_epidata_androidclient_core_Document_';
+
+
 function Document_Create(Env: PJNIEnv; This: jobject): jint; cdecl;
 function Document_CreateFromFile(Env: PJNIEnv; This: jobject; FileName: jstring): jint; cdecl;
 procedure Document_Destroy(Env: PJNIEnv; This: jobject; Doc: jint); cdecl;
@@ -35,9 +39,7 @@ var
 begin
   Doc := TEpiDocument.Create('en');
   result := jint(doc);
-
-  FN := String(Env^^.GetStringUTFChars(Env, FileName, IsCopy));
-  Doc.LoadFromFile(FN);
+  Doc.LoadFromFile(GetJNIString(Env, FileName));
 end;
 
 procedure Document_Destroy(Env: PJNIEnv; This: jobject; Doc: jint); cdecl;
@@ -52,7 +54,7 @@ var
   IsCopy: jboolean;
 begin
   ALogInfo('SaveToFile (doc = ' + IntToStr(Doc) + ')');
-  FN := String(Env^^.GetStringUTFChars(Env, FileName, IsCopy));
+  FN := GetJNIString(Env, FileName);
   ALogInfo('FN = ' + FN);
   TEpiDocument(Doc).SaveToFile(FN);
   ALogInfo('Saved = ' + FN);
