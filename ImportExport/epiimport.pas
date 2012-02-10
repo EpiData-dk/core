@@ -150,6 +150,7 @@ var
   TempInt: Int64;
   HeaderLineCount: Integer;
   ValCode: Integer;
+  ValCodeFloat: Extended;
   TotFieldLength: Integer;
   CurrentLine: Integer;
   TmpFieldChar, Dummy: Char;
@@ -180,6 +181,7 @@ var
   VLSet: TEpiValueLabelSet;
   VL: TEpiCustomValueLabel;
   Lines: TStringList;
+  ImportFormatSettings: TFormatSettings;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -251,6 +253,10 @@ begin
 
   if not Assigned(DataFile) then
     DataFile := TEpiDataFile.Create(nil);
+
+  ImportFormatSettings := DefaultFormatSettings;
+  ImportFormatSettings.DecimalSeparator := '.';
+  ImportFormatSettings.DateSeparator := '/';
 
   with DataFile do
   try
@@ -372,7 +378,7 @@ begin
     CloseFile(TxtFile);
 
     LocalDateSeparator := DateSeparator;
-    DateSeparator := '/';  // This was standard in old .rec files.
+    DefaultFormatSettings.DateSeparator := '/';  // This was standard in old .rec files.
 
     if ImportData then
     begin
@@ -467,12 +473,20 @@ begin
               UTmpStr := UTF8UpperCase(TmpStr);
               while not ((Pos('END', UTmpStr) > 0) and (Length(UTmpStr) = 3)) do
               begin // Read individual labels.
-                StrBuf := Trim(Copy2SpaceDel(TmpStr));
+                // Values may be incapsulated in "..."
+                if TmpStr[1] = '"' then
+                begin
+                  StrBuf := AnsiDequotedStr(Trim(TmpStr), '"');
+                  Delete(TmpStr, 1, Length(StrBuf)+2);
+                end else
+                  StrBuf := Trim(Copy2SpaceDel(TmpStr));
 
                 if NewVLset then
                 begin
                   if TryStrToInt(StrBuf, ValCode) then
                     TmpFieldType := ftInteger
+                  else if TryStrToFloat(StrBuf, ValCodeFloat) then
+                    TmpFieldType := ftFloat
                   else
                     TmpFieldType := ftString;
                   VLSet := ValueLabels.NewValueLabelSet(TmpFieldType);
@@ -483,6 +497,7 @@ begin
                 VL := VLSet.NewValueLabel;
                 case VLSet.LabelType of
                   ftInteger: TEpiIntValueLabel(VL).Value := StrToInt(Strbuf);
+                  ftFloat:   TEpiFloatValueLabel(VL).Value := StrToFloat(StrBuf, ImportFormatSettings);
                   ftString:  TEpiStringValueLabel(VL).Value := StrBuf;
                 end;
                 VL.TheLabel.Text := AnsiDequotedStr(Trim(TmpStr), '"');
@@ -507,8 +522,7 @@ begin
       Lines.Free;
     end;
   finally
-//    CloseFile(TxtFile);
-    DateSeparator := LocalDateSeparator;
+    DefaultFormatSettings.DateSeparator := LocalDateSeparator;
     if Assigned(DataStream) then DataStream.Free;
   end;
   result := true;
