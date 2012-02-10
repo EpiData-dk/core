@@ -107,7 +107,12 @@ type
       const Val: TDateTime): string; overload;
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
+
     // Attributes save
+  private
+    // - used internally by SaveAttr
+    function   SaveAttrRaw(const AttrName: string; const Val: string): string;
+  protected
     function   SaveAttr(const AttrName: string; const Val: string): string; overload;
     function   SaveAttr(const AttrName: string; const Val: integer): string; overload;
     function   SaveAttr(const AttrName: string; const Val: extended): string; overload;
@@ -759,22 +764,31 @@ begin
   result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
 end;
 
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: string
+// This function writes the raw content of Val and AttrName without further
+// checking. If val need to be XML'ified it should go through SaveAttr(... val: string)
+function TEpiCustomBase.SaveAttrRaw(const AttrName: string; const Val: string
   ): string;
 begin
   result := Format(' %s="%s"', [AttrName, Val]);
 end;
 
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: string
+  ): string;
+begin
+  // Check that Val is not malformed (according to XML standard).
+  result := SaveAttrRaw(AttrName, StringToXml(Val));
+end;
+
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: integer
   ): string;
 begin
-  result := SaveAttr(AttrName, IntToStr(Val));
+  result := SaveAttrRaw(AttrName, IntToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
   ): string;
 begin
-  result := SaveAttr(AttrName, FloatToStr(Val));
+  result := SaveAttrRaw(AttrName, FloatToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
@@ -787,14 +801,13 @@ begin
     result := SaveAttr(AttrName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
     RestoreFormatSettings;
   end else
-    result := SaveAttr(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
-//  result := SaveAttr(AttrName, DateToStr(Val));
+    result := SaveAttrRaw(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: boolean
   ): string;
 begin
-  result := SaveAttr(AttrName, BoolToStr(Val, 'true', 'false'));
+  result := SaveAttrRaw(AttrName, BoolToStr(Val, 'true', 'false'));
 end;
 
 function TEpiCustomBase.SaveAttrEnum(const AttrName: string;
