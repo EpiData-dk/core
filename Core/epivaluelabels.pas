@@ -186,16 +186,16 @@ begin
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Result +=
     Indent(LvL + 1) +
-      '<' + rsValueLabel +
-         ' order="' + IntToStr(Order) +
-        '" value="' + GetValueAsString;
+    '<ValueLabel' +
+    SaveAttr(rsOrder, Order) +
+    SaveAttr(rsValue, GetValueAsString);
   RestoreFormatSettings;
 
   // Add missing if set
   if IsMissingValue then
-    Result += '" missing="true">'
-  else
-    Result += '">';
+    Result += SaveAttr(rsMissing, IsMissingValue);
+
+  Result += '>';
 
   // Inset labels (language dependant)
   Result += LineEnding + FLabel.SaveToXml('', Lvl + 2) +

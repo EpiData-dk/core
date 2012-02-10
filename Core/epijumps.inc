@@ -190,7 +190,7 @@ var
   Attr: TDOMAttr;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrInt(Root, rsJumpReset);
+  JumpValue := LoadAttrInt(Root, rsJumpOn);
 end;
 
 procedure TEpiBoolJump.Assign(const AEpiCustomBase: TEpiCustomBase);
