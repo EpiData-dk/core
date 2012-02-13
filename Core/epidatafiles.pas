@@ -49,7 +49,8 @@ type
 implementation
 
 uses
-  epidocument, math, epistringutils, epiconvertutils;
+  epidocument, math, epistringutils, epiconvertutils,
+  DCPrijndael, DCPsha256;
 
 {$I epidatafiles_helper.inc}
 {$I epidatafiles.inc}

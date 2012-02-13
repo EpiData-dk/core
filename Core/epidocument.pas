@@ -19,6 +19,7 @@ type
   private
     FAdmin: TEpiAdmin;
     FLoading: boolean;
+    FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
     FVersion: integer;
@@ -52,9 +53,14 @@ type
     property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
+    // EpiData XML Version 2 perperties:
+    property   PassWord: string read FPassWord write FPassWord;
   end;
 
 implementation
+
+uses
+  epimiscutils;
 
 { TEpiDocument }
 
@@ -82,6 +88,10 @@ begin
     SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd') +
     SaveAttr(rsVersionAttr, Version) +
     SaveAttr('xml:lang', DefaultLang);
+
+  // Version 2 Properties:
+  if PassWord <> '' then
+    Result += SaveAttr(rsPassword, StrToSHA1Base64(PassWord));
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -149,6 +159,7 @@ end;
 procedure TEpiDocument.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
+  PW, Login, UserPW: String;
 begin
   // Root = <EpiData>
   FLoading := true;
@@ -160,6 +171,20 @@ begin
   // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
   XMLSettings.LoadFromXml(Node);
+
+  // XML Version 2:
+  if Version >= 2 then
+  begin
+    PW := LoadAttrString(Root, rsPassword, '', false);
+
+    if (PW <> '') and (Assigned(OnPassword)) then
+      OnPassword(Self, Login, UserPW);
+
+    if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
+      Raise EEpiBadPassword.Create('Incorrect Password');
+
+    PassWord := UserPW;
+  end;
 
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node);
@@ -182,6 +207,7 @@ begin
 
   FLoading := false;
   Modified := false;
+  FVersion := EPI_XML_DATAFILE_VERSION;
 end;
 
 function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;

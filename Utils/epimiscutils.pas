@@ -61,12 +61,14 @@ const
   procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
   procedure ZipFileToStream(St: TStream;   Const ZipFileName: string);
 
+  // Encryption Utils
+  function StrToSHA1Base64(const S: string): string;
 
 
 implementation
 
 uses
-  zipper, FileUtil;
+  zipper, FileUtil, DCPsha1, DCPbase64;
 
 type
   TEpiDialogFilterPair = record
@@ -234,6 +236,20 @@ begin
   TheUnZipper.OnDoneStream   := @StHandler.CreateStream; // This is only needed to prevent TUnZipper from FreeAndNil the stream.
   TheUnZipper.UnZipAllFiles;
   TheUnZipper.Free;
+end;
+
+function StrToSHA1Base64(const S: string): string;
+var
+  Sha1: TDCP_sha1;
+  Digest: string;
+begin
+  SetLength(Digest, 20);
+  Sha1 := TDCP_sha1.Create(nil);
+  Sha1.Init;
+  Sha1.UpdateStr(S);
+  Sha1.Final(Digest[1]);
+  result := Base64EncodeStr(Digest);
+  Sha1.Free;
 end;
 
 end.

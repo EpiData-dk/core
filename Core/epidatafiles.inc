@@ -242,40 +242,37 @@ var
   CurRec: Integer;
   CurField: Integer;
   S: String;
-
-  {$IFNDEF EPIOLDSAVE}
   Lst: TStringList;
   R: String;
-  {$ENDIF}
-  {$IFDEF EPICORETIMING}
-  T: TDateTime;
-  {$ENDIF}
-begin
-  {$IFDEF EPICORETIMING}
-  T := Now;
-  {$ENDIF}
+  EnCrypter: TDCP_rijndael;
+  Edoc: TEpiDocument;
 
-  {$IFNDEF EPIOLDSAVE}
+  function LocalEncrypt(S: String): string;
+  begin
+    if Assigned(EnCrypter) then
+      S := EnCrypter.EncryptString(S);
+    Result := S;
+  end;
+
+begin
   Lst := TStringList.Create;
   Lst.Add(Indent(Lvl) + '<' + rsRecords + '>');
-  {$ELSE}
-  result := Indent(Lvl) + '<' + rsRecords + '>' + LineEnding;
-  {$ENDIF}
 
-  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+  Edoc := TEpiDocument(RootOwner);
+  BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
-  {$IFNDEF EPIOLDSAVE}
+
+  EnCrypter := nil;
+  if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
+  begin
+    EnCrypter := TDCP_rijndael.Create(nil);
+    EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
+  end;
+
   for CurRec := 0 to Sz - 1 do
   begin
     R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
-
-{    if Verified[CurRec] then
-      R += rsRecordStatus + '="2">'
-    else if Deleted[CurRec] then
-      R += rsRecordStatus + '="1">'
-    else
-      R += rsRecordStatus + '="0">';}
 
     S := '';
     for CurField := 0 to Fc - 1 do
@@ -286,46 +283,14 @@ begin
         else
           S += Name + '=' + AsString[CurRec] + ',';
     Delete(S, Length(S), 1);
-    Lst.Add(R + S + '</' + rsRecord + '>');
-  end;
-  {$ELSE}
-  for CurRec := 0 to Sz - 1 do
-  begin
-    Result += Indent(Lvl + 1) + '<' + rsRecord + ' ';
-    if Verified[CurRec] then
-      Result += rsRecordStatus + '="2"'
-    else if Deleted[CurRec] then
-      Result += rsRecordStatus + '="1"'
-    else
-      Result += rsRecordStatus + '="0"';
-    Result += '>';
 
-    S := '';
-    for CurField := 0 to Fc - 1 do
-    with Fields[CurField] do
-      if not IsMissing[CurRec] then
-        if FieldType in StringFieldTypes + FloatFieldTypes then
-          S += ',' + Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll]))
-        else
-          S += ',' + Name + '=' + AsString[CurRec];
-    Delete(S, 1, 1);
-    Result += S + '</' + rsRecord + '>' + LineEnding;
+    Lst.Add(R + LocalEncrypt(S) + '</' + rsRecord + '>');
   end;
-  {$ENDIF}
   RestoreFormatSettings;
 
-  {$IFNDEF EPIOLDSAVE}
   Lst.Add(Indent(Lvl) + '</' + rsRecords + '>');
   Result := Lst.Text;
   Lst.Free;
-  {$ELSE}
-  Result += Indent(Lvl) + '</' + rsRecords + '>' + LineEnding;
-  {$ENDIF}
-
-  {$IFDEF EPICORETIMING}
-  T := Now - T;
-  WriteLn('Save Records: ', FormatDateTime('NN:SS:ZZZZ', T));
-  {$ENDIF}
 end;
 
 {$DEFINE EPIHASH}
@@ -430,6 +395,8 @@ var
 
 const
   DummyString = #243#176#80#80;  // Unicode private area: http://www.utf8-chartable.de/unicode-utf8-table.pl?start=983040
+var
+  DeCrypter: TDCP_rijndael;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -441,11 +408,20 @@ const
     result := StringReplace(S, DummyString, DecimalSeparator, [rfReplaceAll]);
   end;
 
+  function LocalDeCrypt(S: string): string;
+  begin
+    if Assigned(DeCrypter) then
+      S := DeCrypter.DecryptString(S);
+
+    Result := S;
+  end;
+
 begin
   // Root = <Records>
 
   CurRec := 0;
   Size := Root.ChildNodes.Count;
+  DeCrypter := nil;
 
 {$IFDEF EPIHASH}
   // This improves speed by 10-15%.
@@ -479,6 +455,12 @@ begin
   DataList.QuoteChar := '"';
   DataList.StrictDelimiter := true;
 
+  if (TEpiDocument(RootOwner).Version >= 2) and (TEpiDocument(RootOwner).PassWord <> '') then
+  begin
+    DeCrypter := TDCP_rijndael.Create(nil);
+    DeCrypter.InitStr(TEpiDocument(RootOwner).PassWord, TDCP_sha256);
+  end;
+
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
@@ -491,7 +473,7 @@ begin
       rsVerified: Verified[CurRec] := true;
     end;
 
-    DataList.DelimitedText := Dummyfy(UTF8Encode(Node.TextContent));
+    DataList.DelimitedText := Dummyfy(LocalDeCrypt(UTF8Encode(Node.TextContent)));
     for i := 0 to DataList.Count - 1 do
     begin
       FN := DataList.Names[i];
@@ -508,6 +490,7 @@ begin
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
+  if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
 end;
 

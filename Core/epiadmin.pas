@@ -15,6 +15,8 @@ type
   TEpiGroups = class;
   TEpiGroup = class;
 
+  EEpiBadPassword = class(Exception);
+
   TEpiAdminRight = (
     // Data access
     earCreate, earRead, earUpdate, earDelete, earVerify,
@@ -176,22 +178,7 @@ type
 implementation
 
 uses
-  DCPsha1, DCPbase64, epistringutils,
-  XMLRead, epidocument;
-
-function GetSHA1Base64EncodedStr(const Key: string): string;
-var
-  Sha1: TDCP_sha1;
-  Digest: string;
-begin
-  SetLength(Digest, 20);
-  Sha1 := TDCP_sha1.Create(nil);
-  Sha1.Init;
-  Sha1.UpdateStr(Key);
-  Sha1.Final(Digest[1]);
-  result := Base64EncodeStr(Digest);
-  Sha1.Free;
-end;
+  DCPbase64, epistringutils, XMLRead, epidocument, epimiscutils;
 
 { TEpiAdmin }
 
@@ -209,7 +196,7 @@ begin
   TheUser := Users.GetUserByLogin(Login);
   if not Assigned(TheUser) then exit;
 
-  result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + GetSHA1Base64EncodedStr(TheUser.Salt + Password + Login) = TheUser.Password;
+  result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
   if not result then exit;
 
   InitCrypt(TheUser.Salt + Password + Login);
@@ -490,7 +477,7 @@ begin
   FSalt := String(SaltByte);
 
   // Sha1 the new password and Base64 it..
-  FPassword := '$' + Base64EncodeStr(Salt) + '$' + GetSHA1Base64EncodedStr(Salt + AValue + Login);
+  FPassword := '$' + Base64EncodeStr(Salt) + '$' + StrToSHA1Base64(Salt + AValue + Login);
 
   // Scramble master password with own key.
   InitCrypt(Salt + AValue + Login);

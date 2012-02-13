@@ -9,7 +9,7 @@ uses
   Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo;
 
 const
-  EPI_XML_DATAFILE_VERSION = 1;
+  EPI_XML_DATAFILE_VERSION = 2;
 
 type
   TEpiCustomBase = class;
