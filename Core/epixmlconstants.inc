@@ -138,9 +138,6 @@ const
        rsRecordStatus    = 'status';
 
    rsRelations       = 'Relations';
-    rsPrimaryKeys     = 'PrimaryKeys';
-     rsPrimaryKey      = 'PrimaryKey';
-      rsFieldIdList     = 'FieldIdList';
     rsRelates         = 'Relates';
      rsRelate          = 'Relate';
       rsFieldId         = 'FieldId';

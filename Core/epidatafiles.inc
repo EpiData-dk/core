@@ -204,8 +204,10 @@ begin
                 FDataFile := Self;
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
                 Fields.OnValidateRename := @Self.ValidateRename;
+                Fields.Sorted := true;
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
                 Headings.OnValidateRename := @Self.ValidateRename;
+                Headings.Sorted := true;
               end;
             end;
 
@@ -494,6 +496,43 @@ begin
   RestoreFormatSettings;
 end;
 
+function TEpiDataFile.SaveKeyFields(Lvl: integer): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  if KeyFields.Count = 0 then
+    exit;
+
+  Result := Indent(Lvl) + '<KeyFields>' + LineEnding;
+
+  for i := 0 to KeyFields.Count -1 do
+  begin
+    Result += Indent(Lvl + 1) +
+      '<Key' + SaveAttr('fieldRef', KeyFields[i].Name) + '/>' + LineEnding;
+  end;
+  Result += Indent(Lvl) + '</KeyFields>' + LineEnding;
+end;
+
+procedure TEpiDataFile.LoadKeyFields(Root: TDOMNode);
+var
+  Node: TDOMNode;
+  FieldId: String;
+begin
+  // Root = <KeyFields>
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    CheckNode(Node, 'Key');
+
+    FieldId := LoadAttrString(Node, 'fieldRef');
+    LinkMap.AddLink(ltKeyField, KeyFields, FieldId);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
 begin
   if AValue then
@@ -571,8 +610,8 @@ begin
   // Same section! Regular compare
   if S1 = S2 then
   begin
-    Result := Compare(C1, C2);
-    Exit;
+    // C1 := C1
+    // C2 := C2
   end else
 
   // One section is main
@@ -606,19 +645,26 @@ begin
   FSections.ItemOwner := true;
   FSections.RegisterOnChangeHook(@LocalEventHook, true);
   FSections.OnValidateRename := @ValidateRename;
+  FSections.Sorted := true;
 
   // The "all" containers.
   FAllFields := TEpiFields.Create(Self);
   FAllFields.OnSort := @ControlItemListSort;
+  FAllFields.Sorted := true;
   FAllHeadings := TEpiHeadings.Create(Self);
   FAllHeadings.OnSort := @ControlItemListSort;
+  FAllHeadings.Sorted := true;
 
   // The special main section...
   FMainSection := NewSection;
   FMainSection.Name := 'MAIN';
 
+  // Special field to hold status of current record.
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.Size := Size;
+
+  // Container for Key Fields.
+  FKeyFields := TEpiFields.Create(Self);
 
   RegisterClasses([Caption, Notes, Sections]);
 end;
@@ -649,7 +695,8 @@ end;
 function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
-    SaveRecords(Lvl + 1);
+    SaveRecords(Lvl + 1) +
+    SaveKeyFields(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -678,6 +725,10 @@ begin
   Caption.LoadFromXml(Root);
   FVersion := LoadAttrString(Root, rsVersion, FVersion, false);
   FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
+
+  // VERSION 2 PROPERTY
+  if LoadNode(Node, Root, 'KeyFields', false) then
+    LoadKeyFields(Node);
 
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node);
@@ -715,6 +766,8 @@ begin
         TEpiCombineStringCalc(LinkMap.Objects[i]).Field3 := AField;
       ltCompare:
         TEpiComparison(LinkMap.Objects[i]).CompareField := AField;
+      ltKeyField:
+        TEpiFields(LinkMap.Objects[i]).AddItem(AField);
     end;
   end;
   LinkMap.Clear;

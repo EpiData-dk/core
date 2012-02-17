@@ -52,6 +52,8 @@ type
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
+    function    SaveKeyFields(Lvl: integer): string;
+    procedure   LoadKeyFields(Root: TDOMNode);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
@@ -89,6 +91,7 @@ type
   private
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
+    FKeyFields: TEpiFields;
     FNotes:     TEpiTranslatedText;
     FVersion:   string;
     procedure   SetVersion(const AValue: string);
@@ -97,6 +100,7 @@ type
     property    Created: TDateTime read FCreated;
     property    Version: string read FVersion write SetVersion;
     property    Notes: TEpiTranslatedText read FNotes;
+    property    KeyFields: TEpiFields read FKeyFields;
 
   { Update Overrides}
   public

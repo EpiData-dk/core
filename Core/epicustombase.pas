@@ -266,6 +266,8 @@ type
     procedure   SetItemOwner(const AValue: boolean);
     procedure   OnChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    procedure   RegisterItem(Item: TEpiCustomItem);
+    procedure   UnRegisterItem(Item: TEpiCustomItem);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     function    GetCount: Integer; virtual;
@@ -276,6 +278,9 @@ type
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
+  { Standard Item Methods }
+  public
+    procedure   Clear;
     function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; virtual;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
@@ -287,7 +292,6 @@ type
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
-
   { Naming and Validation }
   private
     FOnGetPrefix: TEpiPrefixEvent;
@@ -300,43 +304,49 @@ type
     function  ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; override;
     property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
     property  OnGetPrefix: TEpiPrefixEvent read FOnGetPrefix write FOnGetPrefix;
-
   { New Item Hook }
   private
     FOnNewItemClass: TEpiOnNewItemClass;
   public
     property   OnNewItemClass: TEpiOnNewItemClass read FOnNewItemClass write FOnNewItemClass;
-
   { Change-event hooks overrides }
   public
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
-
   { Tanslation overrides }
   public
     procedure SetLanguage(Const LangCode: string;
       Const DefaultLanguage: boolean); override;
-
   { Class properties overrides }
   protected
     procedure SetModified(const AValue: Boolean); override;
     procedure DoAssignList(Const EpiCustomList: TEpiCustomList); virtual;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  { Sorting }
+  private
+    FOnSort: TListSortCompare;
+    FSorted: boolean;
+    procedure SetSorted(AValue: boolean);
+  protected
+    procedure DoSort; virtual;
+  public
+    procedure Sort;
+    property  Sorted: boolean read FSorted write SetSorted;
+    property  OnSort: TListSortCompare read FOnSort write FOnSort;
   end;
 
   { TEpiCustomControlItemList }
 
   TEpiCustomControlItemList = class(TEpiCustomList)
   private
-    FOnSort: TListSortCompare;
     procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-    procedure Sort;
+  protected
+    procedure DoSort; override;
   public
-    procedure   AddItem(Item: TEpiCustomItem); override;
-    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
-    function    DeleteItem(Index: integer): TEpiCustomItem; override;
-    procedure   RemoveItem(Item: TEpiCustomItem); override;
-    property    OnSort: TListSortCompare read FOnSort write FOnSort;
+    procedure AddItem(Item: TEpiCustomItem); override;
+    procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function  DeleteItem(Index: integer): TEpiCustomItem; override;
+    procedure RemoveItem(Item: TEpiCustomItem); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -1335,10 +1345,36 @@ begin
   end;
 end;
 
+procedure TEpiCustomList.RegisterItem(Item: TEpiCustomItem);
+begin
+  if ItemOwner then Item.FOwner := Self;
+  Item.RegisterOnChangeHook(@OnChangeHook, true);
+
+  if ItemOwner then
+  begin
+    Item.SetLanguage(FDefaultLang, true);
+    Item.SetLanguage(FCurrentLang, false);
+  end;
+
+  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+  if Sorted then Sort;
+end;
+
+procedure TEpiCustomList.UnRegisterItem(Item: TEpiCustomItem);
+begin
+  if not (ebsDestroying in Item.State) then
+    Item.UnRegisterOnChangeHook(@OnChangeHook);
+  if ItemOwner then Item.FOwner := nil;
+  DoChange(eegCustomBase, Word(ecceDelItem), Item);
+  if Sorted then Sort;
+end;
+
 constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FList := TFPList.Create;
+  FItemOwner := false;
+  FSorted := false;
 end;
 
 function TEpiCustomList.GetCount: Integer;
@@ -1431,6 +1467,12 @@ begin
   result := inherited SaveToXml(Content, Lvl);
 end;
 
+procedure TEpiCustomList.Clear;
+begin
+  while Count > 0 do
+    DeleteItem(Count - 1);
+end;
+
 function TEpiCustomList.NewItem(ItemClass: TEpiCustomItemClass
   ): TEpiCustomItem;
 begin
@@ -1448,17 +1490,8 @@ begin
   if (not ValidateRename(Item.Name, false)) then
     raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
 
-  if ItemOwner then Item.FOwner := Self;
   FList.Add(Item);
-  Item.RegisterOnChangeHook(@OnChangeHook, true);
-
-  if ItemOwner then
-  begin
-    Item.SetLanguage(FDefaultLang, true);
-    Item.SetLanguage(FCurrentLang, false);
-  end;
-
-  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+  RegisterItem(Item);
 end;
 
 procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
@@ -1466,37 +1499,21 @@ procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
 begin
   if (not ValidateRename(Item.Name, false)) then
     raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
-
-  if ItemOwner then Item.FOwner := Self;
   FList.Insert(Index, Item);
-  Item.RegisterOnChangeHook(@OnChangeHook, true);
-
-  if ItemOwner then
-  begin
-    Item.SetLanguage(FDefaultLang, true);
-    Item.SetLanguage(FCurrentLang, false);
-  end;
-
-  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+  RegisterItem(Item);
 end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
   FList.Remove(Item);
-  if not (ebsDestroying in Item.State) then
-    Item.UnRegisterOnChangeHook(@OnChangeHook);
-  if ItemOwner then Item.FOwner := nil;
-  DoChange(eegCustomBase, Word(ecceDelItem), Item);
+  UnRegisterItem(Item);
 end;
 
 function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := TEpiCustomItem(FList[Index]);
   FList.Delete(Index);
-  if not (ebsDestroying in Result.State) then
-    Result.UnRegisterOnChangeHook(@OnChangeHook);
-  if ItemOwner then Result.FOwner := nil;
-  DoChange(eegCustomBase, Word(ecceDelItem), Result);
+  UnRegisterItem(Result);
 end;
 
 function TEpiCustomList.GetItemByName(AName: string): TEpiCustomItem;
@@ -1590,6 +1607,25 @@ begin
     DoAssignList(TEpiCustomList(AEpiCustomBase));
 end;
 
+procedure TEpiCustomList.SetSorted(AValue: boolean);
+begin
+  if FSorted = AValue then Exit;
+  FSorted := AValue;
+end;
+
+procedure TEpiCustomList.DoSort;
+begin
+  if not Sorted then exit;
+
+  if Assigned(FOnSort) then
+    FList.Sort(FOnSort)
+end;
+
+procedure TEpiCustomList.Sort;
+begin
+  DoSort;
+end;
+
 { TEpiCustomControlItemList }
 
 function SortControlItems(Item1, Item2: Pointer): Integer;
@@ -1615,30 +1651,26 @@ begin
   if (EventGroup <> eegCustomBase) then exit;
 
   case TEpiCustomChangeEventType(EventType) of
-    ecceDestroy: ;
-    ecceUpdate,
-    ecceAddItem,
-    ecceDelItem, ecceSetItem,
-    ecceText, ecceName:
-      Exit;
     ecceSetTop:  Sort;
     ecceSetLeft: Sort;
   end;
 end;
 
-procedure TEpiCustomControlItemList.Sort;
+procedure TEpiCustomControlItemList.DoSort;
 begin
-  if Assigned(FOnSort) then
-    FList.Sort(FOnSort)
-  else
-    FList.Sort(@SortControlItems);
+  if not Assigned(FOnSort) then
+    FOnSort := @SortControlItems;
+
+  inherited DoSort;
+
+  if FOnSort = @SortControlItems then
+    FOnSort := nil;
 end;
 
 procedure TEpiCustomControlItemList.AddItem(Item: TEpiCustomItem);
 begin
   inherited AddItem(Item);
   Item.RegisterOnChangeHook(@ChangeHook, true);
-  Sort;
 end;
 
 procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
@@ -1646,21 +1678,18 @@ procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
 begin
   inherited InsertItem(Index, Item);
   Item.RegisterOnChangeHook(@ChangeHook, true);
-  Sort;
 end;
 
 function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := inherited DeleteItem(Index);
   Result.UnRegisterOnChangeHook(@ChangeHook);
-  Sort;
 end;
 
 procedure TEpiCustomControlItemList.RemoveItem(Item: TEpiCustomItem);
 begin
-  inherited RemoveItem(Item);
   Item.UnRegisterOnChangeHook(@ChangeHook);
-  Sort;
+  inherited RemoveItem(Item);
 end;
 
 end.
