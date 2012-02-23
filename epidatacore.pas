@@ -2,7 +2,7 @@
   This source is only used to compile and install the package.
  }
 
-unit epidatacore; 
+unit epidatacore;
 
 interface
 
@@ -14,7 +14,7 @@ uses
   epireport_fieldlist_simple, epireport_filelist, epireport_htmlgenerator, 
   epireport_project_overview, epireport_types, epireport_valuelabels, 
   episervice_ipc, episervice_ipctypes, epiconvertutils, epimiscutils, 
-  epistringutils, epiversionutils, UniqueInstanceRaw;
+  epistringutils, epiversionutils, UniqueInstanceRaw, epiintegritycheck;
 
 implementation
 

@@ -33,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="1"/>
-    <Files Count="46">
+    <Files Count="47">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -218,6 +218,10 @@
         <Filename Value="Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
       </Item46>
+      <Item47>
+        <Filename Value="Utils/epiintegritycheck.pas"/>
+        <UnitName Value="epiintegritycheck"/>
+      </Item47>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
