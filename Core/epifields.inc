@@ -322,6 +322,14 @@ begin
   FSize := AValue;
 end;
 
+function TEpiField.Compare(i, j: integer): integer;
+begin
+  if IsMissing[i] and IsMissing[j] then exit(0);        // Both missing, sort even.
+  if IsMissing[i] and (not IsMissing[j]) then exit(1); // A missing, sort A last
+  if (not IsMissing[i]) and IsMissing[j] then exit(-1);  // B missing, sort A first
+  result := DoCompare(i,j);                             // Compare normal values.
+end;
+
 procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
 var
   OrgField: TEpiField absolute AEpiCustomBase;
@@ -733,7 +741,7 @@ begin
   result := NA_INT;
 end;
 
-function TEpiIntField.Compare(i, j: integer): integer;
+function TEpiIntField.DoCompare(i, j: integer): integer;
 begin
   result := AsInteger[i] - AsInteger[j];
 end;
@@ -972,7 +980,7 @@ begin
   result := NA_FLOAT;
 end;
 
-function TEpiFloatField.Compare(i, j: integer): integer;
+function TEpiFloatField.DoCompare(i, j: integer): integer;
 begin
   Result := Sign(AsFloat[i] - AsFloat[j]);
 end;
@@ -1234,7 +1242,7 @@ begin
   result := NA_BOOL;
 end;
 
-function TEpiBoolField.Compare(i, j: integer): integer;
+function TEpiBoolField.DoCompare(i, j: integer): integer;
 begin
   Result := Sign(AsBoolean[i]) - Sign(AsBoolean[j]);
 end;
@@ -1472,8 +1480,9 @@ begin
   result := NA_STRING;
 end;
 
-function TEpiStringField.Compare(i, j: integer): integer;
+function TEpiStringField.DoCompare(i, j: integer): integer;
 begin
+  // TODO: Use UTF8Compare[Text|Str]
   Result := CompareStr(AsString[i], AsString[j]);
 end;
 
@@ -1638,7 +1647,7 @@ begin
   result := NA_DATE;
 end;
 
-function TEpiDateField.Compare(i, j: integer): integer;
+function TEpiDateField.DoCompare(i, j: integer): integer;
 begin
   Result := AsDate[i] - AsDate[j];
 end;
@@ -1987,7 +1996,7 @@ begin
   result := NA_TIME;
 end;
 
-function TEpiDateTimeField.Compare(i, j: integer): integer;
+function TEpiDateTimeField.DoCompare(i, j: integer): integer;
 begin
   Result := Sign(AsDateTime[i] - AsDateTime[j]);
 end;

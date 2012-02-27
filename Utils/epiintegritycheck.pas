@@ -43,10 +43,18 @@ var
   j: Integer;
   i: Integer;
   HashMap: TFPDataHashTable;
-  L: Integer;
   T1: QWord;
   T2: QWord;
   T3: Integer;
+  L: Integer;
+
+  procedure AddFailedRecord(RecNo: Integer);
+  begin
+    Inc(L);
+    SetLength(FailedRecords, L);
+    FailedRecords[L-1] := RecNo;
+  end;
+
 begin
   {
     Finding index errors - IDEA:
@@ -87,7 +95,12 @@ begin
     // Concat K1, ..., Kn
     S := '';
     for j := 0 to KeyFields.Count - 1 do
-      S += KeyFields[j].AsString[i];
+      if KeyFields[j].IsMissing[i] then
+      begin
+        AddFailedRecord(i);
+        if StopOnFail then break;
+      end else
+        S += KeyFields[j].AsString[i];
 
     // 1: Hash (K1...) -> A
     try
@@ -97,10 +110,7 @@ begin
       on E: EDuplicate do
         begin
           // 3 + 4 : Since .Add(..) already checks key!
-          Inc(L);
-          SetLength(FailedRecords, L);
-          FailedRecords[L-1] := i;
-
+          AddFailedRecord(i);
           if StopOnFail then break;
         end;
     end;

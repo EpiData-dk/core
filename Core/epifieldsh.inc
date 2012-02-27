@@ -148,9 +148,10 @@ type
     procedure   SetSize(const AValue: Integer); virtual;
     property    Capacity: Integer read GetCapacity write SetCapacity;
     property    Settings: TEpiXMLSettings read GetSettings;
+    function    DoCompare(i, j: integer): integer; virtual; abstract;
   public
     procedure   Exchange(i,j: integer); virtual; abstract;
-    function    Compare(i,j: integer): integer; virtual; abstract;
+    function    Compare(i,j: integer): integer;
     function    FormatString(Const FillSpace: boolean = false): string; virtual; abstract;
     property    Size:      Integer read GetSize write SetSize;
     property    DataFile: TEpiDataFile read FDataFile;
@@ -205,10 +206,10 @@ type
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetHasDefaultValue(const AValue: boolean); override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
@@ -250,10 +251,10 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -296,10 +297,10 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
@@ -341,10 +342,10 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
@@ -404,10 +405,10 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
@@ -449,10 +450,10 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
   public
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
     property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;
