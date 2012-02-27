@@ -17,8 +17,15 @@ type
    private
      //
    public
+     // Checks the datafile for index integrity.
+     //   out FailedRecords: Array of int returned with record no. to record where more than one exists.
+     //   StopOnFail: if TRUE then integrity check stops on first found doublicate record.
+     //   KeyFields: if assigned, this list is used as index fields instead of Datafiles key fields.
+     //   result: true if NO doublicate records found, otherwise false.
      function IndexIntegrity(Const DataFile: TEpiDataFile;
-       out FailedRecords: TBoundArray; StopOnFail: boolean = false): boolean;
+       out FailedRecords: TBoundArray;
+       StopOnFail: boolean = false;
+       KeyFields: TEpiFields = nil): boolean;
   end;
 
 implementation
@@ -29,9 +36,9 @@ uses
 { TEpiIntegrityChecker }
 
 function TEpiIntegrityChecker.IndexIntegrity(const DataFile: TEpiDataFile; out
-  FailedRecords: TBoundArray; StopOnFail: boolean): boolean;
+  FailedRecords: TBoundArray; StopOnFail: boolean; KeyFields: TEpiFields
+  ): boolean;
 var
-  KeyFields: TEpiFields;
   S: String;
   j: Integer;
   i: Integer;
@@ -55,7 +62,9 @@ begin
          else
            New Hash Alg.
   }
-  KeyFields := DataFile.KeyFields;
+  if not Assigned(KeyFields) then
+    KeyFields := DataFile.KeyFields;
+
   if KeyFields.Count = 0 then exit(true);
 
   HashMap := TFPDataHashTable.CreateWith(DataFile.Size, @RSHash);
@@ -64,6 +73,17 @@ begin
 //  T1 := GetTickCount64;
   for i := 0 to DataFile.Size - 1 do
   begin
+    {$IFDEF EPI_INTEGRITY_DEBUG}
+    // Since this is (most likely) run through debugger during
+    // development AND raising exceptions wiht debugger attacher
+    // is EXTREMELY slow - we skip if more than 100 dublicates are
+    // found.
+    // Speed is not a problem when compiling for release and with
+    // no debugger.
+    if (L >= 100) and (DataFile.Size > 1000) then
+      break;
+    {$ENDIF}
+
     // Concat K1, ..., Kn
     S := '';
     for j := 0 to KeyFields.Count - 1 do
