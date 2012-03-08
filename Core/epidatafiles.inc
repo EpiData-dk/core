@@ -876,3 +876,19 @@ begin
   Fields.EndUpdate;
   inherited EndUpdate;
 end;
+
+function TEpiDataFile.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoCloneCreate(AOwner);
+  with TEpiDataFile(Result) do
+  begin
+    Sections.RemoveItem(MainSection);
+    MainSection.Free;
+  end;
+end;
+
+function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+end;

@@ -251,6 +251,10 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -269,6 +273,10 @@ type
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
   TEpiCustomControlItemClass = class of TEpiCustomControlItem;
 
@@ -351,6 +359,10 @@ type
     procedure Sort;
     property  Sorted: boolean read FSorted write SetSorted;
     property  OnSort: TListSortCompare read FOnSort write FOnSort;
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiCustomControlItemList }
@@ -1348,6 +1360,13 @@ begin
   result := DoValidateRename(NewName);
 end;
 
+function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiCustomItem(Result).FName := FName;
+end;
+
 { TEpiCustomControlItem }
 
 function TEpiCustomControlItem.SaveAttributesToXml: string;
@@ -1396,6 +1415,17 @@ begin
   if Left = 0 then
     Left := OrgControlItem.Left;
   EndUpdate;
+end;
+
+function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiCustomControlItem(Result) do
+  begin
+    FTop  := Self.FTop;
+    FLeft := Self.FLeft;
+  end;
 end;
 
 { TEpiCustomList }
@@ -1697,6 +1727,21 @@ end;
 procedure TEpiCustomList.Sort;
 begin
   DoSort;
+end;
+
+function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+  NItem: TEpiCustomItem;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  for i := 0 to Count - 1 do
+  begin
+    NItem := TEpiCustomItem(Items[i].DoClone(Result));
+    TEpiCustomList(Result).AddItem(NItem);
+  end;
 end;
 
 { TEpiCustomControlItemList }
