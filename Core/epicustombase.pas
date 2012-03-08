@@ -180,8 +180,18 @@ type
     // not be copied/assigned/freed etc.
     // It is entirely up to the user to keep track of it's use throught a program.
     property    ObjectData: PtrUInt read FObjectData write FObjectData;
+
+  { Cloning }
+  protected
+    // DoCloneCreate should only be overridden if a special constructor is used.
+    function    DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; virtual;
+    // DoClone should normally be overridden, since this is where data should be copied.
+    function    DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase = nil): TEpiCustomBase; virtual;
+  public
+    function    Clone: TEpiCustomBase;
   end;
   {$static off}
+  TEpiCustomBaseClass = class of TEpiCustomBase;
 
   { TEpiTranslatedText }
 
@@ -205,6 +215,11 @@ type
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
     property    TextLang[LangCode: string]: string read GetText write SetText;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiTranslatedTextWrapper }
@@ -216,6 +231,9 @@ type
     constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
   end;
 
   { TEpiCustomItem }
@@ -424,6 +442,38 @@ begin
   for i := 0 to OrgBase.ClassList.Count - 1 do
     TEpiCustomBase(ClassList[i]).Assign(TEpiCustomBase(OrgBase.ClassList[i]));
   EndUpdate;
+end;
+
+function TEpiCustomBase.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  result := TEpiCustomBaseClass(Self.ClassType).Create(AOwner);
+end;
+
+function TEpiCustomBase.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  OrgClass: TEpiCustomBase;
+  NewClass: TEpiCustomBase;
+  i: Integer;
+begin
+  Result := Dest;
+  if not Assigned(Result) then
+    Result := DoCloneCreate(AOwner);
+
+  // TODO: OnChangeEvents - Copy or Not?
+
+  for i := 0 to Result.ClassList.Count - 1 do
+  begin
+    NewClass := TEpiCustomBase(Result.ClassList[i]);
+    OrgClass := TEpiCustomBase(ClassList[i]);
+
+    OrgClass.DoClone(Result, NewClass);
+  end;
+end;
+
+function TEpiCustomBase.Clone: TEpiCustomBase;
+begin
+  Result := DoClone(nil);
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
@@ -1157,6 +1207,23 @@ begin
   EndUpdate;
 end;
 
+function TEpiTranslatedText.DoCloneCreate(AOwner: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := TEpiTranslatedText.Create(AOwner, XMLName);
+end;
+
+function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiTranslatedText(Result) do
+  begin
+    FTextList.Assign(Self.FTextList);
+    FCurrentText := Self.FCurrentText;
+  end;
+end;
+
 procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
@@ -1208,6 +1275,12 @@ begin
   // Root = Parent for FNodeName (since this is a wrapped object.
   if LoadNode(NRoot, Root, FNodeName, false) then
     inherited LoadFromXml(NRoot);
+end;
+
+function TEpiTranslatedTextWrapper.DoCloneCreate(AOwner: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
 end;
 
 { TEpiCustomItem }
