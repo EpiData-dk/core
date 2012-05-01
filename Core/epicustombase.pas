@@ -1408,7 +1408,7 @@ function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
 var
   i: Integer;
 begin
-  i := Count;
+  i := Count + 1;
   repeat
     result := DoPrefix + IntToStr(i);
     Inc(i);
