@@ -83,7 +83,7 @@ begin
   begin
     {$IFDEF EPI_INTEGRITY_DEBUG}
     // Since this is (most likely) run through debugger during
-    // development AND raising exceptions wiht debugger attacher
+    // development AND raising exceptions wiht debugger attached
     // is EXTREMELY slow - we skip if more than 100 dublicates are
     // found.
     // Speed is not a problem when compiling for release and with

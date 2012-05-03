@@ -1446,8 +1446,10 @@ begin
     // ensures that destroy notifications from Items is defered until after
     // the item is removed from the list.
     F := TEpiCustomItem(FList.Last);
-    // Deleting is faster than removing...
-    FList.Delete(FList.Count - 1);
+    RemoveItem(F);
+
+{    // Deleting is faster than removing...
+    FList.Delete(FList.Count - 1);     }
     if ItemOwner then
       FreeAndNil(F);
   end;
