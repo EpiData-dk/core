@@ -22,18 +22,27 @@ type
      //   StopOnFail: if TRUE then integrity check stops on first found doublicate record.
      //   KeyFields: if assigned, this list is used as index fields instead of Datafiles key fields.
      //   result: true if NO doublicate records found, otherwise false.
-     function IndexIntegrity(Const DataFile: TEpiDataFile;
-       out FailedRecords: TBoundArray;
+     function IndexIntegrity(const DataFile: TEpiDataFile; out
+       FailedRecords: TBoundArray;
        StopOnFail: boolean = false;
-       KeyFields: TEpiFields = nil): boolean;
+       KeyFields: TEpiFields = nil
+  ): boolean;
   end;
 
 implementation
 
 uses
-  contnrs, LCLIntf;
+  contnrs, LCLIntf, fgl;
+
+type
+  TIntList = specialize TFPGList<Integer>;
 
 { TEpiIntegrityChecker }
+
+function CompareInt(Const Item1, Item2: Integer): Integer;
+begin
+  result := Item1 - Item2;
+end;
 
 function TEpiIntegrityChecker.IndexIntegrity(const DataFile: TEpiDataFile; out
   FailedRecords: TBoundArray; StopOnFail: boolean; KeyFields: TEpiFields
@@ -43,16 +52,16 @@ var
   j: Integer;
   i: Integer;
   HashMap: TFPDataHashTable;
-  T1: QWord;
-  T2: QWord;
-  T3: Integer;
-  L: Integer;
+  Failed: Boolean;
+  CollisionRecList: TIntList;
 
-  procedure AddFailedRecord(RecNo: Integer);
+  procedure AddFailedRecord(RecNo: Integer; CollisionRecNo: Integer = -1);
   begin
-    Inc(L);
-    SetLength(FailedRecords, L);
-    FailedRecords[L-1] := RecNo;
+    if (CollisionRecNo <> -1) and
+       (CollisionRecList.IndexOf(CollisionRecNo) = -1) then
+      CollisionRecList.Add(CollisionRecNo);
+
+    CollisionRecList.Add(RecNo);
   end;
 
 begin
@@ -75,10 +84,9 @@ begin
 
   if KeyFields.Count = 0 then exit(true);
 
+  CollisionRecList := TIntList.Create ;
   HashMap := TFPDataHashTable.CreateWith(DataFile.Size, @RSHash);
-  L := 0;
 
-//  T1 := GetTickCount64;
   for i := 0 to DataFile.Size - 1 do
   begin
     {$IFDEF EPI_INTEGRITY_DEBUG}
@@ -88,9 +96,10 @@ begin
     // found.
     // Speed is not a problem when compiling for release and with
     // no debugger.
-    if (L >= 100) and (DataFile.Size > 1000) then
+    if (CollisionRecList.Count >= 100) and (DataFile.Size > 1000) then
       break;
     {$ENDIF}
+    Failed := false;
 
     // Concat K1, ..., Kn
     S := '';
@@ -98,9 +107,12 @@ begin
       if KeyFields[j].IsMissing[i] then
       begin
         AddFailedRecord(i);
-        if StopOnFail then break;
+        Failed := true;
       end else
         S += KeyFields[j].AsString[i];
+
+    if Failed and StopOnFail then break;
+    if Failed then continue;
 
     // 1: Hash (K1...) -> A
     try
@@ -110,18 +122,21 @@ begin
       on E: EDuplicate do
         begin
           // 3 + 4 : Since .Add(..) already checks key!
-          AddFailedRecord(i);
+          AddFailedRecord(i, PtrUInt(THTDataNode(HashMap.Find(S)).Data));
           if StopOnFail then break;
         end;
     end;
     // 3: No -> ... (already added in HashMap.Add).
   end;
-{  T2 := GetTickCount64;
-  T3 := t2 - t1;
-  WriteLn('Tick Count: ', T3);
-  WriteLn('L: ', L);      }
 
-  Result := (L = 0);
+  CollisionRecList.Sort(@CompareInt);
+  SetLength(FailedRecords, CollisionRecList.Count);
+  for i := 0 to CollisionRecList.Count - 1 do
+    FailedRecords[i] := CollisionRecList.Items[i];
+
+  Result := (CollisionRecList.Count = 0);
+  CollisionRecList.Free;
+  HashMap.Free;
 end;
 
 end.
