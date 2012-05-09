@@ -23,10 +23,8 @@ type
      //   KeyFields: if assigned, this list is used as index fields instead of Datafiles key fields.
      //   result: true if NO doublicate records found, otherwise false.
      function IndexIntegrity(const DataFile: TEpiDataFile; out
-       FailedRecords: TBoundArray;
-       StopOnFail: boolean = false;
-       KeyFields: TEpiFields = nil
-  ): boolean;
+       FailedRecords: TBoundArray; out FailValues: TBoundArray;
+       StopOnFail: boolean = false; KeyFields: TEpiFields = nil): boolean;
   end;
 
 implementation
@@ -35,7 +33,7 @@ uses
   contnrs, LCLIntf, fgl;
 
 type
-  TIntList = specialize TFPGList<Integer>;
+  TIntegrityList = specialize TFPGMap<Integer, Integer>;  // Maps RecNo -> FailValue
 
 { TEpiIntegrityChecker }
 
@@ -45,23 +43,24 @@ begin
 end;
 
 function TEpiIntegrityChecker.IndexIntegrity(const DataFile: TEpiDataFile; out
-  FailedRecords: TBoundArray; StopOnFail: boolean; KeyFields: TEpiFields
-  ): boolean;
+  FailedRecords: TBoundArray; out FailValues: TBoundArray; StopOnFail: boolean;
+  KeyFields: TEpiFields): boolean;
 var
   S: String;
   j: Integer;
   i: Integer;
   HashMap: TFPDataHashTable;
   Failed: Boolean;
-  CollisionRecList: TIntList;
+  CollisionRecList: TIntegrityList;
 
   procedure AddFailedRecord(RecNo: Integer; CollisionRecNo: Integer = -1);
   begin
-    if (CollisionRecNo <> -1) and
-       (CollisionRecList.IndexOf(CollisionRecNo) = -1) then
-      CollisionRecList.Add(CollisionRecNo);
-
-    CollisionRecList.Add(RecNo);
+    if CollisionRecNo = -1 then
+      CollisionRecList.Add(RecNo, 2)  // Failed because of missing value.
+    else begin
+      CollisionRecList.Add(RecNo, 1); // Failed dues to dublicate.
+      CollisionRecList.Add(CollisionRecNo, 1);  // Also add collision record - if already present previous entry is ignored.
+    end;
   end;
 
 begin
@@ -84,7 +83,10 @@ begin
 
   if KeyFields.Count = 0 then exit(true);
 
-  CollisionRecList := TIntList.Create ;
+  CollisionRecList := TIntegrityList.Create ;
+  CollisionRecList.OnKeyCompare := @CompareInt;
+  CollisionRecList.Sorted := true;
+  CollisionRecList.Duplicates := dupIgnore;
   HashMap := TFPDataHashTable.CreateWith(DataFile.Size, @RSHash);
 
   for i := 0 to DataFile.Size - 1 do
@@ -129,10 +131,13 @@ begin
     // 3: No -> ... (already added in HashMap.Add).
   end;
 
-  CollisionRecList.Sort(@CompareInt);
   SetLength(FailedRecords, CollisionRecList.Count);
+  SetLength(FailValues, CollisionRecList.Count);
   for i := 0 to CollisionRecList.Count - 1 do
-    FailedRecords[i] := CollisionRecList.Items[i];
+  begin
+    FailedRecords[i] := CollisionRecList.Keys[i];
+    FailValues[i]    := CollisionRecList.Data[i];
+  end;
 
   Result := (CollisionRecList.Count = 0);
   CollisionRecList.Free;
