@@ -194,3 +194,14 @@ begin
   Width  := OrgSection.Width;
   EndUpdate;
 end;
+
+function TEpiSection.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiSection(Result) do
+  begin
+    FWidth := Self.FWidth;
+    FHeight := Self.FHeight;
+  end;
+end;

@@ -375,6 +375,11 @@ begin
   EndUpdate;
 end;
 
+function TEpiField.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := CreateField(AOwner, FieldType);
+end;
+
 constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);

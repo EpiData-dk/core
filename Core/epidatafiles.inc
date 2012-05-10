@@ -889,6 +889,19 @@ end;
 
 function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
   ): TEpiCustomBase;
+var
+  i: Integer;
 begin
   Result := inherited DoClone(AOwner, Dest);
+  with TEpiDataFile(Result) do
+  begin
+    FVersion := Self.FVersion;
+    FCreated := Self.FCreated;
+  end;
+
+  // Clone list of key-fields.
+  // at this point all existing fields in this DataFile have been cloned,
+  // hence we can do a lookup in result list for comparable names.
+  for i := 0 to Self.KeyFields.Count - 1 do
+    TEpiDataFile(Result).KeyFields.AddItem(TEpiDataFile(Result).Fields.FieldByName[Self.KeyFields[i].Name]);
 end;

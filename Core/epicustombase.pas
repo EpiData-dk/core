@@ -1737,10 +1737,23 @@ var
 begin
   Result := inherited DoClone(AOwner, Dest);
 
+  // Set itemowner before copying the items - otherwise
+  // owner is not set properly.
+  TEpiCustomList(Result).FItemOwner := FItemOwner;
   for i := 0 to Count - 1 do
   begin
-    NItem := TEpiCustomItem(Items[i].DoClone(Result));
-    TEpiCustomList(Result).AddItem(NItem);
+    NItem := TEpiCustomItem(Items[i].DoCloneCreate(Result));
+    if TEpiCustomList(Result).IndexOf(NItem) = -1 then
+      TEpiCustomList(Result).AddItem(NItem);
+    Items[i].DoClone(Result, NItem);
+  end;
+
+  // Set Sorting last, otherwise each AddItem triggers a sort.
+  with TEpiCustomList(Result) do
+  begin
+    FOnSort := Self.FOnSort;
+    FSorted := Self.FSorted;
+    Sort;
   end;
 end;
 

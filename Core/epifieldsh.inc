@@ -170,6 +170,9 @@ type
     function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
   end;
 
   { TEpiIntField }
