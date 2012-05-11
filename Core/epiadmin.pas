@@ -114,15 +114,19 @@ type
     // - this gives approx. 2^32 different ways to store the same password.
     FSalt: string;
     function GetAdmin: TEpiAdmin;
+    function GetName: string;
     procedure SetExpireDate(const AValue: TDateTime);
     procedure SetFirstName(const AValue: string);
     procedure SetGroup(const AValue: TEpiGroup);
     procedure SetLastLogin(const AValue: TDateTime);
     procedure SetLastName(const AValue: string);
     procedure SetMasterPassword(const AValue: string);
+    procedure SetName(AValue: string);
     procedure SetPassword(const AValue: string);
   protected
     property  Salt: string read FSalt;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -169,6 +173,9 @@ type
     FCaption: TEpiTranslatedTextWrapper;
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -453,6 +460,11 @@ begin
   result := TEpiAdmin(TEpiUsers(Owner).Owner);
 end;
 
+function TEpiUser.GetName: string;
+begin
+
+end;
+
 procedure TEpiUser.SetLastLogin(const AValue: TDateTime);
 var
   Val: TDateTime;
@@ -479,6 +491,11 @@ begin
   FMasterPassword := AValue;
 end;
 
+procedure TEpiUser.SetName(AValue: string);
+begin
+
+end;
+
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   SaltInt: LongInt;
@@ -496,6 +513,24 @@ begin
   InitCrypt(Admin.MasterPassword);
 
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
+end;
+
+function TEpiUser.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiUser(Result) do
+  begin
+    FGroup      := TEpiGroup(Admin.Groups.GetItemByName(Self.FGroup.Name));
+    FExpireDate := Self.FExpireDate;
+    FLastLogin  := Self.FLastLogin;
+    FFirstName  := Self.FFirstName;
+    FLastName   := Self.FLastName;
+    FMasterPassword := Self.FMasterPassword;
+    FPassword       := Self.FPassword;
+    FSalt           := Self.FSalt;
+  end;
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
@@ -648,6 +683,13 @@ begin
   Val := FRights;
   FRights := AValue;
   DoChange(eegAdmin, Word(eaceGroupSetRights), @Val);
+end;
+
+function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiGroup(Result).FRights := FRights;
 end;
 
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);

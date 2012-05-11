@@ -10,7 +10,6 @@ type
 
   TEpiDataFiles = class(TEpiCustomList)
   private
-    FValueLabelSets: TEpiValueLabelSets;
     function    GetDataFile(Index: integer): TEpiDataFile;
     function    GetSettings: TEpiXMLSettings;
   protected

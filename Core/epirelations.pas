@@ -63,10 +63,12 @@ type
    procedure SetValue(const AValue: EpiVariant);
  protected
    function WriteNameToXml: boolean; override;
+   function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
  public
    constructor Create(AOwner: TEpiCustomBase); override;
-   destructor Destroy; override;
-   function XMLName: string; override;
+   destructor  Destroy; override;
+   function    XMLName: string; override;
    function    SaveToXml(Content: String; Lvl: integer): string; override;
    procedure   LoadFromXml(Root: TDOMNode); override;
    property    DataFile: TEpiDataFile read FDataFile write SetDataFile;
@@ -238,6 +240,21 @@ end;
 function TEpiRelate.WriteNameToXml: boolean;
 begin
   Result := false;
+end;
+
+function TEpiRelate.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiRelate(Result) do
+  begin
+    FDataFile     := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(SElf.FDataFile.Name));
+    FDestination  := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(SElf.FDestination.Name));
+    FField        := FDataFile.Fields.FieldByName[Self.FField.Name];
+    FRelateType   := Self.FRelateType;
+    FValue        := Self.FValue;
+  end;
 end;
 
 constructor TEpiRelate.Create(AOwner: TEpiCustomBase);

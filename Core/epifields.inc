@@ -810,7 +810,7 @@ begin
   begin
     Capacity := Self.Capacity;
     Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiInteger));
-    FSize := FSize;
+    FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
   end;
 end;
@@ -1063,7 +1063,7 @@ begin
   begin
     Capacity := Self.Capacity;
     Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiFloat));
-    FSize := FSize;
+    FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
   end;
 end;
@@ -1339,7 +1339,7 @@ begin
   begin
     Capacity := Self.Capacity;
     Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiBool));
-    FSize := FSize;
+    FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
   end;
 end;
@@ -1595,7 +1595,7 @@ begin
     Capacity := Self.Capacity;
     for i := 0 to Self.Size - 1 do
       FData[i] := Self.FData[i];
-    FSize := FSize;
+    FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
   end;
 end;
@@ -1782,7 +1782,7 @@ begin
   begin
     Capacity := Self.Capacity;
     Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiDate));
-    FSize := FSize;
+    FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
   end;
 end;
@@ -2145,7 +2145,7 @@ begin
   begin
     Capacity := Self.Capacity;
     Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiDateTime));
-    FSize := FSize;
+    FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
   end;
 end;

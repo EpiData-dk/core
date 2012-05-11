@@ -899,6 +899,10 @@ begin
     FCreated := Self.FCreated;
     Size := Self.Size;
     Fields.Sort;
+
+    // Copy Record Status - start by deleting the one created by default.
+    FRecordStatus.Free;
+    FRecordStatus := TEpiField(Self.FRecordStatus.Clone(Self));
   end;
 
   // At this point all existing fields in this DataFile have been cloned:
