@@ -189,6 +189,7 @@ type
     function    DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase = nil): TEpiCustomBase; virtual;
   public
     function    Clone: TEpiCustomBase;
+    function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
   end;
   {$static off}
   TEpiCustomBaseClass = class of TEpiCustomBase;
@@ -486,6 +487,11 @@ end;
 function TEpiCustomBase.Clone: TEpiCustomBase;
 begin
   Result := DoClone(nil);
+end;
+
+function TEpiCustomBase.Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := DoClone(AOwner);
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
@@ -1227,11 +1233,16 @@ end;
 
 function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
   ): TEpiCustomBase;
+var
+  i: Integer;
 begin
   Result := inherited DoClone(AOwner, Dest);
   with TEpiTranslatedText(Result) do
   begin
-    FTextList.Assign(Self.FTextList);
+    FTextList.Clear;
+    for i := 0 to Self.FTextList.Count - 1 do
+      FTextList.AddObject(Self.FTextList[i], TString.Create(TString(Self.FTextList.Objects[i]).Str));
+
     FCurrentText := Self.FCurrentText;
   end;
 end;
@@ -1511,7 +1522,7 @@ function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
 var
   i: Integer;
 begin
-  i := Count;
+  i := Count + 1;
   repeat
     result := DoPrefix + IntToStr(i);
     Inc(i);
@@ -1549,8 +1560,10 @@ begin
     // ensures that destroy notifications from Items is defered until after
     // the item is removed from the list.
     F := TEpiCustomItem(FList.Last);
-    // Deleting is faster than removing...
-    FList.Delete(FList.Count - 1);
+    RemoveItem(F);
+
+{    // Deleting is faster than removing...
+    FList.Delete(FList.Count - 1);     }
     if ItemOwner then
       FreeAndNil(F);
   end;
@@ -1734,6 +1747,19 @@ function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
 var
   i: Integer;
   NItem: TEpiCustomItem;
+
+  function GetRandomName: string;
+  var
+    GUID: TGUID;
+  begin
+    // Hack: Create a GUID to use as name.
+    //  - the comp. name is not used in other parts of the program anyway,
+    //  - so using GUID is a valid way to create random components names... :)
+    //  - And the chance of creating to equal component name are very-very-very unlikely.
+    CreateGUID(GUID);
+    Result := '_' + StringsReplace(GUIDToString(GUID), ['{','}','-'], ['','',''], [rfReplaceAll]);
+  end;
+
 begin
   Result := inherited DoClone(AOwner, Dest);
 
@@ -1743,6 +1769,9 @@ begin
   for i := 0 to Count - 1 do
   begin
     NItem := TEpiCustomItem(Items[i].DoCloneCreate(Result));
+    // Set a random name, otherwise calling Add will fail.
+    // Name is correctly set in Items[i].DoClone...
+    NItem.FName := GetRandomName;
     if TEpiCustomList(Result).IndexOf(NItem) = -1 then
       TEpiCustomList(Result).AddItem(NItem);
     Items[i].DoClone(Result, NItem);

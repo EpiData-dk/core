@@ -22,37 +22,45 @@ type
      //   StopOnFail: if TRUE then integrity check stops on first found doublicate record.
      //   KeyFields: if assigned, this list is used as index fields instead of Datafiles key fields.
      //   result: true if NO doublicate records found, otherwise false.
-     function IndexIntegrity(Const DataFile: TEpiDataFile;
-       out FailedRecords: TBoundArray;
-       StopOnFail: boolean = false;
-       KeyFields: TEpiFields = nil): boolean;
+     function IndexIntegrity(const DataFile: TEpiDataFile; out
+       FailedRecords: TBoundArray; out FailValues: TBoundArray;
+       StopOnFail: boolean = false; KeyFields: TEpiFields = nil): boolean;
   end;
 
 implementation
 
 uses
-  contnrs, LCLIntf;
+  contnrs, LCLIntf, fgl;
+
+type
+  TIntegrityList = specialize TFPGMap<Integer, Integer>;  // Maps RecNo -> FailValue
 
 { TEpiIntegrityChecker }
 
+function CompareInt(Const Item1, Item2: Integer): Integer;
+begin
+  result := Item1 - Item2;
+end;
+
 function TEpiIntegrityChecker.IndexIntegrity(const DataFile: TEpiDataFile; out
-  FailedRecords: TBoundArray; StopOnFail: boolean; KeyFields: TEpiFields
-  ): boolean;
+  FailedRecords: TBoundArray; out FailValues: TBoundArray; StopOnFail: boolean;
+  KeyFields: TEpiFields): boolean;
 var
   S: String;
   j: Integer;
   i: Integer;
   HashMap: TFPDataHashTable;
-  T1: QWord;
-  T2: QWord;
-  T3: Integer;
-  L: Integer;
+  Failed: Boolean;
+  CollisionRecList: TIntegrityList;
 
-  procedure AddFailedRecord(RecNo: Integer);
+  procedure AddFailedRecord(RecNo: Integer; CollisionRecNo: Integer = -1);
   begin
-    Inc(L);
-    SetLength(FailedRecords, L);
-    FailedRecords[L-1] := RecNo;
+    if CollisionRecNo = -1 then
+      CollisionRecList.Add(RecNo, 2)  // Failed because of missing value.
+    else begin
+      CollisionRecList.Add(RecNo, 1); // Failed dues to dublicate.
+      CollisionRecList.Add(CollisionRecNo, 1);  // Also add collision record - if already present previous entry is ignored.
+    end;
   end;
 
 begin
@@ -75,22 +83,25 @@ begin
 
   if KeyFields.Count = 0 then exit(true);
 
+  CollisionRecList := TIntegrityList.Create ;
+  CollisionRecList.OnKeyCompare := @CompareInt;
+  CollisionRecList.Sorted := true;
+  CollisionRecList.Duplicates := dupIgnore;
   HashMap := TFPDataHashTable.CreateWith(DataFile.Size, @RSHash);
-  L := 0;
 
-//  T1 := GetTickCount64;
   for i := 0 to DataFile.Size - 1 do
   begin
     {$IFDEF EPI_INTEGRITY_DEBUG}
     // Since this is (most likely) run through debugger during
-    // development AND raising exceptions wiht debugger attacher
+    // development AND raising exceptions wiht debugger attached
     // is EXTREMELY slow - we skip if more than 100 dublicates are
     // found.
     // Speed is not a problem when compiling for release and with
     // no debugger.
-    if (L >= 100) and (DataFile.Size > 1000) then
+    if (CollisionRecList.Count >= 100) and (DataFile.Size > 1000) then
       break;
     {$ENDIF}
+    Failed := false;
 
     // Concat K1, ..., Kn
     S := '';
@@ -98,9 +109,12 @@ begin
       if KeyFields[j].IsMissing[i] then
       begin
         AddFailedRecord(i);
-        if StopOnFail then break;
+        Failed := true;
       end else
         S += KeyFields[j].AsString[i];
+
+    if Failed and StopOnFail then break;
+    if Failed then continue;
 
     // 1: Hash (K1...) -> A
     try
@@ -110,18 +124,24 @@ begin
       on E: EDuplicate do
         begin
           // 3 + 4 : Since .Add(..) already checks key!
-          AddFailedRecord(i);
+          AddFailedRecord(i, PtrUInt(THTDataNode(HashMap.Find(S)).Data));
           if StopOnFail then break;
         end;
     end;
     // 3: No -> ... (already added in HashMap.Add).
   end;
-{  T2 := GetTickCount64;
-  T3 := t2 - t1;
-  WriteLn('Tick Count: ', T3);
-  WriteLn('L: ', L);      }
 
-  Result := (L = 0);
+  SetLength(FailedRecords, CollisionRecList.Count);
+  SetLength(FailValues, CollisionRecList.Count);
+  for i := 0 to CollisionRecList.Count - 1 do
+  begin
+    FailedRecords[i] := CollisionRecList.Keys[i];
+    FailValues[i]    := CollisionRecList.Data[i];
+  end;
+
+  Result := (CollisionRecList.Count = 0);
+  CollisionRecList.Free;
+  HashMap.Free;
 end;
 
 end.

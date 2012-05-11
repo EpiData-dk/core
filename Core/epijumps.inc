@@ -122,6 +122,22 @@ begin
   Result := false;
 end;
 
+function TEpiJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  // Cloning a jump should only be done if a full Datafile exists.
+
+  with TEpiJump(Result) do
+  begin
+    FJumpType := Self.FJumpType;
+    FResetType := Self.FResetType;
+
+    if Assigned(Self.FJumpToField) then
+      FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+  end;
+end;
+
 function TEpiJump.XMLName: string;
 begin
   Result := rsJump;
@@ -185,6 +201,13 @@ begin
   Result := IntToStr(JumpValue);
 end;
 
+function TEpiBoolJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiBoolJump(Result).FJumpValue := FJumpValue;
+end;
+
 procedure TEpiBoolJump.LoadFromXml(Root: TDOMNode);
 var
   Attr: TDOMAttr;
@@ -210,6 +233,13 @@ end;
 function TEpiIntJump.GetJumpValueAsString: string;
 begin
   Result := IntToStr(JumpValue);
+end;
+
+function TEpiIntJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiIntJump(Result).FJumpValue := FJumpValue;
 end;
 
 procedure TEpiIntJump.LoadFromXml(Root: TDOMNode);
@@ -239,6 +269,13 @@ begin
   Result := FloatToStr(JumpValue);
 end;
 
+function TEpiFloatJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiFloatJump(Result).FJumpValue := FJumpValue;
+end;
+
 procedure TEpiFloatJump.LoadFromXml(Root: TDOMNode);
 var
   Attr: TDOMAttr;
@@ -264,6 +301,13 @@ end;
 function TEpiStringJump.GetJumpValueAsString: string;
 begin
   Result := JumpValue;
+end;
+
+function TEpiStringJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiStringJump(Result).FJumpValue := FJumpValue;
 end;
 
 procedure TEpiStringJump.LoadFromXml(Root: TDOMNode);

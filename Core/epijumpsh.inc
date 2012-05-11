@@ -34,6 +34,8 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     function    GetJumpValueAsString: string; virtual; abstract;
     function    WriteNameToXml: boolean; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -53,6 +55,8 @@ type
     procedure SetJumpValue(const AValue: EpiBool);
   protected
     function  GetJumpValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -67,6 +71,8 @@ type
     procedure SetJumpValue(const AValue: EpiInteger);
   protected
     function  GetJumpValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -81,6 +87,8 @@ type
     procedure SetJumpValue(const AValue: EpiFloat);
   protected
     function  GetJumpValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -95,6 +103,8 @@ type
     procedure SetJumpValue(const AValue: EpiString);
   protected
     function  GetJumpValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
