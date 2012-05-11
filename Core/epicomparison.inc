@@ -35,6 +35,17 @@ begin
     FCompareField := nil;
 end;
 
+function TEpiComparison.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiComparison(Result) do
+  begin
+    FCompareType := Self.FCompareType;
+    FCompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
+  end;
+end;
+
 constructor TEpiComparison.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);

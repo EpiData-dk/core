@@ -55,6 +55,12 @@ type
     Property   Version: integer read FVersion;
     // EpiData XML Version 2 perperties:
     property   PassWord: string read FPassWord write FPassWord;
+
+  { Cloning }
+  protected
+    function   DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
   end;
 
 implementation
@@ -236,6 +242,19 @@ begin
   Fs := TFileStream.Create(AFileName, fmCreate);
   SaveToStream(Fs);
   Fs.Free;
+end;
+
+function TEpiDocument.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := TEpiDocument.Create(Self.DefaultLang);
+end;
+
+function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiDocument(Result) do
+    FPassWord := Self.FPassWord;
 end;
 
 end.

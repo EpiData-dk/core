@@ -876,3 +876,39 @@ begin
   Fields.EndUpdate;
   inherited EndUpdate;
 end;
+
+function TEpiDataFile.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoCloneCreate(AOwner);
+  with TEpiDataFile(Result) do
+  begin
+    Sections.RemoveItem(MainSection);
+    MainSection.Free;
+  end;
+end;
+
+function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiDataFile(Result) do
+  begin
+    FVersion := Self.FVersion;
+    FCreated := Self.FCreated;
+    Size := Self.Size;
+    Fields.Sort;
+  end;
+
+  // At this point all existing fields in this DataFile have been cloned:
+  // hence we can do a lookup in result list for comparable names.
+
+  // - Clone list of key-fields.
+  for i := 0 to Self.KeyFields.Count - 1 do
+    TEpiDataFile(Result).KeyFields.AddItem(TEpiDataFile(Result).Fields.FieldByName[KeyFields[i].Name]);
+
+  // - Update other references in each field
+  for i := 0 to Fields.Count - 1 do
+    Fields[i].PostCloneUpdate(TEpiDataFile(Result).Fields.FieldByName[Fields[i].Name]);
+end;

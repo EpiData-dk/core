@@ -57,5 +57,9 @@ type
     property    DataFile: TEpiDataFile read FDataFile;
     property    Width: integer read FWidth write SetWidth;
     property    Height: integer read FHeight write SetHeight;
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 

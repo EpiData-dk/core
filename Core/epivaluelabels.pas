@@ -21,6 +21,8 @@ type
     procedure SetIsMissingValue(AValue: boolean);
   protected
     function GetValueAsString: string; virtual; abstract;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -41,6 +43,8 @@ type
     procedure SetValue(AValue: EpiInteger);
   protected
     function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -55,6 +59,8 @@ type
     procedure SetValue(AValue: EpiFloat);
   protected
     function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -69,6 +75,8 @@ type
     procedure SetValue(AValue: EpiString);
   protected
     function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -109,6 +117,8 @@ type
     function    SaveExternal(Lvl: integer): string; virtual;
     function    WriteNameToXml: boolean; override;
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -163,6 +173,17 @@ begin
   Val := FIsMissingValue;
   FIsMissingValue := AValue;
   DoChange(eegValueLabels, Word(evceMissing), @Val);
+end;
+
+function TEpiCustomValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiCustomValueLabel(Result) do
+  begin
+    FIsMissingValue := Self.FIsMissingValue;
+    FOrder          := Self.FOrder;
+  end;
 end;
 
 constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
@@ -249,6 +270,13 @@ begin
   Result := IntToStr(Value);
 end;
 
+function TEpiIntValueLabel.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiIntValueLabel(Result).FValue := FValue;
+end;
+
 procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
@@ -280,6 +308,13 @@ begin
   Result := FloatToStr(Value);
 end;
 
+function TEpiFloatValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiFloatValueLabel(Result).FValue := FValue;
+end;
+
 procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
@@ -309,6 +344,13 @@ end;
 function TEpiStringValueLabel.GetValueAsString: string;
 begin
   Result := Value;
+end;
+
+function TEpiStringValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiStringValueLabel(Result).FValue := FValue;
 end;
 
 procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode);
@@ -511,6 +553,18 @@ begin
     end;
   end;
   EndUpdate;
+end;
+
+function TEpiValueLabelSet.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiValueLabelSet(Result) do
+  begin
+    FLabelScope := Self.FLabelScope;
+    FLabelType := Self.FLabelType;
+    FName := Self.FName;
+  end;
 end;
 
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);

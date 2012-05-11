@@ -106,4 +106,10 @@ type
   public
     procedure BeginUpdate; override;
     procedure EndUpdate; override;
+
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;

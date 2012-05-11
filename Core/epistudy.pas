@@ -62,6 +62,11 @@ type
     Property   Title: TEpiTranslatedTextWrapper read FTitle;
     Property   Keywords: string read FKeywords write SetKeywords;
     property   Version: string read FVersion write SetVersion;
+
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
   end;
 
 implementation
@@ -198,6 +203,23 @@ begin
   FRights.LoadFromXml(Root);
   FTimeCoverage.LoadFromXml(Root);
   FTitle.LoadFromXml(Root);
+end;
+
+function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiStudy(Result) do
+  begin
+    FAuthor          := Self.FAuthor;
+    FAgency          := Self.FAgency;
+    FCreated         := Self.Created;
+    FIdentifier      := Self.FIdentifier;
+    FKeywords        := Self.FKeywords;
+    FModifiedDate    := Self.FModifiedDate;
+    FNotes           := Self.FNotes;
+    FVersion         := Self.FVersion;
+  end;
 end;
 
 end.

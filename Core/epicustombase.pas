@@ -180,8 +180,19 @@ type
     // not be copied/assigned/freed etc.
     // It is entirely up to the user to keep track of it's use throught a program.
     property    ObjectData: PtrUInt read FObjectData write FObjectData;
+
+  { Cloning }
+  protected
+    // DoCloneCreate should only be overridden if a special constructor is used.
+    function    DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; virtual;
+    // DoClone should normally be overridden, since this is where data should be copied.
+    function    DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase = nil): TEpiCustomBase; virtual;
+  public
+    function    Clone: TEpiCustomBase;
+    function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
   end;
   {$static off}
+  TEpiCustomBaseClass = class of TEpiCustomBase;
 
   { TEpiTranslatedText }
 
@@ -205,6 +216,11 @@ type
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
     property    TextLang[LangCode: string]: string read GetText write SetText;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiTranslatedTextWrapper }
@@ -216,6 +232,9 @@ type
     constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
   end;
 
   { TEpiCustomItem }
@@ -233,6 +252,10 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -251,6 +274,10 @@ type
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
   TEpiCustomControlItemClass = class of TEpiCustomControlItem;
 
@@ -333,6 +360,10 @@ type
     procedure Sort;
     property  Sorted: boolean read FSorted write SetSorted;
     property  OnSort: TListSortCompare read FOnSort write FOnSort;
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiCustomControlItemList }
@@ -424,6 +455,43 @@ begin
   for i := 0 to OrgBase.ClassList.Count - 1 do
     TEpiCustomBase(ClassList[i]).Assign(TEpiCustomBase(OrgBase.ClassList[i]));
   EndUpdate;
+end;
+
+function TEpiCustomBase.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  result := TEpiCustomBaseClass(Self.ClassType).Create(AOwner);
+end;
+
+function TEpiCustomBase.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  OrgClass: TEpiCustomBase;
+  NewClass: TEpiCustomBase;
+  i: Integer;
+begin
+  Result := Dest;
+  if not Assigned(Result) then
+    Result := DoCloneCreate(AOwner);
+
+  // TODO: OnChangeEvents - Copy or Not?
+
+  for i := 0 to Result.ClassList.Count - 1 do
+  begin
+    NewClass := TEpiCustomBase(Result.ClassList[i]);
+    OrgClass := TEpiCustomBase(ClassList[i]);
+
+    OrgClass.DoClone(Result, NewClass);
+  end;
+end;
+
+function TEpiCustomBase.Clone: TEpiCustomBase;
+begin
+  Result := DoClone(nil);
+end;
+
+function TEpiCustomBase.Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := DoClone(AOwner);
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
@@ -1157,6 +1225,28 @@ begin
   EndUpdate;
 end;
 
+function TEpiTranslatedText.DoCloneCreate(AOwner: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := TEpiTranslatedText.Create(AOwner, XMLName);
+end;
+
+function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiTranslatedText(Result) do
+  begin
+    FTextList.Clear;
+    for i := 0 to Self.FTextList.Count - 1 do
+      FTextList.AddObject(Self.FTextList[i], TString.Create(TString(Self.FTextList.Objects[i]).Str));
+
+    FCurrentText := Self.FCurrentText;
+  end;
+end;
+
 procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
@@ -1208,6 +1298,12 @@ begin
   // Root = Parent for FNodeName (since this is a wrapped object.
   if LoadNode(NRoot, Root, FNodeName, false) then
     inherited LoadFromXml(NRoot);
+end;
+
+function TEpiTranslatedTextWrapper.DoCloneCreate(AOwner: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
 end;
 
 { TEpiCustomItem }
@@ -1275,6 +1371,13 @@ begin
   result := DoValidateRename(NewName);
 end;
 
+function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiCustomItem(Result).FName := FName;
+end;
+
 { TEpiCustomControlItem }
 
 function TEpiCustomControlItem.SaveAttributesToXml: string;
@@ -1323,6 +1426,17 @@ begin
   if Left = 0 then
     Left := OrgControlItem.Left;
   EndUpdate;
+end;
+
+function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiCustomControlItem(Result) do
+  begin
+    FTop  := Self.FTop;
+    FLeft := Self.FLeft;
+  end;
 end;
 
 { TEpiCustomList }
@@ -1626,6 +1740,50 @@ end;
 procedure TEpiCustomList.Sort;
 begin
   DoSort;
+end;
+
+function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+  NItem: TEpiCustomItem;
+
+  function GetRandomName: string;
+  var
+    GUID: TGUID;
+  begin
+    // Hack: Create a GUID to use as name.
+    //  - the comp. name is not used in other parts of the program anyway,
+    //  - so using GUID is a valid way to create random components names... :)
+    //  - And the chance of creating to equal component name are very-very-very unlikely.
+    CreateGUID(GUID);
+    Result := '_' + StringsReplace(GUIDToString(GUID), ['{','}','-'], ['','',''], [rfReplaceAll]);
+  end;
+
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  // Set itemowner before copying the items - otherwise
+  // owner is not set properly.
+  TEpiCustomList(Result).FItemOwner := FItemOwner;
+  for i := 0 to Count - 1 do
+  begin
+    NItem := TEpiCustomItem(Items[i].DoCloneCreate(Result));
+    // Set a random name, otherwise calling Add will fail.
+    // Name is correctly set in Items[i].DoClone...
+    NItem.FName := GetRandomName;
+    if TEpiCustomList(Result).IndexOf(NItem) = -1 then
+      TEpiCustomList(Result).AddItem(NItem);
+    Items[i].DoClone(Result, NItem);
+  end;
+
+  // Set Sorting last, otherwise each AddItem triggers a sort.
+  with TEpiCustomList(Result) do
+  begin
+    FOnSort := Self.FOnSort;
+    FSorted := Self.FSorted;
+    Sort;
+  end;
 end;
 
 { TEpiCustomControlItemList }

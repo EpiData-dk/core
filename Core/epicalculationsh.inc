@@ -16,6 +16,8 @@ type
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
     property OwnerField: TEpiField read GetOwnerField;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
@@ -44,6 +46,8 @@ type
     function GetCalcType: TEpiCalcType; override;
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
        EventType: Word; Data: Pointer); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
@@ -68,6 +72,8 @@ type
     function GetCalcType: TEpiCalcType; override;
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
        EventType: Word; Data: Pointer); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
@@ -94,6 +100,8 @@ type
     function GetCalcType: TEpiCalcType; override;
     procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
        EventType: Word; Data: Pointer); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;

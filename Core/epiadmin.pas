@@ -68,6 +68,10 @@ type
     // OnChange-hook methods
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiUsers }
@@ -302,6 +306,13 @@ end;
 procedure TEpiAdmin.EndUpdate;
 begin
   inherited EndUpdate;
+end;
+
+function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiAdmin(Result).FMasterPassword := FMasterPassword;
 end;
 
 { TEpiUsers }

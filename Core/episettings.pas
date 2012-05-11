@@ -41,6 +41,10 @@ type
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
     property    Scrambled: boolean read FScrambled write SetScrambled;
     property    FormatSettings: TFormatSettings read FFormatSettings;
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiProjectSettings }
@@ -75,6 +79,10 @@ type
     property    BackupInterval: Integer read FBackupInterval write SetBackupInterval;
     property    BackupOnShutdown: Boolean read FBackupOnShutdown write SetBackupOnShutdown;
     property    AutoIncStartValue: EpiInteger read FAutoIncStartValue write SetAutoIncStartValue;
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
 implementation
@@ -167,6 +175,21 @@ begin
   DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
   TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
   DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
+end;
+
+function TEpiXMLSettings.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiXMLSettings(Result) do
+  begin
+    FDateSeparator     := Self.FDateSeparator;
+    FDecimalSeparator  := Self.FDecimalSeparator;
+    FFormatSettings    := Self.FFormatSettings;
+    FMissingString     := Self.FMissingString;
+    FScrambled         := Self.FScrambled;
+    FTimeSeparator     := Self.FTimeSeparator;
+  end;
 end;
 
 { TEpiProjectSettings }
@@ -271,6 +294,20 @@ end;
 function TEpiProjectSettings.ScrambleXml: boolean;
 begin
   Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
+end;
+
+function TEpiProjectSettings.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiProjectSettings(Result) do
+  begin
+    FAutoIncStartValue := Self.FAutoIncStartValue;
+    FBackupInterval    := Self.FBackupInterval;
+    FBackupOnShutdown  := Self.FBackupOnShutdown;
+    FShowFieldBorders  := Self.FShowFieldBorders;
+    FShowFieldNames    := Self.FShowFieldNames;
+  end;
 end;
 
 end.
