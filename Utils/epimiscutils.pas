@@ -64,11 +64,14 @@ const
   // Encryption Utils
   function StrToSHA1Base64(const S: string): string;
 
+  // Returns true if Name is a field name defined in EpiGlobals.pas
+  function IsReservedEpiFieldName(Const Name: string): boolean;
+
 
 implementation
 
 uses
-  zipper, FileUtil, DCPsha1, DCPbase64;
+  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals;
 
 type
   TEpiDialogFilterPair = record
@@ -250,6 +253,13 @@ begin
   Sha1.Final(Digest[1]);
   result := Base64EncodeStr(Digest);
   Sha1.Free;
+end;
+
+function IsReservedEpiFieldName(const Name: string): boolean;
+begin
+  result :=
+    (Name = EpiIndexIntegrityFieldName) or
+    (Name = EpiDoubleEntryFieldName);
 end;
 
 end.

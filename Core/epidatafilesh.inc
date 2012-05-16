@@ -56,6 +56,8 @@ type
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
+    function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
+    procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
   public
@@ -71,6 +73,9 @@ type
     function    NewHeading: TEpiHeading;
     procedure   NewRecords(Const Count: Cardinal = 1);
     procedure   Pack; // Removes records marked for deletion.
+    procedure   ExchangeRecords(Const Index1, Index2: Integer);
+    procedure   SortRecords(SortFields: TEpiFields); overload;
+    procedure   SortRecords(SortField: TEpiField); overload;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;

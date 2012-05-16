@@ -7,7 +7,7 @@
       <Version Value="11"/>
       <SearchPaths>
         <IncludeFiles Value="Core"/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Services"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="3"/>
-    <Files Count="47">
+    <Files Count="50">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -220,9 +220,21 @@
         <UnitName Value="UniqueInstanceRaw"/>
       </Item46>
       <Item47>
-        <Filename Value="Utils/epiintegritycheck.pas"/>
-        <UnitName Value="epiintegritycheck"/>
+        <Filename Value="Tools/epitools_integritycheck.pas"/>
+        <UnitName Value="epitools_integritycheck"/>
       </Item47>
+      <Item48>
+        <Filename Value="Utils/epiglobals.pas"/>
+        <UnitName Value="epiglobals"/>
+      </Item48>
+      <Item49>
+        <Filename Value="Tools/epitools_val_dbl_entry.pas"/>
+        <UnitName Value="epitools_val_dbl_entry"/>
+      </Item49>
+      <Item50>
+        <Filename Value="Utils/epidatafileutils.pas"/>
+        <UnitName Value="epidatafileutils"/>
+      </Item50>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

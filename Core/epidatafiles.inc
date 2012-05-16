@@ -565,6 +565,42 @@ begin
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
 end;
 
+function TEpiDataFile.InternalCompareRecords(const SortList: TEpiFields;
+  const Idx1, Idx2: Integer): integer;
+var
+  i: Integer;
+begin
+  for i := 0 to SortList.Count - 1 do
+  begin
+    result := SortList[i].Compare(Idx1, Idx2);
+    if result <> 0 then exit;
+  end;
+end;
+
+procedure TEpiDataFile.InternalSortRecords(const SortList: TEpiFields; L,
+  R: Integer);
+var
+   I, J, P: Integer;
+begin
+  I:=L;
+  J:=R;
+  P:=(L + R) shr 1;
+  repeat
+    while InternalCompareRecords(SortList, I,P) < 0 do Inc(I);
+    while InternalCompareRecords(SortList, J,P) > 0 do Dec(J);
+    if I <= J then
+    begin
+      ExchangeRecords(J,I);
+      if p=i then p:=j
+      else if p=j then p:=i;
+      Inc(I);
+      Dec(J);
+    end;
+  until I>J;
+  if L<J then InternalSortRecords(SortList, L,J);
+  if I < R then InternalSortRecords(SortList, I, R);
+end;
+
 procedure TEpiDataFile.SetVersion(const AValue: string);
 begin
   if FVersion = AValue then exit;
@@ -861,6 +897,30 @@ begin
     FRecordStatus.MovePackData(S, D, C);
   end;
   Size := Size - (Length(L) - 1);
+end;
+
+procedure TEpiDataFile.ExchangeRecords(const Index1, Index2: Integer);
+var
+  i: Integer;
+begin
+  for i := 0 to Fields.Count - 1 do
+    Fields[i].Exchange(Index1, Index2);
+  FRecordStatus.Exchange(Index1, Index2);
+end;
+
+procedure TEpiDataFile.SortRecords(SortFields: TEpiFields);
+begin
+  InternalSortRecords(SortFields, 0, Size - 1);
+end;
+
+procedure TEpiDataFile.SortRecords(SortField: TEpiField);
+var
+  SortFields: TEpiFields;
+begin
+  SortFields := TEpiFields.Create(nil);
+  SortFields.AddItem(SortField);
+  SortRecords(SortFields);
+  SortFields.Free;
 end;
 
 procedure TEpiDataFile.BeginUpdate;

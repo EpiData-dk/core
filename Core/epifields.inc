@@ -330,10 +330,10 @@ end;
 
 function TEpiField.Compare(i, j: integer): integer;
 begin
-  if IsMissing[i] and IsMissing[j] then exit(0);        // Both missing, sort even.
-  if IsMissing[i] and (not IsMissing[j]) then exit(1); // A missing, sort A last
+  if IsMissing[i] and IsMissing[j] then exit(0);         // Both missing, sort even.
+  if IsMissing[i] and (not IsMissing[j]) then exit(1);   // A missing, sort A last
   if (not IsMissing[i]) and IsMissing[j] then exit(-1);  // B missing, sort A first
-  result := DoCompare(i,j);                             // Compare normal values.
+  result := DoCompare(i,j);                              // Compare normal values.
 end;
 
 procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -1051,7 +1051,7 @@ end;
 
 function TEpiFloatField.DoCompare(i, j: integer): integer;
 begin
-  Result := Sign(AsFloat[i] - AsFloat[j]);
+  Result := CompareValue(AsFloat[i], AsFloat[j], 0.0);  // Sign(AsFloat[i] - AsFloat[j]);
 end;
 
 function TEpiFloatField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -1580,7 +1580,7 @@ end;
 function TEpiStringField.DoCompare(i, j: integer): integer;
 begin
   // TODO: Use UTF8Compare[Text|Str]
-  Result := CompareStr(AsString[i], AsString[j]);
+  Result := AnsiCompareText(AsString[i], AsString[j]);
 end;
 
 function TEpiStringField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase

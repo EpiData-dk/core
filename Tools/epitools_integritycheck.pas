@@ -1,4 +1,4 @@
-unit epiintegritycheck;
+unit epitools_integritycheck;
 
 {$mode objfpc}{$H+}
 
