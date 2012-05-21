@@ -5,7 +5,7 @@ unit epitools_val_dbl_entry;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles;
+  Classes, SysUtils, epidatafiles, epivaluelabels;
 
 type
   TEpiToolsDblEntryValidateOption = (
@@ -35,6 +35,8 @@ type
     FSortFields: TEpiFields;
     FMainCmpFields: TEpiFields;
     FDuplCmpFields: TEpiFields;
+    FResultField:   TEpiField;
+    FResultArray:   TBoundArray;
     FValidateOptions: TEpiToolsDblEntryValidateOptions;
     procedure   AddResult(Const Index: integer; Const Value: Integer);
     procedure   ValidateSequencial;
@@ -59,9 +61,10 @@ type
 implementation
 
 uses
-  epidatafilestypes, epidatafileutils, math;
+  epidatafilestypes, epidatafileutils, math, epiglobals;
 
 const
+  ValInDuplDF     = -1;
   ValOk           = 0;
   ValNoExists     = 1;
   ValTextFail     = 2;
@@ -80,8 +83,21 @@ const
 
 procedure TEpiToolsDblEntryValidator.AddResult(const Index: integer;
   const Value: Integer);
+var
+  L: Integer;
 begin
-  //
+  if Value = ValInDuplDF then
+  begin
+    // Result indicate that a record was found in duplicate DF that did not exist in Main DF.
+    L := Length(FResultArray);
+    Inc(L);
+    SetLength(FResultArray, L);
+    FResultArray[L-1] := Index;
+    Exit;
+  end;
+
+  if Assigned(FResultField) then
+    FResultField.AsInteger[Index] := Value;
 end;
 
 procedure TEpiToolsDblEntryValidator.ValidateSequencial;
@@ -164,7 +180,7 @@ begin
           end;
         PositiveValue:
           begin
-            // AddResult, for extra records in duplicate file.
+            AddResult(MRunner, ValInDuplDF);
             Inc(DRunner);
           end;
       end;
@@ -219,6 +235,9 @@ procedure TEpiToolsDblEntryValidator.ValidateDataFiles(out Result: TBoundArray;
   ValidateOptions: TEpiToolsDblEntryValidateOptions);
 var
   i: Integer;
+  F: TEpiField;
+  V: TEpiValueLabelSet;
+  VL: TEpiIntValueLabel;
 begin
   if (not Assigned(MainDF)) or (not Assigned(DuplDF)) then
     RaiseError(EEpiDFNotAssigned, 'Main or Duplicate datafile not assigned');
@@ -232,11 +251,55 @@ begin
     FDuplCmpFields.AddItem(FDuplDF.Fields.FieldByName[CompareFields.Field[i].Name]);
 
   FValidateOPtions := ValidateOptions;
+  if devAddResultToField in FValidateOptions then
+  begin
+    FResultField := FMainDF.Fields.FieldByName[EpiDoubleEntryFieldName];
+    if not Assigned(FResultField) then
+    begin
+      FResultField := FMainDF.NewField(ftInteger);
+      FResultField.Name := EpiDoubleEntryFieldName;
+      FResultField.Length := 1;
+    end;
+
+    if not Assigned(FResultField.ValueLabelSet) then
+    begin
+      V := FMainDF.ValueLabels.GetValueLabelSetByName(EpiDoubleEntryValueLabelSetName);
+      if not Assigned(V) then
+      begin
+        V := FMainDF.ValueLabels.NewValueLabelSet(ftInteger);
+        V.Name := EpiDoubleEntryValueLabelSetName;
+
+        VL := TEpiIntValueLabel(V.NewValueLabel);
+        VL.Value := ValOk;
+        VL.TheLabel.Text := ValTexts[ValOk];
+
+        VL := TEpiIntValueLabel(V.NewValueLabel);
+        VL.Value := ValNoExists;
+        VL.TheLabel.Text := ValTexts[ValNoExists];
+
+        VL := TEpiIntValueLabel(V.NewValueLabel);
+        VL.Value := ValTextFail;
+        VL.TheLabel.Text := ValTexts[ValTextFail];
+
+        VL := TEpiIntValueLabel(V.NewValueLabel);
+        VL.Value := ValValueFail;
+        VL.TheLabel.Text := ValTexts[ValValueFail];
+
+        VL := TEpiIntValueLabel(V.NewValueLabel);
+        VL.Value := ValDupKeyFail;
+        VL.TheLabel.Text := ValTexts[ValDupKeyFail];
+      end;
+      FResultField.ValueLabelSet := V;
+    end;
+  end;
 
   if Assigned(SortFields) then
     ValidateWithSort
   else
     ValidateSequencial;
+
+  if Length(FResultArray) > 0 then
+    Result := FResultArray;
 end;
 
 end.

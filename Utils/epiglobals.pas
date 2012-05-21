@@ -13,6 +13,7 @@ const
   EpiIndexIntegrityValueLabelSetName = '_label_indexFail';
   // Double Entry strings
   EpiDoubleEntryFieldName = '_DoubleEntry';
+  EpiDoubleEntryValueLabelSetName = '_label_DoubleEntry';
 
 implementation
 
