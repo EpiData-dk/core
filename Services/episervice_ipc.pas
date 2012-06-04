@@ -9,127 +9,139 @@ uses
 
 type
 
-  { TEpiIPC }
+  { TEpiIPCService }
 
-  TEpiIPC = class(TComponent)
+  TEpiIPCService = class
   private
-    FOnRequest: TEpiIPCRequest;
-    Timer:      TFPTimer;
-    IPCServer:  TSimpleIPCServer;
-    IPCClient:  TSimpleIPCClient;
-    FAppName:   string;
-    FWaitForMsg: boolean;
-    FFileIsOpen: boolean;
-    procedure   SetOnRequest(AValue: TEpiIPCRequest);
-    procedure   TimerEvent(Sender: TObject);
-    procedure   ServerEvent(Sender: TObject);
-    procedure   SendMsg(Const MsgType: TMessageType; Const MsgText: string);
+    IPCServer: TSimpleIPCServer;
+    IPCClient: TSimpleIPCClient;
   public
-    constructor Create(Const AppName: string; AOwner: TComponent);
-    destructor  Destroy; override;
-    function    IsFileOpenMsg(Const FileName: string): boolean;
-    property    OnRequest: TEpiIPCRequest read FOnRequest write SetOnRequest;
+    constructor Create(Const Name: string);
+    function    IsFileOpen(Const FileName: string;
+      var OpenProgram: string): boolean;
+    procedure   NotifyProgram(Const ProgramName: string;
+      Const Notification: integer);
   end;
 
 implementation
 
 type
-  TMsgListEntry = record
-    MsgType: TMessageType;
-    MsgData: string;
-  end;
-  PMsgListEntry = ^TMsgListEntry;
 
-{ TEpiIPC }
+  { TIPCCentral }
 
-procedure TEpiIPC.TimerEvent(Sender: TObject);
-begin
-   // TODO: Create list of sent events and loop through msg. with a timestamp larger than thresshold.
-  if not Timer.Enabled then exit;
-  IPCServer.PeekMessage(0, true);
-end;
-
-procedure TEpiIPC.SetOnRequest(AValue: TEpiIPCRequest);
-begin
-  if FOnRequest = AValue then Exit;
-  FOnRequest := AValue;
-end;
-
-procedure TEpiIPC.ServerEvent(Sender: TObject);
-var
-  Ack: TMessageType;
-begin
-  // Stop timer - we do not want to read messages while processing one.
-//  Timer.Enabled := false;
-
-  FWaitForMsg := false;
-  with IPCServer do
-  case MsgType of
-    epiIPC_Req_IsFileOpen:
-      begin
-        if Assigned(FOnRequest) then
-          FOnRequest(MsgType, StringMessage, Ack);
-
-        IPCClient.Connect;
-        IPCClient.SendStringMessage(Ack, StringMessage);
-      end;
-    epiIPC_Ack_FileNotOpen:
-      FFileIsOpen := false;
-    epiIPC_Ack_FileIsOpen:
-      FFileIsOpen := true;
+  TIPCCentral = class
+  private
+    IPS: TSimpleIPCServer;
+    IPCs: TStringList;
+    procedure CentralMessage(Sender: TObject);
+    procedure DoConnectClient;
+    procedure DoDisconnectClient;
+  protected
+    constructor Create;
+  public
+    class function StartCentral: TIPCCentral;
   end;
 
-  // Start timer again.
-//  Timer.StartTimer;
+{ TIPCCentral }
+
+procedure TIPCCentral.CentralMessage(Sender: TObject);
+begin
+  Case IPS.MsgType of
+    EpiIPCMsgConnect:
+      DoConnectClient;
+    EpiIPCMsgDisconnect:
+      DoDisconnectClient;
+  end;
 end;
 
-procedure TEpiIPC.SendMsg(const MsgType: TMessageType; const MsgText: string);
+procedure TIPCCentral.DoConnectClient;
 var
-  MsgEntry: PMsgListEntry;
-  i: Integer;
+  ProgName: String;
+  Client: TSimpleIPCClient;
 begin
-  if IPCClient.ServerRunning then
+  ProgName := IPS.StringMessage;
+  Client   := TSimpleIPCClient.Create(nil);
+
+  IPCs.AddObject(ProgName, Client);
+  Client.ServerID := EpiSimpleIPCServerPrefix + ProgName;
+  Client.Connect;
+end;
+
+procedure TIPCCentral.DoDisconnectClient;
+var
+  ProgName: String;
+  Idx: Integer;
+  Client: TSimpleIPCClient;
+begin
+  ProgName := IPS.StringMessage;
+  Idx      := IPCs.IndexOf(ProgName);
+  Client   := TSimpleIPCClient(IPCs.Objects[Idx]);
+  IPCs.Delete(Idx);
+
+  Client.Disconnect;
+  Client.Free;
+end;
+
+constructor TIPCCentral.Create;
+begin
+  IPCs := TStringList.Create;
+
+  IPS := TSimpleIPCServer.Create(nil);
+  with IPS do
   begin
-    IPCClient.Connect;
-    IPCClient.SendStringMessage(MsgType, MsgText)
-  end
-  else
-    FWaitForMsg := false;
+    ServerID := EpiSimpleIPCCentralName;
+    Global := true;
+    OnMessage  := @CentralMessage;
+    StartServer;
+  end;
+
+  // Start timer....
 end;
 
-constructor TEpiIPC.Create(const AppName: string; AOwner: TComponent);
+class function TIPCCentral.StartCentral: TIPCCentral;
+var
+  lIPC: TSimpleIPCClient;
 begin
-  FAppName := AppName;
+  Result := nil;
+  lIPC := TSimpleIPCClient.Create(nil);
+  lIPC.ServerID := EpiSimpleIPCCentralName;
 
-  IPCServer := TSimpleIPCServer.Create(self);
-  IPCServer.ServerID := epiIPCprefix + AppName;
+  if not lIPC.ServerRunning then
+    Result := TIPCCentral.Create;
+
+  lIPC.Free;
+end;
+
+
+{ TEpiIPCService }
+
+constructor TEpiIPCService.Create(const Name: string);
+begin
+  TIPCCentral.StartCentral;
+
+  IPCServer := TSimpleIPCServer.Create(nil);
+  IPCServer.ServerID := EpiSimpleIPCServerPrefix + Name;
   IPCServer.Global := true;
-  IPCServer.OnMessage := @ServerEvent;
-  IPCServer.Active := true;
+  IPCServer.StartServer;
 
-  Timer := TFPTimer.Create(self);
-  Timer.Interval := 100;
-  Timer.OnTimer := @TimerEvent;
-  Timer.Enabled := true;
+  IPCClient := TSimpleIPCClient.Create(nil);
+  IPCClient.ServerID := EpiSimpleIPCCentralName;
+  IPCClient.Connect;
+  IPCClient.SendStringMessage(EpiIPCMsgConnect, Name);
 
-  IPCClient := TSimpleIPCClient.Create(self);
-  IPCClient.ServerID := BoolToStr(AppName = epiIPCNames[0], epiIPCprefix + epiIPCNames[1], epiIPCprefix + epiIPCNames[0]);
+  // Start timer.....
 end;
 
-destructor TEpiIPC.Destroy;
+function TEpiIPCService.IsFileOpen(const FileName: string;
+  var OpenProgram: string): boolean;
 begin
-  inherited Destroy;
+
 end;
 
-function TEpiIPC.IsFileOpenMsg(const FileName: string): boolean;
+procedure TEpiIPCService.NotifyProgram(const ProgramName: string;
+  const Notification: integer);
 begin
-  FFileIsOpen := false;
 
-  FWaitForMsg := true;
-  SendMsg(epiIPC_Req_IsFileOpen, FileName);
-  while FWaitForMsg do IPCServer.PeekMessage(50, true);
-
-  Result := FFileIsOpen;
 end;
 
 end.
