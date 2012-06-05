@@ -1,0 +1,974 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1052.3622"
+   height="744.09448"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="ClassChart.svg">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lend"
+       style="overflow:visible;">
+      <path
+         id="path4521"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;marker-start:none;"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective10" />
+    <inkscape:perspective
+       id="perspective3616"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3616-9"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3616-0"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3616-7"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3732"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3770"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3770-2"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3834"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3834-2"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3921"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3921-1"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3921-8"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3921-0"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4075"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4186"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4224"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4249"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4325"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4359"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4359-2"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4359-4"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4359-7"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4359-5"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective4359-3"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective5944"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective5944-0"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6013"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6054"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6054-7"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6054-8"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6094"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6094-6"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6184"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6184-2"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective6248"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="357.78472"
+     inkscape:cy="442.34793"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:snap-to-guides="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1119"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-308.2677)">
+    <g
+       id="g3704"
+       transform="translate(-26.263966,-22.223356)">
+      <rect
+         y="354.51248"
+         x="43.097195"
+         height="37.549301"
+         width="143.61533"
+         id="rect2826"
+         style="fill:none;stroke:#000000;stroke-width:1.33142018px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         id="text3600"
+         y="379.09552"
+         x="47.947826"
+         style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan3604"
+           y="379.09552"
+           x="47.947826"
+           sodipodi:role="line">TEpiCustomBase</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="m 93.944187,62.241514 0,30.304577"
+       id="path4513"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="m 124.75384,131.94204 -1.01015,42.42641"
+       id="path4963"
+       transform="translate(0,308.2677)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="m 129.29952,523.54733 0,35.35533"
+       id="path5519" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="m 531.84531,522.0321 c 0,1.51523 0,36.87057 0,36.87057"
+       id="path5705" />
+    <g
+       id="g5901">
+      <g
+         transform="translate(-64.649763,-33.335034)"
+         id="g4119">
+        <g
+           id="g3696"
+           transform="translate(-88.893425,-2.0202804)">
+          <rect
+             y="436.58737"
+             x="189.82185"
+             height="37.549301"
+             width="143.61533"
+             id="rect2826-9"
+             style="fill:none;stroke:#000000;stroke-width:1.33142018px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-0"
+             y="459.77609"
+             x="196.19592"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3636"
+               y="459.77609"
+               x="196.19592"
+               sodipodi:role="line">TEpiCustomItem</tspan></text>
+        </g>
+        <g
+           id="g4020"
+           transform="translate(-2.4243372,2.2828579e-5)">
+          <rect
+             y="434.54611"
+             x="274.65369"
+             height="37.591213"
+             width="134.56586"
+             id="rect2826-9-5"
+             style="fill:none;stroke:#000000;stroke-width:1.28950918px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-0-7"
+             y="457.75577"
+             x="283.43661"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3947"
+               y="457.75577"
+               x="283.43661"
+               sodipodi:role="line">TEpiDocument</tspan></text>
+        </g>
+        <g
+           id="g4015"
+           transform="translate(-3.8385752,0)">
+          <rect
+             y="434.46231"
+             x="438.2146"
+             height="37.758862"
+             width="101.39848"
+             id="rect2826-9-3"
+             style="fill:none;stroke:#000000;stroke-width:1.12186074px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-0-76"
+             y="457.7558"
+             x="448.81619"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3636-1"
+               y="457.7558"
+               x="448.81619"
+               sodipodi:role="line">TEpiStudy</tspan></text>
+        </g>
+        <g
+           id="g4010"
+           transform="translate(-32.526911,1.0101813)">
+          <rect
+             y="433.44662"
+             x="595.79291"
+             height="37.769871"
+             width="99.389183"
+             id="rect2826-9-4"
+             style="fill:none;stroke:#000000;stroke-width:1.11085176px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-0-8"
+             y="456.74564"
+             x="603.44843"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3636-0"
+               y="456.74564"
+               x="603.44843"
+               sodipodi:role="line">TEpiAdmin</tspan></text>
+        </g>
+        <g
+           id="g4005"
+           transform="translate(-68.286235,2.0203263)">
+          <rect
+             y="432.509"
+             x="758.49994"
+             height="37.624825"
+             width="127.5284"
+             id="rect2826-9-2"
+             style="fill:none;stroke:#000000;stroke-width:1.25589836px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-0-6"
+             y="455.73547"
+             x="764.9118"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3636-3"
+               y="455.73547"
+               x="764.9118"
+               sodipodi:role="line">TEpiRelations</tspan></text>
+        </g>
+        <g
+           id="g4113"
+           transform="translate(0,1.0101753)">
+          <rect
+             y="433.61179"
+             x="845.46576"
+             height="37.43956"
+             width="168.75938"
+             id="rect2826-9-2-1"
+             style="fill:none;stroke:#000000;stroke-width:1.44116306px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <g
+             id="g4109">
+            <text
+               xml:space="preserve"
+               style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+               x="851.78497"
+               y="456.74564"
+               id="text3600-0-6-9"><tspan
+                 sodipodi:role="line"
+                 x="851.78497"
+                 y="456.74564"
+                 id="tspan4105">TEpiTranslatedText</tspan></text>
+          </g>
+        </g>
+      </g>
+      <path
+         id="path5891"
+         d="m 180.31223,420.82729 25.25381,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path5893"
+         d="m 342.44171,420.82729 25.25382,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         id="path5895"
+         d="m 472.14286,420.82729 23.31145,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path5897"
+         d="m 599.28571,420.82729 26.42858,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path5899"
+         d="m 754.28572,420.82729 24.28571,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+    <g
+       id="g6027"
+       transform="translate(-8.0812204,-75.761441)">
+      <g
+         id="g4146">
+        <g
+           id="g3821"
+           transform="translate(-339.41125,-105.05593)">
+          <rect
+             y="740.51044"
+             x="432.12555"
+             height="37.815086"
+             width="91.35318"
+             id="rect2826-99-4"
+             style="fill:none;stroke:#000000;stroke-width:1.06563437px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6"
+             y="763.83203"
+             x="442.83337"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758"
+               y="763.83203"
+               x="442.83337"
+               sodipodi:role="line">TEpiField</tspan></text>
+        </g>
+        <g
+           id="g3816"
+           transform="translate(-343.45185,-205.06096)">
+          <rect
+             y="840.58319"
+             x="546.34052"
+             height="37.679626"
+             width="116.47153"
+             id="rect2826-99-4-9"
+             style="fill:none;stroke:#000000;stroke-width:1.20109403px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-3"
+             y="863.83704"
+             x="558.30286"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3790"
+               y="863.83704"
+               x="558.30286"
+               sodipodi:role="line">TEpiSection</tspan></text>
+        </g>
+        <g
+           id="g3811"
+           transform="translate(-312.13715,-150.51277)">
+          <rect
+             y="786.0426"
+             x="650.39386"
+             height="37.664425"
+             width="119.48679"
+             id="rect2826-99-4-2"
+             style="fill:none;stroke:#000000;stroke-width:1.21629643px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-2"
+             y="809.28888"
+             x="660.34039"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3807"
+               y="809.28888"
+               x="660.34039"
+               sodipodi:role="line">TEpiHeading</tspan></text>
+        </g>
+      </g>
+      <path
+         id="path6003"
+         d="m 184.28571,654.50504 17.14286,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path6003-6"
+         d="m 320,654.50504 17.14286,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+    <g
+       id="g6117"
+       transform="translate(-40.527933,-75.761441)">
+      <g
+         transform="translate(0,-10.020323)"
+         id="g4479">
+        <g
+           id="g3879"
+           transform="translate(-157.58382,-219.28433)">
+          <rect
+             y="864.75916"
+             x="698.80585"
+             height="37.815086"
+             width="91.35318"
+             id="rect2826-99-4-6"
+             style="fill:none;stroke:#000000;stroke-width:1.06563437px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1"
+             y="888.08075"
+             x="705.22852"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9"
+               y="888.08075"
+               x="705.22852"
+               sodipodi:role="line">TEpiUsers</tspan></text>
+        </g>
+        <g
+           id="g4464"
+           transform="translate(-108.0863,-50.507625)">
+          <rect
+             y="743.5957"
+             x="649.36316"
+             height="37.705421"
+             width="111.44656"
+             id="rect2826-99-4-6-1"
+             style="fill:none;stroke:#000000;stroke-width:1.17530096px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8"
+             y="766.86249"
+             x="655.73102"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0"
+               y="766.86249"
+               x="655.73102"
+               sodipodi:role="line">TEpiGroups</tspan></text>
+        </g>
+        <g
+           id="g4444"
+           transform="translate(-80.812191,45.375605)">
+          <rect
+             y="600.17706"
+             x="727.16797"
+             height="37.659401"
+             width="120.49191"
+             id="rect2826-99-4-6-1-4"
+             style="fill:none;stroke:#000000;stroke-width:1.22132015px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8-9"
+             y="623.42084"
+             x="733.91003"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0-7"
+               y="623.42084"
+               x="733.91003"
+               sodipodi:role="line">TEpiDataFiles</tspan></text>
+        </g>
+        <g
+           id="g4459"
+           transform="translate(-118.52453,1.0101986)">
+          <rect
+             y="692.03729"
+             x="781.65259"
+             height="37.786598"
+             width="96.37545"
+             id="rect2826-99-4-6-1-2"
+             style="fill:none;stroke:#000000;stroke-width:1.09412253px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8-7"
+             y="715.34467"
+             x="790.36768"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0-4"
+               y="715.34467"
+               x="790.36768"
+               sodipodi:role="line">TEpiFields</tspan></text>
+        </g>
+        <g
+           id="g4454"
+           transform="translate(37.3757,-23.314739)">
+          <rect
+             y="668.87488"
+             x="876.67798"
+             height="37.644459"
+             width="123.50743"
+             id="rect2826-99-4-6-1-9"
+             style="fill:none;stroke:#000000;stroke-width:1.23626316px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8-70"
+             y="692.11115"
+             x="884.13092"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0-3"
+               y="692.11115"
+               x="884.13092"
+               sodipodi:role="line">TEpiHeadings</tspan></text>
+        </g>
+        <g
+           id="g4449"
+           transform="translate(-83.842596,67.598984)">
+          <rect
+             y="577.95117"
+             x="864.5462"
+             height="37.664425"
+             width="119.48679"
+             id="rect2826-99-4-6-1-6"
+             style="fill:none;stroke:#000000;stroke-width:1.21629655px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8-4"
+             y="601.19745"
+             x="873.55133"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0-6"
+               y="601.19745"
+               x="873.55133"
+               sodipodi:role="line">TEpiSections</tspan></text>
+        </g>
+        <g
+           id="g4469"
+           transform="translate(-25.92726,-98.994949)">
+          <rect
+             y="792.16565"
+             x="795.91797"
+             height="37.540176"
+             width="145.62651"
+             id="rect2826-99-4-6-1-7"
+             style="fill:none;stroke:#000000;stroke-width:1.34054744px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8-5"
+             y="815.34979"
+             x="802.27417"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0-31"
+               y="815.34979"
+               x="802.27417"
+               sodipodi:role="line">TEpiPrimaryKeys</tspan></text>
+        </g>
+        <g
+           id="g4474"
+           transform="translate(167.68537,-161.62438)">
+          <rect
+             y="854.71246"
+             x="758.45966"
+             height="37.705421"
+             width="111.44656"
+             id="rect2826-99-4-6-1-1"
+             style="fill:none;stroke:#000000;stroke-width:1.17530096px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+          <text
+             id="text3600-5-6-1-8-3"
+             y="877.97925"
+             x="764.82751"
+             style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+             xml:space="preserve"><tspan
+               id="tspan3758-9-0-45"
+               y="877.97925"
+               x="764.82751"
+               sodipodi:role="line">TEpiRelates</tspan></text>
+        </g>
+      </g>
+      <path
+         id="path6044"
+         d="m 632.85714,655.21932 12.5,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path6044-2"
+         d="m 767.53565,655.21932 12.5,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path6044-9"
+         d="m 900.83927,655.21932 12.5,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         id="path6044-7"
+         d="m 652.32143,703.61218 9.28571,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         id="path6044-7-4"
+         d="m 758.92857,703.61219 9.28571,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         id="path6044-7-3"
+         d="m 916.78572,703.61218 9.28571,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+    <g
+       id="g3887"
+       transform="translate(-681.85297,-239.40614)">
+      <rect
+         y="923.34802"
+         x="764.46576"
+         height="37.815086"
+         width="91.35318"
+         id="rect2826-99-4-7"
+         style="fill:none;stroke:#000000;stroke-width:1.06563437px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         id="text3600-5-6-27"
+         y="946.66962"
+         x="774.67358"
+         style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           y="946.66962"
+           x="774.67358"
+           sodipodi:role="line"
+           id="tspan3875">TEpiUser</tspan></text>
+    </g>
+    <g
+       id="g4279"
+       transform="translate(-197.98989,200.01023)">
+      <rect
+         y="484.06683"
+         x="397.91556"
+         height="37.544727"
+         width="144.62091"
+         id="rect2826-99-4-7-2"
+         style="fill:none;stroke:#000000;stroke-width:1.33599198px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         id="text3600-5-6-27-4"
+         y="507.25327"
+         x="407.78461"
+         style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan4212"
+           y="507.25327"
+           x="407.78461"
+           sodipodi:role="line">TEpiPrimaryKey</tspan></text>
+    </g>
+    <g
+       id="g4284"
+       transform="translate(-300.01532,210.11174)">
+      <rect
+         y="473.88235"
+         x="670.57379"
+         height="37.710651"
+         width="110.44164"
+         id="rect2826-99-4-7-1"
+         style="fill:none;stroke:#000000;stroke-width:1.17007113px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         id="text3600-5-6-27-46"
+         y="497.15173"
+         x="683.68134"
+         style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan4275"
+           y="497.15173"
+           x="683.68134"
+           sodipodi:role="line">TEpiRelate</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 64.091682,523.17596 0.178571,180.17857 15.892857,0.17857"
+       id="path5934"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 175.34167,703.17596 22.5,0.35714"
+       id="path5934-7" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 346.41311,703.17596 22.5,0.35714"
+       id="path5934-0" />
+    <g
+       id="g3850">
+      <rect
+         y="484.18958"
+         x="55.596561"
+         height="37.299282"
+         width="203.97447"
+         id="rect2826-1"
+         style="fill:none;stroke:#000000;stroke-width:1.58143723px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <text
+         id="text3600-3"
+         y="507.25327"
+         x="63.212704"
+         style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+         xml:space="preserve"><tspan
+           id="tspan3670"
+           y="507.25327"
+           x="63.212704"
+           sodipodi:role="line">TEpiCustomControlItem</tspan></text>
+    </g>
+    <g
+       id="g3897"
+       transform="translate(-34.345187,-77.781746)">
+      <g
+         transform="translate(109.0965,-190.91889)"
+         id="g3719">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:1.33142018px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           id="rect2826-99"
+           width="143.61533"
+           height="37.549301"
+           x="409.02496"
+           y="752.76514" />
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           x="419.14514"
+           y="775.95386"
+           id="text3600-5"><tspan
+             sodipodi:role="line"
+             x="419.14514"
+             y="775.95386"
+             id="tspan3687">TEpiCustomList</tspan></text>
+      </g>
+      <path
+         id="path5989"
+         d="m 295.71429,581.28235 222.14285,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <g
+         transform="translate(-0.50506896,-1.0102048)"
+         id="g6225">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:1.14354861px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           id="rect2826-99-46"
+           width="105.4174"
+           height="37.737171"
+           x="681.67218"
+           y="562.76251" />
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           x="693.2168"
+           y="586.04517"
+           id="text3600-5-4"><tspan
+             sodipodi:role="line"
+             x="693.2168"
+             y="586.04517"
+             id="tspan3687-2">TEpiGroup</tspan></text>
+      </g>
+      <g
+         transform="translate(-34.345187,-2.0203051)"
+         id="g6233">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:1.23626304px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           id="rect2826-99-0"
+           width="123.50743"
+           height="37.644459"
+           x="840.3125"
+           y="563.81897" />
+        <text
+           xml:space="preserve"
+           style="font-size:16px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
+           x="850.48029"
+           y="587.05524"
+           id="text3600-5-7"><tspan
+             sodipodi:role="line"
+             x="850.48029"
+             y="587.05524"
+             id="tspan3687-7">TEpiDataFile</tspan></text>
+      </g>
+      <path
+         id="path6238"
+         d="m 662.15499,581.28235 17.1726,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         id="path6238-1"
+         d="m 786.90883,581.28235 17.1726,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+  </g>
+</svg>
