@@ -11,7 +11,7 @@ type
   TEpiToolsDblEntryValidateOption = (
     devIgnoreDeleted,                  // Ignores if a record i marked for deletion in either Datafile
     devCaseSensitiveText,              // When comparing text, do it case-sensitive
-//    devIgnoreMissingRecords,           // Ignore reporting if no matching records is found in dublicate datafile (but still reports differences)
+    devIgnoreMissingRecords,           // Ignore reporting if no matching records is found in dublicate datafile (but still reports differences)
     devAddResultToField                // Add a field to Main Datafile with result (and a matching valuelabel set)
   );
   TEpiToolsDblEntryValidateOptions = set of TEpiToolsDblEntryValidateOption;
@@ -161,10 +161,12 @@ var
   function CompareSortFieldRecords(Const FL1, FL2: TEpiFields; Const Idx1, Idx2: Integer): TValueSign;
   var
     i: Integer;
+    CaseSensitive: boolean;
   begin
+    CaseSensitive := (devCaseSensitiveText in FValidateOptions);
     for i := 0 to FL1.Count - 1 do
     begin
-      CompareFieldRecords(Result, FL1[i], FL2[i], Idx1, Idx2);
+      CompareFieldRecords(Result, FL1[i], FL2[i], Idx1, Idx2, CaseSensitive);
       if Result <> ZeroValue then Exit;
     end;
   end;
@@ -200,6 +202,18 @@ begin
     DSize   := DuplDF.Size;
     while (MRunner < MSize) and (DRunner < DSize) do
     begin
+      if (devIgnoreDeleted in FValidateOptions) and (MainDF.Deleted[MRunner]) then
+      begin
+        Inc(MRunner);
+        Continue;
+      end;
+
+      if (devIgnoreDeleted in FValidateOptions) and (DuplDF.Deleted[DRunner]) then
+      begin
+        Inc(DRunner);
+        Continue;
+      end;
+
       if (MRunner > 0) and
          (CompareSortFieldRecords(SortFields, SortFields, MRunner, MRunner - 1) = ZeroValue) then
       begin
@@ -212,7 +226,8 @@ begin
         NegativeValue:
           begin
             // Record does not exists in duplicate file
-            AddResult(MRunner, ValNoExists);
+            if not (devIgnoreMissingRecords in FValidateOptions) then
+              AddResult(MRunner, ValNoExists);
             Inc(MRunner);
           end;
         ZeroValue:
@@ -285,12 +300,14 @@ var
   ResultRecord: PEpiDblEntryResultRecord;
   j: Integer;
   L: Integer;
+  CaseSensitive: Boolean;
 
 begin
+  CaseSensitive := (devCaseSensitiveText in FValidateOptions);
   ResultRecord := nil;
   for i := 0 to CompareFields.Count - 1 do
   begin
-    if not CompareFieldRecords(CmpResult, FCmpFields[i], FDuplCmpFields[i], MIndex, DIndex) then
+    if not CompareFieldRecords(CmpResult, FCmpFields[i], FDuplCmpFields[i], MIndex, DIndex, CaseSensitive) then
       RaiseError(EEpiInvalidCompare, 'Comparison failed due to different field types!');
 
     if CmpResult = ZeroValue then

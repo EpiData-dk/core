@@ -8,7 +8,8 @@ uses
   sysutils, epidatafiles, epidatafilestypes, math;
 
 function CompareFieldRecords(Out CmpResult: TValueSign;
-  Const F1, F2: TEpiField; Const Idx1, Idx2: Integer): boolean;
+  Const F1, F2: TEpiField; Const Idx1, Idx2: Integer;
+  Const Casesensitive: boolean = false): boolean;
 
 procedure DumpDatafileRecords(Const DF: TEpiDataFile);
 
@@ -18,7 +19,8 @@ uses
   epistringutils, LazUTF8;
 
 function CompareFieldRecords(out CmpResult: TValueSign;
-  const F1, F2: TEpiField; const Idx1, Idx2: Integer): boolean;
+  const F1, F2: TEpiField; const Idx1, Idx2: Integer;
+  Const Casesensitive: boolean = false): boolean;
 begin
   // TODO : Perhaps reult=false if two types cannot be compared?
   case F1.FieldType of
@@ -38,7 +40,10 @@ begin
       CmpResult := CompareValue(F1.AsFloat[Idx1], F2.AsFloat[Idx2], 0.0);
     ftString,
     ftUpperString:
-      CmpResult := AnsiCompareText(F1.AsString[Idx1], F2.AsString[Idx2]);
+      if Casesensitive then
+        CmpResult := AnsiCompareStr(F1.AsString[Idx1], F2.AsString[Idx2])
+      else
+        CmpResult := AnsiCompareText(F1.AsString[Idx1], F2.AsString[Idx2]);
   end;
   CmpResult := Sign(CmpResult);
   Result := true;
