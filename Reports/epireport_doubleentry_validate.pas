@@ -44,7 +44,6 @@ type
 
 implementation
 
-
 { TEpiReportDoubleEntryValidation }
 
 constructor TEpiReportDoubleEntryValidation.Create(const MainEpiDocument,
@@ -63,6 +62,11 @@ var
   i: Integer;
   BadCount: Integer;
   ResultArray: TEpiDblEntryResultArray;
+  MText: String;
+  DText: String;
+  j: Integer;
+  MCmpField: TEpiField;
+  DCmpField: TEpiField;
 begin
   inherited RunReport;
 
@@ -72,6 +76,7 @@ begin
   Validator.SortFields := FKeyFields;
   Validator.CompareFields := FCompareFields;
   Validator.ValidateDataFiles(ResultArray, ExtraDulpRecords, DblEntryValidateOptions);
+  Validator.SortDblEntryResultArray(ResultArray);
 
   DoSection('Result of Validation:');
   DoTableHeader('', 2, 4);
@@ -91,20 +96,77 @@ begin
   for i := 0 to FCompareFields.Count - 1 do
     DoLineText(FCompareFields[i].Name + ': ' + FCompareFields[i].Question.Text);
 
-  DoTableHeader('Field comparisons:', 2, Length(ResultArray) + 1);
-  DoTableCell(0,0, 'Record no:');  DoTableCell(1, 0, 'Status');
-  BadCount := 0;
+  DoTableHeader('Datasets comparison:', 2, Length(ResultArray) + Length(ExtraDulpRecords) + 1);
+  DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, 'Duplicate dataset:');
   for i := 0 to Length(ResultArray) -1 do
+  with ResultArray[i] do
   begin
-    DoTableCell(0, i + 1, IntToStr(i + 1));
-    case ResultArray[i].ValResult of
-      ValNoExists:    S := 'Record not found in duplicate file';
-      ValTextFail:    S := 'Text mismatch';
-      ValValueFail:   S := 'Value mismatch';
-      ValDupKeyFail:  S := 'Duplicate key exists';
+    MText := 'Record no: ' + IntToStr(MRecNo + 1) + LineEnding;
+    if not ((ValResult = ValNoExists) or (ValResult = ValDupKeyFail)) then
+      DText := 'Record no: ' + IntToStr(DRecNo + 1) + LineEnding
+    else
+      DText := '';
+
+    MText += 'Key Fields: ' + LineEnding;
+    DText += LineEnding;
+    for j := 0 to FKeyFields.Count - 1 do
+    begin
+      MText += FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[MRecNo] + LineEnding;
+      DText += LineEnding;
     end;
-    DoTableCell(1, i + 1, S);
+
+    case ValResult of
+      ValNoExists:
+        begin
+          MText += 'Record not found in duplicate file';
+          DText += 'Record not found';
+        end;
+      ValTextFail,
+      ValValueFail:
+        begin
+          MText += 'Compared Fields:' + LineEnding;
+          DText += 'Compared Fields:' + LineEnding;
+
+          for j := 0 to Length(CmpFieldNames) - 1 do
+          begin
+            MCmpField := Validator.CompareFields.FieldByName[CmpFieldNames[j]];
+            DCmpField := Validator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
+
+            MText += ' ' + MCmpField.Name + ' = ' + MCmpField.AsString[MRecNo] + LineEnding;
+            DText += ' ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
+          end;
+        end;
+      ValDupKeyFail:
+        begin
+          MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
+        end;
+    end;
+
+    DoTableCell(0, i + 1, MText);
+    DoTableCell(1, i + 1, DText);
   end;
+
+  for i := 0 to Length(ExtraDulpRecords) - 1 do
+  begin
+    MText := LineEnding;
+    DText := 'Record no: ' + IntToStr(ExtraDulpRecords[i] + 1) + LineEnding;
+
+    MText += LineEnding;
+    DText += 'Key Fields: ' + LineEnding;
+    for j := 0 to Validator.DuplKeyFields.Count - 1 do
+    begin
+      DCmpField := Validator.DuplKeyFields[j];
+      MText += LineEnding;
+      DText += DCmpField.Name + ' = ' + DCmpField.AsString[ExtraDulpRecords[i]] + LineEnding;
+    end;
+
+    MText += 'Record not found';
+    DText += 'Record not found in main datafile!';
+
+    DoTableCell(0, Length(ResultArray) + i + 1, MText);
+    DoTableCell(1, Length(ResultArray) + i + 1, DText);
+  end;
+  DoTableFooter('');
 end;
 
 { TEpiReportDoubleEntryValidationHtml }
