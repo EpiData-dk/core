@@ -116,6 +116,7 @@ begin
 
   FColCount := ColCount;
   FRowCount := RowCount;
+  InTable   := true;
 
   AddLine('<TABLE cellspacing=0 class=simple>');
   AddLine('<CAPTION class=caption>' + HtmlString(Text) + '</CAPTION>');
@@ -125,6 +126,7 @@ procedure TEpiReportHTMLGenerator.TableFooter(Sender: TEpiReportBase;
   const Text: string);
 begin
   AddLine('</TABLE>');
+  InTable := false;
 end;
 
 procedure TEpiReportHTMLGenerator.TableCell(Sender: TEpiReportBase;
@@ -132,6 +134,9 @@ procedure TEpiReportHTMLGenerator.TableCell(Sender: TEpiReportBase;
 var
   S: String;
 begin
+  if not InTable then
+    Raise Exception.Create('TEpiReportValueLabelsHtml: Table not initialised');
+
   if (Col < 0) or (Col > (FColCount-1)) or
      (Row < 0) or (Row > (FRowCount-1)) then
     Raise Exception.Create('TEpiReportValueLabelsHtml: Index out of bound for table! ' + Format('Col: %d; Row: %d', [Col,Row]));

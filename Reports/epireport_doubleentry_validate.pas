@@ -6,6 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epireport_base, epireport_htmlgenerator,
+  epireport_txtgenerator,
   epidocument, epidatafiles, epitools_val_dbl_entry;
 
 type
@@ -18,6 +19,16 @@ type
     FDblEntryValidateOptions: TEpiToolsDblEntryValidateOptions;
     FDuplEpiDocument: TEpiDocument;
     FKeyFields: TEpiFields;
+    FResultArray: TEpiDblEntryResultArray;
+    FExtraRecs:   TBoundArray;
+    FVAlidator:   TEpiToolsDblEntryValidator;
+    function    CalcMissingInMainDF: Integer;
+    function    CalcMissingInDuplDF: Integer;
+    function    CalcCommonRecords: integer;
+    function    CalcErrorRecords:  integer;
+    function    CalcErrorFields:  integer;
+    function    CalcErrorPct: Extended;
+    function    CalcErrorFieldPct: Extended;
   public
     constructor Create(const MainEpiDocument, DuplEpiDocument: TEpiDocument);
     procedure   RunReport; override;
@@ -42,9 +53,73 @@ type
     property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
   end;
 
+  { TEpiReportDoubleEntryValidationTXT }
+
+  TEpiReportDoubleEntryValidationTXT = class(TEpiReportDoubleEntryValidation)
+  private
+    FTxtGenerator: TEpiReportTXTGenerator;
+  protected
+    function GetReportText: string; override;
+  public
+    constructor Create(const MainEpiDocument, DuplEpiDocument: TEpiDocument);
+    destructor Destroy; override;
+    procedure RunReport; override;
+    property TXTGenerator: TEpiReportTXTGenerator read FTxtGenerator;
+  end;
+
 implementation
 
+uses
+  math;
+
 { TEpiReportDoubleEntryValidation }
+
+function TEpiReportDoubleEntryValidation.CalcMissingInMainDF: Integer;
+begin
+  result := Length(FExtraRecs);
+end;
+
+function TEpiReportDoubleEntryValidation.CalcMissingInDuplDF: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Length(FResultArray) - 1 do
+    if FResultArray[i].ValResult = ValNoExists then inc(Result);
+end;
+
+function TEpiReportDoubleEntryValidation.CalcCommonRecords: integer;
+begin
+  Result := Math.Min(FValidator.MainDF.Size, FValidator.DuplDF.Size) - Length(FExtraRecs);
+end;
+
+function TEpiReportDoubleEntryValidation.CalcErrorRecords: integer;
+var
+  i: Integer;
+begin
+  Result  := 0;
+  for i := 0 to Length(FResultArray) - 1 do
+    if FResultArray[i].ValResult in [ValTextFail, ValValueFail] then inc(Result);
+end;
+
+function TEpiReportDoubleEntryValidation.CalcErrorFields: integer;
+var
+  i: Integer;
+begin
+  Result  := 0;
+  for i := 0 to Length(FResultArray) - 1 do
+    if FResultArray[i].ValResult in [ValTextFail, ValValueFail] then inc(Result, Length(FResultArray[i].CmpFieldNames));
+end;
+
+function TEpiReportDoubleEntryValidation.CalcErrorPct: Extended;
+begin
+  Result := CalcErrorRecords / CalcCommonRecords;
+end;
+
+function TEpiReportDoubleEntryValidation.CalcErrorFieldPct: Extended;
+begin
+  result := CalcErrorFields / (CalcCommonRecords * FVAlidator.CompareFields.Count);
+end;
 
 constructor TEpiReportDoubleEntryValidation.Create(const MainEpiDocument,
   DuplEpiDocument: TEpiDocument);
@@ -56,34 +131,33 @@ end;
 
 procedure TEpiReportDoubleEntryValidation.RunReport;
 var
-  Validator: TEpiToolsDblEntryValidator;
-  ExtraDulpRecords: TBoundArray;
   S: String;
   i: Integer;
   BadCount: Integer;
-  ResultArray: TEpiDblEntryResultArray;
   MText: String;
   DText: String;
   j: Integer;
   MCmpField: TEpiField;
   DCmpField: TEpiField;
+  CommonCount: Integer;
 begin
   inherited RunReport;
 
-  Validator := TEpiToolsDblEntryValidator.Create;
-  Validator.MainDF := EpiDocument.DataFiles[0];
-  Validator.DuplDF := FDuplEpiDocument.DataFiles[0];
-  Validator.SortFields := FKeyFields;
-  Validator.CompareFields := FCompareFields;
-  Validator.ValidateDataFiles(ResultArray, ExtraDulpRecords, DblEntryValidateOptions);
-  Validator.SortDblEntryResultArray(ResultArray);
+  FValidator := TEpiToolsDblEntryValidator.Create;
+  FValidator.MainDF := EpiDocument.DataFiles[0];
+  FValidator.DuplDF := FDuplEpiDocument.DataFiles[0];
+  FValidator.SortFields := FKeyFields;
+  FValidator.CompareFields := FCompareFields;
+  FValidator.ValidateDataFiles(FResultArray, FExtraRecs, DblEntryValidateOptions);
+  FValidator.SortDblEntryResultArray(FResultArray);
 
-  DoSection('Result of Validation:');
-  DoTableHeader('', 2, 4);
-  DoTableCell(0, 0, 'Records missing in main file');      DoTableCell(1, 0, IntToStr(Validator.MainDF.DeletedCount));
-  DoTableCell(0, 1, 'Records missing in duplicate file'); DoTableCell(1, 1, IntToStr(Validator.DuplDF.DeletedCount));
-  DoTableCell(0, 2, 'Common records found');              DoTableCell(1, 2, IntToStr(Length(ResultArray)));
-  DoTableCell(0, 3, 'Number of fields checked');          DoTableCell(1, 3, IntToStr(FCompareFields.Count));
+  DoSection('Selections for validation:');
+  DoTableHeader('Options', 2, 5);
+  DoTableCell(0, 0, 'Option');                 DoTableCell(1, 0, 'Selected');
+  DoTableCell(0, 1, 'Ignore deleted records'); DoTableCell(1, 1, BoolToStr(devIgnoreDeleted in DblEntryValidateOptions, 'Yes', 'No'));
+  DoTableCell(0, 2, 'Ignore missing records'); DoTableCell(1, 2, BoolToStr(devIgnoreMissingRecords in DblEntryValidateOptions, 'Yes', 'No'));
+  DoTableCell(0, 3, 'Add result to field');    DoTableCell(1, 3, BoolToStr(devAddResultToField in DblEntryValidateOptions, 'Yes', 'No'));
+  DoTableCell(0, 4, 'Case sensitive text');    DoTableCell(1, 4, BoolToStr(devCaseSensitiveText in DblEntryValidateOptions, 'Yes', 'No'));
   DoTableFooter('');
 
   DoHeading('Key Fields:');
@@ -96,10 +170,25 @@ begin
   for i := 0 to FCompareFields.Count - 1 do
     DoLineText(FCompareFields[i].Name + ': ' + FCompareFields[i].Question.Text);
 
-  DoTableHeader('Datasets comparison:', 2, Length(ResultArray) + Length(ExtraDulpRecords) + 1);
+
+  DoSection('Result of Validation:');
+  DoTableHeader('Overview', 2, 9);
+  DoTableCell(0, 0, 'Test');                              DoTableCell(1, 0, 'Result');
+  DoTableCell(0, 1, 'Records missing in main file');      DoTableCell(1, 1, IntToStr(CalcMissingInMainDF));
+  DoTableCell(0, 2, 'Records missing in duplicate file'); DoTableCell(1, 2, IntToStr(CalcMissingInDuplDF));
+  DoTableCell(0, 3, 'Number of fields checked');          DoTableCell(1, 3, IntToStr(FCompareFields.Count));
+  DoTableCell(0, 4, 'Common records');                    DoTableCell(1, 4, IntToStr(CalcCommonRecords));
+  DoTableCell(0, 5, 'Records with errors');               DoTableCell(1, 5, IntToStr(CalcErrorRecords));
+  DoTableCell(0, 6, 'Field entries with errors');         DoTableCell(1, 6, IntToStr(CalcErrorFields));
+  DoTableCell(0, 7, 'Error percentage (#records)');       DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, 8, 'Error percentage (#fields)');        DoTableCell(1, 8, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  DoTableFooter('');
+
+  Exit;
+  DoTableHeader('Datasets comparison:', 2, Length(FResultArray) + Length(FExtraRecs) + 1);
   DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, 'Duplicate dataset:');
-  for i := 0 to Length(ResultArray) -1 do
-  with ResultArray[i] do
+  for i := 0 to Length(FResultArray) -1 do
+  with FResultArray[i] do
   begin
     MText := 'Record no: ' + IntToStr(MRecNo + 1) + LineEnding;
     if not ((ValResult = ValNoExists) or (ValResult = ValDupKeyFail)) then
@@ -129,8 +218,8 @@ begin
 
           for j := 0 to Length(CmpFieldNames) - 1 do
           begin
-            MCmpField := Validator.CompareFields.FieldByName[CmpFieldNames[j]];
-            DCmpField := Validator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
+            MCmpField := FValidator.CompareFields.FieldByName[CmpFieldNames[j]];
+            DCmpField := FValidator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
 
             MText += ' ' + MCmpField.Name + ' = ' + MCmpField.AsString[MRecNo] + LineEnding;
             DText += ' ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
@@ -146,27 +235,29 @@ begin
     DoTableCell(1, i + 1, DText);
   end;
 
-  for i := 0 to Length(ExtraDulpRecords) - 1 do
+  for i := 0 to Length(FExtraRecs) - 1 do
   begin
     MText := LineEnding;
-    DText := 'Record no: ' + IntToStr(ExtraDulpRecords[i] + 1) + LineEnding;
+    DText := 'Record no: ' + IntToStr(FExtraRecs[i] + 1) + LineEnding;
 
     MText += LineEnding;
     DText += 'Key Fields: ' + LineEnding;
-    for j := 0 to Validator.DuplKeyFields.Count - 1 do
+    for j := 0 to FValidator.DuplKeyFields.Count - 1 do
     begin
-      DCmpField := Validator.DuplKeyFields[j];
+      DCmpField := FValidator.DuplKeyFields[j];
       MText += LineEnding;
-      DText += DCmpField.Name + ' = ' + DCmpField.AsString[ExtraDulpRecords[i]] + LineEnding;
+      DText += DCmpField.Name + ' = ' + DCmpField.AsString[FExtraRecs[i]] + LineEnding;
     end;
 
     MText += 'Record not found';
     DText += 'Record not found in main datafile!';
 
-    DoTableCell(0, Length(ResultArray) + i + 1, MText);
-    DoTableCell(1, Length(ResultArray) + i + 1, DText);
+    DoTableCell(0, Length(FResultArray) + i + 1, MText);
+    DoTableCell(1, Length(FResultArray) + i + 1, DText);
   end;
   DoTableFooter('');
+
+  FValidator.Free;
 end;
 
 { TEpiReportDoubleEntryValidationHtml }
@@ -199,6 +290,31 @@ begin
 
   if FCompleteHtml then
     FHtmlGenerator.CloseHtml;
+end;
+
+{ TEpiReportDoubleEntryValidationTXT }
+
+function TEpiReportDoubleEntryValidationTXT.GetReportText: string;
+begin
+  Result := FTxtGenerator.GetReportText;
+end;
+
+constructor TEpiReportDoubleEntryValidationTXT.Create(const MainEpiDocument,
+  DuplEpiDocument: TEpiDocument);
+begin
+  inherited Create(MainEpiDocument, DuplEpiDocument);
+  FTxtGenerator := TEpiReportTXTGenerator.Create(Self);
+end;
+
+destructor TEpiReportDoubleEntryValidationTXT.Destroy;
+begin
+  FTxtGenerator.Free;
+  inherited Destroy;
+end;
+
+procedure TEpiReportDoubleEntryValidationTXT.RunReport;
+begin
+  inherited RunReport;
 end;
 
 end.

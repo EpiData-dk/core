@@ -479,7 +479,8 @@ end;
 class procedure TEpiToolsDblEntryValidator.SortDblEntryResultArray(
   var ResultArray: TEpiDblEntryResultArray);
 begin
-  InternalSort(ResultArray, 0, Length(ResultArray) - 1);
+  if Length(ResultArray) > 0 then
+    InternalSort(ResultArray, 0, Length(ResultArray) - 1);
 end;
 
 end.
