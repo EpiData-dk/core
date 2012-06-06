@@ -184,7 +184,6 @@ begin
   DoTableCell(0, 8, 'Error percentage (#fields)');        DoTableCell(1, 8, FormatFloat('##0.00', CalcErrorFieldPct * 100));
   DoTableFooter('');
 
-  Exit;
   DoTableHeader('Datasets comparison:', 2, Length(FResultArray) + Length(FExtraRecs) + 1);
   DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, 'Duplicate dataset:');
   for i := 0 to Length(FResultArray) -1 do

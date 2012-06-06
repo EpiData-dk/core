@@ -23,6 +23,8 @@ type
     // Misc
     procedure InternalInit;
     procedure AddLine(Const Txt: string);
+    function  CenterText(Const Txt: string; Width: Integer): string;
+    function  LineFromLines(var Lines: string): string;
 
     // Lines
     procedure Section(Sender: TEpiReportBase; Const Text: string);
@@ -65,6 +67,50 @@ end;
 procedure TEpiReportTXTGenerator.AddLine(const Txt: string);
 begin
   FReportText.Add(Txt);
+end;
+
+function TEpiReportTXTGenerator.CenterText(const Txt: string; Width: Integer
+  ): string;
+var
+  L: PtrInt;
+  D: Integer;
+  Count: Integer;
+begin
+  L := UTF8Length(Txt);
+  if L >= Width then
+  begin
+    Result := Txt;
+    Exit;
+  end;
+
+  // D indicates if an extra space is required at the end of text.
+  D := 0;
+  if (odd(Width) and not odd(L)) then Inc(D);
+  if (not odd(Width) and odd(L)) then Inc(D);
+
+  Count := (Width - UTF8Length(Txt)) div 2;
+  Result :=
+    // Prefix
+    DupeString(' ', Count) +
+    // Text
+    Txt +
+    // Postfix (with possible extra space)
+    DupeString(' ', Count + D);
+end;
+
+function TEpiReportTXTGenerator.LineFromLines(var Lines: string): string;
+var
+  p: Integer;
+begin
+  p := Pos(LineEnding, Lines);
+  if p = 0 then
+  begin
+    result:=Lines;
+    Lines:='';
+  end else begin
+    Result := Copy(Lines, 1, p-1);
+    delete(Lines, 1, (p - 1) + Length(LineEnding));
+  end;
 end;
 
 procedure TEpiReportTXTGenerator.Section(Sender: TEpiReportBase;
@@ -118,6 +164,8 @@ var
   j: Integer;
   Idx: Integer;
   Value: Double;
+  S: String;
+  T: String;
 begin
   FTableList[1] := Text;
 
@@ -126,7 +174,14 @@ begin
   for i := 2 to FTableList.Count - 1 do
   begin
     Idx := ((i - 2) mod FColCount);
-    ColWidths[Idx] := Math.Max(ColWidths[Idx], UTF8Length(FTableList[i]));
+
+    // TODO : Handle multiple lines in one cell.
+    Txt := FTableList[i];
+    while Length(Txt) > 0 do
+    begin
+      S := LineFromLines(Txt);
+      ColWidths[Idx] := Math.Max(ColWidths[Idx], UTF8Length(S));
+    end;
   end;
 
   ColWidthTotal := 0;
@@ -141,26 +196,40 @@ begin
 
   // Table header
   AddLine(DupeString('-', ColWidthTotal));
-  i := (ColWidthTotal - UTF8Length(FTableList[0])) div 2 - 2;
-  AddLine('| ' + DupeString(' ', i) + FTableList[0] + DupeString(' ', i) + ' |');
+  AddLine('| ' + CenterText(FTableList[0], ColWidthTotal - 4) + ' |');
+  AddLine(DupeString('-', ColWidthTotal));
+
+  // Table - first row:
+  Txt := '| ';
+  for i := 0 to FColCount - 1 do
+    Txt += CenterText(FTableList[i+2], ColWidths[i]) + ' | ';
+  TrimRight(Txt);
+  AddLine(Txt);
   AddLine(DupeString('-', ColWidthTotal));
 
   // Table cells
-  for i := 0 to FRowCount - 1 do
+  for i := 1 to FRowCount - 1 do
   begin
     Txt := '|';
     for j := 0 to FColCount - 1 do
     begin
       Idx := (FColCount * i) + j + 2;
 
-      // First row : TODO
-
       Txt += ' ';
-      // If data is number then right-adjust.
-      if TryStrToFloat(FTableList[Idx], Value) then
-        Txt += Format('%' + IntToStr(ColWidths[j]) + 's', [FTableList[Idx]])
-      else
-        Txt += Format('%-' + IntToStr(ColWidths[j]) + 's', [FTableList[Idx]]);
+
+      T := FTableList[Idx];
+      while Length(T) > 0 do
+      begin
+        S := LineFromLines(T);
+        // If data is number then right-adjust.
+        if TryStrToFloat(FTableList[Idx], Value) then
+          Txt += Format('%' + IntToStr(ColWidths[j]) + 's', [S])
+        else
+          Txt += Format('%-' + IntToStr(ColWidths[j]) + 's', [S]);
+
+//        AddLine(Txt);
+      end;
+
       Txt += ' |';
     end;
     AddLine(Txt);
