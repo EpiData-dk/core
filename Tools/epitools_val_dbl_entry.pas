@@ -175,6 +175,8 @@ begin
   MainSortField := nil;
   DuplSortField := nil;
   FDuplKeyFields := nil;
+  MainDF.BeginUpdate;
+  DuplDF.BeginUpdate;
 
   try
     // Create temporary fields to preserver sorting.
@@ -272,6 +274,9 @@ begin
 
     MainSortField.Free;
     DuplSortField.Free;
+
+    MainDF.EndUpdate;
+    DuplDF.EndUpdate;
   end;
 end;
 
@@ -419,7 +424,7 @@ begin
     end;
   end;
 
-  if Assigned(SortFields) then
+  if Assigned(SortFields) and (SortFields.Count > 0) then
     ValidateWithSort
   else
     ValidateSequencial;
