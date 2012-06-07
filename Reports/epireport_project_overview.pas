@@ -8,6 +8,7 @@ uses
   Classes, SysUtils, epireport_base, epireport_htmlgenerator,
   epidocument, epidatafiles;
 
+{
 type
 
   { TEpiReportProjectOverView }
@@ -36,10 +37,10 @@ type
     destructor Destroy; override;
     procedure RunReport; override;
     property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
-  end;
+  end;               }
 
 implementation
-
+                       {
 { TEpiReportProjectOverView }
 
 constructor TEpiReportProjectOverView.Create(const AEpiDocument: TEpiDocument);
@@ -153,6 +154,6 @@ begin
   if FCompleteHtml then
     FHtmlGenerator.CloseHtml;
 end;
-
+}
 end.
 

@@ -5,42 +5,28 @@ unit epireport_txtgenerator;
 interface
 
 uses
-  Classes, SysUtils, epireport_base;
+  Classes, SysUtils, epireport_generator_base;
 
 type
 
   { TEpiReportTXTGenerator }
 
-  TEpiReportTXTGenerator = class
+  TEpiReportTXTGenerator = class(TEpiReportGeneratorBase)
   private
-    FReport: TEpiReportBase;
-    FReportText: TStringList;
     FTableList:  TStringList;
-    InTable: Boolean;
-    FRowCount: Integer;
-    FColCount: Integer;
-
-    // Misc
-    procedure InternalInit;
-    procedure AddLine(Const Txt: string);
     function  CenterText(Const Txt: string; Width: Integer): string;
     function  LineFromLines(var Lines: string): string;
 
+  public
     // Lines
-    procedure Section(Sender: TEpiReportBase; Const Text: string);
-    procedure Heading(Sender: TEpiReportBase; Const Text: string);
-    procedure Line(Sender: TEpiReportBase; Const Text: string);
+    procedure Section(Const Text: string); override;
+    procedure Heading(Const Text: string); override;
+    procedure Line(Const Text: string); override;
 
     // Table
-    procedure TableHeader(Sender: TEpiReportBase; Const Text: string;
-      Const ColCount, RowCount: Integer);
-    procedure TableFooter(Sender: TEpiReportBase; Const Text: string);
-    procedure TableCell(Sender: TEpiReportBase; Const Text: string;
-      Const Col, Row: Integer);
-  public
-    constructor Create(Const Report: TEpiReportBase);
-    destructor  Destroy; override;
-    function    GetReportText: string;
+    procedure TableHeader(Const Text: string; Const AColCount, ARowCount: Integer); override;
+    procedure TableFooter(Const Text: string); override;
+    procedure TableCell(Const Text: string; Const Col, Row: Integer); override;
   end;
 
 implementation
@@ -49,25 +35,6 @@ uses
   strutils, math, LazUTF8;
 
 { TEpiReportTXTGenerator }
-
-procedure TEpiReportTXTGenerator.InternalInit;
-begin
-  FReportText := TStringList.Create;
-  with FReport do
-  begin
-    OnHeading := @Heading;
-    OnLineText := @Line;
-    OnSection := @Section;
-    OnTableCell := @TableCell;
-    OnTableFooter := @TableFooter;
-    OnTableHeader := @TableHeader;
-  end;
-end;
-
-procedure TEpiReportTXTGenerator.AddLine(const Txt: string);
-begin
-  FReportText.Add(Txt);
-end;
 
 function TEpiReportTXTGenerator.CenterText(const Txt: string; Width: Integer
   ): string;
@@ -113,49 +80,43 @@ begin
   end;
 end;
 
-procedure TEpiReportTXTGenerator.Section(Sender: TEpiReportBase;
-  const Text: string);
+procedure TEpiReportTXTGenerator.Section(const Text: string);
 begin
+  inherited Section(Text);
   AddLine(DupeString('=', Length(Text)));
   AddLine(Text);
   AddLine(DupeString('=', Length(Text)));
 end;
 
-procedure TEpiReportTXTGenerator.Heading(Sender: TEpiReportBase;
-  const Text: string);
+procedure TEpiReportTXTGenerator.Heading(const Text: string);
 begin
+  inherited Heading(Text);
   AddLine(DupeString('-', Length(Text)));
   AddLine(Text);
   AddLine(DupeString('-', Length(Text)));
 end;
 
-procedure TEpiReportTXTGenerator.Line(Sender: TEpiReportBase; const Text: string
-  );
+procedure TEpiReportTXTGenerator.Line(const Text: string);
 begin
+  inherited Line(Text);
   AddLine(Text);
 end;
 
-procedure TEpiReportTXTGenerator.TableHeader(Sender: TEpiReportBase;
-  const Text: string; const ColCount, RowCount: Integer);
+procedure TEpiReportTXTGenerator.TableHeader(const Text: string;
+  const AColCount, ARowCount: Integer);
 var
   i: Integer;
 begin
-  if InTable then
-    raise Exception.Create('TEpiReportHTMLGenerator: Previous table not closed!');
-
-  FColCount := ColCount;
-  FRowCount := RowCount;
-  InTable   := true;
+  inherited TableHeader(Text, AColCount, ARowCount);
 
   FTableList := TStringList.Create;
-  FTableList.Capacity := (FColCount * FRowCount) + 2;
+  FTableList.Capacity := (ColCount * RowCount) + 2;
   for i := 0 to FTableList.Capacity -1 do
     FTableList.Add('');
   FTableList[0] := Text;
 end;
 
-procedure TEpiReportTXTGenerator.TableFooter(Sender: TEpiReportBase;
-  const Text: string);
+procedure TEpiReportTXTGenerator.TableFooter(const Text: string);
 var
   ColWidths: TBoundArray;
   ColWidthTotal: Integer;
@@ -169,13 +130,14 @@ var
   HasMoreText: Boolean;
   W: PtrInt;
 begin
+  inherited TableFooter(Text);
   FTableList[1] := Text;
 
   // Find max with of each column.
-  SetLength(ColWidths, FColCount);
+  SetLength(ColWidths, ColCount);
   for i := 2 to FTableList.Count - 1 do
   begin
-    Idx := ((i - 2) mod FColCount);
+    Idx := ((i - 2) mod ColCount);
 
     // TODO : Handle multiple lines in one cell.
     Txt := FTableList[i];
@@ -187,12 +149,12 @@ begin
   end;
 
   ColWidthTotal := 0;
-  for i := 0 to FColCount - 1 do
+  for i := 0 to ColCount - 1 do
     ColWidthTotal += ColWidths[i];
 
   ColWidthTotal := Math.Max(ColWidthTotal, UTF8Length(FTableList[0])) +
     // for adding " | " to sides and in between cells.
-    ((FColCount - 1) * 3) +
+    ((ColCount - 1) * 3) +
     // For adding "| " and " |" in beginning and end of cells
     4;
 
@@ -203,23 +165,23 @@ begin
 
   // Table - first row:
   Txt := '| ';
-  for i := 0 to FColCount - 1 do
+  for i := 0 to ColCount - 1 do
     Txt += CenterText(FTableList[i+2], ColWidths[i]) + ' | ';
   TrimRight(Txt);
   AddLine(Txt);
   AddLine(DupeString('-', ColWidthTotal));
 
   // Table cells
-  for i := 1 to FRowCount - 1 do
+  for i := 1 to RowCount - 1 do
   begin
     HasMoreText := true;
     while HasMoreText do
     begin
       Txt := '|';
       HasMoreText := false;
-      for j := 0 to FColCount - 1 do
+      for j := 0 to ColCount - 1 do
       begin
-        Idx := (FColCount * i) + j + 2;
+        Idx := (ColCount * i) + j + 2;
 
         Txt += ' ';
 
@@ -245,42 +207,17 @@ begin
   AddLine(FTableList[1]);
 
   FTableList.Free;
-  InTable := false;
 end;
 
-procedure TEpiReportTXTGenerator.TableCell(Sender: TEpiReportBase;
-  const Text: string; const Col, Row: Integer);
+procedure TEpiReportTXTGenerator.TableCell(const Text: string; const Col,
+  Row: Integer);
 var
   Idx: Integer;
 begin
-  if not InTable then
-    Raise Exception.Create('TEpiReportTXTGenerator: Table not initialised');
+  inherited TableCell(Text, Col, Row);
 
-  if (Col < 0) or (Col > (FColCount-1)) or
-     (Row < 0) or (Row > (FRowCount-1)) then
-    Raise Exception.Create('TEpiReportTXTGenerator: Index out of bound for table! ' + Format('Col: %d; Row: %d', [Col,Row]));
-
-  Idx := (FColCount * Row) + Col + 2;
+  Idx := (ColCount * Row) + Col + 2;
   FTableList[Idx] := Text;
-end;
-
-constructor TEpiReportTXTGenerator.Create(const Report: TEpiReportBase);
-begin
-  if not Assigned(Report) then
-    Raise Exception.Create('TEpiReportTXTGenerator: Report cannot be nil!');
-  FReport := Report;
-  InternalInit;
-end;
-
-destructor TEpiReportTXTGenerator.Destroy;
-begin
-  FReportText.Free;
-  inherited Destroy;
-end;
-
-function TEpiReportTXTGenerator.GetReportText: string;
-begin
-  result := FReportText.Text;
 end;
 
 end.

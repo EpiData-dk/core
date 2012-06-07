@@ -8,7 +8,8 @@ uses
   Classes, SysUtils, epireport_base, epireport_htmlgenerator,
   epidocument, epidatafiles;
 
-type
+{type
+
 
   { TEpiReportDataSetsGrid }
 
@@ -35,10 +36,10 @@ type
     destructor Destroy; override;
     procedure RunReport; override;
     property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
-  end;
+  end;                }
 
 implementation
-
+                    {
 procedure TEpiReportDataSetsGrid.PrintDataSet(const DataFile: TEpiDataFile;
   const RowNo: Integer);
 begin
@@ -112,5 +113,6 @@ begin
     FHtmlGenerator.CloseHtml;
 end;
 
+}
 end.
 

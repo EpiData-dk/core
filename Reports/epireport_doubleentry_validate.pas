@@ -6,8 +6,7 @@ unit epireport_doubleentry_validate;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epireport_htmlgenerator,
-  epireport_txtgenerator,
+  Classes, SysUtils, epireport_base, epireport_generator_base,
   epidocument, epidatafiles, epitools_val_dbl_entry;
 
 type
@@ -18,8 +17,10 @@ type
   private
     FCompareFields: TEpiFields;
     FDblEntryValidateOptions: TEpiToolsDblEntryValidateOptions;
+    FDuplDF: TEpiDataFile;
     FDuplEpiDocument: TEpiDocument;
     FKeyFields: TEpiFields;
+    FMainDF: TEpiDataFile;
     FResultArray: TEpiDblEntryResultArray;
     FExtraRecs:   TBoundArray;
     FVAlidator:   TEpiToolsDblEntryValidator;
@@ -31,41 +32,13 @@ type
     function    CalcErrorPct: Extended;
     function    CalcErrorFieldPct: Extended;
   public
-    constructor Create(const MainEpiDocument, DuplEpiDocument: TEpiDocument);
+    constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass); override;
     procedure   RunReport; override;
+    property    MainDF: TEpiDataFile read FMainDF write FMainDF;
+    property    DuplDF: TEpiDataFile read FDuplDF write FDuplDF;
     property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
     property    CompareFields: TEpiFields read FCompareFields write FCompareFields;
     property    DblEntryValidateOptions: TEpiToolsDblEntryValidateOptions read FDblEntryValidateOptions write FDblEntryValidateOptions;
-  end;
-
-  { TEpiReportDoubleEntryValidationHtml }
-
-  TEpiReportDoubleEntryValidationHtml = class(TEpiReportDoubleEntryValidation)
-  private
-    FHtmlGenerator: TEpiReportHTMLGenerator;
-    FCompleteHtml: Boolean;
-  protected
-    function GetReportText: string; override;
-  public
-    constructor Create(const MainEpiDocument, DuplEpiDocument: TEpiDocument;
-      Const CompleteHtml: boolean);
-    destructor Destroy; override;
-    procedure RunReport; override;
-    property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
-  end;
-
-  { TEpiReportDoubleEntryValidationTXT }
-
-  TEpiReportDoubleEntryValidationTXT = class(TEpiReportDoubleEntryValidation)
-  private
-    FTxtGenerator: TEpiReportTXTGenerator;
-  protected
-    function GetReportText: string; override;
-  public
-    constructor Create(const MainEpiDocument, DuplEpiDocument: TEpiDocument);
-    destructor Destroy; override;
-    procedure RunReport; override;
-    property TXTGenerator: TEpiReportTXTGenerator read FTxtGenerator;
   end;
 
 implementation
@@ -122,11 +95,10 @@ begin
   result := CalcErrorFields / (CalcCommonRecords * FVAlidator.CompareFields.Count);
 end;
 
-constructor TEpiReportDoubleEntryValidation.Create(const MainEpiDocument,
-  DuplEpiDocument: TEpiDocument);
+constructor TEpiReportDoubleEntryValidation.Create(
+  ReportGeneratorClass: TEpiReportGeneratorBaseClass);
 begin
-  inherited Create(MainEpiDocument);
-  FDuplEpiDocument := DuplEpiDocument;
+  inherited Create(ReportGeneratorClass);
   FDblEntryValidateOptions := EpiDefaultDblEntryValidateOptions;
 end;
 
@@ -145,10 +117,10 @@ begin
   inherited RunReport;
 
   FValidator := TEpiToolsDblEntryValidator.Create;
-  FValidator.MainDF := EpiDocument.DataFiles[0];
-  FValidator.DuplDF := FDuplEpiDocument.DataFiles[0];
-  FValidator.SortFields := FKeyFields;
-  FValidator.CompareFields := FCompareFields;
+  FValidator.MainDF := MainDF;
+  FValidator.DuplDF := DuplDF;
+  FValidator.SortFields := KeyFields;
+  FValidator.CompareFields := CompareFields;
   FValidator.ValidateDataFiles(FResultArray, FExtraRecs, DblEntryValidateOptions);
   FValidator.SortDblEntryResultArray(FResultArray);
 
@@ -258,63 +230,6 @@ begin
   DoTableFooter('');
 
   FValidator.Free;
-end;
-
-{ TEpiReportDoubleEntryValidationHtml }
-
-function TEpiReportDoubleEntryValidationHtml.GetReportText: string;
-begin
-  Result := FHtmlGenerator.GetReportText;
-end;
-
-constructor TEpiReportDoubleEntryValidationHtml.Create(const MainEpiDocument,
-  DuplEpiDocument: TEpiDocument; const CompleteHtml: boolean);
-begin
-  inherited Create(MainEpiDocument, DuplEpiDocument);
-  FHtmlGenerator := TEpiReportHTMLGenerator.Create(Self);
-  FCompleteHtml := CompleteHtml;
-end;
-
-destructor TEpiReportDoubleEntryValidationHtml.Destroy;
-begin
-  FHtmlGenerator.Free;
-  inherited Destroy;
-end;
-
-procedure TEpiReportDoubleEntryValidationHtml.RunReport;
-begin
-  if FCompleteHtml then
-    FHtmlGenerator.InitHtml('Double Entry Validation');
-
-  inherited RunReport;
-
-  if FCompleteHtml then
-    FHtmlGenerator.CloseHtml;
-end;
-
-{ TEpiReportDoubleEntryValidationTXT }
-
-function TEpiReportDoubleEntryValidationTXT.GetReportText: string;
-begin
-  Result := FTxtGenerator.GetReportText;
-end;
-
-constructor TEpiReportDoubleEntryValidationTXT.Create(const MainEpiDocument,
-  DuplEpiDocument: TEpiDocument);
-begin
-  inherited Create(MainEpiDocument, DuplEpiDocument);
-  FTxtGenerator := TEpiReportTXTGenerator.Create(Self);
-end;
-
-destructor TEpiReportDoubleEntryValidationTXT.Destroy;
-begin
-  FTxtGenerator.Free;
-  inherited Destroy;
-end;
-
-procedure TEpiReportDoubleEntryValidationTXT.RunReport;
-begin
-  inherited RunReport;
 end;
 
 end.

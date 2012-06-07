@@ -1,4 +1,4 @@
-unit epireport_htmlgenerator;
+unit epireport_generator_html;
 
 {$mode objfpc}{$H+}
 

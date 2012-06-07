@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, epireport_base, epireport_types, epireport_htmlgenerator,
   epidocument, epidatafiles;
 
-type
+{type
 
   { TEpiReportExtendedFieldList }
 
@@ -41,9 +41,9 @@ type
     procedure RunReport; override;
     property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
   end;
-
+                   }
 implementation
-
+            {
 uses
   epimiscutils, epidatafilestypes;
 
@@ -347,6 +347,6 @@ begin
   if FCompleteHtml then
     FHtmlGenerator.CloseHtml;
 end;
-
+             }
 end.
 

@@ -7,6 +7,7 @@ interface
 uses
   Classes, SysUtils, epireport_base, epireport_htmlgenerator;
 
+{
 type
 
   { TEpiReportFileList }
@@ -33,11 +34,11 @@ type
     destructor Destroy; override;
     procedure RunReport; override;
     property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
-  end;
+  end;            }
 
 
 implementation
-
+{
 uses
   epidocument,
   FileUtil;
@@ -109,6 +110,6 @@ begin
   if FCompleteHtml then
     FHtmlGenerator.CloseHtml;
 end;
-
+}
 end.
 

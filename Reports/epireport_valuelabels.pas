@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, epireport_base, epireport_htmlgenerator,
   epidocument, epivaluelabels;
-
+{
 type
 
   { TEpiReportValueLabels }
@@ -37,8 +37,8 @@ type
     procedure RunReport; override;
     property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
   end;
-
-implementation
+               }
+implementation  {
 
 uses
   epimiscutils;
@@ -121,6 +121,6 @@ begin
   if FCompleteHtml then
     FHtmlGenerator.CloseHtml;
 end;
-
+}
 end.
 
