@@ -166,6 +166,8 @@ var
   Value: Double;
   S: String;
   T: String;
+  HasMoreText: Boolean;
+  W: PtrInt;
 begin
   FTableList[1] := Text;
 
@@ -210,29 +212,33 @@ begin
   // Table cells
   for i := 1 to FRowCount - 1 do
   begin
-    Txt := '|';
-    for j := 0 to FColCount - 1 do
+    HasMoreText := true;
+    while HasMoreText do
     begin
-      Idx := (FColCount * i) + j + 2;
-
-      Txt += ' ';
-
-      T := FTableList[Idx];
-      while Length(T) > 0 do
+      Txt := '|';
+      HasMoreText := false;
+      for j := 0 to FColCount - 1 do
       begin
+        Idx := (FColCount * i) + j + 2;
+
+        Txt += ' ';
+
+        T := FTableList[Idx];
         S := LineFromLines(T);
+        FTableList[Idx] := T;
+
         // If data is number then right-adjust.
-        if TryStrToFloat(FTableList[Idx], Value) then
-          Txt += Format('%' + IntToStr(ColWidths[j]) + 's', [S])
+        W := ColWidths[j] - UTF8Length(S);
+        if TryStrToFloat(S, Value) then
+          Txt += DupeString(' ', W) + S
         else
-          Txt += Format('%-' + IntToStr(ColWidths[j]) + 's', [S]);
+          Txt += S + DupeString(' ', W);
+        Txt += ' |';
 
-//        AddLine(Txt);
+        HasMoreText := HasMoreText or (Length(T) > 0);
       end;
-
-      Txt += ' |';
+      AddLine(Txt);
     end;
-    AddLine(Txt);
     AddLine(DupeString('-', ColWidthTotal));
   end;
   // Table footer

@@ -250,7 +250,8 @@ begin
     begin
       // If MRunner < MSize, then records exists in Main DF with no matching
       // records in Dupl. DF. Hence mark them as NoExists.
-      AddResult(MRunner, ValNoExists);
+      if not (devIgnoreMissingRecords in FValidateOptions) then
+        AddResult(MRunner, ValNoExists);
       Inc(MRunner);
     end;
 
