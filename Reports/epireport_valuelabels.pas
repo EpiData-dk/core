@@ -5,10 +5,14 @@ unit epireport_valuelabels;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epireport_htmlgenerator,
+  Classes, SysUtils, epireport_base, epireport_generator_html,
   epidocument, epivaluelabels;
-{
+
+const
+  SEpiReportValueLabelsNoValueLabelSets = 'No EpiValueLabels assigned';
+
 type
+  EEpiReportValueLabelsException = class(Exception);
 
   { TEpiReportValueLabels }
 
@@ -16,29 +20,14 @@ type
   private
     FEpiValueLabels: TEpiValueLabelSets;
     procedure   PrintValueLabelSet(Const VLSet: TEpiValueLabelSet);
-  public
-    constructor Create(const AEpiDocument: TEpiDocument); override;
-    procedure   RunReport; override;
-    property    EpiValueLabels: TEpiValueLabelSets read FEpiValueLabels;
-  end;
-
-  { TEpiReportValueLabelsHtml }
-
-  TEpiReportValueLabelsHtml = class(TEpiReportValueLabels)
-  private
-    FHtmlGenerator: TEpiReportHTMLGenerator;
-    FCompleteHtml: Boolean;
   protected
-    function GetReportText: string; override;
+    procedure DoSanityCheck; override;
   public
-    constructor Create(const AEpiDocument: TEpiDocument;
-      Const CompleteHtml: boolean);
-    destructor Destroy; override;
-    procedure RunReport; override;
-    property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
+    procedure   RunReport; override;
+    property    EpiValueLabels: TEpiValueLabelSets read FEpiValueLabels write FEpiValueLabels;
   end;
-               }
-implementation  {
+
+implementation
 
 uses
   epimiscutils;
@@ -66,10 +55,12 @@ begin
   DoTableFooter('');
 end;
 
-constructor TEpiReportValueLabels.Create(const AEpiDocument: TEpiDocument);
+procedure TEpiReportValueLabels.DoSanityCheck;
 begin
-  inherited Create(AEpiDocument);
-  FEpiValueLabels := AEpiDocument.ValueLabelSets;
+  inherited DoSanityCheck;
+
+  if not Assigned(FEpiValueLabels) then
+    DoError(EEpiReportValueLabelsException, SEpiReportValueLabelsNoValueLabelSets);
 end;
 
 procedure TEpiReportValueLabels.RunReport;
@@ -90,37 +81,5 @@ begin
     PrintValueLabelSet(TEpiValueLabelSet(LabelList.Objects[i]));
 end;
 
-{ TEpiReportValueLabelsHtml }
-
-function TEpiReportValueLabelsHtml.GetReportText: string;
-begin
-  Result := FHtmlGenerator.GetReportText;
-end;
-
-constructor TEpiReportValueLabelsHtml.Create(const AEpiDocument: TEpiDocument;
-  const CompleteHtml: boolean);
-begin
-  inherited Create(AEpiDocument);
-  FHtmlGenerator := TEpiReportHTMLGenerator.Create(Self);
-  FCompleteHtml := CompleteHtml;
-end;
-
-destructor TEpiReportValueLabelsHtml.Destroy;
-begin
-  FHtmlGenerator.Free;
-  inherited Destroy;
-end;
-
-procedure TEpiReportValueLabelsHtml.RunReport;
-begin
-  if FCompleteHtml then
-    FHtmlGenerator.InitHtml('List of Valuelabels');
-
-  inherited RunReport;
-
-  if FCompleteHtml then
-    FHtmlGenerator.CloseHtml;
-end;
-}
 end.
 

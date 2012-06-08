@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="3"/>
-    <Files Count="53">
+    <Files Count="54">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -240,13 +240,17 @@
         <UnitName Value="epireport_doubleentry_validate"/>
       </Item51>
       <Item52>
-        <Filename Value="Reports/epireport_txtgenerator.pas"/>
-        <UnitName Value="epireport_txtgenerator"/>
+        <Filename Value="Reports/epireport_generator_txt.pas"/>
+        <UnitName Value="epireport_generator_txt"/>
       </Item52>
       <Item53>
         <Filename Value="Reports/epireport_generator_base.pas"/>
         <UnitName Value="epireport_generator_base"/>
       </Item53>
+      <Item54>
+        <Filename Value="Reports/epireport_datafilesreport_base.pas"/>
+        <UnitName Value="epireport_datafilesreport_base"/>
+      </Item54>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

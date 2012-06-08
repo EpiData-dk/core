@@ -9,7 +9,12 @@ uses
   Classes, SysUtils, epireport_base, epireport_generator_base,
   epidocument, epidatafiles, epitools_val_dbl_entry;
 
+const
+  SEpiReportDEVNoDataFile = 'Datafile "%s" not assigned';
+  SEpiReportDEVNoFields   = 'Fields "%s" not assigned';
+
 type
+  EEpiReportDEVException = class(Exception);
 
   { TEpiReportDoubleEntryValidation }
 
@@ -31,6 +36,8 @@ type
     function    CalcErrorFields:  integer;
     function    CalcErrorPct: Extended;
     function    CalcErrorFieldPct: Extended;
+  protected
+    procedure DoSanityCheck; override;
   public
     constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass); override;
     procedure   RunReport; override;
@@ -93,6 +100,20 @@ end;
 function TEpiReportDoubleEntryValidation.CalcErrorFieldPct: Extended;
 begin
   result := CalcErrorFields / (CalcCommonRecords * FVAlidator.CompareFields.Count);
+end;
+
+procedure TEpiReportDoubleEntryValidation.DoSanityCheck;
+begin
+  inherited DoSanityCheck;
+
+  if not Assigned(MainDF) then
+    DoError(EEpiReportDEVException, Format(SEpiReportDEVNoDataFile, ['MainDF']));
+  if not Assigned(DuplDF) then
+    DoError(EEpiReportDEVException, Format(SEpiReportDEVNoDataFile, ['DuplDF']));
+  if not Assigned(KeyFields) then
+    DoError(EEpiReportDEVException, Format(SEpiReportDEVNoFields, ['KeyFields']));
+  if not Assigned(CompareFields) then
+    DoError(EEpiReportDEVException, Format(SEpiReportDEVNoFields, ['CompareFields']));
 end;
 
 constructor TEpiReportDoubleEntryValidation.Create(

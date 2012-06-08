@@ -18,8 +18,10 @@ type
   TEpiReportBase = class
   private
     FReportGenerator: TEpiReportGeneratorBase;
-    procedure DoError(Const Msg: string);
+    procedure SanityCheck;
   protected
+    procedure DoError(EC: ExceptClass; Const Msg: string);
+    procedure DoSanityCheck; virtual;
     function GetReportText: string; virtual;
     procedure DoTableHeader(Const Text: string;
       Const ColCount, RowCount: integer);
@@ -36,9 +38,20 @@ type
 
 implementation
 
-procedure TEpiReportBase.DoError(const Msg: string);
+procedure TEpiReportBase.DoError(EC: ExceptClass; const Msg: string);
 begin
-  raise EEpiReportBaseException.Create(Msg);
+  raise EC.Create(Msg);
+end;
+
+procedure TEpiReportBase.SanityCheck;
+begin
+  DoSanityCheck;
+end;
+
+procedure TEpiReportBase.DoSanityCheck;
+begin
+  if not Assigned(FReportGenerator) then
+    DoError(EEpiReportBaseException, SEpiReportBaseNoGenerator);
 end;
 
 function TEpiReportBase.GetReportText: string;
@@ -85,8 +98,7 @@ end;
 
 procedure TEpiReportBase.RunReport;
 begin
-  if not Assigned(FReportGenerator) then
-    DoError(SEpiReportBaseNoGenerator);
+  SanityCheck;
 end;
 
 end.

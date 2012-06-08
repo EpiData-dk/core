@@ -1,4 +1,4 @@
-unit epireport_txtgenerator;
+unit epireport_generator_txt;
 
 {$mode objfpc}{$H+}
 
@@ -159,8 +159,12 @@ begin
     4;
 
   // Table header
-  AddLine(DupeString('-', ColWidthTotal));
-  AddLine('| ' + CenterText(FTableList[0], ColWidthTotal - 4) + ' |');
+  if Length(FTableList[0]) > 0 then
+  begin
+    // Do not write an empty header... looks goofy :)
+    AddLine(DupeString('-', ColWidthTotal));
+    AddLine('| ' + CenterText(FTableList[0], ColWidthTotal - 4) + ' |');
+  end;
   AddLine(DupeString('-', ColWidthTotal));
 
   // Table - first row:

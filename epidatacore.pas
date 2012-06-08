@@ -16,8 +16,8 @@ uses
   episervice_ipc, episervice_ipctypes, epiconvertutils, epimiscutils, 
   epistringutils, epiversionutils, UniqueInstanceRaw, epitools_integritycheck, 
   epiglobals, epitools_val_dbl_entry, epidatafileutils, 
-  epireport_doubleentry_validate, epireport_txtgenerator, 
-  epireport_generator_base;
+  epireport_doubleentry_validate, epireport_generator_txt, 
+  epireport_generator_base, epireport_datafilesreport_base;
 
 implementation
 
