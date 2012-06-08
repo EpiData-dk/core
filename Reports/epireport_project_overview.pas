@@ -5,47 +5,40 @@ unit epireport_project_overview;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epireport_htmlgenerator,
-  epidocument, epidatafiles;
+  Classes, SysUtils, epireport_base, epireport_generator_base,
+  epidocument;
+
+const
+  SEpiReportProjectOverViewNoDocument = 'Document not assigned';
 
 type
+  EEpiReportProjectOverViewException = class(Exception);
 
   { TEpiReportProjectOverView }
 
   TEpiReportProjectOverView = class(TEpiReportBase)
   private
     FDocument: TEpiDocument;
-    FEpiDataFiles: TEpiDataFiles;
-  public
-    constructor Create(const AEpiDocument: TEpiDocument); override;
-    procedure   RunReport; override;
-    property    EpiDataFiles: TEpiDataFiles read FEpiDataFiles;
-  end;
-
-  { TEpiReportProjectOverViewHtml }
-
-  TEpiReportProjectOverViewHtml = class(TEpiReportProjectOverView)
-  private
-    FHtmlGenerator: TEpiReportHTMLGenerator;
-    FCompleteHtml: Boolean;
   protected
-    function GetReportText: string; override;
+    procedure DoSanityCheck; override;
   public
-    constructor Create(const AEpiDocument: TEpiDocument;
-      Const CompleteHtml: boolean = false);
-    destructor Destroy; override;
     procedure RunReport; override;
-    property HtmlGenerator: TEpiReportHTMLGenerator read FHtmlGenerator;
+    property  Document: TEpiDocument read FDocument write FDocument;
   end;
 
 implementation
 
+uses
+  epidatafiles;
+
 { TEpiReportProjectOverView }
 
-constructor TEpiReportProjectOverView.Create(const AEpiDocument: TEpiDocument);
+procedure TEpiReportProjectOverView.DoSanityCheck;
 begin
-  inherited Create(AEpiDocument);
-  FDocument := AEpiDocument;
+  inherited DoSanityCheck;
+
+  if not Assigned(FDocument) then
+    DoError(EEpiReportProjectOverViewException, SEpiReportProjectOverViewNoDocument);
 end;
 
 procedure TEpiReportProjectOverView.RunReport;
@@ -120,38 +113,6 @@ begin
     DoTableCell(4, 1, IntToStr(DeletedCount));
   end;
   DoTableFooter('');
-end;
-
-{ TEpiReportProjectOverViewHtml }
-
-function TEpiReportProjectOverViewHtml.GetReportText: string;
-begin
-  Result := FHtmlGenerator.GetReportText;
-end;
-
-constructor TEpiReportProjectOverViewHtml.Create(
-  const AEpiDocument: TEpiDocument; const CompleteHtml: boolean);
-begin
-  inherited Create(AEpiDocument);
-  FHtmlGenerator := TEpiReportHTMLGenerator.Create(Self);
-  FCompleteHtml := CompleteHtml;
-end;
-
-destructor TEpiReportProjectOverViewHtml.Destroy;
-begin
-  FHtmlGenerator.Free;
-  inherited Destroy;
-end;
-
-procedure TEpiReportProjectOverViewHtml.RunReport;
-begin
-  if FCompleteHtml then
-    FHtmlGenerator.InitHtml('Project Overview');
-
-  inherited RunReport;
-
-  if FCompleteHtml then
-    FHtmlGenerator.CloseHtml;
 end;
 
 end.

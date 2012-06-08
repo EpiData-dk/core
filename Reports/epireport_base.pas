@@ -5,42 +5,23 @@ unit epireport_base;
 interface
 
 uses
-  Classes, SysUtils, epidocument;
+  Classes, SysUtils, epireport_generator_base;
+
+const
+  SEpiReportBaseNoGenerator = 'No ReportGenerator Assigned To Report';
 
 type
-  TEpiReportBase = class;
-
-  // Lines
-  TEpiReportSection     = procedure(Sender: TEpiReportBase; Const Text: string) of object;
-  TEpiReportHeading     = procedure(Sender: TEpiReportBase; Const Text: string) of object;
-  TEpiReportLineText    = procedure(Sender: TEpiReportBase; Const Text: string) of object;
-
-  // Table
-  TEpiReportTableHeader = procedure(Sender: TEpiReportBase; Const Text: string;
-    Const ColCount, RowCount: Integer) of object;
-  TEpiReportTableFooter = procedure(Sender: TEpiReportBase; Const Text: string) of object;
-  TEpiReportTableCell   = procedure(Sender: TEpiReportBase; Const Text: string;
-    Const Col, Row: Integer) of object;
-
+  EEpiReportBaseException = class(Exception);
 
   { TEpiReportBase }
 
   TEpiReportBase = class
   private
-    FEpiDocument: TEpiDocument;
-    FOnHeading: TEpiReportHeading;
-    FOnLineText: TEpiReportLineText;
-    FOnSection: TEpiReportSection;
-    FOnTableCell: TEpiReportTableCell;
-    FOnTableFooter: TEpiReportTableFooter;
-    FOnTableHeader: TEpiReportTableHeader;
-    procedure SetOnHeading(const AValue: TEpiReportHeading);
-    procedure SetOnLineText(const AValue: TEpiReportLineText);
-    procedure SetOnSection(const AValue: TEpiReportSection);
-    procedure SetOnTableCell(const AValue: TEpiReportTableCell);
-    procedure SetOnTableFooter(const AValue: TEpiReportTableFooter);
-    procedure SetOnTableHeader(const AValue: TEpiReportTableHeader);
+    FReportGenerator: TEpiReportGeneratorBase;
+    procedure SanityCheck;
   protected
+    procedure DoError(EC: ExceptClass; Const Msg: string);
+    procedure DoSanityCheck; virtual;
     function GetReportText: string; virtual;
     procedure DoTableHeader(Const Text: string;
       Const ColCount, RowCount: integer);
@@ -50,109 +31,74 @@ type
     procedure DoHeading(Const Text: string);
     procedure DoLineText(Const Text: string);
   public
-    constructor Create(Const AEpiDocument: TEpiDocument); virtual;
+    constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass); virtual;
     procedure RunReport; virtual;
     property ReportText: string read GetReportText;
-    property OnTableHeader: TEpiReportTableHeader read FOnTableHeader write SetOnTableHeader;
-    property OnTableFooter: TEpiReportTableFooter read FOnTableFooter write SetOnTableFooter;
-    property OnTableCell:   TEpiReportTableCell read FOnTableCell write SetOnTableCell;
-    property OnSection:     TEpiReportSection read FOnSection write SetOnSection;
-    property OnHeading:     TEpiReportHeading read FOnHeading write SetOnHeading;
-    property OnLineText:    TEpiReportLineText read FOnLineText write SetOnLineText;
-    property EpiDocument:   TEpiDocument read FEpiDocument;
   end;
 
 implementation
 
-{ TEpiReportBase }
-
-procedure TEpiReportBase.SetOnHeading(const AValue: TEpiReportHeading);
+procedure TEpiReportBase.DoError(EC: ExceptClass; const Msg: string);
 begin
-  if FOnHeading = AValue then exit;
-  FOnHeading := AValue;
+  raise EC.Create(Msg);
 end;
 
-procedure TEpiReportBase.SetOnLineText(const AValue: TEpiReportLineText);
+procedure TEpiReportBase.SanityCheck;
 begin
-  if FOnLineText = AValue then exit;
-  FOnLineText := AValue;
+  DoSanityCheck;
 end;
 
-procedure TEpiReportBase.SetOnSection(const AValue: TEpiReportSection);
+procedure TEpiReportBase.DoSanityCheck;
 begin
-  if FOnSection = AValue then exit;
-  FOnSection := AValue;
-end;
-
-procedure TEpiReportBase.SetOnTableCell(const AValue: TEpiReportTableCell);
-begin
-  if FOnTableCell = AValue then exit;
-  FOnTableCell := AValue;
-end;
-
-procedure TEpiReportBase.SetOnTableFooter(const AValue: TEpiReportTableFooter);
-begin
-  if FOnTableFooter = AValue then exit;
-  FOnTableFooter := AValue;
-end;
-
-procedure TEpiReportBase.SetOnTableHeader(const AValue: TEpiReportTableHeader);
-begin
-  if FOnTableHeader = AValue then exit;
-  FOnTableHeader := AValue;
+  if not Assigned(FReportGenerator) then
+    DoError(EEpiReportBaseException, SEpiReportBaseNoGenerator);
 end;
 
 function TEpiReportBase.GetReportText: string;
 begin
-  // Empty result - must be implemented in sub-classes.
-  result := '';
+  result := FReportGenerator.GetReportText;
 end;
 
 procedure TEpiReportBase.DoTableHeader(const Text: string; const ColCount,
   RowCount: integer);
 begin
-  if Assigned(FOnTableHeader) then
-    FOnTableHeader(Self, Text, ColCount, RowCount);
+  FReportGenerator.TableHeader(Text, ColCount, RowCount);
 end;
 
 procedure TEpiReportBase.DoTableFooter(Const Text: string);
 begin
-  if Assigned(OnTableFooter) then
-    OnTableFooter(Self, Text);
+  FReportGenerator.TableFooter(Text);
 end;
 
 procedure TEpiReportBase.DoTableCell(Const Col, Row: Integer; Const Text: string);
 begin
-  if Assigned(FOnTableCell) then
-    FOnTableCell(Self, Text, Col, Row);
+  FReportGenerator.TableCell(Text, Col, Row);
 end;
 
 procedure TEpiReportBase.DoSection(Const Text: string);
 begin
-  if Assigned(OnSection) then
-    OnSection(Self, Text);
+  FReportGenerator.Section(Text);
 end;
 
 procedure TEpiReportBase.DoHeading(const Text: string);
 begin
-  if Assigned(OnHeading) then
-    OnHeading(Self, Text);
+  FReportGenerator.Heading(Text);
 end;
 
 procedure TEpiReportBase.DoLineText(Const Text: string);
 begin
-  if Assigned(OnLineText) then
-    OnLineText(Self, Text);
+  FReportGenerator.Line(Text);
 end;
 
-constructor TEpiReportBase.Create(const AEpiDocument: TEpiDocument);
+constructor TEpiReportBase.Create(
+  ReportGeneratorClass: TEpiReportGeneratorBaseClass);
 begin
-  FEpiDocument := AEpiDocument;
+  FReportGenerator := ReportGeneratorClass.Create;
 end;
 
 procedure TEpiReportBase.RunReport;
 begin
-  // Do nothing, should be overriden.
+  SanityCheck;
 end;
 
 end.

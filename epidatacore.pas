@@ -11,12 +11,13 @@ uses
   epiranges, epirelations, episettings, epistudy, epivaluelabels, 
   epieximtypes, epiexport, epiexportsettings, epiimport, epireport_base, 
   epireport_databasegrid, epireport_fieldlist_extended, 
-  epireport_fieldlist_simple, epireport_filelist, epireport_htmlgenerator, 
+  epireport_fieldlist_simple, epireport_filelist, epireport_generator_html, 
   epireport_project_overview, epireport_types, epireport_valuelabels, 
   episervice_ipc, episervice_ipctypes, epiconvertutils, epimiscutils, 
   epistringutils, epiversionutils, UniqueInstanceRaw, epitools_integritycheck, 
   epiglobals, epitools_val_dbl_entry, epidatafileutils, 
-  epireport_doubleentry_validate, epireport_txtgenerator;
+  epireport_doubleentry_validate, epireport_generator_txt, 
+  epireport_generator_base, epireport_datafilesreport_base;
 
 implementation
 
