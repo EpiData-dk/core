@@ -39,7 +39,7 @@ type
   protected
     procedure DoSanityCheck; override;
   public
-    constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass); override;
+    constructor Create(ReportGenerator: TEpiReportGeneratorBase); override;
     procedure   RunReport; override;
     property    MainDF: TEpiDataFile read FMainDF write FMainDF;
     property    DuplDF: TEpiDataFile read FDuplDF write FDuplDF;
@@ -117,9 +117,9 @@ begin
 end;
 
 constructor TEpiReportDoubleEntryValidation.Create(
-  ReportGeneratorClass: TEpiReportGeneratorBaseClass);
+  ReportGenerator: TEpiReportGeneratorBase);
 begin
-  inherited Create(ReportGeneratorClass);
+  inherited Create(ReportGenerator);
   FDblEntryValidateOptions := EpiDefaultDblEntryValidateOptions;
 end;
 

@@ -22,13 +22,9 @@ type
     procedure TableFooter(Const Text: string); override;
     procedure TableCell(Const Text: string; Const Col, Row: Integer); override;
 
-    // HTML ??
-    procedure   InitHtml(Const Title: string);
-    procedure   CloseHtml;
-  public
-    class function HtmlHeader(const Title: string; const StyleSheet: string = ''): string;
-    class function HtmlFooter: string;
-    class function HtmlStyleSheet: string;
+
+    procedure StartReport(const Title: string); override;
+    procedure EndReport; override;
   end;
 
 function  HtmlString(Const Txt: String): String;
@@ -117,20 +113,11 @@ begin
   AddLine(S);
 end;
 
-procedure TEpiReportHTMLGenerator.InitHtml(const Title: string);
+procedure TEpiReportHTMLGenerator.StartReport(const Title: string);
+var
+  Txt: String;
 begin
-  AddLine(HtmlHeader(Title));
-end;
-
-procedure TEpiReportHTMLGenerator.CloseHtml;
-begin
-  AddLine(HtmlFooter);
-end;
-
-class function TEpiReportHTMLGenerator.HtmlHeader(const Title: string;
-  const StyleSheet: string): string;
-begin
-  result :=
+  Txt :=
     '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">' + LineEnding +
     '<HTML>' + LineEnding +
     '<Head>' + LineEnding +
@@ -142,32 +129,9 @@ begin
     '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' + LineEnding +
     '' + LineEnding +
     '<STYLE type="text/css">' + LineEnding +
-    '<!--' + LineEnding;
 
-
-  if StyleSheet <> '' then
-    Result += StyleSheet
-  else
-    Result += HtmlStyleSheet;
-
-  result +=
-    '-->' + LineEnding +
-    '</STYLE>' + LineEnding +
-    '<TITLE>' + HtmlString(Title) + '</TITLE>' + LineEnding +
-    '</HEAD>' + LineEnding +
-    '<BODY class=body>' + LineEnding;
-end;
-
-class function TEpiReportHTMLGenerator.HtmlFooter: string;
-begin
-  result :=
-    '</BODY>' + LineEnding +
-    '</HTML>';
-end;
-
-class function TEpiReportHTMLGenerator.HtmlStyleSheet: string;
-begin
-  result :=
+    // Stylesheet
+    '<!--' + LineEnding +
     '  .body {color: black; background-color: white;  font-size: 1.0em; font-weight: normal}' + LineEnding +
     '' + LineEnding +
     '   p {color: black ;font-size: 1.0em; font-family: proportional,monospace; font-weight: normal; margin: 0em }' + LineEnding +
@@ -196,7 +160,20 @@ begin
     '   v1.0' + LineEnding +
     '   Use the design table.system as a template for a new design. To be safe, define all styles for a design.' + LineEnding +
     '   Note that a style followed by a comma will take the attributes at the end of the group, so do not sort this file.' + LineEnding +
-    '*/' + LineEnding;
+    '*/' + LineEnding +
+    '-->' + LineEnding +
+
+    '</STYLE>' + LineEnding +
+    '<TITLE>' + HtmlString(Title) + '</TITLE>' + LineEnding +
+    '</HEAD>' + LineEnding +
+    '<BODY class=body>' + LineEnding;
+  AddLine(Txt);
+end;
+
+procedure TEpiReportHTMLGenerator.EndReport;
+begin
+  AddLine('</BODY>' + LineEnding +
+          '</HTML>');
 end;
 
 end.

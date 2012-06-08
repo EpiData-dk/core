@@ -18,7 +18,7 @@ type
   protected
     procedure PrintDataFile(const DataFile: TEpiDataFile); override;
   public
-    constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass);
+    constructor Create(ReportGenerator: TEpiReportGeneratorBase);
        override;
     procedure   RunReport; override;
     property    SortType: TEpiReportFieldListSortType read FSortType write FSortType;
@@ -227,9 +227,9 @@ begin
 end;
 
 constructor TEpiReportExtendedFieldList.Create(
-  ReportGeneratorClass: TEpiReportGeneratorBaseClass);
+  ReportGenerator: TEpiReportGeneratorBase);
 begin
-  inherited Create(ReportGeneratorClass);
+  inherited Create(ReportGenerator);
   FSortType := stEntryFlow;
 end;
 

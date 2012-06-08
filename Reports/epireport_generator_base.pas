@@ -44,6 +44,10 @@ type
     procedure TableFooter(Const Text: string); virtual;
     procedure TableCell(Const Text: string;
       Const Col, Row: Integer); virtual;
+
+    // Generator static output
+    procedure   StartReport(Const Title: string); virtual; abstract;
+    procedure   EndReport; virtual; abstract;
   public
     constructor Create; virtual;
     destructor  Destroy; override;

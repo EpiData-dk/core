@@ -31,7 +31,13 @@ type
     procedure DoHeading(Const Text: string);
     procedure DoLineText(Const Text: string);
   public
-    constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass); virtual;
+    // This constructor automaticall call the constructor with an instance of the
+    // assigned ReportGeneratorClass.
+    constructor Create(ReportGeneratorClass: TEpiReportGeneratorBaseClass); virtual; overload;
+    // This constructor may/should be used if the same generator is used across
+    // multiple reports. In addition this is the contructor sub-classes should override
+    // since it is called from the other constructor.
+    constructor Create(ReportGenerator: TEpiReportGeneratorBase); virtual; overload;
     procedure RunReport; virtual;
     property ReportText: string read GetReportText;
   end;
@@ -93,7 +99,12 @@ end;
 constructor TEpiReportBase.Create(
   ReportGeneratorClass: TEpiReportGeneratorBaseClass);
 begin
-  FReportGenerator := ReportGeneratorClass.Create;
+  Create(ReportGeneratorClass.Create);
+end;
+
+constructor TEpiReportBase.Create(ReportGenerator: TEpiReportGeneratorBase);
+begin
+  FReportGenerator := ReportGenerator;
 end;
 
 procedure TEpiReportBase.RunReport;

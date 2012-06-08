@@ -27,6 +27,9 @@ type
     procedure TableHeader(Const Text: string; Const AColCount, ARowCount: Integer); override;
     procedure TableFooter(Const Text: string); override;
     procedure TableCell(Const Text: string; Const Col, Row: Integer); override;
+
+    procedure StartReport(Const Title: string); override;
+    procedure EndReport; override;
   end;
 
 implementation
@@ -222,6 +225,16 @@ begin
 
   Idx := (ColCount * Row) + Col + 2;
   FTableList[Idx] := Text;
+end;
+
+procedure TEpiReportTXTGenerator.StartReport(const Title: string);
+begin
+  // Do nothing
+end;
+
+procedure TEpiReportTXTGenerator.EndReport;
+begin
+  // Do nothing
 end;
 
 end.
