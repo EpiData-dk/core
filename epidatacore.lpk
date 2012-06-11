@@ -6,7 +6,7 @@
     <CompilerOptions>
       <Version Value="11"/>
       <SearchPaths>
-        <IncludeFiles Value="Core"/>
+        <IncludeFiles Value="Core;."/>
         <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
@@ -33,7 +33,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Major="1" Minor="3"/>
+    <Version Major="1" Minor="3" Build="1"/>
     <Files Count="54">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
