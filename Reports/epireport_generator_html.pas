@@ -1,49 +1,30 @@
-unit epireport_htmlgenerator;
+unit epireport_generator_html;
 
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils, epireport_base;
+  Classes, SysUtils, epireport_generator_base;
 
 type
 
   { TEpiReportHTMLGenerator }
 
-  TEpiReportHTMLGenerator = class
-  private
-    FReport: TEpiReportBase;
-    FReportText: TStringList;
-    InTable: Boolean;
-    FRowCount: Integer;
-    FColCount: Integer;
-
-    // Misc
-    procedure InternalInit;
-    procedure AddLine(Const Txt: string);
-
-    // Lines
-    procedure Section(Sender: TEpiReportBase; Const Text: string);
-    procedure Heading(Sender: TEpiReportBase; Const Text: string);
-    procedure Line(Sender: TEpiReportBase; Const Text: string);
+  TEpiReportHTMLGenerator = class(TEpiReportGeneratorBase)
+  public
+    procedure Section(Const Text: string); override;
+    procedure Heading(Const Text: string); override;
+    procedure Line(Const Text: string); override;
 
     // Table
-    procedure TableHeader(Sender: TEpiReportBase; Const Text: string;
-      Const ColCount, RowCount: Integer);
-    procedure TableFooter(Sender: TEpiReportBase; Const Text: string);
-    procedure TableCell(Sender: TEpiReportBase; Const Text: string;
-      Const Col, Row: Integer);
-  public
-    constructor Create(Const Report: TEpiReportBase);
-    destructor  Destroy; override;
-    function    GetReportText: string;
-    procedure   InitHtml(Const Title: string);
-    procedure   CloseHtml;
-  public
-    class function HtmlHeader(const Title: string; const StyleSheet: string = ''): string;
-    class function HtmlFooter: string;
-    class function HtmlStyleSheet: string;
+    procedure TableHeader(Const Text: string; Const AColCount, ARowCount: Integer); override;
+    procedure TableFooter(Const Text: string); override;
+    procedure TableCell(Const Text: string; Const Col, Row: Integer); override;
+
+
+    procedure StartReport(const Title: string); override;
+    procedure EndReport; override;
   end;
 
 function  HtmlString(Const Txt: String): String;
@@ -71,70 +52,46 @@ end;
 
 { TEpiReportHTMLGenerator }
 
-procedure TEpiReportHTMLGenerator.InternalInit;
+procedure TEpiReportHTMLGenerator.Section(const Text: string);
 begin
-  FReportText := TStringList.Create;
-  with FReport do
-  begin
-    OnHeading := @Heading;
-    OnLineText := @Line;
-    OnSection := @Section;
-    OnTableCell := @TableCell;
-    OnTableFooter := @TableFooter;
-    OnTableHeader := @TableHeader;
-  end;
-end;
-
-procedure TEpiReportHTMLGenerator.AddLine(const Txt: string);
-begin
-  FReportText.Add(Txt);
-end;
-
-procedure TEpiReportHTMLGenerator.Section(Sender: TEpiReportBase;
-  const Text: string);
-begin
+  inherited Section(Text);
   AddLine('<h1>' + HtmlString(Text) + '</h1>');
 end;
 
-procedure TEpiReportHTMLGenerator.Heading(Sender: TEpiReportBase;
-  const Text: string);
+procedure TEpiReportHTMLGenerator.Heading(const Text: string);
 begin
+  inherited Heading(Text);
   AddLine('<h2>' + HtmlString(Text) + '</h2>');
 end;
 
-procedure TEpiReportHTMLGenerator.Line(Sender: TEpiReportBase;
-  const Text: string);
+procedure TEpiReportHTMLGenerator.Line(const Text: string);
 begin
+  inherited Line(Text);
   AddLine(HtmlString(Text) + '<br>');
 end;
 
-procedure TEpiReportHTMLGenerator.TableHeader(Sender: TEpiReportBase;
-  const Text: string; const ColCount, RowCount: Integer);
+procedure TEpiReportHTMLGenerator.TableHeader(const Text: string;
+  const AColCount, ARowCount: Integer);
 begin
-  if InTable then
-    raise Exception.Create('TEpiReportHTMLGenerator: Previous table not closed!');
-
-  FColCount := ColCount;
-  FRowCount := RowCount;
+  inherited TableHeader(Text, AColCount, ARowCount);
 
   AddLine('<TABLE cellspacing=0 class=simple>');
   AddLine('<CAPTION class=caption>' + HtmlString(Text) + '</CAPTION>');
 end;
 
-procedure TEpiReportHTMLGenerator.TableFooter(Sender: TEpiReportBase;
-  const Text: string);
+procedure TEpiReportHTMLGenerator.TableFooter(const Text: string);
 begin
+  inherited TableFooter(Text);
+
   AddLine('</TABLE>');
 end;
 
-procedure TEpiReportHTMLGenerator.TableCell(Sender: TEpiReportBase;
-  const Text: string; const Col, Row: Integer);
+procedure TEpiReportHTMLGenerator.TableCell(const Text: string; const Col,
+  Row: Integer);
 var
   S: String;
 begin
-  if (Col < 0) or (Col > (FColCount-1)) or
-     (Row < 0) or (Row > (FRowCount-1)) then
-    Raise Exception.Create('TEpiReportValueLabelsHtml: Index out of bound for table! ' + Format('Col: %d; Row: %d', [Col,Row]));
+  inherited TableCell(Text, Col, Row);
 
   S := '';
   if (Col = 0) then
@@ -150,46 +107,17 @@ begin
   S += HtmlString(Text) + '</TD>';
 
 
-  if (Col = (FColCount - 1)) then
+  if (Col = (ColCount - 1)) then
     S += '</TR>';
 
   AddLine(S);
 end;
 
-constructor TEpiReportHTMLGenerator.Create(const Report: TEpiReportBase);
+procedure TEpiReportHTMLGenerator.StartReport(const Title: string);
+var
+  Txt: String;
 begin
-  if not Assigned(Report) then
-    Raise Exception.Create('TEpiReportHTMLGenerator: Report cannot be nil!');
-  FReport := Report;
-  FReportText := TStringList.Create;
-  InternalInit;
-end;
-
-destructor TEpiReportHTMLGenerator.Destroy;
-begin
-  FReportText.Free;
-  inherited Destroy;
-end;
-
-function TEpiReportHTMLGenerator.GetReportText: string;
-begin
-  result := FReportText.Text;
-end;
-
-procedure TEpiReportHTMLGenerator.InitHtml(const Title: string);
-begin
-  AddLine(HtmlHeader(Title));
-end;
-
-procedure TEpiReportHTMLGenerator.CloseHtml;
-begin
-  AddLine(HtmlFooter);
-end;
-
-class function TEpiReportHTMLGenerator.HtmlHeader(const Title: string;
-  const StyleSheet: string): string;
-begin
-  result :=
+  Txt :=
     '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">' + LineEnding +
     '<HTML>' + LineEnding +
     '<Head>' + LineEnding +
@@ -201,32 +129,9 @@ begin
     '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' + LineEnding +
     '' + LineEnding +
     '<STYLE type="text/css">' + LineEnding +
-    '<!--' + LineEnding;
 
-
-  if StyleSheet <> '' then
-    Result += StyleSheet
-  else
-    Result += HtmlStyleSheet;
-
-  result +=
-    '-->' + LineEnding +
-    '</STYLE>' + LineEnding +
-    '<TITLE>' + HtmlString(Title) + '</TITLE>' + LineEnding +
-    '</HEAD>' + LineEnding +
-    '<BODY class=body>' + LineEnding;
-end;
-
-class function TEpiReportHTMLGenerator.HtmlFooter: string;
-begin
-  result :=
-    '</BODY>' + LineEnding +
-    '</HTML>';
-end;
-
-class function TEpiReportHTMLGenerator.HtmlStyleSheet: string;
-begin
-  result :=
+    // Stylesheet
+    '<!--' + LineEnding +
     '  .body {color: black; background-color: white;  font-size: 1.0em; font-weight: normal}' + LineEnding +
     '' + LineEnding +
     '   p {color: black ;font-size: 1.0em; font-family: proportional,monospace; font-weight: normal; margin: 0em }' + LineEnding +
@@ -255,7 +160,20 @@ begin
     '   v1.0' + LineEnding +
     '   Use the design table.system as a template for a new design. To be safe, define all styles for a design.' + LineEnding +
     '   Note that a style followed by a comma will take the attributes at the end of the group, so do not sort this file.' + LineEnding +
-    '*/' + LineEnding;
+    '*/' + LineEnding +
+    '-->' + LineEnding +
+
+    '</STYLE>' + LineEnding +
+    '<TITLE>' + HtmlString(Title) + '</TITLE>' + LineEnding +
+    '</HEAD>' + LineEnding +
+    '<BODY class=body>' + LineEnding;
+  AddLine(Txt);
+end;
+
+procedure TEpiReportHTMLGenerator.EndReport;
+begin
+  AddLine('</BODY>' + LineEnding +
+          '</HTML>');
 end;
 
 end.

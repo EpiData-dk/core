@@ -29,18 +29,11 @@ implementation
 uses
   strutils;
 
-{$IFDEF EPI_SHOWREVISION}
-  {$I corerevision.inc}
-{$ELSE}
-  const RevisionStr = '(DEBUG)';
-{$ENDIF}
+  {$I epidatacore.revision.inc}
 
 const
   CoreVersion: TEpiVersionInfo = (
-    VersionNo: 1;
-    MajorRev:  0;
-    MinorRev:  0;
-    BuildNo:   0;
+  {$I epidatacore.version.inc}
   );
 
   EpiDataURL = 'http://www.epidata.dk/version/checkversion.php';

@@ -11,57 +11,13 @@ type
   TEpiToolsDblEntryValidateOption = (
     devIgnoreDeleted,                  // Ignores if a record i marked for deletion in either Datafile
     devCaseSensitiveText,              // When comparing text, do it case-sensitive
-//    devIgnoreMissingRecords,           // Ignore reporting if no matching records is found in dublicate datafile (but still reports differences)
+    devIgnoreMissingRecords,           // Ignore reporting if no matching records is found in dublicate datafile (but still reports differences)
     devAddResultToField                // Add a field to Main Datafile with result (and a matching valuelabel set)
   );
   TEpiToolsDblEntryValidateOptions = set of TEpiToolsDblEntryValidateOption;
 
 const
   EpiDefaultDblEntryValidateOptions = [devIgnoreDeleted, {devIgnoreMissingRecords,} devAddResultToField];
-
-type
-
-  { TEpiToolsDblEntryValidator }
-
-  EEpiDFNotAssigned = class(Exception);
-  EEpiFieldsNotAssigned = class(Exception);
-  EEpiInvalidCompare = class(Exception);
-
-  TEpiToolsDblEntryValidator = class
-  private
-    FCmpFields: TEpiFields;
-    FMainDF: TEpiDataFile;
-    FDuplDF: TEpiDataFile;
-    FSortFields: TEpiFields;
-    FMainCmpFields: TEpiFields;
-    FDuplCmpFields: TEpiFields;
-    FResultField:   TEpiField;
-    FResultArray:   TBoundArray;
-    FValidateOptions: TEpiToolsDblEntryValidateOptions;
-    procedure   AddResult(Const Index: integer; Const Value: Integer);
-    procedure   ValidateSequencial;
-    procedure   ValidateWithSort;
-    procedure   RaiseError(ErrorClass: ExceptClass; Const msg: String);
-    function    DoCompareFields(Const MIndex, DIndex: Integer): integer;
-  public
-    constructor Create;
-    procedure   ValidateDataFiles(
-      out Result: TBoundArray;
-      ValidateOptions: TEpiToolsDblEntryValidateOptions = EpiDefaultDblEntryValidateOptions);
-    property    MainDF: TEpiDataFile read FMainDF write FMainDF;
-    property    DuplDF: TEpiDataFile read FDuplDF write FDuplDF;
-    // Sort fields is a list of common fields in which the Datafiles are sorted.
-    // The list of fields MUST belong to MainDF.
-    property    SortFields: TEpiFields read FSortFields write FSortFields;
-    // Compare fields is a list of common fields for which the Datafiles are compared.
-    // The list of fields MUST belong to MainDF.
-    property    CompareFields: TEpiFields read FCmpFields write FCmpFields;
-  end;
-
-implementation
-
-uses
-  epidatafilestypes, epidatafileutils, math, epiglobals;
 
 const
   ValInDuplDF     = -1;
@@ -71,6 +27,79 @@ const
   ValValueFail    = 3;
   ValDupKeyFail   = 4;
 
+type
+  TEpiDblEntryResultRecord = record
+    ValResult: Integer;                    // Result of comparison -> see const above.
+    MRecNo: Integer;                       // Record no. in main file
+    DRecNo: Integer;                       // Record no. matching in duplicate file.
+    CmpFieldNames: Array of string;        // List of fields names where comparison failed.
+  end;
+  PEpiDblEntryResultRecord = ^TEpiDblEntryResultRecord;
+  TEpiDblEntryResultArray = array of TEpiDblEntryResultRecord;
+
+
+  EEpiDFNotAssigned = class(Exception);
+  EEpiFieldsNotAssigned = class(Exception);
+  EEpiInvalidCompare = class(Exception);
+
+  { TEpiToolsDblEntryValidator }
+
+  TEpiToolsDblEntryValidator = class
+  { Common }
+  private
+    FCmpFields: TEpiFields;
+    FMainDF: TEpiDataFile;
+    FDuplDF: TEpiDataFile;
+    FMainCmpFields: TEpiFields;
+    FDuplCmpFields: TEpiFields;
+    FResultField:   TEpiField;
+    FResultArray:   TEpiDblEntryResultArray;
+    FExtraDuplRecords:   TBoundArray;
+    FValidateOptions: TEpiToolsDblEntryValidateOptions;
+    procedure   ValidateSequencial;
+    procedure   RaiseError(ErrorClass: ExceptClass; Const msg: String);
+
+  { KeyFields Validation }
+  private
+    FDuplKeyFields: TEpiFields;
+    FSortFields: TEpiFields;
+    MainSortField: TEpiField;
+    DuplSortField: TEpiField;
+    procedure   ValidateWithSort;
+    function    NewResultRecord: PEpiDblEntryResultRecord;
+    procedure   AddResult(Const SortedRecNo: integer; Const Value: Integer);
+    function    DoCompareFields(Const MIndex, DIndex: Integer): integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure   ValidateDataFiles(
+      out ResultArray: TEpiDblEntryResultArray;
+      out ExtraDuplRecords: TBoundArray;
+      ValidateOptions: TEpiToolsDblEntryValidateOptions = EpiDefaultDblEntryValidateOptions);
+    property    MainDF: TEpiDataFile read FMainDF write FMainDF;
+    property    DuplDF: TEpiDataFile read FDuplDF write FDuplDF;
+    // Sort fields is a list of common fields in which the Datafiles are sorted.
+    // The list of fields MUST belong to MainDF.
+    property    SortFields: TEpiFields read FSortFields write FSortFields;
+    // Compare fields is a list of common fields for which the Datafiles are compared.
+    // The list of fields MUST belong to MainDF.
+    property    CompareFields: TEpiFields read FCmpFields write FCmpFields;
+    property    DuplCompareFields: TEpiFields read FDuplCmpFields;
+    property    DuplKeyFields: TEpiFields read FDuplKeyFields;
+
+  { Helper }
+  private
+    class procedure InternalSort(var ResultArray: TEpiDblEntryResultArray; L, R: Integer);
+  public
+    class procedure SortDblEntryResultArray(var ResultArray: TEpiDblEntryResultArray);
+  end;
+
+implementation
+
+uses
+  epidatafilestypes, epidatafileutils, math, epiglobals;
+
+const
   ValTexts: array[ValOK..ValDupKeyFail] of string = (
     'Validated',
     'Record does not exists in duplicate file',
@@ -81,23 +110,39 @@ const
 
 { TEpiToolsDblEntryValidator }
 
-procedure TEpiToolsDblEntryValidator.AddResult(const Index: integer;
+procedure TEpiToolsDblEntryValidator.AddResult(const SortedRecNo: integer;
   const Value: Integer);
 var
   L: Integer;
+  i: Integer;
 begin
   if Value = ValInDuplDF then
   begin
     // Result indicate that a record was found in duplicate DF that did not exist in Main DF.
-    L := Length(FResultArray);
+    L := Length(FExtraDuplRecords);
     Inc(L);
-    SetLength(FResultArray, L);
-    FResultArray[L-1] := Index;
+    SetLength(FExtraDuplRecords, L);
+    FExtraDuplRecords[L-1] := SortedRecNo;
     Exit;
   end;
 
   if Assigned(FResultField) then
-    FResultField.AsInteger[Index] := Value;
+    FResultField.AsInteger[SortedRecNo] := Value;
+
+  if Value = ValOk then exit;
+
+  with NewResultRecord^ do
+  begin
+    ValResult := Value;
+
+    MRecNo := MainSortField.AsInteger[SortedRecNo];
+    case Value of
+      ValNoExists:
+        DRecNo := -1;
+      ValDupKeyFail:
+        DRecNo := DuplSortField.AsInteger[SortedRecNo - 1];
+    end;
+  end;
 end;
 
 procedure TEpiToolsDblEntryValidator.ValidateSequencial;
@@ -107,9 +152,6 @@ end;
 
 procedure TEpiToolsDblEntryValidator.ValidateWithSort;
 var
-  MainSortField: TEpiField;
-  DuplSortField: TEpiField;
-  DuplSortFields: TEpiFields;
   MRunner: Integer;
   DRunner: Integer;
   i: Integer;
@@ -119,10 +161,12 @@ var
   function CompareSortFieldRecords(Const FL1, FL2: TEpiFields; Const Idx1, Idx2: Integer): TValueSign;
   var
     i: Integer;
+    CaseSensitive: boolean;
   begin
+    CaseSensitive := (devCaseSensitiveText in FValidateOptions);
     for i := 0 to FL1.Count - 1 do
     begin
-      CompareFieldRecords(Result, FL1[i], FL2[i], Idx1, Idx2);
+      CompareFieldRecords(Result, FL1[i], FL2[i], Idx1, Idx2, CaseSensitive);
       if Result <> ZeroValue then Exit;
     end;
   end;
@@ -130,7 +174,9 @@ var
 begin
   MainSortField := nil;
   DuplSortField := nil;
-  DuplSortFields := nil;
+  FDuplKeyFields := nil;
+  MainDF.BeginUpdate;
+  DuplDF.BeginUpdate;
 
   try
     // Create temporary fields to preserver sorting.
@@ -143,13 +189,13 @@ begin
       DuplSortField.AsInteger[i] := i;
 
     // Create a copy of the list of field to sort.
-    DuplSortFields := TEpiFields.Create(nil);
+    FDuplKeyFields := TEpiFields.Create(nil);
     for i := 0 to SortFields.Count - 1 do
-      DuplSortFields.AddItem(DuplDF.Fields.FieldByName[SortFields.Field[i].Name]);
+      FDuplKeyFields.AddItem(DuplDF.Fields.FieldByName[SortFields.Field[i].Name]);
 
     // Now sort both DF's before we are going to compare.
     MainDF.SortRecords(SortFields);
-    DuplDF.SortRecords(DuplSortFields);
+    DuplDF.SortRecords(FDuplKeyFields);
 
     // Do the validation!
     MRunner := 0;
@@ -158,6 +204,18 @@ begin
     DSize   := DuplDF.Size;
     while (MRunner < MSize) and (DRunner < DSize) do
     begin
+      if (devIgnoreDeleted in FValidateOptions) and (MainDF.Deleted[MRunner]) then
+      begin
+        Inc(MRunner);
+        Continue;
+      end;
+
+      if (devIgnoreDeleted in FValidateOptions) and (DuplDF.Deleted[DRunner]) then
+      begin
+        Inc(DRunner);
+        Continue;
+      end;
+
       if (MRunner > 0) and
          (CompareSortFieldRecords(SortFields, SortFields, MRunner, MRunner - 1) = ZeroValue) then
       begin
@@ -166,24 +224,45 @@ begin
         Continue;
       end;
 
-      case CompareSortFieldRecords(SortFields, DuplSortFields, MRunner, DRunner) of
+      case CompareSortFieldRecords(SortFields, FDuplKeyFields, MRunner, DRunner) of
         NegativeValue:
           begin
-            AddResult(MRunner, ValNoExists);
+            // Record does not exists in duplicate file
+            if not (devIgnoreMissingRecords in FValidateOptions) then
+              AddResult(MRunner, ValNoExists);
             Inc(MRunner);
           end;
         ZeroValue:
           begin
+            // Record exists in both files - compare fields.
             DoCompareFields(MRunner, DRunner);
             Inc(MRunner);
             Inc(DRunner);
           end;
         PositiveValue:
           begin
-            AddResult(MRunner, ValInDuplDF);
+            // Record does not exists in main file
+            AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF);
             Inc(DRunner);
           end;
       end;
+    end;
+
+    while MRunner < MSize do
+    begin
+      // If MRunner < MSize, then records exists in Main DF with no matching
+      // records in Dupl. DF. Hence mark them as NoExists.
+      if not (devIgnoreMissingRecords in FValidateOptions) then
+        AddResult(MRunner, ValNoExists);
+      Inc(MRunner);
+    end;
+
+    while DRunner < DSize do
+    begin
+      // If DRunner < DSize, then records exists in Dupl. DF with no matching
+      // records in Main DF. Hence mark them as InDulpDF
+      AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF);
+      Inc(DRunner);
     end;
 
   finally
@@ -195,8 +274,21 @@ begin
 
     MainSortField.Free;
     DuplSortField.Free;
-    DuplSortFields.Free;
+
+    MainDF.EndUpdate;
+    DuplDF.EndUpdate;
   end;
+end;
+
+function TEpiToolsDblEntryValidator.NewResultRecord: PEpiDblEntryResultRecord;
+var
+  L: Integer;
+begin
+  L := Length(FResultArray);
+  Inc(L);
+  SetLength(FResultArray, L);
+  FResultArray[L-1].CmpFieldNames := nil;
+  Result := @FResultArray[L-1];
 end;
 
 procedure TEpiToolsDblEntryValidator.RaiseError(ErrorClass: ExceptClass;
@@ -210,19 +302,50 @@ function TEpiToolsDblEntryValidator.DoCompareFields(const MIndex,
 var
   i: Integer;
   CmpResult: TValueSign;
+  lValResult: Integer;
+  ResultRecord: PEpiDblEntryResultRecord;
+  j: Integer;
+  L: Integer;
+  CaseSensitive: Boolean;
+
 begin
+  CaseSensitive := (devCaseSensitiveText in FValidateOptions);
+  ResultRecord := nil;
   for i := 0 to CompareFields.Count - 1 do
   begin
-    if not CompareFieldRecords(CmpResult, FCmpFields[i], FDuplCmpFields[i], MIndex, DIndex) then
+    if not CompareFieldRecords(CmpResult, FCmpFields[i], FDuplCmpFields[i], MIndex, DIndex, CaseSensitive) then
       RaiseError(EEpiInvalidCompare, 'Comparison failed due to different field types!');
 
-    if CmpResult = ZeroValue then continue;
+    if CmpResult = ZeroValue then
+    begin
+      AddResult(MIndex, ValOk);
+      continue;
+    end;
 
     if FCmpFields[i].FieldType in StringFieldTypes then
-      AddResult(MIndex, ValTextFail)
+      lValResult := ValTextFail
     else
-      AddResult(MIndex, ValValueFail);
-    Break;
+      lValResult := ValValueFail;
+
+    if not Assigned(ResultRecord) then
+    begin
+      ResultRecord := NewResultRecord;
+      with ResultRecord^ do
+      begin
+        MRecNo := MainSortField.AsInteger[MIndex];
+        DRecNo := DuplSortField.AsInteger[DIndex];
+      end;
+    end;
+
+    with ResultRecord^ do
+    begin
+      ValResult := Max(ValResult, lValResult);
+
+      L := Length(CmpFieldNames);
+      Inc(L);
+      SetLength(CmpFieldNames, L);
+      CmpFieldNames[L-1] := FCmpFields[i].Name;
+    end;
   end;
 end;
 
@@ -231,7 +354,15 @@ begin
 
 end;
 
-procedure TEpiToolsDblEntryValidator.ValidateDataFiles(out Result: TBoundArray;
+destructor TEpiToolsDblEntryValidator.Destroy;
+begin
+  FDuplKeyFields.Free;
+  FDuplCmpFields.Free;
+  inherited Destroy;
+end;
+
+procedure TEpiToolsDblEntryValidator.ValidateDataFiles(out
+  ResultArray: TEpiDblEntryResultArray; out ExtraDuplRecords: TBoundArray;
   ValidateOptions: TEpiToolsDblEntryValidateOptions);
 var
   i: Integer;
@@ -293,13 +424,69 @@ begin
     end;
   end;
 
-  if Assigned(SortFields) then
+  if Assigned(SortFields) and (SortFields.Count > 0) then
     ValidateWithSort
   else
     ValidateSequencial;
 
-  if Length(FResultArray) > 0 then
-    Result := FResultArray;
+  if Length(FExtraDuplRecords) > 0 then
+    ExtraDuplRecords := FExtraDuplRecords;
+  ResultArray := FResultArray;
+end;
+
+class procedure TEpiToolsDblEntryValidator.InternalSort(
+  var ResultArray: TEpiDblEntryResultArray; L, R: Integer);
+var
+   I, J, P: Integer;
+
+   procedure Exchange(J, I: Integer);
+   var
+     TValRes: Integer;
+     TMRecNo: Integer;
+     TDRecNo: Integer;
+     TCmpNames: Array of string;
+   begin
+     TValRes := ResultArray[J].ValResult;
+     TMRecNo := ResultArray[J].MRecNo;
+     TDRecNo := ResultArray[J].DRecNo;
+     TCmpNames := ResultArray[j].CmpFieldNames;
+
+     ResultArray[J].ValResult     := ResultArray[I].ValResult;
+     ResultArray[J].MRecNo        := ResultArray[I].MRecNo;
+     ResultArray[J].DRecNo        := ResultArray[I].DRecNo;
+     ResultArray[j].CmpFieldNames := ResultArray[I].CmpFieldNames;
+
+     ResultArray[I].ValResult     := TValRes;
+     ResultArray[I].MRecNo        := TMRecNo;
+     ResultArray[I].DRecNo        := TDRecNo;
+     ResultArray[I].CmpFieldNames := TCmpNames;
+   end;
+
+begin
+  I:=L;
+  J:=R;
+  P:=(L + R) shr 1;
+  repeat
+    while ResultArray[I].MRecNo < ResultArray[P].MRecNo do Inc(I);
+    while ResultArray[J].MRecNo > ResultArray[P].MRecNo do Dec(J);
+    if I <= J then
+    begin
+      Exchange(J,I);
+      if p=i then p:=j
+      else if p=j then p:=i;
+      Inc(I);
+      Dec(J);
+    end;
+  until I>J;
+  if L<J then InternalSort(ResultArray, L,J);
+  if I < R then InternalSort(ResultArray, I, R);
+end;
+
+class procedure TEpiToolsDblEntryValidator.SortDblEntryResultArray(
+  var ResultArray: TEpiDblEntryResultArray);
+begin
+  if Length(ResultArray) > 0 then
+    InternalSort(ResultArray, 0, Length(ResultArray) - 1);
 end;
 
 end.

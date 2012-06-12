@@ -295,7 +295,8 @@ begin
   Lst.Free;
 end;
 
-{$DEFINE EPIHASH}
+{.$DEFINE EPIHASH}
+{$DEFINE EPINEW_HASH}
 procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
 var
   CurRec: Integer;
@@ -306,6 +307,9 @@ var
   FieldList: Array of TEpiField;
   Fc, P, Val, C: LongInt;
   {$ENDIF EPIHASH}
+  {$IFDEF EPINEW_HASH}
+  FieldList: TFPDataHashTable;
+  {$ENDIF}
   NN: WideString;
   Collision: Boolean;
   DataList: TStringList;
@@ -399,6 +403,7 @@ const
   DummyString = #243#176#80#80;  // Unicode private area: http://www.utf8-chartable.de/unicode-utf8-table.pl?start=983040
 var
   DeCrypter: TDCP_rijndael;
+  n: String;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -436,7 +441,8 @@ begin
     SetLength(FieldList, P);
     for i := 0 to Fc -1 do
     begin
-      Val := (Hash(Fields[i].Name) mod P);
+      n := Fields[i].Name;
+      Val := (Hash(n{Fields[i].Name}) mod P);
       // Collision detection (with Fc^2 size)
       if Assigned(FieldList[val]) then
       begin
@@ -451,6 +457,15 @@ begin
     if not Collision then Break;
   end;
 {$ENDIF EPIHASH}
+
+{$IFDEF EPINEW_HASH}
+  FieldList := TFPDataHashTable.CreateWith(Fields.Count, @RSHash);
+  for i := 0 to Fields.Count -1 do
+  begin
+    n := Fields[i].Name;
+    FieldList.Add(N, Fields[i]);
+  end;
+{$ENDIF}
 
   DataList := TStringList.Create;
   DataList.Delimiter := ',';
@@ -482,7 +497,11 @@ begin
       {$IFDEF EPIHASH}
       TmpField := FieldList[Hash(FN) mod P];
       {$ELSE}
-      TmpField := Fields.FieldByName[NN];
+      {$IFDEF EPINEW_HASH}
+      TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
+      {$ELSE}
+      TmpField := Fields.FieldByName[FN];
+      {$ENDIF EPINEW_HASH}
       {$ENDIF EPIHASH}
       // Do not crash if reading bash entry/line.
       if not Assigned(TmpField) then

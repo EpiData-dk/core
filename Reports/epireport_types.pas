@@ -8,7 +8,7 @@ uses
   Classes, SysUtils;
 
 type
-  TEpiReportFieldListSortType = (stCreation, stFieldName, stEntryFlow);
+  TEpiReportFieldListSortType = (stFieldName, stEntryFlow);
 
 
 implementation

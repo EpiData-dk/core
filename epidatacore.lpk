@@ -6,7 +6,7 @@
     <CompilerOptions>
       <Version Value="11"/>
       <SearchPaths>
-        <IncludeFiles Value="Core"/>
+        <IncludeFiles Value="Core;."/>
         <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
@@ -33,8 +33,8 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Major="1" Minor="3"/>
-    <Files Count="51">
+    <Version Major="1" Minor="3" Build="1"/>
+    <Files Count="55">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -176,8 +176,8 @@
         <UnitName Value="epireport_filelist"/>
       </Item35>
       <Item36>
-        <Filename Value="Reports/epireport_htmlgenerator.pas"/>
-        <UnitName Value="epireport_htmlgenerator"/>
+        <Filename Value="Reports/epireport_generator_html.pas"/>
+        <UnitName Value="epireport_generator_html"/>
       </Item36>
       <Item37>
         <Filename Value="Reports/epireport_project_overview.pas"/>
@@ -236,9 +236,25 @@
         <UnitName Value="epidatafileutils"/>
       </Item50>
       <Item51>
+        <Filename Value="Reports/epireport_doubleentry_validate.pas"/>
+        <UnitName Value="epireport_doubleentry_validate"/>
+      </Item51>
+      <Item52>
+        <Filename Value="Reports/epireport_generator_txt.pas"/>
+        <UnitName Value="epireport_generator_txt"/>
+      </Item52>
+      <Item53>
+        <Filename Value="Reports/epireport_generator_base.pas"/>
+        <UnitName Value="epireport_generator_base"/>
+      </Item53>
+      <Item54>
+        <Filename Value="Reports/epireport_datafilesreport_base.pas"/>
+        <UnitName Value="epireport_datafilesreport_base"/>
+      </Item54>
+      <Item55>
         <Filename Value="ImportExport/epiexport_ddi.pas"/>
         <UnitName Value="epiexport_ddi"/>
-      </Item51>
+      </Item55>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
