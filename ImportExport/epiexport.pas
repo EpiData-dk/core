@@ -33,13 +33,15 @@ type
     function    ExportCSV(Const Settings: TEpiCSVExportSetting): boolean;
     function    ExportSPSS(Const Settings: TEpiSPSSExportSetting): boolean;
     function    ExportSAS(Const Settings: TEpiSASExportSetting): boolean;
+    function    ExportDDI(Const Settings: TEpiDDIExportSetting): boolean;
     property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding default eeUTF8;
   end;
 
 implementation
 
 uses
-  FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8;
+  FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8,
+  epiexport_ddi;
 
 
 { TEpiExport }
@@ -1091,6 +1093,15 @@ begin
 
   ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   Result := true;
+end;
+
+function TEpiExport.ExportDDI(const Settings: TEpiDDIExportSetting): boolean;
+var
+  DDIExporter: TEpiDDIExport;
+begin
+  DDIExporter := TEpiDDIExport.Create;
+  DDIExporter.ExportDDI(Settings);
+  DDIExporter.Free;
 end;
 
 end.

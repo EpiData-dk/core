@@ -72,6 +72,11 @@ type
 
   end;
 
+  TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
+  public
+
+  end;
+
   { TEpiCustomTextExportSettings }
 
   TEpiCustomTextExportSettings = class(TEpiExportSetting)

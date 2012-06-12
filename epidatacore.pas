@@ -15,7 +15,7 @@ uses
   epireport_project_overview, epireport_types, epireport_valuelabels, 
   episervice_ipc, episervice_ipctypes, epiconvertutils, epimiscutils, 
   epistringutils, epiversionutils, UniqueInstanceRaw, epitools_integritycheck, 
-  epiglobals, epitools_val_dbl_entry, epidatafileutils;
+  epiglobals, epitools_val_dbl_entry, epidatafileutils, epiexport_ddi;
 
 implementation
 
