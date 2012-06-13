@@ -13,6 +13,14 @@ type
   { TEpiDDIExport }
 
   TEpiDDIExport = class
+  private
+    EpiDoc:     TEpiDocument;
+    XMLDoc:     TXMLDocument;
+    DDIInstance: TDOMElement;
+    StudyUnit:    TDOMElement;
+
+    procedure     AddNameSpace(Elem: TDOMElement; NameSpace: string);
+    procedure     AddID(Elem: TDOMElement; Prefix: string);
 
   public
     constructor Create;
@@ -27,6 +35,16 @@ uses
 
 { TEpiDDIExport }
 
+procedure TEpiDDIExport.AddNameSpace(Elem: TDOMElement; NameSpace: string);
+begin
+  Elem.SetAttribute('xmlns', 'ddi:' + NameSpace + ':3_1');
+end;
+
+procedure TEpiDDIExport.AddID(Elem: TDOMElement; Prefix: string);
+begin
+//  TGuid;
+end;
+
 constructor TEpiDDIExport.Create;
 begin
 
@@ -38,14 +56,11 @@ begin
 end;
 
 function TEpiDDIExport.ExportDDI(const Settings: TEpiDDIExportSetting): boolean;
-var
-  XMLDoc: TXMLDocument;
-  Root: TDOMElement;
 begin
   XMLDoc := TXMLDocument.Create;
-  Root   := XMLDoc.CreateElement('DDIInstance');
-  XMLDoc.AppendChild(Root);
-  Root   := XMLDoc.DocumentElement;
+  DDIInstance := XMLDoc.CreateElement('DDIInstance');
+  XMLDoc.AppendChild(DDIInstrance);
+  DDIInstance := XMLDoc.DocumentElement;
 
   {
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -56,7 +71,8 @@ begin
   versionDate="2012-05-30T13:27:58.364+02:00"
   agency="dk.dda"}
 
-  with Root do
+  AddNameSpace(DDIInstance, 'instance');
+  with DDIInstance do
   begin
     SetAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
     SetAttribute('xmlns', 'ddi:instance:3_1');
