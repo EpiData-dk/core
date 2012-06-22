@@ -23,6 +23,8 @@ type
     DDIFunding:      TDOMElement;
     DDISpatialCoverage: TDOMElement;
 
+    ValueLabelSetsGUIDs: TStringList;
+
     // Helper methods.
     procedure AddAttrNameSpace(Elem: TDOMElement; Const NameSpace: string);
     procedure AddAttrID(Elem: TDOMElement; Const Prefix: string);
@@ -42,6 +44,10 @@ type
     procedure BuildCoverage;
     procedure BuildConceptualComponent;
     procedure BuildDataCollection;
+    // Datacollection helpers:
+    procedure BuildQuestionScheme(DataCollection: TDOMElement);
+    procedure BuildControlConstructScheme(DataCollection: TDOMElement);
+
     procedure BuildLogicalProduct;
     procedure BuildPhysicalDataProduct;
   public
@@ -64,6 +70,15 @@ const
 
 { TEpiDDIExport }
 
+function CreateAttrID(Const Prefix: string): string;
+var
+  GUID: TGUID;
+begin
+  CreateGUID(GUID);
+  Result := LowerCase(GUIDToString(GUID));
+  Result := Prefix + '-' + Copy(Result, 2, Length(Result) - 2);
+end;
+
 procedure TEpiDDIExport.AddAttrNameSpace(Elem: TDOMElement;
   const NameSpace: string);
 begin
@@ -71,14 +86,8 @@ begin
 end;
 
 procedure TEpiDDIExport.AddAttrID(Elem: TDOMElement; const Prefix: string);
-var
-  GUID: TGUID;
-  S: String;
 begin
-  CreateGUID(GUID);
-  S := LowerCase(GUIDToString(GUID));
-  S := Prefix + '-' + Copy(S, 2, Length(S) - 2);
-  Elem.SetAttribute('id', S);
+  Elem.SetAttribute('id', CreateAttrID(Prefix));
 end;
 
 procedure TEpiDDIExport.AddAttrTranslation(Elem: TDOMElement);
@@ -317,23 +326,35 @@ end;
 procedure TEpiDDIExport.BuildDataCollection;
 var
   DataCollection: TDOMElement;
-  QScheme: TDOMElement;
-  QItem: TDOMElement;
-  QText: TDOMElement;
-  QLiteralText: TDOMElement;
-  i: Integer;
-  TextElem: TDOMElement;
-  Domain: TDOMElement;
-  S: String;
-  j: Integer;
 begin
   DataCollection := XMLDoc.CreateElementNS(NSdatacollection, 'DataCollection');
   AddAttrID(DataCollection, 'daco');
   DDIStudyUnit.AppendChild(DataCollection);
 
+  BuildQuestionScheme(DataCollection);
+  BuildControlConstructScheme(DataCollection);
+
+end;
+
+procedure TEpiDDIExport.BuildQuestionScheme(DataCollection: TDOMElement);
+var
+  QScheme: TDOMElement;
+  QItem: TDOMElement;
+  QText: TDOMElement;
+  QLiteralText: TDOMElement;
+  i: Integer;
+  Domain: TDOMElement;
+  S: String;
+  j: Integer;
+  Elem: TDOMElement;
+begin
   QScheme := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionScheme');
   AddAttrID(QScheme, 'ques');
   DataCollection.AppendChild(QScheme);
+
+  // Build the list of GUID's for all our valuelabelsets.
+  for i := 0 to FSettings.Doc.ValueLabelSets.Count - 1 do
+    ValueLabelSetsGUIDs.AddObject(CreateAttrID('cods'), FSettings.Doc.ValueLabelSets[i]);
 
   for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
   with FSettings.Doc.DataFiles[0].Field[i] do
@@ -345,50 +366,61 @@ begin
 
     QText := AppendElem(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText', '');
-    TextElem := AppendElem(QLiteralText, NSdatacollection, 'Text', Question.Text);
+    Elem := AppendElem(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
-    case FieldType of
-      ftBoolean:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
-          Domain.SetAttribute('type', 'Short');
-        end;
-      ftInteger:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
-          Domain.SetAttribute('type', 'Long');
-        end;
-      ftAutoInc:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
-          Domain.SetAttribute('type', 'Incremental');
-          Domain.SetAttribute('startValue', IntToStr(FSettings.Doc.ProjectSettings.AutoIncStartValue));
-          Domain.SetAttribute('interval', '1');
-        end;
-      ftFloat:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
-          Domain.SetAttribute('type', 'Float');
-          Domain.SetAttribute('decimalPositions', IntToStr(Decimals));
-        end;
-      ftDMYDate, ftMDYDate, ftYMDDate,
-      ftDMYAuto, ftMDYAuto, ftYMDAuto:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
-          Domain.SetAttribute('type', 'Date')
-        end;
-      ftTime,
-      ftTimeAuto:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
-          Domain.SetAttribute('type', 'Time')
-        end;
-      ftString,
-      ftUpperString:
-        begin
-          Domain := AppendElem(QItem, NSdatacollection, 'TextDomain');
-        end;
-    end;
+    if Assigned(ValueLabelSet) then
+    begin
+      Domain := AppendElem(QItem, NSdatacollection, 'CodeDomain');
+      j := ValueLabelSetsGUIDs.IndexOfObject(ValueLabelSet);
+      Elem := AppendElem(Domain, NSreuseable, 'CodeSchemeReference');
+      AppendElem(Elem, NSreuseable, 'ID', ValueLabelSetsGUIDs[j]);
+    end else
+      case FieldType of
+        ftBoolean:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
+            Domain.SetAttribute('type', 'Short');
+          end;
+        ftInteger:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
+            Domain.SetAttribute('type', 'Long');
+          end;
+        ftAutoInc:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
+            Domain.SetAttribute('type', 'Incremental');
+            Domain.SetAttribute('startValue', IntToStr(FSettings.Doc.ProjectSettings.AutoIncStartValue));
+            Domain.SetAttribute('interval', '1');
+          end;
+        ftFloat:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
+            Domain.SetAttribute('type', 'Float');
+            Domain.SetAttribute('decimalPositions', IntToStr(Decimals));
+          end;
+        ftDMYDate, ftMDYDate, ftYMDDate,
+        ftDMYAuto, ftMDYAuto, ftYMDAuto:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
+            Domain.SetAttribute('type', 'Date');
+            Domain.SetAttribute('format', FormatString());
+          end;
+        ftTime,
+        ftTimeAuto:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
+            Domain.SetAttribute('type', 'Time');
+            Domain.SetAttribute('format', FormatString());
+          end;
+        ftString,
+        ftUpperString:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'TextDomain');
+            Domain.SetAttribute('maxLength', IntToStr(Length));
+          end;
+      end;
+    // Missing Value
     if Assigned(ValueLabelSet) and (ValueLabelSet.MissingCount > 0) then
     begin
       S := '';
@@ -398,6 +430,22 @@ begin
       Domain.SetAttribute('missingValue', TrimRight(S));
     end;
     Domain.SetAttribute('blankIsMissingValue', 'true');
+  end;
+end;
+
+procedure TEpiDDIExport.BuildControlConstructScheme(DataCollection: TDOMElement
+  );
+var
+  CCS: TDOMElement;
+begin
+  CCS := XMLDoc.CreateElementNS(NSdatacollection, 'ControlConstructScheme');
+  AddAttrID(CSS, 'cocs');
+  DDIStudyUnit.AppendChild(CCS);
+
+  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
+  with FSettings.Doc.DataFiles[0].Field[i] do
+  begin
+
   end;
 end;
 
@@ -413,11 +461,12 @@ end;
 
 constructor TEpiDDIExport.Create;
 begin
-
+  ValueLabelSetsGUIDs := TStringList.Create;
 end;
 
 destructor TEpiDDIExport.Destroy;
 begin
+  ValueLabelSetsGUIDs.Free;
   inherited Destroy;
 end;
 
