@@ -6,10 +6,9 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes, epiexportsettings, DOM, epicustombase;
+  epieximtypes, epiexportsettings, DOM, epicustombase, fgl;
 
 type
-
   { TEpiDDIExport }
 
   TEpiDDIExport = class
@@ -24,6 +23,8 @@ type
     DDISpatialCoverage: TDOMElement;
 
     ValueLabelSetsGUIDs: TStringList;
+
+    QuieMap: TFPSMap;
 
     // Helper methods.
     procedure AddAttrNameSpace(Elem: TDOMElement; Const NameSpace: string);
@@ -347,6 +348,7 @@ var
   S: String;
   j: Integer;
   Elem: TDOMElement;
+  F: TEpiField;
 begin
   QScheme := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionScheme');
   AddAttrID(QScheme, 'ques');
@@ -359,10 +361,12 @@ begin
   for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
   with FSettings.Doc.DataFiles[0].Field[i] do
   begin
+    F := FSettings.Doc.DataFiles[0].Field[i];
+
     QItem := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionItem');
     AddAttrID(QItem, 'quei');
     QScheme.AppendChild(QItem);
-
+    QuieMap.Add(F, QItem);
 
     QText := AppendElem(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText', '');
@@ -437,15 +441,29 @@ procedure TEpiDDIExport.BuildControlConstructScheme(DataCollection: TDOMElement
   );
 var
   CCS: TDOMElement;
+  i: Integer;
+  MainSequence: TDOMElement;
+  QCons: TDOMElement;
+  F: TEpiField;
+  Elem: TDOMElement;
 begin
   CCS := XMLDoc.CreateElementNS(NSdatacollection, 'ControlConstructScheme');
-  AddAttrID(CSS, 'cocs');
+  AddAttrID(CCS, 'cocs');
   DDIStudyUnit.AppendChild(CCS);
 
-  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
-  with FSettings.Doc.DataFiles[0].Field[i] do
-  begin
+  MainSequence := XMLDoc.CreateElementNS(NSdatacollection, 'Sequence');
+  CCS.AppendChild(MainSequence);
 
+  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
+  begin
+    F := FSettings.Doc.DataFiles[0].Field[i];
+
+    QCons := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionConstruct');
+    AddAttrID(QCons, 'quec');
+    Elem := AppendElem(QCons, NSdatacollection, 'QuestionReference');
+    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(QuieMap.KeyData[F]).GetAttribute('id'));
+
+    CCS.AppendChild(QCons);
   end;
 end;
 
@@ -462,10 +480,13 @@ end;
 constructor TEpiDDIExport.Create;
 begin
   ValueLabelSetsGUIDs := TStringList.Create;
+  QuieMap := TFPSMap.Create;
+  QuieMap.Sorted := true;
 end;
 
 destructor TEpiDDIExport.Destroy;
 begin
+  QuieMap.Free;
   ValueLabelSetsGUIDs.Free;
   inherited Destroy;
 end;
