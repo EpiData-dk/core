@@ -41,7 +41,7 @@ implementation
 
 uses
   FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8,
-  epiexport_ddi;
+  epiexport_ddi, strutils;
 
 
 { TEpiExport }
@@ -657,8 +657,17 @@ begin
     if Settings.ExportFieldNames then
     begin
       TmpStr := '';
-      for i := 0 to FieldCount - 1do
-        TmpStr += TEpiField(Settings.Fields[i]).Name + FieldSep;
+      for i := 0 to FieldCount - 1 do
+      begin
+        S := EncodeString(TEpiField(Settings.Fields[i]).Name, Settings.Encoding);
+        L := TEpiField(Settings.Fields[i]).Length;
+        if (Settings.Encoding = eeUTF8) and Fixed then
+          TmpStr += UTF8Copy(S, 1, L) + DupeString(' ', L - UTF8Length(S))
+        else if Fixed then
+          TmpStr += Format('%-' + IntToStr(L) + '.' + IntToStr(L) + 's', [S])
+        else
+          TmpStr += S + FieldSep;
+      end;
       Delete(TmpStr, Length(TmpStr), 1);
       TmpStr += NewLine;
       TmpStr := EncodeString(TmpStr, Settings.Encoding);
@@ -685,17 +694,22 @@ begin
         if IsMissing[CurRec] then
           S := ''
         else
-          if (FieldType in StringFieldTypes) and (QuoteCh <> '') then
-            S := AnsiQuotedStr(AsString[CurRec], QuoteCh[1])
-          else
-            S := AsString[CurRec];
+          S := AsString[CurRec];
 
         L := Length;
         if (FieldType in StringFieldTypes) then
-          L *= 3;  // This should cover MOST instances of UTF-8 and not be too long.
-                   // TODO : some day an exact calculation of MaxByteLenght would be great!
+        begin
+          S := EncodeString(S, Settings.Encoding);
+          if (QuoteCh <> '') and (not Fixed) then
+          begin
+            S := AnsiQuotedStr(S, QuoteCh[1]);
+            Inc(L, 2);
+          end;
+        end;
 
-        if Fixed then
+        if (Settings.Encoding = eeUTF8) and Fixed then
+          S := S + DupeString(' ', L - UTF8Length(S))
+        else if Fixed then
           S := Format('%-' + IntToStr(L) + '.' + IntToStr(L) + 's', [S])
         else
           S += FieldSep;
@@ -705,7 +719,6 @@ begin
 
       Delete(TmpStr, Length(TmpStr), 1);
       TmpStr += NewLine;
-      TmpStr := EncodeString(TmpStr, Settings.Encoding);
       DataStream.Write(TmpStr[1], Length(TmpStr));
     end;
     result := true;
