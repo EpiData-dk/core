@@ -24,7 +24,10 @@ type
 
     ValueLabelSetsGUIDs: TStringList;
 
+    // Maps TEpiField -> QuestionItem
     QuieMap: TFPSMap;
+    // Maps TEpiField -> QuestionConstruct
+    QuecMap: TFPSMap;
 
     // Helper methods.
     procedure AddAttrNameSpace(Elem: TDOMElement; Const NameSpace: string);
@@ -36,6 +39,8 @@ type
     function  AppendElem(Root: TDOMElement; Const NameSpace, NodeName: string;
       Const Text: String = ''): TDOMElement;
 
+
+    procedure ExportCSVFile;
     // Block to produce.
     procedure BuildCitations;
     procedure BuildAbstract;
@@ -44,13 +49,21 @@ type
     procedure BuildPurpose;
     procedure BuildCoverage;
     procedure BuildConceptualComponent;
+
     procedure BuildDataCollection;
     // Datacollection helpers:
     procedure BuildQuestionScheme(DataCollection: TDOMElement);
-    procedure BuildControlConstructScheme(DataCollection: TDOMElement);
+    // helper: Returns MainSequence
+    function BuildControlConstructScheme(DataCollection: TDOMElement): TDomElement;
 
     procedure BuildLogicalProduct;
+    // LogicalProductHelpers
+    function  BuildVariableScheme: TDOMElement;
+    procedure BuildCodeScheme(LogicalProduct: TDOMElement);
+
     procedure BuildPhysicalDataProduct;
+    procedure BuildPhysicalInstance;
+    procedure BuildArchive;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -60,13 +73,15 @@ type
 implementation
 
 uses
-  XMLWrite;
+  XMLWrite, epiexport;
 
 const
   NSreuseable = 'ddi:reusable:3_1';
   NSstudy     = 'ddi:studyunit:3_1';
   NSconcept   = 'ddi:conceptualcomponent:3_1';
   NSdatacollection = 'ddi:datacollection:3_1';
+  NSlogicalproduct = 'ddi:logicalproduct:3_1';
+  NSphysicaldataproduct = 'ddi:physicaldataproduct:3_1';
   // .... todo!
 
 { TEpiDDIExport }
@@ -121,6 +136,31 @@ begin
   Result := XMLDoc.CreateElementNS(NameSpace, NodeName);
   Result.TextContent := Text;
   Root.AppendChild(Result);
+end;
+
+procedure TEpiDDIExport.ExportCSVFile;
+var
+  CSVExporter: TEpiExport;
+  TxtExportSetting: TEpiCSVExportSetting;
+  i: Integer;
+begin
+  TxtExportSetting := TEpiCSVExportSetting.Create;
+  TxtExportSetting.Assign(FSettings);
+  TxtExportSetting.FieldSeparator := '!';
+  TxtExportSetting.DecimalSeparator := '.';
+  TxtExportSetting.DateSeparator  := '-';
+  TxtExportSetting.TimeSeparator  := ':';
+  TxtExportSetting.QuoteChar      := '';
+  TxtExportSetting.FixedFormat    := true;
+  TxtExportSetting.NewLine        := LineEnding;
+  TxtExportSetting.Encoding       := eeUTF8;
+  TxtExportSetting.ExportFieldNames := false;
+  TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
+  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
+    TxtExportSetting.Fields.Add(FSettings.Doc.DataFiles[0].Field[i]);
+
+  CSVExporter := TEpiExport.Create;
+  CSVExporter.ExportCSV(TxtExportSetting);
 end;
 
 procedure TEpiDDIExport.BuildCitations;
@@ -327,14 +367,20 @@ end;
 procedure TEpiDDIExport.BuildDataCollection;
 var
   DataCollection: TDOMElement;
+  Seq: TDOMElement;
+  Elem: TDOMElement;
 begin
   DataCollection := XMLDoc.CreateElementNS(NSdatacollection, 'DataCollection');
   AddAttrID(DataCollection, 'daco');
   DDIStudyUnit.AppendChild(DataCollection);
 
   BuildQuestionScheme(DataCollection);
-  BuildControlConstructScheme(DataCollection);
+  Seq := BuildControlConstructScheme(DataCollection);
 
+  Elem := AppendElem(DataCollection, NSdatacollection, 'Instrument');
+  AddAttrID(Elem, 'inst');
+  Elem := AppendElem(Elem, NSdatacollection, 'ControlConstructReference');
+  AppendElem(Elem, NSreuseable, 'ID', Seq.GetAttribute('id'));
 end;
 
 procedure TEpiDDIExport.BuildQuestionScheme(DataCollection: TDOMElement);
@@ -366,7 +412,7 @@ begin
     QItem := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionItem');
     AddAttrID(QItem, 'quei');
     QScheme.AppendChild(QItem);
-    QuieMap.Add(F, QItem);
+    QuieMap.Add(@F, @QItem);
 
     QText := AppendElem(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText', '');
@@ -437,42 +483,345 @@ begin
   end;
 end;
 
-procedure TEpiDDIExport.BuildControlConstructScheme(DataCollection: TDOMElement
-  );
+function TEpiDDIExport.BuildControlConstructScheme(DataCollection: TDOMElement
+  ): TDomElement;
 var
   CCS: TDOMElement;
   i: Integer;
   MainSequence: TDOMElement;
-  QCons: TDOMElement;
-  F: TEpiField;
   Elem: TDOMElement;
+  DF: TEpiDataFile;
+  DoneItem: TDOMElement;
+  F: TEpiField;
+  QCons: TDOMElement;
+
+  procedure BuildSequence(Sequence: TDOMElement; FromIndex: integer);
+  var
+    QCons: TDOMElement;
+    QConsRef: TDOMElement;
+    i: integer;
+    NewSequence: TDOMElement;
+    Idx: Integer;
+    Elem: TDOMElement;
+    ITE: TDOMElement;
+    Jmp: TEpiJump;
+    F: TEpiField;
+    TheITE: TDOMElement;
+  begin
+    while FromIndex < Df.Fields.Count do
+    begin
+      F := FSettings.Doc.DataFiles[0].Field[FromIndex];
+      QConsRef := AppendElem(Sequence, NSdatacollection, 'ControlConstructReference');
+      QCons := TDOmElement(QuecMap.KeyData[@F]^);
+      AppendElem(QConsRef, NSreuseable, 'ID', QCons.GetAttribute('id'));
+      Inc(FromIndex);
+
+      if Assigned(F.Jumps) and (F.Jumps.Count > 0) then
+      for i := 0 to F.Jumps.Count - 1 do
+      begin
+        Jmp := F.Jumps[i];
+
+        // Build Main IfThenElse Node(s):
+        if i = 0 then
+        begin
+          ITE := AppendElem(CCS, NSdatacollection, 'IfThenElse');
+          TheITE := ITE;
+          AddAttrID(ITE, 'ifth');
+        end else begin
+          ITE := AppendElem(TheITE, NSdatacollection, 'ElseIf');
+        end;
+
+
+        // Add a reference in the original sequence to this IfThenElse node:
+        QConsRef := AppendElem(Sequence, NSdatacollection, 'ControlConstructReference');
+        AppendElem(QConsRef, NSreuseable, 'ID', ITE.GetAttribute('id'));
+
+        // Build Inner nodes of IfThenElse:
+        // - If Condition:
+        Elem := AppendElem(ITE, NSdatacollection, 'IfCondition');
+        AppendElem(Elem, NSreuseable, 'Code', F.Name + '=' + Jmp.JumpValueAsString);
+        // - Source (Field) of If Condition
+        Elem := AppendElem(Elem, NSreuseable, 'SourceQuestionReference');
+        AppendElem(Elem, NSreuseable, 'ID', QCons.GetAttribute('id'));
+
+
+        // Handle special case with jtSaveRecord:
+        if Jmp.JumpType = jtSaveRecord then
+        begin
+          Elem := AppendElem(ITE, NSdatacollection, 'ThenConstructReference');
+          AppendElem(Elem, NSreuseable, 'ID', DoneItem.GetAttribute('id'));
+          Continue;
+        end;
+
+        // Construct new branching sequence for this jump value:
+        NewSequence := XMLDoc.CreateElementNS(NSdatacollection, 'Sequence');
+        AppendElem(NewSequence, NSreuseable, 'Label', 'Sequence: ' + F.Name + ' Jump=' + Jmp.JumpValueAsString);
+        AddAttrID(NewSequence, 'seqc');
+        CCS.AppendChild(NewSequence);
+        Case F.Jumps[i].JumpType of
+          jtExitSection:
+            begin
+              for Idx := FromIndex to Df.Fields.Count -1 do
+                if Df[Idx].Section <> F.Section then break;
+            end;
+          jtSkipNextField:
+            Idx := Df.Fields.IndexOf(F) + 1;
+          jtToField:
+            Idx := Df.Fields.IndexOf(F.Jumps[i].JumpToField);
+        end;
+        Elem := AppendElem(ITE, NSdatacollection, 'ThenConstructReference');
+        AppendElem(Elem, NSreuseable, 'ID', NewSequence.GetAttribute('id'));
+
+        BuildSequence(NewSequence, Idx);
+      end;
+    end;
+  end;
+
 begin
   CCS := XMLDoc.CreateElementNS(NSdatacollection, 'ControlConstructScheme');
   AddAttrID(CCS, 'cocs');
-  DDIStudyUnit.AppendChild(CCS);
+  DataCollection.AppendChild(CCS);
 
   MainSequence := XMLDoc.CreateElementNS(NSdatacollection, 'Sequence');
+  AppendElem(MainSequence, NSreuseable, 'Label', 'Main Sequence');
+  AddAttrID(MainSequence, 'seqc');
   CCS.AppendChild(MainSequence);
 
-  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
+  DF := FSettings.Doc.DataFiles[0];
+
+  for i := 0 to Df.Fields.Count - 1 do
   begin
-    F := FSettings.Doc.DataFiles[0].Field[i];
+    F := Df.Field[i];
 
     QCons := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionConstruct');
     AddAttrID(QCons, 'quec');
     Elem := AppendElem(QCons, NSdatacollection, 'QuestionReference');
-    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(QuieMap.KeyData[F]).GetAttribute('id'));
+    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(QuieMap.KeyData[@F]^).GetAttribute('id'));
 
     CCS.AppendChild(QCons);
+    QuecMap.Add(@F, @QCons);
   end;
+  DoneItem := AppendElem(CCS, NSdatacollection, 'StatementItem');
+  AddAttrID(DoneItem, 'stai');
+  Elem := AppendElem(DoneItem, NSdatacollection, 'DisplayText');
+  Elem := AppendElem(Elem, NSdatacollection, 'LiteralText');
+  AppendElem(Elem, NSdatacollection, 'Text', 'End of Fields.');
+
+  BuildSequence(MainSequence, 0);
+  Result := MainSequence;
 end;
 
 procedure TEpiDDIExport.BuildLogicalProduct;
+var
+  LogicalProd: TDOMElement;
+  VarS: TDOMElement;
+  Elem: TDOMElement;
+begin
+  LogicalProd := AppendElem(DDIStudyUnit, NSlogicalproduct, 'LogicalProduct');
+  AddAttrID(LogicalProd, 'lopr');
+
+  VarS := BuildVariableScheme;
+
+  Elem := AppendElem(LogicalProd, NSlogicalproduct, 'DataRelationship');
+  AddAttrID(Elem, 'dars');
+  Elem := AppendElem(Elem, NSlogicalproduct, 'LogicalRecord');
+  AddAttrID(Elem, 'lore');
+  Elem.SetAttribute('hasLocator', 'false');
+  Elem := AppendElem(Elem, NSlogicalproduct, 'VariablesInRecord');
+  Elem.SetAttribute('allVariablesInLogicalProduct', 'true');
+  Elem := AppendElem(Elem, NSlogicalproduct, 'VariableSchemeReference');
+  AppendElem(Elem, NSreuseable, 'ID', VarS.GetAttribute('id'));
+
+  BuildCodeScheme(LogicalProd);
+
+  LogicalProd.AppendChild(VarS);
+end;
+
+function TEpiDDIExport.BuildVariableScheme: TDOMElement;
+var
+  Df: TEpiDataFile;
+  F: TEpiField;
+  VarElem: TDOMElement;
+  i: Integer;
+  Elem: TDOMElement;
+  ReprElem: TDOMElement;
+  j: Integer;
+  S: String;
+begin
+  Result := XMLDoc.CreateElementNS(NSlogicalproduct, 'VariableScheme');
+  AddAttrID(Result, 'vars');
+
+  Df := FSettings.Doc.DataFiles[0];
+  for i := 0 to Df.Fields.Count -1 do
+  begin
+    F := Df.Field[i];
+
+    VarElem := AppendElem(Result, NSlogicalproduct, 'Variable');
+    AddAttrID(VarElem, 'vari');
+    AppendElem(VarElem, NSlogicalproduct, 'VariableName', F.Name);
+    AppendElem(VarElem, NSreuseable, 'Label', F.Question.Text);
+    Elem := AppendElem(VarElem, NSlogicalproduct, 'QuestionReference');
+    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(QuieMap.KeyData[@F]^).GetAttribute('id'));
+
+    Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
+
+
+    if Assigned(F.ValueLabelSet) then
+    begin
+      ReprElem := AppendElem(Elem, NSlogicalproduct, 'CodeRepresentation');
+      j := ValueLabelSetsGUIDs.IndexOfObject(F.ValueLabelSet);
+      Elem := AppendElem(ReprElem, NSreuseable, 'CodeSchemeReference');
+      AppendElem(Elem, NSreuseable, 'ID', ValueLabelSetsGUIDs[j]);
+    end else
+      case F.FieldType of
+        ftBoolean:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'NumericRepresentation');
+            ReprElem.SetAttribute('type', 'Short');
+          end;
+        ftInteger:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'NumericRepresentation');
+            ReprElem.SetAttribute('type', 'Long');
+          end;
+        ftAutoInc:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'NumericRepresentation');
+            ReprElem.SetAttribute('type', 'Incremental');
+            ReprElem.SetAttribute('startValue', IntToStr(FSettings.Doc.ProjectSettings.AutoIncStartValue));
+            ReprElem.SetAttribute('interval', '1');
+          end;
+        ftFloat:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'NumericRepresentation');
+            ReprElem.SetAttribute('type', 'Float');
+            ReprElem.SetAttribute('decimalPositions', IntToStr(F.Decimals));
+          end;
+        ftDMYDate, ftMDYDate, ftYMDDate,
+        ftDMYAuto, ftMDYAuto, ftYMDAuto:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
+            ReprElem.SetAttribute('type', 'Date');
+            ReprElem.SetAttribute('format', F.FormatString());
+          end;
+        ftTime,
+        ftTimeAuto:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
+            ReprElem.SetAttribute('type', 'Time');
+            ReprElem.SetAttribute('format', F.FormatString());
+          end;
+        ftString,
+        ftUpperString:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'TextRepresentation');
+            ReprElem.SetAttribute('maxLength', IntToStr(F.Length));
+          end;
+      end;
+    // Missing Value
+    if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
+    begin
+      S := '';
+      for j := 0 to F.ValueLabelSet.Count -1 do
+        if F.ValueLabelSet[j].IsMissingValue then
+          S += F.ValueLabelSet[j].ValueAsString + ' ';
+      ReprElem.SetAttribute('missingValue', TrimRight(S));
+    end;
+    ReprElem.SetAttribute('blankIsMissingValue', 'true');
+  end;
+end;
+
+procedure TEpiDDIExport.BuildCodeScheme(LogicalProduct: TDOMElement);
+var
+  VLSets: TEpiValueLabelSets;
+  CatScheme: TDOMElement;
+  CodScheme: TDOMElement;
+  VSet: TEpiValueLabelSet;
+  V: TEpiCustomValueLabel;
+  Cat: TDOMElement;
+  Elem: TDOMElement;
+  CodSchemeList: TList;
+  i: Integer;
+  j: Integer;
+  Cod: TDOMElement;
+begin
+  VLSets := FSettings.Doc.ValueLabelSets;
+  CodSchemeList := TList.Create;
+
+  for i := 0 to VLSets.Count - 1 do
+  begin
+    VSet := VLSets[i];
+
+    CatScheme := AppendElem(LogicalProduct, NSlogicalproduct, 'CategoryScheme');
+    AddAttrID(CatScheme, 'cats');
+    CodScheme := XMLDoc.CreateElementNS(NSlogicalproduct, 'CodeScheme');
+    j := ValueLabelSetsGUIDs.IndexOfObject(VSet);
+    CodScheme.SetAttribute('id', ValueLabelSetsGUIDs[j]);
+    CodSchemeList.Add(CodScheme);
+
+    AppendElem(CatScheme, NSreuseable, 'Label', VSet.Name);
+    AppendElem(CodScheme, NSreuseable, 'Label', VSet.Name);
+
+    Elem := AppendElem(CodScheme, NSlogicalproduct, 'CategorySchemeReference');
+    AppendElem(Elem, NSreuseable, 'ID', CatScheme.GetAttribute('id'));
+
+    for j := 0 to VSet.Count - 1 do
+    begin
+      V := VSet[j];
+
+      Cat := AppendElem(CatScheme, NSlogicalproduct, 'Category');
+      AddAttrID(Cat, 'cat');
+      AppendElem(Cat, NSreuseable, 'Label', V.TheLabel.Text);
+
+      Cod := AppendElem(CodScheme, NSlogicalproduct, 'Code');
+      Elem := AppendElem(Cod, NSlogicalproduct, 'CategoryReference');
+      AppendElem(Elem, NSreuseable, 'ID', Cat.GetAttribute('id'));
+
+      AppendElem(Cod, NSlogicalproduct, 'Value', V.ValueAsString);
+    end;
+  end;
+
+  for i := 0 to CodSchemeList.Count - 1 do
+    LogicalProduct.AppendChild(TDOMElement(CodSchemeList[i]));
+end;
+
+procedure TEpiDDIExport.BuildPhysicalDataProduct;
+var
+  PhysDataProd: TDOMElement;
+begin
+{
+<PhysicalDataProduct xmlns="ddi:physicaldataproduct:3_1" agency="dk.dda" id="phdp-52cae64d-bad5-49c9-8845-652d31a9e910" version="1.0.0">
+  <PhysicalStructureScheme agency="dk.dda" id="phss-7d597aed-5cad-45d1-b95f-3c967cc7b70e" version="1.0.0">
+    <PhysicalStructure id="phst-e99172c7-fc40-459b-b4c4-311bc1032638" version="1.0.0">
+      <LogicalProductReference>
+        <ID xmlns="ddi:reusable:3_1">lopr-8fa7b9fb-7ef0-4ceb-803f-56d3fd007a32</ID>
+        <IdentifyingAgency xmlns="ddi:reusable:3_1">dk.dda</IdentifyingAgency>
+        <Version xmlns="ddi:reusable:3_1">1.0.0</Version>
+      </LogicalProductReference>
+      <Format>ASCII_FIXED_NATIVE</Format>
+      <DefaultDecimalSeparator>.</DefaultDecimalSeparator>
+      <GrossRecordStructure id="grst-108e554b-c31d-40fb-b102-986c6680a939" numberOfPhysicalSegments="1">
+        <LogicalRecordReference>
+          <ID xmlns="ddi:reusable:3_1">lore-ddbb03e5-fb98-4bd6-8364-dee90b41f755</ID>
+          <IdentifyingAgency xmlns="ddi:reusable:3_1">dk.dda</IdentifyingAgency>
+          <Version xmlns="ddi:reusable:3_1">1.0.0</Version>
+        </LogicalRecordReference>
+        <PhysicalRecordSegment hasSegmentKey="false" id="phrs-6d5f8c7e-f917-4418-bea2-ab263182f963" segmentOrder="1"/>
+      </GrossRecordStructure>
+    </PhysicalStructure>
+  </PhysicalStructureScheme>
+}
+  PhysDataProd := AppendElem(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct');
+  AddAttrID(PhysDataProd, 'phdp');
+
+end;
+
+procedure TEpiDDIExport.BuildPhysicalInstance;
 begin
 
 end;
 
-procedure TEpiDDIExport.BuildPhysicalDataProduct;
+procedure TEpiDDIExport.BuildArchive;
 begin
 
 end;
@@ -481,12 +830,13 @@ constructor TEpiDDIExport.Create;
 begin
   ValueLabelSetsGUIDs := TStringList.Create;
   QuieMap := TFPSMap.Create;
-  QuieMap.Sorted := true;
+  QuecMap := TFPSMap.Create;
 end;
 
 destructor TEpiDDIExport.Destroy;
 begin
   QuieMap.Free;
+  QuecMap.Free;
   ValueLabelSetsGUIDs.Free;
   inherited Destroy;
 end;
@@ -495,25 +845,18 @@ function TEpiDDIExport.ExportDDI(const Settings: TEpiDDIExportSetting): boolean;
 var
   Elem: TDOMElement;
   RefIDElem: TDOMElement;
+  TxtExportSetting: TEpiCSVExportSetting;
 begin
   Settings.SanetyCheck;
   FSettings := Settings;
-
   EpiDoc := Settings.Doc;
+
+  ExportCSVFile;
 
   XMLDoc := TXMLDocument.Create;
   DDIInstance := XMLDoc.CreateElementNS('ddi:instance:3_1', 'DDIInstance');
   XMLDoc.AppendChild(DDIInstance);
   DDIInstance := XMLDoc.DocumentElement;
-
-  {
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="ddi:instance:3_1"
-  xsi:schemaLocation="ddi:instance:3_1 http://www.ddialliance.org/sites/default/files/schema/ddi3.1/instance.xsd"
-  id="2fbc5af9-939d-4b95-999a-2920c38c9dc3"
-  version="1.0.0"
-  versionDate="2012-05-30T13:27:58.364+02:00"
-  agency="dk.dda"}
 
   AddAttrID(DDIInstance, 'inst');
   with DDIInstance do
@@ -541,6 +884,8 @@ begin
   BuildDataCollection;
   BuildLogicalProduct;
   BuildPhysicalDataProduct;
+  BuildPhysicalInstance;
+  BuildArchive;
 
   WriteXML(XMLDoc, Settings.ExportFileName)
 end;
