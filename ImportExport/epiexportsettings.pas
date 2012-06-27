@@ -356,10 +356,17 @@ begin
   Result :=
     (inherited SanetyCheck) and
     // FieldSep compare
-    (FieldSeparator <> DateSeparator) and
-    (FieldSeparator <> TimeSeparator) and
-    (FieldSeparator <> DecimalSeparator) and
-    (FieldSeparator <> QuoteChar) and
+    (
+      (not FixedFormat) and
+        (
+          (FieldSeparator <> DateSeparator) and
+          (FieldSeparator <> TimeSeparator) and
+          (FieldSeparator <> DecimalSeparator) and
+          (FieldSeparator <> QuoteChar)
+        )
+      or
+      ( FixedFormat )
+    ) and
     // Date compare
     (DateSeparator  <> TimeSeparator) and
     (DateSeparator  <> DecimalSeparator) and
