@@ -21,6 +21,11 @@ type
     DDIUniverseRef:  TDOMElement;
     DDIFunding:      TDOMElement;
     DDISpatialCoverage: TDOMElement;
+    DDILogicalProd:     TDOMElement;
+    DDILogicalRec:      TDOMElement;
+    DDIVarScheme:       TDOMElement;
+    DDIRels:            TDOMElement;
+    DDIRely:            TDOMElement;
 
     ValueLabelSetsGUIDs: TStringList;
 
@@ -28,6 +33,8 @@ type
     QuieMap: TFPSMap;
     // Maps TEpiField -> QuestionConstruct
     QuecMap: TFPSMap;
+    // Maps TEPiField -> VariableItem
+    VarsMap: TFPSMap;
 
     // Helper methods.
     procedure AddAttrNameSpace(Elem: TDOMElement; Const NameSpace: string);
@@ -73,7 +80,7 @@ type
 implementation
 
 uses
-  XMLWrite, epiexport;
+  XMLWrite, epiexport, LazUTF8;
 
 const
   NSreuseable = 'ddi:reusable:3_1';
@@ -82,6 +89,8 @@ const
   NSdatacollection = 'ddi:datacollection:3_1';
   NSlogicalproduct = 'ddi:logicalproduct:3_1';
   NSphysicaldataproduct = 'ddi:physicaldataproduct:3_1';
+  NSphysicalinstance = 'ddi:physicalinstance:3_1';
+  NSarchive          = 'ddi:archive:3_1';
   // .... todo!
 
 { TEpiDDIExport }
@@ -92,7 +101,9 @@ var
 begin
   CreateGUID(GUID);
   Result := LowerCase(GUIDToString(GUID));
-  Result := Prefix + '-' + Copy(Result, 2, Length(Result) - 2);
+  Result := Copy(Result, 2, Length(Result) - 2);
+  if Prefix <> '' then
+    Result := Prefix + '-' + Result;
 end;
 
 procedure TEpiDDIExport.AddAttrNameSpace(Elem: TDOMElement;
@@ -613,28 +624,26 @@ end;
 
 procedure TEpiDDIExport.BuildLogicalProduct;
 var
-  LogicalProd: TDOMElement;
-  VarS: TDOMElement;
   Elem: TDOMElement;
 begin
-  LogicalProd := AppendElem(DDIStudyUnit, NSlogicalproduct, 'LogicalProduct');
-  AddAttrID(LogicalProd, 'lopr');
+  DDILogicalProd := AppendElem(DDIStudyUnit, NSlogicalproduct, 'LogicalProduct');
+  AddAttrID(DDILogicalProd, 'lopr');
 
-  VarS := BuildVariableScheme;
+  DDIVarScheme := BuildVariableScheme;
 
-  Elem := AppendElem(LogicalProd, NSlogicalproduct, 'DataRelationship');
+  Elem := AppendElem(DDILogicalProd, NSlogicalproduct, 'DataRelationship');
   AddAttrID(Elem, 'dars');
-  Elem := AppendElem(Elem, NSlogicalproduct, 'LogicalRecord');
-  AddAttrID(Elem, 'lore');
-  Elem.SetAttribute('hasLocator', 'false');
-  Elem := AppendElem(Elem, NSlogicalproduct, 'VariablesInRecord');
+  DDILogicalRec := AppendElem(Elem, NSlogicalproduct, 'LogicalRecord');
+  AddAttrID(DDILogicalRec, 'lore');
+  DDILogicalRec.SetAttribute('hasLocator', 'false');
+  Elem := AppendElem(DDILogicalRec, NSlogicalproduct, 'VariablesInRecord');
   Elem.SetAttribute('allVariablesInLogicalProduct', 'true');
   Elem := AppendElem(Elem, NSlogicalproduct, 'VariableSchemeReference');
-  AppendElem(Elem, NSreuseable, 'ID', VarS.GetAttribute('id'));
+  AppendElem(Elem, NSreuseable, 'ID', DDIVarScheme.GetAttribute('id'));
 
-  BuildCodeScheme(LogicalProd);
+  BuildCodeScheme(DDILogicalProd);
 
-  LogicalProd.AppendChild(VarS);
+  DDILogicalProd.AppendChild(DDIVarScheme);
 end;
 
 function TEpiDDIExport.BuildVariableScheme: TDOMElement;
@@ -657,6 +666,8 @@ begin
     F := Df.Field[i];
 
     VarElem := AppendElem(Result, NSlogicalproduct, 'Variable');
+    VarsMap.Add(@F, @VarElem);
+
     AddAttrID(VarElem, 'vari');
     AppendElem(VarElem, NSlogicalproduct, 'VariableName', F.Name);
     AppendElem(VarElem, NSreuseable, 'Label', F.Question.Text);
@@ -788,42 +799,190 @@ end;
 procedure TEpiDDIExport.BuildPhysicalDataProduct;
 var
   PhysDataProd: TDOMElement;
+  PhysStruct: TDOMElement;
+  Elem: TDOMElement;
+  GrossRecStr: TDOMElement;
+  RL: TDOMElement;
+  PHRS: TDOMElement;
+  Df: TEpiDataFile;
+  DI: TDOMElement;
+  F: TEpiField;
+  StartPos: Integer;
+  i: Integer;
+  S: String;
 begin
-{
-<PhysicalDataProduct xmlns="ddi:physicaldataproduct:3_1" agency="dk.dda" id="phdp-52cae64d-bad5-49c9-8845-652d31a9e910" version="1.0.0">
-  <PhysicalStructureScheme agency="dk.dda" id="phss-7d597aed-5cad-45d1-b95f-3c967cc7b70e" version="1.0.0">
-    <PhysicalStructure id="phst-e99172c7-fc40-459b-b4c4-311bc1032638" version="1.0.0">
-      <LogicalProductReference>
-        <ID xmlns="ddi:reusable:3_1">lopr-8fa7b9fb-7ef0-4ceb-803f-56d3fd007a32</ID>
-        <IdentifyingAgency xmlns="ddi:reusable:3_1">dk.dda</IdentifyingAgency>
-        <Version xmlns="ddi:reusable:3_1">1.0.0</Version>
-      </LogicalProductReference>
-      <Format>ASCII_FIXED_NATIVE</Format>
-      <DefaultDecimalSeparator>.</DefaultDecimalSeparator>
-      <GrossRecordStructure id="grst-108e554b-c31d-40fb-b102-986c6680a939" numberOfPhysicalSegments="1">
-        <LogicalRecordReference>
-          <ID xmlns="ddi:reusable:3_1">lore-ddbb03e5-fb98-4bd6-8364-dee90b41f755</ID>
-          <IdentifyingAgency xmlns="ddi:reusable:3_1">dk.dda</IdentifyingAgency>
-          <Version xmlns="ddi:reusable:3_1">1.0.0</Version>
-        </LogicalRecordReference>
-        <PhysicalRecordSegment hasSegmentKey="false" id="phrs-6d5f8c7e-f917-4418-bea2-ab263182f963" segmentOrder="1"/>
-      </GrossRecordStructure>
-    </PhysicalStructure>
-  </PhysicalStructureScheme>
-}
   PhysDataProd := AppendElem(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct');
   AddAttrID(PhysDataProd, 'phdp');
+  // *********************
+  // PhysicalStructureScheme
+  // *********************
+  Elem  := AppendElem(PhysDataProd, NSphysicaldataproduct, 'PhysicalStructureScheme');
+  AddAttrID(Elem, 'phss');
+  PhysStruct := AppendElem(Elem, NSphysicaldataproduct, 'PhysicalStructure');
+  AddAttrID(PhysStruct, 'phst');
 
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'LogicalProductReference');
+  AppendElem(Elem, NSreuseable, 'ID', DDILogicalProd.GetAttribute('id'));
+
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'FIXED');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', '.');
+
+  GrossRecStr := AppendElem(PhysStruct, NSphysicaldataproduct, 'GrossRecordStructure');
+  AddAttrID(GrossRecStr, 'grst');
+  Elem := AppendElem(GrossRecStr, NSphysicaldataproduct, 'LogicalRecordReference');
+  AppendElem(Elem, NSreuseable, 'ID', DDILogicalRec.GetAttribute('id'));
+
+  PHRS := AppendElem(GrossRecStr, NSphysicaldataproduct, 'PhysicalRecordSegment');
+  AddAttrID(PHRS, 'phrs');
+  PHRS.SetAttribute('hasSegmentKey', 'false');
+  PHRS.SetAttribute('segmentOrder', '1');
+  // *********************
+
+  // *********************
+  // RecordLayoutScheme
+  // *********************
+  DDIRels := AppendElem(PhysDataProd, NSphysicaldataproduct, 'RecordLayoutScheme');
+  AddAttrID(DDIRels, 'rels');
+
+  RL := AppendElem(DDIRels, NSphysicaldataproduct, 'RecordLayout');
+  DDIRely := RL;
+  AddAttrID(RL, 'rely');
+
+  Elem := AppendElem(RL, NSphysicaldataproduct, 'PhysicalStructureReference');
+  AppendElem(Elem, NSreuseable, 'ID', PhysDataProd.GetAttribute('id'));
+  AppendElem(Elem, NSphysicaldataproduct, 'PhysicalRecordSegmentUsed', PHRS.GetAttribute('id'));
+
+  AppendElem(RL, NSphysicaldataproduct, 'CharacterSet', 'UTF-8');
+  AppendElem(RL, NSphysicaldataproduct, 'ArrayBase', '1');
+  Elem := AppendElem(RL, NSphysicaldataproduct, 'DefaultVariableSchemeReference');
+  AppendElem(Elem, NSreuseable, 'ID', DDIVarScheme.GetAttribute('id'));
+
+  Df := FSettings.Doc.DataFiles[0];
+  StartPos := 1;
+  for i := 0 to Df.Fields.Count - 1 do
+  begin
+    F := DF.Field[i];
+
+    DI := AppendElem(RL, NSphysicaldataproduct, 'DataItem');
+    Elem := AppendElem(DI, NSphysicaldataproduct, 'VariableReference');
+    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(VarsMap.KeyData[@F]^).GetAttribute('id'));
+
+    Elem := AppendElem(DI, NSphysicaldataproduct, 'PhysicalLocation');
+
+    case F.FieldType of
+      ftBoolean,
+      ftInteger,
+      ftAutoInc: S := 'integer';
+      ftFloat:   S := 'real';
+      ftDMYDate,
+      ftMDYDate,
+      ftYMDDate,
+      ftDMYAuto,
+      ftMDYAuto,
+      ftYMDAuto,
+      ftTime,
+      ftTimeAuto,
+      ftString,
+      ftUpperString: S := 'string';
+    end;
+    AppendElem(Elem, NSphysicaldataproduct, 'StorageFormat', S);
+    AppendElem(Elem, NSphysicaldataproduct, 'StartPosition', IntToStr(StartPos));
+    AppendElem(Elem, NSphysicaldataproduct, 'Width', IntToStr(F.Length));
+    if F.FieldType in FloatFieldTypes then
+      AppendElem(Elem, NSphysicaldataproduct, 'DecimalPositions', IntToStr(F.Decimals));
+    Inc(StartPos, F.Length);
+  end;
 end;
 
 procedure TEpiDDIExport.BuildPhysicalInstance;
+var
+  PhysicalInst: TDOMElement;
+  RecLayoutRef: TDOMElement;
+  Elem: TDOMElement;
+  Fn: String;
+  GRFS: TDOMElement;
 begin
+  PhysicalInst := AppendElem(DDIStudyUnit, NSphysicalinstance, 'PhysicalInstance');
+  AddAttrID(PhysicalInst, 'phin');
+  RecLayoutRef := AppendElem(PhysicalInst, NSphysicalinstance, 'RecordLayoutReference');
+  Elem := AppendElem(RecLayoutRef, NSreuseable, 'Scheme');
+  AppendElem(Elem, NSreuseable, 'ID', DDIRels.GetAttribute('id'));
 
+  AppendElem(RecLayoutRef, NSreuseable, 'ID', DDIRely.GetAttribute('id'));
+
+  Elem := AppendElem(PhysicalInst, NSphysicalinstance, 'DataFileIdentification');
+  AddAttrID(Elem, 'dafi');
+  Fn := UTF8ToSys(FSettings.ExportFileName);
+  Fn := ExtractFileName(ChangeFileExt(Fn, 'txt'));
+  AppendElem(Elem, NSphysicalinstance, 'URI', Fn);
+
+  GRFS := AppendElem(PhysicalInst, NSphysicalinstance, 'GrossFileStructure');
+  AddAttrID(GRFS, 'grfs');
+  Elem := AppendElem(GRFS, NSphysicalinstance, 'CreationSoftware');
+  AddAttrID(Elem, 'crsw');
+  AppendElem(Elem, NSreuseable, 'Name', 'EpiData');
+
+  AppendElem(GRFS, NSphysicalinstance, 'CaseQuantity', IntToStr(FSettings.Doc.DataFiles[0].Size));
+  AppendElem(GRFS, NSphysicalinstance, 'OverallRecordCount', IntToStr(FSettings.Doc.DataFiles[0].Size));
 end;
 
 procedure TEpiDDIExport.BuildArchive;
+var
+  Archive: TDOMElement;
+  OrgScheme: TDOMElement;
+  Org: TDOMElement;
+  Elem: TDOMElement;
 begin
+{
+<Archive xmlns="ddi:archive:3_1" id="5428ce11-5f2e-40c4-893e-e6439e536de0" version="1.0.0" versionDate="2012-05-30T13:28:54.496+02:00" agency="dk.dda">
+  <VersionResponsibility xmlns="ddi:reusable:3_1">ddajvj</VersionResponsibility>
+  <VersionRationale xmlns="ddi:reusable:3_1" translated="false" translatable="true" xml:lang="da">Version: 1.0.0, date: 2012-05-30T13:28:54.496+02:00</VersionRationale>
+  <OrganizationScheme id="51ad1f62-30a7-4179-9169-71d7febbec48" version="1.0.0" versionDate="2012-05-30T13:28:54.504+02:00" agency="dk.dda">
+    <Individual id="14627">
+      <IndividualName>
+        <First>Jørgen Møller Christiansen</First>
+      </IndividualName>
+      <DDIMaintenanceAgencyID registryID="dk.dda"/>
+      <Location id="a96f0cdd-add8-4f51-8df9-d06bcb51577d">
+        <Address>
+          <Line>Center for Alternativ Samfundsanalyse</Line>
+          <Line>Kigkurren 8M, st</Line>
+          <City>KØBENHAVN S</City>
+          <Postal>2300</Postal>
+        </Address>
+        <Country codeClass="ISO-3166">DK</Country>
+        <Telephone>3389 0155</Telephone>
+        <Email>jmc@casa-analyse.dk</Email>
+      </Location>
+    </Individual>
+  </OrganizationScheme>
+</Archive>
+}
+  Archive := AppendElem(DDIStudyUnit, NSarchive, 'Archive');
+  AddAttrID(Archive, '');
+  Elem := AppendElem(Archive, NSarchive, 'ArchiveSpecific');
+  Elem := AppendElem(Elem, NSarchive, 'ArchiveOrganizationReference');
+  AppendElem(Elem, NSreuseable, 'ID', 'NotFilled');
 
+  if (FSettings.FundAgencyName <> '') then
+  begin
+    OrgScheme := AppendElem(Archive, NSarchive, 'OrganizationScheme');
+    AddAttrID(OrgScheme, '');
+
+    Org := AppendElem(OrgScheme, NSarchive, 'Organization');
+    AddAttrID(Org, '');
+    AppendElem(Org, NSarchive, 'OrganizationName', FSettings.FundAgencyName);
+    if (FSettings.FundAgencyAddress <> '') then
+    begin
+      Elem := AppendElem(Org, NSarchive, 'Location');
+      AddAttrID(Elem, '');
+      AppendElem(Elem, NSarchive, 'Address', FSettings.FundAgencyAddress);
+    end;
+
+    // Now we have the funding orgination, create the content of the FundingInfo element.
+    Elem := AppendElem(DDIFunding, NSreuseable, 'AgencyOrganizationReference');
+    AppendElem(Elem, NSreuseable, 'ID', Org.GetAttribute('id'));
+  end;
 end;
 
 constructor TEpiDDIExport.Create;
@@ -831,10 +990,12 @@ begin
   ValueLabelSetsGUIDs := TStringList.Create;
   QuieMap := TFPSMap.Create;
   QuecMap := TFPSMap.Create;
+  VarsMap := TFPSMap.Create;
 end;
 
 destructor TEpiDDIExport.Destroy;
 begin
+  VarsMap.Free;
   QuieMap.Free;
   QuecMap.Free;
   ValueLabelSetsGUIDs.Free;
