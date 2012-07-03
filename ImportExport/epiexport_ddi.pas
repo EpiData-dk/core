@@ -61,7 +61,7 @@ type
     // Datacollection helpers:
     procedure BuildQuestionScheme(DataCollection: TDOMElement);
     // helper: Returns MainSequence
-    function BuildControlConstructScheme(DataCollection: TDOMElement): TDomElement;
+    function  BuildControlConstructScheme(DataCollection: TDOMElement): TDomElement;
 
     procedure BuildLogicalProduct;
     // LogicalProductHelpers
@@ -550,7 +550,7 @@ var
         // Build Inner nodes of IfThenElse:
         // - If Condition:
         Elem := AppendElem(ITE, NSdatacollection, 'IfCondition');
-        AppendElem(Elem, NSreuseable, 'Code', F.Name + '=' + Jmp.JumpValueAsString);
+        AppendElem(Elem, NSreuseable, 'Code', F.Name + '==' + Jmp.JumpValueAsString);
         // - Source (Field) of If Condition
         Elem := AppendElem(Elem, NSreuseable, 'SourceQuestionReference');
         AppendElem(Elem, NSreuseable, 'ID', QCons.GetAttribute('id'));
@@ -913,7 +913,7 @@ begin
   Elem := AppendElem(PhysicalInst, NSphysicalinstance, 'DataFileIdentification');
   AddAttrID(Elem, 'dafi');
   Fn := UTF8ToSys(FSettings.ExportFileName);
-  Fn := ExtractFileName(ChangeFileExt(Fn, 'txt'));
+  Fn := ExtractFileName(ChangeFileExt(Fn, '.csv'));
   AppendElem(Elem, NSphysicalinstance, 'URI', Fn);
 
   GRFS := AppendElem(PhysicalInst, NSphysicalinstance, 'GrossFileStructure');
