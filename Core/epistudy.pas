@@ -200,6 +200,7 @@ begin
   FGeographicalCoverage.LoadFromXml(Root);
   FPublisher.LoadFromXml(Root);
   FPurpose.LoadFromXml(Root);
+  FPopulation.LoadFromXml(Root);
   FRights.LoadFromXml(Root);
   FTimeCoverage.LoadFromXml(Root);
   FTitle.LoadFromXml(Root);
