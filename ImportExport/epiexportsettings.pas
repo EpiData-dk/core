@@ -145,6 +145,18 @@ type
     // ConceptualConponent->UniverseScheme->Universe->HumanReadable
     property ConUniverse: String read FConUniverse write FConUniverse;
 
+  { Other }
+  private
+    FAgency: string;
+    FSoftwareName: string;
+    FSoftwareVersion: string;
+    FVersion: string;
+  public
+    property Agency: string  read FAgency  write FAgency;
+    property SoftwareName: string read FSoftwareName write FSoftwareName;
+    property SoftwareVersion: string read FSoftwareVersion write FSoftwareVersion;
+    property Version: string read FVersion write FVersion;
+
   { Common }
   public
     constructor Create; override;

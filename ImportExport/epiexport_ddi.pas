@@ -37,15 +37,42 @@ type
     VarsMap: TFPSMap;
 
     // Helper methods.
+    function  idFromFieldMap(Const Map: TFPSMap; Const F: TEpiField): string;
     procedure AddAttrNameSpace(Elem: TDOMElement; Const NameSpace: string);
     procedure AddAttrID(Elem: TDOMElement; Const Prefix: string);
     procedure AddAttrTranslation(Elem: TDOMElement);
     procedure AddAttrLang(Elem: TDOMElement; Const Lang: string);
 
-    procedure AppendContent(Root: TDOMElement; Const Text: string; Const ContentName: string = 'Content');
     function  AppendElem(Root: TDOMElement; Const NameSpace, NodeName: string;
       Const Text: String = ''): TDOMElement;
 
+    // Adds Lang
+    function  AppendElemInternationalStringType(Root: TDOMElement;
+      Const NameSpace, NodeName: string;
+      Const Text: String): TDOMElement;
+
+    // Adds ID
+    function  AppendElemIdentifiableType(Root: TDOMElement;
+      Const NameSpace, NodeName: string;
+      Const Prefix: String = ''): TDOMElement;
+
+    // Adds ID and Version
+    function  AppendElemVersionableType(Root: TDOMElement;
+      Const NameSpace, NodeName: string;
+      Const Prefix: String = ''): TDOMElement;
+
+    // Adds ID, Version, Lang And Agency!
+    function AppendElemMaintainableType(Root: TDOMElement;
+      Const NameSpace, NodeName: string;
+      Const Prefix: String = ''): TDOMElement;
+
+    function AppendElemReferenceType(Root: TDOMElement;
+      Const NameSpace, NodeName: string;
+      Const ReferenceElem: TDOMElement): TDOMElement; overload;
+
+    function AppendElemReferenceType(Root: TDOMElement;
+      Const NameSpace, NodeName: string;
+      Const ReferenceId: string): TDOMElement; overload;
 
     procedure ExportCSVFile;
     // Block to produce.
@@ -106,6 +133,12 @@ begin
     Result := Prefix + '-' + Result;
 end;
 
+function TEpiDDIExport.idFromFieldMap(const Map: TFPSMap; const F: TEpiField
+  ): string;
+begin
+  Result := TDOMElement(Map.KeyData[@F]^).GetAttribute('id')
+end;
+
 procedure TEpiDDIExport.AddAttrNameSpace(Elem: TDOMElement;
   const NameSpace: string);
 begin
@@ -129,24 +162,58 @@ begin
   Elem.SetAttribute('xml:lang', Lang);
 end;
 
-procedure TEpiDDIExport.AppendContent(Root: TDOMElement; const Text: string;
-  const ContentName: string);
-var
-  Content: TDOMElement;
-begin
-  Content := XMLDoc.CreateElementNS(NSreuseable, ContentName);
-  Root.AppendChild(Content);
-  AddAttrTranslation(Content);
-//  AddAttrLang(Content, Text.DefaultLang);
-  Content.TextContent := Text;
-end;
-
 function TEpiDDIExport.AppendElem(Root: TDOMElement; const NameSpace,
   NodeName: string; const Text: String): TDOMElement;
 begin
   Result := XMLDoc.CreateElementNS(NameSpace, NodeName);
   Result.TextContent := Text;
-  Root.AppendChild(Result);
+  if Assigned(Root) then
+    Root.AppendChild(Result);
+end;
+
+function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
+  const NameSpace, NodeName: string; const Text: String): TDOMElement;
+begin
+  Result := AppendElem(Root, NameSpace, NodeName, Text);
+  AddAttrLang(Result, FSettings.Doc.DefaultLang);
+end;
+
+function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;
+  const NameSpace, NodeName: string; const Prefix: String): TDOMElement;
+begin
+  Result := AppendElem(Root, NameSpace, NodeName);
+  AddAttrID(Result, Prefix);
+end;
+
+function TEpiDDIExport.AppendElemVersionableType(Root: TDOMElement;
+  const NameSpace, NodeName: string; const Prefix: String): TDOMElement;
+begin
+  Result := AppendElemIdentifiableType(Root, NameSpace, NodeName, Prefix);
+  Result.SetAttribute('version', FSettings.Version);
+  Result.SetAttribute('versionDate', FormatDateTime('YYYY/MM/DD"T"HH:MM:SS"."ZZZ', Now));
+end;
+
+function TEpiDDIExport.AppendElemMaintainableType(Root: TDOMElement;
+  const NameSpace, NodeName: string; const Prefix: String): TDOMElement;
+begin
+  Result := AppendElemVersionableType(Root, NameSpace, NodeName, Prefix);
+  AddAttrLang(Result, FSettings.Doc.DefaultLang);
+  Result.SetAttribute('agency', FSettings.Agency);
+end;
+
+function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
+  const NameSpace, NodeName: string; const ReferenceElem: TDOMElement
+  ): TDOMElement;
+begin
+  Result := AppendElemReferenceType(Root, NameSpace, NodeName,
+              ReferenceElem.GetAttribute('id'));
+end;
+
+function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
+  const NameSpace, NodeName: string; const ReferenceId: string): TDOMElement;
+begin
+  Result := AppendElem(Root, NameSpace, NodeName);
+  AppendElem(Result, NSreuseable, 'ID', ReferenceId);
 end;
 
 procedure TEpiDDIExport.ExportCSVFile;
@@ -178,23 +245,22 @@ procedure TEpiDDIExport.BuildCitations;
 var
   Citation: TDOMElement;
 begin
-  Citation := XMLDoc.CreateElementNS(NSreuseable, 'Citation');
-  DDIStudyUnit.AppendChild(Citation);
+  Citation := AppendElem(DDIStudyUnit, NSreuseable, 'Citation');
 
   // Title MUST be present, so assume it is...
-  AppendElem(Citation, NSreuseable, 'Title', FSettings.CitTitle);
+  AppendElemInternationalStringType(Citation, NSreuseable, 'Title', FSettings.CitTitle);
 
   if FSettings.CitSubTitle <> '' then
-    AppendElem(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle);
+    AppendElemInternationalStringType(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle);
 
   if FSettings.CitCreator <> '' then
-    AppendElem(Citation, NSreuseable, 'Creator', FSettings.CitCreator);
+    AppendElemInternationalStringType(Citation, NSreuseable, 'Creator', FSettings.CitCreator);
 
   if FSettings.CitPublisher <> '' then
-    AppendElem(Citation, NSreuseable, 'Publisher', FSettings.CitPublisher);
+    AppendElemInternationalStringType(Citation, NSreuseable, 'Publisher', FSettings.CitPublisher);
 
   if FSettings.CitCopyRight <> '' then
-    AppendElem(Citation, NSreuseable, 'Copyright', FSettings.CitCopyRight);
+    AppendElemInternationalStringType(Citation, NSreuseable, 'Copyright', FSettings.CitCopyRight);
 end;
 
 procedure TEpiDDIExport.BuildAbstract;
@@ -202,19 +268,15 @@ var
   Abstract: TDOMElement;
   Content: TDOMElement;
 begin
-  Abstract := XMLDoc.CreateElementNS(NSstudy, 'Abstract');
-  DDIStudyUnit.AppendChild(Abstract);
-  AddAttrID(Abstract, 'abst');
-
-  AppendContent(Abstract, FSettings.AbstractText);
+  Abstract := AppendElemIdentifiableType(DDIStudyUnit, NSstudy, 'Abstract', 'abst');
+  AppendElemInternationalStringType(Abstract, NSreuseable, 'Content', FSettings.AbstractText);
 end;
 
 procedure TEpiDDIExport.BuildUniverseRef;
 begin
   // Universe Ref cannot be built fully at this instance, but append it as child to StudyUnit
   // to get the correct order of things.
-  DDIUniverseRef := XMLDoc.CreateElementNS(NSreuseable, 'UniverseReference');
-  DDIStudyUnit.AppendChild(DDIUniverseRef);
+  DDIUniverseRef := AppendElem(DDIStudyUnit, NSreuseable, 'UniverseReference');
 
   // UniverseReference element still need an "ID" element, but that is created later
   // when the actual UniverseScheme is created.
@@ -223,7 +285,7 @@ end;
 procedure TEpiDDIExport.BuildFunding;
 begin
   if (FSettings.FundAgencyName = '') then exit;
-  DDIFunding := XMLDoc.CreateElementNS(NSreuseable, 'FundingInformation');
+  DDIFunding := AppendElem(DDIStudyUnit, NSreuseable, 'FundingInformation');
 
   // Requires AgencyOrganizationReference, built later
 end;
@@ -232,11 +294,8 @@ procedure TEpiDDIExport.BuildPurpose;
 var
   Purpose: TDOMElement;
 begin
-  Purpose := XMLDoc.CreateElementNS(NSstudy, 'Purpose');
-  AddAttrID(Purpose, 'purp');
-  DDIStudyUnit.AppendChild(Purpose);
-
-  AppendContent(Purpose, FSettings.Purpose);
+  Purpose := AppendElemIdentifiableType(DDIStudyUnit, NSstudy, 'Purpose');
+  AppendElem(Purpose, NSreuseable, 'Content', FSettings.Purpose);
 end;
 
 procedure TEpiDDIExport.BuildCoverage;
@@ -252,56 +311,36 @@ begin
        (CoverTopSubjects.Count = 0) and
        (CoverTmpStartDate = 0) then exit;
 
-  Coverage := XMLDoc.CreateElementNS(NSreuseable, 'Coverage');
-  DDIStudyUnit.AppendChild(Coverage);
+  Coverage := AppendElem(DDIStudyUnit, NSreuseable, 'Coverage');
 
   if (FSettings.CoverTopSubjects.Count > 0) or
      (FSettings.CoverTopKeyWords.Count > 0) then
   begin
-    CoverElem := XMLDoc.CreateElementNS(NSreuseable, 'TopicalCoverage');
-    Coverage.AppendChild(CoverElem);
-    AddAttrID(CoverElem, 'topcov');
+    CoverElem := AppendElemIdentifiableType(Coverage, NSreuseable, 'TopicalCoverage', 'topcov');
 
     for i := 0 to FSettings.CoverTopSubjects.Count - 1 do
-      AppendElem(CoverElem, NSreuseable, 'Subject', FSettings.CoverTopSubjects[i]);
+      AppendElemInternationalStringType(CoverElem, NSreuseable, 'Subject', FSettings.CoverTopSubjects[i]);
 
     for i := 0 to FSettings.CoverTopKeyWords.Count - 1 do
-      AppendElem(CoverElem, NSreuseable, 'Keyword', FSettings.CoverTopKeyWords[i]);
+      AppendElemInternationalStringType(CoverElem, NSreuseable, 'Keyword', FSettings.CoverTopKeyWords[i]);
   end;
 
   if FSettings.CoverSpatial <> '' then
   begin
-    CoverElem := XMLDoc.CreateElementNS(NSreuseable, 'SpatialCoverage');
-    DDISpatialCoverage := CoverElem;
-    Coverage.AppendChild(CoverElem);
-    AddAttrID(CoverElem, 'spacov');
-
-    Elem := XMLDoc.CreateElementNS(NSreuseable, 'TopLevelReference');
-    CoverElem.AppendChild(Elem);
-
-    Elem := XMLDoc.CreateElementNS(NSreuseable, 'LowestLevelReference');
-    CoverElem.AppendChild(Elem);
+    DDISpatialCoverage := AppendElemIdentifiableType(Coverage, NSreuseable, 'SpatialCoverage', 'spacov');
+    Elem := AppendElem(DDISpatialCoverage, NSreuseable, 'TopLevelReference');
+    Elem := AppendElem(DDISpatialCoverage, NSreuseable, 'LowestLevelReference');
   end;
 
   if (FSettings.CoverTmpStartDate > 0) then
   begin
-    CoverElem := XMLDoc.CreateElementNS(NSreuseable, 'TemporalCoverage');
-    Coverage.AppendChild(CoverElem);
-    AddAttrID(CoverElem, 'tmpcov');
+    CoverElem := AppendElemIdentifiableType(Coverage, NSreuseable, 'TemporalCoverage', 'tmpcov');
 
-    Elem := XMLDoc.CreateElementNS(NSreuseable, 'ReferenceDate');
-    CoverElem.AppendChild(Elem);
+    Elem := AppendElem(CoverElem, NSreuseable, 'ReferenceDate');
 
-    CoverElem := XMLDoc.CreateElementNS(NSreuseable, 'StartDate');
-    CoverElem.TextContent := FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpStartDate);
-    Elem.AppendChild(CoverElem);
-
+    AppendElem(Elem, NSreuseable, 'StartDate', FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpStartDate));
     if FSettings.CoverTmpEndDate > 0 then
-    begin
-      CoverElem := XMLDoc.CreateElementNS(NSreuseable, 'EndDate');
-      CoverElem.TextContent := FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpEndDate);
-      Elem.AppendChild(CoverElem);
-    end;
+      AppendElem(Elem, NSreuseable, 'EndDate', FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpEndDate));
   end;
 end;
 
@@ -316,22 +355,15 @@ var
   OuterLevel: TDOMElement;
   Level: TDOMElement;
 begin
-  ConceptualComponent := XMLDoc.CreateElementNS(NSconcept, 'ConceptualComponent');
-  AddAttrID(ConceptualComponent, 'coco');
-  DDIStudyUnit.AppendChild(ConceptualComponent);
+  ConceptualComponent := AppendElemMaintainableType(DDIStudyUnit, NSconcept, 'ConceptualComponent', 'coco');
 
   // ***
   // Build Universe!
-  UniS := XMLDoc.CreateElementNS(NSconcept, 'UniverseScheme');
-  AddAttrID(UniS, 'unis');
-  ConceptualComponent.AppendChild(UniS);
-
-  Uni := XMLDoc.CreateElementNS(NSconcept, 'Universe');
-  AddAttrID(Uni, 'univ');
-  UniS.AppendChild(Uni);
+  UniS := AppendElemMaintainableType(ConceptualComponent, NSconcept, 'UniverseScheme', 'unis');
+  Uni  := AppendElemVersionableType(UniS, NSconcept, 'Universe', 'univ');
 
   // A Universe MUST Exists.
-  AppendElem(Uni, NSconcept, 'HumanReadable', FSettings.ConUniverse);
+  AppendElemInternationalStringType(Uni, NSconcept, 'HumanReadable', FSettings.ConUniverse);
 
   // Create universe reference.
   AppendElem(DDIUniverseRef, NSreuseable, 'ID', Uni.GetAttribute('id'));
@@ -342,34 +374,20 @@ begin
   // ****
   // Build Geography
   if FSettings.CoverSpatial = '' then exit;
-  GeoSch := XMLDoc.CreateElementNS(NSconcept, 'GeographicStructureScheme');
-  AddAttrID(GeoSch, 'geostrs');
-  ConceptualComponent.AppendChild(GeoSch);
+  GeoSch := AppendElemMaintainableType(    ConceptualComponent, NSconcept,   'GeographicStructureScheme', 'geostrs');
+  GeoS   := AppendElemVersionableType( GeoSch,              NSreuseable, 'GeographicStructure',       'geostr');
+  Geo    := AppendElemIdentifiableType(Geo,                 NSreuseable, 'Geography',                 'geo');
 
-  GeoS := XMLDoc.CreateElementNS(NSreuseable, 'GeographicStructure');
-  AddAttrID(GeoS, 'geostr');
-  GeoSch.AppendChild(GeoS);
-
-  Geo := XMLDoc.CreateElementNS(NSreuseable, 'Geography');
-  AddAttrID(Geo, 'geo');
-  GeoS.AppendChild(Geo);
-
-  Level := XMLDoc.CreateElementNS(NSreuseable, 'Level');
-  Geo.AppendChild(Level);
-
-  AppendContent(Level, FSettings.CoverSpatial, 'Name');
+  Level  := AppendElem(Geo, NSreuseable, 'Level');
+  AppendElem(Level, NSreuseable, 'Name', FSettings.CoverSpatial);
 
   // Build TopLevelReference & LowestLevelReference
   OuterLevel := TDOMElement(DDISpatialCoverage.FindNode('TopLevelReference'));
-  Level := XMLDoc.CreateElementNS(NSreuseable, 'LevelReference');
-  OuterLevel.AppendChild(Level);
-  AppendElem(Level, NSreuseable, 'ID', Geo.GetAttribute('id'));
+  AppendElemReferenceType(OuterLevel, NSreuseable, 'LevelReference', Geo);
   AppendElem(OuterLevel, NSreuseable, 'LevelName', FSettings.CoverSpatial);
 
   OuterLevel := TDOMElement(DDISpatialCoverage.FindNode('LowestLevelReference'));
-  Level := XMLDoc.CreateElementNS(NSreuseable, 'LevelReference');
-  OuterLevel.AppendChild(Level);
-  AppendElem(Level, NSreuseable, 'ID', Geo.GetAttribute('id'));
+  AppendElemReferenceType(OuterLevel, NSreuseable, 'LevelReference', Geo);
   AppendElem(OuterLevel, NSreuseable, 'LevelName', FSettings.CoverSpatial);
   // DONE
   // ****
@@ -381,17 +399,13 @@ var
   Seq: TDOMElement;
   Elem: TDOMElement;
 begin
-  DataCollection := XMLDoc.CreateElementNS(NSdatacollection, 'DataCollection');
-  AddAttrID(DataCollection, 'daco');
-  DDIStudyUnit.AppendChild(DataCollection);
+  DataCollection := AppendElemMaintainableType(DDIStudyUnit, NSdatacollection, 'DataCollection', 'daco');
 
   BuildQuestionScheme(DataCollection);
   Seq := BuildControlConstructScheme(DataCollection);
 
-  Elem := AppendElem(DataCollection, NSdatacollection, 'Instrument');
-  AddAttrID(Elem, 'inst');
-  Elem := AppendElem(Elem, NSdatacollection, 'ControlConstructReference');
-  AppendElem(Elem, NSreuseable, 'ID', Seq.GetAttribute('id'));
+  Elem := AppendElemMaintainableType(DataCollection, NSdatacollection, 'Instrument', 'inst');
+  AppendElemReferenceType(Elem, NSdatacollection, 'ControlConstructReference', Seq);
 end;
 
 procedure TEpiDDIExport.BuildQuestionScheme(DataCollection: TDOMElement);
@@ -407,34 +421,31 @@ var
   Elem: TDOMElement;
   F: TEpiField;
 begin
-  QScheme := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionScheme');
-  AddAttrID(QScheme, 'ques');
-  DataCollection.AppendChild(QScheme);
+  QScheme := AppendElemMaintainableType(DataCollection, NSdatacollection, 'QuestionScheme', 'ques');
 
   // Build the list of GUID's for all our valuelabelsets.
   for i := 0 to FSettings.Doc.ValueLabelSets.Count - 1 do
     ValueLabelSetsGUIDs.AddObject(CreateAttrID('cods'), FSettings.Doc.ValueLabelSets[i]);
 
+  // Build QuestionItem
   for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
   with FSettings.Doc.DataFiles[0].Field[i] do
   begin
     F := FSettings.Doc.DataFiles[0].Field[i];
 
-    QItem := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionItem');
-    AddAttrID(QItem, 'quei');
-    QScheme.AppendChild(QItem);
+    QItem := AppendElemVersionableType(QScheme, NSdatacollection, 'QuestionItem', 'quei');
     QuieMap.Add(@F, @QItem);
 
-    QText := AppendElem(QItem, NSdatacollection, 'QuestionText', '');
-    QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText', '');
-    Elem := AppendElem(QLiteralText, NSdatacollection, 'Text', Question.Text);
+    Elem := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionItemName', F.Name);
+    QText := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionText', '');
+    QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText');
+    AppendElemInternationalStringType(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
     if Assigned(ValueLabelSet) then
     begin
       Domain := AppendElem(QItem, NSdatacollection, 'CodeDomain');
       j := ValueLabelSetsGUIDs.IndexOfObject(ValueLabelSet);
-      Elem := AppendElem(Domain, NSreuseable, 'CodeSchemeReference');
-      AppendElem(Elem, NSreuseable, 'ID', ValueLabelSetsGUIDs[j]);
+      AppendElemReferenceType(Domain, NSreuseable, 'CodeSchemeReference', ValueLabelSetsGUIDs[j]);
     end else
       case FieldType of
         ftBoolean:
@@ -509,7 +520,6 @@ var
   procedure BuildSequence(Sequence: TDOMElement; FromIndex: integer);
   var
     QCons: TDOMElement;
-    QConsRef: TDOMElement;
     i: integer;
     NewSequence: TDOMElement;
     Idx: Integer;
@@ -522,9 +532,9 @@ var
     while FromIndex < Df.Fields.Count do
     begin
       F := FSettings.Doc.DataFiles[0].Field[FromIndex];
-      QConsRef := AppendElem(Sequence, NSdatacollection, 'ControlConstructReference');
-      QCons := TDOmElement(QuecMap.KeyData[@F]^);
-      AppendElem(QConsRef, NSreuseable, 'ID', QCons.GetAttribute('id'));
+
+      QCons := TDOMElement(QuecMap.KeyData[@F]^);
+      AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', QCons);
       Inc(FromIndex);
 
       if Assigned(F.Jumps) and (F.Jumps.Count > 0) then
@@ -535,40 +545,34 @@ var
         // Build Main IfThenElse Node(s):
         if i = 0 then
         begin
-          ITE := AppendElem(CCS, NSdatacollection, 'IfThenElse');
-          TheITE := ITE;
-          AddAttrID(ITE, 'ifth');
+          TheITE := AppendElemVersionableType(CCS, NSdatacollection, 'IfThenElse', 'ifth');
+          ITE := TheITE;
         end else begin
           ITE := AppendElem(TheITE, NSdatacollection, 'ElseIf');
         end;
 
 
         // Add a reference in the original sequence to this IfThenElse node:
-        QConsRef := AppendElem(Sequence, NSdatacollection, 'ControlConstructReference');
-        AppendElem(QConsRef, NSreuseable, 'ID', ITE.GetAttribute('id'));
+        AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', ITE);
 
         // Build Inner nodes of IfThenElse:
         // - If Condition:
         Elem := AppendElem(ITE, NSdatacollection, 'IfCondition');
         AppendElem(Elem, NSreuseable, 'Code', F.Name + '==' + Jmp.JumpValueAsString);
         // - Source (Field) of If Condition
-        Elem := AppendElem(Elem, NSreuseable, 'SourceQuestionReference');
-        AppendElem(Elem, NSreuseable, 'ID', QCons.GetAttribute('id'));
+        AppendElemReferenceType(Elem, NSreuseable, 'SourceQuestionReference', QCons);
 
 
         // Handle special case with jtSaveRecord:
         if Jmp.JumpType = jtSaveRecord then
         begin
-          Elem := AppendElem(ITE, NSdatacollection, 'ThenConstructReference');
-          AppendElem(Elem, NSreuseable, 'ID', DoneItem.GetAttribute('id'));
+          AppendElemReferenceType(ITE, NSdatacollection, 'ThenConstructReference', DoneItem);
           Continue;
         end;
 
         // Construct new branching sequence for this jump value:
-        NewSequence := XMLDoc.CreateElementNS(NSdatacollection, 'Sequence');
+        NewSequence := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
         AppendElem(NewSequence, NSreuseable, 'Label', 'Sequence: ' + F.Name + ' Jump=' + Jmp.JumpValueAsString);
-        AddAttrID(NewSequence, 'seqc');
-        CCS.AppendChild(NewSequence);
         Case F.Jumps[i].JumpType of
           jtExitSection:
             begin
@@ -580,8 +584,7 @@ var
           jtToField:
             Idx := Df.Fields.IndexOf(F.Jumps[i].JumpToField);
         end;
-        Elem := AppendElem(ITE, NSdatacollection, 'ThenConstructReference');
-        AppendElem(Elem, NSreuseable, 'ID', NewSequence.GetAttribute('id'));
+        AppendElemReferenceType(ITE, NSdatacollection, 'ThenConstructReference', NewSequence);
 
         BuildSequence(NewSequence, Idx);
       end;
@@ -589,14 +592,10 @@ var
   end;
 
 begin
-  CCS := XMLDoc.CreateElementNS(NSdatacollection, 'ControlConstructScheme');
-  AddAttrID(CCS, 'cocs');
-  DataCollection.AppendChild(CCS);
+  CCS := AppendElemMaintainableType(DataCollection, NSdatacollection, 'ControlConstructScheme', 'cocs');
 
-  MainSequence := XMLDoc.CreateElementNS(NSdatacollection, 'Sequence');
-  AppendElem(MainSequence, NSreuseable, 'Label', 'Main Sequence');
-  AddAttrID(MainSequence, 'seqc');
-  CCS.AppendChild(MainSequence);
+  MainSequence := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
+  AppendElemInternationalStringType(MainSequence, NSreuseable, 'Label', 'Main Sequence');
 
   DF := FSettings.Doc.DataFiles[0];
 
@@ -604,19 +603,16 @@ begin
   begin
     F := Df.Field[i];
 
-    QCons := XMLDoc.CreateElementNS(NSdatacollection, 'QuestionConstruct');
-    AddAttrID(QCons, 'quec');
-    Elem := AppendElem(QCons, NSdatacollection, 'QuestionReference');
-    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(QuieMap.KeyData[@F]^).GetAttribute('id'));
+    QCons := AppendElemVersionableType(CCS, NSdatacollection, 'QuestionConstruct', 'quec');
+    AppendElemReferenceType(QCons, NSdatacollection, 'QuestionReference',idFromFieldMap(QuieMap, F));
 
-    CCS.AppendChild(QCons);
     QuecMap.Add(@F, @QCons);
   end;
-  DoneItem := AppendElem(CCS, NSdatacollection, 'StatementItem');
-  AddAttrID(DoneItem, 'stai');
-  Elem := AppendElem(DoneItem, NSdatacollection, 'DisplayText');
-  Elem := AppendElem(Elem, NSdatacollection, 'LiteralText');
-  AppendElem(Elem, NSdatacollection, 'Text', 'End of Fields.');
+  DoneItem := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
+  AppendElemInternationalStringType(DoneItem, NSreuseable, 'Label', 'Empty Sequence');
+  AppendElemInternationalStringType(DoneItem, NSreuseable, 'Description',
+    'The empty sequence is designed to be the destination for ending a questionaire, based on a Jump with exit value = jtSaveRecord'
+  );
 
   BuildSequence(MainSequence, 0);
   Result := MainSequence;
@@ -626,20 +622,17 @@ procedure TEpiDDIExport.BuildLogicalProduct;
 var
   Elem: TDOMElement;
 begin
-  DDILogicalProd := AppendElem(DDIStudyUnit, NSlogicalproduct, 'LogicalProduct');
-  AddAttrID(DDILogicalProd, 'lopr');
+  DDILogicalProd := AppendElemMaintainableType(DDIStudyUnit, NSlogicalproduct, 'LogicalProduct', 'lopr');
 
   DDIVarScheme := BuildVariableScheme;
 
-  Elem := AppendElem(DDILogicalProd, NSlogicalproduct, 'DataRelationship');
-  AddAttrID(Elem, 'dars');
-  DDILogicalRec := AppendElem(Elem, NSlogicalproduct, 'LogicalRecord');
-  AddAttrID(DDILogicalRec, 'lore');
+  Elem := AppendElemVersionableType(DDILogicalProd, NSlogicalproduct, 'DataRelationship', 'dars');
+  DDILogicalRec := AppendElemIdentifiableType(Elem, NSlogicalproduct, 'LogicalRecord',    'lore');
   DDILogicalRec.SetAttribute('hasLocator', 'false');
+
   Elem := AppendElem(DDILogicalRec, NSlogicalproduct, 'VariablesInRecord');
   Elem.SetAttribute('allVariablesInLogicalProduct', 'true');
-  Elem := AppendElem(Elem, NSlogicalproduct, 'VariableSchemeReference');
-  AppendElem(Elem, NSreuseable, 'ID', DDIVarScheme.GetAttribute('id'));
+  AppendElemReferenceType(Elem, NSlogicalproduct, 'VariableSchemeReference', DDIVarScheme);
 
   BuildCodeScheme(DDILogicalProd);
 
@@ -657,22 +650,19 @@ var
   j: Integer;
   S: String;
 begin
-  Result := XMLDoc.CreateElementNS(NSlogicalproduct, 'VariableScheme');
-  AddAttrID(Result, 'vars');
+  Result := AppendElemMaintainableType(nil, NSlogicalproduct, 'VariableScheme', 'vars');
 
   Df := FSettings.Doc.DataFiles[0];
   for i := 0 to Df.Fields.Count -1 do
   begin
     F := Df.Field[i];
 
-    VarElem := AppendElem(Result, NSlogicalproduct, 'Variable');
+    VarElem := AppendElemVersionableType(Result, NSlogicalproduct, 'Variable', 'vari');
     VarsMap.Add(@F, @VarElem);
 
-    AddAttrID(VarElem, 'vari');
-    AppendElem(VarElem, NSlogicalproduct, 'VariableName', F.Name);
-    AppendElem(VarElem, NSreuseable, 'Label', F.Question.Text);
-    Elem := AppendElem(VarElem, NSlogicalproduct, 'QuestionReference');
-    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(QuieMap.KeyData[@F]^).GetAttribute('id'));
+    AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
+    AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
+    AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromFieldMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
 
@@ -681,8 +671,7 @@ begin
     begin
       ReprElem := AppendElem(Elem, NSlogicalproduct, 'CodeRepresentation');
       j := ValueLabelSetsGUIDs.IndexOfObject(F.ValueLabelSet);
-      Elem := AppendElem(ReprElem, NSreuseable, 'CodeSchemeReference');
-      AppendElem(Elem, NSreuseable, 'ID', ValueLabelSetsGUIDs[j]);
+      AppendElemReferenceType(ReprElem, NSreuseable, 'CodeSchemeReference', ValueLabelSetsGUIDs[j]);
     end else
       case F.FieldType of
         ftBoolean:
@@ -763,30 +752,29 @@ begin
   begin
     VSet := VLSets[i];
 
-    CatScheme := AppendElem(LogicalProduct, NSlogicalproduct, 'CategoryScheme');
-    AddAttrID(CatScheme, 'cats');
-    CodScheme := XMLDoc.CreateElementNS(NSlogicalproduct, 'CodeScheme');
-    j := ValueLabelSetsGUIDs.IndexOfObject(VSet);
-    CodScheme.SetAttribute('id', ValueLabelSetsGUIDs[j]);
+    CatScheme := AppendElemMaintainableType(LogicalProduct, NSlogicalproduct, 'CategoryScheme', 'cats');
+    CodScheme := AppendElemMaintainableType(nil,            NSlogicalproduct, 'CodeScheme',     'cods');
     CodSchemeList.Add(CodScheme);
 
-    AppendElem(CatScheme, NSreuseable, 'Label', VSet.Name);
-    AppendElem(CodScheme, NSreuseable, 'Label', VSet.Name);
+    // Circumventing the id's created in Maintainable elemt...
+    j := ValueLabelSetsGUIDs.IndexOfObject(VSet);
+    CodScheme.SetAttribute('id', ValueLabelSetsGUIDs[j]);
 
-    Elem := AppendElem(CodScheme, NSlogicalproduct, 'CategorySchemeReference');
-    AppendElem(Elem, NSreuseable, 'ID', CatScheme.GetAttribute('id'));
+
+    AppendElemInternationalStringType(CatScheme, NSreuseable, 'Label', VSet.Name);
+    AppendElemInternationalStringType(CodScheme, NSreuseable, 'Label', VSet.Name);
+
+    AppendElemReferenceType(CodScheme, NSlogicalproduct, 'CategorySchemeReference', CatScheme);
 
     for j := 0 to VSet.Count - 1 do
     begin
       V := VSet[j];
 
-      Cat := AppendElem(CatScheme, NSlogicalproduct, 'Category');
-      AddAttrID(Cat, 'cat');
+      Cat := AppendElemVersionableType(CatScheme, NSlogicalproduct, 'Category', 'cat');
       AppendElem(Cat, NSreuseable, 'Label', V.TheLabel.Text);
 
       Cod := AppendElem(CodScheme, NSlogicalproduct, 'Code');
-      Elem := AppendElem(Cod, NSlogicalproduct, 'CategoryReference');
-      AppendElem(Elem, NSreuseable, 'ID', Cat.GetAttribute('id'));
+      AppendElemReferenceType(Cod, NSlogicalproduct, 'CategoryReference', Cat);
 
       AppendElem(Cod, NSlogicalproduct, 'Value', V.ValueAsString);
     end;
@@ -811,29 +799,23 @@ var
   i: Integer;
   S: String;
 begin
-  PhysDataProd := AppendElem(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct');
-  AddAttrID(PhysDataProd, 'phdp');
+  PhysDataProd := AppendElemMaintainableType(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct', 'phdp');
+
   // *********************
   // PhysicalStructureScheme
   // *********************
-  Elem  := AppendElem(PhysDataProd, NSphysicaldataproduct, 'PhysicalStructureScheme');
-  AddAttrID(Elem, 'phss');
-  PhysStruct := AppendElem(Elem, NSphysicaldataproduct, 'PhysicalStructure');
-  AddAttrID(PhysStruct, 'phst');
+  Elem  := AppendElemMaintainableType(PhysDataProd, NSphysicaldataproduct, 'PhysicalStructureScheme', 'phss');
+  PhysStruct := AppendElemVersionableType(Elem, NSphysicaldataproduct, 'PhysicalStructure',       'phst');
 
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'LogicalProductReference');
-  AppendElem(Elem, NSreuseable, 'ID', DDILogicalProd.GetAttribute('id'));
+  AppendElemReferenceType(PhysStruct, NSphysicaldataproduct, 'LogicalProductReference', DDILogicalProd);
 
   Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'FIXED');
   Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', '.');
 
-  GrossRecStr := AppendElem(PhysStruct, NSphysicaldataproduct, 'GrossRecordStructure');
-  AddAttrID(GrossRecStr, 'grst');
-  Elem := AppendElem(GrossRecStr, NSphysicaldataproduct, 'LogicalRecordReference');
-  AppendElem(Elem, NSreuseable, 'ID', DDILogicalRec.GetAttribute('id'));
+  GrossRecStr := AppendElemIdentifiableType(PhysStruct, NSphysicaldataproduct, 'GrossRecordStructure', 'grst');
+  AppendElemReferenceType(GrossRecStr, NSphysicaldataproduct, 'LogicalRecordReference', DDILogicalRec);
 
-  PHRS := AppendElem(GrossRecStr, NSphysicaldataproduct, 'PhysicalRecordSegment');
-  AddAttrID(PHRS, 'phrs');
+  PHRS := AppendElemIdentifiableType(GrossRecStr, NSphysicaldataproduct, 'PhysicalRecordSegment', 'phrs');
   PHRS.SetAttribute('hasSegmentKey', 'false');
   PHRS.SetAttribute('segmentOrder', '1');
   // *********************
@@ -841,21 +823,15 @@ begin
   // *********************
   // RecordLayoutScheme
   // *********************
-  DDIRels := AppendElem(PhysDataProd, NSphysicaldataproduct, 'RecordLayoutScheme');
-  AddAttrID(DDIRels, 'rels');
+  DDIRels := AppendElemMaintainableType(PhysDataProd, NSphysicaldataproduct, 'RecordLayoutScheme', 'rels');
+  DDIRely := AppendElemVersionableType(DDIRels, NSphysicaldataproduct, 'RecordLayout', 'rely');
 
-  RL := AppendElem(DDIRels, NSphysicaldataproduct, 'RecordLayout');
-  DDIRely := RL;
-  AddAttrID(RL, 'rely');
-
-  Elem := AppendElem(RL, NSphysicaldataproduct, 'PhysicalStructureReference');
-  AppendElem(Elem, NSreuseable, 'ID', PhysDataProd.GetAttribute('id'));
+  Elem := AppendElemReferenceType(DDIRely, NSphysicaldataproduct, 'PhysicalStructureReference', PhysDataProd);
   AppendElem(Elem, NSphysicaldataproduct, 'PhysicalRecordSegmentUsed', PHRS.GetAttribute('id'));
 
-  AppendElem(RL, NSphysicaldataproduct, 'CharacterSet', 'UTF-8');
-  AppendElem(RL, NSphysicaldataproduct, 'ArrayBase', '1');
-  Elem := AppendElem(RL, NSphysicaldataproduct, 'DefaultVariableSchemeReference');
-  AppendElem(Elem, NSreuseable, 'ID', DDIVarScheme.GetAttribute('id'));
+  AppendElem(DDIRely, NSphysicaldataproduct, 'CharacterSet', 'UTF-8');
+  AppendElem(DDIRely, NSphysicaldataproduct, 'ArrayBase', '1');
+  AppendElemReferenceType(DDIRely, NSphysicaldataproduct, 'DefaultVariableSchemeReference', DDIVarScheme);
 
   Df := FSettings.Doc.DataFiles[0];
   StartPos := 1;
@@ -863,10 +839,8 @@ begin
   begin
     F := DF.Field[i];
 
-    DI := AppendElem(RL, NSphysicaldataproduct, 'DataItem');
-    Elem := AppendElem(DI, NSphysicaldataproduct, 'VariableReference');
-    AppendElem(Elem, NSreuseable, 'ID', TDOMElement(VarsMap.KeyData[@F]^).GetAttribute('id'));
-
+    DI := AppendElem(DDIRely, NSphysicaldataproduct, 'DataItem');
+    AppendElemReferenceType(DI, NSphysicaldataproduct, 'VariableReference', idFromFieldMap(VarsMap, F));
     Elem := AppendElem(DI, NSphysicaldataproduct, 'PhysicalLocation');
 
     case F.FieldType of
@@ -902,27 +876,23 @@ var
   Fn: String;
   GRFS: TDOMElement;
 begin
-  PhysicalInst := AppendElem(DDIStudyUnit, NSphysicalinstance, 'PhysicalInstance');
-  AddAttrID(PhysicalInst, 'phin');
-  RecLayoutRef := AppendElem(PhysicalInst, NSphysicalinstance, 'RecordLayoutReference');
-  Elem := AppendElem(RecLayoutRef, NSreuseable, 'Scheme');
-  AppendElem(Elem, NSreuseable, 'ID', DDIRels.GetAttribute('id'));
+  PhysicalInst := AppendElemMaintainableType(DDIStudyUnit, NSphysicalinstance, 'PhysicalInstance', 'phin');
+  RecLayoutRef := AppendElemReferenceType(PhysicalInst, NSphysicalinstance, 'RecordLayoutReference', DDIRely);
+  AppendElemReferenceType(RecLayoutRef, NSreuseable, 'Scheme', DDIRels.GetAttribute('id'));
 
-  AppendElem(RecLayoutRef, NSreuseable, 'ID', DDIRely.GetAttribute('id'));
-
-  Elem := AppendElem(PhysicalInst, NSphysicalinstance, 'DataFileIdentification');
-  AddAttrID(Elem, 'dafi');
+  Elem := AppendElemIdentifiableType(PhysicalInst, NSphysicalinstance, 'DataFileIdentification', 'dafi');
+  // TODO: Smarten up to allow user to choose export name?
   Fn := UTF8ToSys(FSettings.ExportFileName);
   Fn := ExtractFileName(ChangeFileExt(Fn, '.csv'));
   AppendElem(Elem, NSphysicalinstance, 'URI', Fn);
 
-  GRFS := AppendElem(PhysicalInst, NSphysicalinstance, 'GrossFileStructure');
-  AddAttrID(GRFS, 'grfs');
-  Elem := AppendElem(GRFS, NSphysicalinstance, 'CreationSoftware');
-  AddAttrID(Elem, 'crsw');
-  AppendElem(Elem, NSreuseable, 'Name', 'EpiData');
+  GRFS := AppendElemIdentifiableType(PhysicalInst, NSphysicalinstance, 'GrossFileStructure', 'grfs');
+  Elem := AppendElemIdentifiableType(GRFS, NSphysicalinstance, 'CreationSoftware', 'crsw');
+  AppendElem(Elem, NSreuseable, 'Name', FSettings.SoftwareName);
+  AppendElem(Elem, NSreuseable, 'Version', FSettings.SoftwareVersion);
+  AppendElem(Elem, NSreuseable, 'Name', FSettings.SoftwareName);
+  AppendElem(Elem, NSreuseable, 'Description', 'website: <a href="http://www.epidata.dk">http://www.epidata.dk</a>');
 
-  AppendElem(GRFS, NSphysicalinstance, 'CaseQuantity', IntToStr(FSettings.Doc.DataFiles[0].Size));
   AppendElem(GRFS, NSphysicalinstance, 'OverallRecordCount', IntToStr(FSettings.Doc.DataFiles[0].Size));
 end;
 
@@ -933,55 +903,23 @@ var
   Org: TDOMElement;
   Elem: TDOMElement;
 begin
-{
-<Archive xmlns="ddi:archive:3_1" id="5428ce11-5f2e-40c4-893e-e6439e536de0" version="1.0.0" versionDate="2012-05-30T13:28:54.496+02:00" agency="dk.dda">
-  <VersionResponsibility xmlns="ddi:reusable:3_1">ddajvj</VersionResponsibility>
-  <VersionRationale xmlns="ddi:reusable:3_1" translated="false" translatable="true" xml:lang="da">Version: 1.0.0, date: 2012-05-30T13:28:54.496+02:00</VersionRationale>
-  <OrganizationScheme id="51ad1f62-30a7-4179-9169-71d7febbec48" version="1.0.0" versionDate="2012-05-30T13:28:54.504+02:00" agency="dk.dda">
-    <Individual id="14627">
-      <IndividualName>
-        <First>Jørgen Møller Christiansen</First>
-      </IndividualName>
-      <DDIMaintenanceAgencyID registryID="dk.dda"/>
-      <Location id="a96f0cdd-add8-4f51-8df9-d06bcb51577d">
-        <Address>
-          <Line>Center for Alternativ Samfundsanalyse</Line>
-          <Line>Kigkurren 8M, st</Line>
-          <City>KØBENHAVN S</City>
-          <Postal>2300</Postal>
-        </Address>
-        <Country codeClass="ISO-3166">DK</Country>
-        <Telephone>3389 0155</Telephone>
-        <Email>jmc@casa-analyse.dk</Email>
-      </Location>
-    </Individual>
-  </OrganizationScheme>
-</Archive>
-}
-  Archive := AppendElem(DDIStudyUnit, NSarchive, 'Archive');
-  AddAttrID(Archive, '');
+  Archive := AppendElemMaintainableType(DDIStudyUnit, NSarchive, 'Archive', 'arch');
   Elem := AppendElem(Archive, NSarchive, 'ArchiveSpecific');
-  Elem := AppendElem(Elem, NSarchive, 'ArchiveOrganizationReference');
-  AppendElem(Elem, NSreuseable, 'ID', 'NotFilled');
+  AppendElemReferenceType(Elem, NSarchive, 'ArchiveOrganizationReference', 'Not_Filled');
 
   if (FSettings.FundAgencyName <> '') then
   begin
-    OrgScheme := AppendElem(Archive, NSarchive, 'OrganizationScheme');
-    AddAttrID(OrgScheme, '');
-
-    Org := AppendElem(OrgScheme, NSarchive, 'Organization');
-    AddAttrID(Org, '');
-    AppendElem(Org, NSarchive, 'OrganizationName', FSettings.FundAgencyName);
+    OrgScheme := AppendElemMaintainableType(Archive,   NSarchive, 'OrganizationScheme', 'orgs');
+    Org := AppendElemVersionableType(       OrgScheme, NSarchive, 'Organization',       'orga');
+    AppendElemInternationalStringType(Org, NSarchive, 'OrganizationName', FSettings.FundAgencyName);
     if (FSettings.FundAgencyAddress <> '') then
     begin
-      Elem := AppendElem(Org, NSarchive, 'Location');
-      AddAttrID(Elem, '');
+      Elem := AppendElemInternationalStringType(Org, NSarchive, 'Location', 'loca');
       AppendElem(Elem, NSarchive, 'Address', FSettings.FundAgencyAddress);
     end;
 
     // Now we have the funding orgination, create the content of the FundingInfo element.
-    Elem := AppendElem(DDIFunding, NSreuseable, 'AgencyOrganizationReference');
-    AppendElem(Elem, NSreuseable, 'ID', Org.GetAttribute('id'));
+    AppendElemReferenceType(DDIFunding, NSreuseable, 'AgencyOrganizationReference', Org);
   end;
 end;
 
@@ -1015,24 +953,17 @@ begin
   ExportCSVFile;
 
   XMLDoc := TXMLDocument.Create;
-  DDIInstance := XMLDoc.CreateElementNS('ddi:instance:3_1', 'DDIInstance');
+  DDIInstance := AppendElemMaintainableType(nil, 'ddi:instance:3_1', 'DDIInstance', 'inst');
   XMLDoc.AppendChild(DDIInstance);
   DDIInstance := XMLDoc.DocumentElement;
 
-  AddAttrID(DDIInstance, 'inst');
   with DDIInstance do
   begin
     SetAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
     SetAttribute('xsi:schemaLocation', 'ddi:instance:3_1 http://www.ddialliance.org/sites/default/files/schema/ddi3.1/instance.xsd');
-    // Version NO!
-    SetAttribute('version', '1.0.0');
-    SetAttribute('versionDate', FormatDateTime('YYYY/MM/DD"T"HH:MM:SS"."ZZZ', Now));
-    SetAttribute('agency', 'dk.dda');
   end;
 
-  DDIStudyUnit := XMLDoc.CreateElementNS(NSstudy, 'StudyUnit');
-  DDIStudyUnit.SetAttribute('id', 'epidata-test');
-  DDIInstance.AppendChild(DDIStudyUnit);
+  DDIStudyUnit := AppendElemMaintainableType(DDIInstance, NSstudy, 'StudyUnit', 'stud');
 
   // Build the <StudyUnit>
   BuildCitations;
