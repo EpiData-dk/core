@@ -35,9 +35,11 @@ type
     QuecMap: TFPSMap;
     // Maps TEPiField -> VariableItem
     VarsMap: TFPSMap;
+    // Maps TEpiSection -> Concept
+    ConcMap: TFPSMap;
 
     // Helper methods.
-    function  idFromFieldMap(Const Map: TFPSMap; Const F: TEpiField): string;
+    function  idFromMap(Const Map: TFPSMap; Const Item: TEpiCustomItem): string;
     procedure AddAttrNameSpace(Elem: TDOMElement; Const NameSpace: string);
     procedure AddAttrID(Elem: TDOMElement; Const Prefix: string);
     procedure AddAttrTranslation(Elem: TDOMElement);
@@ -133,10 +135,10 @@ begin
     Result := Prefix + '-' + Result;
 end;
 
-function TEpiDDIExport.idFromFieldMap(const Map: TFPSMap; const F: TEpiField
+function TEpiDDIExport.idFromMap(const Map: TFPSMap; const Item: TEpiCustomItem
   ): string;
 begin
-  Result := TDOMElement(Map.KeyData[@F]^).GetAttribute('id')
+  Result := TDOMElement(Map.KeyData[@Item]^).GetAttribute('id')
 end;
 
 procedure TEpiDDIExport.AddAttrNameSpace(Elem: TDOMElement;
@@ -294,8 +296,8 @@ procedure TEpiDDIExport.BuildPurpose;
 var
   Purpose: TDOMElement;
 begin
-  Purpose := AppendElemIdentifiableType(DDIStudyUnit, NSstudy, 'Purpose');
-  AppendElem(Purpose, NSreuseable, 'Content', FSettings.Purpose);
+  Purpose := AppendElemIdentifiableType(DDIStudyUnit, NSstudy, 'Purpose', 'purp');
+  AppendElemInternationalStringType(Purpose, NSreuseable, 'Content', FSettings.Purpose);
 end;
 
 procedure TEpiDDIExport.BuildCoverage;
@@ -354,8 +356,39 @@ var
   Geo: TDOMElement;
   OuterLevel: TDOMElement;
   Level: TDOMElement;
+  Sections: TEpiSections;
+  i: Integer;
+  ConS: TDOMElement;
+  Con: TDOMElement;
+  Sec: TEpiSection;
 begin
   ConceptualComponent := AppendElemMaintainableType(DDIStudyUnit, NSconcept, 'ConceptualComponent', 'coco');
+
+  // ****
+  // Build Concepts
+  ConS := AppendElemMaintainableType(ConceptualComponent, NSconcept, 'ConceptScheme', 'cons');
+  Con  := AppendElemVersionableType(Cons, NSconcept, 'Concept', 'conc');
+  AppendElemInternationalStringType(Con, NSreuseable, 'Label', 'Project Concept');
+  AppendElemInternationalStringType(Con, NSreuseable, 'Description', FSettings.ConMainConcept);
+
+  Sec := FSettings.Doc.DataFiles[0].MainSection;
+  ConcMap.Add(@Sec, @Con);
+
+  Sections := FSettings.Doc.DataFiles[0].Sections;
+  for i := 0 to Sections.Count - 1 do
+  begin
+    Sec := Sections[i];
+    if Sec = FSettings.Doc.DataFiles[0].MainSection then continue;
+
+    Con  := AppendElemVersionableType(Cons, NSconcept, 'Concept', 'conc');
+    AppendElemInternationalStringType(Con, NSreuseable, 'Label', 'Section Concept');
+    AppendElemInternationalStringType(Con, NSreuseable, 'Description', Sec.Caption.Text);
+
+    ConcMap.Add(@Sec, @Con);
+  end;
+
+  // DONE
+  // ******
 
   // ***
   // Build Universe!
@@ -502,6 +535,9 @@ begin
       Domain.SetAttribute('missingValue', TrimRight(S));
     end;
     Domain.SetAttribute('blankIsMissingValue', 'true');
+
+    // Add reference to Concept (via Section mapping)
+    AppendElemReferenceType(QItem, NSdatacollection, 'ConceptReference', idFromMap(ConcMap, F.Section));
   end;
 end;
 
@@ -604,7 +640,7 @@ begin
     F := Df.Field[i];
 
     QCons := AppendElemVersionableType(CCS, NSdatacollection, 'QuestionConstruct', 'quec');
-    AppendElemReferenceType(QCons, NSdatacollection, 'QuestionReference',idFromFieldMap(QuieMap, F));
+    AppendElemReferenceType(QCons, NSdatacollection, 'QuestionReference', idFromMap(QuieMap, F));
 
     QuecMap.Add(@F, @QCons);
   end;
@@ -662,7 +698,7 @@ begin
 
     AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
-    AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromFieldMap(QuieMap, F));
+    AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
 
@@ -840,7 +876,7 @@ begin
     F := DF.Field[i];
 
     DI := AppendElem(DDIRely, NSphysicaldataproduct, 'DataItem');
-    AppendElemReferenceType(DI, NSphysicaldataproduct, 'VariableReference', idFromFieldMap(VarsMap, F));
+    AppendElemReferenceType(DI, NSphysicaldataproduct, 'VariableReference', idFromMap(VarsMap, F));
     Elem := AppendElem(DI, NSphysicaldataproduct, 'PhysicalLocation');
 
     case F.FieldType of
@@ -875,10 +911,13 @@ var
   Elem: TDOMElement;
   Fn: String;
   GRFS: TDOMElement;
+  Sch: TDOMElement;
 begin
   PhysicalInst := AppendElemMaintainableType(DDIStudyUnit, NSphysicalinstance, 'PhysicalInstance', 'phin');
   RecLayoutRef := AppendElemReferenceType(PhysicalInst, NSphysicalinstance, 'RecordLayoutReference', DDIRely);
-  AppendElemReferenceType(RecLayoutRef, NSreuseable, 'Scheme', DDIRels.GetAttribute('id'));
+  Sch := AppendElemReferenceType(RecLayoutRef, NSreuseable, 'Scheme', DDIRels.GetAttribute('id'));
+  RecLayoutRef.InsertBefore(Sch, RecLayoutRef.FindNode('ID'));
+
 
   Elem := AppendElemIdentifiableType(PhysicalInst, NSphysicalinstance, 'DataFileIdentification', 'dafi');
   // TODO: Smarten up to allow user to choose export name?
@@ -890,7 +929,6 @@ begin
   Elem := AppendElemIdentifiableType(GRFS, NSphysicalinstance, 'CreationSoftware', 'crsw');
   AppendElem(Elem, NSreuseable, 'Name', FSettings.SoftwareName);
   AppendElem(Elem, NSreuseable, 'Version', FSettings.SoftwareVersion);
-  AppendElem(Elem, NSreuseable, 'Name', FSettings.SoftwareName);
   AppendElem(Elem, NSreuseable, 'Description', 'website: <a href="http://www.epidata.dk">http://www.epidata.dk</a>');
 
   AppendElem(GRFS, NSphysicalinstance, 'OverallRecordCount', IntToStr(FSettings.Doc.DataFiles[0].Size));
@@ -914,7 +952,7 @@ begin
     AppendElemInternationalStringType(Org, NSarchive, 'OrganizationName', FSettings.FundAgencyName);
     if (FSettings.FundAgencyAddress <> '') then
     begin
-      Elem := AppendElemInternationalStringType(Org, NSarchive, 'Location', 'loca');
+      Elem := AppendElemIdentifiableType(Org, NSarchive, 'Location', 'loca');
       AppendElem(Elem, NSarchive, 'Address', FSettings.FundAgencyAddress);
     end;
 
@@ -929,10 +967,12 @@ begin
   QuieMap := TFPSMap.Create;
   QuecMap := TFPSMap.Create;
   VarsMap := TFPSMap.Create;
+  ConcMap := TFPSMap.Create;
 end;
 
 destructor TEpiDDIExport.Destroy;
 begin
+  ConcMap.Free;
   VarsMap.Free;
   QuieMap.Free;
   QuecMap.Free;

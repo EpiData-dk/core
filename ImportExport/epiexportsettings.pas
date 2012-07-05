@@ -140,9 +140,11 @@ type
 
   { Conceptual }
   private
+    FConMainConcept: string;
     FConUniverse: String;
   public
     // ConceptualConponent->UniverseScheme->Universe->HumanReadable
+    property ConMainConcept: string read FConMainConcept write FConMainConcept;
     property ConUniverse: String read FConUniverse write FConUniverse;
 
   { Other }
