@@ -33,6 +33,7 @@ type
     { Data containers }
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
+    FAllFieldsHeadings: TEpiCustomControlItemList;
     FSections: TEpiSections;
     FMainSection: TEpiSection;
     function    GetField(Index: integer): TEpiField;
@@ -42,6 +43,7 @@ type
   private
     { Private housekeeping }
     FRecordStatus: TEpiField;
+    function    GetControlItem(Index: integer): TEpiCustomControlItem;
     function    GetDeleted(Index: integer): boolean;
     function    GetDeletedCount: Integer;
     function    GetValueLabelSets: TEpiValueLabelSets;
@@ -81,6 +83,8 @@ type
     property    Section[Index: integer]: TEpiSection read GetSection;
     property    Fields: TEpiFields read FAllFields;
     property    Field[Index: integer]: TEpiField read GetField; default;
+    property    ControlItems: TEpiCustomControlItemList read FAllFieldsHeadings;
+    property    ControlItem[Index: integer]: TEpiCustomControlItem read GetControlItem;
     property    Headings: TEpiHeadings read FAllHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
     property    ValueLabels: TEpiValueLabelSets read GetValueLabelSets;

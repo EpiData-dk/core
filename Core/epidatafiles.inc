@@ -123,6 +123,11 @@ begin
   result := FRecordStatus.AsInteger[Index] = Ord(rsDeleted);
 end;
 
+function TEpiDataFile.GetControlItem(Index: integer): TEpiCustomControlItem;
+begin
+  result := TEpiCustomControlItem(FAllFieldsHeadings[Index]);
+end;
+
 function TEpiDataFile.GetDeletedCount: Integer;
 var
   FSize: Integer;
@@ -184,6 +189,7 @@ begin
                 if Fields.ItemExistsByName(F.Name) then
                   F.Name := Fields.GetUniqueItemName(TEpiField);
                 Fields.AddItem(F);
+                ControlItems.AddItem(F);
                 F.Size := Size;
                 F.FDataFile := Self;
               end;
@@ -195,6 +201,7 @@ begin
                 if Headings.ItemExistsByName(H.Name) then
                   H.Name := Headings.GetUniqueItemName(TEpiHeading);
                 Headings.AddItem(TEpiHeading(Data));
+                ControlItems.AddItem(H);
               end;
 
               // If more sections are created, we need to add a hook to this also.
@@ -214,11 +221,12 @@ begin
           // On DelIetem "data" is a pointer to the now deleted item.
           ecceDelItem:
             begin
-
               if (Sender is TEpiFields) then
                 Fields.RemoveItem(TEpiField(Data));
               if (Sender is TEpiHeadings) then
                 Headings.RemoveItem(TEpiHeading(Data));
+              if ((Sender is TEpiHeadings) or (Sender is TEpiFields)) then
+                FAllFieldsHeadings.RemoveItem(TEpiCustomControlItem(Data));
 
               // If sections are removed, we need to delete the hook
               // in case the section lives on elsewhere.
@@ -709,6 +717,9 @@ begin
   FAllHeadings := TEpiHeadings.Create(Self);
   FAllHeadings.OnSort := @ControlItemListSort;
   FAllHeadings.Sorted := true;
+  FAllFieldsHeadings := TAllItemsList.Create(Self);
+  FAllFieldsHeadings.OnSort := @ControlItemListSort;
+  FAllFieldsHeadings.Sorted := true;
 
   // The special main section...
   FMainSection := NewSection;
