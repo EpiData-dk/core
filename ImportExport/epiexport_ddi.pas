@@ -91,6 +91,8 @@ type
     procedure BuildQuestionScheme(DataCollection: TDOMElement);
     // helper: Returns MainSequence
     function  BuildControlConstructScheme(DataCollection: TDOMElement): TDomElement;
+    // Helper: build interviewer instructions (and references from QuestionConstruc to Instruction.
+    procedure BuildInterviewerInstructionScheme(DataCollection: TDOMElement);
 
     procedure BuildLogicalProduct;
     // LogicalProductHelpers
@@ -216,6 +218,8 @@ function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName);
   AppendElem(Result, NSreuseable, 'ID', ReferenceId);
+  AppendElem(Result, NSreuseable, 'IdentifyingAgency', FSettings.Agency);
+  AppendElem(Result, NSreuseable, 'Version', FSettings.Version);
 end;
 
 procedure TEpiDDIExport.ExportCSVFile;
@@ -436,8 +440,11 @@ begin
 
   BuildQuestionScheme(DataCollection);
   Seq := BuildControlConstructScheme(DataCollection);
+  BuildInterviewerInstructionScheme(DataCollection);
+
 
   Elem := AppendElemMaintainableType(DataCollection, NSdatacollection, 'Instrument', 'inst');
+  AppendElemInternationalStringType(Elem, NSreuseable, 'Label', 'Instrument');
   AppendElemReferenceType(Elem, NSdatacollection, 'ControlConstructReference', Seq);
 end;
 
@@ -455,6 +462,9 @@ var
   F: TEpiField;
 begin
   QScheme := AppendElemMaintainableType(DataCollection, NSdatacollection, 'QuestionScheme', 'ques');
+  AppendElemInternationalStringType(QScheme, NSreuseable, 'Label', 'QUES-' + FSettings.Doc.DataFiles[0].Name);
+  AppendElemInternationalStringType(QScheme, NSreuseable, 'Description', FSettings.Doc.DataFiles[0].Notes.Text);
+
 
   // Build the list of GUID's for all our valuelabelsets.
   for i := 0 to FSettings.Doc.ValueLabelSets.Count - 1 do
@@ -552,6 +562,7 @@ var
   DoneItem: TDOMElement;
   F: TEpiField;
   QCons: TDOMElement;
+  H: TEpiHeading;
 
   procedure BuildSequence(Sequence: TDOMElement; FromIndex: integer);
   var
@@ -564,65 +575,76 @@ var
     Jmp: TEpiJump;
     F: TEpiField;
     TheITE: TDOMElement;
+    CustItem: TEpiCustomItem;
   begin
-    while FromIndex < Df.Fields.Count do
+    while FromIndex < Df.ControlItems.Count do
     begin
-      F := FSettings.Doc.DataFiles[0].Field[FromIndex];
+      CustItem := Df.ControlItems[FromIndex];
 
-      QCons := TDOMElement(QuecMap.KeyData[@F]^);
+      QCons := TDOMElement(QuecMap.KeyData[@CustItem]^);
       AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', QCons);
       Inc(FromIndex);
 
+      if not (CustItem is TEpiField) then continue;
+      F := TEpiField(CustItem);
+
       if Assigned(F.Jumps) and (F.Jumps.Count > 0) then
-      for i := 0 to F.Jumps.Count - 1 do
       begin
-        Jmp := F.Jumps[i];
-
-        // Build Main IfThenElse Node(s):
-        if i = 0 then
-        begin
-          TheITE := AppendElemVersionableType(CCS, NSdatacollection, 'IfThenElse', 'ifth');
-          ITE := TheITE;
-        end else begin
-          ITE := AppendElem(TheITE, NSdatacollection, 'ElseIf');
-        end;
-
+        TheITE := AppendElemVersionableType(CCS, NSdatacollection, 'IfThenElse', 'ifth');
+        ITE := TheITE;
 
         // Add a reference in the original sequence to this IfThenElse node:
         AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', ITE);
 
-        // Build Inner nodes of IfThenElse:
-        // - If Condition:
-        Elem := AppendElem(ITE, NSdatacollection, 'IfCondition');
-        AppendElem(Elem, NSreuseable, 'Code', F.Name + '==' + Jmp.JumpValueAsString);
-        // - Source (Field) of If Condition
-        AppendElemReferenceType(Elem, NSreuseable, 'SourceQuestionReference', QCons);
-
-
-        // Handle special case with jtSaveRecord:
-        if Jmp.JumpType = jtSaveRecord then
+        for i := 0 to F.Jumps.Count - 1 do
         begin
-          AppendElemReferenceType(ITE, NSdatacollection, 'ThenConstructReference', DoneItem);
-          Continue;
-        end;
+          Jmp := F.Jumps[i];
 
-        // Construct new branching sequence for this jump value:
-        NewSequence := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
-        AppendElem(NewSequence, NSreuseable, 'Label', 'Sequence: ' + F.Name + ' Jump=' + Jmp.JumpValueAsString);
-        Case F.Jumps[i].JumpType of
-          jtExitSection:
-            begin
-              for Idx := FromIndex to Df.Fields.Count -1 do
-                if Df[Idx].Section <> F.Section then break;
-            end;
-          jtSkipNextField:
-            Idx := Df.Fields.IndexOf(F) + 1;
-          jtToField:
-            Idx := Df.Fields.IndexOf(F.Jumps[i].JumpToField);
-        end;
-        AppendElemReferenceType(ITE, NSdatacollection, 'ThenConstructReference', NewSequence);
+          // Build Main IfThenElse Node(s):
+          if i > 0 then
+            ITE := AppendElem(TheITE, NSdatacollection, 'ElseIf');
 
-        BuildSequence(NewSequence, Idx);
+          // Build Inner nodes of IfThenElse:
+          // - If Condition:
+          Elem := AppendElem(ITE, NSdatacollection, 'IfCondition');
+          AppendElem(Elem, NSreuseable, 'Code', F.Name + '==' + Jmp.JumpValueAsString).SetAttribute('programmingLanguage', 'dk.dda.inst-0.1');
+          // - Source (Field) of If Condition
+          AppendElemReferenceType(Elem, NSreuseable, 'SourceQuestionReference', QCons);
+
+
+          // Handle special case with jtSaveRecord:
+          if Jmp.JumpType = jtSaveRecord then
+          begin
+            AppendElemReferenceType(ITE, NSdatacollection, 'ThenConstructReference', DoneItem);
+            Continue;
+          end;
+
+          // Construct new branching sequence for this jump value:
+          NewSequence := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
+          AppendElem(NewSequence, NSreuseable, 'Label', 'Sequence: ' + F.Name + ' Jump=' + Jmp.JumpValueAsString);
+          Case F.Jumps[i].JumpType of
+            jtExitSection:
+              begin
+                for Idx := FromIndex to Df.ControlItems.Count -1 do
+                  if ((Df.ControlItems[Idx] is TEpiField)   and (TEpiField(Df.ControlItems[Idx]).Section <> F.Section)) or
+                     ((Df.ControlItems[Idx] is TEpiHeading) and (TEpiHeading(Df.ControlItems[Idx]).Section <> F.Section))
+                     then break
+              end;
+            jtSkipNextField:
+              begin
+                Idx := FromIndex + 1;
+                // Skip until we hit field.
+                while (Idx < Df.ControlItems.Count) and (Df.ControlItems[Idx] is TEpiHeading) do inc(Idx);
+                // Next idx must be after "Skip next Field" (which could be a heading or another thing);
+                Inc(Idx);
+              end;
+            jtToField:
+              Idx := Df.ControlItems.IndexOf(F.Jumps[i].JumpToField);
+          end;
+          AppendElemReferenceType(ITE, NSdatacollection, 'ThenConstructReference', NewSequence);
+
+          BuildSequence(NewSequence, Idx);
+        end;
       end;
     end;
   end;
@@ -638,12 +660,24 @@ begin
   for i := 0 to Df.Fields.Count - 1 do
   begin
     F := Df.Field[i];
-
     QCons := AppendElemVersionableType(CCS, NSdatacollection, 'QuestionConstruct', 'quec');
+    AppendElemInternationalStringType(QCons, NSreuseable, 'Label', 'QUEC-' + F.Name);
     AppendElemReferenceType(QCons, NSdatacollection, 'QuestionReference', idFromMap(QuieMap, F));
-
     QuecMap.Add(@F, @QCons);
   end;
+
+  for i := 0 to Df.Headings.Count - 1 do
+  begin
+    H := Df.Heading[i];
+    QCons := AppendElemVersionableType(CCS, NSdatacollection, 'StatementItem', 'stai');
+    AppendElemInternationalStringType(QCons, NSreuseable, 'Label', 'STAI-' + H.Name);
+    Elem := AppendElemInternationalStringType(QCons, NSdatacollection, 'DisplayText', '');
+    Elem := AppendElem(Elem, NSdatacollection, 'LiteralText');
+    AppendElem(Elem, NSdatacollection, 'Text', H.Caption.Text);
+
+    QuecMap.Add(@H, @QCons);
+  end;
+
   DoneItem := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
   AppendElemInternationalStringType(DoneItem, NSreuseable, 'Label', 'Empty Sequence');
   AppendElemInternationalStringType(DoneItem, NSreuseable, 'Description',
@@ -652,6 +686,44 @@ begin
 
   BuildSequence(MainSequence, 0);
   Result := MainSequence;
+end;
+
+procedure TEpiDDIExport.BuildInterviewerInstructionScheme(
+  DataCollection: TDOMElement);
+var
+  Df: TEpiDataFile;
+  i: Integer;
+  F: TEpiField;
+  InstSc: TDOMElement;
+  Inst: TDOMElement;
+  QCons: TDOMElement;
+  Elem: TDOMElement;
+begin
+  InstSc := AppendElemMaintainableType(nil, NSdatacollection, 'InterviewerInstructionScheme', 'invs');
+
+
+  Df := FSettings.Doc.DataFiles[0];
+  for i := 0 to Df.Fields.Count - 1 do
+  begin
+    F := Df.Field[i];
+    if F.Notes.Text = '' then continue;
+
+    Inst := AppendElemVersionableType(InstSc, NSdatacollection, 'Instruction',     'intv');
+    AppendElemInternationalStringType(Inst,   NSdatacollection, 'InstructionName', 'INVS-' + F.Name);
+    AppendElemInternationalStringType(Inst,   NSreuseable,      'Description',     'Instruction for Question:' + LineEnding + F.Question.Text);
+    Elem := AppendElemInternationalStringType(Inst, NSdatacollection, 'InstructionText', '');
+    Elem := AppendElem(Elem, NSdatacollection, 'LiteralText');
+    AppendElemInternationalStringType(Elem, NSdatacollection, 'Text', F.Notes.Text);
+
+    QCons := TDOMElement(QuecMap.KeyData[@F]^);
+    Elem  := AppendElemReferenceType(QCons, NSdatacollection, 'InterviewerInstructionReference', Inst);
+    QCons.InsertBefore(Elem, QCons.FindNode('QuestionReference'));
+  end;
+
+  if InstSc.HasChildNodes then
+    DataCollection.AppendChild(InstSc)
+  else
+    InstSc.Free;
 end;
 
 procedure TEpiDDIExport.BuildLogicalProduct;
@@ -698,6 +770,7 @@ begin
 
     AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
+    AppendElemReferenceType(VarElem, NSlogicalproduct, 'ConceptReference',  idFromMap(ConcMap, F.Section));
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
