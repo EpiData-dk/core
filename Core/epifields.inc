@@ -187,7 +187,7 @@ begin
   if Length = AValue then exit;
   Val := Length;
   FLength := AValue;
-  DoChange(eegDataFiles, Word(efceSetLength), @Val);
+  DoChange(eegFields, Word(efceSetLength), @Val);
 end;
 
 procedure TEpiField.SetRepeatValue(const AValue: boolean);
