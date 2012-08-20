@@ -113,6 +113,7 @@ type
     procedure   SetHasDefaultValue(Const AValue: boolean); virtual; abstract;
   public
     procedure   ResetDefaultValue; virtual; abstract;
+  published
     property    FieldType: TEpiFieldType read FFieldType;
     property    Length:    Cardinal read FLength write SetLength;
     property    Decimals:  Cardinal read FDecimals write SetDecimals;

@@ -53,7 +53,8 @@ type
   TEpiCoreException = class (Exception);
 
   {$static on}
-  TEpiCustomBase = class
+  {$M+}
+  TEpiCustomBase = class(TPersistent)
   { Scrambling }
   private
     FCrypter:   TDCP_rijndael; static;
@@ -191,6 +192,7 @@ type
     function    Clone: TEpiCustomBase;
     function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
   end;
+  {$M-}
   {$static off}
   TEpiCustomBaseClass = class of TEpiCustomBase;
 
@@ -251,6 +253,7 @@ type
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
+  published
     property    Name: string read GetName write SetName;
   {Cloning}
   protected
@@ -271,7 +274,7 @@ type
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
-  public
+  published
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
   {Cloning}
