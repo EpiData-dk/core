@@ -308,6 +308,7 @@ type
   { Standard Item Methods }
   public
     procedure   Clear;
+    procedure   ClearAndFree;
     function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; virtual;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
@@ -1556,19 +1557,7 @@ destructor TEpiCustomList.Destroy;
 var
   F: TEpiCustomItem;
 begin
-  while FList.Count > 0 do
-  begin
-    // Using this unusual construct in destroying list items (when owned)
-    // ensures that destroy notifications from Items is defered until after
-    // the item is removed from the list.
-    F := TEpiCustomItem(FList.Last);
-    RemoveItem(F);
-
-{    // Deleting is faster than removing...
-    FList.Delete(FList.Count - 1);     }
-    if ItemOwner then
-      FreeAndNil(F);
-  end;
+  ClearAndFree;
   FreeAndNil(FList);
   inherited Destroy;
 end;
@@ -1589,6 +1578,22 @@ procedure TEpiCustomList.Clear;
 begin
   while Count > 0 do
     DeleteItem(Count - 1);
+end;
+
+procedure TEpiCustomList.ClearAndFree;
+var
+  F: TEpiCustomItem;
+begin
+  while FList.Count > 0 do
+  begin
+    // Using this unusual construct in destroying list items (when owned)
+    // ensures that destroy notifications from Items is defered until after
+    // the item is removed from the list.
+    F := TEpiCustomItem(FList.Last);
+    RemoveItem(F);
+    if ItemOwner then
+      FreeAndNil(F);
+  end;
 end;
 
 function TEpiCustomList.NewItem(ItemClass: TEpiCustomItemClass
