@@ -33,7 +33,7 @@ type
     { Data containers }
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
-    FAllFieldsHeadings: TEpiCustomControlItemList;
+    FAllControlItems: TEpiCustomControlItemList;
     FSections: TEpiSections;
     FMainSection: TEpiSection;
     function    GetField(Index: integer): TEpiField;
@@ -83,7 +83,7 @@ type
     property    Section[Index: integer]: TEpiSection read GetSection;
     property    Fields: TEpiFields read FAllFields;
     property    Field[Index: integer]: TEpiField read GetField; default;
-    property    ControlItems: TEpiCustomControlItemList read FAllFieldsHeadings;
+    property    ControlItems: TEpiCustomControlItemList read FAllControlItems;
     property    ControlItem[Index: integer]: TEpiCustomControlItem read GetControlItem;
     property    Headings: TEpiHeadings read FAllHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
