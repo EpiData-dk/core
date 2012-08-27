@@ -1459,6 +1459,9 @@ begin
 
   case TEpiCustomChangeEventType(EventType) of
     ecceDestroy: RemoveItem(EpiSender);
+    ecceAddItem: Sort;
+    ecceDelItem: Sort;
+    ecceUpdate:  Sort;
   end;
 end;
 

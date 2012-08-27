@@ -155,6 +155,7 @@ type
     procedure   Exchange(i,j: integer); virtual; abstract;
     function    Compare(i,j: integer): integer;
     function    FormatString(Const FillSpace: boolean = false): string; virtual; abstract;
+    procedure   ResetData; virtual; abstract;
     property    Size:      Integer read GetSize write SetSize;
     property    DataFile: TEpiDataFile read FDataFile;
     property    Section:  TEpiSection read GetSection;
@@ -222,6 +223,7 @@ type
     class function DefaultMissing: EpiInteger;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
   end;
 
@@ -270,6 +272,7 @@ type
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    procedure ResetData; override;
     property  DefaultValue: EpiFloat read FDefaultValue write SetDefaultValue;
   end;
 
@@ -317,6 +320,7 @@ type
     class function DefaultMissing: EpiBool;
     procedure Exchange(i, j: integer); override;
     function FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
   end;
 
@@ -364,6 +368,7 @@ type
     class function DefaultMissing: EpiString;
     procedure Exchange(i, j: integer); override;
     function FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
   end;
 
@@ -431,6 +436,7 @@ type
     class function DefaultMissing: EpiDate;
     procedure Exchange(i, j: integer); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
   end;
 
@@ -478,6 +484,7 @@ type
     class function DefaultMissing: EpiDateTime;
     procedure Exchange(i, j: integer); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;
   end;
 

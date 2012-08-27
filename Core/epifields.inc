@@ -4,7 +4,7 @@
 const
   NA_INT       = High(EpiInteger); //  $7FFFFFFFFFFFFFFF;
   NA_FLOAT     = MaxFloat;
-  NA_DATE      = NA_INT;
+  NA_DATE      = High(EpiDate);    // NA_INT;
   NA_TIME      = $FFFFFFFF; //MaxDouble;
   NA_STRING    = '.';
   NA_BOOL      = $7F;
@@ -832,6 +832,11 @@ begin
     result := '%d';
 end;
 
+procedure TEpiIntField.ResetData;
+begin
+  FillQWord(FData[0], FSize, DefaultMissing);
+end;
+
 { TEpiFloatField }
 
 procedure TEpiFloatField.SetDefaultValue(const AValue: EpiFloat);
@@ -1092,6 +1097,15 @@ begin
     Decimals := TEpiFloatField(AEpiCustomBase).Decimals
   else
     Decimals := 1;
+end;
+
+procedure TEpiFloatField.ResetData;
+var
+  i: Integer;
+begin
+//  FillDWord(FData[0], FSize, DefaultMissing);  Wrong type Extended vs. Q/DWord
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
 end;
 
 { TEpiBoolField }
@@ -1358,6 +1372,11 @@ begin
   Result := '%d';
 end;
 
+procedure TEpiBoolField.ResetData;
+begin
+  FillByte(FData[0], FSize, DefaultMissing);
+end;
+
 { TEpiStringField }
 
 procedure TEpiStringField.SetDefaultValue(const AValue: EpiString);
@@ -1617,6 +1636,14 @@ begin
     Result := '%s';
 end;
 
+procedure TEpiStringField.ResetData;
+var
+  i: Integer;
+begin
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
+end;
+
 { TEpiCustomAutoField }
 
 procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
@@ -1803,6 +1830,11 @@ begin
     ftMDYDate, ftMDYAuto: result := 'MM/DD/YYYY';
     ftYMDDate, ftYMDAuto: result := 'YYYY/MM/DD';
   end;
+end;
+
+procedure TEpiDateField.ResetData;
+begin
+  FillDWord(FData[0], FSize, DefaultMissing);
 end;
 
 procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -2162,5 +2194,13 @@ end;
 function TEpiDateTimeField.FormatString(const FillSpace: boolean): string;
 begin
   result := 'HH:NN:SS';
+end;
+
+procedure TEpiDateTimeField.ResetData;
+var
+  i: Integer;
+begin
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
 end;
 
