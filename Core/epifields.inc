@@ -405,7 +405,7 @@ begin
   if Assigned(FRanges) then
     F.FRanges := TEpiRanges(FRanges.Clone(F));
 
-  if Assigned(FValueLabelSet) and Assigned(DataFile) then
+  if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
     F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
 
 end;

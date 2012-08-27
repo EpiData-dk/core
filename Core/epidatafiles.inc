@@ -172,6 +172,7 @@ procedure TEpiDataFile.LocalEventHook(Sender: TObject;
 var
   F: TEpiField;
   H: TEpiHeading;
+  i: Integer;
 begin
   case EventGrp of
     eegCustomBase:
@@ -210,9 +211,15 @@ begin
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
                 Fields.OnValidateRename := @Self.ValidateRename;
                 Fields.Sorted := true;
+                for i := 0 to Fields.Count - 1 do
+                  Fields.DoChange(eegCustomBase, Word(ecceAddItem), Fields[i]);
+
+
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
                 Headings.OnValidateRename := @Self.ValidateRename;
                 Headings.Sorted := true;
+                for i := 0 to Headings.Count - 1 do
+                  Headings.DoChange(eegCustomBase, Word(ecceAddItem), Heading[i]);
               end;
 
               // Finally add the Item the list of ALL control items.
