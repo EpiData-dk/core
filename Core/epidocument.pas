@@ -142,9 +142,13 @@ procedure TEpiDocument.LoadFromFile(const AFileName: string);
 var
   St: TFileStream;
 begin
-  St := TFileStream.Create(AFileName, fmOpenRead);
-  LoadFromStream(St);
-  St.Free;
+  St := nil;
+  try
+    St := TFileStream.Create(AFileName, fmOpenRead);
+    LoadFromStream(St);
+  finally
+    St.Free;
+  end;
 end;
 
 procedure TEpiDocument.LoadFromStream(const St: TStream);
