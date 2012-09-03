@@ -235,6 +235,8 @@ begin
 end;
 
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
+var
+  Val: TEpiValueLabelSet;
 begin
   if FValueLabelSet = AValue then exit;
 
@@ -246,7 +248,7 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.UnRegisterOnChangeHook(@LocalEventHook);
   end;
-
+  Val := FValueLabelSet;
   FValueLabelSet := AValue;
 
   if Assigned(FValueLabelSet) then
@@ -255,6 +257,7 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
   end;
+  DoChange(eegFields, Word(efceValueLabelSet), Val);
 end;
 
 procedure TEpiField.SetValueLabelWriteField(const AValue: TEpiField);

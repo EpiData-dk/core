@@ -6,7 +6,7 @@ type
     efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
     efceShowValueLabel, efceRepeatValue, efceDefaultValue, efceValueLabelWriteTo,
-    efceForcePickList
+    efceForcePickList, efceValueLabelSet
   );
 
   { TEpiFields }
