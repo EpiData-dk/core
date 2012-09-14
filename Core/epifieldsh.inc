@@ -21,6 +21,7 @@ type
     function    Prefix: string; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
       nil): TEpiCustomBase; override;
+
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;

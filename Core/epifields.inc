@@ -82,10 +82,18 @@ var
   NField: TEpiField;
   JumpNode: TDOMNode;
 begin
+  // We do NOT call inherited in this method,
+  // since we have no way to call NewField during load of node!
+
   // Root = <Fields>
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then exit;
+
     CheckNode(Node, rsField);
 
     NField := NewField(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));

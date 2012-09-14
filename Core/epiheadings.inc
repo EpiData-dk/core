@@ -22,29 +22,14 @@ begin
   Result := rsHeadings;
 end;
 
-procedure TEpiHeadings.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
-  NHeading: TEpiHeading;
+function TEpiHeadings.ItemClass: TEpiCustomItemClass;
 begin
-  // Root = <Headings>
-  if not Assigned(Root) then exit;
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsHeading);
-
-    NHeading := NewHeading;
-    NHeading.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
+  result := TEpiHeading;
 end;
 
 function TEpiHeadings.NewHeading: TEpiHeading;
 begin
-  result := TEpiHeading(NewItem(TEpiHeading));
+  result := TEpiHeading(NewItem);
 end;
 
 function TEpiHeadings.GetHeadingByName(const AName: string): TEpiHeading;
