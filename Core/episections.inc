@@ -28,24 +28,9 @@ begin
   result := rsSections;
 end;
 
-procedure TEpiSections.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
-  NSection: TEpiSection;
+function TEpiSections.ItemClass: TEpiCustomItemClass;
 begin
-  // Root = <Sections>
-  if not Assigned(Root) then exit;
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsSection);
-
-    NSection := NewSection;
-    NSection.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
+  result := TEpiSection;
 end;
 
 function TEpiSections.NewSection: TEpiSection;

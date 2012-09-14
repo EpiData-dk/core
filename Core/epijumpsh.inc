@@ -14,7 +14,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    ItemClass: TEpiCustomItemClass; override;
     function    NewJump: TEpiJump;
     property    Jump[index: integer]: TEpiJump read GetJump; default;
     property    JumpFromValue[const Value: string]: TEpiJump read GetJumpFromValue;

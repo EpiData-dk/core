@@ -54,6 +54,11 @@ begin
   inherited Destroy;
 end;
 
+function TEpiDataFiles.ItemClass: TEpiCustomItemClass;
+begin
+  result := TEpiDataFile;
+end;
+
 function TEpiDataFiles.SaveToXml(Content: String; Lvl: integer): string;
 begin
   if Count = 0 then exit;
@@ -76,16 +81,8 @@ begin
   else
     NewRoot := Root;
 
-  Node := NewRoot.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsDataFile);
-
-    NDf := NewDataFile;
-    NDf.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
+  // Inherited takes care of loading TEpiDataFile(s)
+  inherited LoadFromXml(NewRoot);
 
   if Settings.Scrambled then
     NewRoot.Free;
@@ -311,109 +308,17 @@ begin
   Lst.Free;
 end;
 
-{.$DEFINE EPIHASH}
-{$DEFINE EPINEW_HASH}
 procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
 var
   CurRec: Integer;
   Node: TDOMElement;
   i: Integer;
   TmpField: TEpiField;
-  {$IFDEF EPIHASH}
-  FieldList: Array of TEpiField;
-  Fc, P, Val, C: LongInt;
-  {$ENDIF EPIHASH}
-  {$IFDEF EPINEW_HASH}
   FieldList: TFPDataHashTable;
-  {$ENDIF}
   NN: WideString;
   Collision: Boolean;
   DataList: TStringList;
   FN: String;
-
-  {$IFDEF EPIHASH}
-  function NextPrime(const AValue: integer): cardinal;
-  const
-    Primes:  array[1..240] of cardinal = (
-        2,      3,      5,      7,     11,     13,     17,     19,     23,     29,
-       31,     37,     41,     43,     47,     53,     59,     61,     67,     71,
-       73,     79,     83,     89,     97,    101,    103,    107,    109,    113,
-      127,    131,    137,    139,    149,    151,    157,    163,    167,    173,
-      179,    181,    191,    193,    197,    199,    211,    223,    227,    229,
-      233,    239,    241,    251,    257,    263,    269,    271,    277,    281,
-      283,    293,    307,    311,    313,    317,    331,    337,    347,    349,
-      353,    359,    367,    373,    379,    383,    389,    397,    401,    409,
-      419,    421,    431,    433,    439,    443,    449,    457,    461,    463,
-      467,    479,    487,    491,    499,    503,    509,    521,    523,    541,
-      547,    557,    563,    569,    571,    577,    587,    593,    599,    601,
-      607,    613,    617,    619,    631,    641,    643,    647,    653,    659,
-      661,    673,    677,    683,    691,    701,    709,    719,    727,    733,
-      739,    743,    751,    757,    761,    769,    773,    787,    797,    809,
-      811,    821,    823,    827,    829,    839,    853,    857,    859,    863,
-      877,    881,    883,    887,    907,    911,    919,    929,    937,    941,
-      947,    953,    967,    971,    977,    983,    991,    997,   1009,   1013,
-     1019,   1021,   1031,   1033,   1039,   1049,   1051,   1061,   1063,   1069,
-     1087,   1091,   1093,   1097,   1103,   1109,   1117,   1123,   1129,   1151,
-     1153,   1163,   1171,   1181,   1187,   1193,   1201,   1213,   1217,   1223,
-     1229,   1231,   1237,   1249,   1259,   1277,   1279,   1283,   1289,   1291,
-     1297,   1301,   1303,   1307,   1319,   1321,   1327,   1361,   1367,   1373,
-     1381,   1399,   1409,   1423,   1427,   1429,   1433,   1439,   1447,   1451,
-     1453,   1459,   1471,   1481,   1483,   1487,   1489,   1493,   1499,   1511
-     );
-  var
-    i: integer;
-    IsPrime: Boolean;
-  begin
-    // Lookup into the primes table.
-    if AValue <= Primes[High(primes)] then
-      for i := Low(Primes) to High(primes) do
-        if AValue < Primes[i] then exit(Primes[i]);
-
-    // Too high a value, search for a prime.
-    Result := AValue;
-    if Result mod 2 = 0 then inc(Result);
-    // This limits max number of variables to 1511**2 = 2.283.121
-    // - it should be enough.
-    while result < (1511**2) do
-    begin
-      IsPrime := true;
-      for i := Low(Primes) to High(Primes) do
-      begin
-        if (Primes[i]**2) > Result then break;
-        if (Result mod Primes[i]) = 0 then
-        begin
-          IsPrime := false;
-          break;
-        end;
-      end;
-      if IsPrime then Exit;
-      Inc(Result, 2);
-    end;
-    result := -1;
-  end;
-
-  Function Hash(S : string) : LongWord;
-  Var
-    thehash,g,I : LongWord;
-  begin
-     thehash:=0;
-     For I:=1 to Length(S) do
-       begin
-       thehash:=thehash shl 4;
-       inc(theHash,Ord(S[i]));
-       g:=thehash and LongWord($f shl 28);
-       if g<>0 then
-         begin
-         thehash:=thehash xor (g shr 24);
-         thehash:=thehash xor g;
-         end;
-       end;
-     If theHash=0 then
-       Hash:=$ffffffff
-     else
-       Hash:=TheHash;
-  end;
-  {$ENDIF EPIHASH}
 
 const
   DummyString = #243#176#80#80;  // Unicode private area: http://www.utf8-chartable.de/unicode-utf8-table.pl?start=983040
@@ -446,42 +351,12 @@ begin
   Size := Root.ChildNodes.Count;
   DeCrypter := nil;
 
-{$IFDEF EPIHASH}
-  // This improves speed by 10-15%.
-  C := 0;
-  while true do
-  begin
-    Collision := false;
-    Fc := Fields.Count;
-    P := NextPrime((Fc + C) ** 2);
-    SetLength(FieldList, P);
-    for i := 0 to Fc -1 do
-    begin
-      n := Fields[i].Name;
-      Val := (Hash(n{Fields[i].Name}) mod P);
-      // Collision detection (with Fc^2 size)
-      if Assigned(FieldList[val]) then
-      begin
-        // Collision detection!!! Try new Prime number.
-        Inc(C);
-        Collision := true;
-        SetLength(FieldList,0);
-        Break;
-      end;
-      FieldList[Val] := Fields[i];
-    end;
-    if not Collision then Break;
-  end;
-{$ENDIF EPIHASH}
-
-{$IFDEF EPINEW_HASH}
   FieldList := TFPDataHashTable.CreateWith(Fields.Count, @RSHash);
   for i := 0 to Fields.Count -1 do
   begin
     n := Fields[i].Name;
     FieldList.Add(N, Fields[i]);
   end;
-{$ENDIF}
 
   DataList := TStringList.Create;
   DataList.Delimiter := ',';
@@ -498,6 +373,10 @@ begin
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
   begin
+    while NodeIsWhiteSpace(Node) do
+      Node := TDOMElement(Node.NextSibling);
+    if not Assigned(Node) then break;
+
     CheckNode(Node, rsRecord);
 
     case TEpiRecordState(LoadAttrEnum(Node, rsRecordStatus, TypeInfo(TEpiRecordState))) of
@@ -510,16 +389,9 @@ begin
     for i := 0 to DataList.Count - 1 do
     begin
       FN := DataList.Names[i];
-      {$IFDEF EPIHASH}
-      TmpField := FieldList[Hash(FN) mod P];
-      {$ELSE}
-      {$IFDEF EPINEW_HASH}
       TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
-      {$ELSE}
-      TmpField := Fields.FieldByName[FN];
-      {$ENDIF EPINEW_HASH}
-      {$ENDIF EPIHASH}
-      // Do not crash if reading bash entry/line.
+
+      // Do not crash if reading bad entry/line.
       if not Assigned(TmpField) then
         continue;
       TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
@@ -559,6 +431,10 @@ begin
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
     CheckNode(Node, 'Key');
 
     FieldId := LoadAttrString(Node, 'fieldRef');

@@ -77,6 +77,7 @@ type
     function   ScrambleXml: boolean; virtual;
 
     { Check methods }
+    function   NodeIsWhiteSpace(Const Node: TDomNode): boolean;
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
     { Load methods }
     function   LoadNode(out Node: TDOMNode; const Root: TDOMNode;
@@ -301,6 +302,7 @@ type
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
     function    WriteNameToXml: boolean; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     property    List: TFPList read FList;
   public
     destructor  Destroy; override;
@@ -309,7 +311,8 @@ type
   public
     procedure   Clear;
     procedure   ClearAndFree;
-    function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; virtual;
+    function    ItemClass: TEpiCustomItemClass; virtual;
+    function    NewItem(AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; virtual;
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
@@ -624,6 +627,20 @@ end;
 function TEpiCustomBase.ScrambleXml: boolean;
 begin
   result := false;
+end;
+
+function TEpiCustomBase.NodeIsWhiteSpace(const Node: TDomNode): boolean;
+var
+  P: PWideChar;
+begin
+  result := false;
+  if (Assigned(Node)) and
+     (Node.NodeType = TEXT_NODE) then
+  begin
+    P := @Node.NodeValue[1];
+    while P^ in [#10, #13, #32] do inc(p);
+    result := (P^ = #0);
+  end;
 end;
 
 procedure TEpiCustomBase.CheckNode(const Node: TDOMNode; const NodeName: string
@@ -1524,6 +1541,29 @@ begin
   Result := false;
 end;
 
+procedure TEpiCustomList.LoadFromXml(Root: TDOMNode);
+var
+  NItem: TEpiCustomItem;
+  Node: TDOMNode;
+begin
+  inherited LoadFromXml(Root);
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    NItem := NewItem();
+    CheckNode(Node, NItem.XMLName);
+    NItem.LoadFromXml(Node);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
 function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
 var
   i: Integer;
@@ -1599,15 +1639,25 @@ begin
   end;
 end;
 
-function TEpiCustomList.NewItem(ItemClass: TEpiCustomItemClass
+function TEpiCustomList.ItemClass: TEpiCustomItemClass;
+begin
+  result := nil;
+end;
+
+function TEpiCustomList.NewItem(AItemClass: TEpiCustomItemClass
   ): TEpiCustomItem;
 begin
+  if not Assigned(AItemClass) then
+    AItemClass := ItemClass;
+
   if Assigned(OnNewItemClass) then
-    ItemClass := OnNewItemClass(Self, ItemClass);
-  if not Assigned(ItemClass) then
-    Exception.Create('');
-  Result := ItemClass.Create(Self);
-  Result.Name := GetUniqueItemName(ItemClass);
+    AItemClass := OnNewItemClass(Self, AItemClass);
+
+  if not Assigned(AItemClass) then
+    Exception.Create('TEpiCustomList: No ItemClass Defined!');
+
+  Result := AItemClass.Create(Self);
+  Result.Name := GetUniqueItemName(AItemClass);
   AddItem(Result);
 end;
 
@@ -1708,17 +1758,17 @@ end;
 procedure TEpiCustomList.DoAssignList(const EpiCustomList: TEpiCustomList);
 var
   i: Integer;
-  ItemClass: TEpiCustomItemClass;
+  NItemClass: TEpiCustomItemClass;
   Item: TEpiCustomItem;
 begin
   BeginUpdate;
   OnNewItemClass := EpiCustomList.OnNewItemClass;
   if EpiCustomList.Count > 0 then
   begin
-    ItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
+    NItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
     for i := 0 to EpiCustomList.Count - 1 do
     begin
-      Item := NewItem(ItemClass);
+      Item := NewItem(NItemClass);
       Item.Assign(EpiCustomList[i]);
     end;
   end;
