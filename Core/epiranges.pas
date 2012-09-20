@@ -22,7 +22,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    ItemClass: TEpiCustomItemClass; override;
     function    XMLName: string; override;
     function    NewRange: TEpiRange;
     function    InRange(const AValue: EpiInteger): boolean; overload;
@@ -186,23 +186,15 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiRanges.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
-  ItemClass: TEpiCustomItemClass;
-  NRange: TEpiRange;
+function TEpiRanges.ItemClass: TEpiCustomItemClass;
 begin
-  // Root = <Ranges>
-  Node := Root.FirstChild;
-
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsRange);
-
-    NRange := NewRange;
-    NRange.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
+  case FieldType of
+    ftInteger: Result := TEpiIntRange;
+    ftFloat:   Result := TEpiFloatRange;
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate: Result := TEpiDateRange;
+    ftTime:    Result := TEpiTimeRange;
   end;
 end;
 
@@ -212,18 +204,8 @@ begin
 end;
 
 function TEpiRanges.NewRange: TEpiRange;
-var
-  Item:  TEpiCustomItem;
 begin
-  case FieldType of
-    ftInteger: Item := NewItem(TEpiIntRange);
-    ftFloat:   Item := NewItem(TEpiFloatRange);
-    ftDMYDate,
-    ftMDYDate,
-    ftYMDDate: Item := NewItem(TEpiDateRange);
-    ftTime:    Item := NewItem(TEpiTimeRange);
-  end;
-  Result := TEpiRange(Item);
+  Result := TEpiRange(NewItem);
 end;
 
 function TEpiRanges.InRange(const AValue: EpiInteger): boolean;

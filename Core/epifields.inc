@@ -4,7 +4,7 @@
 const
   NA_INT       = High(EpiInteger); //  $7FFFFFFFFFFFFFFF;
   NA_FLOAT     = MaxFloat;
-  NA_DATE      = NA_INT;
+  NA_DATE      = High(EpiDate);    // NA_INT;
   NA_TIME      = $FFFFFFFF; //MaxDouble;
   NA_STRING    = '.';
   NA_BOOL      = $7F;
@@ -82,10 +82,18 @@ var
   NField: TEpiField;
   JumpNode: TDOMNode;
 begin
+  // We do NOT call inherited in this method,
+  // since we have no way to call NewField during load of node!
+
   // Root = <Fields>
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then exit;
+
     CheckNode(Node, rsField);
 
     NField := NewField(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
@@ -187,7 +195,7 @@ begin
   if Length = AValue then exit;
   Val := Length;
   FLength := AValue;
-  DoChange(eegDataFiles, Word(efceSetLength), @Val);
+  DoChange(eegFields, Word(efceSetLength), @Val);
 end;
 
 procedure TEpiField.SetRepeatValue(const AValue: boolean);
@@ -235,6 +243,8 @@ begin
 end;
 
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
+var
+  Val: TEpiValueLabelSet;
 begin
   if FValueLabelSet = AValue then exit;
 
@@ -246,7 +256,7 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.UnRegisterOnChangeHook(@LocalEventHook);
   end;
-
+  Val := FValueLabelSet;
   FValueLabelSet := AValue;
 
   if Assigned(FValueLabelSet) then
@@ -255,6 +265,7 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
   end;
+  DoChange(eegFields, Word(efceValueLabelSet), Val);
 end;
 
 procedure TEpiField.SetValueLabelWriteField(const AValue: TEpiField);
@@ -405,7 +416,7 @@ begin
   if Assigned(FRanges) then
     F.FRanges := TEpiRanges(FRanges.Clone(F));
 
-  if Assigned(FValueLabelSet) and Assigned(DataFile) then
+  if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
     F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
 
 end;
@@ -832,6 +843,11 @@ begin
     result := '%d';
 end;
 
+procedure TEpiIntField.ResetData;
+begin
+  FillQWord(FData[0], FSize, DefaultMissing);
+end;
+
 { TEpiFloatField }
 
 procedure TEpiFloatField.SetDefaultValue(const AValue: EpiFloat);
@@ -1092,6 +1108,15 @@ begin
     Decimals := TEpiFloatField(AEpiCustomBase).Decimals
   else
     Decimals := 1;
+end;
+
+procedure TEpiFloatField.ResetData;
+var
+  i: Integer;
+begin
+//  FillDWord(FData[0], FSize, DefaultMissing);  Wrong type Extended vs. Q/DWord
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
 end;
 
 { TEpiBoolField }
@@ -1358,6 +1383,11 @@ begin
   Result := '%d';
 end;
 
+procedure TEpiBoolField.ResetData;
+begin
+  FillByte(FData[0], FSize, DefaultMissing);
+end;
+
 { TEpiStringField }
 
 procedure TEpiStringField.SetDefaultValue(const AValue: EpiString);
@@ -1617,6 +1647,14 @@ begin
     Result := '%s';
 end;
 
+procedure TEpiStringField.ResetData;
+var
+  i: Integer;
+begin
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
+end;
+
 { TEpiCustomAutoField }
 
 procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
@@ -1803,6 +1841,11 @@ begin
     ftMDYDate, ftMDYAuto: result := 'MM/DD/YYYY';
     ftYMDDate, ftYMDAuto: result := 'YYYY/MM/DD';
   end;
+end;
+
+procedure TEpiDateField.ResetData;
+begin
+  FillDWord(FData[0], FSize, DefaultMissing);
 end;
 
 procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -2162,5 +2205,13 @@ end;
 function TEpiDateTimeField.FormatString(const FillSpace: boolean): string;
 begin
   result := 'HH:NN:SS';
+end;
+
+procedure TEpiDateTimeField.ResetData;
+var
+  i: Integer;
+begin
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
 end;
 

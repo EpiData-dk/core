@@ -37,29 +37,8 @@ begin
   Result := rsJumps;
 end;
 
-procedure TEpiJumps.LoadFromXml(Root: TDOMNode);
+function TEpiJumps.ItemClass: TEpiCustomItemClass;
 var
-  Node: TDOMNode;
-  NJump: TEpiJump;
-begin
-  // Root = <Jumps>
-  inherited LoadFromXml(Root);
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsJump);
-
-    NJump := NewJump;
-    NJump.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
-end;
-
-function TEpiJumps.NewJump: TEpiJump;
-var
-  ItemClass: TEpiCustomItemClass;
   Ft: TEpiFieldType;
 begin
   Ft := TEpiField(Owner).FieldType;
@@ -70,12 +49,15 @@ begin
             'Please Contact EpiData',
             [TEpiCustomItem(Owner).Name]);
 
-  if Ft in BoolFieldTypes   then ItemClass := TEpiBoolJump;
-  if Ft in IntFieldTypes    then ItemClass := TEpiIntJump;
-  if Ft in FloatFieldTypes  then ItemClass := TEpiFloatJump;
-  if Ft in StringFieldTypes then ItemClass := TEpiStringJump;
+  if Ft in BoolFieldTypes   then Result := TEpiBoolJump;
+  if Ft in IntFieldTypes    then Result := TEpiIntJump;
+  if Ft in FloatFieldTypes  then Result := TEpiFloatJump;
+  if Ft in StringFieldTypes then Result := TEpiStringJump;
+end;
 
-  Result := TEpiJump(NewItem(ItemClass));
+function TEpiJumps.NewJump: TEpiJump;
+begin
+  Result := TEpiJump(NewItem());
 end;
 
 { TEpiJump }

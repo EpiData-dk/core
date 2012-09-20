@@ -173,7 +173,7 @@ end;
 
 function ValidateIdentifierUTF8(const AValue: string): boolean;
 begin
-  result := true;
+  result := UTF8Length(AValue) > 0;
   if FindInvalidUTF8Character(PChar(@AValue[1]), Length(AValue)) <> -1 then
     exit(false);
   if UTF8Pos(' ', AValue) > 0 then

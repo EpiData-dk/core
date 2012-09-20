@@ -142,17 +142,29 @@ procedure TEpiDocument.LoadFromFile(const AFileName: string);
 var
   St: TFileStream;
 begin
-  St := TFileStream.Create(AFileName, fmOpenRead);
-  LoadFromStream(St);
-  St.Free;
+  St := nil;
+  try
+    St := TFileStream.Create(AFileName, fmOpenRead);
+    LoadFromStream(St);
+  finally
+    St.Free;
+  end;
 end;
 
 procedure TEpiDocument.LoadFromStream(const St: TStream);
 var
   RecXml: TXMLDocument;
   RootNode: TDOMElement;
+  P: TDOMParser;
+  Xin: TXMLInputSource;
 begin
-  ReadXMLFile(RecXml, St);
+  //ReadXMLFile(RecXml, St);
+  P := TDOMParser.Create;
+  P.Options.PreserveWhitespace := true;
+  Xin := TXMLInputSource.Create(St);
+  P.Parse(Xin, RecXml);
+  Xin.Free;
+  P.Free;
 
   // **********************
   // Global <EpiData> structure

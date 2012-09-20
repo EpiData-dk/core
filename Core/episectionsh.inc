@@ -17,7 +17,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    function    ItemClass: TEpiCustomItemClass; override;
     function    NewSection: TEpiSection;
     function    GetSectionByName(Const AName: string): TEpiSection;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
