@@ -63,7 +63,7 @@ type
       Const NameSpace, NodeName: string;
       Const Prefix: String = ''): TDOMElement;
 
-    // Adds ID, Version, Lang And Agency!
+    // Adds ID, Version, and Agency!
     function AppendElemMaintainableType(Root: TDOMElement;
       Const NameSpace, NodeName: string;
       Const Prefix: String = ''): TDOMElement;
@@ -201,7 +201,6 @@ function TEpiDDIExport.AppendElemMaintainableType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Prefix: String): TDOMElement;
 begin
   Result := AppendElemVersionableType(Root, NameSpace, NodeName, Prefix);
-  AddAttrLang(Result, FSettings.Doc.DefaultLang);
   Result.SetAttribute('agency', FSettings.Agency);
 end;
 
@@ -585,8 +584,6 @@ var
       Inc(FromIndex);
       if CustItem is TEpiSection then continue;
 
-
-
       QCons := TDOMElement(QuecMap.KeyData[@CustItem]^);
       AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', QCons);
 
@@ -595,19 +592,21 @@ var
 
       if Assigned(F.Jumps) and (F.Jumps.Count > 0) then
       begin
-        TheITE := AppendElemVersionableType(CCS, NSdatacollection, 'IfThenElse', 'ifth');
-        ITE := TheITE;
-
-        // Add a reference in the original sequence to this IfThenElse node:
-        AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', ITE);
-
         for i := 0 to F.Jumps.Count - 1 do
         begin
+          ITE := AppendElemVersionableType(CCS, NSdatacollection, 'IfThenElse', 'ifth');
+//          ITE := TheITE;
+
+          // Add a reference in the original sequence to this IfThenElse node:
+          AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', ITE);
+
+//        for i := 0 to F.Jumps.Count - 1 do
+//        begin
           Jmp := F.Jumps[i];
 
           // Build Main IfThenElse Node(s):
-          if i > 0 then
-            ITE := AppendElem(TheITE, NSdatacollection, 'ElseIf');
+//          if i > 0 then
+//            ITE := AppendElem(TheITE, NSdatacollection, 'ElseIf');
 
           // Build Inner nodes of IfThenElse:
           // - If Condition:
@@ -650,6 +649,14 @@ var
 
           BuildSequence(NewSequence, Idx);
         end;
+        // Construct branching sequence for all other values (last else sequence)
+        NewSequence := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
+        AppendElem(NewSequence, NSreuseable, 'Label', 'Sequence: ' + F.Name + ' Jump="other values"');
+        AppendElemReferenceType(ITE, NSdatacollection, 'ElseConstructReference', NewSequence);
+        BuildSequence(NewSequence, FromIndex);
+
+        // Break the loop as the last Else will finish the sequence of fields.
+        Break;
       end;
     end;
   end;
@@ -706,6 +713,8 @@ var
 begin
   InstSc := AppendElemMaintainableType(nil, NSdatacollection, 'InterviewerInstructionScheme', 'invs');
 
+  //  Sch := AppendElemReferenceType(RecLayoutRef, NSreuseable, 'Scheme', DDIRels.GetAttribute('id'));
+  //  RecLayoutRef.InsertBefore(Sch, RecLayoutRef.FindNode('ID'));
 
   Df := FSettings.Doc.DataFiles[0];
   for i := 0 to Df.Fields.Count - 1 do
@@ -993,9 +1002,6 @@ var
 begin
   PhysicalInst := AppendElemMaintainableType(DDIStudyUnit, NSphysicalinstance, 'PhysicalInstance', 'phin');
   RecLayoutRef := AppendElemReferenceType(PhysicalInst, NSphysicalinstance, 'RecordLayoutReference', DDIRely);
-  Sch := AppendElemReferenceType(RecLayoutRef, NSreuseable, 'Scheme', DDIRels.GetAttribute('id'));
-  RecLayoutRef.InsertBefore(Sch, RecLayoutRef.FindNode('ID'));
-
 
   Elem := AppendElemIdentifiableType(PhysicalInst, NSphysicalinstance, 'DataFileIdentification', 'dafi');
   // TODO: Smarten up to allow user to choose export name?
