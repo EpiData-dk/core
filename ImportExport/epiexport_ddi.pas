@@ -282,9 +282,10 @@ procedure TEpiDDIExport.BuildUniverseRef;
 begin
   // Universe Ref cannot be built fully at this instance, but append it as child to StudyUnit
   // to get the correct order of things.
-  DDIUniverseRef := AppendElem(DDIStudyUnit, NSreuseable, 'UniverseReference');
+  DDIUniverseRef := AppendElemReferenceType(DDIStudyUnit, NSreuseable, 'UniverseReference', '');
+//  DDIUniverseRef := AppendElem(DDIStudyUnit, NSreuseable, 'UniverseReference');
 
-  // UniverseReference element still need an "ID" element, but that is created later
+  // UniverseReference element still need an "ID" element, but that is assigned later
   // when the actual UniverseScheme is created.
 end;
 
@@ -402,8 +403,8 @@ begin
   // A Universe MUST Exists.
   AppendElemInternationalStringType(Uni, NSconcept, 'HumanReadable', FSettings.ConUniverse);
 
-  // Create universe reference.
-  AppendElem(DDIUniverseRef, NSreuseable, 'ID', Uni.GetAttribute('id'));
+  // Update universe reference.
+  DDIUniverseRef.FindNode('ID').TextContent := Uni.GetAttribute('id');
   // DONE
   // ****
 
@@ -411,9 +412,9 @@ begin
   // ****
   // Build Geography
   if FSettings.CoverSpatial = '' then exit;
-  GeoSch := AppendElemMaintainableType(    ConceptualComponent, NSconcept,   'GeographicStructureScheme', 'geostrs');
+  GeoSch := AppendElemMaintainableType(ConceptualComponent, NSconcept,   'GeographicStructureScheme', 'geostrs');
   GeoS   := AppendElemVersionableType( GeoSch,              NSreuseable, 'GeographicStructure',       'geostr');
-  Geo    := AppendElemIdentifiableType(Geo,                 NSreuseable, 'Geography',                 'geo');
+  Geo    := AppendElemIdentifiableType(GeoS,                 NSreuseable, 'Geography',                 'geo');
 
   Level  := AppendElem(Geo, NSreuseable, 'Level');
   AppendElem(Level, NSreuseable, 'Name', FSettings.CoverSpatial);
@@ -480,7 +481,7 @@ begin
     QuieMap.Add(@F, @QItem);
 
     Elem := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionItemName', F.Name);
-    QText := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionText', '');
+    QText := AppendElem(QItem, NSdatacollection, 'QuestionText');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText');
     AppendElemInternationalStringType(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
@@ -581,9 +582,13 @@ var
     begin
       CustItem := Df.ControlItems[FromIndex];
 
+      Inc(FromIndex);
+      if CustItem is TEpiSection then continue;
+
+
+
       QCons := TDOMElement(QuecMap.KeyData[@CustItem]^);
       AppendElemReferenceType(Sequence, NSdatacollection, 'ControlConstructReference', QCons);
-      Inc(FromIndex);
 
       if not (CustItem is TEpiField) then continue;
       F := TEpiField(CustItem);
