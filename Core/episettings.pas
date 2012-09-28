@@ -14,7 +14,7 @@ type
 
   // esce = Epi Setting Change Event
   TEpiSettingChangeEvent = (
-    esceDateSep, esceTimeSep, esceDecSep, esceMissing, esceScramble
+    esceDateSep, esceTimeSep, esceDecSep, esceScramble
   );
 
   TEpiXMLSettings = class(TEpiCustomBase)

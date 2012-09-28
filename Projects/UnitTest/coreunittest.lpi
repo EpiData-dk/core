@@ -44,17 +44,42 @@
         <MinVersion Major="1" Minor="3" Valid="True"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="2">
+    <Units Count="7">
       <Unit0>
         <Filename Value="coreunittest.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="coreunittest"/>
       </Unit0>
       <Unit1>
-        <Filename Value="ut_epicustombase.pas"/>
+        <Filename Value="ut_epidocument.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ut_epicustombase"/>
+        <UnitName Value="ut_epidocument"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="ut_epiprojectsettings.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ut_epiprojectsettings"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="ut_epixmlsettings.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ut_epixmlsettings"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="ut_epiadmin.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ut_epiadmin"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="ut_epistudy.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ut_epistudy"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="ut_epivaluelabels.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ut_epivaluelabels"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

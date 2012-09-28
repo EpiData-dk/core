@@ -9,6 +9,10 @@ uses
 
 type
 
+
+  TEpiStudyChangeEvent = (esceAgency, esceAuthor, esceIdentifier,
+    esceKeywords, esceModifiedDate, esceNotes, esceVersion);
+
   { TEpiStudy }
 
   TEpiStudy = class(TEpiCustomBase)
@@ -76,46 +80,74 @@ uses
 
 { TEpiStudy }
 
-procedure TEpiStudy.SetAuthor(const AValue: string);
-begin
-  if FAuthor = AValue then exit;
-  FAuthor := AValue;
-end;
-
 procedure TEpiStudy.SetAgency(AValue: string);
+var
+  Val: String;
 begin
+  Val := FAgency;
   if FAgency = AValue then Exit;
   FAgency := AValue;
+  DoChange(eegStudy, Word(esceAgency), @Val);
+end;
+
+procedure TEpiStudy.SetAuthor(const AValue: string);
+var
+  Val: String;
+begin
+  Val := FAuthor;
+  if FAuthor = AValue then exit;
+  FAuthor := AValue;
+  DoChange(eegStudy, Word(esceAuthor), @Val);
 end;
 
 procedure TEpiStudy.SetIdentifier(const AValue: string);
+var
+  Val: String;
 begin
+  Val := FIdentifier;
   if FIdentifier = AValue then exit;
   FIdentifier := AValue;
+  DoChange(eegStudy, Word(esceIdentifier), @Val);
 end;
 
 procedure TEpiStudy.SetKeywords(AValue: string);
+var
+  Val: String;
 begin
+  Val := FKeywords;
   if FKeywords = AValue then Exit;
   FKeywords := AValue;
+  DoChange(eegStudy, Word(esceKeywords), @Val);
 end;
 
 procedure TEpiStudy.SetModifiedDate(const AValue: TDateTime);
+var
+  Val: TDateTime;
 begin
+  Val := ModifiedDate;
   if FModifiedDate = AValue then exit;
   FModifiedDate := AValue;
+  DoChange(eegStudy, Word(esceModifiedDate), @Val);
 end;
 
 procedure TEpiStudy.SetNotes(AValue: string);
+var
+  Val: String;
 begin
+  Val := Notes;
   if FNotes = AValue then Exit;
   FNotes := AValue;
+  DoChange(eegStudy, Word(esceNotes), @Val);
 end;
 
 procedure TEpiStudy.SetVersion(const AValue: string);
+var
+  Val: String;
 begin
+  Val := Version;
   if FVersion = AValue then exit;
   FVersion := AValue;
+  DoChange(eegStudy, Word(esceVersion), @Val);
 end;
 
 constructor TEpiStudy.Create(AOwner: TEpiCustomBase);

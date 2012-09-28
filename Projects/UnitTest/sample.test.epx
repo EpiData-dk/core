@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EpiData xmlns="http://www.epidata.dk/XML/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd" version="2" xml:lang="en">
+ <Settings dateSeparator="/" timeSeparator="." decimalSeparator=","/>
+ <ProjectSettings autoIncStart="1" timedBackupInterval="10" backupOnShutdown="false" showFieldNames="false" showFieldBorders="true"/>
+ <StudyInfo>
+  <Author></Author>
+  <Agency></Agency>
+  <Created>2012/09/28 14.23.27</Created>
+  <Identifier></Identifier>
+  <Keywords></Keywords>
+  <Modified>2012/09/28 14.23.27</Modified>
+  <Notes></Notes>
+  <Version></Version>
+ </StudyInfo>
+</EpiData>

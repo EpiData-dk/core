@@ -2,19 +2,27 @@ program coreunittest;
 
 {$mode objfpc}{$H+}
 
+{.$DEFINE TEST_GUI}
+
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
-  cthreads,
-  {$ENDIF}{$ENDIF}
-  Classes, epidatacore,
+  {$IFDEF UNIX}
+    {$IFDEF UseCThreads}
+    cthreads,
+    {$ENDIF}
+  cwstring, clocale,
+  {$ENDIF}
+  Classes,
   { you can add units after this }
-  GUITestRunner, TestFramework, TestFrameworkIfaces, ut_epicustombase;
+  {$IFDEF TEST_GUI}
+  GUITestRunner,
+  {$ELSE}
+  TextTestRunner,
+  {$ENDIF}
+  ut_epidocument, ut_epiprojectsettings, ut_epixmlsettings,
+  ut_epiadmin,
+  ut_epistudy, ut_epivaluelabels;
 
-var
-  T: ITestProject;
 begin
-  coretestsuite.registerTest;
-
   RunRegisteredTests;
 end.
 
