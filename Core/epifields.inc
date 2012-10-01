@@ -460,29 +460,14 @@ begin
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
+var
+  FC: TEpiFieldClass;
 begin
-  case AFieldType of
-    ftInteger, ftAutoInc:
-      Result := TEpiIntField.Create(AOwner, AFieldType);
-
-    ftDMYDate,  ftMDYDate,  ftYMDDate,
-    ftDMYAuto, ftMDYAuto, ftYMDAuto:
-      Result := TEpiDateField.Create(AOwner, AFieldType);
-
-    ftTime, ftTimeAuto:
-      result := TEpiDateTimeField.Create(AOwner, AFieldType);
-
-    ftFloat:
-      Result := TEpiFloatField.Create(AOwner, AFieldType);
-
-    ftBoolean:
-      Result := TEpiBoolField.Create(AOwner, AFieldType);
-
-    ftString, ftUpperString:
-      Result := TEpiStringField.Create(AOwner, AFieldType);
+  FC := FieldClassFromFieldType(AFieldType);
+  if Assigned(FC) then
+    Result := FC.Create(AOwner, AFieldType)
   else
-    result := nil;
-  end;
+    Result := nil;
 end;
 
 destructor TEpiField.Destroy;

@@ -7,6 +7,8 @@ interface
 uses
   sysutils, epidatafiles, epidatafilestypes, math;
 
+function FieldClassFromFieldType(FieldType: TEpiFieldType): TEpiFieldClass;
+
 function CompareFieldRecords(Out CmpResult: TValueSign;
   Const F1, F2: TEpiField; Const Idx1, Idx2: Integer;
   Const Casesensitive: boolean = false): boolean;
@@ -17,6 +19,32 @@ implementation
 
 uses
   epistringutils, LazUTF8;
+
+function FieldClassFromFieldType(FieldType: TEpiFieldType): TEpiFieldClass;
+begin
+  case FieldType of
+    ftInteger, ftAutoInc:
+      Result := TEpiIntField;
+
+    ftDMYDate,  ftMDYDate,  ftYMDDate,
+    ftDMYAuto, ftMDYAuto, ftYMDAuto:
+      Result := TEpiDateField;
+
+    ftTime, ftTimeAuto:
+      result := TEpiDateTimeField;
+
+    ftFloat:
+      Result := TEpiFloatField;
+
+    ftBoolean:
+      Result := TEpiBoolField;
+
+    ftString, ftUpperString:
+      Result := TEpiStringField;
+  else
+    result := nil;
+  end;
+end;
 
 function CompareFieldRecords(out CmpResult: TValueSign;
   const F1, F2: TEpiField; const Idx1, Idx2: Integer;

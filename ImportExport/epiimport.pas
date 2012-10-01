@@ -211,18 +211,33 @@ const
        ftYMDAuto
   );
 
-
   function RequestPassword(Const EncryptedString: string): boolean;
   var
     S, FPassword: string;
+    Digest: Pointer;
+    Hash: TDCP_sha1;
+    InitVector: array[0..15] of byte;
   begin
     result := false;
     if Assigned(FOnRequestPassword) then
       FOnRequestPassword(Self, S, FPassword);
     try
+      // The initialization of the IV like this, makes importing encrypted .rec
+      // files possible, without using the DCP1COMPAT defines
+      // in DCPCrypt package.
+      GetMem(Digest,TDCP_sha1.GetHashSize div 8);
+      Hash:= TDCP_sha1.Create(nil);
+      Hash.Init;
+      Hash.UpdateStr(FPassword);
+      Hash.Final(Digest^);
+      Hash.Free;
+
       S := Base64DecodeStr(EncryptedString);
+      FillChar(InitVector, 16, $FF);
       Decrypter := TDCP_rijndael.Create(nil);
-      DeCrypter.InitStr(FPassword, TDCP_sha1);
+      Decrypter.Init(Digest^, TDCP_sha1.GetHashSize, @InitVector);
+      Decrypter.EncryptECB(InitVector, InitVector);
+      Decrypter.SetIV(InitVector);
       DeCrypter.DecryptCFB8bit(S[1], S[1], Length(S));
       DeCrypter.Reset;
       Result := (AnsiCompareText(FPassword, S) = 0);

@@ -49,7 +49,7 @@ type
 implementation
 
 uses
-  epidocument, math, epistringutils, epiconvertutils,
+  epidocument, math, epistringutils, epiconvertutils, epidatafileutils,
   DCPrijndael, DCPsha256, contnrs;
 
 {$I epidatafiles_helper.inc}

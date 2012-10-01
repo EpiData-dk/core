@@ -181,6 +181,7 @@ type
        nil): TEpiCustomBase; override;
     procedure PostCloneUpdate(Dest: TEpiField);
   end;
+  TEpiFieldClass = class of TEpiField;
 
   { TEpiIntField }
   // Handles following field types:

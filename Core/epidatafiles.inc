@@ -322,6 +322,7 @@ var
 
 const
   DummyString = #243#176#80#80;  // Unicode private area: http://www.utf8-chartable.de/unicode-utf8-table.pl?start=983040
+
 var
   DeCrypter: TDCP_rijndael;
   n: String;
