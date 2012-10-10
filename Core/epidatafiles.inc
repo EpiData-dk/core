@@ -491,6 +491,20 @@ end;
 
 procedure TEpiDataFile.InternalSortRecords(const SortList: TEpiFields; L,
   R: Integer);
+
+  procedure SortListExchangeRecords(Const Index1, Index2: integer);
+  var
+    i: integer;
+  begin
+    for i := 0 to SortList.Count - 1 do
+      if SortList[i].FDataFile = Self then
+        // This field has been sorted!
+        Continue
+      else
+        // This field is not part of the ExchangeRecords
+        SortList[i].Exchange(Index1, Index2);
+  end;
+
 var
    I, J, P: Integer;
 begin
@@ -503,6 +517,7 @@ begin
     if I <= J then
     begin
       ExchangeRecords(J,I);
+      SortListExchangeRecords(J, I);
       if p=i then p:=j
       else if p=j then p:=i;
       Inc(I);
