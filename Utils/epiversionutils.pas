@@ -18,7 +18,9 @@ type
 
   function GetCoreRevision: string;
   function GetCoreVersionInfo: string;
-  function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
+  function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string; overload;
+  function GetEpiVersionInfo(TheProgram: THandle): string; overload;
+  function GetEpiVersion(TheProgram: THandle): TEpiVersionInfo; overload;
   function CheckVersionOnline(Const ProgramName: String;
     out StableVersion: TEpiVersionInfo;
     out TestVersion: TEpiVersionInfo;
@@ -27,7 +29,7 @@ type
 implementation
 
 uses
-  strutils;
+  strutils, vinfo;
 
   {$I epidatacore.revision.inc}
 
@@ -48,16 +50,25 @@ begin
   result := GetEpiVersionInfo(CoreVersion);
 end;
 
+function BuildVersionInfoString(Version, Major, Minor, Build: integer): string;
+begin
+  result := IntToStr(Version) + '.' + IntToStr(Major);
+  if Minor + Build > 0 then
+    result := result + '.' + IntToStr(Minor);
+  if Build > 0 then
+    result := result + '.' + IntToStr(Build);
+end;
+
 function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
 begin
   with VersionInfo do
-  begin
-    result := IntToStr(VersionNo) + '.' + IntToStr(MajorRev);
-    if MinorRev + BuildNo > 0 then
-      result := result + '.' + IntToStr(MinorRev);
-    if BuildNo > 0 then
-      result := result + '.' + IntToStr(BuildNo);
-  end;
+    Result := BuildVersionInfoString(VersionNo, MajorRev, MinorRev, BuildNo);
+end;
+
+function GetEpiVersionInfo(TheProgram: THandle): string;
+begin
+  with GetEpiVersion(TheProgram) do
+    result := BuildVersionInfoString(VersionNo, MajorRev, MinorRev, BuildNo);
 end;
 
 { TEpiVersionChecker }
@@ -150,6 +161,22 @@ begin
     HttpClient.Free;
     Result := ConnectOK;
   end;
+end;
+
+function GetEpiVersion(TheProgram: THandle): TEpiVersionInfo;
+var
+  Info: TVersionInfo;
+begin
+  Info := TVersionInfo.Create;
+  Info.Load(TheProgram);
+  with Result, Info.FixedInfo do
+  begin
+    VersionNo := FileVersion[0];
+    MajorRev  := FileVersion[1];
+    MinorRev  := FileVersion[2];
+    BuildNo   := FileVersion[3];
+  end;
+  Info.Free;
 end;
 
 function CheckVersionOnline(const ProgramName: String;
