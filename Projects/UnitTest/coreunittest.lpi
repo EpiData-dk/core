@@ -30,6 +30,7 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
+        <LaunchingApplication PathPlusParams="/usr/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
     <RequiredPackages Count="3">
@@ -44,7 +45,7 @@
         <MinVersion Major="1" Minor="3" Valid="True"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="coreunittest.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -80,6 +81,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="ut_epivaluelabels"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="ut_datafile.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ut_datafile"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

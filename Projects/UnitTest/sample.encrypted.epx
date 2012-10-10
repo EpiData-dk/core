@@ -8,7 +8,7 @@
   <Created>2010/08/24 08.29.00</Created>
   <Identifier>EpiData Sample File #1</Identifier>
   <Keywords>epidata,manager</Keywords>
-  <Modified>2012/09/27 12.00.12</Modified>
+  <Modified>2012/10/01 09.57.10</Modified>
   <Notes></Notes>
   <Version>1</Version>
   <Abstract>
@@ -93,35 +93,74 @@
     </ValueLabel>
    </Internal>
   </ValueLabelSet>
+  <ValueLabelSet id="_label_indexFail" type="ftInteger">
+   <Internal>
+    <ValueLabel order="2" value="0">
+     <Label xml:lang="eng">Index OK</Label>
+    </ValueLabel>
+    <ValueLabel order="3" value="1">
+     <Label xml:lang="eng">Index fail</Label>
+    </ValueLabel>
+    <ValueLabel order="4" value="2">
+     <Label xml:lang="eng">Index fail (missing value in key)</Label>
+    </ValueLabel>
+   </Internal>
+  </ValueLabelSet>
  </ValueLabelSets>
  <DataFiles>
   <DataFile id="datafile_id_0" created="2011/04/05 10.16.04" version="">
    <Records>
-    <Record status="rsNormal">0df9rjyQejOCz+G5eGdVELnX0GFemh24PAI0CKNN4M1I4/gdSVXZQ2/Rq9VUMcI3H615non5KwHbN2afdVvDRDHM3/uhwGa85BhtaV31/NuK1607rODek74tjkEvPRNg7KpFfOO1MlHxPyOpgy884Ku7SoumtMzhEI5981XpcPHeK7mlp2J5I44GVgaGxBpVK3SopQP0MZCiDxVLdlF73MYMzqA4Zq3s/0L4IXGfqX8ditr5NMe7+2WDyhguoi3dSpJv8n77b8981IbhgoiqFt4EGcZi/dBn6f75Dkgb5f8HW2vVa9Oc0iBwwfJP/+oYSuJpCd2ZVVizWo0rAIO99nt2G+55u1Zp+p3L26mC2J89UCQuFqrheVmpmIboasre3VoQI0Gx6lE1d5LxLdvNQSWoGMqN</Record>
-    <Record status="rsNormal">a5MW9AO8ObK6oOQ6WvbBApDRcmiOOL5EC0cmyc67ze6MpDvQg6Rk11NVCgXN/LskXrxHnRS8sMixndVqLRHhmFRGx6Jlq97u9nANmmhlegzIkOjlPDfERN82pzTPciU+BXUMFyi6uQBGHwhMaMRbZpOpo33oDgJH/himthvpFeLyXHK5/idAynFu/joYZEcYBYvUVx3jA1V0RcTt4ChKV0Hted+7yok2O4JTlNxiZVhCCN/VQiWMYknBEIMh4nCvIriQ7bTXKnG8MYs7OjWoJqdmTXT5NDJ77/5usB2HAvqr1whissZIGGjwliFGkabjFtHhX/2gKeLn3dcVlWFCandt5Z/NtqMnNXRi1OJjIOFqS20rgn4Lkukw/KLwBNFIDGN4htZe3wCLis7i59K+TO1i</Record>
-    <Record status="rsNormal">9FBi1hUWTQ70LJzNwqn1Y8JZdh5+zj2KXXdEsGR9UsVa3LqZ8Bv5etSWqih9yj63oN+gSPZxZzgL7Z1fG9fm2aRcd8gQeEY9jy2gYzNt110P6GGA+coD71J3naGjO9bITJzkuX8AgU74Mq7eGHyZBsZsCULiXZc/paM7GZwlyTDJCodLSI8hJJ2STckqQqynGGVMa1/NCIhv+oSDnrRN7/aRdKTMDTz7MIylh9ikmXhAsp/tf5J3BlwYXeNo5Ipnhw5Ktd0QT7Dr9883+KhAskdWPGLTiq0Fx//C0uF0IVoSX/d4p0CQ4NqXXjS2Puyb8RASQqt5ELALpocPj6nXDGY64SlFoxcWZQV36aZLsNEPQJQV5/DH6+Kxyq35uIH0/vTHK+F+dAt3Sv5jnm3yHPdLZ67GwaSxrBmbspB9fw==</Record>
-    <Record status="rsNormal">KpKcyYPqpUWZrtyeVSPwz7NhTdfIFF5T24lBFHe662ALjE8nFHiRwCZy8/bL0hAEX5YOIgBWdf4FRwCLgTnDzADqTISmljgVCKBLVCHdJ6mFTTxw7vxn4ZIgJatuD85RYVPlsW++z2fu07elylkVwBsszmpwr0nxCHCBkZq4a46qB5OatEdvlqkBfTYgaz/sHQ+RrZwp6tTxrTSKGRPA9yWTHLPQSRp1Xd5AdhXZbiT2BzUgPtNj+V4/99aUBhTdryh+hhp/CSjQh8xkOPMkl6IZUJVz95r8binVV2YQ11UJPGsCJ5n8HhMS1+mnq/VmvvpC6gbnn6irC+maVzkrTTcnqWRXRwjHCqNgnR1k5xitoooUpB0VWV3IGeIBWwlpWpXVK6k880jvdA==</Record>
-    <Record status="rsNormal">aqZ4PLluIHMqiWastrqPmJkj3Np2gr2AwD7URmRdqwVuH8WLdC8LJG+B1nCw2llFell4jpYBDqGEqCvgJvsDK0PaV619j7pW6gduuKbUuq1BE7E9sucx0amfA+8RZ+GBq6oA6yqVswCaj/AsVBL93h1CVQym48HDnXciVcJTlE6LxhDV5p2kEp6dCO2CfQv0rrSznjvIV+EKJWe/EZovEBuKgLsPG1mAEKrdfB04lCw3/mGUXAOaa3O0nZXgWFrzDADSCxzEQHtjJVzvgSVr1ekLXptG9ayUiimWEKj45uqdLWTVtq7rXtNsQzHaTLUvdqLZO3CH4y4xDWvP4sf63nohkMaFQEcGa8KJemljhFdcU0keDpiVEpkUhXM=</Record>
-    <Record status="rsNormal">1LL1nELgGTirYHgAK0Wip7Ak+zp4V8mxiUoZh4zLirOXjdx+iWlEmUtIhgvPGa2yAUsigCbXxKI1Rt4zIDVPP+LYA2Wlnt+xetvc4SKo+MXhW3EvxgwPYdbycxDobRaJkcnmhcb1tmPR2BrhfYukuuo27tU4rVvEzuXL7UXDeAdurlEvHVGgQ52WAu0r59fu1YpMjllyReM97GM+HXxtHmW+Ce3m7D9GuWQH4MkcQAR3d7dxgmqccI7k6DFv+Rtf9McwWKTuQrPJ0KGoU0s0EMr5yu20E689lEDaHNzcskUB162H71lwH+BwnUjoqgRUxiugsPceQBKCX4onNNODWURXbDibErnCl29K/qGWEBwI48ZZrCb3JIOHdnDeeAW2YeknUXRabWnh6CdzpyKpFtdkx6PjqDFjvbjpzqVAMG4qsTxhdc8mAGPK3sNFtMoyrCtTUb4kDepI2H69HohVDlYdwn5WX2VwPI/ifX78OBQ37rzLmAF+771nrDI+Cu8X</Record>
-    <Record status="rsNormal">SlDtWzhZ96Aln5+BDAGbeRCNQGk3BEl3DjIbKZnJsw/Zc/biY0rf5vSPvL5F3XQCb/XP0y8se992SkstrRbcuhooC8ruxVx5lQHFmI++7B2wEwyR2nZ1Abdydup9z7gJ+ZfdQovJ3x6FN/FEOTktIxUwGLgIg46XTrmKoujdUvqclL+SRHtH1OUdJEkB4x6OVo/xEw0neTbLmNzffHmB31Q/cb/Qo3S00y8rcAaCjCEmHyWnLUH1HgJTvkHeiSCagL+IgatRPHRLuHcnoMbbbk9zOM2Gb0NpRK13+j3nKQqeA4xuQr2HK8VZsX7TtQkqnl3rVROy2PVgXCb5xCO3z9O3LMeAqC6Djx2q6zO0zuSb1gSZ3Ufe2NJ8KI9HwzsKqQ3avo51rQ3cfz2XQIUG9E4eQNwQUWAQyOd7bxNl/Hu13yvWJPU2Bdlj9riHvoZiD28dFEAmuIVBR0h1iynJxhGtGixptJKgNexfjH+tkDPUCKXJ7y2jsMdnKTVBkjxMZ1Y6W/h8Vw==</Record>
-    <Record status="rsNormal">DvaSc09L+eCrSlt9xE+i9raSdL1eNvB8Y6EaOp7vf/OmSrFJ5CcboKCYlWLKeH3s9B7skK9fndC2Yrh+J0ZpFUvXEfn0MD+llXEg20ygT2RkZueEiK7BUw9pStKta9tqVJe15i0KvCQxBNo/D/mzLHCXY0gwNqDqKotSzml8vP1XfJ/4rtZfkkK0/6dKkASfjpi9ohtpS9YsqanD7/UOSqpCB4SrqBmJQpq7PTY61FL6eITSevoKfStXpyxJ4atLkfECrGKL2QDiei6hUZj/+1JD13mpgHFMsaQjezYiYgADyK+T6A1rGwtslYBARM0QYzxOD4PUr+FucsiPCWRGhO39hOwVSjjWvogIWqNLeKYwU+pxEKzxui5P5OwJGx/g3RkAAP0IFXvgjV7Bsb4bpNVQol4Md6QFB/QaDopYmb3PcvA=</Record>
-    <Record status="rsNormal">mUaWQfSVDGVuBGbqqnv+hMfdnnEPEUcQLmvhfzTlXwesEWczkpd6wM6Cryaj7DgGvzvBH2oL8D2hYx6N+TISXBsyrZeNuy1+N300+dCc8Zq3QMClgtrWbI28IyQzy5Y0TmdWZZGHiCb7fmT4vu/89sAUprRB6ihI7thQJ1jLD006wjyfMvG7zQI56ERQ3vM3t9OWg0OX7xaUXc/sETCo3FIKyoewMIeMgjLJsHS2x9hMpW9MSwybsRaKYj2yGk4QAGfz6mT3HDY/53LW4qpvFWQwSBJShbAQPqR6qHlDQlPQ/cmEYnMnEPvBbKvYh0sRe+VrTgrjBNPeel99U8o4JJRz96pQsEOxUqMDZrwULX4zZZ9jeN/s474bGmaZoza6YxDYQdienVEjJMPbOam+z1QltQzOUzJvfWnB</Record>
-    <Record status="rsNormal">a/MESoWa3M1x4aCCjEtrqCsBC/4OSSFvzSDYtM8N08J/B4Ad2hjLop0q29Qdor6mYyEK74xkU+Do5v5lbMt4GueUCSRjDzCiI4H0CKC0dcMGMVPv5/dnmJ07Ui2sg1G6wBCvBDjQWiUcLDlYh2kR8BWIvsZvpJ3O7zteuJ3+YGwdjQ3etTA+Fc6Bfiv3DZIFrpkhOFoh4Bh8L0QEW652ogSimZnHQiph23BwwhpLiR1+MNQ4EBzkGjFrJib2VmLtrtDJ6ymJeOE2G5Ir+diuwziRMLE+OWA56LMiiOfrr2t+fS+/Q1zPJh5Vf2JjkBXWcEuwGhNe8mXvDSZBQookQL12ipGYSluxOg2dxbLK+5VeABTmS4OJOjXiwCFjBy1BpA4TWw5ZE7bn2A==</Record>
-    <Record status="rsNormal">2RwwckTk7LZpiCKT9bJ+wj+1+lajZrKEMp3KEg+m5rVhB6dYHVi6oS7r1JDByzsSiLQ1TQi2tKzMNpuGZsK7etn1GZF5oFS4zGATrY07jQ2VKOzesJxYpC/4KkuSiWgD1JF8DmDNTh1OWY28iYC0Yq5jOkFF0YnkCfLVbQ0LoO51WfVjVg/WxKDGOL+dwqgVsGP7t04l6cZMVO8o2uZ9bXbKlVJldsy/Eajo8qk52TpRLawmm8WBI3u1Y+U5wgMgb33dzHcyygJerOtEgGPbMGu0jEfxegcVgCmQr/aWvpEeSmd9FTNoGiEsIJ/nSQ0XatHPeNKiaWV+/yGa7t5AtaNHi3nIIRx7IoJ3If39UDfFGaQm8vFfG3RVwOZ11Pt+71TGZh2YCCZMVIax9A==</Record>
-    <Record status="rsNormal">PM8+S4oPSsWkRncHMG4+5K1+Lf3KveOj7CPFfCsJUdwIx0vSImCPMBUbxLWEiWj06b2FA+iEpRBQyql4MBQxj8u7ILMAEypfQ/xBG52WIJqL1gNwVOcjEXso2jSICPpljmzlkOD8v2XJwoUy+Ehe5ZusNQ4gKEN4wvcp/jD0FlPvTztwKqZ6s8v1d5jOKXeJ2BzBZeB8ugPNZuX3Dm2RhyXwjDFlCmCtWlO8YNMx8gwVsvLj+l1gP7UYRzEpW4PaWHCfwHAAuG66t+g0dRWPfWKYaQChjLLRaEio0klmrgfMmpq/NZTU+Epi+GndcFTkBP+B3zJp3WX12dmZ8SBR4XHYVudwvuiK6aLaxNGondPFB1BbBybrnnpQggYgxwX/d/TmyI+W+5UcNiyBWEqEHLEJvPNx4GP7q9z1N9fWdihf6CSZ0BSSYCmFYnfCYl2ZUPWzUH2Ltc/ra/HN/VzzgvU=</Record>
-    <Record status="rsNormal">Z8VJPhXD/RVYbPhlwu+W7g==</Record>
-    <Record status="rsNormal">pWAAbBp24/g98a5hDEAJ+w==</Record>
-    <Record status="rsNormal">BO59706N76LOvTXipq+KbQ==</Record>
-    <Record status="rsNormal">UOyQSzLOFynDM5X/y/BEDg==</Record>
-    <Record status="rsNormal">YnlmxFqkbs8pn0ygAl4nxQ==</Record>
-    <Record status="rsNormal">C4h0ZIKlyqFrILam4nTSbw==</Record>
-    <Record status="rsNormal">pFMvcUb32OFYfcCeN9HUcw==</Record>
-    <Record status="rsNormal">nRJHxqHwjH0WQAh4Y9M+3A==</Record>
-    <Record status="rsNormal">eoR0ROza1Zw6Mx6s/jtDhA==</Record>
-    <Record status="rsNormal">C6SiY4ik0lvJm7MwHXxcZQ==</Record>
-    <Record status="rsNormal">kIc8kNF4LJR9N7qXqFbSYg==</Record>
-    <Record status="rsNormal">RmgN7VXteSrTL9P2s5L5MA==</Record>
-    <Record status="rsNormal">VmceGcUNFJ6ROGYm97BN7A==</Record>
+    <Record status="rsNormal">2jS3hrXzR2i9C0DuZn2CdA3vE1UtLtTDszwc3A7UqOvM6P0u6fLc9QM6IJelD9awC35oO9I4wq3t9BGdDZuYACHCGoKqvxm2QWKT9VP1yKJIB+Kihf+C6N7ojWVQGrXfiV1f2II6uL+pmnbUYKYHcuOFvn9KlpHRmgsRnz9SQz8Wz1qO8C7bzhH/c1YoueK+5C6R5nB+0ifizuX/dwmlKoqmEBV5UVdjWfEEq6xFGCGu3cTh7xBaPUBEoo2E3tvQTl4iaQSPZhAKsY5CYsmEtk+AO31onaIKCGQZKNgs0RX6uLSaCa656J+N88D/OeL6KwrToun5kRPpicFSgESNXOXEBW0qPoDxUnrg07VC84Dq+sFGXwiG7UH64bnaRBsknXSetdAP3YAltXqRyrBvrcQH5Ayv</Record>
+    <Record status="rsNormal">rm4pxTP7StwdP1zY3OdT+mdPdATQjE8LdskNWy7oB45vr08I7N5rdt+M7BqEtNY4UHUmPCmCXI55aUe3MbdBLxfb3DQwv5BN9EcxdsGILxB5h+V3x/pJqhtmfAsZ0ggKLiBtq3HYl+DZWno8EgZ39y1YGXSKI87EX+lPi9BmM4PNwA8829qzrrYnRykSxMnc28eggJtLZSx36P9t/P/ACTXZlLbNE0WwiKNORwsXc7I86dL6o3kHeZLfCYTK4uwcbO2iVeNiJKF27CQeljXFeHw1jdJYHZmb+2RJ0yVe2vtnFcHo6QbFx+Asq3292zbTwPiCnZUkh5eygj5l8g9gPJL5YlXfb21uV1F7pudqy6TNoI5jN7F4X4SeMmvuvNuQbxPAREUjbvvGt5sXLpsto/eC</Record>
+    <Record status="rsNormal">3GpFomAPawloalqIGA+vEpe5GlFPnApnaWnN91f3IiWIfxppKoBFF3A7428R9eGaePN2+29CQKp/Pa6a4q6/ZhCiRi2DAxH6vlP44jylQo63JvJCST4hhDuCZhmP+upMutQgHv8NNf/RKbbGF3KAgAOaGsvgvupDIQcRkyIf9IAaBSbD/mYyTXFFgzm/+ipN3MJDNGOXaFynv0+0JOQpYGI/ZianeKcU6Kb/nnm4Ea3M5nIOvQjzi9x8K1ZGJNtpRurWFYggh3s/BJ/uQrsoSBvzmdMY6Isi4BpQV4xe/VLwzSyQ3rZGPICySkmJWAyBubqqpOg9WDa6wk0lmRs3+calwimkGxmSNklQ/tT5CyXlJy0v6W2mfj61quf8R3W8rBf7juJFAak/g052wkL5sN5fDBH+kCJUs6T1M+uDqg==</Record>
+    <Record status="rsNormal">X4OI01+HpU9RhpRdkS+MPQZdxSsnOkCxNY6hFoEz+lxKBT6jC/gGgEZr4BBg5zZNJ0UWHxR1B37sSYWIkruhz238vG5ExVyg2TLv2ggPlDCtV6cfyj7YXkw7KBRpkPcg5vMvruUxCz9ZaJjY3BcxaCILJlmG5sVyfONYx+TIoVclNdcZx0bFcjr0w376GaDIT0DI+OhyuY1ItNwqnVzPrOJXo3CgEQmaKw/ijLI6z5JM/u4FPfBH3vag1ZQhLBjuljkxYcwCS4LoCPO0TJvXR46+fwbjyLvLFDFGYSmtOlo67B4NGo2FgZlfQElg2kwd7jBi0BP6b16/3zgOO3x6WYA8ZRlIbia2nXgOD7NUqK54Lxm7B9F/jBhwMDkS1t6hMPZG6Rdw/QSFOw==</Record>
+    <Record status="rsNormal">RyoG7z8aT0y1kkPIiIKN0sBEr0ESQJPbIFRu9fwLU4zUhI8UshbNB+d+NhJxgtBAxIa8rZWY2561MGtM+bkzUJHfqt5TJaq/1mTqV6jv1yp9R93dZePVOaOlbCPIBiFUmN5PhioQVRaUyRfDyXcJCRUjk6osCoH7anq0AlEIjH0Oa0gh3qGMLfa2WRjAsU/CD5fQKJJ1zXtjVnw5su69O6vF4fLR4RtjwzMCoBs8hoeR+WLt2XuXFziLtturOLzjbyNHvoxurYit0AybUnJxV8yZBS/kZSUKvBzGOuUz7uyLCEX4iq5iC2cBi58UX+TxnRwRdjzoi2xHgSOR3UelvWFzC4xV5NsDk4Ep2a9n5eqHLl2CTHHI6M+43hk=</Record>
+    <Record status="rsNormal">6xcx7czZjO+mPzjFfQzLEjMqCoI8GPBFpiktTHtvzBu0g9NVC2nLMRHPrO8gL8WlP8UUTR/6LwjdiLxtGy9qF6WeIrFX2o95kYyUz8uE2cwnxVA9DkbeIQ2V/4TgZbxAxpbNa4nJwXnJwIpjR1hpWmOm4ad9rH4cHd0ymkJu1ygdXniX7jHC/nl2LAq7CT6G3ilIZy3qVTU2kzkTKDwrqHZ5ZEUokf5yw3HtkzNTZcjesTB8Ew5Q7PLZ85hihLkizgoP/gnxpVTbWSgJBclxmU0LeeJgydpNAFMzMkbPBpZRQe/OssMRrHkBD9gA9uNRTWscmh6oR4M77TW+kqEi1bf74Gy9UPt4NWbbqU+2+qIcmlHFM6rlAoc1Nb+82/utdQQllWZyyVy3n7kdzi9bLf1u6YcPMY2sBdA2A257OzM6AdktJmbXig6t50ea4tOTihKOwYbo1xlDs2TkmQ30r7AlDiFaghKJE5fVBMOf6lARsFrrNvqruswy4omlV61K</Record>
+    <Record status="rsNormal">pbIYIJYWZv+wKpClxF9ZW6+CAg7SGX4B381zgWE9u8/+oPNBG4HxZhYVSMa8xalTW++3DJQTNLpq7F4wUdBz2i6DLI5+jQekfLv+5oWcB9eqGt84lep52jrXyyMOB+89ESLy5e5BOfjCS1qQ+dF6ilL4gr++DnCisDeyPZKg7jippI8UhAfoldF5Tc5XtRI98pjJepVF5EUMIe0ujNhUeRXMOxg6GwiAVwu6cscaExi+D9hFT++vU2MVb8ubr4t+Hp/MPh5nuNs0WkjrGGyp+hVx4uQ+gaC7ULjdCYkUT/tVPehtgmY99zNT73eojkvtPdsEhb3mTelv8/IPlL5kAkd6HAb91K+u5CaHnsqdcVVwnSG2Dyi4h7OrASdSZLlPg1VzVABA5UEb8AmwqlJ/tpUnRzALUQgeyU7c59/8YVVoQaa18PoQHkTs50kh2shjX+xy8tdEUpxufbZi6ClHElYNSOom4MRB2heTYB0W3YJoFOonrQV0yYu5zq55ayzJmLDlJvwYmg==</Record>
+    <Record status="rsNormal">gIDU8qxgi919gCyrnrfmUZtmmXqyyYWz7SnUvtl84LVIX83OyCGo/9EQ4EaKTz7FOX49aYT+SSyGJHc1kFAWdjQjR7n8u2+BZG8Cn8n+dkadV8n64RItIHYh6fL6DteWpsPwGsnP+25h/lKa+sJiX8Z1yUKir8FhOUfRiibDiCgzM8SCk3rBPuDZ3DLdva5Pf6UDSvwnMaWK7pN2lStYpBWJj9xJlPTfALh8Gf559SLo4i2ikjUSg+LZMdXIU+qW35sD+yz88ILkIGgqKk9N7enTm09BrQzAW4eVUMKojV1Fd1G1iljYueMoCnYCYUH0c+BafUA2vxnhSeFv/GdNcZQCWPRh81kcKqA6rL8LRaG6x4saNrJQKD5DiCwMO586yFtCVZyU9LG5r0jQgXGsQc+023ZAPKPpjEZ7C5CsVntTGBU=</Record>
+    <Record status="rsNormal">17s9VtYWfbi+BAzE8qSbfHwbtzbfL43KZSKYvSCdqDsAfJ3N7xouZrF9q9nKm6bp57FWKfWw3FbJODHxgebxLSLqJhjVv688MmPlt0qdTIWY2RSIHqhMJZsDAZLPDRn1lRSY3Eve/cf8Io+tYj3eA2RZ30sSYkYduamZPcK2y00kSQTMmj7QyWg8pCskpGhmp2AVPCkXlXdB167G1Ii5sxwH/6+T6TLDRxZ8nTho4ympQhzGFCbkpCm2WAVO/A+H9COx2MrpUYlSBi0kkPn2JmAIvpxMgHtGBWsgazC0Zc3DQeRIzUznFGghm4cHbh9aGf6PUnN6x8Hctcq7zWpggF4FCRTFxTXHPcajZqvwHUFS4e4X4lQL2HLKQRCalgEmJQic0O2S9DcZ9h9lntOEXD03BxxkhNwQIr76</Record>
+    <Record status="rsNormal">bD+N6fMkvoS2x//nFE+PA25q04fPLhUCEvdfZ/iyk28oTEuejk4ivIcNNxGxxczHuMLV6AfqxVwqdOD5RKAPSszoF464neigK/64IlgYAjWEsb6QJm7YrdSX1IF+MKJq9yjcqAELsDSyPp7Q0Xqw5iOepcn2vpy7PWyQs/yKPUdeKxJEQONX80o7SGQXB+eGsg66kKfTPq/QVSC49Yf+L3cNQo3sx56vUcYY4d9x3sfJRy/9yJWarVwNwxWP3ElME4o2cb7M3Qs94CUxx3Hwj+SPijvtznuiemEHKOgXwweIOnK0vAN+HbchfBckA7/a1oKwjLUIrfxV1haZCqrr3ycJTdT1873Al746SJetdAmVhmDhByQBkmHs9Du2jNqeQZpOtpOKquF1AQ==</Record>
+    <Record status="rsNormal">XJ9TLKigB+d7Ysh0w3QI/juA/TYvl8EpS/m/h+sG1H9EqxCkgENllX3EJKJVtKyLU1mo5QmuNk+LnFqLoVJPpl20hV1v9HWTB5UiJxRa2MVFIbUrXtLr2ULZ9Qoh+nwxWv36+ho5DiXUFgyn9RXNZ2zn6A11GHTtqc01z2OAXDbqwGBbC/R4aDkfcBG0xQSvSb/yVFdCN1VL4IA/grvxdYaoyQOzysapWj6iukuoYVfiWWXUsm42mbkZNi6Ouhxae2NcZX4dnYKbc+9AlB07WNqjVPS6LorZ5bFHhzsJGqNBucUUGXfgS2heVNSX8ax6Gr8xneKUSbpYtspXYmPvfxPp6wJ9sHMm1AYELWW0Jm5DIhAE3FW2KE9JfQfTRotZn98rgxkJHpQLOncN+g==</Record>
+    <Record status="rsNormal">9AFNAgYZzwpTiq/+oqNzkwvSF6bcVlpB3l3ChZJz2NZqD+pcyZU3+bY+2B75vqaH7j829MZpU03E0x5CGpZZAEoAaI3gbN6bvyLmVU0surWacDSRZX1zvyLqEgiwOzdW78vCKNkw40UcWzrljPNIKXMZBWm3OVwuAL9ql+x8Lu+Tvp/8i6ZsjoDzqYQUKhXApMzOzsGwVYKE9DlvHNFN4qCKsVe1ZeQd5ZT7DPgJAgpWJdrfJwkZw59EaHFKr+KvqRCKRh52Vi6QeatWXvxCZ49zOKUbtvn0D/WNmx4dqe7TSViOFBdTB0Z4wWhZg56h445tOXj8lHD5A7q5t/wmJLPCgGcZK1dpXSkuO39Zb0S7d46MItVpoT26kTMVIHbMPv/kQ4/OIziI//5rrruYV16sonJKVO1Ejh1vU9ig7qtZtTjAzDDRJWcuKi3F/kTJJy15AFOtjrF2X1t1EKe30d8=</Record>
+    <Record status="rsNormal">jfLG61q2Nc7Mmd05tFY2iQ==</Record>
+    <Record status="rsNormal">OJXb5aGiRcJGMf6VWB18iQ==</Record>
+    <Record status="rsNormal">LNNadp3ZWU7x9XbzBviXOg==</Record>
+    <Record status="rsNormal">MKhsawTqfYbVT65edegqEw==</Record>
+    <Record status="rsNormal">ju5thh7mw8KR1lNgh0z65g==</Record>
+    <Record status="rsNormal">/eKgDKHMzbehLSEOhamKZQ==</Record>
+    <Record status="rsNormal">CN8/9MitLxkTxdbZJYFvqQ==</Record>
+    <Record status="rsNormal">DcQg5m3SoeU1VIvcH9NPiw==</Record>
+    <Record status="rsNormal">I1Q7vkaYSgvYxr9pVmzOtQ==</Record>
+    <Record status="rsNormal">eeVHDxZCpsfFAAGZO3UYwA==</Record>
+    <Record status="rsNormal">yzLkF55y/uTr3RNT6kgN0g==</Record>
+    <Record status="rsNormal">bCgmcTuuz6RYGyfJDqCyZg==</Record>
+    <Record status="rsNormal">6ngCJvG7A4rzI+aLbRpcWg==</Record>
+    <Record status="rsNormal">oM1cZAY+BowS72gzbcqNlw==</Record>
+    <Record status="rsNormal">QfkTNNWfp4SLqXmHZsGLug==</Record>
+    <Record status="rsNormal">QFsJeRwLUdsLC7KsD7pp6A==</Record>
+    <Record status="rsNormal">7SqjALXd0KOiMRVido76hA==</Record>
+    <Record status="rsNormal">957zTMwOiY9eYrrDsqB3lw==</Record>
+    <Record status="rsNormal">hjOhcDkRouSBFcv4mRwLyA==</Record>
+    <Record status="rsNormal">z2G+dWqF3yVZjI/7yLzo9w==</Record>
+    <Record status="rsNormal">RrsjG7M5sST6Aoe2d93dGQ==</Record>
+    <Record status="rsNormal">71Ur/4Tkt0/4NM7dmXy5bg==</Record>
+    <Record status="rsNormal">KzrIgtzwwgMeEplCtz+/Sg==</Record>
+    <Record status="rsNormal">NK0Uc98vJNd+GOVbojJu8g==</Record>
+    <Record status="rsNormal">Dgk1UyqM/375RfYrQbmfsQ==</Record>
+    <Record status="rsNormal">zEJPaVtLH79vpsKxDu/ihg==</Record>
+    <Record status="rsNormal">vqI84F0Fx2LFKYWabXmdfg==</Record>
+    <Record status="rsNormal">7822ZRecr/aWJ6uwjvye1g==</Record>
+    <Record status="rsNormal">9jXQIIJrSPwcL+yYypCI0g==</Record>
+    <Record status="rsNormal">NFIkXU//pwxMsZFqePZjDg==</Record>
+    <Record status="rsNormal">lb0tmmxxx54cUEYXAgUkeQ==</Record>
+    <Record status="rsNormal">nD/uD3zfnbuSB+TgfWDwnQ==</Record>
+    <Record status="rsNormal">iDchWrDi91/N1ChAnbR1Qg==</Record>
+    <Record status="rsNormal">Swz2Yx7EvpAZpXCvV4gMUg==</Record>
+    <Record status="rsNormal">ibbHvv4RYBkwuhiTvTKGFg==</Record>
+    <Record status="rsNormal">TTd6iyV8KKBoIAoEVm26hQ==</Record>
+    <Record status="rsNormal">UvBfivLx6Fbm215gcAQBbw==</Record>
+    <Record status="rsNormal">BC17HasMvNxn76F9ODO6DA==</Record>
+    <Record status="rsNormal">mdRPxZ6l5zxFD+YV3eXIrA==</Record>
    </Records>
    <Sections>
     <Section id="MAIN" top="0" left="0" width="0" height="0">
@@ -144,6 +183,11 @@
       <Field id="VLAST" top="966" left="619" type="ftInteger" length="2" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Last field...</Text>
+       </Question>
+      </Field>
+      <Field id="_IndexFail" top="999" left="619" type="ftInteger" length="2" decimals="0" entryMode="emDefault" valueLabelRef="_label_indexFail">
+       <Question>
+        <Text xml:lang="eng">Unique index status</Text>
        </Question>
       </Field>
      </Fields>
@@ -180,17 +224,17 @@
       <Text xml:lang="eng">Number Fields:</Text>
      </Caption>
      <Fields>
-      <Field id="I1" top="-2" left="167" type="ftInteger" length="8" decimals="0" entryMode="emDefault">
+      <Field id="I1" top="-4" left="165" type="ftInteger" length="8" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Integer Field (8 digits)</Text>
        </Question>
       </Field>
-      <Field id="F1" top="27" left="167" type="ftFloat" length="9" decimals="4" entryMode="emDefault">
+      <Field id="F1" top="25" left="165" type="ftFloat" length="9" decimals="4" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Float Field (4.4 digits)</Text>
        </Question>
       </Field>
-      <Field id="I2" top="84" left="167" type="ftInteger" length="3" decimals="0" entryMode="emDefault">
+      <Field id="I2" top="82" left="165" type="ftInteger" length="3" decimals="0" entryMode="emDefault">
        <Ranges>
         <Range start="50" end="250"/>
        </Ranges>
@@ -200,7 +244,7 @@
       </Field>
      </Fields>
      <Headings>
-      <Heading id="Nh1" top="60" left="94">
+      <Heading id="Nh1" top="58" left="92">
        <Caption>
         <Text xml:lang="eng">With range (50-250):</Text>
        </Caption>
@@ -212,17 +256,17 @@
       <Text xml:lang="eng">Field with valuelabels:</Text>
      </Caption>
      <Fields>
-      <Field id="VL1" top="10" left="188" type="ftInteger" length="2" decimals="0" entryMode="emDefault" showValueLabel="true" valueLabelRef="IntegerSet">
+      <Field id="VL1" top="8" left="186" type="ftInteger" length="2" decimals="0" entryMode="emDefault" showValueLabel="true" valueLabelRef="IntegerSet">
        <Question>
         <Text xml:lang="eng">Integer Field (2 digits)</Text>
        </Question>
       </Field>
-      <Field id="VL2" top="53" left="188" type="ftFloat" length="4" decimals="2" entryMode="emDefault" showValueLabel="true" valueLabelRef="FloatSet">
+      <Field id="VL2" top="51" left="186" type="ftFloat" length="4" decimals="2" entryMode="emDefault" showValueLabel="true" valueLabelRef="FloatSet">
        <Question>
         <Text xml:lang="eng">Float Field (1.2 digits)</Text>
        </Question>
       </Field>
-      <Field id="VL3" top="95" left="188" type="ftString" length="3" decimals="0" entryMode="emDefault" showValueLabel="true" valueLabelRef="StringSet">
+      <Field id="VL3" top="93" left="186" type="ftString" length="3" decimals="0" entryMode="emDefault" showValueLabel="true" valueLabelRef="StringSet">
        <Question>
         <Text xml:lang="eng">String Field (3 characters)</Text>
        </Question>
@@ -235,22 +279,22 @@
       <Text xml:lang="eng">Date Fields:</Text>
      </Caption>
      <Fields>
-      <Field id="D1" top="8" left="213" type="ftDMYDate" length="10" decimals="0" entryMode="emDefault">
+      <Field id="D1" top="6" left="211" type="ftDMYDate" length="10" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Date Field (DD/MM/YYYY)</Text>
        </Question>
       </Field>
-      <Field id="D2" top="43" left="213" type="ftMDYDate" length="10" decimals="0" entryMode="emDefault">
+      <Field id="D2" top="41" left="211" type="ftMDYDate" length="10" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Date Field (MM/DD/YYYY)</Text>
        </Question>
       </Field>
-      <Field id="D3" top="80" left="213" type="ftYMDDate" length="10" decimals="0" entryMode="emDefault">
+      <Field id="D3" top="78" left="211" type="ftYMDDate" length="10" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Date Field (YYYY/MM/DD)</Text>
        </Question>
       </Field>
-      <Field id="T1" top="115" left="213" type="ftTime" length="8" decimals="0" entryMode="emDefault">
+      <Field id="T1" top="113" left="211" type="ftTime" length="8" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Time Field (HH:MM:SS)</Text>
        </Question>
@@ -263,27 +307,27 @@
       <Text xml:lang="eng">Auto Fields:</Text>
      </Caption>
      <Fields>
-      <Field id="A1" top="3" left="219" type="ftAutoInc" length="4" decimals="0" entryMode="emDefault">
+      <Field id="A1" top="1" left="217" type="ftAutoInc" length="4" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Auto Incrementing (4 digits)</Text>
        </Question>
       </Field>
-      <Field id="A2" top="33" left="219" type="ftDMYAuto" length="10" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
+      <Field id="A2" top="31" left="217" type="ftDMYAuto" length="10" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
        <Question>
         <Text xml:lang="eng">Date Field Auto (dmy)</Text>
        </Question>
       </Field>
-      <Field id="A3" top="63" left="219" type="ftMDYAuto" length="10" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
+      <Field id="A3" top="61" left="217" type="ftMDYAuto" length="10" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
        <Question>
         <Text xml:lang="eng">Date Field Auto (mdy)</Text>
        </Question>
       </Field>
-      <Field id="A4" top="93" left="219" type="ftYMDAuto" length="10" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
+      <Field id="A4" top="91" left="217" type="ftYMDAuto" length="10" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
        <Question>
         <Text xml:lang="eng">Date Field Auto (ymd)</Text>
        </Question>
       </Field>
-      <Field id="A5" top="123" left="219" type="ftTimeAuto" length="8" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
+      <Field id="A5" top="121" left="217" type="ftTimeAuto" length="8" decimals="0" entryMode="emDefault" autoUpdateMode="umCreated">
        <Question>
         <Text xml:lang="eng">Time Field Auto</Text>
        </Question>
@@ -296,23 +340,23 @@
       <Text xml:lang="eng">Other Properties:</Text>
      </Caption>
      <Fields>
-      <Field id="O1" top="6" left="94" type="ftInteger" length="3" decimals="0" entryMode="emDefault" repeat="true">
+      <Field id="O1" top="4" left="92" type="ftInteger" length="3" decimals="0" entryMode="emDefault" repeat="true">
        <Question>
         <Text xml:lang="eng">Repeat Value</Text>
        </Question>
       </Field>
-      <Field id="O2" top="37" left="94" type="ftInteger" length="3" decimals="0" entryMode="emDefault" defaultValue="100">
+      <Field id="O2" top="35" left="92" type="ftInteger" length="3" decimals="0" entryMode="emDefault" defaultValue="100">
        <Question>
         <Text xml:lang="eng">Default Value</Text>
        </Question>
       </Field>
-      <Field id="O3" top="37" left="267" type="ftInteger" length="3" decimals="0" entryMode="emDefault">
+      <Field id="O3" top="35" left="265" type="ftInteger" length="3" decimals="0" entryMode="emDefault">
        <Compare toFieldRef="O2" type="fcGT"/>
        <Question>
         <Text xml:lang="eng">Compare field</Text>
        </Question>
       </Field>
-      <Field id="O4" top="109" left="144" type="ftInteger" length="2" decimals="0" entryMode="emDefault">
+      <Field id="O4" top="107" left="142" type="ftInteger" length="2" decimals="0" entryMode="emDefault">
        <Notes>
         <Text xml:lang="eng">This field has notes attached. Use this to write helpfull comment for
         persons entering data in EpiData EntryClient.</Text>
@@ -323,17 +367,17 @@
       </Field>
      </Fields>
      <Headings>
-      <Heading id="OH1" top="42" left="144">
+      <Heading id="OH1" top="40" left="142">
        <Caption>
         <Text xml:lang="eng">&gt;</Text>
        </Caption>
       </Heading>
-      <Heading id="OH2" top="70" left="23">
+      <Heading id="OH2" top="68" left="21">
        <Caption>
         <Text xml:lang="eng">Press F12 to view the notes in the</Text>
        </Caption>
       </Heading>
-      <Heading id="OH3" top="88" left="23">
+      <Heading id="OH3" top="86" left="21">
        <Caption>
         <Text xml:lang="eng">field below:</Text>
        </Caption>
@@ -345,17 +389,17 @@
       <Text xml:lang="eng">Calculated fields</Text>
      </Caption>
      <Fields>
-      <Field id="C1" top="14" left="56" type="ftInteger" length="2" decimals="0" entryMode="emMustEnter">
+      <Field id="C1" top="12" left="54" type="ftInteger" length="2" decimals="0" entryMode="emMustEnter">
        <Question>
         <Text xml:lang="eng">Day</Text>
        </Question>
       </Field>
-      <Field id="C2" top="14" left="159" type="ftInteger" length="2" decimals="0" entryMode="emMustEnter">
+      <Field id="C2" top="12" left="157" type="ftInteger" length="2" decimals="0" entryMode="emMustEnter">
        <Question>
         <Text xml:lang="eng">Month</Text>
        </Question>
       </Field>
-      <Field id="C3" top="14" left="273" type="ftInteger" length="4" decimals="0" entryMode="emDefault">
+      <Field id="C3" top="12" left="271" type="ftInteger" length="4" decimals="0" entryMode="emDefault">
        <Calculation type="ctCombineDate">
         <ResultFieldRef>C4</ResultFieldRef>
         <DayFieldRef>C1</DayFieldRef>
@@ -366,19 +410,19 @@
         <Text xml:lang="eng">Year</Text>
        </Question>
       </Field>
-      <Field id="C4" top="104" left="187" type="ftDMYDate" length="10" decimals="0" entryMode="emNoEnter">
+      <Field id="C4" top="102" left="185" type="ftDMYDate" length="10" decimals="0" entryMode="emNoEnter">
        <Question>
         <Text xml:lang="eng">Result Date Field (YMD)</Text>
        </Question>
       </Field>
      </Fields>
      <Headings>
-      <Heading id="CH1" top="55" left="23">
+      <Heading id="CH1" top="53" left="21">
        <Caption>
         <Text xml:lang="eng">Above fields combine into following</Text>
        </Caption>
       </Heading>
-      <Heading id="H1" top="73" left="23">
+      <Heading id="H1" top="71" left="21">
        <Caption>
         <Text xml:lang="eng">date field. Result IS validated!</Text>
        </Caption>
@@ -390,34 +434,34 @@
       <Text xml:lang="eng">String fields:</Text>
      </Caption>
      <Fields>
-      <Field id="S1" top="13" left="114" type="ftString" length="20" decimals="0" entryMode="emDefault">
+      <Field id="S1" top="11" left="112" type="ftString" length="20" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Language</Text>
        </Question>
       </Field>
-      <Field id="S2" top="66" left="114" type="ftString" length="40" decimals="0" entryMode="emDefault">
+      <Field id="S2" top="64" left="112" type="ftString" length="40" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Sample text</Text>
        </Question>
       </Field>
-      <Field id="S3" top="121" left="114" type="ftUpperString" length="40" decimals="0" entryMode="emDefault">
+      <Field id="S3" top="119" left="112" type="ftUpperString" length="40" decimals="0" entryMode="emDefault">
        <Question>
         <Text xml:lang="eng">Sample text</Text>
        </Question>
       </Field>
      </Fields>
      <Headings>
-      <Heading id="Sh1" top="-6" left="114">
+      <Heading id="Sh1" top="-8" left="112">
        <Caption>
         <Text xml:lang="eng">String Field (20 characters)</Text>
        </Caption>
       </Heading>
-      <Heading id="Sh2" top="46" left="114">
+      <Heading id="Sh2" top="44" left="112">
        <Caption>
         <Text xml:lang="eng">String Field (40 characters), in language:</Text>
        </Caption>
       </Heading>
-      <Heading id="Sh3" top="99" left="114">
+      <Heading id="Sh3" top="97" left="112">
        <Caption>
         <Text xml:lang="eng">String Field (40 characters), UPPERCASE in language:</Text>
        </Caption>
@@ -429,7 +473,7 @@
       <Text xml:lang="eng">Jumps:</Text>
      </Caption>
      <Fields>
-      <Field id="J1" top="28" left="105" type="ftInteger" length="2" decimals="0" entryMode="emMustEnter">
+      <Field id="J1" top="26" left="103" type="ftInteger" length="2" decimals="0" entryMode="emMustEnter">
        <Jumps>
         <Jump on="1" type="jtSkipNextField" reset="jrSystemMissing"/>
         <Jump on="2" type="jtExitSection" reset="jrMaxMissing"/>
@@ -443,39 +487,39 @@
         <Text xml:lang="eng">Jump field</Text>
        </Question>
       </Field>
-      <Field id="J2" top="94" left="187" type="ftInteger" length="2" decimals="0" entryMode="emDefault" showValueLabel="true">
+      <Field id="J2" top="92" left="185" type="ftInteger" length="2" decimals="0" entryMode="emDefault" showValueLabel="true">
        <Question>
         <Text xml:lang="eng">With valuelabel</Text>
        </Question>
       </Field>
-      <Field id="J3" top="121" left="187" type="ftFloat" length="4" decimals="2" entryMode="emDefault" showValueLabel="true">
+      <Field id="J3" top="119" left="185" type="ftFloat" length="4" decimals="2" entryMode="emDefault" showValueLabel="true">
        <Question>
         <Text xml:lang="eng">Float with second max</Text>
        </Question>
       </Field>
      </Fields>
      <Headings>
-      <Heading id="Jh1" top="-5" left="187">
+      <Heading id="Jh1" top="-7" left="185">
        <Caption>
         <Text xml:lang="eng">0 = No Jump defined</Text>
        </Caption>
       </Heading>
-      <Heading id="Jh2" top="13" left="187">
+      <Heading id="Jh2" top="11" left="185">
        <Caption>
         <Text xml:lang="eng">1 = Skip Next (system missing)</Text>
        </Caption>
       </Heading>
-      <Heading id="Jh3" top="33" left="187">
+      <Heading id="Jh3" top="31" left="185">
        <Caption>
         <Text xml:lang="eng">2 = Exit Section (max missing)</Text>
        </Caption>
       </Heading>
-      <Heading id="Jh4" top="53" left="187">
+      <Heading id="Jh4" top="51" left="185">
        <Caption>
         <Text xml:lang="eng">3 = Jump to last field (2nd max)</Text>
        </Caption>
       </Heading>
-      <Heading id="Jh5" top="73" left="187">
+      <Heading id="Jh5" top="71" left="185">
        <Caption>
         <Text xml:lang="eng">4 = Save record (leave as is)</Text>
        </Caption>

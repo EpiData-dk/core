@@ -19,8 +19,7 @@ uses
   TextTestRunner,
   {$ENDIF}
   ut_epidocument, ut_epiprojectsettings, ut_epixmlsettings,
-  ut_epiadmin,
-  ut_epistudy, ut_epivaluelabels;
+  ut_epiadmin, ut_epistudy, ut_epivaluelabels, ut_datafile;
 
 begin
   RunRegisteredTests;

@@ -9,8 +9,6 @@ uses
 
 type
 
-  { TUnitTest_EpiStudy }
-
   { TUnitTest_EpiValueLabels }
 
   TUnitTest_EpiValueLabels = class(TTestCase)
@@ -49,7 +47,7 @@ type
 
     { TEpiCustomValueLabel }
     procedure ValueAsString;
-    procedure Order;
+//    procedure Order;
     procedure TheLabel;
   end;
 
@@ -167,37 +165,66 @@ end;
 
 procedure TUnitTest_EpiValueLabels.IsMissingValue;
 begin
+  Check(FIntVL.IsMissingValue[3], 'IntVL (Value=2) was not missingvalue');
+  CheckFalse(FIntVL.IsMissingValue[4], 'IntVL (Value=4) was missingvalue');
 
+  Check(FFloatVL.IsMissingValue[0.3], 'FloatVL (Value=0.2) was not missingvalue');
+  CheckFalse(FFloatVL.IsMissingValue[0.5], 'FloatVL (Value=0.6) was missingvalue');
+
+  Check(FStringVL.IsMissingValue['C'], 'StringVL (Value=C) was not missingvalue');
+  Check(FStringVL.IsMissingValue['F'], 'StringVL (Value=F) was not missingvalue');
+  CheckFalse(FStringVL.IsMissingValue['A'], 'StringVL (Value=A) was missingvalue');
 end;
 
 procedure TUnitTest_EpiValueLabels.StringValue;
 begin
-
+  CheckEquals('A', TEpiStringValueLabel(FStringVL.ValueLabels[0]).Value);
+  CheckEquals('B', TEpiStringValueLabel(FStringVL.ValueLabels[1]).Value);
+  CheckEquals('C', TEpiStringValueLabel(FStringVL.ValueLabels[2]).Value);
 end;
 
 procedure TUnitTest_EpiValueLabels.FloatValue;
 begin
-
+  CheckEquals(0.1, TEpiFloatValueLabel(FFloatVL.ValueLabels[0]).Value);
+  CheckEquals(0.2, TEpiFloatValueLabel(FFloatVL.ValueLabels[1]).Value);
+  CheckEquals(0.3, TEpiFloatValueLabel(FFloatVL.ValueLabels[2]).Value);
 end;
 
 procedure TUnitTest_EpiValueLabels.IntValue;
 begin
-
+  CheckEquals(1, TEpiIntValueLabel(FIntVL.ValueLabels[0]).Value);
+  CheckEquals(2, TEpiIntValueLabel(FIntVL.ValueLabels[1]).Value);
+  CheckEquals(3, TEpiIntValueLabel(FIntVL.ValueLabels[2]).Value);
 end;
 
 procedure TUnitTest_EpiValueLabels.ValueAsString;
 begin
-
+  CheckEquals('1', FIntVL.ValueLabels[0].ValueAsString);
+  CheckEquals(FloatToStr(0.1), FFloatVL.ValueLabels[0].ValueAsString);
+  CheckEquals('A', FStringVL.ValueLabels[0].ValueAsString);
+  CheckEquals('2', FIntVL.ValueLabels[1].ValueAsString);
+  CheckEquals(FloatToStr(0.2), FFloatVL.ValueLabels[1].ValueAsString);
+  CheckEquals('B', FStringVL.ValueLabels[1].ValueAsString);
+  CheckEquals('3', FIntVL.ValueLabels[2].ValueAsString);
+  CheckEquals(FloatToStr(0.3), FFloatVL.ValueLabels[2].ValueAsString);
+  CheckEquals('C', FStringVL.ValueLabels[2].ValueAsString);
 end;
 
-procedure TUnitTest_EpiValueLabels.Order;
+{procedure TUnitTest_EpiValueLabels.Order;
 begin
-
-end;
+  // TODO : A test for Order?
+end;}
 
 procedure TUnitTest_EpiValueLabels.TheLabel;
+var
+  i: Integer;
 begin
-
+  for i := 1 to 3 do
+  begin
+    CheckEquals('Int-' + IntToStr(i),    FIntVL.ValueLabels[i-1].TheLabel.Text);
+    CheckEquals('Float-' + IntToStr(i),  FFloatVL.ValueLabels[i-1].TheLabel.Text);
+    CheckEquals('String-' + IntToStr(i), FStringVL.ValueLabels[i-1].TheLabel.Text);
+  end;
 end;
 
 initialization
