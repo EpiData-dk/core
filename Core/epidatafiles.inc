@@ -349,7 +349,7 @@ begin
   // Root = <Records>
 
   CurRec := 0;
-  Size := Root.ChildNodes.Count;
+//  Size := Root.ChildNodes.Count;
   DeCrypter := nil;
 
   FieldList := TFPDataHashTable.CreateWith(Fields.Count, @RSHash);
@@ -378,6 +378,8 @@ begin
       Node := TDOMElement(Node.NextSibling);
     if not Assigned(Node) then break;
 
+    // Add space for new record.
+    NewRecords(1);
     CheckNode(Node, rsRecord);
 
     case TEpiRecordState(LoadAttrEnum(Node, rsRecordStatus, TypeInfo(TEpiRecordState))) of

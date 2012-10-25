@@ -610,6 +610,8 @@ begin
   if not Assigned(DataFile) then
     DataFile := Doc.DataFiles.NewDataFile;
 
+  DataFile.Fields.Sorted := false;
+
   With DataFile do
   try
     DataStream := TFileStream.Create(aFileName, fmOpenRead);
@@ -853,13 +855,16 @@ begin
     BEGIN
       TmpField := Fields[i];
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
+      StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
 
       IF StrBuf <> '' THEN
       BEGIN
         VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);
         if not Assigned(VLSet) then
+        begin
           VLSet := ValueLabels.NewValueLabelSet(ftInteger);
-        VLSet.Name := StrBuf;
+          VLSet.Name := StrBuf
+        end;
 
         TmpField.ValueLabelSet := VLSet;
       END;
@@ -883,6 +888,8 @@ begin
       // No more field information exists. The update may complete.
       TmpField.EndUpdate;
     END;
+
+
 
     // ********************************
     //      STATA EXPANSION FIELDS
@@ -1145,7 +1152,9 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          VLSet := ValueLabels.GetValueLabelSetByName(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
+          StrBuf := StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength);
+          StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
+          VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(DataStream, 4);                                               // Number of entries in label
@@ -1173,6 +1182,8 @@ begin
       END;  //if stataversion 6+
     END;
     // successfully loaded the file.
+
+    DataFile.Fields.Sorted := true;
     Result := true;
   finally
     if Assigned(DataStream) then FreeAndNil(DataStream);
