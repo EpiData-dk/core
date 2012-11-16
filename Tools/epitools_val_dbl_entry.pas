@@ -389,6 +389,7 @@ begin
     begin
       FResultField := FMainDF.NewField(ftInteger);
       FResultField.Name := EpiDoubleEntryFieldName;
+      FResultField.Question.Text := Copy(EpiDoubleEntryFieldName, 2, Length(EpiDoubleEntryFieldName) - 1);
       FResultField.Length := 1;
     end;
 

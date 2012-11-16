@@ -848,6 +848,8 @@ end;
 
 procedure TEpiDataFile.SortRecords(SortFields: TEpiFields);
 begin
+  if Size < 1 then exit;
+
   InternalSortRecords(SortFields, 0, Size - 1);
 end;
 
