@@ -5,13 +5,30 @@ unit epidatafiles_jni;
 interface
 
 uses
-  Classes, SysUtils;
+  jni, sysutils;
 
 const
   EpiDataFilesJNI = 'Java_dk_epidata_androidclient_core_EpiDataFiles_';
 
+function DataFiles_GetDataFile(Env: PJNIEnv; This: jobject; DataFiles: jint; Index: jint): jint; cdecl;
+function DataFiles_NewDataFile(Env: PJNIEnv; This: jobject; DataFiles: jint): jint; cdecl;
 
 implementation
+
+uses
+  epidatafiles;
+
+function DataFiles_GetDataFile(Env: PJNIEnv; This: jobject; DataFiles: jint;
+  Index: jint): jint; cdecl;
+begin
+  result := Jint(TEpiDataFiles(DataFiles).DataFile[Index]);
+end;
+
+function DataFiles_NewDataFile(Env: PJNIEnv; This: jobject; DataFiles: jint
+  ): jint; cdecl;
+begin
+  result := Jint(TEpiDataFiles(DataFiles).NewDataFile);
+end;
 
 end.
 

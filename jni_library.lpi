@@ -43,37 +43,32 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="6">
+    <Units Count="5">
       <Unit0>
         <Filename Value="jni_library.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="jni_library"/>
       </Unit0>
       <Unit1>
-        <Filename Value="Android/androidutils.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="androidutils"/>
-      </Unit1>
-      <Unit2>
         <Filename Value="Android/epidocument_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="epidocument_jni"/>
-      </Unit2>
-      <Unit3>
+      </Unit1>
+      <Unit2>
         <Filename Value="Android/epicustomlist_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="epicustomlist_jni"/>
-      </Unit3>
-      <Unit4>
+      </Unit2>
+      <Unit3>
         <Filename Value="Android/customitem_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="customitem_jni"/>
-      </Unit4>
-      <Unit5>
+      </Unit3>
+      <Unit4>
         <Filename Value="Android/epidatafiles_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="epidatafiles_jni"/>
-      </Unit5>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

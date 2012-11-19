@@ -56,6 +56,9 @@ type
 
 implementation
 
+uses
+  androidutils;
+
 { TEpiDocument }
 
 function TEpiDocument.GetOnPassword: TRequestPasswordEvent;
@@ -79,7 +82,7 @@ begin
     inherited SaveAttributesToXml +
     SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.0') +
     SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk ./docs/samples/sample.xsd') +
+    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd') +
     SaveAttr(rsVersionAttr, Version) +
     SaveAttr('xml:lang', DefaultLang);
 end;
@@ -87,6 +90,7 @@ end;
 constructor TEpiDocument.Create(const LangCode: string);
 begin
   inherited Create(nil);
+  FVersion         := EPI_XML_DATAFILE_VERSION;
   FXMLSettings     := TEpiXMLSettings.Create(Self);
   FProjectSettings := TEpiProjectSettings.Create(Self);
   FAdmin           := TEpiAdmin.Create(Self);
@@ -167,15 +171,19 @@ begin
 //  LoadNode(Node, Root, rsAdmin, true);
 //  Admin.LoadFromXml(Node);
 
+  ALogInfo('TEpiDocument.LoadFromXml (7)');
   if LoadNode(Node, Root, rsProjectSettings, false) then
     ProjectSettings.LoadFromXml(Node);
 
+  ALogInfo('TEpiDocument.LoadFromXml (8)');
   if LoadNode(Node, Root, rsValueLabelSets, false) then
     ValueLabelSets.LoadFromXml(Node);
 
+  ALogInfo('TEpiDocument.LoadFromXml (9)');
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node);
 
+  ALogInfo('TEpiDocument.LoadFromXml ()');
   if LoadNode(Node, Root, rsRelations, false) then
     Relations.LoadFromXml(Node);
 

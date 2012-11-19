@@ -7,7 +7,7 @@
       <Version Value="11"/>
       <SearchPaths>
         <IncludeFiles Value="Core"/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Services"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Services;Android"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -22,7 +22,6 @@
       </CodeGeneration>
       <Linking>
         <Debugging>
-          <GenerateDebugInfo Value="False"/>
           <DebugInfoType Value="dsDwarf2Set"/>
         </Debugging>
       </Linking>
@@ -34,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="1"/>
-    <Files Count="45">
+    <Files Count="47">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -148,73 +147,81 @@
         <UnitName Value="epiexport"/>
       </Item28>
       <Item29>
-        <Filename Value="ImportExport/epiimport.pas"/>
-        <UnitName Value="epiimport"/>
+        <Filename Value="ImportExport/epiexportsettings.pas"/>
+        <UnitName Value="epiexportsettings"/>
       </Item29>
       <Item30>
-        <Filename Value="Reports/epireport_base.pas"/>
-        <UnitName Value="epireport_base"/>
+        <Filename Value="ImportExport/epiimport.pas"/>
+        <UnitName Value="epiimport"/>
       </Item30>
       <Item31>
-        <Filename Value="Reports/epireport_databasegrid.pas"/>
-        <UnitName Value="epireport_databasegrid"/>
+        <Filename Value="Reports/epireport_base.pas"/>
+        <UnitName Value="epireport_base"/>
       </Item31>
       <Item32>
-        <Filename Value="Reports/epireport_fieldlist_extended.pas"/>
-        <UnitName Value="epireport_fieldlist_extended"/>
+        <Filename Value="Reports/epireport_databasegrid.pas"/>
+        <UnitName Value="epireport_databasegrid"/>
       </Item32>
       <Item33>
-        <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
-        <UnitName Value="epireport_fieldlist_simple"/>
+        <Filename Value="Reports/epireport_fieldlist_extended.pas"/>
+        <UnitName Value="epireport_fieldlist_extended"/>
       </Item33>
       <Item34>
-        <Filename Value="Reports/epireport_filelist.pas"/>
-        <UnitName Value="epireport_filelist"/>
+        <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
+        <UnitName Value="epireport_fieldlist_simple"/>
       </Item34>
       <Item35>
-        <Filename Value="Reports/epireport_htmlgenerator.pas"/>
-        <UnitName Value="epireport_htmlgenerator"/>
+        <Filename Value="Reports/epireport_filelist.pas"/>
+        <UnitName Value="epireport_filelist"/>
       </Item35>
       <Item36>
-        <Filename Value="Reports/epireport_project_overview.pas"/>
-        <UnitName Value="epireport_project_overview"/>
+        <Filename Value="Reports/epireport_htmlgenerator.pas"/>
+        <UnitName Value="epireport_htmlgenerator"/>
       </Item36>
       <Item37>
-        <Filename Value="Reports/epireport_types.pas"/>
-        <UnitName Value="epireport_types"/>
+        <Filename Value="Reports/epireport_project_overview.pas"/>
+        <UnitName Value="epireport_project_overview"/>
       </Item37>
       <Item38>
-        <Filename Value="Reports/epireport_valuelabels.pas"/>
-        <UnitName Value="epireport_valuelabels"/>
+        <Filename Value="Reports/epireport_types.pas"/>
+        <UnitName Value="epireport_types"/>
       </Item38>
       <Item39>
-        <Filename Value="Services/episervice_ipc.pas"/>
-        <UnitName Value="episervice_ipc"/>
+        <Filename Value="Reports/epireport_valuelabels.pas"/>
+        <UnitName Value="epireport_valuelabels"/>
       </Item39>
       <Item40>
-        <Filename Value="Utils/epiconvertutils.pas"/>
-        <UnitName Value="epiconvertutils"/>
+        <Filename Value="Services/episervice_ipc.pas"/>
+        <UnitName Value="episervice_ipc"/>
       </Item40>
       <Item41>
-        <Filename Value="Utils/epimiscutils.pas"/>
-        <UnitName Value="epimiscutils"/>
-      </Item41>
-      <Item42>
-        <Filename Value="Utils/epistringutils.pas"/>
-        <UnitName Value="epistringutils"/>
-      </Item42>
-      <Item43>
-        <Filename Value="Utils/epiversionutils.pas"/>
-        <UnitName Value="epiversionutils"/>
-      </Item43>
-      <Item44>
-        <Filename Value="Utils/uniqueinstanceraw.pas"/>
-        <UnitName Value="UniqueInstanceRaw"/>
-      </Item44>
-      <Item45>
         <Filename Value="Services/episervice_ipctypes.pas"/>
         <UnitName Value="episervice_ipctypes"/>
+      </Item41>
+      <Item42>
+        <Filename Value="Utils/epiconvertutils.pas"/>
+        <UnitName Value="epiconvertutils"/>
+      </Item42>
+      <Item43>
+        <Filename Value="Utils/epimiscutils.pas"/>
+        <UnitName Value="epimiscutils"/>
+      </Item43>
+      <Item44>
+        <Filename Value="Utils/epistringutils.pas"/>
+        <UnitName Value="epistringutils"/>
+      </Item44>
+      <Item45>
+        <Filename Value="Utils/epiversionutils.pas"/>
+        <UnitName Value="epiversionutils"/>
       </Item45>
+      <Item46>
+        <Filename Value="Utils/uniqueinstanceraw.pas"/>
+        <UnitName Value="UniqueInstanceRaw"/>
+      </Item46>
+      <Item47>
+        <Filename Value="Android/androidutils.pas"/>
+        <UnitName Value="androidutils"/>
+      </Item47>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

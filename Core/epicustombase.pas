@@ -8,6 +8,9 @@ interface
 uses
   Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo;
 
+const
+  EPI_XML_DATAFILE_VERSION = 1;
+
 type
   TEpiCustomBase = class;
   TEpiCustomItem = class;
@@ -340,7 +343,8 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument, epidatafiles;
+  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument,
+  epidatafiles, androidutils;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
@@ -645,6 +649,7 @@ function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
 var
   Attr: TDOMAttr;
 begin
+  ALogInfo('TEpiCustomBase.LoadAttrInt (1)');
   if LoadAttr(Attr, Root, AttrName, Fatal) then
     Result := StrToInt(Attr.Value)
   else
@@ -1109,7 +1114,7 @@ begin
     if ElemList[i].ParentNode <> Root then continue;
     LangCode := UTF8Encode(TDOMElement(ElemList[i]).AttribStrings['xml:lang']);
     Val := UTF8Encode(ElemList[i].TextContent);
-    if LangCode = FCurrentLang then
+    if (LangCode = FCurrentLang) or (LangCode = '') then
       SetCurrentText(Val)
     else
       SetText(LangCode, Val);

@@ -447,7 +447,7 @@ begin
     SaveAttrEnum(rsType, Integer(FieldType), TypeInfo(TEpiFieldType)) +
     SaveAttr(rsLength, Length) +
     SaveAttr(rsDecimals, Decimals) +
-    SaveAttr(rsEntryMode, Integer(EntryMode));
+    SaveAttrEnum(rsEntryMode, Integer(EntryMode), TypeInfo(TEpiEntryMode));
   if ConfirmEntry then
     Result += SaveAttr(rsConfirmEntry, ConfirmEntry);
   if RepeatValue then

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes;
+  epieximtypes, epiexportsettings;
 
 type
 
@@ -16,7 +16,7 @@ type
   private
     FExportEncoding: TEpiEncoding;
     FExportLines: TStrings;
-    function    EncodeString(Const Str: string): string;
+    function    EncodeString(Const Str: string; Encoding: TEpiEncoding): string;
     procedure   RaiseError(Const Msg: string);
     procedure   WriteByte(St: TStream; Val: ShortInt);
     procedure   WriteWord(St: TStream; Val: SmallInt);
@@ -28,24 +28,26 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ExportStata(Const aFilename: string; Const Doc: TEpiDocument;
-      Const DatafileIndex: integer = 0;
-      Const StataVersion: TEpiStataVersion = dta8): Boolean;
+    function    Export(Const Settings: TEpiExportSetting): boolean;
+    function    ExportStata(Const ExportSettings: TEpiStataExportSetting): Boolean;
+    function    ExportCSV(Const Settings: TEpiCSVExportSetting): boolean;
+    function    ExportSPSS(Const Settings: TEpiSPSSExportSetting): boolean;
+    function    ExportSAS(Const Settings: TEpiSASExportSetting): boolean;
     property    ExportEncoding: TEpiEncoding read FExportEncoding write FExportEncoding default eeUTF8;
-    property    ExportLines: TStrings read FExportLines;
   end;
 
 implementation
 
 uses
-  FileUtil, epistringutils, math, LConvEncoding, dateutils;
+  FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8;
 
 
 { TEpiExport }
 
-function TEpiExport.EncodeString(const Str: string): string;
+function TEpiExport.EncodeString(const Str: string; Encoding: TEpiEncoding
+  ): string;
 begin
-  result := ConvertEncoding(Str, 'utf8', EpiEncodingToString[ExportEncoding]);
+  result := ConvertEncoding(Str, 'utf8', EpiEncodingToString[Encoding]);
 end;
 
 procedure TEpiExport.RaiseError(const Msg: string);
@@ -83,7 +85,7 @@ end;
 procedure TEpiExport.WriteEncString(St: TStream; const Str: string;
   const Count: Integer; Terminate: Boolean);
 begin
-  WriteString(St, EncodeString(Str), Count, Terminate);
+  WriteString(St, EncodeString(Str, ExportEncoding), Count, Terminate);
 end;
 
 procedure TEpiExport.WriteString(St: TStream; Const Str: string; Const Count: Integer; Terminate: Boolean = True);
@@ -110,9 +112,27 @@ begin
   inherited Destroy;
 end;
 
-function TEpiExport.ExportStata(const aFilename: string;
-  const Doc: TEpiDocument; const DatafileIndex: integer;
-  const StataVersion: TEpiStataVersion): Boolean;
+function TEpiExport.Export(const Settings: TEpiExportSetting): boolean;
+begin
+  // CSV
+  if Settings is TEpiCSVExportSetting then
+    Exit(ExportCSV(TEpiCSVExportSetting(Settings)));
+
+  // Stata
+  if Settings is TEpiStataExportSetting then
+    Exit(ExportStata(TEpiStataExportSetting(Settings)));
+
+  // SPSS
+  if Settings is TEpiSPSSExportSetting then
+    Exit(ExportSPSS(TEpiSPSSExportSetting(Settings)));
+
+  // SAS
+  if Settings is TEpiSASExportSetting then
+    Exit(ExportSAS(TEpiSASExportSetting(Settings)));
+end;
+
+function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting
+  ): Boolean;
 var
   ValBuf,
   ByteBuf: Array of Byte;
@@ -138,6 +158,11 @@ var
   DataStream: TFileStream;
   VLblSet: TEpiValueLabelSet;
   TimeFields: TStringList;
+  Fn: String;
+  Df: TEpiDataFile;
+  NObsPos: Int64;
+  Flds: TList;
+  RecCount: Integer;
 
   procedure WriteFloat(Val: Double; Const MisVal: string);
   var
@@ -159,8 +184,9 @@ var
   var
     i, j: integer;
   begin
-    result := copy(StringReplace(EpiUtf8ToAnsi(Str), ' ', '_', [rfReplaceAll]), 1, Count-1);
+    result := copy(StringReplace(Str, ' ', '_', [rfReplaceAll]), 1, Count-1);
     i := 1;
+    if result = '' then result := 'ValueLabel';
     while UniqueValueLabels.Find(result, j) do
     begin
       result := Copy(result, 1, Count - Length(IntToStr(i - 1))) + IntToStr(i);
@@ -170,14 +196,19 @@ var
 
 begin
   Result := false;
+
   // Sanity checks:
-  if Trim(aFilename) = '' then Exit;
+  if not Assigned(ExportSettings) then exit;
+  if not ExportSettings.SanetyCheck then exit;
 
-  if not Assigned(Doc) then Exit;
+  Fn := ExportSettings.ExportFileName;
+  Df := ExportSettings.Doc.DataFiles[ExportSettings.DataFileIndex];
+  Flds := ExportSettings.Fields;
 
-  with Doc.DataFiles[DatafileIndex] do
+
+  with Df do
   try
-    DataStream := TFileStream.Create(aFileName, fmCreate);
+    DataStream := TFileStream.Create(UTF8ToSys(Fn), fmCreate);
 
     // Version specific settings:
     // - "original" setting from Ver. 4
@@ -192,13 +223,13 @@ begin
     FloatChar       := 'f';
     DoubleChar      := 'd';
     // - changed in Ver. 6
-    if StataVersion >= dta6 THEN
+    if ExportSettings.Version >= dta6 THEN
       FileLabelLength := 81;
     // - change in Ver. 7
-    IF StataVersion >= dta7 THEN
+    IF ExportSettings.Version >= dta7 THEN
       FieldNameLength := 33;
     // - changed in Ver. 8
-    IF StataVersion >= dta8 THEN
+    IF ExportSettings.Version >= dta8 THEN
     BEGIN
       StrBaseNum := 0;
       MissingBaseNum := 27;
@@ -209,29 +240,33 @@ begin
       DoubleChar := StataDoubleConst;
     END;
     // - changed in Ver. 10
-    if StataVersion >= dta10 THEN
+    if ExportSettings.Version >= dta10 THEN
       FmtLength := 49;
 
-    NVar := Fields.Count;
-    NObs := Size;
+    NVar := Flds.Count;
+    NObs := (ExportSettings.ToRecord - ExportSettings.FromRecord) + 1;
 
     // ********************************
     //           STATA HEADER
     // ********************************
     SetLength(ByteBuf, 4);
-    ByteBuf[0] := Byte(StataVersion);
+    ByteBuf[0] := Byte(ExportSettings.Version);
     ByteBuf[1] := 2;                                          // Use LOHI order of data
     ByteBuf[2] := 1;                                          // Filetype - only 1 is legal value
     ByteBuf[3] := 0;                                          // Unused
     DataStream.Write(ByteBuf[0], 4);
     WriteWord(DataStream, NVar);                                       // Number of Variables
+
+    // Since we at this stage do NOT know about delete records,
+    // store the position and revert to write the correct number.
+    NObsPos := DataStream.Position;
     WriteInt(DataStream,  NObs);                                       // Number of records
 
 
     IF trim(Caption.Text) <> '' THEN
       TmpStr := Trim(Caption.Text)
     ELSE
-      TmpStr := Format('Datafile created by EpiData based on %s', [SysToUTF8(ExtractFilename(UTF8ToSys(aFilename)))]);
+      TmpStr := Format('Datafile created by EpiData based on %s', [SysToUTF8(ExtractFilename(UTF8ToSys(Fn)))]);
 
     // data_label \0 terminated.
     WriteEncString(DataStream, TmpStr, FileLabelLength);
@@ -248,7 +283,7 @@ begin
     SetLength(ByteBuf, NVar);
     FOR i := 0 to NVar - 1 DO
     BEGIN
-      WITH Field[i] DO
+      WITH TEpiField(Flds[i]) DO
       BEGIN
         CASE FieldType OF
           ftInteger, ftAutoInc:
@@ -294,9 +329,13 @@ begin
     FieldNames := TStringList.Create;
     FOR i :=0 TO NVar - 1 DO
     BEGIN
-      WITH Field[i] DO
+      WITH TEpiField(Flds[i]) DO
       BEGIN
-        TmpStr := Trim(Name);
+        case ExportSettings.FieldNameCase of
+          fncUpper: TmpStr := UTF8UpperCase(Trim(Name));
+          fncLower: TmpStr := UTF8LowerCase(Trim(Name));
+          fncAsIs:  TmpStr := Trim(Name);
+        end;
         TmpStr := CreateUniqueAnsiVariableName(TmpStr, FieldNameLength - 1, FieldNames);
         WriteString(DataStream, TmpStr, FieldNameLength);
       END;   //with
@@ -311,7 +350,7 @@ begin
     // - Fmtlist: list of formats of the variables
     TimeFields := TStringList.Create;
     FOR i := 0 TO NVar - 1 DO
-    WITH Field[i] DO
+    WITH TEpiField(Flds[i]) DO
     BEGIN
       CASE FieldType OF
         ftInteger, ftAutoInc:
@@ -326,7 +365,7 @@ begin
         ftDMYAuto, ftMDYAuto, ftYMDAuto:
           TmpStr := '%d';
         ftTime, ftTimeAuto:
-          if StataVersion >= dta10 then
+          if ExportSettings.Version >= dta10 then
           begin
             // Stata 10 supports a new time format!
             TmpStr := '%tcHH:MM:SS';
@@ -344,10 +383,12 @@ begin
     UniqueValueLabels := TStringList.Create();
     UniqueValueLabels.Sorted := true;
     for i := 0 to NVar - 1 do
-    with Field[i] do
+    with TEpiField(Flds[i]) do
     begin
       TmpStr := '';
-      if Assigned(ValueLabelSet) and (FieldType = ftInteger) then
+      if ExportSettings.ExportValueLabels and
+         Assigned(ValueLabelSet) and
+         (FieldType = ftInteger) then
       begin
         TmpStr := ValueLabelSet.Name;
         if WritenValueLabels.Find(TmpStr, j) then
@@ -356,7 +397,7 @@ begin
         else begin
           // ValuelabelSet not seen before...
           WritenValueLabels.Add(TmpStr);
-          TmpStr := UniqueValueLabelName(TmpStr, FieldNameLength);
+          TmpStr := UniqueValueLabelName(EncodeString(TmpStr, ExportEncoding), FieldNameLength);
           if TmpStr <> '' then
             UniqueValueLabels.Add(TmpStr);
         end;
@@ -368,13 +409,13 @@ begin
     //      STATA VARIABLE LABELS
     // ********************************
     FOR i := 0 TO NVar - 1 DO
-    WITH Field[i] DO
+    WITH TEpiField(Flds[i]) DO
       WriteEncString(DataStream, Trim(Question.Text), FileLabelLength);
 
     // ********************************
     //      STATA EXPANSION FIELDS
     // ********************************
-    if StataVersion < dta7 then
+    if ExportSettings.Version < dta7 then
     begin
       // Expansion field is 3 bytes before version 7
       // Skip expansion field - since we don't know the format (documents no
@@ -382,14 +423,14 @@ begin
       WriteByte(DataStream, 0); // 3 bytes....
       WriteWord(DataStream, 0);
     end;
-    if StataVersion >= dta7 then
+    if ExportSettings.Version >= dta7 then
     begin
       // Expansion field is 5 bytes from version 7
-      if ExportLines.Count > 0 then
+      if ExportSettings.ExportLines.Count > 0 then
       begin
         // We start out by writing the length of the notes in a "special" characteristic called 'note0'
         WriteByte(DataStream, 1);
-        TmpStr := IntToStr(ExportLines.Count);
+        TmpStr := IntToStr(ExportSettings.ExportLines.Count);
         // TmpInt = len  (sum of 2 * 33 + length(TmpStr)
         TmpInt := 2*33 + Length(TmpStr) + 1;
         WriteInt(DataStream, TmpInt);
@@ -397,9 +438,9 @@ begin
         WriteString(DataStream, 'note0', 33);
         WriteString(DataStream, TmpStr, Length(TmpStr) + 1);
       end;
-      for i := 0 to ExportLines.Count - 1 do
+      for i := 0 to ExportSettings.ExportLines.Count - 1 do
       begin
-        TmpStr := ExportLines[i];
+        TmpStr := ExportSettings.ExportLines[i];
         WriteByte(DataStream, 1);
         // TmpInt = len  (sum of 2 * 33 + length(TmpStr)
         TmpInt := 33 +                 // First variable name or _dta for notes regarding the dataset.
@@ -440,10 +481,15 @@ begin
     //          STATA DATA
     // ********************************
     TRY
-      FOR CurRec := 0 TO NObs-1 DO
+      RecCount := 0;
+
+      FOR CurRec := ExportSettings.FromRecord TO ExportSettings.ToRecord DO
       BEGIN
+        if Deleted[CurRec] then continue;
+        Inc(RecCount);
+
         FOR CurField := 0 TO NVar - 1 DO
-        With Field[CurField] do
+        With TEpiField(Flds[CurField]) do
         Case TypeList[CurField] of
           StataByteConst:
             begin
@@ -479,7 +525,7 @@ begin
                 WriteDouble(DataStream, Power(2, 1023))
               else
                 if (FieldType in TimeFieldTypes) and
-                   (StataVersion >= dta10) then
+                   (ExportSettings.Version >= dta10) then
                   WriteDouble(DataStream, round(MilliSecondSpan(StataBaseDate + AsDateTime[CurRec], StataBaseDateTime)))
                 else
                   WriteDouble(DataStream, AsFloat[CurRec]);
@@ -494,65 +540,76 @@ begin
       Exit;
     END;  //try..Except
 
+    // In case some deleted records were not exported.
+    if RecCount <> NObs then
+    begin
+      DataStream.Seek(NObsPos, soBeginning);
+      WriteInt(DataStream, RecCount);
+      DataStream.Position := DataStream.Size;
+    end;
+
     {Write VALUE-LABELS}
-    IF StataVersion = dta4 THEN
-    BEGIN
-{      //write value labels in Stata ver. 4/5 format
-      FOR I := 0 TO WritenValueLabels.Count - 1 DO
+    if ExportSettings.ExportValueLabels then
+    begin
+      IF ExportSettings.Version = dta4 THEN
       BEGIN
-        {Fill out value label header}
-        VLblSet := ValueLabels.ValueLabelSetByName(WritenValueLabels[i]);
-        WriteInts(VLblSet.Count, 2);
-        WriteString(UniqueValueLabels[i], FieldNameLength);
-
-        {Fill out entries}
-        FOR j := 0 TO VLblSet.Count - 1 DO
+  {      //write value labels in Stata ver. 4/5 format
+        FOR I := 0 TO WritenValueLabels.Count - 1 DO
         BEGIN
-          // TODO : ValueLabels in STATA
-          WriteInts(0 {StrToInt(VLblSet.Values[j])}, 2);
-          WriteString(''{VLblSet.Labels[j]}, 8);
-        END;  //for j
-      END;       }
-    END ELSE BEGIN
-      //write value labels in Stata ver. 6+ format
-      SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
-      FOR I := 0 TO WritenValueLabels.Count - 1 DO
-      BEGIN
-        VLblSet := ValueLabels.GetValueLabelSetByName(WritenValueLabels[i]);
-        NObs := VLblSet.Count;
-        SetLength(ByteBuf, 4 * NObs);   // Write Off[]
-        SetLength(ValBuf,  4 * NObs);   // Write Val[]
-        FillChar(CharBuf[0], 32000, 0); // reset Txt[]
+          {Fill out value label header}
+          VLblSet := ValueLabels.ValueLabelSetByName(WritenValueLabels[i]);
+          WriteInts(VLblSet.Count, 2);
+          WriteString(UniqueValueLabels[i], FieldNameLength);
 
-        CurRec := 0;                    // Holds Off[i] index into Txt[]
-        for J := 0 to NObs - 1 do
-        begin
-          Move(CurRec, ByteBuf[J * 4], 4);
-          TmpInt := TEpiIntValueLabel(VLblSet.ValueLabels[J]).Value;
-          Move(TmpInt, ValBuf[J * 4], 4);
-          TmpStr := EncodeString(VLblSet.ValueLabels[J].TheLabel.Text);
-          Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
-          Inc(CurRec, Length(TmpStr) + 1);
-        end;
-        {Fill out value label header}
-        TmpInt := 4 +                   // n
-                  4 +                   // txtlen
-                  (4 * NObs) +          // off[]
-                  (4 * NObs) +          // val[]
-                  CurRec;               // txt[]
+          {Fill out entries}
+          FOR j := 0 TO VLblSet.Count - 1 DO
+          BEGIN
+            // TODO : ValueLabels in STATA
+            WriteInts(0 {StrToInt(VLblSet.Values[j])}, 2);
+            WriteString(''{VLblSet.Labels[j]}, 8);
+          END;  //for j
+        END;       }
+      END ELSE BEGIN
+        //write value labels in Stata ver. 6+ format
+        SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
+        FOR I := 0 TO WritenValueLabels.Count - 1 DO
+        BEGIN
+          VLblSet := ValueLabels.GetValueLabelSetByName(WritenValueLabels[i]);
+          NObs := VLblSet.Count;
+          SetLength(ByteBuf, 4 * NObs);   // Write Off[]
+          SetLength(ValBuf,  4 * NObs);   // Write Val[]
+          FillChar(CharBuf[0], 32000, 0); // reset Txt[]
 
-        WriteInt(DataStream, TmpInt);                                     // len
-        WriteString(DataStream, UniqueValueLabels[I], FieldNameLength);   // labname
-        DataStream.Write(#0#0#0, 3);                                      // padding...
+          CurRec := 0;                    // Holds Off[i] index into Txt[]
+          for J := 0 to NObs - 1 do
+          begin
+            Move(CurRec, ByteBuf[J * 4], 4);
+            TmpInt := TEpiIntValueLabel(VLblSet.ValueLabels[J]).Value;
+            Move(TmpInt, ValBuf[J * 4], 4);
+            TmpStr := EncodeString(VLblSet.ValueLabels[J].TheLabel.Text, ExportEncoding);
+            Move(TmpStr[1], CharBuf[CurRec], Length(TmpStr));
+            Inc(CurRec, Length(TmpStr) + 1);
+          end;
+          {Fill out value label header}
+          TmpInt := 4 +                   // n
+                    4 +                   // txtlen
+                    (4 * NObs) +          // off[]
+                    (4 * NObs) +          // val[]
+                    CurRec;               // txt[]
 
-        {Fill out value_label_table}
-        WriteInt(DataStream, NObs);                                       // n
-        WriteInt(DataStream, CurRec);                                     // txtlen
-        DataStream.Write(ByteBuf[0], 4 * NObs);                           // off[]
-        DataStream.Write(ValBuf[0], 4 * NObs);                            // val[]
-        DataStream.Write(CharBuf[0], CurRec);                             // txt[]
-      END;  //write value labels in stata 6 version
-    END;  //for i
+          WriteInt(DataStream, TmpInt);                                     // len
+          WriteString(DataStream, UniqueValueLabels[I], FieldNameLength);   // labname
+          DataStream.Write(#0#0#0, 3);                                      // padding...
+
+          {Fill out value_label_table}
+          WriteInt(DataStream, NObs);                                       // n
+          WriteInt(DataStream, CurRec);                                     // txtlen
+          DataStream.Write(ByteBuf[0], 4 * NObs);                           // off[]
+          DataStream.Write(ValBuf[0], 4 * NObs);                            // val[]
+          DataStream.Write(CharBuf[0], CurRec);                             // txt[]
+        END;  //write value labels in stata 6 version
+      END;  //for i
+    end;
 
     Result := true;
   finally
@@ -560,6 +617,480 @@ begin
     if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
     if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
   end;
+end;
+
+function TEpiExport.ExportCSV(const Settings: TEpiCSVExportSetting): boolean;
+var
+  DataStream: TFileStream;
+  FieldSep: String;
+  QuoteCh: String;
+  i: Integer;
+  NewLine: String;
+  TmpStr, S: String;
+  FieldCount: Integer;
+  BackUpSettings: TFormatSettings;
+  CurRec: Integer;
+  L: Cardinal;
+  Df: TEpiDataFile;
+  Fixed: Boolean;
+begin
+  Result := false;
+
+  // Sanity checks:
+  if not Assigned(Settings) then Exit;
+  if not Settings.SanetyCheck then Exit;
+
+  Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+
+  try
+    DataStream := TFileStream.Create(UTF8ToSys(Settings.ExportFileName), fmCreate);
+
+    FieldSep := Settings.FieldSeparator;
+    QuoteCh  := Settings.QuoteChar;
+    NewLine  := Settings.NewLine;
+    FieldCount := Settings.Fields.Count;
+    Fixed      := Settings.FixedFormat;
+
+    {Write Field Names}
+    if Settings.ExportFieldNames then
+    begin
+      TmpStr := '';
+      for i := 0 to FieldCount - 1do
+        TmpStr += TEpiField(Settings.Fields[i]).Name + FieldSep;
+      Delete(TmpStr, Length(TmpStr), 1);
+      TmpStr += NewLine;
+      TmpStr := EncodeString(TmpStr, Settings.Encoding);
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+    end;
+
+    BackUpSettings := FormatSettings;
+    FormatSettings.DateSeparator := Settings.DateSeparator[1];
+    FormatSettings.TimeSeparator := Settings.TimeSeparator[1];
+    FormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
+
+    { Write Data }
+    for CurRec := Settings.FromRecord to Settings.ToRecord do
+    begin
+      TmpStr := '';
+
+      // TODO : Condition checking!
+      if Df.Deleted[CurRec] then continue;
+
+      // Using AsString should take care of formatting since it uses FormatSettings.
+      for i := 0 to FieldCount - 1 do
+      with TEpiField(Settings.Fields[i]) do
+      begin
+        if IsMissing[CurRec] then
+          S := ''
+        else
+          if (FieldType in StringFieldTypes) and (QuoteCh <> '') then
+            S := AnsiQuotedStr(AsString[CurRec], QuoteCh[1])
+          else
+            S := AsString[CurRec];
+
+        L := Length;
+        if (FieldType in StringFieldTypes) then
+          L *= 3;  // This should cover MOST instances of UTF-8 and not be too long.
+                   // TODO : some day an exact calculation of MaxByteLenght would be great!
+
+        if Fixed then
+          S := Format('%-' + IntToStr(L) + '.' + IntToStr(L) + 's', [S])
+        else
+          S += FieldSep;
+
+        TmpStr += S;
+      end;
+
+      Delete(TmpStr, Length(TmpStr), 1);
+      TmpStr += NewLine;
+      TmpStr := EncodeString(TmpStr, Settings.Encoding);
+      DataStream.Write(TmpStr[1], Length(TmpStr));
+    end;
+    result := true;
+  finally
+    DataStream.Free;
+    FormatSettings := BackUpSettings;
+  end;
+end;
+
+function TEpiExport.ExportSPSS(const Settings: TEpiSPSSExportSetting): boolean;
+var
+  CSVSetting: TEpiCSVExportSetting;
+  ExpLines: TStringList;
+  S: String;
+  Col: Integer;
+  i: Integer;
+  Df: TEpiDataFile;
+  TmpLines: TStringList;
+  j: Integer;
+begin
+  Result := false;
+
+  // Sanity checks:
+  if not Assigned(Settings) then Exit;
+  if not Settings.SanetyCheck then Exit;
+
+  // First export the data:
+  CSVSetting := TEpiCSVExportSetting.Create;
+  CSVSetting.Assign(Settings);
+  with CSVSetting do begin
+    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+
+    // CSV Settings
+    QuoteChar        := '';
+    FixedFormat      := true;
+    ExportFieldNames := false;
+    DateSeparator    := '/';
+    TimeSeparator    := ':';
+    DecimalSeparator := '.';
+  end;
+
+  if not ExportCSV(CSVSetting) then exit;
+  Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+
+
+  // HEADER INFORMATION:
+  TmpLines := TStringList.Create;
+  ExpLines := TStringList.Create;
+  ExpLines.Append('* EpiData created two files during export');
+  ExpLines.Append('* .');
+  ExpLines.Append('* 1. ' + Settings.ExportFileName + ' .');
+  ExpLines.append('*    is this SPSS command file');
+  ExpLines.Append('* 2. ' + CSVSetting.ExportFileName + ' .');
+  ExpLines.Append('*    is an ASCII text file with the raw data');
+  ExpLines.Append('*');
+  ExpLines.Append('* You may modify the commands before running it');
+  ExpLines.Append('* Uncomment (remove the *) the last command (SAVE) if the');
+  ExpLines.Append('* command file should save the data as a SPSS datafile');
+  ExpLines.Append('');
+  // Currently we ALWAYS export in unicode... this could be changed in the future.
+  ExpLines.Append('SET UNICODE=yes.');
+  // Always export using "." as decimal separator. SPSS only supports "." and ","
+  // so we go for safe option and make exporting to CSV easier.
+  ExpLines.Append('SET DECIMAL=dot.');
+  // Define the entire dataset.
+  ExpLines.Append('DATA LIST');
+  // The CSV file.
+  ExpLines.append('  FILE = "' + CSVSetting.ExportFileName + '"');
+  // RECORDS is basically the number of lines used to define a single record (in epidata).
+  // SPSS does not seem to have a max character count on the length of lines in the CSV file
+  // so we export: 1 .epx record -> 1 .csv line.
+  ExpLines.Append('  RECORDS = 1');
+
+  // Field name and position information!
+  S := '  / ';
+  Col := 1;
+  for i := 0 to Settings.Fields.Count - 1 do
+  with TEpiField(Settings.Fields[i]) do
+  begin
+    // The SPSS command file should not all too difficult to read.. ;)
+    // - hence we break somewhere after 80 characters.
+    if System.Length(S) > 80 then
+    begin
+      ExpLines.Append(S);
+      S := '    '
+    end;
+
+    {
+      Fieldname formatting in SPSS looks like this:
+        / varname {col location  [(format)]} [varname...]
+    }
+    // varname {col "start"}
+    S += Copy(Name, 1, 64) + ' ' + IntToStr(Col);
+    //  col "end"
+    if (FieldType in StringFieldTypes) then
+      S += '-' + IntToStr(Col + (Length * 3) - 1)   // To cover up for UTF-8 lengths.
+    else if Length > 1 then
+      S += '-' + IntToStr(Col + Length - 1);
+
+    // [(format)]
+    case FieldType of
+      ftBoolean,
+      ftInteger,
+      ftAutoInc:
+        ; // Do nothing since length defines the format by itself.
+      ftFloat:
+        S += '(' + IntToStr(Decimals) + ')';
+      ftDMYDate,
+      ftDMYAuto:
+        S += '(EDATE)';
+      ftMDYDate,
+      ftMDYAuto:
+        S += '(ADATE)';
+      ftYMDDate,
+      ftYMDAuto:
+        S += '(SDATE)';
+      ftTime,
+      ftTimeAuto:
+        S += '(TIME)';
+      ftString,
+      ftUpperString:
+        S += '(A)';
+    end;
+    S += ' ';
+    if (FieldType in StringFieldTypes) then
+      Inc(Col, Length * 3)
+    else
+      Inc(Col, Length);
+  end;
+  // Write the last line along with the trailing "."
+  ExpLines.Append(S + '.');
+  ExpLines.Strings[ExpLines.Count - 1];
+
+  // Dataset Label
+  //  FILE LABEL <text>
+  if Df.Caption.Text <> '' then
+  begin
+    ExpLines.Append('FILE LABEL ' + AnsiQuotedStr(Df.Caption.Text, '"'));
+    ExpLines.Append('');
+  end;
+
+  // Variable Labels
+  TmpLines.Clear;
+  for i := 0 to Settings.Fields.Count - 1 do
+  with TEpiField(Settings.Fields[i]) do
+    if Question.Text <> '' then
+      TmpLines.Append('  ' + Name + ' ' + AnsiQuotedStr(Question.Text, '"'));
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add('.');
+    ExpLines.Append('VARIABLE LABELS');
+    ExpLines.AddStrings(TmpLines);
+  end;
+
+
+  // Value Labels:
+  //
+  // VALUE LABELS
+  //    <varname(s)>
+  //       <value>  <"label">
+  //       <value>  <"label">..
+  //  / <varname(s)> ...
+  TmpLines.Clear;
+  S := '  ';
+  for i := 0 to Settings.Fields.Count - 1 do
+  with TEpiField(Settings.Fields[i]) do
+  begin
+    if not (Assigned(ValueLabelSet)) then continue;
+    if not (FieldType in IntFieldTypes + StringFieldTypes) then continue;
+
+    // [/] <varname>
+    TmpLines.Add(' ' + S + Name);
+
+    // <value> <"label">
+    for j := 0 to ValueLabelSet.Count - 1 do
+      if FieldType in StringFieldTypes then
+        TmpLines.Add('    ' + AnsiQuotedStr(ValueLabelSet[j].ValueAsString, '"') + ' ' + AnsiQuotedStr(ValueLabelSet[j].TheLabel.Text, '"'))
+      else
+        TmpLines.Add('    ' + ValueLabelSet[j].ValueAsString + ' ' + AnsiQuotedStr(ValueLabelSet[j].TheLabel.Text, '"'));
+    S := '/ ';
+  end;
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add('.');
+    ExpLines.Append('VALUE LABELS');
+    ExpLines.AddStrings(TmpLines);
+  end;
+
+  ExpLines.Append('execute.');
+  ExpLines.Append('*********** Uncomment next line to save file ******************.');
+  ExpLines.Append('* SAVE OUTFILE="' + ChangeFileExt(Settings.ExportFileName,'.sav') + '".');
+  ExpLines.Append('***************************************************************.');
+  ExpLines.Append('*.');
+
+  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  result := true;
+end;
+
+function TEpiExport.ExportSAS(const Settings: TEpiSASExportSetting): boolean;
+var
+  CSVSetting: TEpiCSVExportSetting;
+  Df: TEpiDataFile;
+  TmpLines: TStringList;
+  ExpLines: TStringList;
+  Flds: TList;
+  VLList: TStringList;
+  i: Integer;
+  Idx: Integer;
+  j: Integer;
+  S: String;
+  Col: Integer;
+begin
+  Result := false;
+
+  // Sanity checks:
+  if not Assigned(Settings) then Exit;
+  if not Settings.SanetyCheck then Exit;
+
+  // First export the data:
+  CSVSetting := TEpiCSVExportSetting.Create;
+  CSVSetting.Assign(Settings);
+  with CSVSetting do begin
+    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+
+    // CSV Settings
+    QuoteChar        := '';
+    FixedFormat      := true;
+    ExportFieldNames := false;
+    DateSeparator    := '/';
+    TimeSeparator    := ':';
+    DecimalSeparator := '.';
+  end;
+
+  if not ExportCSV(CSVSetting) then exit;
+  Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
+  Flds := Settings.Fields;
+
+  // HEADER INFORMATION:
+  TmpLines := TStringList.Create;
+  ExpLines := TStringList.Create;
+  ExpLines.Append('* EpiData created two files during export');
+  ExpLines.Append('* .');
+  ExpLines.Append('* 1. ' + Settings.ExportFileName + ' .');
+  ExpLines.append('*    is this SAS command file');
+  ExpLines.Append('* 2. ' + CSVSetting.ExportFileName + ' .');
+  ExpLines.Append('*    is an ASCII text file with the raw data');
+  ExpLines.Append('*');
+  ExpLines.Append('* You may modify the commands before running it;');
+  ExpLines.Append('');
+
+
+  // Preliminary ValueLabel Sets are printed.
+  if Settings.ExportValueLabels then
+  begin
+    VLList := TStringList.Create;
+
+    // first build list of used VLSets.
+    for i := 0 to Flds.Count - 1 do
+    with TEpiField(Flds[i]) do
+    begin
+      if Assigned(ValueLabelSet) and
+         not (VLList.Find(ValueLabelSet.Name, Idx))
+      then
+        VLList.AddObject(ValueLabelSet.Name, ValueLabelSet);
+    end;
+
+    // The output content
+    TmpLines.Clear;
+    for i := 0 to VLList.Count - 1 do
+    with TEpiValueLabelSet(VLLIst.Objects[i]) do
+    begin
+      // Name the Valuelabel set.
+      TmpLines.Add('  VALUE ' + Name);
+
+      // Print the labels.
+      for j := 0 to Count - 1 do
+      with ValueLabels[j] do
+        TmpLines.Add('   ' + ValueAsString + ' = "' + TheLabel.Text + '"' + BoolToStr(j = (Count-1), ';', ''));
+    end;
+
+    if TmpLines.Count > 0 then
+    begin
+      ExpLines.Add('PROC FORMAT;');
+      ExpLines.AddStrings(TmpLines);
+      ExpLines.Add('run;');
+      ExpLines.Add('');
+    end;
+  end;
+
+  ExpLines.Add('DATA ' + Df.Name + '(LABEL="' + Df.Caption.Text + '");');
+  ExpLines.Add('  INFILE "' + CSVSetting.ExportFileName + '";');
+  ExpLines.Add('  INPUT');
+
+  S := '   ';
+  Col := 1;
+  for i := 0 to Flds.Count - 1 do
+  with TEpiField(Flds[i]) do
+  begin
+    // The SAS command file should not all too difficult to read.. ;)
+    // - hence we break somewhere after 80 characters.
+    if System.Length(S) > 80 then
+    begin
+      ExpLines.Append(S);
+      S := '   '
+    end;
+
+    {
+      Fieldname formatting in SAS looks like this:
+        varname {[$] col location  [Informat]} [varname...]
+    }
+    // varname
+    S += Name;
+
+    // {[$]
+    if FieldType in StringFieldTypes then
+      S += ' $';
+
+    // col "start"
+    S += ' ' + IntToStr(Col);
+
+    //  col "end"
+    if (FieldType in StringFieldTypes) then
+      S += '-' + IntToStr(Col + (Length * 3) - 1)   // To cover up for UTF-8 lengths.
+    else if Length > 1 then
+      S += '-' + IntToStr(Col + Length - 1);
+
+    case FieldType of
+      ftFloat:
+        S += ' .' + IntToStr(Decimals);
+      ftDMYDate,
+      ftDMYAuto:
+        S += ' ddmmyy10.';
+      ftMDYDate,
+      ftMDYAuto:
+        S += ' mmddyy10.';
+      ftYMDDate,
+      ftYMDAuto:
+        S += ' yymmdd10.';
+      ftTime: ;
+      ftTimeAuto: ;
+    end;
+    S += ' ';
+    if (FieldType in StringFieldTypes) then
+      Inc(Col, Length * 3)
+    else
+      Inc(Col, Length);
+  end;
+  // Write the last line along with the trailing ";"
+  ExpLines.Append(S + ';');
+  ExpLines.Add('');
+
+  // Variable Labels
+  TmpLines.Clear;
+  for i := 0 to Flds.Count - 1 do
+  with TEpiField(Flds[i]) do
+    if Question.Text <> '' then
+      TmpLines.Append('  ' + Name + ' = ' + AnsiQuotedStr(Question.Text, '"'));
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add(';');
+    ExpLines.Append('LABEL');
+    ExpLines.AddStrings(TmpLines);
+    ExpLines.Add('');
+  end;
+
+
+  // Fields <-> ValueLabels association
+  TmpLines.Clear;
+  for i := 0 to Flds.Count - 1 do
+  with TEpiField(Flds[i]) do
+  begin
+    if Assigned(ValueLabelSet) then
+      TmpLines.Add('  ' + Name + ' ' + ValueLabelSet.Name + '.');
+  end;
+
+  if TmpLines.Count > 0 then
+  begin
+    TmpLines.Add(';');
+    ExpLines.Add('FORMAT');
+    ExpLines.AddStrings(TmpLines);
+  end;
+
+  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  Result := true;
 end;
 
 end.

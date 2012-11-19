@@ -4,9 +4,9 @@ library jni_library;
 
 uses
   cmem, jni,
+
   // EpiData units
-  androidutils, epidocument_jni, epicustomlist_jni, customitem_jni,
-  epidatafiles_jni;
+  epicustomlist_jni, epidocument_jni, customitem_jni, epidatafiles_jni;
 
 {$ifdef ver2_5}
 // This code is unnecessary in FPC 2.6+,
@@ -18,7 +18,7 @@ begin
 end;
 {$endif}
 
-function JNI_OnLoad(vm:PJavaVM; reserved:pointer):jint; cdecl;
+function JNI_OnLoad(vm:PJavaVM; reserved: pointer): jint; cdecl;
 begin
   result := JNI_VERSION_1_6;
 end;
@@ -41,15 +41,11 @@ exports
   Document_Create            name DocumentJNI + 'Create',
   Document_CreateFromFile    name DocumentJNI + 'CreateFromFile',
   Document_SaveToFile        name DocumentJNI + 'SaveToFile',
-  Document_Destroy           name DocumentJNI + 'Destroy'//,
+  Document_Destroy           name DocumentJNI + 'Destroy',
 
   // DataFiles:
   // - Datafiles
-
-
-
-
-  ;
-
+  DataFiles_GetDataFile      name EpiDataFilesJNI + 'GetDataFile',
+  DataFiles_NewDataFile      name EpiDataFilesJNI + 'NewDataFile';
 end.
 
