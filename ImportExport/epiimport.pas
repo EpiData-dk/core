@@ -330,7 +330,7 @@ begin
 
         // This is an encrypted field... (new XML does not have single encrypted fields.)
         if (TmpFieldTypeInt = 18) then
-          IsCrypt.Bits[CurrentLine-1] := true;
+          IsCrypt.Bits[Fields.Count] := true;
 
         // This is not a data field, but a question field.
         if (TmpFieldTypeInt = 15) or (TmpLength = 0) then
