@@ -378,7 +378,7 @@ type
   { TEpiCustomAutoField }
 
   // State indication whether to update value on creation or on update/save.
-  TEpiAutoUpdateMode = (umCreated, umUpdated);
+  TEpiAutoUpdateMode = (umCreated, umFirstSave, umUpdated);
   TEpiCustomAutoField = class(TEpiField)
   private
     FAutoMode: TEpiAutoUpdateMode;
