@@ -151,6 +151,8 @@ begin
   FFormatSettings := DefaultFormatSettings;
   FFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN:SS';
   FFormatSettings.LongDateFormat  := 'YYYY/MM/DD HH:NN:SS';
+  FFormatSettings.ShortTimeFormat := 'HH:NN:SS';
+  FFormatSettings.LongTimeFormat  := 'HH:NN:SS';
 
   DateSeparator := '/';
   TimeSeparator := '.';

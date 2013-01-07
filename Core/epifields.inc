@@ -2008,7 +2008,9 @@ function TEpiDateTimeField.GetAsString(const index: Integer): EpiString;
 begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
-  result := TimeToStr(AsDateTime[Index]);
+  // Always format the Time according to HH:NN:SS -> we only support the 24h
+  // time entry (no AM/PM)
+  result := FormatDateTime(FormatString(), AsDateTime[Index]);
 end;
 
 function TEpiDateTimeField.GetAsTime(const index: Integer): EpiTime;
