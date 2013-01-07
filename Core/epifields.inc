@@ -777,6 +777,14 @@ begin
   if not AValue then FDefaultValue := DefaultMissing;
 end;
 
+constructor TEpiIntField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  if AFieldType = ftAutoInc then
+    FLength := 6;
+end;
+
 procedure TEpiIntField.MovePackData(const SrcIdx, DstIdx, Count: integer);
 begin
   Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiInteger));
