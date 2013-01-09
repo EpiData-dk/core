@@ -777,6 +777,14 @@ begin
   if not AValue then FDefaultValue := DefaultMissing;
 end;
 
+constructor TEpiIntField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  if AFieldType = ftAutoInc then
+    FLength := 6;
+end;
+
 procedure TEpiIntField.MovePackData(const SrcIdx, DstIdx, Count: integer);
 begin
   Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiInteger));
@@ -2000,7 +2008,9 @@ function TEpiDateTimeField.GetAsString(const index: Integer): EpiString;
 begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
-  result := TimeToStr(AsDateTime[Index]);
+  // Always format the Time according to HH:NN:SS -> we only support the 24h
+  // time entry (no AM/PM)
+  result := FormatDateTime(FormatString(), AsDateTime[Index]);
 end;
 
 function TEpiDateTimeField.GetAsTime(const index: Integer): EpiTime;

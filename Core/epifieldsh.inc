@@ -216,6 +216,8 @@ type
     procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetHasDefaultValue(const AValue: boolean); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
