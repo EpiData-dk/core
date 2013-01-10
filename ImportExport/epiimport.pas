@@ -614,7 +614,7 @@ begin
 
   With DataFile do
   try
-    DataStream := TFileStream.Create(aFileName, fmOpenRead);
+    DataStream := TFileStream.Create(UTF8ToSys(aFileName), fmOpenRead);
 
     // ********************************
     //           STATA HEADER
