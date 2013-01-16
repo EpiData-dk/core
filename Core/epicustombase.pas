@@ -6,7 +6,8 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo;
+  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
+  contnrs;
 
 const
   EPI_XML_DATAFILE_VERSION = 2;
@@ -180,7 +181,7 @@ type
     // along with the object. It is NEVER used by the internals of Core, hence will
     // not be copied/assigned/freed etc.
     // It is entirely up to the user to keep track of it's use throught a program.
-    property    ObjectData: PtrUInt read FObjectData write FObjectData;
+//    property    ObjectData: PtrUInt read FObjectData write FObjectData; deprecated;
 
   { Cloning }
   protected
@@ -257,6 +258,13 @@ type
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+  { CustomData }
+  private
+    FCustomData: TFPObjectHashTable;
+  public
+    procedure AddCustomData(const Key: string; Const Obj: TObject);
+    function  FindCustomData(const Key: string): TObject;
+    function  RemoveCustomData(Const Key: string): TObject;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -393,7 +401,8 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument, epidatafiles;
+  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument,
+  epidatafiles;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
@@ -1370,6 +1379,8 @@ end;
 destructor TEpiCustomItem.Destroy;
 begin
   FName := '';
+  if Assigned(FCustomData) then
+    FreeAndNil(FCustomData);
   inherited Destroy;
 end;
 
@@ -1396,6 +1407,36 @@ function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
 begin
   Result := inherited DoClone(AOwner, Dest);
   TEpiCustomItem(Result).FName := FName;
+end;
+
+procedure TEpiCustomItem.AddCustomData(const Key: string; const Obj: TObject);
+begin
+  if not Assigned(FCustomData) then
+    FCustomData := TFPObjectHashTable.Create(false);
+
+  try
+    FCustomData.Items[Key] := Obj;
+  except
+    raise Exception.Create('TEpiCustomItem: Duplicate CustomData - key=' + Key);
+  end;
+end;
+
+function TEpiCustomItem.FindCustomData(const Key: string): TObject;
+begin
+  result := nil;
+  if Assigned(FCustomData) then
+    result := FCustomData.Items[Key];
+end;
+
+function TEpiCustomItem.RemoveCustomData(const Key: string): TObject;
+begin
+  Result := FindCustomData(Key);
+  if not Assigned(Result) then exit;
+
+  FCustomData.Delete(Key);
+
+  if FCustomData.Count = 0 then
+    FreeAndNil(FCustomData);
 end;
 
 { TEpiCustomControlItem }
