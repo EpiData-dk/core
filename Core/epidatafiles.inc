@@ -170,6 +170,7 @@ var
   F: TEpiField;
   H: TEpiHeading;
   i: Integer;
+  S: TEpiSection;
 begin
   case EventGrp of
     eegCustomBase:
@@ -184,7 +185,7 @@ begin
               begin
                 F := TEpiField(Data);
                 // Check that id is not in conflict with others.
-                if Fields.ItemExistsByName(F.Name) then
+                if not ValidateRename(F.Name) then
                   F.Name := Fields.GetUniqueItemName(TEpiField);
                 Fields.AddItem(F);
                 F.Size := Size;
@@ -195,7 +196,7 @@ begin
               begin
                 H := TEpiHeading(Data);
                 // Check that id is not in conflict with others.
-                if Headings.ItemExistsByName(H.Name) then
+                if not ValidateRename(H.Name) then
                   H.Name := Headings.GetUniqueItemName(TEpiHeading);
                 Headings.AddItem(TEpiHeading(Data));
               end;
@@ -204,6 +205,11 @@ begin
               if (Sender is TEpiSections) then
               with TEpiSection(Data) do
               begin
+                S := TEpiSection(Data);
+                // Check that id is not in conflict with others.
+                if not Self.ValidateRename(S.Name) then
+                  S.Name := Sections.GetUniqueItemName(TEpiSection);
+
                 FDataFile := Self;
                 Fields.RegisterOnChangeHook(@LocalEventHook, true);
                 Fields.OnValidateRename := @Self.ValidateRename;
