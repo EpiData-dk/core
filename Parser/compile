@@ -1,0 +1,4 @@
+#/bin/bash
+
+plex language.lex parser_core.inc
+pyacc language.yacc parser_core.pas

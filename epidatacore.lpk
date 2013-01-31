@@ -7,7 +7,7 @@
       <Version Value="11"/>
       <SearchPaths>
         <IncludeFiles Value="Core;."/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services;Parser"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="3" Build="1"/>
-    <Files Count="56">
+    <Files Count="60">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -259,6 +259,22 @@
         <Filename Value="Utils/vinfo.pas"/>
         <UnitName Value="vinfo"/>
       </Item56>
+      <Item57>
+        <Filename Value="Parser/ast.pas"/>
+        <UnitName Value="AST"/>
+      </Item57>
+      <Item58>
+        <Filename Value="Parser/parser_core.pas"/>
+        <UnitName Value="parser_core"/>
+      </Item58>
+      <Item59>
+        <Filename Value="Parser/parser.pas"/>
+        <UnitName Value="parser"/>
+      </Item59>
+      <Item60>
+        <Filename Value="Parser/parser_types.pas"/>
+        <UnitName Value="parser_types"/>
+      </Item60>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
