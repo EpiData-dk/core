@@ -148,7 +148,7 @@ begin
     'table.simple th,' + LineEnding +
     'table.simple tr {border-bottom: double 2px black; padding: 0.2em}' + LineEnding +
     'table.simple td {text-align: right; vertical-align: top; padding: 0.2em}' + LineEnding +
-    'table.simple .cell {text-align: right; vertical-align: top; padding: 0.2em;}' + LineEnding +
+    'table.simple .cell {text-align: left; vertical-align: top; padding: 0.2em;}' + LineEnding +
     '' + LineEnding +
     'table.simple .cellfoot {font-size: 0.8em; border-top: solid 2.0px; text-align: left;}' + LineEnding +
     'table.simple .caption {font-size: 1.1em; font-weight: bold; border-bottom: solid 2.0px; text-align: left;}' + LineEnding +
