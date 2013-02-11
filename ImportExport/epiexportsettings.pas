@@ -41,13 +41,11 @@ type
     procedure Assign(Const ASettings: TEpiExportSetting); override;
   end;
 
-  TEpiStataFieldNamingCase = (fncUpper, fncLower, fncAsIs);
-
   { TEpiStataExportSetting }
 
   TEpiStataExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
-    FieldNameCase: TEpiStataFieldNamingCase;
+    FieldNameCase: TEpiFieldNamingCase;
     Version:       TEpiStataVersion;
     ExportLines:   TStrings;
 
