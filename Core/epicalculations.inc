@@ -383,7 +383,7 @@ begin
   if LoadNode(Node, Root, rsField3, false) then
   begin
     Field3Id := LoadNodeString(Root, rsField3);
-    Field3 := OwnerField.DataFile.Fields.FieldByName[Field2Id];
+    Field3 := OwnerField.DataFile.Fields.FieldByName[Field3Id];
     if not Assigned(Field3) then LinkMap.AddLink(ltCalcField3, Self, Field3Id);
   end;
 
