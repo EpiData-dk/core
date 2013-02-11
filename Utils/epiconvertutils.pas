@@ -25,7 +25,7 @@ function EpiStrToTime(Const Str: string; Const Separator: Char;
 implementation
 
 uses
-  epimiscutils, dateutils;
+  epimiscutils, dateutils, epidatafiles;
 
 function EpiStrToDate(Const Str: string; Const Separator: Char;
   Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
@@ -33,6 +33,7 @@ var
   A, B, C: String;
   Al, Bl, Cl: Integer;
   DateStr: String;
+  Mis: EpiString;
 
   function ValidateError(Const Msg: string): boolean;
   begin
@@ -48,6 +49,11 @@ begin
   Bl := Length(B);
   C := Copy2SymbDel(DateStr, Separator);
   Cl := Length(C);
+
+  // Handle a missing in text:
+  Mis := TEpiStringField.DefaultMissing;
+  if (A = Mis) or (B = Mis) or (C = Mis) then
+    Exit(ValidateError(Mis));
 
   DecodeDate(Date, Y, M, D);
 
