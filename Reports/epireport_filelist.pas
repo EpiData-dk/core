@@ -66,7 +66,7 @@ begin
   begin
     Doc := TEpiDocument(FFileList.Objects[i]);
     DoTableCell(0, i + 1, IntToStr(i + 1));
-    DoTableCell(1, i + 1, Doc.Study.Title.Text);
+    DoTableCell(1, i + 1, ExtractFileName(FFileList[i]));
     DoTableCell(2, i + 1, Doc.Study.Title.Text);
     DoTableCell(3, i + 1, DateToStr(Doc.Study.Created));
     DoTableCell(4, i + 1, DateToStr(Doc.Study.ModifiedDate));
