@@ -14,7 +14,7 @@ begin
   result := nil;
   for i := 0 to Count - 1 do
     if (Jump[i].JumpValueAsString = Value) or
-       (Jump[i].JumpValueAsString = '.')
+       (Jump[i].JumpValueAsString = TEpiJump.DefaultOnAnyValue)
     then
       Exit(Jump[i]);
 end;
