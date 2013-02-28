@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
-  contnrs;
+  contnrs, LazMethodList;
 
 const
   EPI_XML_DATAFILE_VERSION = 2;
@@ -130,13 +130,15 @@ type
 
     { Change-event hooks }
   private
-    FOnChangeList: ^TEpiChangeEvent;
+{    FOnChangeList: ^TEpiChangeEvent;
     FOnChangeListCount: Integer;
     FOnChangeListIgnoreUpdate: ^TEpiChangeEvent;
-    FOnChangeListCountIgnoreUpdate: Integer;
+    FOnChangeListCountIgnoreUpdate: Integer;   }
+    FOnChangeList: TMethodList;
+    FOnChangeListIgnoreUpdate: TMethodList;
     FUpdateCount: Integer;
-    function   GetOnChangeListCount: integer;
-    function   GetOnChangeListCountIgnoreUpdate: integer;
+//    function   GetOnChangeListCount: integer;
+//    function   GetOnChangeListCountIgnoreUpdate: integer;
   protected
     procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
   public
@@ -960,7 +962,7 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
-function TEpiCustomBase.GetOnChangeListCount: integer;
+{function TEpiCustomBase.GetOnChangeListCount: integer;
 begin
   result := FOnChangeListCount;
 end;
@@ -968,13 +970,29 @@ end;
 function TEpiCustomBase.GetOnChangeListCountIgnoreUpdate: integer;
 begin
   result := FOnChangeListCountIgnoreUpdate;
-end;
+end;}
 
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 var
   i: Integer;
 begin
+  I := FOnChangeListIgnoreUpdate.Count;
+  while FOnChangeListIgnoreUpdate.NextDownIndex(I) do
+    TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I])(Self, EventGroup, EventType, Data);
+
+  if ((EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate))) or
+     (EventGroup <> eegCustomBase)
+  then
+    Modified := true;
+
+  if FUpdateCount > 0 then exit;
+
+  I := FOnChangeList.Count;
+  while FOnChangeList.NextDownIndex(I) do
+    TEpiChangeEvent(FOnChangeList.Items[I])(Self, EventGroup, EventType, Data);
+
+{
   i := 0;
   while i < GetOnChangeListCountIgnoreUpdate do
   begin
@@ -994,7 +1012,7 @@ begin
   begin
     FOnChangeList[i](Self, EventGroup, EventType, Data);
     inc(i);
-  end;
+  end;  }
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
@@ -1032,6 +1050,17 @@ procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent;
 begin
   if IgnoreUpdate then
   begin
+    if not Assigned(FOnChangeListIgnoreUpdate) then
+      FOnChangeListIgnoreUpdate := TMethodList.Create;
+    FOnChangeListIgnoreUpdate.Add(TMethod(Event), false);
+  end else begin
+    if not Assigned(FOnChangeList) then
+      FOnChangeList := TMethodList.Create;
+    FOnChangeList.Add(TMethod(Event), false);
+  end;
+
+{  if IgnoreUpdate then
+  begin
     Inc(FOnChangeListCountIgnoreUpdate);
     ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate * SizeOf(TEpiChangeEvent));
     FOnChangeListIgnoreUpdate[FOnChangeListCountIgnoreUpdate-1] := Event;
@@ -1039,14 +1068,22 @@ begin
     Inc(FOnChangeListCount);
     ReAllocMem(FOnChangeList, FOnChangeListCount * SizeOf(TEpiChangeEvent));
     FOnChangeList[FOnChangeListCount-1] := Event;
-  end;
+  end; }
 end;
 
 procedure TEpiCustomBase.UnRegisterOnChangeHook(Event: TEpiChangeEvent);
 var
   Idx: LongInt;
 begin
-  Idx := 0;
+  FOnChangeListIgnoreUpdate.Remove(TMethod(Event));
+  if FOnChangeListIgnoreUpdate.Count = 0 then
+    FreeAndNil(FOnChangeListIgnoreUpdate);
+
+  FOnChangeList.Remove(TMethod(Event));
+  if FOnChangeList.Count = 0 then
+    FreeAndNil(FOnChangeList);
+
+{  Idx := 0;
   while Idx <= FOnChangeListCountIgnoreUpdate -1 do
   begin
     if (TMethod(FOnChangeListIgnoreUpdate[Idx]).Code = TMethod(Event).Code) and
@@ -1075,7 +1112,7 @@ begin
   dec(FOnChangeListCount);
   if FOnChangeListCount > Idx then
     System.Move(FOnChangeList[Idx+1],FOnChangeList[Idx],(FOnChangeListCount-Idx)*SizeOf(TEpiChangeEvent));
-  ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent));
+  ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent)); }
 end;
 
 procedure TEpiCustomBase.SetLanguage(const LangCode: string;
@@ -1542,8 +1579,9 @@ end;
 
 procedure TEpiCustomList.UnRegisterItem(Item: TEpiCustomItem);
 begin
-  if not (ebsDestroying in Item.State) then
-    Item.UnRegisterOnChangeHook(@OnChangeHook);
+//  if not (ebsDestroying in Item.State) then
+  Item.UnRegisterOnChangeHook(@OnChangeHook);
+
   if ItemOwner then Item.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
   if Sorted then Sort;
@@ -1721,8 +1759,9 @@ end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
-  FList.Remove(Item);
-  UnRegisterItem(Item);
+{  FList.Remove(Item);
+  UnRegisterItem(Item);      }
+  DeleteItem(FList.IndexOf(Item));
 end;
 
 function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
@@ -1942,7 +1981,7 @@ end;
 
 procedure TEpiCustomControlItemList.RemoveItem(Item: TEpiCustomItem);
 begin
-  Item.UnRegisterOnChangeHook(@ChangeHook);
+//  Item.UnRegisterOnChangeHook(@ChangeHook);
   inherited RemoveItem(Item);
 end;
 

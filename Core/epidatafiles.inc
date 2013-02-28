@@ -217,7 +217,6 @@ begin
                 for i := 0 to Fields.Count - 1 do
                   Fields.DoChange(eegCustomBase, Word(ecceAddItem), Fields[i]);
 
-
                 Headings.RegisterOnChangeHook(@LocalEventHook, true);
                 Headings.OnValidateRename := @Self.ValidateRename;
                 Headings.Sorted := true;
@@ -245,8 +244,14 @@ begin
               with TEpiSection(Data) do
               begin
                 if (ebsDestroying in State) then exit;
+
+                for i := 0 to Fields.Count - 1 do
+                  Fields.DoChange(eegCustomBase, Word(ecceDelItem), Fields[i]);
                 Fields.UnRegisterOnChangeHook(@LocalEventHook);
                 Fields.OnValidateRename := nil;
+
+                for i := 0 to Headings.Count - 1 do
+                  Headings.DoChange(eegCustomBase, Word(ecceDelItem), Heading[i]);
                 Headings.UnRegisterOnChangeHook(@LocalEventHook);
                 Headings.OnValidateRename := nil;
               end;
