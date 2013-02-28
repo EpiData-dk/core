@@ -38,7 +38,8 @@ type
     eegGroups,
     eegHeading,
     // epivaluelabels.pas
-    eegValueLabels,
+    eegValueLabel,
+    eegValueLabelSet,
     // epirelations.pas
     eegRelates
     );
@@ -321,8 +322,10 @@ type
     procedure   ClearAndFree;
     function    ItemClass: TEpiCustomItemClass; virtual;
     function    NewItem(AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; virtual;
+    // AddItem uses InsertItem internally, so only that method need overriding if needed.
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
+    // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
     function    GetItemByName(AName: string): TEpiCustomItem; virtual;
@@ -386,7 +389,6 @@ type
   protected
     procedure DoSort; override;
   public
-    procedure AddItem(Item: TEpiCustomItem); override;
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  DeleteItem(Index: integer): TEpiCustomItem; override;
     procedure RemoveItem(Item: TEpiCustomItem); override;
@@ -1704,11 +1706,8 @@ end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
-  if (not ValidateRename(Item.Name, false)) then
-    raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
-
-  FList.Add(Item);
-  RegisterItem(Item);
+  // AddItem uses InsertItem internally, so only that method need overriding if needed.
+  InsertItem(Count, Item);
 end;
 
 procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
@@ -1926,12 +1925,6 @@ begin
 
   if FOnSort = @SortControlItems then
     FOnSort := nil;
-end;
-
-procedure TEpiCustomControlItemList.AddItem(Item: TEpiCustomItem);
-begin
-  inherited AddItem(Item);
-  Item.RegisterOnChangeHook(@ChangeHook, true);
 end;
 
 procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
