@@ -138,7 +138,6 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
-    procedure   RemoveItem(Item: TEpiCustomItem); override;
     function    DeleteItem(Index: integer): TEpiCustomItem; override;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
@@ -674,13 +673,6 @@ begin
   inherited InsertItem(Index, Item);
   Item.RegisterOnChangeHook(@ItemChangeHook, true);
   FDirtyCache := true;
-end;
-
-procedure TEpiValueLabelSet.RemoveItem(Item: TEpiCustomItem);
-begin
-  FDirtyCache := true;
-  Item.UnRegisterOnChangeHook(@ItemChangeHook);
-  inherited RemoveItem(Item);
 end;
 
 function TEpiValueLabelSet.DeleteItem(Index: integer): TEpiCustomItem;
