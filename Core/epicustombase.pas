@@ -87,17 +87,17 @@ type
     function   LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
       const AttrName: string; Fatal: boolean): boolean; overload;
     // Direct loading of node are always fatal, since they must return some value.
-    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: Integer = 0; Fatal: boolean = true): EpiInteger;
-    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: extended = 0; Fatal: boolean = true): EpiFloat;
-    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: string = ''; Fatal: boolean = true): EpiString;
-    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: TDateTime = 0; Fatal: boolean = true): EpiDateTime;
+    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiInteger = 0; Fatal: boolean = true): EpiInteger;
+    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiFloat = 0; Fatal: boolean = true): EpiFloat;
+    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiString = ''; Fatal: boolean = true): EpiString;
+    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiDateTime = 0; Fatal: boolean = true): EpiDateTime;
     function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string; DefaultVal: Boolean = false; Fatal: boolean = true): boolean;
     // Loading attributes
-    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: Integer = 0; Fatal: Boolean = true): EpiInteger;
+    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiInteger = 0; Fatal: Boolean = true): EpiInteger;
     function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
-    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: Extended = 0; Fatal: Boolean = true): EpiFloat;
-    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: String = ''; Fatal: Boolean = true): EpiString;
-    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: TDateTime = 0; Fatal: Boolean = true): EpiDateTime; overload;
+    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiFloat = 0; Fatal: Boolean = true): EpiFloat;
+    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiString = ''; Fatal: Boolean = true): EpiString;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: EpiDateTime = 0; Fatal: Boolean = true): EpiDateTime; overload;
     function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string; DefaultVal: Boolean = false; Fatal: Boolean = true): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
@@ -688,18 +688,18 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeInt(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: Integer; Fatal: boolean): EpiInteger;
+  const NodeName: string; DefaultVal: EpiInteger; Fatal: boolean): EpiInteger;
 var
   Node: TDOMNode;
 begin
   if LoadNode(Node, Root, NodeName, Fatal) then
-    result := StrToInt(Node.TextContent)
+    result := StrToInt64(Node.TextContent)
   else
     result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeFloat(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: extended; Fatal: boolean): EpiFloat;
+  const NodeName: string; DefaultVal: EpiFloat; Fatal: boolean): EpiFloat;
 var
   Node: TDOMNode;
 begin
@@ -714,7 +714,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: string; Fatal: boolean): EpiString;
+  const NodeName: string; DefaultVal: EpiString; Fatal: boolean): EpiString;
 var
   Node: TDOMNode;
 begin
@@ -725,7 +725,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: TDateTime; Fatal: boolean): EpiDateTime;
+  const NodeName: string; DefaultVal: EpiDateTime; Fatal: boolean): EpiDateTime;
 var
   Node: TDOMNode;
 begin
@@ -751,12 +751,12 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: Integer; Fatal: Boolean): EpiInteger;
+  const AttrName: string; DefaultVal: EpiInteger; Fatal: Boolean): EpiInteger;
 var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    Result := StrToInt(Attr.Value)
+    Result := StrToInt64(Attr.Value)
   else
     Result := DefaultVal;
 end;
@@ -769,7 +769,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: Extended; Fatal: Boolean): EpiFloat;
+  const AttrName: string; DefaultVal: EpiFloat; Fatal: Boolean): EpiFloat;
 var
   Attr: TDOMAttr;
 begin
@@ -784,7 +784,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrString(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: String; Fatal: Boolean): EpiString;
+  const AttrName: string; DefaultVal: EpiString; Fatal: Boolean): EpiString;
 var
   Attr: TDOMAttr;
 begin
@@ -795,7 +795,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
-  const AttrName: string; const Format: string; DefaultVal: TDateTime;
+  const AttrName: string; const Format: string; DefaultVal: EpiDateTime;
   Fatal: Boolean): EpiDateTime;
 var
   Attr: TDOMAttr;
