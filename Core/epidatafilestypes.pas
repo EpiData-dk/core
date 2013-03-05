@@ -70,7 +70,7 @@ const
   RangeFieldTypes        = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
   ValueLabelFieldTypes   = (IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
   JumpsFieldTypes        = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
-  CompareFieldTypes      = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
+  CompareFieldTypes      = AllFieldTypes - (AutoFieldTypes + BoolFieldTypes);
   EntryModeFieldTypes    = AllFieldTypes - AutoFieldTypes;
   ConfirmEntryFieldTypes = AllFieldTypes - AutoFieldTypes;
   RepeatValueFieldTypes  = AllFieldTypes - AutoFieldTypes;
