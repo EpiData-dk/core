@@ -41,6 +41,13 @@ type
   );
   TEpiFieldTypes  = Set of TEpiFieldType;
 
+  TEpiHeadingType = (
+    // 5 catagories of headings, programs specifies how to handle these:
+    // only requirement is the order of type is H1 > H2 > ... > H5
+    // hence, H1 is "biggest" and H5 is "smallest"
+    htH1, htH2, htH3, htH4, htH5
+  );
+
 const
   // "Native sets"
   BoolFieldTypes    = [ftBoolean];

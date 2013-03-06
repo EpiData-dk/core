@@ -94,7 +94,7 @@ type
     function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string; DefaultVal: Boolean = false; Fatal: boolean = true): boolean;
     // Loading attributes
     function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiInteger = 0; Fatal: Boolean = true): EpiInteger;
-    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
+    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String = ''; Fatal: Boolean = true): integer;
     function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiFloat = 0; Fatal: Boolean = true): EpiFloat;
     function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiString = ''; Fatal: Boolean = true): EpiString;
     function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: EpiDateTime = 0; Fatal: Boolean = true): EpiDateTime; overload;
@@ -762,10 +762,10 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrEnum(const Root: TDOMNode;
-  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer;
+  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String;
   Fatal: Boolean): integer;
 begin
-  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, '', Fatal));
+  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, DefaultVal, Fatal));
 end;
 
 function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
