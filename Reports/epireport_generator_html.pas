@@ -48,6 +48,9 @@ begin
    [LineEnding, '&',     '"',      '<',    '>',    ''''],
    ['<br>',   '&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
    [rfReplaceAll]);
+
+  if Result = '' then
+    Result := '&nbsp;';
 end;
 
 { TEpiReportHTMLGenerator }
@@ -144,16 +147,16 @@ begin
     '  .info {color: green; font-size: 1.0em; font-weight: normal; font-family: monospace ;}' + LineEnding +
     '  .error {color: red; font-family: monospace}' + LineEnding +
     '' + LineEnding +
-    'table.simple  {color: black; font-size: 1.0em; font-family: proportional; font-weight: normal; border-left: none; border-right: none; border-bottom: solid 2px black; border-spacing: 0; margin-top: 1.25cm; }' + LineEnding +
+    'table.simple  {color: black; font-size: 1.0em; font-family: proportional; font-weight: normal; border-left: solid 2px black; border-right: solid 2px black; border-spacing: 0; margin-top: 1.25cm; }' + LineEnding +
     'table.simple th,' + LineEnding +
-    'table.simple tr {border-bottom: double 2px black; padding: 0.2em}' + LineEnding +
-    'table.simple td {text-align: right; vertical-align: top; padding: 0.2em}' + LineEnding +
-    'table.simple .cell {text-align: right; vertical-align: top; padding: 0.2em;}' + LineEnding +
+    'table.simple tr {padding: 0.2em}' + LineEnding +
+    'table.simple td {border-bottom: 2px solid black; text-align: right; vertical-align: top; padding: 0.2em}' + LineEnding +
+    'table.simple .cell {text-align: left; vertical-align: top; padding: 0.2em;}' + LineEnding +
     '' + LineEnding +
-    'table.simple .cellfoot {font-size: 0.8em; border-top: solid 2.0px; text-align: left;}' + LineEnding +
-    'table.simple .caption {font-size: 1.1em; font-weight: bold; border-bottom: solid 2.0px; text-align: left;}' + LineEnding +
+    'table.simple .cellfoot {font-size: 0.8em; text-align: left;}' + LineEnding +
+    'table.simple .caption {font-size: 1.1em; font-weight: bold; border-bottom: 2px solid black; text-align: center;}' + LineEnding +
     '' + LineEnding +
-    'table.simple .firstrow {font-weight: bold; text-align: center;padding-right: 0.4em }' + LineEnding +
+    'table.simple .firstrow {font-weight: bold; text-align: center; padding-right: 0.4em }' + LineEnding +
     'table.simple .firstcol {font-weight: bold; text-align: right; padding-right: 0.4em}' + LineEnding +
     '' + LineEnding +
     '/* EpiData Reporting Minimalistic style sheet - white background' + LineEnding +

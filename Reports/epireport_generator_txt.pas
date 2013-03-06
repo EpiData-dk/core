@@ -157,7 +157,8 @@ begin
 
   ColWidthTotal := Math.Max(ColWidthTotal, UTF8Length(FTableList[0])) +
     // for adding " | " to sides and in between cells.
-    ((ColCount - 1) * 3) +
+  {  ((ColCount - 1) * 3) +   }
+    (ColCount - 1) +
     // For adding "| " and " |" in beginning and end of cells
     4;
 
@@ -173,8 +174,9 @@ begin
   // Table - first row:
   Txt := '| ';
   for i := 0 to ColCount - 1 do
-    Txt += CenterText(FTableList[i+2], ColWidths[i]) + ' | ';
-  TrimRight(Txt);
+    Txt += CenterText(FTableList[i+2], ColWidths[i]) {+ ' | '} + ' ';
+  Txt += '|';
+//  TrimRight(Txt);
   AddLine(Txt);
   AddLine(DupeString('-', ColWidthTotal));
 
@@ -196,16 +198,19 @@ begin
         S := LineFromLines(T);
         FTableList[Idx] := T;
 
-        // If data is number then right-adjust.
+        // If data is number (or missing) then right-adjust.
         W := ColWidths[j] - UTF8Length(S);
-        if TryStrToFloat(S, Value) then
+        if (TryStrToFloat(S, Value)) or
+           (S = '.')
+        then
           Txt += DupeString(' ', W) + S
         else
           Txt += S + DupeString(' ', W);
-        Txt += ' |';
+        {Txt += ' |';  }
 
         HasMoreText := HasMoreText or (Length(T) > 0);
       end;
+      Txt += ' |';
       AddLine(Txt);
     end;
     AddLine(DupeString('-', ColWidthTotal));

@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
-  contnrs;
+  contnrs, LazMethodList;
 
 const
   EPI_XML_DATAFILE_VERSION = 2;
@@ -38,7 +38,8 @@ type
     eegGroups,
     eegHeading,
     // epivaluelabels.pas
-    eegValueLabels,
+    eegValueLabel,
+    eegValueLabelSet,
     // epirelations.pas
     eegRelates
     );
@@ -86,17 +87,17 @@ type
     function   LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
       const AttrName: string; Fatal: boolean): boolean; overload;
     // Direct loading of node are always fatal, since they must return some value.
-    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: Integer = 0; Fatal: boolean = true): integer;
-    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: extended = 0; Fatal: boolean = true): extended;
-    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: string = ''; Fatal: boolean = true): String;
-    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: TDateTime = 0; Fatal: boolean = true): TDateTime;
+    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiInteger = 0; Fatal: boolean = true): EpiInteger;
+    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiFloat = 0; Fatal: boolean = true): EpiFloat;
+    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiString = ''; Fatal: boolean = true): EpiString;
+    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiDateTime = 0; Fatal: boolean = true): EpiDateTime;
     function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string; DefaultVal: Boolean = false; Fatal: boolean = true): boolean;
     // Loading attributes
-    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
-    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
-    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: Extended = 0; Fatal: Boolean = true): extended;
-    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: String = ''; Fatal: Boolean = true): String;
-    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: TDateTime = 0; Fatal: Boolean = true): TDateTime; overload;
+    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiInteger = 0; Fatal: Boolean = true): EpiInteger;
+    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String = ''; Fatal: Boolean = true): integer;
+    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiFloat = 0; Fatal: Boolean = true): EpiFloat;
+    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiString = ''; Fatal: Boolean = true): EpiString;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: EpiDateTime = 0; Fatal: Boolean = true): EpiDateTime; overload;
     function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string; DefaultVal: Boolean = false; Fatal: Boolean = true): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
@@ -129,13 +130,9 @@ type
 
     { Change-event hooks }
   private
-    FOnChangeList: ^TEpiChangeEvent;
-    FOnChangeListCount: Integer;
-    FOnChangeListIgnoreUpdate: ^TEpiChangeEvent;
-    FOnChangeListCountIgnoreUpdate: Integer;
+    FOnChangeList: TMethodList;
+    FOnChangeListIgnoreUpdate: TMethodList;
     FUpdateCount: Integer;
-    function   GetOnChangeListCount: integer;
-    function   GetOnChangeListCountIgnoreUpdate: integer;
   protected
     procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
   public
@@ -321,8 +318,10 @@ type
     procedure   ClearAndFree;
     function    ItemClass: TEpiCustomItemClass; virtual;
     function    NewItem(AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; virtual;
+    // AddItem uses InsertItem internally, so only that method need overriding if needed.
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
+    // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
     function    GetItemByName(AName: string): TEpiCustomItem; virtual;
@@ -386,10 +385,8 @@ type
   protected
     procedure DoSort; override;
   public
-    procedure AddItem(Item: TEpiCustomItem); override;
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  DeleteItem(Index: integer): TEpiCustomItem; override;
-    procedure RemoveItem(Item: TEpiCustomItem); override;
   end;
 
 {$I epixmlconstants.inc}
@@ -691,18 +688,18 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeInt(const Root: TDOMNode;
-  Const NodeName: string; DefaultVal: Integer; Fatal: boolean = true): integer;
+  const NodeName: string; DefaultVal: EpiInteger; Fatal: boolean): EpiInteger;
 var
   Node: TDOMNode;
 begin
   if LoadNode(Node, Root, NodeName, Fatal) then
-    result := StrToInt(Node.TextContent)
+    result := StrToInt64(Node.TextContent)
   else
     result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeFloat(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: extended; Fatal: boolean): extended;
+  const NodeName: string; DefaultVal: EpiFloat; Fatal: boolean): EpiFloat;
 var
   Node: TDOMNode;
 begin
@@ -717,7 +714,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: string; Fatal: boolean): String;
+  const NodeName: string; DefaultVal: EpiString; Fatal: boolean): EpiString;
 var
   Node: TDOMNode;
 begin
@@ -728,7 +725,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode;
-  Const NodeName: string; DefaultVal: TDateTime; Fatal: boolean = true): TDateTime;
+  const NodeName: string; DefaultVal: EpiDateTime; Fatal: boolean): EpiDateTime;
 var
   Node: TDOMNode;
 begin
@@ -743,7 +740,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
-  Const NodeName: string; DefaultVal: Boolean; Fatal: boolean = true): boolean;
+  const NodeName: string; DefaultVal: Boolean; Fatal: boolean): boolean;
 var
   Node: TDOMNode;
 begin
@@ -754,25 +751,25 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: Integer; Fatal: Boolean): integer;
+  const AttrName: string; DefaultVal: EpiInteger; Fatal: Boolean): EpiInteger;
 var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    Result := StrToInt(Attr.Value)
+    Result := StrToInt64(Attr.Value)
   else
     Result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrEnum(const Root: TDOMNode;
-  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer;
+  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String;
   Fatal: Boolean): integer;
 begin
-  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, '', Fatal));
+  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, DefaultVal, Fatal));
 end;
 
 function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: Extended; Fatal: Boolean): extended;
+  const AttrName: string; DefaultVal: EpiFloat; Fatal: Boolean): EpiFloat;
 var
   Attr: TDOMAttr;
 begin
@@ -787,7 +784,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrString(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: String; Fatal: Boolean): String;
+  const AttrName: string; DefaultVal: EpiString; Fatal: Boolean): EpiString;
 var
   Attr: TDOMAttr;
 begin
@@ -798,8 +795,8 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
-  const AttrName: string; const Format: string; DefaultVal: TDateTime;
-  Fatal: Boolean): TDateTime;
+  const AttrName: string; const Format: string; DefaultVal: EpiDateTime;
+  Fatal: Boolean): EpiDateTime;
 var
   Attr: TDOMAttr;
 begin
@@ -958,27 +955,14 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
-function TEpiCustomBase.GetOnChangeListCount: integer;
-begin
-  result := FOnChangeListCount;
-end;
-
-function TEpiCustomBase.GetOnChangeListCountIgnoreUpdate: integer;
-begin
-  result := FOnChangeListCountIgnoreUpdate;
-end;
-
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 var
   i: Integer;
 begin
-  i := 0;
-  while i < GetOnChangeListCountIgnoreUpdate do
-  begin
-    FOnChangeListIgnoreUpdate[i](Self, EventGroup, EventType, Data);
-    inc(i);
-  end;
+  I := FOnChangeListIgnoreUpdate.Count;
+  while FOnChangeListIgnoreUpdate.NextDownIndex(I) do
+    TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I])(Self, EventGroup, EventType, Data);
 
   if ((EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate))) or
      (EventGroup <> eegCustomBase)
@@ -987,12 +971,9 @@ begin
 
   if FUpdateCount > 0 then exit;
 
-  i := 0;
-  while i < GetOnChangeListCount do
-  begin
-    FOnChangeList[i](Self, EventGroup, EventType, Data);
-    inc(i);
-  end;
+  I := FOnChangeList.Count;
+  while FOnChangeList.NextDownIndex(I) do
+    TEpiChangeEvent(FOnChangeList.Items[I])(Self, EventGroup, EventType, Data);
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
@@ -1030,13 +1011,13 @@ procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent;
 begin
   if IgnoreUpdate then
   begin
-    Inc(FOnChangeListCountIgnoreUpdate);
-    ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate * SizeOf(TEpiChangeEvent));
-    FOnChangeListIgnoreUpdate[FOnChangeListCountIgnoreUpdate-1] := Event;
+    if not Assigned(FOnChangeListIgnoreUpdate) then
+      FOnChangeListIgnoreUpdate := TMethodList.Create;
+    FOnChangeListIgnoreUpdate.Add(TMethod(Event), false);
   end else begin
-    Inc(FOnChangeListCount);
-    ReAllocMem(FOnChangeList, FOnChangeListCount * SizeOf(TEpiChangeEvent));
-    FOnChangeList[FOnChangeListCount-1] := Event;
+    if not Assigned(FOnChangeList) then
+      FOnChangeList := TMethodList.Create;
+    FOnChangeList.Add(TMethod(Event), false);
   end;
 end;
 
@@ -1044,36 +1025,13 @@ procedure TEpiCustomBase.UnRegisterOnChangeHook(Event: TEpiChangeEvent);
 var
   Idx: LongInt;
 begin
-  Idx := 0;
-  while Idx <= FOnChangeListCountIgnoreUpdate -1 do
-  begin
-    if (TMethod(FOnChangeListIgnoreUpdate[Idx]).Code = TMethod(Event).Code) and
-       (TMethod(FOnChangeListIgnoreUpdate[Idx]).Data = TMethod(Event).Data) then
-      break;
-    Inc(Idx)
-  end;
-  if (Idx < FOnChangeListCountIgnoreUpdate) then
-  begin
-    dec(FOnChangeListCountIgnoreUpdate);
-    if FOnChangeListCountIgnoreUpdate > Idx then
-      System.Move(FOnChangeListIgnoreUpdate[Idx+1],FOnChangeListIgnoreUpdate[Idx],(FOnChangeListCountIgnoreUpdate-Idx)*SizeOf(TEpiChangeEvent));
-    ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate*SizeOf(TEpiChangeEvent));
-  end;
+  FOnChangeListIgnoreUpdate.Remove(TMethod(Event));
+  if FOnChangeListIgnoreUpdate.Count = 0 then
+    FreeAndNil(FOnChangeListIgnoreUpdate);
 
-  Idx := 0;
-  while Idx <= FOnChangeListCount -1 do
-  begin
-    if (TMethod(FOnChangeList[Idx]).Code = TMethod(Event).Code) and
-       (TMethod(FOnChangeList[Idx]).Data = TMethod(Event).Data) then
-      break;
-    Inc(Idx)
-  end;
-  if Idx = FOnChangeListCount then exit;
-
-  dec(FOnChangeListCount);
-  if FOnChangeListCount > Idx then
-    System.Move(FOnChangeList[Idx+1],FOnChangeList[Idx],(FOnChangeListCount-Idx)*SizeOf(TEpiChangeEvent));
-  ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent));
+  FOnChangeList.Remove(TMethod(Event));
+  if FOnChangeList.Count = 0 then
+    FreeAndNil(FOnChangeList);
 end;
 
 procedure TEpiCustomBase.SetLanguage(const LangCode: string;
@@ -1540,8 +1498,9 @@ end;
 
 procedure TEpiCustomList.UnRegisterItem(Item: TEpiCustomItem);
 begin
-  if not (ebsDestroying in Item.State) then
-    Item.UnRegisterOnChangeHook(@OnChangeHook);
+//  if not (ebsDestroying in Item.State) then
+  Item.UnRegisterOnChangeHook(@OnChangeHook);
+
   if ItemOwner then Item.FOwner := nil;
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
   if Sorted then Sort;
@@ -1704,11 +1663,8 @@ end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
-  if (not ValidateRename(Item.Name, false)) then
-    raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
-
-  FList.Add(Item);
-  RegisterItem(Item);
+  // AddItem uses InsertItem internally, so only that method need overriding if needed.
+  InsertItem(Count, Item);
 end;
 
 procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
@@ -1722,8 +1678,8 @@ end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
-  FList.Remove(Item);
-  UnRegisterItem(Item);
+  // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
+  DeleteItem(FList.IndexOf(Item));
 end;
 
 function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
@@ -1928,12 +1884,6 @@ begin
     FOnSort := nil;
 end;
 
-procedure TEpiCustomControlItemList.AddItem(Item: TEpiCustomItem);
-begin
-  inherited AddItem(Item);
-  Item.RegisterOnChangeHook(@ChangeHook, true);
-end;
-
 procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
   Item: TEpiCustomItem);
 begin
@@ -1945,12 +1895,6 @@ function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := inherited DeleteItem(Index);
   Result.UnRegisterOnChangeHook(@ChangeHook);
-end;
-
-procedure TEpiCustomControlItemList.RemoveItem(Item: TEpiCustomItem);
-begin
-  Item.UnRegisterOnChangeHook(@ChangeHook);
-  inherited RemoveItem(Item);
 end;
 
 end.
