@@ -96,7 +96,7 @@ procedure TDatasetViewerFrame.ListGridHeaderClick(Sender: TObject;
 var
   SelectedRecordNo: Integer;
 begin
-  if Index <= 0 then exit;
+  if Index < 0 then exit;
 
   if IsColumn then
   begin
