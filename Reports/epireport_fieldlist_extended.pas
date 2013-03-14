@@ -157,16 +157,7 @@ begin
     if Assigned(Comparison)  then
     begin
       DoTableCell(0, j, 'Comparison');
-      S := Name;
-      case Comparison.CompareType of
-        fcLT:  S += '<';
-        fcLEq: S += '<=';
-        fcGEq: S += '>=';
-        fcGT:  S += '>';
-        fcEq:  S += '=';
-        fcNEq: S += '<>';
-      end;
-      S += Comparison.CompareField.Name;
+      S := Name + ComparisonTypeToString(Comparison.CompareType) + Comparison.CompareField.Name;
       DoTableCell(1, j, S);
       Inc(j);
     end;
