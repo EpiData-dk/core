@@ -5,8 +5,8 @@ unit epireport_valuelabels;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epireport_generator_html,
-  epidocument, epivaluelabels;
+  Classes, SysUtils, epireport_base,
+  epivaluelabels;
 
 const
   SEpiReportValueLabelsNoValueLabelSets = 'No EpiValueLabels assigned';
