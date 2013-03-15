@@ -9,6 +9,8 @@ const
   NA_STRING    = '.';
   NA_BOOL      = $7F;
 
+  JMP_ANY      = '*';
+
 { TEpiFields }
 
 function TEpiFields.GetDataFile: TEpiDataFile;
