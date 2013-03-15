@@ -136,10 +136,11 @@ begin
   with TEpiField(ExtendedList[i]) do
   begin
     j := 0;
-    if Assigned(Comparison)  then inc(j);
-    if Assigned(Jumps)       then inc(j);
-    if Assigned(Calculation) then inc(j);
-    if Assigned(Ranges)      then inc(j);
+    if Assigned(ValueLabelSet)  then inc(j);
+    if Assigned(Comparison)     then inc(j);
+    if Assigned(Jumps)          then inc(j);
+    if Assigned(Calculation)    then inc(j);
+    if Assigned(Ranges)         then inc(j);
     if (EntryMode <> emDefault) then inc(j);
     if ConfirmEntry             then inc(j);
     if RepeatValue              then inc(j);
@@ -154,19 +155,18 @@ begin
     DoTableCell(1, 0, 'Value:');
 
     j := 1;
+
+    if Assigned(ValueLabelSet) then
+    begin
+      DoTableCell(0, j, 'Value label set');
+      DoTableCell(1, j, ValueLabelSet.Name);
+      Inc(j);
+    end;
+
     if Assigned(Comparison)  then
     begin
       DoTableCell(0, j, 'Comparison');
-      S := Name;
-      case Comparison.CompareType of
-        fcLT:  S += '<';
-        fcLEq: S += '<=';
-        fcGEq: S += '>=';
-        fcGT:  S += '>';
-        fcEq:  S += '=';
-        fcNEq: S += '<>';
-      end;
-      S += Comparison.CompareField.Name;
+      S := Name + ComparisonTypeToString(Comparison.CompareType) + Comparison.CompareField.Name;
       DoTableCell(1, j, S);
       Inc(j);
     end;

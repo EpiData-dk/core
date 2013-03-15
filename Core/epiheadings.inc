@@ -63,7 +63,7 @@ constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
-  FHeadingType := htH5;
+  FHeadingType := htH4;
   RegisterClasses([FCaption]);
 end;
 
@@ -83,7 +83,7 @@ begin
   inherited LoadFromXml(Root);
 
   if TEpiDocument(RootOwner).Version >= 2 then
-    HeadingType := TEpiHeadingType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiHeadingType), GetEnumName(TypeInfo(TEpiHeadingType), Integer(htH5)), false));
+    HeadingType := TEpiHeadingType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiHeadingType), GetEnumName(TypeInfo(TEpiHeadingType), Integer(htH4)), false));
 
   FCaption.LoadFromXml(Root);
 end;

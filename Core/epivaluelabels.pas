@@ -117,6 +117,7 @@ type
     { House-keeping for MaxValueLengt }
     FDirtyCache: boolean;
     FCachedLength: LongInt;
+    procedure   DirtyCacheAndSendChangeEvent;
     procedure   ItemChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
                   EventType: Word; Data: Pointer);
   protected
@@ -433,6 +434,12 @@ begin
   FLabelType := AValue;
 end;
 
+procedure TEpiValueLabelSet.DirtyCacheAndSendChangeEvent;
+begin
+  FDirtyCache := true;
+  DoChange(eegValueLabelSet, Word(evlsMaxValueLength), @FCachedLength);
+end;
+
 function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
 var
   i: Integer;
@@ -461,10 +468,7 @@ begin
   if (EventGroup <> eegValueLabel) then Exit;
 
   if TEpiValueLabelChangeEvent(EventType) = evceValue then
-  begin
-    FDirtyCache := true;
-    DoChange(eegValueLabelSet, Word(evlsMaxValueLength), @FCachedLength);
-  end;
+    DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
@@ -672,14 +676,14 @@ procedure TEpiValueLabelSet.InsertItem(const Index: integer;
 begin
   inherited InsertItem(Index, Item);
   Item.RegisterOnChangeHook(@ItemChangeHook, true);
-  FDirtyCache := true;
+  DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.DeleteItem(Index: integer): TEpiCustomItem;
 begin
-  FDirtyCache := true;
   Result := inherited DeleteItem(Index);
   Result.UnRegisterOnChangeHook(@ItemChangeHook);
+  DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.MissingCount: LongInt;

@@ -174,7 +174,7 @@ end;
 
 class function TEpiJump.DefaultOnAnyValue: string;
 begin
-  result := NA_STRING;
+  result := JMP_ANY;
 end;
 
 { TEpiBoolJump }
