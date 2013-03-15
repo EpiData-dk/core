@@ -136,7 +136,6 @@ begin
   with TEpiField(ExtendedList[i]) do
   begin
     j := 0;
-    if Assigned(ValueLabelSet)  then inc(j);
     if Assigned(Comparison)     then inc(j);
     if Assigned(Jumps)          then inc(j);
     if Assigned(Calculation)    then inc(j);
@@ -155,14 +154,6 @@ begin
     DoTableCell(1, 0, 'Value:');
 
     j := 1;
-
-    if Assigned(ValueLabelSet) then
-    begin
-      DoTableCell(0, j, 'Value label set');
-      DoTableCell(1, j, ValueLabelSet.Name);
-      Inc(j);
-    end;
-
     if Assigned(Comparison)  then
     begin
       DoTableCell(0, j, 'Comparison');
@@ -300,6 +291,24 @@ begin
       Inc(j);
     end;
     DoTableFooter('');
+
+    if Assigned(ValueLabelSet) then
+    begin
+      DoTableHeader(ValueLabelSet.Name + ': (' + EpiTypeNames[ValueLabelSet.LabelType] + ')', 3, ValueLabelSet.Count + 1);
+
+      DoTableCell(0, 0, 'Category');
+      DoTableCell(1, 0, 'Label');
+      DoTableCell(2, 0, 'Missing');
+
+      for j := 0 to ValueLabelSet.Count - 1 do
+      with ValueLabelSet[j] do
+      begin
+        DoTableCell(0, j+1, ValueAsString);
+        DoTableCell(1, j+1, TheLabel.Text);
+        DoTableCell(2, j+1, BoolToStr(IsMissingValue, 'yes', ''));
+      end;
+      DoTableFooter('');
+    end;
   end;
 end;
 
