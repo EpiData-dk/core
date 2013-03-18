@@ -9,28 +9,28 @@ uses
   AST,
   sysutils,
   yacclib,
-  lexlib;
+  lexlib,
+  parser_types;
 
 type
   IdString = String[64];
-  TParserError = procedure (Const Msg: string; Const LineNo, ColNo: integer; Const Text: string);
+  TParserError = procedure (Const Msg: string; Const LineNo, ColNo: integer; Const Text: string) of object;
+  TParserGetIdentType = function (Const VarName: string): TParserResultType of object;
 
 var
   StmList: TStatementList;
   OnParseError: TParserError;
+  OnGetIdentType: TParserGetIdentType;
 
 function yyparse: integer;
+procedure yyerror(msg: string);
 
 implementation
-
-uses
-  parser_types;
-  
 
 %}
 
   /* Command tokens */
-%token OPBegin OPEnd OPClear OPDefine OPExecute
+%token OPBegin OPEnd OPDefine
 
  /* General tokens 		                           *
   * Do not edit anything below this line unless you know   *
@@ -41,8 +41,8 @@ uses
 %token <Boolean>OPTrue OPFalse
 
  /* Binary OPerator tokens */
-%token OPAnd OPMod OPDiv OPShl OPShr OPOr
-%token OPXor OPMult OPPlus OPMinus OPDivide 
+%token OPOr OPAnd OPMod OPDiv /* OPShl OPShr OPXor */
+%token OPMult OPPlus OPMinus OPDivide 
 
  /* Unary OPerators */
 %token OPNot
@@ -58,8 +58,8 @@ uses
 
  /* Misc. tokens */
 %token OPOpenParan OPCloseParan
-%token OPOpenBracket OPCloseBracket OPHash
 %token OPSemicolon OPComma OPPeriod OPAssign
+ /* %token OPOpenBracket OPCloseBracket OPHash */
 
  /* Special case tokens */
 %token <Extended> OPFloat
@@ -72,7 +72,8 @@ uses
 /* Declare types */
 %type <TStatementList>		statementlist program
 %type <TCustomStatement>	statement
-%type <Word>			typicalcommands emptycommands definetype
+%type <Word>			typicalcommands emptycommands
+%type <TParserResultType>	definetype
 %type <TVarList>		varlist
 %type <TVariable>		variable
 %type <TExpr>			opt_bracket expr
@@ -90,8 +91,8 @@ uses
   /*   not, unaryminus                 Highest */ 
 
 %nonassoc OPEQ OPNEQ OPLT OPLTE OPGT OPGTE
-%left OPPlus OPMinus OPOr OPXor
-%left OPMult OPDivide OPDiv OPMod OPAnd OPShl OPShr
+%left OPPlus OPMinus OPOr /*OPXor*/
+%left OPMult OPDivide OPDiv OPMod OPAnd /*OPShl OPShr*/
 %right OPNot UMINUS
 
 %{
@@ -121,7 +122,7 @@ statementlist	:	statement OPSemicolon statementlist		{ $$ := TStatementList.Crea
 statement 	:	OPBegin statementlist OPEnd			{ $$ := TStatementList.Create($2, nil); }  
 		| 	OPIf expr OPThen statement opt_else		{ $$ := TIfThen.Create($2, $4, $5); } 
 		|	variable OPAssign expr				{ $$ := TAssignment.Create($1, $3); } 
-		|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  
+/*		|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  */
                 |       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3); } 
 		;
 
@@ -129,15 +130,21 @@ opt_else	:	OPElse statement				{ $$ := TOptElse.Create($2); }
 		|	/* empty */					{ $$ := nil; }
 		;
 
+/*
 typicalcommands	:       OPClear 					{ $$ := OPClear; }
 		;
+*/
 
-definetype	:	OPIntegerCast					{ $$ := OPIntegerCast; }
+definetype	:	OPIntegerCast					{ $$ := rtInteger; }
+		|	OPStringCast					{ $$ := rtString; }
+		|	OPFloatCast					{ $$ := rtFloat; }
 		;
 
+/*
 varlist		:	variable varlist    				{ $$ := TVarlist.Create($1, $2); }
-		|	/* empty */					{ $$ := nil; }
+		|							{ $$ := nil; }
 		;
+*/
 
 variable	:	OPIdentifier					{ $$ := TVariable.Create($1); }
 		;
@@ -148,17 +155,17 @@ expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
 		|	expr OPGT expr					{ $$ := TRelationalExpr.Create(otGT, $1, $3); }
 		|	expr OPLTE expr					{ $$ := TRelationalExpr.Create(otLTE, $1, $3); }
 		|	expr OPGTE expr					{ $$ := TRelationalExpr.Create(otGTE, $1, $3); }
-		|	expr OPPlus expr       				{ $$ := TRelationalExpr.Create(otPlus, $1, $3); }
-		|	expr OPMinus expr				{ $$ := TRelationalExpr.Create(otMinus, $1, $3); }
+		|	expr OPPlus expr       				{ $$ := TBinaryExpr.Create(otPlus, $1, $3); }
+		|	expr OPMinus expr				{ $$ := TBinaryExpr.Create(otMinus, $1, $3); }
 		|	expr OPOr expr					{ $$ := TBinaryExpr.Create(otOr, $1, $3); }
-		|	expr OPXor expr					{ $$ := TBinaryExpr.Create(otXor, $1, $3); }
+/*		|	expr OPXor expr					{ $$ := TBinaryExpr.Create(otXor, $1, $3); } */
 		|       expr OPMult expr       				{ $$ := TBinaryExpr.Create(otMult, $1, $3); }
 		|	expr OPDivide expr     				{ $$ := TBinaryExpr.Create(otDivide, $1, $3); }
 		|	expr OPDiv expr					{ $$ := TBinaryExpr.Create(otDiv, $1, $3); }
 		|       expr OPMod expr					{ $$ := TBinaryExpr.Create(otMod, $1, $3); }
 		|	expr OPAnd expr					{ $$ := TBinaryExpr.Create(otAnd, $1, $3); }
-		|       expr OPShl expr					{ $$ := TBinaryExpr.Create(otShl, $1, $3); }
-		|	expr OPShr expr					{ $$ := TBinaryExpr.Create(otShr, $1, $3); }
+/*		|       expr OPShl expr					{ $$ := TBinaryExpr.Create(otShl, $1, $3); } */
+/*		|	expr OPShr expr					{ $$ := TBinaryExpr.Create(otShr, $1, $3); } */
                 |       OPNot expr					{ $$ := TUnaryExpr.Create(otNot,  $2, nil); }
                 |       OPMinus expr					{ $$ := TUnaryExpr.Create(otMinus, $2, nil); }
                         %prec UMINUS

@@ -31,9 +31,7 @@ U		({L}|{U2}|{U3}|{U4})
  (* Command tokens - add here for new commands *)
 <normal>"begin"		return(OPBegin);
 <normal>"end"		return(OPEnd);
-<normal>"clear"		return(OPClear);
 <normal>"define"	return(OPDefine);
-<normal>"execute"	return(OPExecute);
 
  (* General tokens *)
  (* Do not edit anything below this line unless you know   *)
@@ -52,17 +50,17 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"false"         return(OPFalse);
 
  (* Binary OPerator tokens *)
+<normal>"or"            return(OPOr);
 <normal>"and"           return(OPAnd);
 <normal>"mod"           return(OPMod);
 <normal>"div"           return(OPDiv);
-<normal>"shl"           return(OPShl);
-<normal>"shr"           return(OPShr);
-<normal>"or"            return(OPOr);
-<normal>"xor"           return(OPXor);
 <normal>"*"             return(OPMult);
 <normal>"+"             return(OPPlus);
 <normal>"-"             return(OPMinus);
 <normal>"/"             return(OPDivide);
+ (* <normal>"shl"           return(OPShl);
+<normal>"shr"           return(OPShr);
+<normal>"xor"           return(OPXor); *)
 
  (* Unary OPerators *)
 <normal>"not"           return(OPNot);
@@ -90,11 +88,11 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>":="            return(OPAssign);      
 <normal>"("             return(OPOpenParan);      
 <normal>")"             return(OPCloseParan);
-<normal>"["             return(OPOpenBracket);    (* L. bracket for variable indexing *)
-<normal>"]"             return(OPCloseBracket);   (* R. bracket for variable indexing *)
 <normal>";"             return(OPSemicolon);      (* Command seperator *)
-<normal>","             return(OPComma);
 <normal>"."             return(OPPeriod);         (* Missing value identifier *)
+ // <normal>","             return(OPComma);
+ // <normal>"["             return(OPOpenBracket);    (* L. bracket for variable indexing *)
+ // <normal>"]"             return(OPCloseBracket);   (* R. bracket for variable indexing *)
 
  (* Special case tokens *)
 <normal>[ \t]+        ;                           (* ignore whitespace *)

@@ -10,7 +10,8 @@ type
     rtInteger,
     rtFloat,
     rtString,
-    rtObject
+    rtObject,
+    rtUndefined
   );
 
 
@@ -26,16 +27,16 @@ type
 
     // Binary ops
     otAnd,
+    otOr,
     otMod,
     otDiv,
-    otShl,
-    otShr,
-    otOr,
-    otXor,
     otMult,
     otPlus,
     otMinus,
     otDivide,
+{    otShl,
+    otShr,
+    otXor,}
 
     // Unary (excluding minus which is defined above)
     otNot,

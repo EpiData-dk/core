@@ -150,8 +150,6 @@ type
     function ResultType: TParserResultType; override;
   end;
 
-  { TRelationExpr }
-
   { TRelationalExpr }
 
   TRelationalExpr = class(TExpr)
@@ -189,9 +187,9 @@ type
   TDefine = class(TCustomStatement)
   private
     FIdent: string;
-    FType: Word;
+    FType: TParserResultType;
   public
-    constructor Create(Const DefineType: Word; Const Ident: string);
+    constructor Create(Const DefineType: TParserResultType; Const Ident: string);
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
   end;
@@ -223,20 +221,25 @@ type
 implementation
 
 uses
-  parser;
+  YaccLib, parser, typetable, parser_core, math;
+
+var
+  ASTTypeTable: TTypeTable = nil;
+
 
 { TRelationExpr }
 
 function TRelationalExpr.TypeCheck(out Msg: String): boolean;
 const
   RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean =
-           //    rtBoolean, rtInteger, rtFloat, rtString, rtObject
+           //    rtBoolean, rtInteger, rtFloat, rtString, rtObject, rtUndefined
                (
-    {rtBoolean} ( true,     false,     false,   false,    false),
-    {rtInteger} (false,     true,      true,    false,    false),
-    {rtFloat}   (false,     true,      true,    false,    false),
-    {rtString}  (false,     false,     false,   true,     false),
-    {rtObject}  (false,     false,     false,   false,    true )
+ {rtBoolean}    ( true,     false,     false,   false,    false,    false),
+ {rtInteger}    (false,     true,      true,    false,    false,    false),
+ {rtFloat}      (false,     true,      true,    false,    false,    false),
+ {rtString}     (false,     false,     false,   true,     false,    false),
+ {rtObject}     (false,     false,     false,   false,    true ,    false),
+ {rtUndefined}  (false,     false,     false,   false,    false,    false)
                );
 begin
   result := inherited TypeCheck(Msg);
@@ -257,23 +260,34 @@ end;
 { TBinaryExpr }
 
 function TBinaryExpr.TypeCheck(out Msg: String): boolean;
+var
+  Lr: TParserResultType;
+  Rr: TParserResultType;
 begin
   Result := inherited TypeCheck(Msg);
+  Lr := FL.ResultType;
+  Rr := FR.ResultType;
 
   if result then
   case FOp of
     otAnd,
+    otOr:
+      result := (Lr = rtBoolean) and
+                (Rr = rtBoolean);
+
     otMod,
-    otDiv,
-    otShl,
-    otShr,
-    otOr,
-    otXor,
+    otDiv:
+      result := (Lr = rtInteger) and
+                (Rr = rtInteger);
     otMult,
     otPlus,
     otMinus,
     otDivide:
-      ;
+      result := (Lr in [rtInteger, rtFloat]) and
+                (Rr in [rtInteger, rtFloat]);
+{    otXor,
+    otShl,
+    otShr:         }
   end;
 end;
 
@@ -287,19 +301,21 @@ begin
 
   case FOp of
     otAnd,
+    otOr:
+      Result := rtBoolean;
     otMod,
-    otDiv,
-    otShl,
-    otShr,
-    otOr,
-    otXor,
+    otDiv:
+      Result := rtInteger;
     otMult,
     otPlus,
     otMinus,
     otDivide:
-      ;
+      result := TParserResultType(Max(Integer(Lr), Integer(RR)));
+{      otShl,
+      otShr,
+      otXor,
+      ;}
   end;
-  Result := inherited ResultType;
 end;
 
 { TUnaryExpr }
@@ -323,11 +339,31 @@ end;
 
 { TDefine }
 
-constructor TDefine.Create(const DefineType: Word; const Ident: string);
+constructor TDefine.Create(const DefineType: TParserResultType;
+  const Ident: string);
 begin
   inherited Create;
   FType := DefineType;
   FIdent := Ident;
+
+  if not Assigned(ASTTypeTable) then
+    ASTTypeTable := TTypeTable.Create;
+
+  if ASTTypeTable.VariableExists(FIdent) then
+  begin
+    yyerror('Variable "' + Ident + '" already defined');
+    yyabort
+  end;
+
+  if Assigned(OnGetIdentType) and
+     (OnGetIdentType(FIdent) <> rtUndefined)
+  then
+  begin
+    yyerror('Variable "' + Ident + '" already defined');
+    yyabort;
+  end
+  else
+    ASTTypeTable.AddVariable(FIdent, FType);
 end;
 
 procedure TDefine.PrettyPrint;
@@ -362,7 +398,12 @@ begin
   Result := FVAriable.TypeCheck(Msg) and FExpr.TypeCheck(Msg);
 
   if Result then
-    ; // TODO : Check that Variable and Expr. fits!
+  begin
+    Result := Ord(FVAriable.ResultType) >= Ord(FExpr.ResultType);
+
+    if not result then
+      Msg := 'Incompatible types at line: ' + IntToStr(FExpr.FLineNo);
+  end;
 end;
 
 { TOptElse }
@@ -585,8 +626,8 @@ end;
 
 function TAbstractSyntaxTreeBase.ResultType: TParserResultType;
 begin
-  // Default result type is rtObject.
-  result := rtObject;
+  // Default result type is rtUndefined
+  result := rtUndefined;
 end;
 
 function TAbstractSyntaxTreeBase.TypeCheck(out Msg: String): boolean;
@@ -617,8 +658,14 @@ end;
 
 function TVariable.ResultType: TParserResultType;
 begin
-  // TODO : Depends on the variable!
-  Result := inherited ResultType;
+  if Assigned(ASTTypeTable) then
+    Result := ASTTypeTable.VariableType(FIdent);
+
+
+  if (Result = rtUndefined) and
+     (Assigned(OnGetIdentType))
+  then
+    Result := OnGetIdentType(FIdent)
 end;
 
 { TVarList }

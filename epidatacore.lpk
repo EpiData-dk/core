@@ -13,6 +13,7 @@
       <Parsing>
         <SyntaxOptions>
           <AllowLabel Value="False"/>
+          <CPPInline Value="False"/>
         </SyntaxOptions>
       </Parsing>
       <CodeGeneration>
@@ -34,7 +35,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="3" Build="1"/>
-    <Files Count="61">
+    <Files Count="62">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -275,11 +276,14 @@
         <Filename Value="Parser/parser_types.pas"/>
         <UnitName Value="parser_types"/>
       </Item60>
-     <Item61>
+      <Item61>
         <Filename Value="Reports/epireport_counts.pas"/>
         <UnitName Value="epireport_counts"/>
       </Item61>
-
+      <Item62>
+        <Filename Value="Parser/typetable.pas"/>
+        <UnitName Value="typetable"/>
+      </Item62>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
