@@ -2,6 +2,8 @@
 
 type
 
+  TEpiHeadingChangeEvent = (ehceType);
+
   { TEpiHeadings }
 
   TEpiHeadings = class(TEpiCustomControlItemList)
@@ -22,15 +24,19 @@ type
   private
     FCaption:   TEpiTranslatedTextWrapper;
     FDataFile: TEpiDataFile;
+    FHeadingType: TEpiHeadingType;
     function   GetSection: TEpiSection;
+    procedure SetHeadingType(AValue: TEpiHeadingType);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    function    SaveAttributesToXml: string; override;
   public
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    DataFile: TEpiDataFile read FDataFile;
     property    Section:  TEpiSection read GetSection;
+    property    HeadingType: TEpiHeadingType read FHeadingType write SetHeadingType;
   end;
 

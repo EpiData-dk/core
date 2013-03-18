@@ -725,7 +725,7 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
-  Rights := TEpiAdminRights(LoadAttrInt(Root, rsRights));
+//  Rights := TEpiAdminRights(LoadAttrInt(Root, rsRights));
 end;
 
 end.

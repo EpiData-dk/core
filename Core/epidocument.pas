@@ -13,6 +13,8 @@ uses
 
 type
 
+  TEpiDocumentChangeEvent = (edcePassword);
+
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
@@ -29,6 +31,7 @@ type
     FRelations: TEpiRelations;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
+    procedure  SetPassWord(AValue: string);
   protected
     procedure  SetModified(const AValue: Boolean); override;
     function   SaveAttributesToXml: string; override;
@@ -54,7 +57,7 @@ type
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
     // EpiData XML Version 2 perperties:
-    property   PassWord: string read FPassWord write FPassWord;
+    property   PassWord: string read FPassWord write SetPassWord;
 
   { Cloning }
   protected
@@ -78,6 +81,16 @@ end;
 procedure TEpiDocument.SetOnPassword(const AValue: TRequestPasswordEvent);
 begin
   Admin.OnPassword := AValue;
+end;
+
+procedure TEpiDocument.SetPassWord(AValue: string);
+var
+  Val: String;
+begin
+  if FPassWord = AValue then Exit;
+  Val := FPassWord;
+  FPassWord := AValue;
+  DoChange(eegDocument, Word(edcePassword), @Val);
 end;
 
 procedure TEpiDocument.SetModified(const AValue: Boolean);

@@ -13,7 +13,9 @@ var
 begin
   result := nil;
   for i := 0 to Count - 1 do
-    if Jump[i].JumpValueAsString = Value then
+    if (Jump[i].JumpValueAsString = Value) or
+       (Jump[i].JumpValueAsString = TEpiJump.DefaultOnAnyValue)
+    then
       Exit(Jump[i]);
 end;
 
@@ -170,6 +172,11 @@ begin
   EndUpdate;
 end;
 
+class function TEpiJump.DefaultOnAnyValue: string;
+begin
+  result := JMP_ANY;
+end;
+
 { TEpiBoolJump }
 
 procedure TEpiBoolJump.SetJumpValue(const AValue: EpiBool);
@@ -180,7 +187,10 @@ end;
 
 function TEpiBoolJump.GetJumpValueAsString: string;
 begin
-  Result := IntToStr(JumpValue);
+  if JumpValue = TEpiBoolField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := IntToStr(JumpValue);
 end;
 
 function TEpiBoolJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -193,9 +203,14 @@ end;
 procedure TEpiBoolJump.LoadFromXml(Root: TDOMNode);
 var
   Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrInt(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiBoolField.DefaultMissing
+  else
+    JumpValue := StrToInt(S);
 end;
 
 procedure TEpiBoolJump.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -214,7 +229,10 @@ end;
 
 function TEpiIntJump.GetJumpValueAsString: string;
 begin
-  Result := IntToStr(JumpValue);
+  if JumpValue = TEpiIntField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := IntToStr(JumpValue);
 end;
 
 function TEpiIntJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -226,10 +244,14 @@ end;
 
 procedure TEpiIntJump.LoadFromXml(Root: TDOMNode);
 var
-  Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrInt(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiIntField.DefaultMissing
+  else
+    JumpValue := StrToInt64(S);
 end;
 
 procedure TEpiIntJump.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -248,7 +270,10 @@ end;
 
 function TEpiFloatJump.GetJumpValueAsString: string;
 begin
-  Result := FloatToStr(JumpValue);
+  if JumpValue = TEpiFloatField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := FloatToStr(JumpValue);
 end;
 
 function TEpiFloatJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -260,10 +285,14 @@ end;
 
 procedure TEpiFloatJump.LoadFromXml(Root: TDOMNode);
 var
-  Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrFloat(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiFloatField.DefaultMissing
+  else
+    JumpValue := LoadAttrFloat(Root, rsJumpOn);
 end;
 
 procedure TEpiFloatJump.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -282,7 +311,10 @@ end;
 
 function TEpiStringJump.GetJumpValueAsString: string;
 begin
-  Result := JumpValue;
+  if JumpValue = TEpiStringField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := JumpValue;
 end;
 
 function TEpiStringJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -295,9 +327,14 @@ end;
 procedure TEpiStringJump.LoadFromXml(Root: TDOMNode);
 var
   Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrString(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiStringField.DefaultMissing
+  else
+    JumpValue := S;
 end;
 
 procedure TEpiStringJump.Assign(const AEpiCustomBase: TEpiCustomBase);

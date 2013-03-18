@@ -27,7 +27,7 @@ type
 implementation
 
 uses
-  epimiscutils, epidatafilestypes;
+  epimiscutils, epidatafilestypes, epistringutils;
 
 { TEpiReportExtendedFieldList }
 
@@ -115,6 +115,14 @@ begin
     if Assigned(Comparison) or
        Assigned(Jumps) or
        Assigned(Calculation) or
+       Assigned(Ranges) or
+       (EntryMode <> emDefault) or
+       ConfirmEntry or
+       RepeatValue or
+       (DefaultValueAsString <> '') or
+       ShowValueLabel or
+       ForcePickList or
+       Assigned(ValueLabelWriteField) or
        (Notes.Text <> '') then
     begin
       DoTableCell(13, i+1, 'x');
@@ -128,12 +136,20 @@ begin
   with TEpiField(ExtendedList[i]) do
   begin
     j := 0;
-    if Assigned(Comparison)  then inc(j);
-    if Assigned(Jumps)       then inc(j);
-    if Assigned(Calculation) then inc(j);
-    if (Notes.Text <> '')    then inc(j);
+    if Assigned(Comparison)     then inc(j);
+    if Assigned(Jumps)          then inc(j);
+    if Assigned(Calculation)    then inc(j);
+    if Assigned(Ranges)         then inc(j);
+    if (EntryMode <> emDefault) then inc(j);
+    if ConfirmEntry             then inc(j);
+    if RepeatValue              then inc(j);
+    if (DefaultValueAsString <> '') then inc(j);
+    if ShowValueLabel               then inc(j);
+    if ForcePickList                then inc(j);
+    if Assigned(ValueLabelWriteField) then inc(j);
+    if (Notes.Text <> '')             then inc(j);
 
-    DoTableHeader(Name, 2, j + 1);
+    DoTableHeader(Name + ': ' + Question.Text, 2, j + 1);
     DoTableCell(0, 0, 'Extension:');
     DoTableCell(1, 0, 'Value:');
 
@@ -141,14 +157,7 @@ begin
     if Assigned(Comparison)  then
     begin
       DoTableCell(0, j, 'Comparison');
-      S := Name;
-      case Comparison.CompareType of
-        fcLT:  S += '<';
-        fcLEq: S += '<=';
-        fcGEq: S += '>=';
-        fcGT:  S += '>';
-      end;
-      S += Comparison.CompareField.Name;
+      S := Name + ComparisonTypeToString(Comparison.CompareType) + Comparison.CompareField.Name;
       DoTableCell(1, j, S);
       Inc(j);
     end;
@@ -216,6 +225,65 @@ begin
       Inc(j);
     end;
 
+    if Assigned(Ranges)       then
+    begin
+      DoTableCell(0, j, 'Range');
+      DoTableCell(1, j, Ranges[0].AsString[true] + '-' + Ranges[0].AsString[false]);
+      inc(j);
+    end;
+
+    if (EntryMode <> emDefault) then
+    begin
+      DoTableCell(0, j, 'Entry Mode');
+      Case EntryMode of
+        emMustEnter: DoTableCell(1, j, 'Must Enter');
+        emNoEnter:   DoTableCell(1, j, 'No Enter');
+      end;
+      inc(j);
+    end;
+
+    if ConfirmEntry             then
+    begin
+      DoTableCell(0, j, 'Confirm Entry');
+      DoTableCell(1, j, 'true');
+      inc(j);
+    end;
+
+    if RepeatValue              then
+    begin
+      DoTableCell(0, j, 'Repeat Value');
+      DoTableCell(1, j, 'true');
+      inc(j);
+    end;
+
+    if (DefaultValueAsString <> '') then
+    begin
+      DoTableCell(0, j, 'Default Value');
+      DoTableCell(1, j, DefaultValueAsString);
+      inc(j);
+    end;
+
+    if ShowValueLabel               then
+    begin
+      DoTableCell(0, j, 'Show Value Label');
+      DoTableCell(1, j, 'true');
+      inc(j);
+    end;
+
+    if ForcePickList                then
+    begin
+      DoTableCell(0, j, 'Show Picklist');
+      DoTableCell(1, j, 'true');
+      inc(j);
+    end;
+
+    if Assigned(ValueLabelWriteField) then
+    begin
+      DoTableCell(0, j, 'Write Value Label text to Field');
+      DoTableCell(1, j, ValueLabelWriteField.Name + ': ' + EpiCutString(ValueLabelWriteField.Question.Text, 15));
+      inc(j);
+    end;
+
     if (Notes.Text <> '') then
     begin
       DoTableCell(0, j, 'Notes');
@@ -223,6 +291,24 @@ begin
       Inc(j);
     end;
     DoTableFooter('');
+
+    if Assigned(ValueLabelSet) then
+    begin
+      DoTableHeader(ValueLabelSet.Name + ': (' + EpiTypeNames[ValueLabelSet.LabelType] + ')', 3, ValueLabelSet.Count + 1);
+
+      DoTableCell(0, 0, 'Category');
+      DoTableCell(1, 0, 'Label');
+      DoTableCell(2, 0, 'Missing');
+
+      for j := 0 to ValueLabelSet.Count - 1 do
+      with ValueLabelSet[j] do
+      begin
+        DoTableCell(0, j+1, ValueAsString);
+        DoTableCell(1, j+1, TheLabel.Text);
+        DoTableCell(2, j+1, BoolToStr(IsMissingValue, 'yes', ''));
+      end;
+      DoTableFooter('');
+    end;
   end;
 end;
 

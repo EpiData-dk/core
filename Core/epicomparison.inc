@@ -96,6 +96,8 @@ end;
 function ComparisonTypeToString(ct: TEpiComparisonType): string;
 begin
   case ct of
+    fcEq:  result := '=';
+    fcNEq: result := '<>';
     fcLT:  result := '<';
     fcLEq: result := '<=';
     fcGEq: result := '>=';

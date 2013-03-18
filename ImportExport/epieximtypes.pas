@@ -8,6 +8,9 @@ uses
   Classes, SysUtils;
 
 type
+  TEpiFieldNamingCase = (fncUpper, fncLower, fncAsIs);
+
+
   TEpiEncoding =
     (eeUTF8,             // Unicode (UTF-8)
      eeCP1250,           // Centel Europe (CP1250)

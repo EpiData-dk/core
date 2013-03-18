@@ -193,7 +193,7 @@ begin
     DText += LineEnding;
     for j := 0 to FKeyFields.Count - 1 do
     begin
-      MText += FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[MRecNo] + LineEnding;
+      MText += ' ' + FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[MRecNo] + LineEnding;
       DText += LineEnding;
     end;
 
@@ -207,7 +207,7 @@ begin
       ValValueFail:
         begin
           MText += 'Compared Fields:' + LineEnding;
-          DText += 'Compared Fields:' + LineEnding;
+          DText += LineEnding;
 
           for j := 0 to Length(CmpFieldNames) - 1 do
           begin

@@ -10,6 +10,7 @@ uses
 type
 
   TEpiValueLabelChangeEvent = (evceValue, evceMissing);
+  TEpiValueLabelSetChangeEvent = (evlsMaxValueLength);
 
   { TEpiCustomValueLabel }
 
@@ -112,6 +113,13 @@ type
     function    GetValueLabelExists(const AValue: variant): boolean;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
     procedure   SetLabelType(const AValue: TEpiFieldType);
+  private
+    { House-keeping for MaxValueLengt }
+    FDirtyCache: boolean;
+    FCachedLength: LongInt;
+    procedure   DirtyCacheAndSendChangeEvent;
+    procedure   ItemChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
+                  EventType: Word; Data: Pointer);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     function    SaveInternal(Lvl: integer): string; virtual;
@@ -130,6 +138,8 @@ type
     function    ItemClass: TEpiCustomItemClass; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
+    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function    DeleteItem(Index: integer): TEpiCustomItem; override;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
     property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
@@ -175,7 +185,7 @@ begin
   if FIsMissingValue = AValue then Exit;
   Val := FIsMissingValue;
   FIsMissingValue := AValue;
-  DoChange(eegValueLabels, Word(evceMissing), @Val);
+  DoChange(eegValueLabel, Word(evceMissing), @Val);
 end;
 
 function TEpiCustomValueLabel.DoClone(AOwner: TEpiCustomBase;
@@ -270,7 +280,7 @@ begin
   if FValue = AValue then Exit;
   Val := FValue;
   FValue := AValue;
-  DoChange(eegValueLabels, Word(evceValue), @Val);
+  DoChange(eegValueLabel, Word(evceValue), @Val);
 end;
 
 function TEpiIntValueLabel.GetValueAsString: string;
@@ -308,7 +318,7 @@ begin
   if FValue = AValue then Exit;
   Val := FValue;
   FValue := AValue;
-  DoChange(eegValueLabels, Word(evceValue), @Val);
+  DoChange(eegValueLabel, Word(evceValue), @Val);
 end;
 
 function TEpiFloatValueLabel.GetValueAsString: string;
@@ -346,7 +356,7 @@ begin
   if FValue = AValue then Exit;
   Val := FValue;
   FValue := AValue;
-  DoChange(eegValueLabels, Word(evceValue), @Val);
+  DoChange(eegValueLabel, Word(evceValue), @Val);
 end;
 
 function TEpiStringValueLabel.GetValueAsString: string;
@@ -424,6 +434,12 @@ begin
   FLabelType := AValue;
 end;
 
+procedure TEpiValueLabelSet.DirtyCacheAndSendChangeEvent;
+begin
+  FDirtyCache := true;
+  DoChange(eegValueLabelSet, Word(evlsMaxValueLength), @FCachedLength);
+end;
+
 function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
 var
   i: Integer;
@@ -444,6 +460,15 @@ function TEpiValueLabelSet.GetValueLabels(const index: integer
   ): TEpiCustomValueLabel;
 begin
   result := TEpiCustomValueLabel(Items[index]);
+end;
+
+procedure TEpiValueLabelSet.ItemChangeHook(Sender: TObject;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  if (EventGroup <> eegValueLabel) then Exit;
+
+  if TEpiValueLabelChangeEvent(EventType) = evceValue then
+    DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
@@ -586,6 +611,7 @@ begin
   FLabelScope := vlsInternal;
   FLabelType  := ftInteger;
   FName       := '';
+  FDirtyCache := false;
 end;
 
 destructor TEpiValueLabelSet.Destroy;
@@ -645,6 +671,21 @@ begin
   result.Order := Count + 1;
 end;
 
+procedure TEpiValueLabelSet.InsertItem(const Index: integer;
+  Item: TEpiCustomItem);
+begin
+  inherited InsertItem(Index, Item);
+  Item.RegisterOnChangeHook(@ItemChangeHook, true);
+  DirtyCacheAndSendChangeEvent;
+end;
+
+function TEpiValueLabelSet.DeleteItem(Index: integer): TEpiCustomItem;
+begin
+  Result := inherited DeleteItem(Index);
+  Result.UnRegisterOnChangeHook(@ItemChangeHook);
+  DirtyCacheAndSendChangeEvent;
+end;
+
 function TEpiValueLabelSet.MissingCount: LongInt;
 var
   i: Integer;
@@ -658,9 +699,14 @@ function TEpiValueLabelSet.MaxValueLength: LongInt;
 var
   i: Integer;
 begin
+  if not FDirtyCache then
+    Exit(FCachedLength);
+
   Result := 0;
   for i := 0 to Count -1 do
     Result := Max(Result, UTF8Length(ValueLabels[i].ValueAsString));
+  FCachedLength := Result;
+  FDirtyCache := false;
 end;
 
 { TEpiValueLabelSets }

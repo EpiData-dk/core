@@ -4,7 +4,7 @@ type
 
   { TEpiComparison }
 
-  TEpiComparisonType = (fcLT, fcLEq, fcGEq, fcGT);
+  TEpiComparisonType = (fcEq, fcNEq, fcLT, fcLEq, fcGEq, fcGT);
   TEpiComparison = class(TEpiCustomBase)
   private
     function GetOwnerField: TEpiField;

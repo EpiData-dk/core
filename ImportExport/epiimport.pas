@@ -30,6 +30,7 @@ type
     function    ReEncodeString(Const Str: string): string;
     function    StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
   private
+    FImportCasing: TEpiFieldNamingCase;
     function    TruncToInt(e: Extended): integer;
   public
     constructor Create;
@@ -43,6 +44,8 @@ type
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
+    // Import casing only relevant for .rec files, since they are considere case-incensitive.
+    property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
   end;
 
 implementation
@@ -343,6 +346,12 @@ begin
 
       // Trim text information.
       TmpName := Trim(TmpName);
+      case ImportCasing of
+        fncUpper: TmpName := UTF8UpperCase(TmpName);
+        fncLower: TmpName := UTF8LowerCase(TmpName);
+        fncAsIs: ;
+      end;
+
       TmpLabel := Trim(TmpLabel);
 
       if FieldIsQuestion then

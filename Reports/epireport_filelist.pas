@@ -55,14 +55,21 @@ begin
     FFileList.Objects[i] := Doc;
   end;
 
-  DoTableHeader('', 2, FFileList.Count + 1);
-  DoTableCell(0, 0, 'Filename');
-  DoTableCell(1, 0, 'Project Title');
+  DoTableHeader('', 5, FFileList.Count + 1);
+  DoTableCell(0, 0, 'File No');
+  DoTableCell(1, 0, 'Filename');
+  DoTableCell(2, 0, 'Project Title');
+  DoTableCell(3, 0, 'Created');
+  DoTableCell(4, 0, 'Last Edited');
 
   for i := 0 to FFileList.Count - 1 do
   begin
-    DoTableCell(0, i + 1, ExtractFileName(FFileList[i]));
-    DoTableCell(1, i + 1, TEpiDocument(FFileList.Objects[i]).Study.Title.Text);
+    Doc := TEpiDocument(FFileList.Objects[i]);
+    DoTableCell(0, i + 1, IntToStr(i + 1));
+    DoTableCell(1, i + 1, ExtractFileName(FFileList[i]));
+    DoTableCell(2, i + 1, Doc.Study.Title.Text);
+    DoTableCell(3, i + 1, DateToStr(Doc.Study.Created));
+    DoTableCell(4, i + 1, DateToStr(Doc.Study.ModifiedDate));
   end;
   DoTableFooter('');
 end;

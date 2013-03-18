@@ -41,6 +41,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    SaveAttributesToXml: string; override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    class function DefaultOnAnyValue: string;
     property    JumpToField: TEpiField read FJumpToField write SetJumpToField;
     property    JumpType: TEpiJumpType read FJumpType write SetJumpType;
     property    ResetType: TEpiJumpResetType read FResetType write SetResetType;
