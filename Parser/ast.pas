@@ -346,8 +346,10 @@ begin
   FType := DefineType;
   FIdent := Ident;
 
-  if not Assigned(ASTTypeTable) then
-    ASTTypeTable := TTypeTable.Create;
+  if Assigned(OnGetSymbolTable) then
+    ASTTypeTable := OnGetSymbolTable()
+  else
+    Exit;
 
   if ASTTypeTable.VariableExists(FIdent) then
   begin

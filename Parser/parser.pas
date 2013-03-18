@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, parser_core, AST, epidatafiles,
-  parser_types;
+  parser_types, typetable;
 
 type
 
@@ -15,15 +15,18 @@ type
   TParser = class(TObject)
   private
     FDataFile: TEpiDataFile;
+    FSymbolTable: TTypeTable;
     function InternalParse: boolean;
     procedure ParseError(Const Msg: string; Const LineNo, ColNo: integer; Const Text: string);
     function GetIdentType(Const VarName: string): TParserResultType;
+    function GetSymbolTable: TTypeTable;
   public
     constructor Create;
     destructor Destroy; override;
     function Parse(Const Line: String; out StatementList: TStatementList): boolean; overload;
     function Parse(Const Lines: TStrings; out StatementList: TStatementList): boolean; overload;
     property DataFile: TEpiDataFile read FDataFile write FDataFile;
+    property SymbolTable: TTypeTable read FSymbolTable write FSymbolTable;
   end;
 
 implementation
@@ -81,6 +84,11 @@ begin
     result := FieldTypeToParserType[F.FieldType];
 end;
 
+function TParser.GetSymbolTable: TTypeTable;
+begin
+  result := FSymbolTable;
+end;
+
 constructor TParser.Create;
 begin
   Assign(yyinput, GetTempFileName('', 'epidata_parser'));
@@ -88,6 +96,7 @@ begin
 
   OnParseError := @ParseError;
   OnGetIdentType := @GetIdentType;
+  OnGetSymbolTable := @GetSymbolTable;
 end;
 
 destructor TParser.Destroy;

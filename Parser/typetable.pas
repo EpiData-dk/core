@@ -12,7 +12,7 @@ type
 
   { TTypeTable }
 
-  TTypeTable = class
+  TTypeTable = class(TObject)
   private
     FTable: TFPDataHashTable;
   public

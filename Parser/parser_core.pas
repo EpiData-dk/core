@@ -10,17 +10,20 @@ uses
   sysutils,
   yacclib,
   lexlib,
-  parser_types;
+  parser_types,
+  typetable;
 
 type
   IdString = String[64];
   TParserError = procedure (Const Msg: string; Const LineNo, ColNo: integer; Const Text: string) of object;
   TParserGetIdentType = function (Const VarName: string): TParserResultType of object;
+  TParserGetSymbolTable = function: TTypeTable of object;
 
 var
   StmList: TStatementList;
   OnParseError: TParserError;
   OnGetIdentType: TParserGetIdentType;
+  OnGetSymbolTable: TParserGetSymbolTable;
 
 function yyparse: integer;
 procedure yyerror(msg: string);
