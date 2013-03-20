@@ -78,9 +78,8 @@ implementation
 %type <Word>			typicalcommands emptycommands
 %type <TParserResultType>	definetype
 %type <TVarList>		varlist
-%type <TVariable>		variable
-%type <TExpr>			opt_bracket expr
-%type <TTerm>			term
+%type <TCustomVariable>		variable
+%type <TExpr>			opt_bracket expr term
 %type <TOptElse>		opt_else
 %type <TParserOperationType>	typecast
 
@@ -122,7 +121,7 @@ statementlist	:	statement OPSemicolon statementlist		{ $$ := TStatementList.Crea
 		| 	/* empty */					{ $$ := nil; }
 		;
 
-statement 	:	OPBegin statementlist OPEnd			{ $$ := TStatementList.Create($2, nil); }  
+statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }  
 		| 	OPIf expr OPThen statement opt_else		{ $$ := TIfThen.Create($2, $4, $5); } 
 		|	variable OPAssign expr				{ $$ := TAssignment.Create($1, $3); } 
 /*		|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  */
@@ -149,7 +148,7 @@ varlist		:	variable varlist    				{ $$ := TVarlist.Create($1, $2); }
 		;
 */
 
-variable	:	OPIdentifier					{ $$ := TVariable.Create($1); }
+variable	:	OPIdentifier					{ $$ := TCustomVariable.CreateVariable($1); }
 		;
 
 expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
@@ -175,14 +174,14 @@ expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
 		|	term						
 		;
 
-term		:	OPOpenParan expr OPCloseParan			{ $$ := TParen.Create($2); }
-		|	typecast OPOpenParan expr OPCloseParan		{ $$ := TTypeCast.Create($1, $3) }
-                |       variable					{ $$ := TTermVar.Create($1); }
+term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
+		|	typecast OPOpenParan expr OPCloseParan		{ $$ := TTypeCast.Create($1, $3, nil) }
+                |       variable					{ $$ := $1; }
 		|	OPNumber					{ $$ := TLiteral.Create($1);  }
 		|	OPHexNumber             			{ $$ := TLiteral.Create($1);  }
 		|	OPFloat						{ $$ := TLiteral.Create($1);  }
-		|	OPTrue						{ $$ := TLiteral.Create($1); }
-		|	OPFalse						{ $$ := TLiteral.Create($1); }
+		|	OPTrue						{ $$ := TLiteral.Create(true); }
+		|	OPFalse						{ $$ := TLiteral.Create(false); }
 		;
 
 typecast	:	OPStringCast					{ $$ := otStringCast }

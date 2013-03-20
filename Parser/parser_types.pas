@@ -67,9 +67,13 @@ type
     otSemicolon,
     otComma,
     otPeriod,
-    otAssign
+    otAssign,
+
+    // Term
+    otVariable
   );
 
+  TExecutorGetRecordIndex = function(Sender: TObject): integer;
 
 implementation
 

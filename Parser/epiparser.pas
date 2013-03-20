@@ -1,4 +1,4 @@
-unit parser;
+unit epiparser;
 
 {$mode objfpc}{$H+}
 
@@ -10,9 +10,9 @@ uses
 
 type
 
-  { TParser }
+  { TEpiParser }
 
-  TParser = class(TObject)
+  TEpiParser = class(TObject)
   private
     FDataFile: TEpiDataFile;
     FSymbolTable: TTypeTable;
@@ -20,6 +20,7 @@ type
     procedure ParseError(Const Msg: string; Const LineNo, ColNo: integer; Const Text: string);
     function GetIdentType(Const VarName: string): TParserResultType;
     function GetSymbolTable: TTypeTable;
+    procedure ResetFile;
   public
     constructor Create;
     destructor Destroy; override;
@@ -33,23 +34,24 @@ implementation
 
 uses
   LexLib, epidatafilestypes;
-{ TParser }
 
-function TParser.InternalParse: boolean;
+{ TEpiParser }
+
+function TEpiParser.InternalParse: boolean;
 begin
   Flush(yyinput);
   Reset(yyinput);
   result := yyparse = 0;
 end;
 
-procedure TParser.ParseError(const Msg: string; const LineNo, ColNo: integer;
+procedure TEpiParser.ParseError(const Msg: string; const LineNo, ColNo: integer;
   const Text: string);
 begin
   if IsConsole then
     writeln('(', yylineno, ',', yycolno, '): ', msg, ' at or before ''', yytext, '''.')
 end;
 
-function TParser.GetIdentType(const VarName: string): TParserResultType;
+function TEpiParser.GetIdentType(const VarName: string): TParserResultType;
 var
   F: TEpiField;
 const
@@ -84,12 +86,12 @@ begin
     result := FieldTypeToParserType[F.FieldType];
 end;
 
-function TParser.GetSymbolTable: TTypeTable;
+function TEpiParser.GetSymbolTable: TTypeTable;
 begin
   result := FSymbolTable;
 end;
 
-constructor TParser.Create;
+constructor TEpiParser.Create;
 begin
   Assign(yyinput, GetTempFileName('', 'epidata_parser'));
   Rewrite(yyinput);
@@ -99,27 +101,34 @@ begin
   OnGetSymbolTable := @GetSymbolTable;
 end;
 
-destructor TParser.Destroy;
+destructor TEpiParser.Destroy;
 begin
-  Close(yyinput);
-  Erase(yyinput);
+//  Close(yyinput);
+//  Erase(yyinput);
   inherited Destroy;
 end;
 
-function TParser.Parse(const Line: String; out StatementList: TStatementList
+procedure TEpiParser.ResetFile;
+begin
+  //Rewrite(yyinput);
+end;
+
+function TEpiParser.Parse(const Line: String; out StatementList: TStatementList
   ): boolean;
 begin
+  ResetFile;
   WriteLn(yyinput, line);
   result := InternalParse;
   StatementList := StmList;
 end;
 
-function TParser.Parse(const Lines: TStrings; out StatementList: TStatementList
+function TEpiParser.Parse(const Lines: TStrings; out StatementList: TStatementList
   ): boolean;
 var
   i: Integer;
   F: TextFile;
 begin
+  ResetFile;
   for i := 0 to Lines.Count -1 do
     WriteLn(yyinput, Lines[i]);
   result := InternalParse;

@@ -5,11 +5,13 @@ interface
 uses
   Classes, SysUtils,
   lexlib,
-  parser_types;
+  parser_types,
+  epidatafilestypes,
+  epidatafiles;
 
 type
   TExpr = class;
-  TVariable = class;
+  TCustomVariable = class;
   TStatement = class;
 
   { TAbstractSyntaxTreeBase }
@@ -22,9 +24,13 @@ type
   protected
     constructor Create; virtual;
   public
+    destructor Destroy; override;
     procedure PrettyPrint; virtual;
     function ResultType: TParserResultType; virtual;
     function TypeCheck(out Msg: String): boolean; virtual;
+    property LineNo: integer read FLineNo;
+    property ColNo: integer read FColNo;
+    property Line: string read FLine;
   end;
 
   TCustomStatement = class(TAbstractSyntaxTreeBase);
@@ -33,12 +39,15 @@ type
 
   TAssignment = class(TCustomStatement)
   private
-    FVAriable: TVariable;
+    FVAriable: TCustomVariable;
     FExpr: TExpr;
   public
-    constructor Create(Const Variable: TVariable; Const Expr: TExpr);
+    constructor Create(Const Variable: TCustomVariable; Const Expr: TExpr);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Variable: TCustomVariable read FVAriable;
+    property Expr: TExpr read FExpr;
   end;
 
   { TOptElse }
@@ -48,8 +57,10 @@ type
     FStatement: TCustomStatement;
   public
     constructor Create(Const Statement: TCustomStatement);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Statment: TCustomStatement read FStatement;
   end;
 
   { TIfThen }
@@ -62,51 +73,56 @@ type
   public
     constructor Create(Const Expr: TExpr; Const Statement: TCustomStatement;
       Const OptElse: TOptElse);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Expr: TExpr read FExpr;
+    property Statement: TCustomStatement read FStatement;
+    property OptElse: TOptElse read FOptElse;
   end;
 
-  TTerm = class(TAbstractSyntaxTreeBase);
+
+  { TExpr }
+
+  TExpr = class(TAbstractSyntaxTreeBase)
+  private
+    FOp: TParserOperationType;
+    FL:  TExpr;
+    FR:  TExpr;
+  protected
+    function CommonType(Const A, B: TExpr): TParserResultType;
+  public
+    constructor Create(Const Op: TParserOperationType; Const L, R: TExpr);
+    destructor Destroy; override;
+    procedure PrettyPrint; override;
+    function TypeCheck(out Msg: String): boolean; override;
+    property Operation: TParserOperationType read FOp;
+    property Left: TExpr read FL;
+    property Right: TExpr read FR;
+  public
+    function AsInteger: EpiInteger; virtual;
+    function AsFloat: EpiFloat; virtual;
+    function AsBoolean: Boolean; virtual;
+  end;
 
   { TTypeCast }
 
-  TTypeCast = class(TTerm)
+  TTypeCast = class(TExpr)
   private
-    FOp: TParserOperationType;
-    FExpr: TExpr;
+    function GetExpr: TExpr;
   public
-    constructor Create(Const Op: TParserOperationType; Const Expr: TExpr);
     function TypeCheck(out Msg: String): boolean; override;
     function ResultType: TParserResultType; override;
-  end;
-
-  { TParen }
-
-  TParen = class(TTerm)
-  private
-    FExpr: TExpr;
+    property Expr: TExpr read GetExpr;
   public
-    constructor Create(Const Expr: TExpr);
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
-    function ResultType: TParserResultType; override;
-  end;
-
-  { TTermVar }
-
-  TTermVar = class(TTerm)
-  private
-    FVariable: TVariable;
-  public
-    constructor Create(Const Variable: TVariable);
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
-    function ResultType: TParserResultType; override;
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsBoolean: Boolean; override;
   end;
 
   { TLiteral }
 
-  TLiteral = class(TTerm)
+  TLiteral = class(TExpr)
   private
     FValueType: TParserResultType;
     FIntVal: integer;
@@ -119,20 +135,13 @@ type
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
     function ResultType: TParserResultType; override;
-  end;
-
-  { TExpr }
-
-  TExpr = class(TAbstractSyntaxTreeBase)
-  private
-    FOp: TParserOperationType;
-    FL:  TExpr;
-    FR:  TExpr;
+    property ValueType: TParserResultType read FValueType;
   public
-    constructor Create(Const Op: TParserOperationType; Const L, R: TExpr);
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsBoolean: Boolean; override;
   end;
+
 
   { TUnaryExpr }
 
@@ -140,6 +149,10 @@ type
   public
     function TypeCheck(out Msg: String): boolean; override;
     function ResultType: TParserResultType; override;
+  public
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsBoolean: Boolean; override;
   end;
 
   { TBinaryExpr }
@@ -148,6 +161,10 @@ type
   public
     function TypeCheck(out Msg: String): boolean; override;
     function ResultType: TParserResultType; override;
+  public
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsBoolean: Boolean; override;
   end;
 
   { TRelationalExpr }
@@ -156,30 +173,64 @@ type
   public
     function TypeCheck(out Msg: String): boolean; override;
     function ResultType: TParserResultType; override;
+  public
+    function AsBoolean: Boolean; override;
   end;
 
-  { TVariable }
+  { TCustomVariable }
 
-  TVariable = class(TAbstractSyntaxTreeBase)
+  TCustomVariable = class(TExpr)
   private
     FIdent: string;
   public
-    constructor Create(Const Ident: string);
+    class function CreateVariable(Const Ident: String): TCustomVariable;
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Ident: string read FIdent;
+  end;
+
+  { TFieldVariable }
+
+  TFieldVariable = class(TCustomVariable)
+  private
+    FField: TEpiField;
+  public
+    constructor Create(Const Field: TEpiField);
     function ResultType: TParserResultType; override;
+  public
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsBoolean: Boolean; override;
+  end;
+
+  { TDefineVariable }
+
+  TDefineVariable = class(TCustomVariable)
+  private
+    FValue: Variant;
+  public
+    constructor Create();
+    function ResultType: TParserResultType; override;
+  public
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsBoolean: Boolean; override;
   end;
 
   { TVarList }
 
   TVarList = class(TAbstractSyntaxTreeBase)
   private
-    FVariable: TVariable;
+    FVariable: TCustomVariable;
     FVarList: TVarList;
   public
-    constructor Create(Const Variable: TVariable; Const VarList: TVarList);
+    constructor Create(Const Variable: TCustomVariable; Const VarList: TVarList);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Variable: TCustomVariable read FVariable;
+    property VarList: TVarList read FVarList;
   end;
 
   { TDefine }
@@ -190,8 +241,11 @@ type
     FType: TParserResultType;
   public
     constructor Create(Const DefineType: TParserResultType; Const Ident: string);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Ident: string read FIdent;
+    property IdentType: TParserResultType read FType;
   end;
 
   { TStatement }
@@ -202,8 +256,11 @@ type
     FVarList: TVarList;
   public
     constructor Create(Const StatementType: word; Const VarList: TVarList);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property StatementType: Integer read FStatementType;
+    property VarList: TVarList read FVarList;
   end;
 
   { TStatementList }
@@ -214,17 +271,70 @@ type
     FStatementList: TStatementList;
   public
     constructor Create(Const Statement: TCustomStatement; Const StatementList: TStatementList);
+    destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
+    property Statement: TCustomStatement read FStatement;
+    property StatementList: TStatementList read FStatementList;
   end;
 
 implementation
 
 uses
-  YaccLib, parser, typetable, parser_core, math;
+  YaccLib, typetable, parser_core, math;
 
 var
   ASTTypeTable: TTypeTable = nil;
+
+{ TDefineVariable }
+
+constructor TDefineVariable.Create;
+begin
+  inherited Create(otVariable, nil, nil);
+end;
+
+function TDefineVariable.AsInteger: EpiInteger;
+begin
+  Result := inherited AsInteger;
+end;
+
+function TDefineVariable.AsFloat: EpiFloat;
+begin
+  Result := inherited AsFloat;
+end;
+
+function TDefineVariable.AsBoolean: Boolean;
+begin
+  Result := inherited AsBoolean;
+end;
+
+{ TFieldVariable }
+
+constructor TFieldVariable.Create(const Field: TEpiField);
+begin
+  inherited Create(otVariable, nil, nil);
+  FField := Field;
+end;
+
+function TFieldVariable.ResultType: TParserResultType;
+begin
+  Result := OnGetIdentType(Ident);
+end;
+
+function TFieldVariable.AsInteger: EpiInteger;
+begin
+  Result := FField.AsInteger[0];
+end;
+
+function TFieldVariable.AsFloat: EpiFloat;
+begin
+  Result := FField.AsFloat[0];
+end;
+
+function TFieldVariable.AsBoolean: Boolean;
+begin
+  Result := Boolean(FField.AsBoolean[0]);
+end;
 
 
 { TRelationExpr }
@@ -255,6 +365,62 @@ end;
 function TRelationalExpr.ResultType: TParserResultType;
 begin
   Result := rtBoolean;
+end;
+
+function TRelationalExpr.AsBoolean: Boolean;
+var
+  CType: TParserResultType;
+begin
+  CType := CommonType(Left, Right);
+  case CType of
+    rtBoolean:
+    case Operation of
+      otEQ:  result := Left.AsBoolean = Right.AsBoolean;
+      otNEQ: result := Left.AsBoolean <> Right.AsBoolean;
+    end;
+
+    rtInteger:
+    case Operation of
+      otEQ:  result := Left.AsInteger = Right.AsInteger;
+      otNEQ: result := Left.AsInteger <>Right.AsInteger;
+      otLT:  result := Left.AsInteger < Right.AsInteger;
+      otLTE: result := Left.AsInteger <= Right.AsInteger;
+      otGT:  result := Left.AsInteger > Right.AsInteger;
+      otGTE: result := Left.AsInteger >= Right.AsInteger;
+    end;
+
+    rtFloat:
+    case Operation of
+      otEQ:  result := SameValue(Left.AsFloat, Right.AsFloat, 0.0);
+      otNEQ: result := not SameValue(Left.AsFloat, Right.AsFloat, 0.0);
+      otLT:  result := Left.AsFloat < Right.AsFloat;
+      otLTE: result := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
+      otGT:  result := Left.AsFloat > Right.AsFloat;
+      otGTE: result := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
+    end;
+
+{    rtString:
+    case Operation of
+      otEQ:  result := FL.AsS;
+      otNEQ: ;
+      otLT: ;
+      otLTE: ;
+      otGT: ;
+      otGTE: ;
+    end;}
+
+{    rtObject:
+    case Operation of
+      otEQ: ;
+      otNEQ: ;
+      otLT: ;
+      otLTE: ;
+      otGT: ;
+      otGTE: ;
+    end;}
+
+//    rtUndefined: ;
+  end;
 end;
 
 { TBinaryExpr }
@@ -292,13 +458,7 @@ begin
 end;
 
 function TBinaryExpr.ResultType: TParserResultType;
-var
-  Lr: TParserResultType;
-  Rr: TParserResultType;
 begin
-  Lr := FL.ResultType;
-  Rr := FR.ResultType;
-
   case FOp of
     otAnd,
     otOr:
@@ -308,13 +468,49 @@ begin
       Result := rtInteger;
     otMult,
     otPlus,
-    otMinus,
+    otMinus:
+      result := CommonType(FL, FR);
     otDivide:
-      result := TParserResultType(Max(Integer(Lr), Integer(RR)));
+      result := rtFloat;
 {      otShl,
       otShr,
       otXor,
       ;}
+  end;
+end;
+
+function TBinaryExpr.AsInteger: EpiInteger;
+begin
+  case Operation of
+    otPlus:  result := Left.AsInteger + Right.AsInteger;
+    otMinus: result := Left.AsInteger - Right.AsInteger;
+    otMult:  result := Left.AsInteger * Right.AsInteger;
+    otDiv:   result := Left.AsInteger div Right.AsInteger;
+    otMod:   result := Left.AsInteger mod Right.AsInteger;
+  else
+    result := inherited AsInteger;
+  end;
+end;
+
+function TBinaryExpr.AsFloat: EpiFloat;
+begin
+  case Operation of
+    otPlus:   result := Left.AsFloat + Right.AsFloat;
+    otMinus:  result := Left.AsFloat - Right.AsFloat;
+    otMult:   result := Left.AsFloat * Right.AsFloat;
+    otDivide: result := Left.AsFloat / Right.AsFloat;
+  else
+    result := inherited AsFloat;
+  end;
+end;
+
+function TBinaryExpr.AsBoolean: Boolean;
+begin
+  case Operation of
+    otOr:  result := Left.AsBoolean or Right.AsBoolean;
+    otAnd: result := Left.AsBoolean and Right.AsBoolean;
+  else
+    result := inherited AsBoolean;
   end;
 end;
 
@@ -335,6 +531,27 @@ end;
 function TUnaryExpr.ResultType: TParserResultType;
 begin
   Result := FL.ResultType;
+end;
+
+function TUnaryExpr.AsInteger: EpiInteger;
+begin
+  case Operation of
+    otMinus: result := -Left.AsInteger;
+  end;
+end;
+
+function TUnaryExpr.AsFloat: EpiFloat;
+begin
+  case Operation of
+    otMinus: result := -Left.AsFloat;
+  end;
+end;
+
+function TUnaryExpr.AsBoolean: Boolean;
+begin
+  case Operation of
+    otNot: result := (not Left.AsBoolean);
+  end;
 end;
 
 { TDefine }
@@ -368,6 +585,12 @@ begin
     ASTTypeTable.AddVariable(FIdent, FType);
 end;
 
+destructor TDefine.Destroy;
+begin
+  FIdent := '';
+  inherited Destroy;
+end;
+
 procedure TDefine.PrettyPrint;
 begin
   write('define ', FType, ' ', FIdent);
@@ -381,11 +604,18 @@ end;
 
 { TAssignment }
 
-constructor TAssignment.Create(const Variable: TVariable; const Expr: TExpr);
+constructor TAssignment.Create(const Variable: TCustomVariable; const Expr: TExpr);
 begin
   inherited Create;
   FExpr := Expr;
   FVAriable := Variable;
+end;
+
+destructor TAssignment.Destroy;
+begin
+  FExpr.Free;
+  FVAriable.Free;
+  inherited Destroy;
 end;
 
 procedure TAssignment.PrettyPrint;
@@ -416,6 +646,12 @@ begin
   FStatement := Statement;
 end;
 
+destructor TOptElse.Destroy;
+begin
+  FStatement.Free;
+  inherited Destroy;
+end;
+
 procedure TOptElse.PrettyPrint;
 begin
   FStatement.PrettyPrint;
@@ -437,6 +673,14 @@ begin
   FOptElse := OptElse;
 end;
 
+destructor TIfThen.Destroy;
+begin
+  FExpr.Free;
+  FStatement.Free;
+  FOptElse.Free;
+  inherited Destroy;
+end;
+
 procedure TIfThen.PrettyPrint;
 begin
   write('if');
@@ -453,54 +697,33 @@ end;
 
 function TIfThen.TypeCheck(out Msg: String): boolean;
 begin
-  Result := FExpr.TypeCheck(Msg) and FStatement.TypeCheck(Msg);
+  Result := (FExpr.TypeCheck(Msg)) and
+            (FExpr.ResultType = rtBoolean) and
+            (FStatement.TypeCheck(Msg));
 
   if Result and Assigned(FOptElse) then
-    FOptElse.TypeCheck(Msg);
-end;
-
-{ TTermVar }
-
-constructor TTermVar.Create(const Variable: TVariable);
-begin
-  inherited Create;
-  FVariable := Variable;
-end;
-
-procedure TTermVar.PrettyPrint;
-begin
-  FVariable.PrettyPrint;
-end;
-
-function TTermVar.TypeCheck(out Msg: String): boolean;
-begin
-  Result := FVariable.TypeCheck(Msg);
-end;
-
-function TTermVar.ResultType: TParserResultType;
-begin
-  Result := FVariable.ResultType;
+    result := FOptElse.TypeCheck(Msg);
 end;
 
 { TLiteral }
 
 constructor TLiteral.Create(const Value: Integer);
 begin
-  inherited Create;
+  inherited Create(otNumber, nil, nil);
   FValueType := rtInteger;
   FIntVal := Value;
 end;
 
 constructor TLiteral.Create(const Value: Extended);
 begin
-  inherited Create;
+  inherited Create(otFloat, nil, nil);
   FValueType := rtFloat;
   FExtVal := Value;
 end;
 
 constructor TLiteral.Create(const Value: Boolean);
 begin
-  inherited Create;
+  inherited Create(otNumber, nil, nil);
   FValueType := rtBoolean;
   FBoolVal := Value;
 end;
@@ -525,43 +748,46 @@ begin
   Result := FValueType;
 end;
 
-{ TParen }
-
-constructor TParen.Create(const Expr: TExpr);
+function TLiteral.AsInteger: EpiInteger;
 begin
-  inherited Create;
-  FExpr := Expr;
+  case FValueType of
+    rtInteger: result := FIntVal;
+    rtFloat:   result := Trunc(SimpleRoundTo(FExtVal, 0));
+    rtBoolean: Result := Integer(FBoolVal);
+  end;
 end;
 
-procedure TParen.PrettyPrint;
+function TLiteral.AsFloat: EpiFloat;
 begin
-  write('(');
-  FExpr.PrettyPrint;
-  write(')');
+  case FValueType of
+    rtInteger: result := FIntVal;
+    rtFloat:   result := FExtVal;
+    rtBoolean: if FBoolVal then
+                 result := 1
+               else
+                 result := 0;
+  end;
 end;
 
-function TParen.TypeCheck(out Msg: String): boolean;
+function TLiteral.AsBoolean: Boolean;
 begin
-  Result := FExpr.TypeCheck(Msg);
-end;
-
-function TParen.ResultType: TParserResultType;
-begin
-  Result := FExpr.ResultType;
+  case FValueType of
+    rtInteger: result := (FIntVal <> 0);
+    rtFloat:   result := (FExtVal <> 0);
+    rtBoolean: Result := FBoolVal;
+  end;
 end;
 
 { TTypeCast }
 
-constructor TTypeCast.Create(const Op: TParserOperationType; const Expr: TExpr);
+function TTypeCast.GetExpr: TExpr;
 begin
-  inherited Create;
-  FExpr := Expr;
-  FOp := Op;
+  Result := Left;
 end;
 
 function TTypeCast.TypeCheck(out Msg: String): boolean;
 begin
-  Result := FExpr.TypeCheck(Msg);
+  Result := Expr.TypeCheck(Msg);
 
   if result then
   case FOp of
@@ -584,7 +810,27 @@ begin
   Result := inherited ResultType;
 end;
 
+function TTypeCast.AsInteger: EpiInteger;
+begin
+  Result := inherited AsInteger;
+end;
+
+function TTypeCast.AsFloat: EpiFloat;
+begin
+  Result := inherited AsFloat;
+end;
+
+function TTypeCast.AsBoolean: Boolean;
+begin
+  Result := inherited AsBoolean;
+end;
+
 { TExpr }
+
+function TExpr.CommonType(const A, B: TExpr): TParserResultType;
+begin
+  result := TParserResultType(Math.Max(Ord(A.ResultType), Ord(B.ResultType)));
+end;
 
 constructor TExpr.Create(const Op: TParserOperationType; const L, R: TExpr);
 begin
@@ -592,6 +838,13 @@ begin
   FOp := Op;
   FL := L;
   FR := R;
+end;
+
+destructor TExpr.Destroy;
+begin
+  FL.Free;
+  FR.Free;
+  inherited Destroy;
 end;
 
 procedure TExpr.PrettyPrint;
@@ -606,10 +859,28 @@ end;
 
 function TExpr.TypeCheck(out Msg: String): boolean;
 begin
-  result := FL.TypeCheck(Msg);
+  result := true;
+
+  if Assigned(FL) then
+    result := FL.TypeCheck(Msg);
 
   if result and Assigned(FR) then
     result := FR.TypeCheck(Msg);
+end;
+
+function TExpr.AsInteger: EpiInteger;
+begin
+  result := TEpiIntField.DefaultMissing;
+end;
+
+function TExpr.AsFloat: EpiFloat;
+begin
+  result := TEpiFloatField.DefaultMissing;
+end;
+
+function TExpr.AsBoolean: Boolean;
+begin
+  result := Boolean(TEpiBoolField.DefaultMissing);
 end;
 
 { TAbstractSyntaxTreeBase }
@@ -619,6 +890,12 @@ begin
   FLineNo := yylineno;
   FColNo := yycolno;
   FLine := yyline;
+end;
+
+destructor TAbstractSyntaxTreeBase.Destroy;
+begin
+  FLine := '';
+  inherited Destroy;
 end;
 
 procedure TAbstractSyntaxTreeBase.PrettyPrint;
@@ -639,26 +916,47 @@ begin
   result := false;
 end;
 
-{ TVariable }
+{ TCustomVariable }
 
-constructor TVariable.Create(const Ident: string);
+class function TCustomVariable.CreateVariable(const Ident: String
+  ): TCustomVariable;
 begin
-  inherited Create;
-  FIdent := Ident;
+  if (not ASTTypeTable.VariableExists(Ident)) and
+     (not (OnGetIdentType(Ident) <> rtUndefined))
+  then
+  begin
+    yyerror('Variable "' + Ident + '" not defined or not in scope');
+    yyabort;
+    Exit;
+  end;
+
+  if ASTTypeTable.VariableExists(Ident) then
+    Result := TDefineVariable.Create();
+
+  if OnGetIdentType(Ident) <> rtUndefined then
+    Result := TFieldVariable.Create(nil);
+
+  Result.FIdent := Ident;
 end;
 
-procedure TVariable.PrettyPrint;
+destructor TCustomVariable.Destroy;
+begin
+  FIdent := '';
+  inherited Destroy;
+end;
+
+procedure TCustomVariable.PrettyPrint;
 begin
   write(' ', FIdent);
 end;
 
-function TVariable.TypeCheck(out Msg: String): boolean;
+function TCustomVariable.TypeCheck(out Msg: String): boolean;
 begin
   Msg := '';
   Result := true;
 end;
 
-function TVariable.ResultType: TParserResultType;
+function TCustomVariable.ResultType: TParserResultType;
 begin
   if Assigned(ASTTypeTable) then
     Result := ASTTypeTable.VariableType(FIdent);
@@ -672,11 +970,18 @@ end;
 
 { TVarList }
 
-constructor TVarList.Create(const Variable: TVariable; const VarList: TVarList);
+constructor TVarList.Create(const Variable: TCustomVariable; const VarList: TVarList);
 begin
   inherited Create;
   FVariable := Variable;
   FVarList := VarList;
+end;
+
+destructor TVarList.Destroy;
+begin
+  FVariable.Free;
+  FVarList.Free;
+  inherited Destroy;
 end;
 
 procedure TVarList.PrettyPrint;
@@ -706,6 +1011,12 @@ begin
   FVarList := VarList;
 end;
 
+destructor TStatement.Destroy;
+begin
+  FVarList.Free;
+  inherited Destroy;
+end;
+
 procedure TStatement.PrettyPrint;
 begin
   if Assigned(FVarList) then
@@ -725,6 +1036,13 @@ begin
   inherited Create;
   FStatement := Statement;
   FStatementList := StatementList;
+end;
+
+destructor TStatementList.Destroy;
+begin
+  FStatement.Free;
+  FStatementList.Free;
+  inherited Destroy;
 end;
 
 procedure TStatementList.PrettyPrint;

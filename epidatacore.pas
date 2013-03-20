@@ -18,7 +18,8 @@ uses
   epiglobals, epitools_val_dbl_entry, epidatafileutils, 
   epireport_doubleentry_validate, epireport_generator_txt, 
   epireport_generator_base, epireport_datafilesreport_base, epiexport_ddi, 
-  vinfo, AST, parser_core, parser, parser_types, epireport_counts, typetable;
+  vinfo, AST, parser_core, epiparser, parser_types, epireport_counts, 
+  typetable, epi_scriptexecutor;
 
 implementation
 

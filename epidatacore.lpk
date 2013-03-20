@@ -34,8 +34,8 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Major="1" Minor="3" Build="1"/>
-    <Files Count="62">
+    <Version Major="1" Minor="3" Release="1" Build="1"/>
+    <Files Count="63">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -269,8 +269,8 @@
         <UnitName Value="parser_core"/>
       </Item58>
       <Item59>
-        <Filename Value="Parser/parser.pas"/>
-        <UnitName Value="parser"/>
+        <Filename Value="Parser/epiparser.pas"/>
+        <UnitName Value="epiparser"/>
       </Item59>
       <Item60>
         <Filename Value="Parser/parser_types.pas"/>
@@ -284,6 +284,10 @@
         <Filename Value="Parser/typetable.pas"/>
         <UnitName Value="typetable"/>
       </Item62>
+      <Item63>
+        <Filename Value="Parser/epi_scriptexecutor.pas"/>
+        <UnitName Value="epi_scriptexecutor"/>
+      </Item63>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

@@ -86,15 +86,14 @@ type YYSType = record case Integer of
                  3 : ( yyIdString : IdString );
                  4 : ( yyInteger : Integer );
                  5 : ( yyTCustomStatement : TCustomStatement );
-                 6 : ( yyTExpr : TExpr );
-                 7 : ( yyTOptElse : TOptElse );
-                 8 : ( yyTParserOperationType : TParserOperationType );
-                 9 : ( yyTParserResultType : TParserResultType );
-                10 : ( yyTStatementList : TStatementList );
-                11 : ( yyTTerm : TTerm );
+                 6 : ( yyTCustomVariable : TCustomVariable );
+                 7 : ( yyTExpr : TExpr );
+                 8 : ( yyTOptElse : TOptElse );
+                 9 : ( yyTParserOperationType : TParserOperationType );
+                10 : ( yyTParserResultType : TParserResultType );
+                11 : ( yyTStatementList : TStatementList );
                 12 : ( yyTVarList : TVarList );
-                13 : ( yyTVariable : TVariable );
-                14 : ( yyWord : Word );
+                13 : ( yyWord : Word );
                end(*YYSType*);
 
 var yylval : YYSType;
@@ -123,13 +122,13 @@ begin
          yyval.yyTStatementList := nil; 
        end;
    4 : begin
-         yyval.yyTCustomStatement := TStatementList.Create(yyv[yysp-1].yyTStatementList, nil); 
+         yyval.yyTCustomStatement := yyv[yysp-1].yyTStatementList; 
        end;
    5 : begin
          yyval.yyTCustomStatement := TIfThen.Create(yyv[yysp-3].yyTExpr, yyv[yysp-1].yyTCustomStatement, yyv[yysp-0].yyTOptElse); 
        end;
    6 : begin
-         yyval.yyTCustomStatement := TAssignment.Create(yyv[yysp-2].yyTVariable, yyv[yysp-0].yyTExpr); 
+         yyval.yyTCustomStatement := TAssignment.Create(yyv[yysp-2].yyTCustomVariable, yyv[yysp-0].yyTExpr); 
        end;
    7 : begin
          yyval.yyTCustomStatement := TDefine.Create(yyv[yysp-1].yyTParserResultType, yyv[yysp-0].yyIdString); 
@@ -150,7 +149,7 @@ begin
          yyval.yyTParserResultType := rtFloat; 
        end;
   13 : begin
-         yyval.yyTVariable := TVariable.Create(yyv[yysp-0].yyIdString); 
+         yyval.yyTCustomVariable := TCustomVariable.CreateVariable(yyv[yysp-0].yyIdString); 
        end;
   14 : begin
          yyval.yyTExpr := TRelationalExpr.Create(otEQ, yyv[yysp-2].yyTExpr, yyv[yysp-0].yyTExpr); 
@@ -204,28 +203,28 @@ begin
          yyval := yyv[yysp-0];
        end;
   31 : begin
-         yyval.yyTTerm := TParen.Create(yyv[yysp-1].yyTExpr); 
+         yyval.yyTExpr := yyv[yysp-1].yyTExpr; 
        end;
   32 : begin
-         yyval.yyTTerm := TTypeCast.Create(yyv[yysp-3].yyTParserOperationType, yyv[yysp-1].yyTExpr) 
+         yyval.yyTExpr := TTypeCast.Create(yyv[yysp-3].yyTParserOperationType, yyv[yysp-1].yyTExpr, nil) 
        end;
   33 : begin
-         yyval.yyTTerm := TTermVar.Create(yyv[yysp-0].yyTVariable); 
+         yyval.yyTExpr := yyv[yysp-0].yyTCustomVariable; 
        end;
   34 : begin
-         yyval.yyTTerm := TLiteral.Create(yyv[yysp-0].yyInteger);  
+         yyval.yyTExpr := TLiteral.Create(yyv[yysp-0].yyInteger);  
        end;
   35 : begin
-         yyval.yyTTerm := TLiteral.Create(yyv[yysp-0].yyInteger);  
+         yyval.yyTExpr := TLiteral.Create(yyv[yysp-0].yyInteger);  
        end;
   36 : begin
-         yyval.yyTTerm := TLiteral.Create(yyv[yysp-0].yyExtended);  
+         yyval.yyTExpr := TLiteral.Create(yyv[yysp-0].yyExtended);  
        end;
   37 : begin
-         yyval.yyTTerm := TLiteral.Create(yyv[yysp-0].yyBoolean); 
+         yyval.yyTExpr := TLiteral.Create(true); 
        end;
   38 : begin
-         yyval.yyTTerm := TLiteral.Create(yyv[yysp-0].yyBoolean); 
+         yyval.yyTExpr := TLiteral.Create(false); 
        end;
   39 : begin
          yyval.yyTParserOperationType := otStringCast 
