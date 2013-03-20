@@ -458,6 +458,47 @@ begin
   end;
 end;
 
+function TEpiDataFile.SaveScripts(Lvl: integer): string;
+var
+  i: Integer;
+begin
+  result := '';
+  if (FBeforeRecordScript.Count = 0) and
+     (FAfterRecordScript.Count = 0)
+  then
+    Exit;
+
+  if FBeforeRecordScript.Count > 0 then
+  begin
+    Result += Indent(Lvl) + '<BeforeRecordScript>';
+    for i := 0 to FBeforeRecordScript.Count - 2 do
+      Result += FBeforeRecordScript[i] + LineEnding;
+    Result += FBeforeRecordScript[FBeforeRecordScript.Count - 1];
+    Result += Indent(Lvl) + '</BeforeRecordScript>' + LineEnding;
+  end;
+
+  if FAfterRecordScript.Count > 0 then
+  begin
+    Result += Indent(Lvl) + '<AfterRecordScript>';
+    for i := 0 to FAfterRecordScript.Count - 2 do
+      Result += FAfterRecordScript[i] + LineEnding;
+    Result += FAfterRecordScript[FAfterRecordScript.Count - 1];
+    Result += Indent(Lvl) + '</AfterRecordScript>' + LineEnding;
+  end;
+end;
+
+procedure TEpiDataFile.LoadScripts(Root: TDOMNode; ScriptList: TStrings);
+var
+  S: String;
+begin
+  // Root = <[Before|After]RecordScript>
+  S := Root.TextContent;
+  S := StringReplace(S, #13#10, #1, [rfReplaceAll]);
+  S := StringReplace(S, #10, #1, [rfReplaceAll]);
+  S := StringReplace(S, #13, #1, [rfReplaceAll]);
+  SplitString(S, ScriptList, [#1], []);
+end;
+
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
 begin
   if AValue then
@@ -622,6 +663,10 @@ begin
   FVersion := '';
   FCreated := Now;
 
+  // Scripts
+  FBeforeRecordScript := TStringList.Create;
+  FAfterRecordScript  := TStringList.Create;
+
   // Sections
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
@@ -656,6 +701,8 @@ end;
 
 destructor TEpiDataFile.Destroy;
 begin
+  FBeforeRecordScript.Free;
+  FAfterRecordScript.Free;
   FRecordStatus.Free;
   FSections.Free;
   FAllFields.Free;
@@ -681,7 +728,8 @@ function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
 begin
   Content +=
     SaveRecords(Lvl + 1) +
-    SaveKeyFields(Lvl + 1);
+    SaveKeyFields(Lvl + 1) +
+    SaveScripts(Lvl + 1);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -710,6 +758,12 @@ begin
   Caption.LoadFromXml(Root);
   FVersion := LoadAttrString(Root, rsVersion, FVersion, false);
   FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
+
+  // VERSION 3 PROPERTY
+  if LoadNode(Node, Root, 'BeforeRecordScript', false) then
+    LoadScripts(Node, FBeforeRecordScript);
+  if LoadNode(Node, Root, 'AfterRecordScript', false) then
+    LoadScripts(Node, FAfterRecordScript);
 
   // VERSION 2 PROPERTY
   if LoadNode(Node, Root, 'KeyFields', false) then

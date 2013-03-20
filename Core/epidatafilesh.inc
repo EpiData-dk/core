@@ -56,6 +56,8 @@ type
     procedure   LoadRecords(Root: TDOMNode);
     function    SaveKeyFields(Lvl: integer): string;
     procedure   LoadKeyFields(Root: TDOMNode);
+    function    SaveScripts(Lvl: integer): string;
+    procedure   LoadScripts(Root: TDOMNode; ScriptList: TStrings);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
@@ -98,6 +100,8 @@ type
 
   { DataFile properties }
   private
+    FAfterRecordScript: TStrings;
+    FBeforeRecordScript: TStrings;
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
     FKeyFields: TEpiFields;
@@ -110,6 +114,8 @@ type
     property    Version: string read FVersion write SetVersion;
     property    Notes: TEpiTranslatedText read FNotes;
     property    KeyFields: TEpiFields read FKeyFields;
+    property    BeforeRecordScript: TStrings read FBeforeRecordScript;
+    property    AfterRecordScript: TStrings read FAfterRecordScript;
 
   { Update Overrides}
   public

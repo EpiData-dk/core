@@ -80,6 +80,8 @@ type
 
   { Field Properties }
   private
+    FAfterEntryScript: TStrings;
+    FBeforeEntryScript: TStrings;
     FCalculation: TEpiCalculation;
     FComparison: TEpiComparison;
     FConfirmEntry: Boolean;
@@ -107,6 +109,8 @@ type
     procedure   SetShowValueLabel(const AValue: Boolean);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
     procedure   SetValueLabelWriteField(const AValue: TEpiField);
+    function    SaveScripts(Lvl: integer): string;
+    procedure   LoadScripts(Root: TDOMNode; ScriptList: TStrings);
   protected
     function    DoGetDefaultValueAsString: string; virtual; abstract;
     procedure   DoSetDefaultValueAsString(const AValue: string); virtual; abstract;
@@ -134,6 +138,8 @@ type
     property    Jumps:     TEpiJumps read FJumps write FJumps;
     property    Calculation: TEpiCalculation read FCalculation write FCalculation;
     property    Comparison:  TEpiComparison read FComparison write FComparison;
+    property    BeforeEntryScript: TStrings read FBeforeEntryScript;
+    property    AfterEntryScript: TStrings read FAfterEntryScript;
 
   { Pack Data}
   protected

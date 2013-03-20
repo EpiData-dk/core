@@ -297,6 +297,47 @@ begin
   DoChange(eegFields, Word(efceValueLabelWriteTo), Val);
 end;
 
+function TEpiField.SaveScripts(Lvl: integer): string;
+var
+  i: Integer;
+begin
+  result := '';
+  if (FBeforeEntryScript.Count = 0) and
+     (FAfterEntryScript.Count = 0)
+  then
+    Exit;
+
+  if FBeforeEntryScript.Count > 0 then
+  begin
+    Result += Indent(Lvl) + '<BeforeEntryScript>';
+    for i := 0 to FBeforeEntryScript.Count - 2 do
+      Result += FBeforeEntryScript[i] + LineEnding;
+    Result += FAfterEntryScript[FBeforeEntryScript.Count - 1];
+    Result += Indent(Lvl) + '</BeforeEntryScript>' + LineEnding;
+  end;
+
+  if FAfterEntryScript.Count > 0 then
+  begin
+    Result += Indent(Lvl) + '<AfterEntryScript>';
+    for i := 0 to FAfterEntryScript.Count - 2 do
+      Result += FAfterEntryScript[i] + LineEnding;
+    Result += FAfterEntryScript[FAfterEntryScript.Count - 1];
+    Result += Indent(Lvl) + '</AfterEntryScript>' + LineEnding;
+  end;
+end;
+
+procedure TEpiField.LoadScripts(Root: TDOMNode; ScriptList: TStrings);
+var
+  S: String;
+begin
+  // Root = <[Before|After]EntryScript>
+  S := Root.TextContent;
+  S := StringReplace(S, #13#10, #1, [rfReplaceAll]);
+  S := StringReplace(S, #10, #1, [rfReplaceAll]);
+  S := StringReplace(S, #13, #1, [rfReplaceAll]);
+  SplitString(S, ScriptList, [#1], []);
+end;
+
 function TEpiField.GetSection: TEpiSection;
 var
   AOwner: TEpiCustomBase;
@@ -457,6 +498,8 @@ begin
   FRepeatValue  := false;
   FForcePickList := false;
   HasDefaultValue := false;
+  FBeforeEntryScript := TStringList.Create;
+  FAfterEntryScript := TStringList.Create;
 
   RegisterClasses([Notes, Question]);
 end;
@@ -501,6 +544,9 @@ begin
     Content += Jumps.SaveToXml('', Lvl + 1);
   if Assigned(Ranges) then
     Content += Ranges.SaveToXml('', Lvl + 1);
+
+  // VERSION 3 Properties
+  Content += SaveScripts(Lvl + 1);
 
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -589,6 +635,12 @@ begin
     Comparison := TEpiComparison.Create(Self);
     Comparison.LoadFromXml(Node);
   end;
+
+  // VERSION 3 Property
+  if LoadNode(Node, Root, 'BeforeEntryScript', false) then
+    LoadScripts(Node, FBeforeEntryScript);
+  if LoadNode(Node, Root, 'AfterEntryScript', false) then
+    LoadScripts(Node, FAfterEntryScript);
 end;
 
 { TEpiIntField }
