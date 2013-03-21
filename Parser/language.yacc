@@ -74,13 +74,12 @@ implementation
 
 /* Declare types */
 %type <TStatementList>		statementlist program
-%type <TCustomStatement>	statement
+%type <TCustomStatement>	statement opt_else
 %type <Word>			typicalcommands emptycommands
 %type <TParserResultType>	definetype
 %type <TVarList>		varlist
 %type <TCustomVariable>		variable
 %type <TExpr>			opt_bracket expr term
-%type <TOptElse>		opt_else
 %type <TParserOperationType>	typecast
 
 
@@ -128,7 +127,7 @@ statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }
                 |       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3); } 
 		;
 
-opt_else	:	OPElse statement				{ $$ := TOptElse.Create($2); }
+opt_else	:	OPElse statement				{ $$ := $2; }
 		|	/* empty */					{ $$ := nil; }
 		;
 

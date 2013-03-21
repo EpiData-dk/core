@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, parser_core, AST, epidatafiles,
-  parser_types, typetable;
+  parser_types, typetable, epi_scriptexecutor;
 
 type
 
@@ -15,6 +15,7 @@ type
   TEpiParser = class(TObject)
   private
     FDataFile: TEpiDataFile;
+    FExecutor: TEpiScriptExecutor;
     FSymbolTable: TTypeTable;
     function InternalParse: boolean;
     procedure ParseError(Const Msg: string; Const LineNo, ColNo: integer; Const Text: string);
@@ -28,6 +29,7 @@ type
     function Parse(Const Lines: TStrings; out StatementList: TStatementList): boolean; overload;
     property DataFile: TEpiDataFile read FDataFile write FDataFile;
     property SymbolTable: TTypeTable read FSymbolTable write FSymbolTable;
+    property Executor: TEpiScriptExecutor read FExecutor;
   end;
 
 implementation

@@ -61,9 +61,9 @@ end;
 procedure TEpiScriptExecutor.ProcessIfThenElse(IfThen: TIfThen);
 begin
   if IfThen.Expr.asBoolean then
-    ProcessCustomStatement(IfThen.Statement)
-  else if Assigned(IfThen.OptElse) then
-    ProcessCustomStatement(IfThen.OptElse.Statment);
+    ProcessCustomStatement(IfThen.ThenStatement)
+  else
+    ProcessCustomStatement(IfThen.ElseStatement);
 end;
 
 procedure TEpiScriptExecutor.ProcessStatementList(List: TStatementList);

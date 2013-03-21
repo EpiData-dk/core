@@ -50,35 +50,22 @@ type
     property Expr: TExpr read FExpr;
   end;
 
-  { TOptElse }
-
-  TOptElse = class(TAbstractSyntaxTreeBase)
-  private
-    FStatement: TCustomStatement;
-  public
-    constructor Create(Const Statement: TCustomStatement);
-    destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
-    property Statment: TCustomStatement read FStatement;
-  end;
-
   { TIfThen }
 
   TIfThen = class(TCustomStatement)
   private
     FExpr: TExpr;
-    FStatement: TCustomStatement;
-    FOptElse: TOptElse;
+    FThenStatement: TCustomStatement;
+    FElseStatement: TCustomStatement;
   public
-    constructor Create(Const Expr: TExpr; Const Statement: TCustomStatement;
-      Const OptElse: TOptElse);
+    constructor Create(Const Expr: TExpr; Const ThenStatement: TCustomStatement;
+      Const ElseStatement: TCustomStatement);
     destructor Destroy; override;
     procedure PrettyPrint; override;
     function TypeCheck(out Msg: String): boolean; override;
     property Expr: TExpr read FExpr;
-    property Statement: TCustomStatement read FStatement;
-    property OptElse: TOptElse read FOptElse;
+    property ThenStatement: TCustomStatement read FThenStatement;
+    property ElseStatement: TCustomStatement read FElseStatement;
   end;
 
 
@@ -207,8 +194,6 @@ type
   { TDefineVariable }
 
   TDefineVariable = class(TCustomVariable)
-  private
-    FValue: Variant;
   public
     constructor Create();
     function ResultType: TParserResultType; override;
@@ -291,6 +276,11 @@ var
 constructor TDefineVariable.Create;
 begin
   inherited Create(otVariable, nil, nil);
+end;
+
+function TDefineVariable.ResultType: TParserResultType;
+begin
+  Result := inherited ResultType;
 end;
 
 function TDefineVariable.AsInteger: EpiInteger;
@@ -638,71 +628,37 @@ begin
   end;
 end;
 
-{ TOptElse }
-
-constructor TOptElse.Create(const Statement: TCustomStatement);
-begin
-  inherited Create;
-  FStatement := Statement;
-end;
-
-destructor TOptElse.Destroy;
-begin
-  FStatement.Free;
-  inherited Destroy;
-end;
-
-procedure TOptElse.PrettyPrint;
-begin
-  FStatement.PrettyPrint;
-end;
-
-function TOptElse.TypeCheck(out Msg: String): boolean;
-begin
-  Result := FStatement.TypeCheck(Msg);
-end;
-
 { TIfThen }
 
 constructor TIfThen.Create(const Expr: TExpr;
-  const Statement: TCustomStatement; const OptElse: TOptElse);
+  const ThenStatement: TCustomStatement; const ElseStatement: TCustomStatement);
 begin
   inherited Create;
   FExpr := Expr;
-  FStatement := Statement;
-  FOptElse := OptElse;
+  FThenStatement := ThenStatement;
+  FElseStatement := ElseStatement;
 end;
 
 destructor TIfThen.Destroy;
 begin
   FExpr.Free;
-  FStatement.Free;
-  FOptElse.Free;
+  FThenStatement.Free;
+  FElseStatement.Free;
   inherited Destroy;
 end;
 
 procedure TIfThen.PrettyPrint;
 begin
-  write('if');
-  FExpr.PrettyPrint;
-  writeln(' then ');
-  FStatement.PrettyPrint;
-  if Assigned(FOptElse) then
-  begin
-    writeln;
-    writeln('else ');
-    FOptElse.PrettyPrint;
-  end;
 end;
 
 function TIfThen.TypeCheck(out Msg: String): boolean;
 begin
-  Result := (FExpr.TypeCheck(Msg)) and
-            (FExpr.ResultType = rtBoolean) and
-            (FStatement.TypeCheck(Msg));
+  Result := (Expr.TypeCheck(Msg)) and
+            (Expr.ResultType = rtBoolean) and
+            (ThenStatement.TypeCheck(Msg));
 
-  if Result and Assigned(FOptElse) then
-    result := FOptElse.TypeCheck(Msg);
+  if Result and Assigned(ElseStatement) then
+    result := ElseStatement.TypeCheck(Msg);
 end;
 
 { TLiteral }
@@ -954,18 +910,6 @@ function TCustomVariable.TypeCheck(out Msg: String): boolean;
 begin
   Msg := '';
   Result := true;
-end;
-
-function TCustomVariable.ResultType: TParserResultType;
-begin
-  if Assigned(ASTTypeTable) then
-    Result := ASTTypeTable.VariableType(FIdent);
-
-
-  if (Result = rtUndefined) and
-     (Assigned(OnGetIdentType))
-  then
-    Result := OnGetIdentType(FIdent)
 end;
 
 { TVarList }
