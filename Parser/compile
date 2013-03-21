@@ -1,4 +1,4 @@
 #/bin/bash
 
-plex language.lex parser_core.inc
-pyacc language.yacc parser_core.pas
+plex language.lex epi_parser_core.inc
+pyacc language.yacc epi_parser_core.pas

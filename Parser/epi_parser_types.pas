@@ -1,4 +1,4 @@
-unit parser_types;
+unit epi_parser_types;
 
 {$mode objfpc}{$H+}
 

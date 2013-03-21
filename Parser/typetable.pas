@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, contnrs,
-  parser_types;
+  epi_parser_types;
 
 type
 

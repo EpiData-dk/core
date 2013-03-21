@@ -1,18 +1,18 @@
-unit epiparser;
+unit epi_script_parser;
 
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils, parser_core, AST, epidatafiles,
-  parser_types, typetable, epi_scriptexecutor;
+  Classes, SysUtils, epi_parser_core, epi_script_ast, epidatafiles,
+  epi_parser_types, typetable, epi_script_executor;
 
 type
 
-  { TEpiParser }
+  { TEpiScriptParser }
 
-  TEpiParser = class(TObject)
+  TEpiScriptParser = class(TObject)
   private
     FDataFile: TEpiDataFile;
     FExecutor: TEpiScriptExecutor;
@@ -37,23 +37,23 @@ implementation
 uses
   LexLib, epidatafilestypes;
 
-{ TEpiParser }
+{ TEpiScriptParser }
 
-function TEpiParser.InternalParse: boolean;
+function TEpiScriptParser.InternalParse: boolean;
 begin
   Flush(yyinput);
   Reset(yyinput);
   result := yyparse = 0;
 end;
 
-procedure TEpiParser.ParseError(const Msg: string; const LineNo, ColNo: integer;
+procedure TEpiScriptParser.ParseError(const Msg: string; const LineNo, ColNo: integer;
   const Text: string);
 begin
   if IsConsole then
     writeln('(', yylineno, ',', yycolno, '): ', msg, ' at or before ''', yytext, '''.')
 end;
 
-function TEpiParser.GetIdentType(const VarName: string): TParserResultType;
+function TEpiScriptParser.GetIdentType(const VarName: string): TParserResultType;
 var
   F: TEpiField;
 const
@@ -88,12 +88,12 @@ begin
     result := FieldTypeToParserType[F.FieldType];
 end;
 
-function TEpiParser.GetSymbolTable: TTypeTable;
+function TEpiScriptParser.GetSymbolTable: TTypeTable;
 begin
   result := FSymbolTable;
 end;
 
-constructor TEpiParser.Create;
+constructor TEpiScriptParser.Create;
 begin
   Assign(yyinput, GetTempFileName('', 'epidata_parser'));
   Rewrite(yyinput);
@@ -103,19 +103,19 @@ begin
   OnGetSymbolTable := @GetSymbolTable;
 end;
 
-destructor TEpiParser.Destroy;
+destructor TEpiScriptParser.Destroy;
 begin
 //  Close(yyinput);
 //  Erase(yyinput);
   inherited Destroy;
 end;
 
-procedure TEpiParser.ResetFile;
+procedure TEpiScriptParser.ResetFile;
 begin
   //Rewrite(yyinput);
 end;
 
-function TEpiParser.Parse(const Line: String; out StatementList: TStatementList
+function TEpiScriptParser.Parse(const Line: String; out StatementList: TStatementList
   ): boolean;
 begin
   ResetFile;
@@ -124,7 +124,7 @@ begin
   StatementList := StmList;
 end;
 
-function TEpiParser.Parse(const Lines: TStrings; out StatementList: TStatementList
+function TEpiScriptParser.Parse(const Lines: TStrings; out StatementList: TStatementList
   ): boolean;
 var
   i: Integer;

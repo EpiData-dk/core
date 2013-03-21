@@ -1,11 +1,11 @@
-unit AST;
+unit epi_script_AST;
 
 interface
 
 uses
   Classes, SysUtils,
   lexlib,
-  parser_types,
+  epi_parser_types,
   epidatafilestypes,
   epidatafiles;
 

@@ -1,16 +1,16 @@
 %{
-unit parser_core;
+unit epi_parser_core;
 
 {$GOTO ON}
 
 interface
 
 uses
-  AST,
+  epi_script_AST,
   sysutils,
   yacclib,
   lexlib,
-  parser_types,
+  epi_parser_types,
   typetable;
 
 type
