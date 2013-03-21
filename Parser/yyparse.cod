@@ -4,7 +4,7 @@ var yylval : YYSType;
 
 function yylex : Integer; forward;
 
-function yyparse : Integer;
+function yyparse(Const EpiParser: IEpiScriptParser; Out AST: TStatementList): boolean;
 
 var yystate, yysp, yyn : Integer;
     yys : array [1..yymaxdepth] of Integer;
@@ -59,6 +59,8 @@ function yygoto(state, sym : Integer; var nstate : Integer) : Boolean;
 label parse, next, error, errlab, shift, reduce, accept, abort;
 
 begin(*yyparse*)
+
+  FParser := EpiParser;
 
   (* initialize: *)
 
@@ -171,10 +173,10 @@ reduce:
 
 accept:
 
-  yyparse := 0; exit;
+  yyparse := true; exit;
 
 abort:
 
-  yyparse := 1; exit;
+  yyparse := false; exit;
 
 end(*yyparse*);

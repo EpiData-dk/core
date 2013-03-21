@@ -6,29 +6,25 @@ unit epi_parser_core;
 interface
 
 uses
-  epi_script_AST,
   sysutils,
-  yacclib,
-  lexlib,
   epi_parser_types,
+  epi_script_parser,
+  epi_script_AST,
   typetable;
 
 type
   IdString = String[64];
-  TParserError = procedure (Const Msg: string; Const LineNo, ColNo: integer; Const Text: string) of object;
-  TParserGetIdentType = function (Const VarName: string): TParserResultType of object;
-  TParserGetSymbolTable = function: TTypeTable of object;
 
-var
-  StmList: TStatementList;
-  OnParseError: TParserError;
-  OnGetIdentType: TParserGetIdentType;
-  OnGetSymbolTable: TParserGetSymbolTable;
-
-function yyparse: integer;
-procedure yyerror(msg: string);
+function yyparse(Const EpiParser: IEpiScriptParser; Out AST: TStatementList): boolean;
 
 implementation
+
+uses
+  yacclib,
+  lexlib;
+
+var
+  FParser: IEpiScriptParser;
 
 %}
 
@@ -56,8 +52,8 @@ implementation
  /* Keyword tokens */
 %token OPIf OPThen OPElse
 
- /* Typecast tokens */
-%token OPStringCast OPIntegerCast OPFloatCast
+ /* Type tokens */
+%token OPString OPInteger OPFloat OPBoolean
 
  /* Misc. tokens */
 %token OPOpenParan OPCloseParan
@@ -100,8 +96,8 @@ implementation
 
 procedure yyerror(msg : string);
   begin
-    if Assigned(OnParseError) then
-      OnParseError(Msg, yylineno, yycolno, yytext)
+    if Assigned(FParser) then
+      FParser.ParseError(Msg, yylineno, yycolno, yytext)
     else if IsConsole then
       writeln('(', yylineno, ',', yycolno, '): ', msg, ' at or before ''', yytext, '''.')
   end(*yyerror*);
@@ -113,7 +109,7 @@ procedure yyerror(msg : string);
 
  /* %start commandlist */
 
-program		:	statementlist					{ StmList := $1 }
+program		:	statementlist					{ AST := $1 }
 		;
 
 statementlist	:	statement OPSemicolon statementlist		{ $$ := TStatementList.Create($1, $3); }
@@ -124,7 +120,7 @@ statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }
 		| 	OPIf expr OPThen statement opt_else		{ $$ := TIfThen.Create($2, $4, $5); } 
 		|	variable OPAssign expr				{ $$ := TAssignment.Create($1, $3); } 
 /*		|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  */
-                |       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3); } 
+                |       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3, FParser); } 
 		;
 
 opt_else	:	OPElse statement				{ $$ := $2; }
@@ -136,9 +132,10 @@ typicalcommands	:       OPClear 					{ $$ := OPClear; }
 		;
 */
 
-definetype	:	OPIntegerCast					{ $$ := rtInteger; }
-		|	OPStringCast					{ $$ := rtString; }
-		|	OPFloatCast					{ $$ := rtFloat; }
+definetype	:	OPInteger					{ $$ := rtInteger; }
+/*		|	OPString					{ $$ := rtString; } */
+		|	OPFloat						{ $$ := rtFloat; }
+		|	OPBoolean					{ $$ := rtBoolean; }
 		;
 
 /*
@@ -147,7 +144,7 @@ varlist		:	variable varlist    				{ $$ := TVarlist.Create($1, $2); }
 		;
 */
 
-variable	:	OPIdentifier					{ $$ := TCustomVariable.CreateVariable($1); }
+variable	:	OPIdentifier					{ $$ := TCustomVariable.FindVariable($1, FParser); }
 		;
 
 expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
@@ -183,14 +180,15 @@ term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
 		|	OPFalse						{ $$ := TLiteral.Create(false); }
 		;
 
-typecast	:	OPStringCast					{ $$ := otStringCast }
-		|	OPIntegerCast					{ $$ := otIntegerCast }
-		|	OPFloatCast					{ $$ := otFloatCast }
+typecast	:	OPInteger					{ $$ := otIntegerCast }
+/*		|	OPString					{ $$ := otStringCast } */
+		|	OPFloat						{ $$ := otFloatCast }
+		|	OPBoolean					{ $$ := otBoolCast }
 		;
 
 %%
 
-{$I parser_core.inc}
+{$I epi_parser_core.inc}
 
 initialization
   start(normal);

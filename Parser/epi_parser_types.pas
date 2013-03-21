@@ -5,6 +5,7 @@ unit epi_parser_types;
 interface
 
 type
+
   TParserResultType = (
     rtBoolean,
     rtInteger,
@@ -58,6 +59,7 @@ type
     otStringCast,
     otIntegerCast,
     otFloatCast,
+    otBoolCast,
 
     // Symbols
     otOpenParan,
@@ -74,6 +76,8 @@ type
   );
 
   TExecutorGetRecordIndex = function(Sender: TObject): integer;
+  TExecutorError = procedure(const Msg: string; const LineNo,
+      ColNo: integer; const TextFound: string);
 
 implementation
 

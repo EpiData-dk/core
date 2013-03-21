@@ -23,10 +23,14 @@ U4		({U4_1}|{U4_2})
 U		({L}|{U2}|{U3}|{U4})
 
 %start normal comment mcomment text
+ 
+  var
+    commentlvl: integer = 0;
 
 %%
 
-  var result : integer;
+  var
+    result : integer;
   
  (* Command tokens - add here for new commands *)
 <normal>"begin"		return(OPBegin);
@@ -80,9 +84,10 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"else"          return(OPElse);
 
  (* Typecast tokens *)
-<normal>"string"        return(OPStringCast);
-<normal>"integer"       return(OPIntegerCast);
-<normal>"float"         return(OPFloatCast);
+<normal>"string"        return(OPString);
+<normal>"integer"       return(OPInteger);
+<normal>"float"         return(OPFloat);
+<normal>"boolean"       return(OPBoolean);
 
  (* Misc. tokens *)
 <normal>":="            return(OPAssign);      
@@ -137,14 +142,25 @@ U		({L}|{U2}|{U3}|{U4})
                             return(OPHexNumber)
                           else
                             return(OPIllegal);
-                          end;
+                        end;
 
 <normal>.		yyerror('NOT ACCEPTED: ' + yytext );
 
  (* Comment states *)
 <comment>\n             start(normal);  (* back to normal state after newline*)
 <comment>.              ;               (* ignore rest *)
-<mcomment>"*)"          start(normal);  (* back to normal state *)
+<mcomment>"(*"		begin
+ 	                  { Increase comment lvl, such that nesten comments are allowed }
+			  inc(commentlvl);
+			end;
+<mcomment>"*)"          begin
+			  if commentlvl = 0 then
+			    (* back to normal state *)
+			    start(normal)  
+			  else
+			    (* decrease nested comment level *)
+			    dec(commentlvl);
+			end;
 <mcomment>.             ;               (* ignore rest *)
 
 

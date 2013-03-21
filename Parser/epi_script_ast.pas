@@ -1,5 +1,8 @@
 unit epi_script_AST;
 
+{$mode objfpc}{$H+}
+{$INTERFACES CORBA}
+
 interface
 
 uses
@@ -12,7 +15,17 @@ uses
 type
   TExpr = class;
   TCustomVariable = class;
-  TStatement = class;
+
+  { IEpiScriptParser }
+
+  IEpiScriptParser = interface ['IEpiScriptParser']
+    procedure ParseError(Const Msg: string; Const LineNo, ColNo: integer;
+      Const TextFound: string);
+    function  VariableExists(Const Ident: string): boolean;
+    procedure AddVariable(Const Variable: TCustomVariable);
+    function  FindVariable(Const Ident: string): TCustomVariable;
+    function  RecordIndex: Integer;
+  end;
 
   { TAbstractSyntaxTreeBase }
 
@@ -23,11 +36,11 @@ type
     FLine: string;
   protected
     constructor Create; virtual;
+    procedure DoTypeCheckError(Const Msg: String; Parser: IEpiScriptParser);
   public
     destructor Destroy; override;
-    procedure PrettyPrint; virtual;
     function ResultType: TParserResultType; virtual;
-    function TypeCheck(out Msg: String): boolean; virtual;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; virtual;
     property LineNo: integer read FLineNo;
     property ColNo: integer read FColNo;
     property Line: string read FLine;
@@ -44,8 +57,7 @@ type
   public
     constructor Create(Const Variable: TCustomVariable; Const Expr: TExpr);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Variable: TCustomVariable read FVAriable;
     property Expr: TExpr read FExpr;
   end;
@@ -61,8 +73,7 @@ type
     constructor Create(Const Expr: TExpr; Const ThenStatement: TCustomStatement;
       Const ElseStatement: TCustomStatement);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Expr: TExpr read FExpr;
     property ThenStatement: TCustomStatement read FThenStatement;
     property ElseStatement: TCustomStatement read FElseStatement;
@@ -81,8 +92,7 @@ type
   public
     constructor Create(Const Op: TParserOperationType; Const L, R: TExpr);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Operation: TParserOperationType read FOp;
     property Left: TExpr read FL;
     property Right: TExpr read FR;
@@ -95,12 +105,9 @@ type
   { TTypeCast }
 
   TTypeCast = class(TExpr)
-  private
-    function GetExpr: TExpr;
   public
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
-    property Expr: TExpr read GetExpr;
   public
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
@@ -119,8 +126,7 @@ type
     constructor Create(Const Value: Integer); overload;
     constructor Create(Const Value: Extended); overload;
     constructor Create(Const Value: Boolean); overload;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
     property ValueType: TParserResultType read FValueType;
   public
@@ -134,7 +140,7 @@ type
 
   TUnaryExpr = class(TExpr)
   public
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
     function AsInteger: EpiInteger; override;
@@ -146,7 +152,7 @@ type
 
   TBinaryExpr = class(TExpr)
   public
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
     function AsInteger: EpiInteger; override;
@@ -158,49 +164,68 @@ type
 
   TRelationalExpr = class(TExpr)
   public
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
   end;
 
   { TCustomVariable }
 
   TCustomVariable = class(TExpr)
-  private
+  protected
     FIdent: string;
   public
-    class function CreateVariable(Const Ident: String): TCustomVariable;
+    class function FindVariable(Const Ident: String;
+      Parser: IEpiScriptParser): TCustomVariable;
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Ident: string read FIdent;
+  public
+    procedure SetInteger(Const Value: EpiInteger); virtual; abstract;
+    procedure SetFloat(Const Value: EpiFloat); virtual; abstract;
+    procedure SetBoolean(Const Value: Boolean); virtual; abstract;
   end;
 
   { TFieldVariable }
 
   TFieldVariable = class(TCustomVariable)
   private
+    FParser: IEpiScriptParser;
     FField: TEpiField;
   public
-    constructor Create(Const Field: TEpiField);
+    constructor Create(Const Field: TEpiField;
+      Parser: IEpiScriptParser);
     function ResultType: TParserResultType; override;
   public
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
+    procedure SetInteger(Const Value: EpiInteger); override;
+    procedure SetFloat(Const Value: EpiFloat); override;
+    procedure SetBoolean(Const Value: Boolean); override;
   end;
 
-  { TDefineVariable }
+  { TScriptVariable }
 
-  TDefineVariable = class(TCustomVariable)
+  TScriptVariable = class(TCustomVariable)
+  private
+    FResultType: TParserResultType;
+    FIntValue: EpiInteger;
+    FFloatValue: EpiFloat;
+    FBoolValue: Boolean;
   public
-    constructor Create();
+    constructor Create(Const AIdent: string; AResultType: TParserResultType);
     function ResultType: TParserResultType; override;
   public
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
+    procedure SetInteger(Const Value: EpiInteger); override;
+    procedure SetFloat(Const Value: EpiFloat); override;
+    procedure SetBoolean(Const Value: Boolean); override;
   end;
 
   { TVarList }
@@ -212,8 +237,7 @@ type
   public
     constructor Create(Const Variable: TCustomVariable; Const VarList: TVarList);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Variable: TCustomVariable read FVariable;
     property VarList: TVarList read FVarList;
   end;
@@ -225,10 +249,9 @@ type
     FIdent: string;
     FType: TParserResultType;
   public
-    constructor Create(Const DefineType: TParserResultType; Const Ident: string);
+    constructor Create(Const DefineType: TParserResultType;
+      Const Ident: string; Const Parser: IEpiScriptParser);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
     property Ident: string read FIdent;
     property IdentType: TParserResultType read FType;
   end;
@@ -242,8 +265,7 @@ type
   public
     constructor Create(Const StatementType: word; Const VarList: TVarList);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property StatementType: Integer read FStatementType;
     property VarList: TVarList read FVarList;
   end;
@@ -257,8 +279,7 @@ type
   public
     constructor Create(Const Statement: TCustomStatement; Const StatementList: TStatementList);
     destructor Destroy; override;
-    procedure PrettyPrint; override;
-    function TypeCheck(out Msg: String): boolean; override;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Statement: TCustomStatement read FStatement;
     property StatementList: TStatementList read FStatementList;
   end;
@@ -266,70 +287,195 @@ type
 implementation
 
 uses
-  YaccLib, typetable, parser_core, math;
+  YaccLib, epi_parser_core, math;
 
-var
-  ASTTypeTable: TTypeTable = nil;
+resourcestring
+  rsExpressionReturnTypeBool     = 'Expression return type must be boolean';
+  rsExpressionReturnTypeInt      = 'Expression return type must be integer';
+  rsExpressionReturnTypeIntFloat = 'Expression return type must be integer or float';
 
-{ TDefineVariable }
 
-constructor TDefineVariable.Create;
+{ TAbstractSyntaxTreeBase }
+
+constructor TAbstractSyntaxTreeBase.Create;
+begin
+  FLineNo := yylineno;
+  FColNo := yycolno;
+  FLine := yyline;
+end;
+
+procedure TAbstractSyntaxTreeBase.DoTypeCheckError(const Msg: String;
+  Parser: IEpiScriptParser);
+begin
+  Parser.ParseError(
+    Msg,
+    FLineNo,
+    FColNo,
+    FLine
+  );
+end;
+
+destructor TAbstractSyntaxTreeBase.Destroy;
+begin
+  FLine := '';
+  inherited Destroy;
+end;
+
+function TAbstractSyntaxTreeBase.ResultType: TParserResultType;
+begin
+  // Default result type is rtUndefined
+  result := rtUndefined;
+end;
+
+function TAbstractSyntaxTreeBase.TypeCheck(Parser: IEpiScriptParser): boolean;
+begin
+  result := true;
+end;
+
+{ TScriptVariable }
+
+constructor TScriptVariable.Create(const AIdent: string;
+  AResultType: TParserResultType);
 begin
   inherited Create(otVariable, nil, nil);
+  FIdent := AIdent;
+  FResultType := AResultType;
 end;
 
-function TDefineVariable.ResultType: TParserResultType;
+function TScriptVariable.ResultType: TParserResultType;
 begin
-  Result := inherited ResultType;
+  Result := FResultType;
 end;
 
-function TDefineVariable.AsInteger: EpiInteger;
+function TScriptVariable.AsInteger: EpiInteger;
 begin
-  Result := inherited AsInteger;
+  case FResultType of
+    rtInteger: result := FIntValue;
+    rtFloat:   result := Trunc(SimpleRoundTo(FFloatValue, 0));
+    rtBoolean: Result := Integer(FBoolValue);
+  end;
 end;
 
-function TDefineVariable.AsFloat: EpiFloat;
+function TScriptVariable.AsFloat: EpiFloat;
 begin
-  Result := inherited AsFloat;
+  case FResultType of
+    rtInteger: result := FIntValue;
+    rtFloat:   result := FFloatValue;
+    rtBoolean: if FBoolValue then
+                 result := 1
+               else
+                 result := 0;
+  end;
 end;
 
-function TDefineVariable.AsBoolean: Boolean;
+function TScriptVariable.AsBoolean: Boolean;
 begin
-  Result := inherited AsBoolean;
+  case FResultType of
+    rtInteger: result := (FIntValue <> 0);
+    rtFloat:   result := (FFloatValue <> 0);
+    rtBoolean: Result := FBoolValue;
+  end;
+end;
+
+procedure TScriptVariable.SetInteger(const Value: EpiInteger);
+begin
+  case FResultType of
+    rtInteger: FIntValue := Value;
+    rtFloat:   FFloatValue := Value;
+    rtBoolean: FBoolValue := Boolean(Value);
+  end;
+end;
+
+procedure TScriptVariable.SetFloat(const Value: EpiFloat);
+begin
+  case FResultType of
+    rtInteger: FIntValue := Trunc(SimpleRoundTo(Value, 0));
+    rtFloat:   FFloatValue := Value;
+    rtBoolean: FBoolValue := Boolean(Trunc(Value));
+  end;
+end;
+
+procedure TScriptVariable.SetBoolean(const Value: Boolean);
+begin
+
+  case FResultType of
+    rtInteger: FIntValue := Integer(Value);
+    rtFloat:   FFloatValue := Integer(Value);
+    rtBoolean: FBoolValue := Value;
+  end;
 end;
 
 { TFieldVariable }
 
-constructor TFieldVariable.Create(const Field: TEpiField);
+constructor TFieldVariable.Create(const Field: TEpiField;
+  Parser: IEpiScriptParser);
 begin
   inherited Create(otVariable, nil, nil);
   FField := Field;
+  FParser := Parser;
+  FIdent := FField.Name;
 end;
 
 function TFieldVariable.ResultType: TParserResultType;
+const
+  FieldTypeToParserType: array[TEpiFieldType] of TParserResultType =
+    (
+//    ftBoolean,
+      rtBoolean,
+
+//    ftInteger, ftAutoInc, ftFloat,
+      rtInteger, rtInteger, rtFloat,
+
+//    ftDMYDate, ftMDYDate, ftYMDDate,
+      rtInteger, rtInteger, rtInteger,
+
+//    ftDMYAuto, ftMDYAuto, ftYMDAuto,
+      rtInteger, rtInteger, rtInteger,
+
+//    ftTime, ftTimeAuto,
+      rtFloat, rtFloat,
+
+//    ftString, ftUpperString
+      rtString, rtString
+    );
 begin
-  Result := OnGetIdentType(Ident);
+  Result := FieldTypeToParserType[FField.FieldType];
 end;
 
 function TFieldVariable.AsInteger: EpiInteger;
 begin
-  Result := FField.AsInteger[0];
+  Result := FField.AsInteger[FParser.RecordIndex];
 end;
 
 function TFieldVariable.AsFloat: EpiFloat;
 begin
-  Result := FField.AsFloat[0];
+  Result := FField.AsFloat[FParser.RecordIndex];
 end;
 
 function TFieldVariable.AsBoolean: Boolean;
 begin
-  Result := Boolean(FField.AsBoolean[0]);
+  Result := Boolean(FField.AsBoolean[FParser.RecordIndex]);
+end;
+
+procedure TFieldVariable.SetInteger(const Value: EpiInteger);
+begin
+  FField.AsInteger[FParser.RecordIndex] := Value;
+end;
+
+procedure TFieldVariable.SetFloat(const Value: EpiFloat);
+begin
+  FField.AsFloat[FParser.RecordIndex] := Value;
+end;
+
+procedure TFieldVariable.SetBoolean(const Value: Boolean);
+begin
+  FField.AsBoolean[FParser.RecordIndex] := EpiBool(Value);
 end;
 
 
 { TRelationExpr }
 
-function TRelationalExpr.TypeCheck(out Msg: String): boolean;
+function TRelationalExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 const
   RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean =
            //    rtBoolean, rtInteger, rtFloat, rtString, rtObject, rtUndefined
@@ -342,19 +488,35 @@ const
  {rtUndefined}  (false,     false,     false,   false,    false,    false)
                );
 begin
-  result := inherited TypeCheck(Msg);
+  result := inherited TypeCheck(Parser);
 
   if result then
   begin
     Result := RelationalOperationCheck[FL.ResultType, FR.ResultType];
+
     if not result then
-      Msg := 'Cannot compare...'
+    begin
+      DoTypeCheckError(
+        'Left and Rigth cannot be compared. Incompatible types.',
+        Parser
+      );
+    end;
   end;
 end;
 
 function TRelationalExpr.ResultType: TParserResultType;
 begin
   Result := rtBoolean;
+end;
+
+function TRelationalExpr.AsInteger: EpiInteger;
+begin
+  Result := Integer(AsBoolean);
+end;
+
+function TRelationalExpr.AsFloat: EpiFloat;
+begin
+  Result := AsInteger;
 end;
 
 function TRelationalExpr.AsBoolean: Boolean;
@@ -415,12 +577,12 @@ end;
 
 { TBinaryExpr }
 
-function TBinaryExpr.TypeCheck(out Msg: String): boolean;
+function TBinaryExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 var
   Lr: TParserResultType;
   Rr: TParserResultType;
 begin
-  Result := inherited TypeCheck(Msg);
+  Result := inherited TypeCheck(Parser);
   Lr := FL.ResultType;
   Rr := FR.ResultType;
 
@@ -428,19 +590,55 @@ begin
   case FOp of
     otAnd,
     otOr:
+    begin
       result := (Lr = rtBoolean) and
                 (Rr = rtBoolean);
+      if not (Lr = rtBoolean) then
+        DoTypeCheckError(
+          'Left ' + rsExpressionReturnTypeBool,
+          Parser
+        );
+      if not (Rr = rtBoolean) then
+        DoTypeCheckError(
+          'Right ' + rsExpressionReturnTypeBool,
+          Parser
+        );
+    end;
 
     otMod,
     otDiv:
+    begin
       result := (Lr = rtInteger) and
                 (Rr = rtInteger);
+      if not (Lr = rtInteger) then
+        DoTypeCheckError(
+          'Left ' + rsExpressionReturnTypeInt,
+          Parser
+        );
+      if not (Rr = rtInteger) then
+        DoTypeCheckError(
+          'Right ' + rsExpressionReturnTypeInt,
+          Parser
+        );
+    end;
     otMult,
     otPlus,
     otMinus,
     otDivide:
+    begin
       result := (Lr in [rtInteger, rtFloat]) and
                 (Rr in [rtInteger, rtFloat]);
+      if not (Lr in [rtInteger, rtFloat]) then
+        DoTypeCheckError(
+          'Left ' + rsExpressionReturnTypeIntFloat,
+          Parser
+        );
+      if not (Rr in [rtInteger, rtFloat]) then
+        DoTypeCheckError(
+          'Right ' + rsExpressionReturnTypeIntFloat,
+          Parser
+        );
+    end;
 {    otXor,
     otShl,
     otShr:         }
@@ -506,15 +704,30 @@ end;
 
 { TUnaryExpr }
 
-function TUnaryExpr.TypeCheck(out Msg: String): boolean;
+function TUnaryExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  Result := inherited TypeCheck(Msg);
+  Result := inherited TypeCheck(Parser);
 
   if result then
   case FOp of
-    otNot,
+    otNot:
+      begin
+        result := Left.ResultType = rtBoolean;
+        if not Result then
+          DoTypeCheckError(
+            rsExpressionReturnTypeBool,
+            Parser
+          );
+      end;
     otMinus:
-      ;
+      begin
+        result := Left.ResultType in [rtFloat, rtInteger];
+        if not Result then
+          DoTypeCheckError(
+            rsExpressionReturnTypeIntFloat,
+            Parser
+          );
+      end;
   end;
 end;
 
@@ -547,49 +760,27 @@ end;
 { TDefine }
 
 constructor TDefine.Create(const DefineType: TParserResultType;
-  const Ident: string);
+  const Ident: string; const Parser: IEpiScriptParser);
+var
+  V: TScriptVariable;
 begin
   inherited Create;
   FType := DefineType;
   FIdent := Ident;
 
-  if Assigned(OnGetSymbolTable) then
-    ASTTypeTable := OnGetSymbolTable()
-  else
-    Exit;
-
-  if ASTTypeTable.VariableExists(FIdent) then
+  if Parser.VariableExists(Ident) then
   begin
     yyerror('Variable "' + Ident + '" already defined');
     yyabort
   end;
 
-  if Assigned(OnGetIdentType) and
-     (OnGetIdentType(FIdent) <> rtUndefined)
-  then
-  begin
-    yyerror('Variable "' + Ident + '" already defined');
-    yyabort;
-  end
-  else
-    ASTTypeTable.AddVariable(FIdent, FType);
+  Parser.AddVariable(TScriptVariable.Create(Ident, DefineType));
 end;
 
 destructor TDefine.Destroy;
 begin
   FIdent := '';
   inherited Destroy;
-end;
-
-procedure TDefine.PrettyPrint;
-begin
-  write('define ', FType, ' ', FIdent);
-end;
-
-function TDefine.TypeCheck(out Msg: String): boolean;
-begin
-  Msg := '';
-  Result := true;
 end;
 
 { TAssignment }
@@ -608,23 +799,19 @@ begin
   inherited Destroy;
 end;
 
-procedure TAssignment.PrettyPrint;
+function TAssignment.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  FVAriable.PrettyPrint;
-  write(' := ');
-  FExpr.PrettyPrint;
-end;
-
-function TAssignment.TypeCheck(out Msg: String): boolean;
-begin
-  Result := FVAriable.TypeCheck(Msg) and FExpr.TypeCheck(Msg);
+  Result := FVAriable.TypeCheck(Parser) and FExpr.TypeCheck(Parser);
 
   if Result then
   begin
     Result := Ord(FVAriable.ResultType) >= Ord(FExpr.ResultType);
 
     if not result then
-      Msg := 'Incompatible types at line: ' + IntToStr(FExpr.FLineNo);
+      DoTypeCheckError(
+        'Incompatible types',
+        Parser
+      );
   end;
 end;
 
@@ -647,18 +834,20 @@ begin
   inherited Destroy;
 end;
 
-procedure TIfThen.PrettyPrint;
+function TIfThen.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-end;
+  Result := (Expr.TypeCheck(Parser));
 
-function TIfThen.TypeCheck(out Msg: String): boolean;
-begin
-  Result := (Expr.TypeCheck(Msg)) and
-            (Expr.ResultType = rtBoolean) and
-            (ThenStatement.TypeCheck(Msg));
+  if result and
+     (not (Expr.ResultType = rtBoolean))
+  then
+    DoTypeCheckError(
+      rsExpressionReturnTypeBool,
+      Parser
+    );
 
   if Result and Assigned(ElseStatement) then
-    result := ElseStatement.TypeCheck(Msg);
+    result := ElseStatement.TypeCheck(Parser);
 end;
 
 { TLiteral }
@@ -684,19 +873,9 @@ begin
   FBoolVal := Value;
 end;
 
-procedure TLiteral.PrettyPrint;
+function TLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  case FValueType of
-    rtInteger: write(FIntVal);
-    rtFloat:   write(FExtVal);
-    rtBoolean: write(FBoolVal);
-  end;
-end;
-
-function TLiteral.TypeCheck(out Msg: String): boolean;
-begin
-  Msg := '';
-  Result := true;
+  result := inherited TypeCheck(Parser);
 end;
 
 function TLiteral.ResultType: TParserResultType;
@@ -736,49 +915,45 @@ end;
 
 { TTypeCast }
 
-function TTypeCast.GetExpr: TExpr;
+function TTypeCast.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  Result := Left;
-end;
-
-function TTypeCast.TypeCheck(out Msg: String): boolean;
-begin
-  Result := Expr.TypeCheck(Msg);
-
-  if result then
-  case FOp of
-    // Can FExpr.ResultType cast to Desired type!;
-    otStringCast,
-    otIntegerCast,
-    otFloatCast:
-      ;
-  end;
+  Result := inherited TypeCheck(Parser);
 end;
 
 function TTypeCast.ResultType: TParserResultType;
 begin
   Case FOp of
-    otStringCast,
-    otIntegerCast,
-    otFloatCast:
-      ;
+    otIntegerCast: result := rtInteger;
+    otFloatCast:   result := rtFloat;
+    otBoolCast:    result := rtBoolean;
   end;
-  Result := inherited ResultType;
 end;
 
 function TTypeCast.AsInteger: EpiInteger;
 begin
-  Result := inherited AsInteger;
+  Case FOp of
+    otFloatCast:   ; // Get's caught in TypeChecking.
+    otIntegerCast: result := Left.AsInteger;
+    otBoolCast:    result := Integer(AsBoolean);
+  end;
 end;
 
 function TTypeCast.AsFloat: EpiFloat;
 begin
-  Result := inherited AsFloat;
+  Case FOp of
+    otFloatCast:   result := Left.AsFloat;
+    otIntegerCast: result := AsInteger;
+    otBoolCast:    result := AsInteger;
+  end;
 end;
 
 function TTypeCast.AsBoolean: Boolean;
 begin
-  Result := inherited AsBoolean;
+  Case FOp of
+    otFloatCast:   ; // Get's caught in TypeChecking.
+    otIntegerCast: ; // Get's caught in TypeChecking.
+    otBoolCast:    result := Left.AsBoolean;
+  end;
 end;
 
 { TExpr }
@@ -803,25 +978,15 @@ begin
   inherited Destroy;
 end;
 
-procedure TExpr.PrettyPrint;
-var
-  S: String;
+function TExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  FL.PrettyPrint;
-  write(S);
-  if Assigned(FR) then
-    FR.PrettyPrint;
-end;
-
-function TExpr.TypeCheck(out Msg: String): boolean;
-begin
-  result := true;
+  result := inherited TypeCheck(Parser);
 
   if Assigned(FL) then
-    result := FL.TypeCheck(Msg);
+    result := FL.TypeCheck(Parser);
 
   if result and Assigned(FR) then
-    result := FR.TypeCheck(Msg);
+    result := FR.TypeCheck(Parser);
 end;
 
 function TExpr.AsInteger: EpiInteger;
@@ -839,60 +1004,18 @@ begin
   result := Boolean(TEpiBoolField.DefaultMissing);
 end;
 
-{ TAbstractSyntaxTreeBase }
-
-constructor TAbstractSyntaxTreeBase.Create;
-begin
-  FLineNo := yylineno;
-  FColNo := yycolno;
-  FLine := yyline;
-end;
-
-destructor TAbstractSyntaxTreeBase.Destroy;
-begin
-  FLine := '';
-  inherited Destroy;
-end;
-
-procedure TAbstractSyntaxTreeBase.PrettyPrint;
-begin
-  writeln('(', ClassName, ') Text: ', FLine, ' LineNo: ', FLineNo, ' ColNo: ', FColNo);
-end;
-
-function TAbstractSyntaxTreeBase.ResultType: TParserResultType;
-begin
-  // Default result type is rtUndefined
-  result := rtUndefined;
-end;
-
-function TAbstractSyntaxTreeBase.TypeCheck(out Msg: String): boolean;
-begin
-  // All classes should override this method!
-  Msg := 'Type Check Failed -> Reached "TAbstractSyntaxTreeBase" which it should not have done!';
-  result := false;
-end;
-
 { TCustomVariable }
 
-class function TCustomVariable.CreateVariable(const Ident: String
-  ): TCustomVariable;
+class function TCustomVariable.FindVariable(const Ident: String;
+  Parser: IEpiScriptParser): TCustomVariable;
 begin
-  if (not ASTTypeTable.VariableExists(Ident)) and
-     (not (OnGetIdentType(Ident) <> rtUndefined))
-  then
+  if not Parser.VariableExists(Ident) then
   begin
-    yyerror('Variable "' + Ident + '" not defined or not in scope');
+    yyerror('Variable "' + Ident + '" not defined');
     yyabort;
-    Exit;
   end;
 
-  if ASTTypeTable.VariableExists(Ident) then
-    Result := TDefineVariable.Create();
-
-  if OnGetIdentType(Ident) <> rtUndefined then
-    Result := TFieldVariable.Create(nil);
-
-  Result.FIdent := Ident;
+  Result := Parser.FindVariable(Ident);
 end;
 
 destructor TCustomVariable.Destroy;
@@ -901,15 +1024,9 @@ begin
   inherited Destroy;
 end;
 
-procedure TCustomVariable.PrettyPrint;
+function TCustomVariable.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  write(' ', FIdent);
-end;
-
-function TCustomVariable.TypeCheck(out Msg: String): boolean;
-begin
-  Msg := '';
-  Result := true;
+  result := inherited TypeCheck(Parser);
 end;
 
 { TVarList }
@@ -928,20 +1045,14 @@ begin
   inherited Destroy;
 end;
 
-procedure TVarList.PrettyPrint;
+function TVarList.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  FVariable.PrettyPrint;
-
-  if Assigned(FVarList) then
-    FVarList.PrettyPrint;
-end;
-
-function TVarList.TypeCheck(out Msg: String): boolean;
-begin
-  Result := FVariable.TypeCheck(Msg);
+  Result :=
+    inherited TypeCheck(Parser);
+    FVariable.TypeCheck(Parser);
 
   if result and Assigned(FVarList) then
-    result := FVarList.TypeCheck(Msg);
+    result := FVarList.TypeCheck(Parser);
 end;
 
 
@@ -961,15 +1072,11 @@ begin
   inherited Destroy;
 end;
 
-procedure TStatement.PrettyPrint;
+function TStatement.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  if Assigned(FVarList) then
-    FVarList.PrettyPrint;
-end;
-
-function TStatement.TypeCheck(out Msg: String): boolean;
-begin
-  Result := FVarList.TypeCheck(Msg);
+  Result :=
+    inherited TypeCheck(Parser) and
+    FVarList.TypeCheck(Parser);
 end;
 
 { TStatementList }
@@ -989,27 +1096,14 @@ begin
   inherited Destroy;
 end;
 
-procedure TStatementList.PrettyPrint;
+function TStatementList.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  if FStatement is TStatementList then
-    writeln('begin');
-
-  FStatement.PrettyPrint;
-
-  if FStatement is TStatementList then
-    write('end');
-
-  writeln(';');
-  if Assigned(FStatementList) then
-    FStatementList.PrettyPrint;
-end;
-
-function TStatementList.TypeCheck(out Msg: String): boolean;
-begin
-  Result := FStatement.TypeCheck(Msg);
+  Result :=
+    inherited TypeCheck(Parser) and
+    FStatement.TypeCheck(Parser);
 
   if Result and Assigned(FStatementList) then
-    result := FStatementList.TypeCheck(Msg);
+    result := FStatementList.TypeCheck(Parser);
 end;
 
 end.

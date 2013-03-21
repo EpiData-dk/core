@@ -5,7 +5,7 @@ unit epi_script_parser;
 interface
 
 uses
-  Classes, SysUtils, epi_parser_core, epi_script_ast, epidatafiles,
+  Classes, SysUtils, epi_script_AST, epidatafiles,
   epi_parser_types, typetable, epi_script_executor;
 
 type
@@ -14,93 +14,37 @@ type
 
   TEpiScriptParser = class(TObject)
   private
-    FDataFile: TEpiDataFile;
-    FExecutor: TEpiScriptExecutor;
-    FSymbolTable: TTypeTable;
-    function InternalParse: boolean;
-    procedure ParseError(Const Msg: string; Const LineNo, ColNo: integer; Const Text: string);
-    function GetIdentType(Const VarName: string): TParserResultType;
-    function GetSymbolTable: TTypeTable;
+    FEpiExecutor: TEpiScriptExecutor;
+    function InternalParse(Out ResultAST: TStatementList): boolean;
     procedure ResetFile;
   public
-    constructor Create;
+    constructor Create(Const EpiExecutor: TEpiScriptExecutor);
     destructor Destroy; override;
     function Parse(Const Line: String; out StatementList: TStatementList): boolean; overload;
     function Parse(Const Lines: TStrings; out StatementList: TStatementList): boolean; overload;
-    property DataFile: TEpiDataFile read FDataFile write FDataFile;
-    property SymbolTable: TTypeTable read FSymbolTable write FSymbolTable;
-    property Executor: TEpiScriptExecutor read FExecutor;
+    property EpiExecutor: TEpiScriptExecutor read FEpiExecutor;
   end;
 
 implementation
 
 uses
-  LexLib, epidatafilestypes;
+  LexLib, epi_parser_core, epidatafilestypes;
 
 { TEpiScriptParser }
 
-function TEpiScriptParser.InternalParse: boolean;
+function TEpiScriptParser.InternalParse(out ResultAST: TStatementList): boolean;
 begin
   Flush(yyinput);
   Reset(yyinput);
-  result := yyparse = 0;
+  result := yyparse(FEpiExecutor, ResultAST);
 end;
 
-procedure TEpiScriptParser.ParseError(const Msg: string; const LineNo, ColNo: integer;
-  const Text: string);
-begin
-  if IsConsole then
-    writeln('(', yylineno, ',', yycolno, '): ', msg, ' at or before ''', yytext, '''.')
-end;
-
-function TEpiScriptParser.GetIdentType(const VarName: string): TParserResultType;
-var
-  F: TEpiField;
-const
-  FieldTypeToParserType: array[TEpiFieldType] of TParserResultType =
-    (
-//    ftBoolean,
-      rtBoolean,
-
-//    ftInteger, ftAutoInc, ftFloat,
-      rtInteger, rtInteger, rtFloat,
-
-//    ftDMYDate, ftMDYDate, ftYMDDate,
-      rtInteger, rtInteger, rtInteger,
-
-//    ftDMYAuto, ftMDYAuto, ftYMDAuto,
-      rtInteger, rtInteger, rtInteger,
-
-//    ftTime, ftTimeAuto,
-      rtFloat, rtFloat,
-
-//    ftString, ftUpperString
-      rtString, rtString
-    );
-
-begin
-  result := rtUndefined;
-
-  if Assigned(DataFile) then
-    F := DataFile.Fields.FieldByName[VarName];
-
-  if Assigned(F) then
-    result := FieldTypeToParserType[F.FieldType];
-end;
-
-function TEpiScriptParser.GetSymbolTable: TTypeTable;
-begin
-  result := FSymbolTable;
-end;
-
-constructor TEpiScriptParser.Create;
+constructor TEpiScriptParser.Create(const EpiExecutor: TEpiScriptExecutor);
 begin
   Assign(yyinput, GetTempFileName('', 'epidata_parser'));
   Rewrite(yyinput);
 
-  OnParseError := @ParseError;
-  OnGetIdentType := @GetIdentType;
-  OnGetSymbolTable := @GetSymbolTable;
+  FEpiExecutor := EpiExecutor;
 end;
 
 destructor TEpiScriptParser.Destroy;
@@ -120,8 +64,9 @@ function TEpiScriptParser.Parse(const Line: String; out StatementList: TStatemen
 begin
   ResetFile;
   WriteLn(yyinput, line);
-  result := InternalParse;
-  StatementList := StmList;
+  result :=
+    InternalParse(StatementList) and
+    StatementList.TypeCheck(FEpiExecutor);
 end;
 
 function TEpiScriptParser.Parse(const Lines: TStrings; out StatementList: TStatementList
@@ -133,8 +78,10 @@ begin
   ResetFile;
   for i := 0 to Lines.Count -1 do
     WriteLn(yyinput, Lines[i]);
-  result := InternalParse;
-  StatementList := StmList;
+
+  result :=
+    InternalParse(StatementList) and
+    StatementList.TypeCheck(FEpiExecutor);
 end;
 
 end.
