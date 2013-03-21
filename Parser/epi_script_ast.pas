@@ -668,12 +668,22 @@ begin
 end;
 
 function TBinaryExpr.AsInteger: EpiInteger;
+var
+  Tmp: EpiInteger;
 begin
   case Operation of
     otPlus:  result := Left.AsInteger + Right.AsInteger;
     otMinus: result := Left.AsInteger - Right.AsInteger;
     otMult:  result := Left.AsInteger * Right.AsInteger;
-    otDiv:   result := Left.AsInteger div Right.AsInteger;
+    otDiv:
+    begin
+      // Catch ZeroDivide before is happens
+      Tmp := Right.AsInteger;
+      if Tmp = 0 then
+        result := inherited AsInteger
+      else
+        result := Left.AsInteger div Tmp;
+    end;
     otMod:   result := Left.AsInteger mod Right.AsInteger;
   else
     result := inherited AsInteger;
@@ -681,12 +691,22 @@ begin
 end;
 
 function TBinaryExpr.AsFloat: EpiFloat;
+var
+  Tmp: EpiFloat;
 begin
   case Operation of
     otPlus:   result := Left.AsFloat + Right.AsFloat;
     otMinus:  result := Left.AsFloat - Right.AsFloat;
     otMult:   result := Left.AsFloat * Right.AsFloat;
-    otDivide: result := Left.AsFloat / Right.AsFloat;
+    otDivide:
+    begin
+      // Catch ZeroDivide before is happens
+      Tmp := Right.AsFloat;
+      if Tmp = 0 then
+        result := inherited AsFloat
+      else
+        result := Left.AsFloat / Tmp;
+    end;
   else
     result := inherited AsFloat;
   end;

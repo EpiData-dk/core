@@ -35,7 +35,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="3" Release="1" Build="1"/>
-    <Files Count="63">
+    <Files Count="62">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -261,33 +261,29 @@
         <UnitName Value="vinfo"/>
       </Item56>
       <Item57>
-        <Filename Value="Parser/ast.pas"/>
-        <UnitName Value="AST"/>
+        <Filename Value="Parser/epi_script_ast.pas"/>
+        <UnitName Value="epi_script_AST"/>
       </Item57>
       <Item58>
-        <Filename Value="Parser/parser_core.pas"/>
-        <UnitName Value="parser_core"/>
+        <Filename Value="Parser/epi_script_parser.pas"/>
+        <UnitName Value="epi_script_parser"/>
       </Item58>
       <Item59>
-        <Filename Value="Parser/epiparser.pas"/>
-        <UnitName Value="epiparser"/>
+        <Filename Value="Parser/epi_parser_types.pas"/>
+        <UnitName Value="epi_parser_types"/>
       </Item59>
       <Item60>
-        <Filename Value="Parser/parser_types.pas"/>
-        <UnitName Value="parser_types"/>
-      </Item60>
-      <Item61>
         <Filename Value="Reports/epireport_counts.pas"/>
         <UnitName Value="epireport_counts"/>
+      </Item60>
+      <Item61>
+        <Filename Value="Parser/epi_script_executor.pas"/>
+        <UnitName Value="epi_script_executor"/>
       </Item61>
       <Item62>
-        <Filename Value="Parser/typetable.pas"/>
-        <UnitName Value="typetable"/>
+        <Filename Value="Parser/epi_parser_core.pas"/>
+        <UnitName Value="epi_parser_core"/>
       </Item62>
-      <Item63>
-        <Filename Value="Parser/epi_scriptexecutor.pas"/>
-        <UnitName Value="epi_scriptexecutor"/>
-      </Item63>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
