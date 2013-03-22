@@ -1,6 +1,8 @@
 
 unit epi_parser_core;
 
+{$mode objfpc}
+{$h+}
 {$GOTO ON}
 
 interface
@@ -9,8 +11,7 @@ uses
   sysutils,
   epi_parser_types,
   epi_script_parser,
-  epi_script_AST,
-  typetable;
+  epi_script_AST;
 
 type
   IdString = String[64];

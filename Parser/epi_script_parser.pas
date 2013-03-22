@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epi_script_AST, epidatafiles,
-  epi_parser_types, typetable, epi_script_executor;
+  epi_parser_types, epi_script_executor;
 
 type
 

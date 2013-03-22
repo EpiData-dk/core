@@ -5,7 +5,7 @@ unit epi_script_executor;
 interface
 
 uses
-  Classes, SysUtils, epi_script_ast, epidatafiles, typetable, epi_parser_types,
+  Classes, SysUtils, epi_script_ast, epidatafiles, epi_parser_types,
   contnrs;
 
 type
