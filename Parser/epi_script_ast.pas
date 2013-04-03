@@ -251,6 +251,8 @@ type
   public
     constructor Create(Const DefineType: TParserResultType;
       Const Ident: string; Const Parser: IEpiScriptParser);
+    constructor Create(Const DefineType: TParserResultType;
+      IdentList: array of IdString; Const Parser: IEpiScriptParser);
     destructor Destroy; override;
     property Ident: string read FIdent;
     property IdentType: TParserResultType read FType;
@@ -781,8 +783,6 @@ end;
 
 constructor TDefine.Create(const DefineType: TParserResultType;
   const Ident: string; const Parser: IEpiScriptParser);
-var
-  V: TScriptVariable;
 begin
   inherited Create;
   FType := DefineType;
@@ -795,6 +795,26 @@ begin
   end;
 
   Parser.AddVariable(TScriptVariable.Create(Ident, DefineType));
+end;
+
+constructor TDefine.Create(const DefineType: TParserResultType;
+  IdentList: array of IdString; const Parser: IEpiScriptParser);
+var
+  i: Integer;
+begin
+  inherited Create;
+  FType := DefineType;
+//  FIdent := Ident;
+
+  for i := Low(IdentList) to High(IdentList) do
+  begin
+    if Parser.VariableExists(IdentList[i]) then
+    begin
+      yyerror('Variable "' + IdentList[i] + '" already defined');
+      yyabort
+    end;
+    Parser.AddVariable(TScriptVariable.Create(IdentList[i], DefineType));
+  end;
 end;
 
 destructor TDefine.Destroy;

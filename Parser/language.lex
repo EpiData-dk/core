@@ -36,6 +36,10 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"begin"		return(OPBegin);
 <normal>"end"		return(OPEnd);
 <normal>"define"	return(OPDefine);
+<normal>"info"		return(OPInfo);
+<normal>"note"		return(OPNote);
+<normal>"warning"	return(OPWarning);
+
 
  (* General tokens *)
  (* Do not edit anything below this line unless you know   *)
@@ -71,8 +75,8 @@ U		({L}|{U2}|{U3}|{U4})
  (* unary minus would be here too, but is identified in the binary OPerator section *)
    
  (* Comparison tokens *)
-<normal>"="             return(OPEQ);
-<normal>"<>"            return(OPNEQ);
+<normal>"=="             return(OPEQ);
+<normal>"!="            return(OPNEQ);
 <normal>"<"             return(OPLT);
 <normal>"<="            return(OPLTE);
 <normal>">"             return(OPGT);
@@ -90,12 +94,13 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"boolean"       return(OPBoolean);
 
  (* Misc. tokens *)
-<normal>":="            return(OPAssign);      
+<normal>"="             return(OPAssign);      
 <normal>"("             return(OPOpenParan);      
 <normal>")"             return(OPCloseParan);
 <normal>";"             return(OPSemicolon);      (* Command seperator *)
 <normal>"."             return(OPPeriod);         (* Missing value identifier *)
- // <normal>","             return(OPComma);
+<normal>","             return(OPComma);
+<normal>":"             return(OPColon);
  // <normal>"["             return(OPOpenBracket);    (* L. bracket for variable indexing *)
  // <normal>"]"             return(OPCloseBracket);   (* R. bracket for variable indexing *)
 
@@ -170,7 +175,7 @@ U		({L}|{U2}|{U3}|{U4})
 <text>{U}*
                         begin
 			  yylval.yyIdString := yytext;
-                          return(OPString);
+                          return(OPStringText);
                         end;  
 
 %%

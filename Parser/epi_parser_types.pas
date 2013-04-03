@@ -5,6 +5,7 @@ unit epi_parser_types;
 interface
 
 type
+  IdString = String[64];
 
   TParserResultType = (
     rtBoolean,

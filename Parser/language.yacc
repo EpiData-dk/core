@@ -12,9 +12,6 @@ uses
   epi_script_parser,
   epi_script_AST;
 
-type
-  IdString = String[64];
-
 function yyparse(Const EpiParser: IEpiScriptParser; Out AST: TStatementList): boolean;
 
 implementation
@@ -28,13 +25,22 @@ var
 
 %}
 
-  /* Command tokens */
-%token OPBegin OPEnd OPDefine
+ /* ================= */
+ /* Statement tokens  */
+ /* ================= */
+
+ /* Define statment   */
+%token OPDefine
+ /* Info statement  */
+%token OPInfo OPNote OPWarning 
 
  /* General tokens 		                           *
   * Do not edit anything below this line unless you know   *
   * what you are doing!                                    *
   * ====================================================== */
+
+ /*   */
+%token OPBegin OPEnd 
 
  /* Constants tokens */
 %token <Boolean>OPTrue OPFalse
@@ -58,12 +64,13 @@ var
  /* Misc. tokens */
 %token OPOpenParan OPCloseParan
 %token OPSemicolon OPComma OPPeriod OPAssign
+%token OPColon
  /* %token OPOpenBracket OPCloseBracket OPHash */
 
  /* Special case tokens */
 %token <Extended> OPFloat
 %token <Integer> OPNumber OPHexNumber
-%token <IdString> OPString OPIdentifier
+%token <IdString> OPStringText OPIdentifier
 
 %token OPIllegal		/* illegal token */
 
@@ -102,6 +109,23 @@ procedure yyerror(msg : string);
       writeln('(', yylineno, ',', yycolno, '): ', msg, ' at or before ''', yytext, '''.')
   end(*yyerror*);
 
+var
+  IdentList: array of IdString;
+
+procedure ClearIdentList;
+begin
+  SetLength(IdentList, 0);
+end;
+
+procedure AddToIdentList(Ident: IdString);
+var
+  l: integer;
+begin
+  l := Length(IdentList);
+  SetLength(IdentList, l+1);
+  IdentList[l] := Ident;
+end;
+
 %}
 
 %%
@@ -119,12 +143,26 @@ statementlist	:	statement OPSemicolon statementlist		{ $$ := TStatementList.Crea
 statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }  
 		| 	OPIf expr OPThen statement opt_else		{ $$ := TIfThen.Create($2, $4, $5); } 
 		|	variable OPAssign expr				{ $$ := TAssignment.Create($1, $3); } 
-/*		|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  */
-                |       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3, FParser); } 
+/*	 	|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  */
+/*		|       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3, FParser); } */
+                |       OPDefine ident_list OPColon definetype
+{
+  $$ := TDefine.Create($4, IdentList, FParser);
+  ClearIdentList;
+} 
+		|	OPInfo OPStringText infotype			{ }
 		;
 
 opt_else	:	OPElse statement				{ $$ := $2; }
 		|	/* empty */					{ $$ := nil; }
+		;
+
+ident_list	:	ident_list OPComma OPIdentifier			{ AddToIdentList($3); }
+		|	OPIdentifier					{ AddToIdentList($1); }
+		;
+
+infotype	:	OPNote
+		|	OPWarning
 		;
 
 /*
