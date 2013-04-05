@@ -474,6 +474,10 @@ end;
 
 destructor TEpiField.Destroy;
 begin
+  // nil in order to remove LocalEventHook from other objects.
+  ValueLabelSet := nil;
+  ValueLabelWriteField := nil;
+
   FQuestion.Free;
   if Assigned(FJumps) then
     FJumps.Free;
@@ -2211,4 +2215,5 @@ begin
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
 end;
+
 
