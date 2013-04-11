@@ -380,8 +380,6 @@ begin
     END;  //for - with
 
     // RE-format valuelabel sets.
-    UniqueValueLabels := TStringList.Create();
-    UniqueValueLabels.Sorted := true;
     WrittenValueLabelSets := TEpiValueLabelSets.Create(nil);
     for i := 0 to ValueLabels.Count - 1 do
     with ValueLabelSet[i] do
