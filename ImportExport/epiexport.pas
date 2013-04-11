@@ -144,18 +144,9 @@ var
   I, J, TmpInt: Integer;
   TmpStr: string;
   TmpChar: Char;
-  WritenValueLabels: TStringList;
-  UniqueValueLabels: TStringList;
   CurRec: Integer;
   CurField: Integer;
   DataFile: TEpiDataFile;
-
-  // Version specific variables.
-  FieldNameLength, StrBaseNum, FileLabelLength,
-  FmtLength: Integer;
-  ByteChar, IntChar, LongChar,
-  FloatChar, DoubleChar: Char;
-  MissingBaseNum: Cardinal;
   FieldNames: TStrings;
   DataStream: TFileStream;
   VLblSet: TEpiValueLabelSet;
@@ -165,31 +156,40 @@ var
   NObsPos: Int64;
   Flds: TList;
   RecCount: Integer;
+  WrittenValueLabelSets: TEpiValueLabelSets;
 
-  procedure WriteFloat(Val: Double; Const MisVal: string);
+  // Version specific variables.
+  FieldNameLength, StrBaseNum, FileLabelLength,
+  FmtLength: Integer;
+  ByteChar, IntChar, LongChar,
+  FloatChar, DoubleChar: Char;
+  MissingBaseNum: Cardinal;
+
+  procedure WriteMissingFloat(Const MisVal: Word);
   var
+    Val: Double;
     FltByte: Array[0..7] of Byte absolute Val;
   begin
-    if MisVal[1] = '.' then
-      case MisVal[2] of
-        'a': FltByte[5] := 1;
-        'b': FltByte[5] := 2;
-        'c': FltByte[5] := 3;
-      else
-        FltByte[5] := 0;
-      end;
+    FltByte[0] := 0;
+    FltByte[1] := 0;
+    FltByte[2] := 0;
+    FltByte[3] := 0;
+    FltByte[4] := hi(MisVal);
+    FltByte[5] := lo(MisVal);
+    FltByte[6] := $e0;
+    FltByte[7] := $7f;
     WriteDouble(DataStream, Val);
   end;
 
 
   function UniqueValueLabelName(Const Str: string; Const Count: Integer): string;
   var
-    i, j: integer;
+    i: integer;
   begin
     result := copy(StringReplace(Str, ' ', '_', [rfReplaceAll]), 1, Count-1);
     i := 1;
     if result = '' then result := 'ValueLabel';
-    while UniqueValueLabels.Find(result, j) do
+    while WrittenValueLabelSets.ItemExistsByName(result) do
     begin
       result := Copy(result, 1, Count - Length(IntToStr(i - 1))) + IntToStr(i);
       Inc(i);
@@ -379,32 +379,40 @@ begin
       WriteString(DataStream, TmpStr, FmtLength);
     END;  //for - with
 
-    // - lbllist: names af value label
-    WritenValueLabels := TStringList.Create();
-    WritenValueLabels.Sorted := true;
+    // RE-format valuelabel sets.
     UniqueValueLabels := TStringList.Create();
     UniqueValueLabels.Sorted := true;
+    WrittenValueLabelSets := TEpiValueLabelSets.Create(nil);
+    for i := 0 to ValueLabels.Count - 1 do
+    with ValueLabelSet[i] do
+    begin
+      if LabelType <> ftInteger then continue;
+
+      VLblSet := TEpiValueLabelSet(Clone(WrittenValueLabelSets));
+      VLblSet.Name := UniqueValueLabelName(EncodeString(VLblSet.Name, ExportEncoding), FieldNameLength);
+      AddCustomData('StataValueLabelsKey', VLblSet);
+      WrittenValueLabelSets.AddItem(VLblSet);
+
+      TmpInt := $7fffffe6;  // Stata missingvalue ".a"
+      for j := 0 to VLblSet.Count - 1 do
+        if VLblSet[j].IsMissingValue then
+        begin
+          TEpiIntValueLabel(VLblSet[j]).Value := TmpInt;
+          Inc(TmpInt);
+        end;
+    end;
+
+    // - lbllist: names af value label
     for i := 0 to NVar - 1 do
     with TEpiField(Flds[i]) do
     begin
       TmpStr := '';
-      if ExportSettings.ExportValueLabels and
-         Assigned(ValueLabelSet) and
-         (FieldType = ftInteger) then
-      begin
-        TmpStr := ValueLabelSet.Name;
-        if WritenValueLabels.Find(TmpStr, j) then
-          // ValuelabelSet already made unique and prepared for finale write.
-          TmpStr := UniqueValueLabels[j]
-        else begin
-          // ValuelabelSet not seen before...
-          WritenValueLabels.Add(TmpStr);
-          TmpStr := UniqueValueLabelName(EncodeString(TmpStr, ExportEncoding), FieldNameLength);
-          if TmpStr <> '' then
-            UniqueValueLabels.Add(TmpStr);
-        end;
-      end;
-      WriteString(DataStream, TmpStr, FieldNameLength);
+      if Assigned(ValueLabelSet) and
+         (ValueLabelSet.LabelType = ftInteger)
+      then
+        TmpStr := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey')).Name;
+
+      WriteString(DataStream, VLblSet.Name, FieldNameLength);
     end;
 
     // ********************************
@@ -464,7 +472,7 @@ begin
         WriteString(DataStream, 'note0', 33);
         WriteString(DataStream, '1', 2);
 
-        TmpStr := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)" for details. Date coded as Jan. 1st 1960.';
+        TmpStr := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)"Ha for details. Date coded as Jan. 1st 1960.';
         WriteByte(DataStream, 1);
         TmpInt := 2*33 + Length(TmpStr) + 1;
         WriteInt(DataStream, TmpInt);
@@ -498,22 +506,37 @@ begin
               // Specific missing values
               // TODO : MissingValues (STATA)
               if IsMissing[CurRec] then
-                WriteByte(DataStream, $7F)
-              else
+                WriteByte(DataStream, $65)
+              else if IsMissingValue[CurRec] then
+              begin
+                VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
+                TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
+                WriteByte(DataStream, (TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5 + $65));
+              end else
                 WriteByte(DataStream, AsInteger[CurRec]);
             end;
           StataIntConst:
             begin
               if IsMissing[CurRec] then
-                WriteWord(DataStream, $7FFF)
-              else
+                WriteWord(DataStream, $7fe5)
+              else if IsMissingValue[CurRec] then
+              begin
+                VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
+                TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
+                WriteWord(DataStream, (TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5 + $7fe5));
+              end else
                 WriteWord(DataStream, AsInteger[CurRec]);
             end;
           StataLongConst:
             begin
               if IsMissing[CurRec] then
                 WriteInt(DataStream, $7FFFFFFF)
-              else
+              else if IsMissingValue[CurRec] then
+              begin
+                VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
+                TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
+                WriteInt(DataStream, TEpiIntValueLabel(VLblSet[TmpInt]).Value);
+              end else
                 {Date is converted from Delphi's/Lazarus 30/12-1899 base
                  to Stata's 1/1-1960 base by substracting 21916 days}
                 If (FieldType in DateFieldTypes) then
@@ -524,8 +547,14 @@ begin
           StataDoubleConst:
             begin
               if IsMissing[CurRec] then
-                WriteDouble(DataStream, Power(2, 1023))
-              else
+                WriteMissingFloat(0)
+              else if IsMissingValue[CurRec] then
+              begin
+                VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
+                TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
+                TmpInt := TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5;
+                WriteMissingFloat(TmpInt);
+              end else
                 if (FieldType in TimeFieldTypes) and
                    (ExportSettings.Version >= dta10) then
                   WriteDouble(DataStream, round(MilliSecondSpan(StataBaseDate + AsDateTime[CurRec], StataBaseDateTime)))
@@ -574,9 +603,9 @@ begin
       END ELSE BEGIN
         //write value labels in Stata ver. 6+ format
         SetLength(CharBuf, 32000);      // Write Txt[] - max posible length is 32000 chars.
-        FOR I := 0 TO WritenValueLabels.Count - 1 DO
+        FOR I := 0 TO WrittenValueLabelSets.Count - 1 DO
         BEGIN
-          VLblSet := ValueLabels.GetValueLabelSetByName(WritenValueLabels[i]);
+          VLblSet := WrittenValueLabelSets[i];
           NObs := VLblSet.Count;
           SetLength(ByteBuf, 4 * NObs);   // Write Off[]
           SetLength(ValBuf,  4 * NObs);   // Write Val[]
@@ -600,7 +629,7 @@ begin
                     CurRec;               // txt[]
 
           WriteInt(DataStream, TmpInt);                                     // len
-          WriteString(DataStream, UniqueValueLabels[I], FieldNameLength);   // labname
+          WriteString(DataStream, VLblSet.Name, FieldNameLength);           // labname
           DataStream.Write(#0#0#0, 3);                                      // padding...
 
           {Fill out value_label_table}
@@ -616,8 +645,8 @@ begin
     Result := true;
   finally
     if Assigned(DataStream) then FreeAndNil(DataStream);
-    if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
-    if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
+    //if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
+//    if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
   end;
 end;
 
