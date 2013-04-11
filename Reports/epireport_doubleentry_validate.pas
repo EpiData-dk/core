@@ -23,7 +23,6 @@ type
     FCompareFields: TEpiFields;
     FDblEntryValidateOptions: TEpiToolsDblEntryValidateOptions;
     FDuplDF: TEpiDataFile;
-    FDuplEpiDocument: TEpiDocument;
     FKeyFields: TEpiFields;
     FMainDF: TEpiDataFile;
     FResultArray: TEpiDblEntryResultArray;
@@ -127,13 +126,11 @@ procedure TEpiReportDoubleEntryValidation.RunReport;
 var
   S: String;
   i: Integer;
-  BadCount: Integer;
   MText: String;
   DText: String;
   j: Integer;
   MCmpField: TEpiField;
   DCmpField: TEpiField;
-  CommonCount: Integer;
 begin
   inherited RunReport;
 
@@ -200,7 +197,7 @@ begin
     case ValResult of
       ValNoExists:
         begin
-          MText += 'Record not found in duplicate file';
+//          MText += '';
           DText += 'Record not found';
         end;
       ValTextFail,
@@ -242,7 +239,7 @@ begin
       DText += DCmpField.Name + ' = ' + DCmpField.AsString[FExtraRecs[i]] + LineEnding;
     end;
 
-    MText += 'Record not found';
+//    MText += 'Record not found';
     DText += 'Record not found in main datafile!';
 
     DoTableCell(0, Length(FResultArray) + i + 1, MText);
