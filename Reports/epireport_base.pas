@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, epireport_generator_base;
 
-const
+resourcestring
   SEpiReportBaseNoGenerator = 'No ReportGenerator Assigned To Report';
 
 type
@@ -17,9 +17,9 @@ type
 
   TEpiReportBase = class
   private
-    FReportGenerator: TEpiReportGeneratorBase;
     procedure SanityCheck;
   protected
+    FReportGenerator: TEpiReportGeneratorBase;
     procedure DoError(EC: ExceptClass; Const Msg: string);
     procedure DoSanityCheck; virtual;
     function GetReportText: string; virtual;
