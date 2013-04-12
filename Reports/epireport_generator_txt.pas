@@ -15,6 +15,8 @@ type
   private
     FTableList:  TStringList;
     function  CenterText(Const Txt: string; Width: Integer): string;
+    function  LeftAdjustText(Const Txt: string; Width: Integer): string;
+    function  RightAdjustText(Const Txt: string; Width: Integer): string;
     function  LineFromLines(var Lines: string): string;
 
   public
@@ -68,6 +70,18 @@ begin
     DupeString(' ', Count + D);
 end;
 
+function TEpiReportTXTGenerator.LeftAdjustText(const Txt: string; Width: Integer
+  ): string;
+begin
+  Result := Txt + DupeString(' ', Width - UTF8Length(Txt));
+end;
+
+function TEpiReportTXTGenerator.RightAdjustText(const Txt: string;
+  Width: Integer): string;
+begin
+  Result := DupeString(' ', Width - UTF8Length(Txt)) + Txt;
+end;
+
 function TEpiReportTXTGenerator.LineFromLines(var Lines: string): string;
 var
   p: Integer;
@@ -84,19 +98,37 @@ begin
 end;
 
 procedure TEpiReportTXTGenerator.Section(const Text: string);
+var
+  T: String;
+  L: Integer;
 begin
   inherited Section(Text);
-  AddLine(DupeString('=', Length(Text)));
+
+  T := Text;
+  L := 0;
+  while Length(T) > 0 do
+    L := Max(L, UTF8Length(LineFromLines(T)));
+
+  AddLine(DupeString('=', L));
   AddLine(Text);
-  AddLine(DupeString('=', Length(Text)));
+  AddLine(DupeString('=', L));
 end;
 
 procedure TEpiReportTXTGenerator.Heading(const Text: string);
+var
+  T: String;
+  L: Integer;
 begin
   inherited Heading(Text);
-  AddLine(DupeString('-', Length(Text)));
+
+  T := Text;
+  L := 0;
+  while Length(T) > 0 do
+    L := Max(L, UTF8Length(LineFromLines(T)));
+
+  AddLine(DupeString('-', L));
   AddLine(Text);
-  AddLine(DupeString('-', Length(Text)));
+  AddLine(DupeString('-', L));
 end;
 
 procedure TEpiReportTXTGenerator.Line(const Text: string);
@@ -142,7 +174,7 @@ begin
   begin
     Idx := ((i - 2) mod ColCount);
 
-    // TODO : Handle multiple lines in one cell.
+    // Handle multiple lines in one cell.
     Txt := FTableList[i];
     while Length(Txt) > 0 do
     begin
@@ -158,24 +190,25 @@ begin
   ColWidthTotal := Math.Max(ColWidthTotal, UTF8Length(FTableList[0])) +
     // for adding " | " to sides and in between cells.
   {  ((ColCount - 1) * 3) +   }
-    (ColCount - 1) +
+    (ColCount - 1) {+
     // For adding "| " and " |" in beginning and end of cells
-    4;
+    4};
 
   // Table header
+  // Do not write an empty header... looks goofy :)
   if Length(FTableList[0]) > 0 then
   begin
-    // Do not write an empty header... looks goofy :)
-    AddLine(DupeString('-', ColWidthTotal));
-    AddLine('| ' + CenterText(FTableList[0], ColWidthTotal - 4) + ' |');
+//    AddLine(DupeString('-', ColWidthTotal));
+    AddLine(FTableList[0]);
   end;
   AddLine(DupeString('-', ColWidthTotal));
 
   // Table - first row:
-  Txt := '| ';
+//  Txt := '| ';
   for i := 0 to ColCount - 1 do
-    Txt += CenterText(FTableList[i+2], ColWidths[i]) {+ ' | '} + ' ';
-  Txt += '|';
+    Txt += LeftAdjustText(FTableList[i+2], ColWidths[i]) + ' ';
+//    Txt += CenterText(FTableList[i+2], ColWidths[i]) {+ ' | '} + ' ';
+//  Txt += '|';
 //  TrimRight(Txt);
   AddLine(Txt);
   AddLine(DupeString('-', ColWidthTotal));
@@ -186,37 +219,40 @@ begin
     HasMoreText := true;
     while HasMoreText do
     begin
-      Txt := '|';
+      Txt := '';
+//      Txt := '|';
       HasMoreText := false;
       for j := 0 to ColCount - 1 do
       begin
         Idx := (ColCount * i) + j + 2;
-
-        Txt += ' ';
 
         T := FTableList[Idx];
         S := LineFromLines(T);
         FTableList[Idx] := T;
 
         // If data is number (or missing) then right-adjust.
-        W := ColWidths[j] - UTF8Length(S);
+//        W := ColWidths[j] - UTF8Length(S);
         if (TryStrToFloat(S, Value)) or
            (S = '.')
         then
-          Txt += DupeString(' ', W) + S
+          Txt += RightAdjustText(S, ColWidths[j])
+//          DupeString(' ', W) + S
         else
-          Txt += S + DupeString(' ', W);
+          Txt += LeftAdjustText(S, ColWidths[j]);
+//          S + DupeString(' ', W);
+        Txt += ' ';
         {Txt += ' |';  }
 
         HasMoreText := HasMoreText or (Length(T) > 0);
       end;
-      Txt += ' |';
+//      Txt += ' |';
       AddLine(Txt);
     end;
-    AddLine(DupeString('-', ColWidthTotal));
   end;
+  AddLine(DupeString('-', ColWidthTotal));
   // Table footer
-  AddLine(FTableList[1]);
+  if FTableList[i] <> '' then
+    AddLine(FTableList[1]);
 
   FTableList.Free;
 end;
