@@ -251,7 +251,7 @@ begin
   end;
   AddLine(DupeString('-', ColWidthTotal));
   // Table footer
-  if FTableList[i] <> '' then
+  if FTableList[1] <> '' then
     AddLine(FTableList[1]);
 
   FTableList.Free;

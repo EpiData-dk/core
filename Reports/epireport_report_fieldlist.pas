@@ -66,6 +66,7 @@ var
   FieldList: TEpiFields;
   ColCount: Integer;
   i: Integer;
+  S: String;
 begin
   inherited RunReport;
 
@@ -79,7 +80,7 @@ begin
   FieldList.Sort;
 
   if ExtendedList then
-    DoTableHeader('Field extended view:', 14, FieldList.Count + 1)
+    DoTableHeader('Field extended view:', 13, FieldList.Count + 1)
   else
     DoTableHeader('Question list overview:', 4, FieldList.Count + 1);
   DoTableCell(0, 0, 'Name');
@@ -88,16 +89,16 @@ begin
   DoTableCell(3, 0, 'Question');
   if ExtendedList then
   begin
-    DoTableCell(4, 0, 'ValueLabel');
-    DoTableCell(5, 0, 'Range');
-    DoTableCell(6, 0, 'Entry Mode');
-    DoTableCell(7, 0, 'Confirm');
-    DoTableCell(8, 0, 'Repeat');
-    DoTableCell(9, 0, 'Default Value');
-    DoTableCell(10, 0, 'Show valuelabel');
-    DoTableCell(11, 0, 'Show picklist');
-    DoTableCell(12, 0, 'Write valuelabel');
-    DoTableCell(13, 0, 'Extended');
+    DoTableCell(4, 0,  'ValueLabel');
+    DoTableCell(5, 0,  'Def.Values');
+    DoTableCell(6, 0,  'Visual');
+    DoTableCell(7, 0,  'Entry Mode');
+    DoTableCell(8, 0,  'Range');
+    DoTableCell(9, 0,  'Compare');
+    DoTableCell(10, 0, 'Jumps');
+    DoTableCell(11, 0, 'Calculate');
+    DoTableCell(12, 0, 'Notes');
+//    DoTableCell(13, 0, 'Script');
   end;
 
   for i := 0 to FieldList.Count - 1 do
@@ -120,44 +121,49 @@ begin
     else
       DoTableCell(4, i+1, '');
 
-    if Assigned(Ranges) then
-      DoTableCell(5, i+1, Ranges.RangesToText)
-    else
-      DoTableCell(5, i+1, '');
+    if HasDefaultValue or RepeatValue then
+      DoTableCell(5, i+1, 'x');
 
-    Case EntryMode of
-      emDefault:   DoTableCell(6, i+1, '');
-      emMustEnter: DoTableCell(6, i+1, 'Must Enter');
-      emNoEnter:   DoTableCell(6, i+1, 'No Enter');
-    end;
-    DoTableCell(7, i+1, BoolToStr(ConfirmEntry, 'x', ''));
-    DoTableCell(8, i+1, BoolToStr(RepeatValue, 'x', ''));
-    DoTableCell(9, i+1, DefaultValueAsString);
-    DoTableCell(10, i+1, BoolToStr(ShowValueLabel, 'x', ''));
-    DoTableCell(11, i+1, BoolToStr(ForcePickList, 'x', ''));
-    if Assigned(ValueLabelWriteField) then
-      DoTableCell(12, i+1, ValueLabelWriteField.Name)
-    else
-      DoTableCell(12, i+1, '');
 
-    if Assigned(Comparison) or
-       Assigned(Jumps) or
-       Assigned(Calculation) or
-       Assigned(Ranges) or
-       (EntryMode <> emDefault) or
-       ConfirmEntry or
-       RepeatValue or
-       (DefaultValueAsString <> '') or
-       ShowValueLabel or
-       ForcePickList or
-       Assigned(ValueLabelWriteField) or
-       (Notes.Text <> '')
+    if ShowValueLabel or ForcePickList then
+      DoTableCell(6, i+1, 'x');
+
+    if (EntryMode in [emMustEnter, emNoEnter]) or
+       ConfirmEntry
     then
-      DoTableCell(13, i+1, 'x')
-    else
-      DoTableCell(13, i+1, '');
+      DoTableCell(7, i+1, 'x');
+
+    if Assigned(Ranges) then
+      DoTableCell(8, i+1, 'x');
+
+    if Assigned(Comparison) then
+      DoTableCell(9, i+1, 'x');
+
+    if Assigned(Jumps) then
+      DoTableCell(10, i+1, 'x');
+
+    if Assigned(Calculation) then
+      DoTableCell(11, i+1, 'x');
+
+    if Notes.Text <> '' then
+      DoTableCell(12, i+1, 'x');
+
+    // Script
+{    if Assigned(Ranges) then
+      DoTableCell(13, i+1, 'x');}
   end;
-  DoTableFooter('');
+  S :=
+    'An x in a column indicate one or more of these specifications:' + LineEnding +
+    'Def.Values:   Repeat, Default Value' + LineEnding +
+    'Visual:       Show Picklist, show Category text from Value Label' + LineEnding +
+    'Entry-Mode :  Mustenter, Noenter, confirm' + LineEnding +
+    'Range:        Range is specified' + LineEnding +
+    'Compare:      Compare with another field' + LineEnding +
+    'Jumps:        Jump specified' + LineEnding +
+    'Calculate:    Calculation, copy from category text to other field' + LineEnding +
+    'Notes:        Note text defined' + LineEnding +
+    'Scrip:        Script defined';
+  DoTableFooter(S);
 end;
 
 end.
