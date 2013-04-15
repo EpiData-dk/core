@@ -152,17 +152,19 @@ begin
 {    if Assigned(Ranges) then
       DoTableCell(13, i+1, 'x');}
   end;
-  S :=
-    'An x in a column indicate one or more of these specifications:' + LineEnding +
-    'Def.Values:   Repeat, Default Value' + LineEnding +
-    'Visual:       Show Picklist, show Category text from Value Label' + LineEnding +
-    'Entry-Mode :  Mustenter, Noenter, confirm' + LineEnding +
-    'Range:        Range is specified' + LineEnding +
-    'Compare:      Compare with another field' + LineEnding +
-    'Jumps:        Jump specified' + LineEnding +
-    'Calculate:    Calculation, copy from category text to other field' + LineEnding +
-    'Notes:        Note text defined' + LineEnding +
-    'Scrip:        Script defined';
+  S := '';
+  if ExtendedList then
+    S :=
+      'An x in a column indicate one or more of these specifications:' + LineEnding +
+      'Def.Values:   Repeat, Default Value' + LineEnding +
+      'Visual:       Show Picklist, show Category text from Value Label' + LineEnding +
+      'Entry-Mode :  Mustenter, Noenter, confirm' + LineEnding +
+      'Range:        Range is specified' + LineEnding +
+      'Compare:      Compare with another field' + LineEnding +
+      'Jumps:        Jump specified' + LineEnding +
+      'Calculate:    Calculation, copy from category text to other field' + LineEnding +
+      'Notes:        Note text defined' + LineEnding +
+      'Scrip:        Script defined';
   DoTableFooter(S);
 end;
 

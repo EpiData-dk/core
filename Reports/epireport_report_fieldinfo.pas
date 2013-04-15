@@ -30,7 +30,7 @@ implementation
 
 uses
   epireport_report_valuelabelsetlist, epidatafilestypes,
-  epistringutils;
+  epistringutils, epimiscutils;
 
 resourcestring
   SEpiReportFieldInfoNoField = 'EpiReport: No field assigned to field info.';
@@ -56,7 +56,7 @@ begin
 
   with Field do
   begin
-    j := 0;
+    j := 2;  // Type + Length
     if Assigned(Comparison)     then inc(j);
     if Assigned(Jumps)          then inc(j);
     if Assigned(Calculation)    then inc(j);
@@ -74,13 +74,39 @@ begin
     DoTableCell(0, 0, 'Extension:');
     DoTableCell(1, 0, 'Content/Value:');
 
-    j := 1;
+    DoTableCell(0, 1, 'Type');
+    DoTableCell(1, 1, EpiTypeNames[FieldType]);
+
+    DoTableCell(0, 2, 'Length');
+    if FieldType in FloatFieldTypes then
+      DoTableCell(1, 2, Format('%d.%d', [Length-Decimals-1, Decimals]))
+    else
+      DoTableCell(1, 2, IntToStr(Length));
+
+    j := 3;
+    if (EntryMode <> emDefault) then
+    begin
+      DoTableCell(0, j, 'Entry Mode');
+      Case EntryMode of
+        emMustEnter: DoTableCell(1, j, 'Must Enter');
+        emNoEnter:   DoTableCell(1, j, 'No Enter');
+      end;
+      inc(j);
+    end;
+
     if Assigned(Comparison)  then
     begin
       DoTableCell(0, j, 'Comparison');
       S := Name + ComparisonTypeToString(Comparison.CompareType) + Comparison.CompareField.Name;
       DoTableCell(1, j, S);
       Inc(j);
+    end;
+
+    if Assigned(Ranges)       then
+    begin
+      DoTableCell(0, j, 'Range');
+      DoTableCell(1, j, Ranges[0].AsString[true] + '-' + Ranges[0].AsString[false]);
+      inc(j);
     end;
 
     if Assigned(Jumps)       then
@@ -146,23 +172,6 @@ begin
       Inc(j);
     end;
 
-    if Assigned(Ranges)       then
-    begin
-      DoTableCell(0, j, 'Range');
-      DoTableCell(1, j, Ranges[0].AsString[true] + '-' + Ranges[0].AsString[false]);
-      inc(j);
-    end;
-
-    if (EntryMode <> emDefault) then
-    begin
-      DoTableCell(0, j, 'Entry Mode');
-      Case EntryMode of
-        emMustEnter: DoTableCell(1, j, 'Must Enter');
-        emNoEnter:   DoTableCell(1, j, 'No Enter');
-      end;
-      inc(j);
-    end;
-
     if ConfirmEntry             then
     begin
       DoTableCell(0, j, 'Confirm Entry');
@@ -184,6 +193,13 @@ begin
       inc(j);
     end;
 
+    if Assigned(ValueLabelWriteField) then
+    begin
+      DoTableCell(0, j, 'Write Value Label text to Field');
+      DoTableCell(1, j, ValueLabelWriteField.Name + ': ' + EpiCutString(ValueLabelWriteField.Question.Text, 15));
+      inc(j);
+    end;
+
     if ShowValueLabel               then
     begin
       DoTableCell(0, j, 'Show Value Label');
@@ -195,13 +211,6 @@ begin
     begin
       DoTableCell(0, j, 'Show Picklist');
       DoTableCell(1, j, 'true');
-      inc(j);
-    end;
-
-    if Assigned(ValueLabelWriteField) then
-    begin
-      DoTableCell(0, j, 'Write Value Label text to Field');
-      DoTableCell(1, j, ValueLabelWriteField.Name + ': ' + EpiCutString(ValueLabelWriteField.Question.Text, 15));
       inc(j);
     end;
 
