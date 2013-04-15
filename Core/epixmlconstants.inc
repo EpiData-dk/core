@@ -99,6 +99,7 @@ const
          rsValueLabelId    = 'valueLabelRef';
          rsValueLabelWriteRef = 'valueLabelWriteFieldRef';
          rsShowValueLabel  = 'showValueLabel';
+         rsShowValueLabelNotes  = 'showValueLabelNotes';
          rsForcePickList   = 'forcePickList';
          rsRepeatValue     = 'repeat';
          rsDefaultValue    = 'defaultValue';

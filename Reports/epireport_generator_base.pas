@@ -5,7 +5,7 @@ unit epireport_generator_base;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epireport_types;
 
 const
   SEpiReportGeneratorBaseInTableError = 'Cannot write %s while in table!';
@@ -26,6 +26,7 @@ type
 
   { MISC }
   protected
+    FHeaderOptions: TEpiReportGeneratorTableHeaderOptionSet;
     procedure AddLine(Const Txt: string);
     procedure DoError(Const Msg: string);
     property  RowCount: Integer read FRowCount;
@@ -40,10 +41,12 @@ type
 
     // Table
     procedure TableHeader(Const Text: string;
-      Const AColCount, ARowCount: Integer); virtual;
+      Const AColCount, ARowCount: Integer;
+      Const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet = [thoRowHeader]); virtual;
     procedure TableFooter(Const Text: string); virtual;
     procedure TableCell(Const Text: string;
-      Const Col, Row: Integer); virtual;
+      Const Col, Row: Integer;
+      Const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust); virtual;
 
     // Generator static output
     procedure   StartReport(Const Title: string); virtual; abstract;
@@ -88,13 +91,15 @@ begin
 end;
 
 procedure TEpiReportGeneratorBase.TableHeader(const Text: string;
-  const AColCount, ARowCount: Integer);
+  const AColCount, ARowCount: Integer;
+  const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet);
 begin
   if InTable then
     DoError(Format(SEpiReportGeneratorBaseInTableError, ['TableHeader']));
   InTable := true;
   FRowCount := ARowCount;
   FColCount := AColCount;
+  FHeaderOptions := HeaderOptions;
 end;
 
 procedure TEpiReportGeneratorBase.TableFooter(const Text: string);
@@ -105,7 +110,7 @@ begin
 end;
 
 procedure TEpiReportGeneratorBase.TableCell(const Text: string; const Col,
-  Row: Integer);
+  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment);
 begin
   if not InTable then
     DoError(Format(SEpiReportGeneratorBaseNotInTableError, ['TableCell']));
@@ -118,6 +123,7 @@ end;
 constructor TEpiReportGeneratorBase.Create;
 begin
   FReportText := TStringList.Create;
+  FHeaderOptions := [];
 end;
 
 destructor TEpiReportGeneratorBase.Destroy;

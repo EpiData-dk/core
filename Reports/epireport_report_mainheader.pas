@@ -54,14 +54,14 @@ begin
     'Created: ' + FormatDateTime('YYYY-MM-DD HH:NN:SS', Now)
   );
 
-  S := 'File 1: ' + ProjectList[0];
-  for i := 1 to ProjectList.Count - 1 do
-  begin
-    S += LineEnding +
-         'File ' + IntToStr(i + 1) + ': ' + ProjectList[i];
-  end;
   DoLineText('');
-  DoHeading(S);
+  DoTableHeader('', 2, ProjectList.Count, []);
+  for i := 0 to ProjectList.Count - 1 do
+  begin
+    DoTableCell(0, i, 'File ' + IntToStr(i+1) + ':');
+    DoTableCell(1, i, ProjectList[i]);
+  end;
+  DoTableFooter('');
 end;
 
 end.

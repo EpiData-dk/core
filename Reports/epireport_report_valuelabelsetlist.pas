@@ -27,7 +27,7 @@ type
 implementation
 
 uses
-  epimiscutils;
+  epimiscutils, epireport_types;
 
 resourcestring
   SEpiReportValueLabelSetListNoValueLabelSet = 'EpiReport: No valuelabelset assigned for valuelabelset list.';
@@ -61,9 +61,9 @@ begin
   for i := 0 to ValueLabelSet.Count - 1 do
   with ValueLabelSet[i] do
   begin
-    DoTableCell(0, i+1, ValueAsString);
+    DoTableCell(0, i+1, ValueAsString, tcaLeftAdjust);
     DoTableCell(1, i+1, TheLabel.Text);
-    DoTableCell(2, i+1, BoolToStr(IsMissingValue, 'M', ''));
+    DoTableCell(2, i+1, BoolToStr(IsMissingValue, 'M', ''), tcaCenter);
   end;
   DoTableFooter('');
 end;

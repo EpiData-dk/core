@@ -5,7 +5,7 @@ unit epireport_generator_html;
 interface
 
 uses
-  Classes, SysUtils, epireport_generator_base;
+  Classes, SysUtils, epireport_generator_base, epireport_types;
 
 type
 
@@ -18,9 +18,13 @@ type
     procedure Line(Const Text: string); override;
 
     // Table
-    procedure TableHeader(Const Text: string; Const AColCount, ARowCount: Integer); override;
+    procedure TableHeader(const Text: string; const AColCount, ARowCount: Integer;
+      const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet = [
+      thoRowHeader]); override;
     procedure TableFooter(Const Text: string); override;
-    procedure TableCell(Const Text: string; Const Col, Row: Integer); override;
+    procedure TableCell(const Text: string; const Col, Row: Integer;
+      const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust
+      ); override;
 
 
     procedure StartReport(const Title: string); override;
@@ -74,9 +78,10 @@ begin
 end;
 
 procedure TEpiReportHTMLGenerator.TableHeader(const Text: string;
-  const AColCount, ARowCount: Integer);
+  const AColCount, ARowCount: Integer;
+  const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet);
 begin
-  inherited TableHeader(Text, AColCount, ARowCount);
+  inherited TableHeader(Text, AColCount, ARowCount, HeaderOptions);
 
   AddLine('<TABLE cellspacing=0 class=simple>');
   AddLine('<CAPTION class=caption>' + HtmlString(Text) + '</CAPTION>');
@@ -86,26 +91,43 @@ procedure TEpiReportHTMLGenerator.TableFooter(const Text: string);
 begin
   inherited TableFooter(Text);
 
+  if Text <> '' then
+  begin
+    AddLine('<TR>');
+    AddLine('<TD class=cellfoot colspan=' + IntToStr(ColCount) + '>' +
+            HtmlString(Text) + '</TD>');
+    AddLine('</TR>');
+  end;
   AddLine('</TABLE>');
 end;
 
 procedure TEpiReportHTMLGenerator.TableCell(const Text: string; const Col,
-  Row: Integer);
+  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment);
 var
   S: String;
 begin
-  inherited TableCell(Text, Col, Row);
+  inherited TableCell(Text, Col, Row, CellAdjust);
 
   S := '';
   if (Col = 0) then
     S += '<TR>';
 
-  if Row = 0 then
+  if (Row = 0) and (thoRowHeader in FHeaderOptions) then
     S += '<TD class=firstrow>'
-  else if (Col = 0) then
+  else if (Col = 0) and (thoColHeader in FHeaderOptions) then
     S += '<TD class=firstcol>'
   else
-    S += '<TD class=cell>';
+    // TODO : Implement cell adjustments
+    case CellAdjust of
+      tcaAutoAdjust:
+        S += '<TD class=cell>';
+      tcaLeftAdjust:
+        S += '<TD class=cell style="text-align: left">';
+      tcaCenter:
+        S += '<TD class=cell style="text-align: center">';
+      tcaRightAdjust:
+        S += '<TD class=cell style="text-align: right">';
+    end;
 
   S += HtmlString(Text) + '</TD>';
 
@@ -147,13 +169,13 @@ begin
     '  .info {color: green; font-size: 1.0em; font-weight: normal; font-family: monospace ;}' + LineEnding +
     '  .error {color: red; font-family: monospace}' + LineEnding +
     '' + LineEnding +
-    'table.simple  {color: black; font-size: 1.0em; font-family: proportional; font-weight: normal; border-left: solid 2px black; border-right: solid 2px black; border-spacing: 0; margin-top: 1.25cm; }' + LineEnding +
+    'table.simple  {color: black; font-size: 1.0em; font-family: proportional; font-weight: normal; border-left: solid 2px black; border-right: solid 2px black; border-bottom: solid 2px black; border-spacing: 0; margin-top: 1.25cm; }' + LineEnding +
     'table.simple th,' + LineEnding +
     'table.simple tr {padding: 0.2em}' + LineEnding +
-    'table.simple td {border-bottom: 2px solid black; text-align: right; vertical-align: top; padding: 0.2em}' + LineEnding +
+    'table.simple td {text-align: right; vertical-align: top; padding: 0.2em}' + LineEnding +
     'table.simple .cell {text-align: left; vertical-align: top; padding: 0.2em;}' + LineEnding +
     '' + LineEnding +
-    'table.simple .cellfoot {font-size: 0.8em; text-align: left;}' + LineEnding +
+    'table.simple .cellfoot {border-top: solid 2px black; font-size: 0.8em; text-align: left;}' + LineEnding +
     'table.simple .caption {font-size: 1.1em; font-weight: bold; border-bottom: 2px solid black; text-align: center;}' + LineEnding +
     '' + LineEnding +
     'table.simple .firstrow {font-weight: bold; text-align: center; padding-right: 0.4em }' + LineEnding +

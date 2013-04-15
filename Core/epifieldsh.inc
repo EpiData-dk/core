@@ -5,8 +5,8 @@ type
   TEpiFieldsChangeEventType = (
     efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
-    efceShowValueLabel, efceRepeatValue, efceDefaultValue, efceValueLabelWriteTo,
-    efceForcePickList, efceValueLabelSet
+    efceShowValueLabel, efceShowValueLabelNotes, efceRepeatValue, efceDefaultValue,
+    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet
   );
 
   { TEpiFields }
@@ -93,6 +93,7 @@ type
     FRanges: TEpiRanges;
     FRepeatValue: boolean;
     FShowValueLabel: Boolean;
+    FShowValueLabelNotes: boolean;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiTranslatedTextWrapper;
     FValueLabelWriteField: TEpiField;
@@ -105,6 +106,7 @@ type
     procedure   SetLength(const AValue: Cardinal);
     procedure   SetRepeatValue(const AValue: boolean);
     procedure   SetShowValueLabel(const AValue: Boolean);
+    procedure   SetShowValueLabelNotes(AValue: boolean);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
     procedure   SetValueLabelWriteField(const AValue: TEpiField);
   protected
@@ -129,6 +131,7 @@ type
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
     property    ForcePickList: Boolean read FForcePickList write SetForcePickList;
+    property    ShowValueLabelNotes: boolean read FShowValueLabelNotes write SetShowValueLabelNotes;
     property    ValueLabelWriteField: TEpiField read FValueLabelWriteField write SetValueLabelWriteField;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;

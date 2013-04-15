@@ -244,6 +244,16 @@ begin
   DoChange(eegFields, word(efceShowValueLabel), @Val);
 end;
 
+procedure TEpiField.SetShowValueLabelNotes(AValue: boolean);
+var
+  Val: Boolean;
+begin
+  if FShowValueLabelNotes = AValue then exit;
+  Val := FShowValueLabelNotes;
+  FShowValueLabelNotes := AValue;
+  DoChange(eegFields, word(efceShowValueLabelNotes), @Val);
+end;
+
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
 var
   Val: TEpiValueLabelSet;
@@ -519,6 +529,9 @@ begin
     Result += SaveAttr(rsRepeatValue, RepeatValue);
   if ShowValueLabel then
     Result += SaveAttr(rsShowValueLabel, ShowValueLabel);
+  // VERSION 2 Property
+  if ShowValueLabelNotes then
+    Result += SaveAttr(rsShowValueLabelNotes, ShowValueLabelNotes);
   if ForcePickList then
     Result += SaveAttr(rsForcePickList, ForcePickList);
   if HasDefaultValue then
@@ -545,6 +558,8 @@ begin
   RepeatValue := LoadAttrBool(Root, rsRepeatValue, RepeatValue, false);
   DefaultValueAsString := LoadAttrString(Root, rsDefaultValue, DefaultValueAsString, false);
   ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel, ShowValueLabel, false);
+  // VERSION 2 Property
+  ShowValueLabelNotes := LoadAttrBool(Root, rsShowValueLabelNotes, ShowValueLabelNotes, false);
   ForcePickList := LoadAttrBool(Root, rsForcePickList, ForcePickList, false);
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
     ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));

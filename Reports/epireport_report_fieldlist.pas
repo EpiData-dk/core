@@ -108,9 +108,9 @@ begin
     DoTableCell(1, i+1, EpiTypeNames[FieldType]);
 
     if FieldType in FloatFieldTypes then
-      DoTableCell(2, i+1, Format('%d.%d', [Length - Decimals - 1, Decimals]))
+      DoTableCell(2, i+1, Format('%d.%d', [Length - Decimals - 1, Decimals]), tcaRightAdjust)
     else
-      DoTableCell(2, i+1, IntToStr(Length));
+      DoTableCell(2, i+1, IntToStr(Length), tcaRightAdjust);
 
     DoTableCell(3, i+1, Question.Text);
 
@@ -122,31 +122,31 @@ begin
       DoTableCell(4, i+1, '');
 
     if HasDefaultValue or RepeatValue then
-      DoTableCell(5, i+1, 'x');
+      DoTableCell(5, i+1, 'x', tcaCenter);
 
 
     if ShowValueLabel or ForcePickList then
-      DoTableCell(6, i+1, 'x');
+      DoTableCell(6, i+1, 'x', tcaCenter);
 
     if (EntryMode in [emMustEnter, emNoEnter]) or
        ConfirmEntry
     then
-      DoTableCell(7, i+1, 'x');
+      DoTableCell(7, i+1, 'x', tcaCenter);
 
     if Assigned(Ranges) then
-      DoTableCell(8, i+1, 'x');
+      DoTableCell(8, i+1, 'x', tcaCenter);
 
     if Assigned(Comparison) then
-      DoTableCell(9, i+1, 'x');
+      DoTableCell(9, i+1, 'x', tcaCenter);
 
     if Assigned(Jumps) then
-      DoTableCell(10, i+1, 'x');
+      DoTableCell(10, i+1, 'x', tcaCenter);
 
     if Assigned(Calculation) then
-      DoTableCell(11, i+1, 'x');
+      DoTableCell(11, i+1, 'x', tcaCenter);
 
     if Notes.Text <> '' then
-      DoTableCell(12, i+1, 'x');
+      DoTableCell(12, i+1, 'x', tcaCenter);
 
     // Script
 {    if Assigned(Ranges) then

@@ -5,7 +5,7 @@ unit epireport_generator_txt;
 interface
 
 uses
-  Classes, SysUtils, epireport_generator_base;
+  Classes, SysUtils, epireport_generator_base, epireport_types;
 
 type
 
@@ -18,7 +18,7 @@ type
     function  LeftAdjustText(Const Txt: string; Width: Integer): string;
     function  RightAdjustText(Const Txt: string; Width: Integer): string;
     function  LineFromLines(var Lines: string): string;
-
+    function  GetCellAdjust(Idx: Integer): TEpiReportGeneratorTableCellAdjustment;
   public
     // Lines
     procedure Section(Const Text: string); override;
@@ -26,9 +26,13 @@ type
     procedure Line(Const Text: string); override;
 
     // Table
-    procedure TableHeader(Const Text: string; Const AColCount, ARowCount: Integer); override;
+    procedure TableHeader(const Text: string; const AColCount, ARowCount: Integer;
+      const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet = [
+      thoRowHeader]); override;
     procedure TableFooter(Const Text: string); override;
-    procedure TableCell(Const Text: string; Const Col, Row: Integer); override;
+    procedure TableCell(const Text: string; const Col, Row: Integer;
+      const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust
+      ); override;
 
     procedure StartReport(Const Title: string); override;
     procedure EndReport; override;
@@ -97,6 +101,12 @@ begin
   end;
 end;
 
+function TEpiReportTXTGenerator.GetCellAdjust(Idx: Integer
+  ): TEpiReportGeneratorTableCellAdjustment;
+begin
+  Result := TEpiReportGeneratorTableCellAdjustment(Integer(PtrInt(FTableList.Objects[Idx])));
+end;
+
 procedure TEpiReportTXTGenerator.Section(const Text: string);
 var
   T: String;
@@ -138,11 +148,12 @@ begin
 end;
 
 procedure TEpiReportTXTGenerator.TableHeader(const Text: string;
-  const AColCount, ARowCount: Integer);
+  const AColCount, ARowCount: Integer;
+  const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet);
 var
   i: Integer;
 begin
-  inherited TableHeader(Text, AColCount, ARowCount);
+  inherited TableHeader(Text, AColCount, ARowCount, HeaderOptions);
 
   FTableList := TStringList.Create;
   FTableList.Capacity := (ColCount * RowCount) + 2;
@@ -164,6 +175,7 @@ var
   T: String;
   HasMoreText: Boolean;
   W: PtrInt;
+  StartRow: Integer;
 begin
   inherited TableFooter(Text);
   FTableList[1] := Text;
@@ -187,40 +199,32 @@ begin
   for i := 0 to ColCount - 1 do
     ColWidthTotal += ColWidths[i];
 
-  ColWidthTotal := Math.Max(ColWidthTotal, UTF8Length(FTableList[0])) +
-    // for adding " | " to sides and in between cells.
-  {  ((ColCount - 1) * 3) +   }
-    (ColCount - 1) {+
-    // For adding "| " and " |" in beginning and end of cells
-    4};
+  ColWidthTotal := Math.Max(ColWidthTotal, UTF8Length(FTableList[0])) + (ColCount - 1);
 
   // Table header
   // Do not write an empty header... looks goofy :)
   if Length(FTableList[0]) > 0 then
-  begin
-//    AddLine(DupeString('-', ColWidthTotal));
     AddLine(FTableList[0]);
-  end;
   AddLine(DupeString('-', ColWidthTotal));
 
   // Table - first row:
-//  Txt := '| ';
-  for i := 0 to ColCount - 1 do
-    Txt += LeftAdjustText(FTableList[i+2], ColWidths[i]) + ' ';
-//    Txt += CenterText(FTableList[i+2], ColWidths[i]) {+ ' | '} + ' ';
-//  Txt += '|';
-//  TrimRight(Txt);
-  AddLine(Txt);
-  AddLine(DupeString('-', ColWidthTotal));
+  if thoRowHeader in FHeaderOptions then
+  begin
+    for i := 0 to ColCount - 1 do
+      Txt += LeftAdjustText(FTableList[i+2], ColWidths[i]) + ' ';
+    AddLine(Txt);
+    AddLine(DupeString('-', ColWidthTotal));
+    StartRow := 1;
+  end else
+    StartRow := 0;
 
   // Table cells
-  for i := 1 to RowCount - 1 do
+  for i := StartRow to RowCount - 1 do
   begin
     HasMoreText := true;
     while HasMoreText do
     begin
       Txt := '';
-//      Txt := '|';
       HasMoreText := false;
       for j := 0 to ColCount - 1 do
       begin
@@ -230,22 +234,25 @@ begin
         S := LineFromLines(T);
         FTableList[Idx] := T;
 
-        // If data is number (or missing) then right-adjust.
-//        W := ColWidths[j] - UTF8Length(S);
-        if (TryStrToFloat(S, Value)) or
-           (S = '.')
-        then
-          Txt += RightAdjustText(S, ColWidths[j])
-//          DupeString(' ', W) + S
-        else
-          Txt += LeftAdjustText(S, ColWidths[j]);
-//          S + DupeString(' ', W);
+        case GetCellAdjust(Idx) of
+          tcaAutoAdjust:
+            // If data is number (or missing) then right-adjust.
+            if (TryStrToFloat(S, Value)) or
+               (S = '.')
+            then
+              Txt += RightAdjustText(S, ColWidths[j])
+            else
+              Txt += LeftAdjustText(S, ColWidths[j]);
+          tcaLeftAdjust:
+            Txt += LeftAdjustText(S, ColWidths[j]);
+          tcaCenter:
+            Txt += CenterText(S, ColWidths[j]);
+          tcaRightAdjust:
+            Txt += RightAdjustText(S, ColWidths[j]);
+        end;
         Txt += ' ';
-        {Txt += ' |';  }
-
         HasMoreText := HasMoreText or (Length(T) > 0);
       end;
-//      Txt += ' |';
       AddLine(Txt);
     end;
   end;
@@ -258,14 +265,15 @@ begin
 end;
 
 procedure TEpiReportTXTGenerator.TableCell(const Text: string; const Col,
-  Row: Integer);
+  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment);
 var
   Idx: Integer;
 begin
-  inherited TableCell(Text, Col, Row);
+  inherited TableCell(Text, Col, Row, CellAdjust);
 
   Idx := (ColCount * Row) + Col + 2;
   FTableList[Idx] := Text;
+  FTableList.Objects[Idx] := TObject(PtrInt(Integer(CellAdjust)));
 end;
 
 procedure TEpiReportTXTGenerator.StartReport(const Title: string);

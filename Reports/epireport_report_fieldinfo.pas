@@ -30,7 +30,7 @@ implementation
 
 uses
   epireport_report_valuelabelsetlist, epidatafilestypes,
-  epistringutils, epimiscutils;
+  epistringutils, epimiscutils, epireport_types;
 
 resourcestring
   SEpiReportFieldInfoNoField = 'EpiReport: No field assigned to field info.';
@@ -75,21 +75,21 @@ begin
     DoTableCell(1, 0, 'Content/Value:');
 
     DoTableCell(0, 1, 'Type');
-    DoTableCell(1, 1, EpiTypeNames[FieldType]);
+    DoTableCell(1, 1, EpiTypeNames[FieldType], tcaRightAdjust);
 
     DoTableCell(0, 2, 'Length');
     if FieldType in FloatFieldTypes then
-      DoTableCell(1, 2, Format('%d.%d', [Length-Decimals-1, Decimals]))
+      DoTableCell(1, 2, Format('%d.%d', [Length-Decimals-1, Decimals]), tcaRightAdjust)
     else
-      DoTableCell(1, 2, IntToStr(Length));
+      DoTableCell(1, 2, IntToStr(Length), tcaRightAdjust);
 
     j := 3;
     if (EntryMode <> emDefault) then
     begin
       DoTableCell(0, j, 'Entry Mode');
       Case EntryMode of
-        emMustEnter: DoTableCell(1, j, 'Must Enter');
-        emNoEnter:   DoTableCell(1, j, 'No Enter');
+        emMustEnter: DoTableCell(1, j, 'Must Enter', tcaRightAdjust);
+        emNoEnter:   DoTableCell(1, j, 'No Enter', tcaRightAdjust);
       end;
       inc(j);
     end;
@@ -98,14 +98,14 @@ begin
     begin
       DoTableCell(0, j, 'Comparison');
       S := Name + ComparisonTypeToString(Comparison.CompareType) + Comparison.CompareField.Name;
-      DoTableCell(1, j, S);
+      DoTableCell(1, j, S, tcaRightAdjust);
       Inc(j);
     end;
 
     if Assigned(Ranges)       then
     begin
       DoTableCell(0, j, 'Range');
-      DoTableCell(1, j, Ranges[0].AsString[true] + '-' + Ranges[0].AsString[false]);
+      DoTableCell(1, j, Ranges[0].AsString[true] + '-' + Ranges[0].AsString[false], tcaRightAdjust);
       inc(j);
     end;
 
@@ -175,49 +175,49 @@ begin
     if ConfirmEntry             then
     begin
       DoTableCell(0, j, 'Confirm Entry');
-      DoTableCell(1, j, 'true');
+      DoTableCell(1, j, 'true', tcaRightAdjust);
       inc(j);
     end;
 
     if RepeatValue              then
     begin
       DoTableCell(0, j, 'Repeat Value');
-      DoTableCell(1, j, 'true');
+      DoTableCell(1, j, 'true', tcaRightAdjust);
       inc(j);
     end;
 
     if (DefaultValueAsString <> '') then
     begin
       DoTableCell(0, j, 'Default Value');
-      DoTableCell(1, j, DefaultValueAsString);
+      DoTableCell(1, j, DefaultValueAsString, tcaRightAdjust);
       inc(j);
     end;
 
     if Assigned(ValueLabelWriteField) then
     begin
       DoTableCell(0, j, 'Write Value Label text to Field');
-      DoTableCell(1, j, ValueLabelWriteField.Name + ': ' + EpiCutString(ValueLabelWriteField.Question.Text, 15));
+      DoTableCell(1, j, ValueLabelWriteField.Name + ': ' + EpiCutString(ValueLabelWriteField.Question.Text, 15), tcaRightAdjust);
       inc(j);
     end;
 
     if ShowValueLabel               then
     begin
       DoTableCell(0, j, 'Show Value Label');
-      DoTableCell(1, j, 'true');
+      DoTableCell(1, j, 'true', tcaRightAdjust);
       inc(j);
     end;
 
     if ForcePickList                then
     begin
       DoTableCell(0, j, 'Show Picklist');
-      DoTableCell(1, j, 'true');
+      DoTableCell(1, j, 'true', tcaRightAdjust);
       inc(j);
     end;
 
     if (Notes.Text <> '') then
     begin
       DoTableCell(0, j, 'Notes');
-      DoTableCell(1, j, Notes.Text);
+      DoTableCell(1, j, Notes.Text, tcaRightAdjust);
       Inc(j);
     end;
     DoTableFooter('');

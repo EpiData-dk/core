@@ -5,7 +5,7 @@ unit epireport_base;
 interface
 
 uses
-  Classes, SysUtils, epireport_generator_base;
+  Classes, SysUtils, epireport_generator_base, epireport_types;
 
 resourcestring
   SEpiReportBaseNoGenerator = 'No ReportGenerator Assigned To Report';
@@ -24,9 +24,12 @@ type
     procedure DoSanityCheck; virtual;
     function GetReportText: string; virtual;
     procedure DoTableHeader(Const Text: string;
-      Const ColCount, RowCount: integer);
+      Const ColCount, RowCount: integer;
+      Const TableOptions: TEpiReportGeneratorTableHeaderOptionSet  = [thoRowHeader]
+      );
     procedure DoTableFooter(Const Text: string);
-    procedure DoTableCell(Const Col, Row: Integer; Const Text: string);
+    procedure DoTableCell(Const Col, Row: Integer; Const Text: string;
+      CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust);
     procedure DoSection(Const Text: string);
     procedure DoHeading(Const Text: string);
     procedure DoLineText(Const Text: string);
@@ -66,22 +69,24 @@ begin
 end;
 
 procedure TEpiReportBase.DoTableHeader(const Text: string; const ColCount,
-  RowCount: integer);
+  RowCount: integer; const TableOptions: TEpiReportGeneratorTableHeaderOptionSet
+  );
 begin
-  FReportGenerator.TableHeader(Text, ColCount, RowCount);
+  FReportGenerator.TableHeader(Text, ColCount, RowCount, TableOptions);
 end;
 
-procedure TEpiReportBase.DoTableFooter(Const Text: string);
+procedure TEpiReportBase.DoTableFooter(const Text: string);
 begin
   FReportGenerator.TableFooter(Text);
 end;
 
-procedure TEpiReportBase.DoTableCell(Const Col, Row: Integer; Const Text: string);
+procedure TEpiReportBase.DoTableCell(const Col, Row: Integer;
+  const Text: string; CellAdjust: TEpiReportGeneratorTableCellAdjustment);
 begin
-  FReportGenerator.TableCell(Text, Col, Row);
+  FReportGenerator.TableCell(Text, Col, Row, CellAdjust);
 end;
 
-procedure TEpiReportBase.DoSection(Const Text: string);
+procedure TEpiReportBase.DoSection(const Text: string);
 begin
   FReportGenerator.Section(Text);
 end;
@@ -91,7 +96,7 @@ begin
   FReportGenerator.Heading(Text);
 end;
 
-procedure TEpiReportBase.DoLineText(Const Text: string);
+procedure TEpiReportBase.DoLineText(const Text: string);
 begin
   FReportGenerator.Line(Text);
 end;
