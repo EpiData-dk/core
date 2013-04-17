@@ -18,15 +18,20 @@ type
   private
     FDocument: TEpiDocument;
     FFilename: string;
+    FFileNo: integer;
   protected
     procedure DoSanityCheck; override;
   public
     procedure RunReport; override;
     property Document: TEpiDocument read FDocument write FDocument;
     property Filename: string read FFilename write FFilename;
+    property FileNo: integer read FFileNo write FFileNo;
   end;
 
 implementation
+
+uses
+  epireport_types;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';
@@ -50,7 +55,19 @@ var
 begin
   inherited RunReport;
 
-  DoTableHeader('Project File Overview:', 5, 2);
+  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + ExtractFileName(Filename), 2, 4, []);
+  DoTableCell(0, 0, 'Title');
+  DoTableCell(0, 1, 'Created');
+  DoTableCell(0, 2, 'Last Edited');
+  DoTableCell(0, 3, 'Version');
+  DoTableCell(1, 0, Document.Study.Title.Text);
+  DoTableCell(1, 1, DateTimeToStr(Document.Study.Created));
+  DoTableCell(1, 2, DateTimeToStr(Document.Study.ModifiedDate));
+  DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
+  DoTableFooter('');
+
+
+{  DoTableHeader('Project File Overview:', 5, 2);
   // Header row:
   DoTableCell(0, 0, 'Filename');
   DoTableCell(1, 0, 'Created');
@@ -63,11 +80,11 @@ begin
   DoTableCell(2, 1, DateTimeToStr(Document.Study.ModifiedDate));
   DoTableCell(3, 1, Document.Study.Version);
   DoTableCell(4, 1, Document.Study.Title.Text);
-  DoTableFooter('');
+  DoTableFooter('');  }
 
   DoLineText('');
 
-  DoTableHeader('Dataforms:', 9, Document.DataFiles.Count + 1);
+  DoTableHeader('Dataforms:', 8{9}, Document.DataFiles.Count + 1);
   // Header row:
   DoTableCell(0, 0, 'Name');
   DoTableCell(1, 0, 'Created');
@@ -77,7 +94,7 @@ begin
   DoTableCell(5, 0, 'Fields');
   DoTableCell(6, 0, 'Records');
   DoTableCell(7, 0, 'Deleted');
-  DoTableCell(8, 0, 'Title');
+//  DoTableCell(8, 0, 'Title');
   for i := 0 to Document.DataFiles.Count -1 do
   with Document.DataFiles[i] do
   begin
@@ -89,7 +106,7 @@ begin
     DoTableCell(5, 1, IntToStr(Fields.Count));
     DoTableCell(6, 1, IntToStr(Size));
     DoTableCell(7, 1, IntToStr(DeletedCount));
-    DoTableCell(8, 1, Caption.Text);
+//    DoTableCell(8, 1, Caption.Text);
   end;
   DoTableFooter('');
 end;
