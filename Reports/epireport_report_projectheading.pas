@@ -64,23 +64,12 @@ begin
   DoTableCell(1, 1, DateTimeToStr(Document.Study.Created));
   DoTableCell(1, 2, DateTimeToStr(Document.Study.ModifiedDate));
   DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
-  DoTableFooter('');
-
-
-{  DoTableHeader('Project File Overview:', 5, 2);
-  // Header row:
-  DoTableCell(0, 0, 'Filename');
-  DoTableCell(1, 0, 'Created');
-  DoTableCell(2, 0, 'Last Edited');
-  DoTableCell(3, 0, 'Version');
-  DoTableCell(4, 0, 'Project Title');
-  // Content:
-  DoTableCell(0, 1, ExtractFileName(Filename));
-  DoTableCell(1, 1, DateTimeToStr(Document.Study.Created));
-  DoTableCell(2, 1, DateTimeToStr(Document.Study.ModifiedDate));
-  DoTableCell(3, 1, Document.Study.Version);
-  DoTableCell(4, 1, Document.Study.Title.Text);
-  DoTableFooter('');  }
+  S := '';
+  if Document.ProjectSettings.BackupOnShutdown then
+    S += 'Backup on shutdown: active';
+  if Document.PassWord <> '' then
+    S += 'Encrypted data: active';
+  DoTableFooter(S);
 
   DoLineText('');
 
