@@ -52,6 +52,7 @@ end;
 procedure TEpiReportProjectHeader.RunReport;
 var
   i: Integer;
+  S: String;
 begin
   inherited RunReport;
 

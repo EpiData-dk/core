@@ -410,7 +410,7 @@ begin
       then
         TmpStr := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey')).Name;
 
-      WriteString(DataStream, VLblSet.Name, FieldNameLength);
+      WriteString(DataStream, TmpStr, FieldNameLength);
     end;
 
     // ********************************
