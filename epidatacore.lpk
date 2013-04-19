@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="3" Build="1"/>
-    <Files Count="57">
+    <Files Count="56">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -160,109 +160,105 @@
         <UnitName Value="epireport_base"/>
       </Item31>
       <Item32>
-        <Filename Value="Reports/epireport_databasegrid.pas"/>
-        <UnitName Value="epireport_databasegrid"/>
-      </Item32>
-      <Item33>
-        <Filename Value="Reports/epireport_fieldlist_extended.pas"/>
-        <UnitName Value="epireport_fieldlist_extended"/>
-      </Item33>
-      <Item34>
-        <Filename Value="Reports/epireport_fieldlist_simple.pas"/>
-        <UnitName Value="epireport_fieldlist_simple"/>
-      </Item34>
-      <Item35>
-        <Filename Value="Reports/epireport_filelist.pas"/>
-        <UnitName Value="epireport_filelist"/>
-      </Item35>
-      <Item36>
         <Filename Value="Reports/epireport_generator_html.pas"/>
         <UnitName Value="epireport_generator_html"/>
-      </Item36>
-      <Item37>
-        <Filename Value="Reports/epireport_project_overview.pas"/>
-        <UnitName Value="epireport_project_overview"/>
-      </Item37>
-      <Item38>
+      </Item32>
+      <Item33>
         <Filename Value="Reports/epireport_types.pas"/>
         <UnitName Value="epireport_types"/>
-      </Item38>
-      <Item39>
-        <Filename Value="Reports/epireport_valuelabels.pas"/>
-        <UnitName Value="epireport_valuelabels"/>
-      </Item39>
-      <Item40>
+      </Item33>
+      <Item34>
         <Filename Value="Services/episervice_ipc.pas"/>
         <UnitName Value="episervice_ipc"/>
-      </Item40>
-      <Item41>
+      </Item34>
+      <Item35>
         <Filename Value="Services/episervice_ipctypes.pas"/>
         <UnitName Value="episervice_ipctypes"/>
-      </Item41>
-      <Item42>
+      </Item35>
+      <Item36>
         <Filename Value="Utils/epiconvertutils.pas"/>
         <UnitName Value="epiconvertutils"/>
-      </Item42>
-      <Item43>
+      </Item36>
+      <Item37>
         <Filename Value="Utils/epimiscutils.pas"/>
         <UnitName Value="epimiscutils"/>
-      </Item43>
-      <Item44>
+      </Item37>
+      <Item38>
         <Filename Value="Utils/epistringutils.pas"/>
         <UnitName Value="epistringutils"/>
-      </Item44>
-      <Item45>
+      </Item38>
+      <Item39>
         <Filename Value="Utils/epiversionutils.pas"/>
         <UnitName Value="epiversionutils"/>
-      </Item45>
-      <Item46>
+      </Item39>
+      <Item40>
         <Filename Value="Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
-      </Item46>
-      <Item47>
+      </Item40>
+      <Item41>
         <Filename Value="Tools/epitools_integritycheck.pas"/>
         <UnitName Value="epitools_integritycheck"/>
-      </Item47>
-      <Item48>
+      </Item41>
+      <Item42>
         <Filename Value="Utils/epiglobals.pas"/>
         <UnitName Value="epiglobals"/>
-      </Item48>
-      <Item49>
+      </Item42>
+      <Item43>
         <Filename Value="Tools/epitools_val_dbl_entry.pas"/>
         <UnitName Value="epitools_val_dbl_entry"/>
-      </Item49>
-      <Item50>
+      </Item43>
+      <Item44>
         <Filename Value="Utils/epidatafileutils.pas"/>
         <UnitName Value="epidatafileutils"/>
-      </Item50>
-      <Item51>
-        <Filename Value="Reports/epireport_doubleentry_validate.pas"/>
-        <UnitName Value="epireport_doubleentry_validate"/>
-      </Item51>
-      <Item52>
+      </Item44>
+      <Item45>
         <Filename Value="Reports/epireport_generator_txt.pas"/>
         <UnitName Value="epireport_generator_txt"/>
-      </Item52>
-      <Item53>
+      </Item45>
+      <Item46>
         <Filename Value="Reports/epireport_generator_base.pas"/>
         <UnitName Value="epireport_generator_base"/>
-      </Item53>
-      <Item54>
-        <Filename Value="Reports/epireport_datafilesreport_base.pas"/>
-        <UnitName Value="epireport_datafilesreport_base"/>
-      </Item54>
-      <Item55>
+      </Item46>
+      <Item47>
         <Filename Value="ImportExport/epiexport_ddi.pas"/>
         <UnitName Value="epiexport_ddi"/>
-      </Item55>
-      <Item56>
+      </Item47>
+      <Item48>
         <Filename Value="Utils/vinfo.pas"/>
         <UnitName Value="vinfo"/>
+      </Item48>
+      <Item49>
+        <Filename Value="Reports/epireport_report_mainheader.pas"/>
+        <UnitName Value="epireport_report_mainheader"/>
+      </Item49>
+      <Item50>
+        <Filename Value="Reports/epireport_report_projectheading.pas"/>
+        <UnitName Value="epireport_report_projectheading"/>
+      </Item50>
+      <Item51>
+        <Filename Value="Reports/epireport_report_studyinfo.pas"/>
+        <UnitName Value="epireport_report_studyinfo"/>
+      </Item51>
+      <Item52>
+        <Filename Value="Reports/epireport_report_fieldlist.pas"/>
+        <UnitName Value="epireport_report_fieldlist"/>
+      </Item52>
+      <Item53>
+        <Filename Value="Reports/epireport_report_valuelabelsetlist.pas"/>
+        <UnitName Value="epireport_report_valuelabelsetlist"/>
+      </Item53>
+      <Item54>
+        <Filename Value="Reports/epireport_report_fieldinfo.pas"/>
+        <UnitName Value="epireport_report_fieldinfo"/>
+      </Item54>
+      <Item55>
+        <Filename Value="Reports/epireport_report_countbyid.pas"/>
+        <UnitName Value="epireport_report_countbyid"/>
+      </Item55>
+      <Item56>
+        <Filename Value="Reports/epireport_report_doubleentryvalidate.pas"/>
+        <UnitName Value="epireport_doubleentry_validate"/>
       </Item56>
-      <Item57>
-        <Filename Value="Reports/epireport_counts.pas"/>
-        <UnitName Value="epireport_counts"/>
-      </Item57>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

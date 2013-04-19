@@ -1,4 +1,4 @@
-unit epireport_counts;
+unit epireport_report_countbyid;
 
 {$mode objfpc}{$H+}
 
@@ -10,9 +10,9 @@ uses
 
 type
 
-  { TEpiReportCounts }
+  { TEpiReportCountById }
 
-  TEpiReportCounts = class(TEpiReportBase)
+  TEpiReportCountById = class(TEpiReportBase)
   private
     FDocuments: TStringList;
     FFieldList: TEpiFields;
@@ -94,9 +94,9 @@ begin
 end;
 
 
-{ TEpiReportCounts }
+{ TEpiReportCountById }
 
-procedure TEpiReportCounts.DoCounts(const DF: TEpiDataFile;
+procedure TEpiReportCountById.DoCounts(const DF: TEpiDataFile;
   const DFIndex: integer);
 var
   OrgSortingField: TEpiField;
@@ -172,7 +172,7 @@ begin
   FreeAndNil(OrgSortingField);
 end;
 
-procedure TEpiReportCounts.DoReport;
+procedure TEpiReportCountById.DoReport;
 var
   S: String;
   i: Integer;
@@ -209,7 +209,7 @@ begin
   DoTableFooter('');
 end;
 
-constructor TEpiReportCounts.Create(ReportGenerator: TEpiReportGeneratorBase);
+constructor TEpiReportCountById.Create(ReportGenerator: TEpiReportGeneratorBase);
 begin
   inherited Create(ReportGenerator);
 
@@ -218,7 +218,7 @@ begin
   CountsFieldList := TEpiFields.Create(nil);
 end;
 
-destructor TEpiReportCounts.Destroy;
+destructor TEpiReportCountById.Destroy;
 begin
   FreeAndNil(CountsFieldList);
   FreeAndNil(ValueFieldList);
@@ -227,7 +227,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiReportCounts.DoSanityCheck;
+procedure TEpiReportCountById.DoSanityCheck;
 begin
   inherited DoSanityCheck;
 
@@ -238,7 +238,7 @@ begin
     DoError(EEpiReportBaseException, rsFieldlistNotAssigned);
 end;
 
-procedure TEpiReportCounts.RunReport;
+procedure TEpiReportCountById.RunReport;
 var
   i: Integer;
   F: TEpiField;
