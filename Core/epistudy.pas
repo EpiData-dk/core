@@ -22,6 +22,9 @@ type
     FAuthor: string;
     FCitations: TEpiTranslatedTextWrapper;
     FCreated: TDateTime;
+    FDataCollectionEnd: TDateTime;
+    FDataCollectionStart: TDateTime;
+    FDesign: TEpiTranslatedTextWrapper;
     FFunding: TEpiTranslatedTextWrapper;
     FGeographicalCoverage: TEpiTranslatedTextWrapper;
     FIdentifier: string;
@@ -34,6 +37,7 @@ type
     FRights: TEpiTranslatedTextWrapper;
     FTimeCoverage: TEpiTranslatedTextWrapper;
     FTitle: TEpiTranslatedTextWrapper;
+    FUnitOfObservation: TEpiTranslatedTextWrapper;
     FVersion: string;
     procedure SetAgency(AValue: string);
     procedure SetAuthor(const AValue: string);
@@ -48,6 +52,7 @@ type
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
+
     Property   AbstractText: TEpiTranslatedTextWrapper read FAbstractText;
     Property   Author: string read FAuthor write SetAuthor;
     property   Agency: string read FAgency write SetAgency;
@@ -66,6 +71,13 @@ type
     Property   Title: TEpiTranslatedTextWrapper read FTitle;
     Property   Keywords: string read FKeywords write SetKeywords;
     property   Version: string read FVersion write SetVersion;
+
+    // version 2 properties:
+    property   DataCollectionStart: TDateTime read FDataCollectionStart write FDataCollectionStart;
+    property   DataCollectionEnd: TDateTime read FDataCollectionEnd write FDataCollectionEnd;
+    property   Design: TEpiTranslatedTextWrapper read FDesign;
+    property   UnitOfObservation: TEpiTranslatedTextWrapper read FUnitOfObservation;
+
 
   { Cloning }
   protected
@@ -169,13 +181,19 @@ begin
   FTimeCoverage         := TEpiTranslatedTextWrapper.Create(Self, rsTimeCoverage, rsText);
   FTitle                := TEpiTranslatedTextWrapper.Create(Self, rsTitle, rsText);
   FVersion              := '';
+  FCreated              := Now;
+  FModifiedDate         := FCreated;
 
-  FCreated := Now;
-  FModifiedDate := FCreated;
+  // version 2 properties:
+  FDataCollectionStart  := MaxDateTime;
+  FDataCollectionEnd    := MaxDateTime;
+  FDesign               := TEpiTranslatedTextWrapper.Create(Self, rsDesign, rsText);
+  FUnitOfObservation    := TEpiTranslatedTextWrapper.Create(Self, rsUnitOfObservation, rsText);
 
-  RegisterClasses([FAbstractText, FCitations, FFunding,
+
+  RegisterClasses([FAbstractText, FCitations, FDesign, FFunding,
     FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights, FTimeCoverage,
-    FTitle]);
+    FTitle, FUnitOfObservation]);
 end;
 
 destructor TEpiStudy.Destroy;
@@ -209,6 +227,10 @@ begin
     SaveNode(Lvl + 1, rsModified, ModifiedDate) +
     SaveNode(Lvl + 1, rsNotes, Notes) +
     SaveNode(Lvl + 1, rsVersion, Version);
+  if (DataCollectionStart <> MaxDateTime) then
+    Content += SaveNode(Lvl + 1, rsDataColectionStart, DataCollectionStart);
+  if (DataCollectionEnd <> MaxDateTime) then
+    Content += SaveNode(Lvl + 1, rsDataColectionEnd,   DataCollectionEnd);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -236,6 +258,13 @@ begin
   FRights.LoadFromXml(Root);
   FTimeCoverage.LoadFromXml(Root);
   FTitle.LoadFromXml(Root);
+
+  // Version 2:
+  // -- all loads defaults to fatal=false, since none of them are required.
+  FDataCollectionStart := LoadNodeDateTime(Root, rsDataColectionStart, FDataCollectionStart, false);
+  FDataCollectionEnd   := LoadNodeDateTime(Root, rsDataColectionEnd,   FDataCollectionEnd,   false);
+  FDesign.LoadFromXml(Root);
+  FUnitOfObservation.LoadFromXml(Root);
 end;
 
 function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase

@@ -546,7 +546,9 @@ begin
             begin
               if IsMissing[CurRec] then
                 WriteMissingFloat(0)
-              else if IsMissingValue[CurRec] then
+              else if (IsMissingValue[CurRec]) and
+                      (FieldType = ftInteger)
+              then
               begin
                 VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
                 TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);

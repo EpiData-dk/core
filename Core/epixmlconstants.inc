@@ -67,6 +67,10 @@ const
     rsTimeCoverage    = 'TimeCoverage';
     rsTitle           = 'Title';
     rsVersion         = 'Version';
+    rsDataColectionStart = 'DataCollectionStart';
+    rsDataColectionEnd   = 'DataCollectionStart';
+    rsDesign             = 'StudyDesign';
+    rsUnitOfObservation  = 'UnitOfObservation';
 
    rsValueLabelSets  = 'ValueLabelSets';
     rsValueLabelSet   = 'ValueLabelSet';

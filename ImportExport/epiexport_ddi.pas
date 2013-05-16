@@ -84,6 +84,9 @@ type
     procedure BuildFunding;
     procedure BuildPurpose;
     procedure BuildCoverage;
+    procedure BuildUnitOfObs;
+    procedure BuildKindOfData;
+    procedure BuildNotes;
     procedure BuildConceptualComponent;
 
     procedure BuildDataCollection;
@@ -114,14 +117,14 @@ uses
   XMLWrite, epiexport, LazUTF8;
 
 const
-  NSreuseable = 'ddi:reusable:3_1';
-  NSstudy     = 'ddi:studyunit:3_1';
-  NSconcept   = 'ddi:conceptualcomponent:3_1';
-  NSdatacollection = 'ddi:datacollection:3_1';
-  NSlogicalproduct = 'ddi:logicalproduct:3_1';
+  NSreuseable           = 'ddi:reusable:3_1';
+  NSstudy               = 'ddi:studyunit:3_1';
+  NSconcept             = 'ddi:conceptualcomponent:3_1';
+  NSdatacollection      = 'ddi:datacollection:3_1';
+  NSlogicalproduct      = 'ddi:logicalproduct:3_1';
   NSphysicaldataproduct = 'ddi:physicaldataproduct:3_1';
-  NSphysicalinstance = 'ddi:physicalinstance:3_1';
-  NSarchive          = 'ddi:archive:3_1';
+  NSphysicalinstance    = 'ddi:physicalinstance:3_1';
+  NSarchive             = 'ddi:archive:3_1';
   // .... todo!
 
 { TEpiDDIExport }
@@ -179,7 +182,7 @@ function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Text: String): TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName, Text);
-  AddAttrLang(Result, FSettings.Doc.DefaultLang);
+  AddAttrLang(Result, EpiDoc.DefaultLang);
 end;
 
 function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;
@@ -201,7 +204,7 @@ function TEpiDDIExport.AppendElemMaintainableType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Prefix: String): TDOMElement;
 begin
   Result := AppendElemVersionableType(Root, NameSpace, NodeName, Prefix);
-  Result.SetAttribute('agency', FSettings.Agency);
+  Result.SetAttribute('agency', EpiDoc.Study.Agency);
 end;
 
 function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
@@ -217,7 +220,7 @@ function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName);
   AppendElem(Result, NSreuseable, 'ID', ReferenceId);
-  AppendElem(Result, NSreuseable, 'IdentifyingAgency', FSettings.Agency);
+  AppendElem(Result, NSreuseable, 'IdentifyingAgency', EpiDoc.Study.Agency);
   AppendElem(Result, NSreuseable, 'Version', FSettings.Version);
 end;
 
@@ -239,8 +242,8 @@ begin
   TxtExportSetting.Encoding       := eeUTF8;
   TxtExportSetting.ExportFieldNames := false;
   TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
-  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
-    TxtExportSetting.Fields.Add(FSettings.Doc.DataFiles[0].Field[i]);
+  for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
+    TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].Field[i]);
 
   CSVExporter := TEpiExport.Create;
   CSVExporter.ExportCSV(TxtExportSetting);
@@ -249,23 +252,32 @@ end;
 procedure TEpiDDIExport.BuildCitations;
 var
   Citation: TDOMElement;
+  Elem: TDOMElement;
 begin
   Citation := AppendElem(DDIStudyUnit, NSreuseable, 'Citation');
 
   // Title MUST be present, so assume it is...
-  AppendElemInternationalStringType(Citation, NSreuseable, 'Title', FSettings.CitTitle);
+  AppendElemInternationalStringType(Citation, NSreuseable, 'Title', EpiDoc.Study.Title.Text);
 
-  if FSettings.CitSubTitle <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle);
+{  if FSettings.CitSubTitle <> '' then
+    AppendElemInternationalStringType(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle); }
 
-  if FSettings.CitCreator <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'Creator', FSettings.CitCreator);
+  if EpiDoc.Study.Author <> '' then
+    AppendElemInternationalStringType(Citation, NSreuseable, 'Creator', EpiDoc.Study.Author);
 
-  if FSettings.CitPublisher <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'Publisher', FSettings.CitPublisher);
+  if EpiDoc.Study.Publisher.Text <> '' then
+    AppendElemInternationalStringType(Citation, NSreuseable, 'Publisher', EpiDoc.Study.Publisher.Text);
 
-  if FSettings.CitCopyRight <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'Copyright', FSettings.CitCopyRight);
+  AppendElem(Citation, NSreuseable, 'Language', EpiDoc.DefaultLang);
+
+  if EpiDoc.Study.Identifier <> '' then
+  begin
+    Elem := AppendElemInternationalStringType(Citation, NSreuseable, 'InternationalIdentifier', EpiDoc.Study.Identifier);
+    Elem.SetAttribute('type', 'Other');
+  end;
+
+{  if FSettings.CitCopyRight <> '' then
+    AppendElemInternationalStringType(Citation, NSreuseable, 'Copyright', EpiDoc.Study.ri);   }
 end;
 
 procedure TEpiDDIExport.BuildAbstract;
@@ -274,7 +286,7 @@ var
   Content: TDOMElement;
 begin
   Abstract := AppendElemIdentifiableType(DDIStudyUnit, NSstudy, 'Abstract', 'abst');
-  AppendElemInternationalStringType(Abstract, NSreuseable, 'Content', FSettings.AbstractText);
+  AppendElemInternationalStringType(Abstract, NSreuseable, 'Content', EpiDoc.Study.AbstractText.Text);
 end;
 
 procedure TEpiDDIExport.BuildUniverseRef;
@@ -290,8 +302,8 @@ end;
 
 procedure TEpiDDIExport.BuildFunding;
 begin
-  if (FSettings.FundAgencyName = '') then exit;
-  DDIFunding := AppendElem(DDIStudyUnit, NSreuseable, 'FundingInformation');
+  if (EpiDoc.Study.Funding.Text = '') then exit;
+//  DDIFunding := AppendElem(DDIStudyUnit, NSreuseable, 'FundingInformation');
 
   // Requires AgencyOrganizationReference, built later
 end;
@@ -301,7 +313,8 @@ var
   Purpose: TDOMElement;
 begin
   Purpose := AppendElemIdentifiableType(DDIStudyUnit, NSstudy, 'Purpose', 'purp');
-  AppendElemInternationalStringType(Purpose, NSreuseable, 'Content', FSettings.Purpose);
+
+  AppendElemInternationalStringType(Purpose, NSreuseable, 'Content', EpiDoc.Study.Purpose.Text);
 end;
 
 procedure TEpiDDIExport.BuildCoverage;
@@ -311,43 +324,82 @@ var
   i: Integer;
   Elem: TDOMElement;
 begin
-  with FSettings do
-    if (CoverSpatial = '') and
-       (CoverTopKeyWords.Count = 0) and
-       (CoverTopSubjects.Count = 0) and
-       (CoverTmpStartDate = 0) then exit;
-
-  Coverage := AppendElem(DDIStudyUnit, NSreuseable, 'Coverage');
-
-  if (FSettings.CoverTopSubjects.Count > 0) or
-     (FSettings.CoverTopKeyWords.Count > 0) then
+  with EpiDoc.Study do
   begin
-    CoverElem := AppendElemIdentifiableType(Coverage, NSreuseable, 'TopicalCoverage', 'topcov');
+    if (GeographicalCoverage.Text = '') and
+       (Keywords = '') and
+//       (CoverTopSubjects.Count = 0) and
+       (true) then exit;
 
-    for i := 0 to FSettings.CoverTopSubjects.Count - 1 do
-      AppendElemInternationalStringType(CoverElem, NSreuseable, 'Subject', FSettings.CoverTopSubjects[i]);
+    Coverage := AppendElem(DDIStudyUnit, NSreuseable, 'Coverage');
 
-    for i := 0 to FSettings.CoverTopKeyWords.Count - 1 do
-      AppendElemInternationalStringType(CoverElem, NSreuseable, 'Keyword', FSettings.CoverTopKeyWords[i]);
+    if {(FSettings.CoverTopSubjects.Count > 0) or}
+       (Keywords <> '') then
+    begin
+      CoverElem := AppendElemIdentifiableType(Coverage, NSreuseable, 'TopicalCoverage', 'topcov');
+
+{      for i := 0 to FSettings.CoverTopSubjects.Count - 1 do
+        AppendElemInternationalStringType(CoverElem, NSreuseable, 'Subject', FSettings.CoverTopSubjects[i]);     }
+
+      AppendElemInternationalStringType(CoverElem, NSreuseable, 'Keyword', Keywords);
+    end;
+
+    if GeographicalCoverage.Text <> '' then
+    begin
+      DDISpatialCoverage := AppendElemIdentifiableType(Coverage, NSreuseable, 'SpatialCoverage', 'spacov');
+      Elem := AppendElem(DDISpatialCoverage, NSreuseable, 'TopLevelReference');
+      Elem := AppendElem(DDISpatialCoverage, NSreuseable, 'LowestLevelReference');
+    end;
+
+{    if (FSettings.CoverTmpStartDate > 0) then
+    begin
+      CoverElem := AppendElemIdentifiableType(Coverage, NSreuseable, 'TemporalCoverage', 'tmpcov');
+
+      Elem := AppendElem(CoverElem, NSreuseable, 'ReferenceDate');
+
+      AppendElem(Elem, NSreuseable, 'StartDate', FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpStartDate));
+      if FSettings.CoverTmpEndDate > 0 then
+        AppendElem(Elem, NSreuseable, 'EndDate', FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpEndDate));
+    end;    }
+  end;
+end;
+
+procedure TEpiDDIExport.BuildUnitOfObs;
+begin
+  AppendElemInternationalStringType(DDIStudyUnit, NSstudy, 'AnalysisUnitsCovered', EpiDoc.Study.UnitOfObservation.Text);
+end;
+
+procedure TEpiDDIExport.BuildKindOfData;
+begin
+  AppendElem(DDIStudyUnit, NSstudy, 'KindOfData', EpiDoc.Study.Design.Text);
+end;
+
+procedure TEpiDDIExport.BuildNotes;
+var
+  Elem: TDOMElement;
+  NoteElem: TDOMElement;
+
+  function BuildNote(Const Header, Content: string): TDOMElement;
+  begin
+    NoteElem := AppendElemIdentifiableType(DDIStudyUnit, NSreuseable, 'Note');
+    NoteElem.SetAttribute('type', 'Comment');
+
+    Elem := AppendElem(NoteElem, NSreuseable, 'Relationship');
+    AppendElemReferenceType(Elem, NSreuseable, 'RelatedToReference', DDIStudyUnit);
+
+    AppendElemInternationalStringType(NoteElem, NSreuseable, 'Header', Header);
+    AppendElemInternationalStringType(NoteElem, NSreuseable, 'Content', Content);
   end;
 
-  if FSettings.CoverSpatial <> '' then
-  begin
-    DDISpatialCoverage := AppendElemIdentifiableType(Coverage, NSreuseable, 'SpatialCoverage', 'spacov');
-    Elem := AppendElem(DDISpatialCoverage, NSreuseable, 'TopLevelReference');
-    Elem := AppendElem(DDISpatialCoverage, NSreuseable, 'LowestLevelReference');
-  end;
+begin
+  // Here we build all additional notes:
+  // - Citation: Fungerer som ”udgivelser fra studiet”
+  // - Rights:   right to use data
+  // - Funding:  contributors
 
-  if (FSettings.CoverTmpStartDate > 0) then
-  begin
-    CoverElem := AppendElemIdentifiableType(Coverage, NSreuseable, 'TemporalCoverage', 'tmpcov');
-
-    Elem := AppendElem(CoverElem, NSreuseable, 'ReferenceDate');
-
-    AppendElem(Elem, NSreuseable, 'StartDate', FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpStartDate));
-    if FSettings.CoverTmpEndDate > 0 then
-      AppendElem(Elem, NSreuseable, 'EndDate', FormatDateTime('YYYY/MM/DD"T"HH:NN:SS', FSettings.CoverTmpEndDate));
-  end;
+  BuildNote('EpiData: User supplied version information.', EpiDoc.Study.Version);
+  BuildNote('EpiData: Citations', EpiDoc.Study.Citations.Text);
+  BuildNote('EpiData: Funding information', EpiDoc.Study.Funding.Text);
 end;
 
 procedure TEpiDDIExport.BuildConceptualComponent;
@@ -373,16 +425,16 @@ begin
   ConS := AppendElemMaintainableType(ConceptualComponent, NSconcept, 'ConceptScheme', 'cons');
   Con  := AppendElemVersionableType(Cons, NSconcept, 'Concept', 'conc');
   AppendElemInternationalStringType(Con, NSreuseable, 'Label', 'Project Concept');
-  AppendElemInternationalStringType(Con, NSreuseable, 'Description', FSettings.ConMainConcept);
+  AppendElemInternationalStringType(Con, NSreuseable, 'Description', 'Main Concept');
 
-  Sec := FSettings.Doc.DataFiles[0].MainSection;
+  Sec := EpiDoc.DataFiles[0].MainSection;
   ConcMap.Add(@Sec, @Con);
 
-  Sections := FSettings.Doc.DataFiles[0].Sections;
+  Sections := EpiDoc.DataFiles[0].Sections;
   for i := 0 to Sections.Count - 1 do
   begin
     Sec := Sections[i];
-    if Sec = FSettings.Doc.DataFiles[0].MainSection then continue;
+    if Sec = EpiDoc.DataFiles[0].MainSection then continue;
 
     Con  := AppendElemVersionableType(Cons, NSconcept, 'Concept', 'conc');
     AppendElemInternationalStringType(Con, NSreuseable, 'Label', 'Section Concept');
@@ -400,7 +452,7 @@ begin
   Uni  := AppendElemVersionableType(UniS, NSconcept, 'Universe', 'univ');
 
   // A Universe MUST Exists.
-  AppendElemInternationalStringType(Uni, NSconcept, 'HumanReadable', FSettings.ConUniverse);
+  AppendElemInternationalStringType(Uni, NSconcept, 'HumanReadable', EpiDoc.Study.Population.Text);
 
   // Update universe reference.
   DDIUniverseRef.FindNode('ID').TextContent := Uni.GetAttribute('id');
@@ -410,22 +462,22 @@ begin
 
   // ****
   // Build Geography
-  if FSettings.CoverSpatial = '' then exit;
+  if EpiDoc.Study.GeographicalCoverage.Text = '' then exit;
   GeoSch := AppendElemMaintainableType(ConceptualComponent, NSconcept,   'GeographicStructureScheme', 'geostrs');
   GeoS   := AppendElemVersionableType( GeoSch,              NSreuseable, 'GeographicStructure',       'geostr');
-  Geo    := AppendElemIdentifiableType(GeoS,                 NSreuseable, 'Geography',                 'geo');
+  Geo    := AppendElemIdentifiableType(GeoS,                NSreuseable, 'Geography',                 'geo');
 
   Level  := AppendElem(Geo, NSreuseable, 'Level');
-  AppendElem(Level, NSreuseable, 'Name', FSettings.CoverSpatial);
+  AppendElem(Level, NSreuseable, 'Name', EpiDoc.Study.GeographicalCoverage.Text);
 
   // Build TopLevelReference & LowestLevelReference
   OuterLevel := TDOMElement(DDISpatialCoverage.FindNode('TopLevelReference'));
   AppendElemReferenceType(OuterLevel, NSreuseable, 'LevelReference', Geo);
-  AppendElem(OuterLevel, NSreuseable, 'LevelName', FSettings.CoverSpatial);
+  AppendElem(OuterLevel, NSreuseable, 'LevelName', EpiDoc.Study.GeographicalCoverage.Text);
 
   OuterLevel := TDOMElement(DDISpatialCoverage.FindNode('LowestLevelReference'));
   AppendElemReferenceType(OuterLevel, NSreuseable, 'LevelReference', Geo);
-  AppendElem(OuterLevel, NSreuseable, 'LevelName', FSettings.CoverSpatial);
+  AppendElem(OuterLevel, NSreuseable, 'LevelName', EpiDoc.Study.GeographicalCoverage.Text);
   // DONE
   // ****
 end;
@@ -437,6 +489,15 @@ var
   Elem: TDOMElement;
 begin
   DataCollection := AppendElemMaintainableType(DDIStudyUnit, NSdatacollection, 'DataCollection', 'daco');
+
+  if (EpiDoc.Study.DataCollectionStart <> MaxDateTime) then
+  begin
+    Elem := AppendElemIdentifiableType(DataCollection, NSdatacollection, 'CollectionEvent', 'coev');
+    Elem := AppendElem(Elem, NSdatacollection, 'DataCollectionDate');
+    AppendElem(Elem, NSreuseable, 'StartDate', FormatDateTime('YYYY/MM/DD', EpiDoc.Study.DataCollectionStart));
+    AppendElem(Elem, NSreuseable, 'EndDate', FormatDateTime('YYYY/MM/DD', EpiDoc.Study.DataCollectionEnd));
+  end;
+
 
   BuildQuestionScheme(DataCollection);
   Seq := BuildControlConstructScheme(DataCollection);
@@ -462,19 +523,19 @@ var
   F: TEpiField;
 begin
   QScheme := AppendElemMaintainableType(DataCollection, NSdatacollection, 'QuestionScheme', 'ques');
-  AppendElemInternationalStringType(QScheme, NSreuseable, 'Label', 'QUES-' + FSettings.Doc.DataFiles[0].Name);
-  AppendElemInternationalStringType(QScheme, NSreuseable, 'Description', FSettings.Doc.DataFiles[0].Notes.Text);
+  AppendElemInternationalStringType(QScheme, NSreuseable, 'Label', 'QUES-' + EpiDoc.DataFiles[0].Name);
+  AppendElemInternationalStringType(QScheme, NSreuseable, 'Description', EpiDoc.DataFiles[0].Notes.Text);
 
 
   // Build the list of GUID's for all our valuelabelsets.
-  for i := 0 to FSettings.Doc.ValueLabelSets.Count - 1 do
-    ValueLabelSetsGUIDs.AddObject(CreateAttrID('cods'), FSettings.Doc.ValueLabelSets[i]);
+  for i := 0 to EpiDoc.ValueLabelSets.Count - 1 do
+    ValueLabelSetsGUIDs.AddObject(CreateAttrID('cods'), EpiDoc.ValueLabelSets[i]);
 
   // Build QuestionItem
-  for i := 0 to FSettings.Doc.DataFiles[0].Fields.Count - 1 do
-  with FSettings.Doc.DataFiles[0].Field[i] do
+  for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
+  with EpiDoc.DataFiles[0].Field[i] do
   begin
-    F := FSettings.Doc.DataFiles[0].Field[i];
+    F := EpiDoc.DataFiles[0].Field[i];
 
     QItem := AppendElemVersionableType(QScheme, NSdatacollection, 'QuestionItem', 'quei');
     QuieMap.Add(@F, @QItem);
@@ -505,7 +566,7 @@ begin
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
             Domain.SetAttribute('type', 'Incremental');
-            Domain.SetAttribute('startValue', IntToStr(FSettings.Doc.ProjectSettings.AutoIncStartValue));
+            Domain.SetAttribute('startValue', IntToStr(EpiDoc.ProjectSettings.AutoIncStartValue));
             Domain.SetAttribute('interval', '1');
           end;
         ftFloat:
@@ -667,7 +728,7 @@ begin
   MainSequence := AppendElemVersionableType(CCS, NSdatacollection, 'Sequence', 'seqc');
   AppendElemInternationalStringType(MainSequence, NSreuseable, 'Label', 'Main Sequence');
 
-  DF := FSettings.Doc.DataFiles[0];
+  DF := EpiDoc.DataFiles[0];
 
   for i := 0 to Df.Fields.Count - 1 do
   begin
@@ -716,7 +777,7 @@ begin
   //  Sch := AppendElemReferenceType(RecLayoutRef, NSreuseable, 'Scheme', DDIRels.GetAttribute('id'));
   //  RecLayoutRef.InsertBefore(Sch, RecLayoutRef.FindNode('ID'));
 
-  Df := FSettings.Doc.DataFiles[0];
+  Df := EpiDoc.DataFiles[0];
   for i := 0 to Df.Fields.Count - 1 do
   begin
     F := Df.Field[i];
@@ -774,7 +835,7 @@ var
 begin
   Result := AppendElemMaintainableType(nil, NSlogicalproduct, 'VariableScheme', 'vars');
 
-  Df := FSettings.Doc.DataFiles[0];
+  Df := EpiDoc.DataFiles[0];
   for i := 0 to Df.Fields.Count -1 do
   begin
     F := Df.Field[i];
@@ -811,7 +872,7 @@ begin
           begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'NumericRepresentation');
             ReprElem.SetAttribute('type', 'Incremental');
-            ReprElem.SetAttribute('startValue', IntToStr(FSettings.Doc.ProjectSettings.AutoIncStartValue));
+            ReprElem.SetAttribute('startValue', IntToStr(EpiDoc.ProjectSettings.AutoIncStartValue));
             ReprElem.SetAttribute('interval', '1');
           end;
         ftFloat:
@@ -868,7 +929,7 @@ var
   j: Integer;
   Cod: TDOMElement;
 begin
-  VLSets := FSettings.Doc.ValueLabelSets;
+  VLSets := EpiDoc.ValueLabelSets;
   CodSchemeList := TList.Create;
 
   for i := 0 to VLSets.Count - 1 do
@@ -956,7 +1017,7 @@ begin
   AppendElem(DDIRely, NSphysicaldataproduct, 'ArrayBase', '1');
   AppendElemReferenceType(DDIRely, NSphysicaldataproduct, 'DefaultVariableSchemeReference', DDIVarScheme);
 
-  Df := FSettings.Doc.DataFiles[0];
+  Df := EpiDoc.DataFiles[0];
   StartPos := 1;
   for i := 0 to Df.Fields.Count - 1 do
   begin
@@ -1015,7 +1076,7 @@ begin
   AppendElem(Elem, NSreuseable, 'Version', FSettings.SoftwareVersion);
   AppendElem(Elem, NSreuseable, 'Description', 'website: <a href="http://www.epidata.dk">http://www.epidata.dk</a>');
 
-  AppendElem(GRFS, NSphysicalinstance, 'OverallRecordCount', IntToStr(FSettings.Doc.DataFiles[0].Size));
+  AppendElem(GRFS, NSphysicalinstance, 'OverallRecordCount', IntToStr(EpiDoc.DataFiles[0].Size));
 end;
 
 procedure TEpiDDIExport.BuildArchive;
@@ -1025,7 +1086,7 @@ var
   Org: TDOMElement;
   Elem: TDOMElement;
 begin
-  Archive := AppendElemMaintainableType(DDIStudyUnit, NSarchive, 'Archive', 'arch');
+{  Archive := AppendElemMaintainableType(DDIStudyUnit, NSarchive, 'Archive', 'arch');
   Elem := AppendElem(Archive, NSarchive, 'ArchiveSpecific');
   AppendElemReferenceType(Elem, NSarchive, 'ArchiveOrganizationReference', 'Not_Filled');
 
@@ -1042,7 +1103,7 @@ begin
 
     // Now we have the funding orgination, create the content of the FundingInfo element.
     AppendElemReferenceType(DDIFunding, NSreuseable, 'AgencyOrganizationReference', Org);
-  end;
+  end;   }
 end;
 
 constructor TEpiDDIExport.Create;
@@ -1093,15 +1154,19 @@ begin
   BuildCitations;
   BuildAbstract;
   BuildUniverseRef;
-  BuildFunding;
+//  BuildFunding;
   BuildPurpose;
   BuildCoverage;
+  BuildUnitOfObs;
+  BuildKindOfData;
+  BuildNotes;
+
   BuildConceptualComponent;
   BuildDataCollection;
   BuildLogicalProduct;
   BuildPhysicalDataProduct;
   BuildPhysicalInstance;
-  BuildArchive;
+//  BuildArchive;
 
   WriteXML(XMLDoc, Settings.ExportFileName)
 end;
