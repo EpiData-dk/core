@@ -68,7 +68,7 @@ const
     rsTitle           = 'Title';
     rsVersion         = 'Version';
     rsDataColectionStart = 'DataCollectionStart';
-    rsDataColectionEnd   = 'DataCollectionStart';
+    rsDataColectionEnd   = 'DataCollectionEnd';
     rsDesign             = 'StudyDesign';
     rsUnitOfObservation  = 'UnitOfObservation';
 

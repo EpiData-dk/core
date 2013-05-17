@@ -131,6 +131,10 @@ begin
   // SAS
   if Settings is TEpiSASExportSetting then
     Exit(ExportSAS(TEpiSASExportSetting(Settings)));
+
+  // DDI
+  IF Settings is TEpiDDIExportSetting then
+    Exit(ExportDDI(TEpiDDIExportSetting(Settings)));
 end;
 
 function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting

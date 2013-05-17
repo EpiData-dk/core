@@ -35,7 +35,7 @@ type
     FPublisher: TEpiTranslatedTextWrapper;
     FPurpose: TEpiTranslatedTextWrapper;
     FRights: TEpiTranslatedTextWrapper;
-    FTimeCoverage: TEpiTranslatedTextWrapper;
+//    FTimeCoverage: TEpiTranslatedTextWrapper;
     FTitle: TEpiTranslatedTextWrapper;
     FUnitOfObservation: TEpiTranslatedTextWrapper;
     FVersion: string;
@@ -67,7 +67,7 @@ type
     property   Purpose: TEpiTranslatedTextWrapper read FPurpose;
     property   Population: TEpiTranslatedTextWrapper read FPopulation;
     property   Rights: TEpiTranslatedTextWrapper read FRights;
-    property   TimeCoverage: TEpiTranslatedTextWrapper read FTimeCoverage;
+//    property   TimeCoverage: TEpiTranslatedTextWrapper read FTimeCoverage;
     Property   Title: TEpiTranslatedTextWrapper read FTitle;
     Property   Keywords: string read FKeywords write SetKeywords;
     property   Version: string read FVersion write SetVersion;
@@ -178,7 +178,7 @@ begin
   FPurpose              := TEpiTranslatedTextWrapper.Create(Self, rsPurpose, rsText);
   FPopulation           := TEpiTranslatedTextWrapper.Create(Self, rsPopulation, rsText);
   FRights               := TEpiTranslatedTextWrapper.Create(Self, rsRights, rsText);
-  FTimeCoverage         := TEpiTranslatedTextWrapper.Create(Self, rsTimeCoverage, rsText);
+//  FTimeCoverage         := TEpiTranslatedTextWrapper.Create(Self, rsTimeCoverage, rsText);
   FTitle                := TEpiTranslatedTextWrapper.Create(Self, rsTitle, rsText);
   FVersion              := '';
   FCreated              := Now;
@@ -192,7 +192,7 @@ begin
 
 
   RegisterClasses([FAbstractText, FCitations, FDesign, FFunding,
-    FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights, FTimeCoverage,
+    FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights, //FTimeCoverage,
     FTitle, FUnitOfObservation]);
 end;
 
@@ -206,7 +206,7 @@ begin
   FPurpose.Free;
   FPopulation.Free;
   FRights.Free;
-  FTimeCoverage.Free;
+//  FTimeCoverage.Free;
   FTitle.Free;
   inherited Destroy;
 end;
@@ -256,7 +256,7 @@ begin
   FPurpose.LoadFromXml(Root);
   FPopulation.LoadFromXml(Root);
   FRights.LoadFromXml(Root);
-  FTimeCoverage.LoadFromXml(Root);
+//  FTimeCoverage.LoadFromXml(Root);
   FTitle.LoadFromXml(Root);
 
   // Version 2:

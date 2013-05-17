@@ -68,8 +68,8 @@ begin
     DoTableCell(0, I         , 'GeographicalCoverage');
     DoTableCell(1, PostInc(i), GeographicalCoverage.Text);
 
-    DoTableCell(0, I         , 'TimeCoverage');
-    DoTableCell(1, PostInc(i), TimeCoverage.Text);
+{    DoTableCell(0, I         , 'TimeCoverage');
+    DoTableCell(1, PostInc(i), TimeCoverage.Text);}
 
     DoTableCell(0, I         , 'Author');
     DoTableCell(1, PostInc(i), Author);

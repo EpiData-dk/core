@@ -366,12 +366,14 @@ end;
 
 procedure TEpiDDIExport.BuildUnitOfObs;
 begin
-  AppendElemInternationalStringType(DDIStudyUnit, NSstudy, 'AnalysisUnitsCovered', EpiDoc.Study.UnitOfObservation.Text);
+  if EpiDoc.Study.UnitOfObservation.Text <> '' then
+    AppendElemInternationalStringType(DDIStudyUnit, NSstudy, 'AnalysisUnitsCovered', EpiDoc.Study.UnitOfObservation.Text);
 end;
 
 procedure TEpiDDIExport.BuildKindOfData;
 begin
-  AppendElem(DDIStudyUnit, NSstudy, 'KindOfData', EpiDoc.Study.Design.Text);
+  if EpiDoc.Study.Design.Text <> '' then
+    AppendElem(DDIStudyUnit, NSstudy, 'KindOfData', EpiDoc.Study.Design.Text);
 end;
 
 procedure TEpiDDIExport.BuildNotes;

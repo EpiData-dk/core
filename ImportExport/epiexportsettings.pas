@@ -74,15 +74,6 @@ type
 
   TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
   { Funding }
-  private
-    FFundAgencyAddress: string;
-    FFundAgencyName: string;
-  public
-    // FundingInformation->AgencyOrganizationReference
-    // Archive->OrganizationScheme->Organization
-    property FundAgencyName: string read FFundAgencyName write FFundAgencyName;
-    property FundAgencyAddress: string read FFundAgencyAddress write FFundAgencyAddress;
-
   { Other }
   private
     FSoftwareName: string;
