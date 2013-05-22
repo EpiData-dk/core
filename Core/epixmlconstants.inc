@@ -7,6 +7,7 @@ const
   rsText        = 'Text';
   rsVersionAttr = 'version';
   rsCreatedAttr = 'created';
+  rsModifiedAttr = 'modified';
 
   // - CustomItem
   rsId   = 'id';
@@ -16,6 +17,7 @@ const
 
   // XML Tree structure.
   rsEpiData         = 'EpiData';
+   rsCycle          = 'cycle';
    // Settings
    rsSettings        = 'Settings';
 //    rsScrambled       = 'Scrambled';

@@ -190,6 +190,13 @@ begin
     Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
+procedure TEpiField.SetDataModified;
+begin
+  if Assigned(DataFile)
+  then
+    DataFile.FRecModified := true;
+end;
+
 procedure TEpiField.SetLength(const AValue: Cardinal);
 var
   Val: LongWord;
@@ -469,6 +476,26 @@ begin
   HasDefaultValue := false;
 
   RegisterClasses([Notes, Question]);
+end;
+
+procedure TEpiField.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  inherited DoChange(EventGroup, EventType, Data);
+
+  // Sanity checks!
+  if not Assigned(DataFile) then exit;
+
+  if (EventGroup = eegFields) and
+     (TEpiFieldsChangeEventType(EventType) = efceData)
+  then
+    FDataFile.FRecModified := true
+  else
+    if not
+         ((EventGroup = eegCustomBase) and
+          (TEpiCustomChangeEventType(EventType) = ecceUpdate))
+    then
+      FDataFile.FStructureModified := true;
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;

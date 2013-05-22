@@ -19,7 +19,7 @@ type
     DDIInstance: TDOMElement;
     DDIStudyUnit:    TDOMElement;
     DDIUniverseRef:  TDOMElement;
-    DDIFunding:      TDOMElement;
+//    DDIFunding:      TDOMElement;
     DDISpatialCoverage: TDOMElement;
     DDILogicalProd:     TDOMElement;
     DDILogicalRec:      TDOMElement;
@@ -1061,7 +1061,6 @@ var
   Elem: TDOMElement;
   Fn: String;
   GRFS: TDOMElement;
-  Sch: TDOMElement;
 begin
   PhysicalInst := AppendElemMaintainableType(DDIStudyUnit, NSphysicalinstance, 'PhysicalInstance', 'phin');
   RecLayoutRef := AppendElemReferenceType(PhysicalInst, NSphysicalinstance, 'RecordLayoutReference', DDIRely);
@@ -1128,10 +1127,6 @@ begin
 end;
 
 function TEpiDDIExport.ExportDDI(const Settings: TEpiDDIExportSetting): boolean;
-var
-  Elem: TDOMElement;
-  RefIDElem: TDOMElement;
-  TxtExportSetting: TEpiCSVExportSetting;
 begin
   Settings.SanetyCheck;
   FSettings := Settings;

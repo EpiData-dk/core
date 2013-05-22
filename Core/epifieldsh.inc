@@ -150,6 +150,7 @@ type
     function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
   protected
+    procedure   SetDataModified;
     function    GetSize: Integer; virtual;
     procedure   SetSize(const AValue: Integer); virtual;
     property    Capacity: Integer read GetCapacity write SetCapacity;
@@ -168,6 +169,8 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
+    procedure DoChange(EventGroup: TEpiEventGroup; EventType: Word;
+       Data: Pointer); override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;

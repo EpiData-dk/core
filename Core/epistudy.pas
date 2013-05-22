@@ -218,6 +218,9 @@ end;
 
 function TEpiStudy.SaveToXml(Content: String; Lvl: integer): string;
 begin
+  if Modified then
+    ModifiedDate := Now;
+
   Content :=
     SaveNode(Lvl + 1, rsAuthor, Author) +
     SaveNode(Lvl + 1, rsAgency, Agency) +
