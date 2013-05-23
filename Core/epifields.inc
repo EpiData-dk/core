@@ -437,7 +437,6 @@ begin
 
   if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
     F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
-
 end;
 
 procedure TEpiField.PostCloneUpdate(Dest: TEpiField);

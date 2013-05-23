@@ -349,9 +349,12 @@ begin
   Result := inherited DoClone(AOwner, Dest);
   with TEpiCombineStringCalc(Result) do
   begin
-    FField1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
-    FField2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
-    FField3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
+    if Assigned(Self.FField1) then
+      FField1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
+    if Assigned(Self.FField2) then
+      FField2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
+    if Assigned(Self.FField3) then
+      FField3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
     FDelim1 := Self.FDelim1;
     FDelim2 := Self.FDelim2;
   end;
