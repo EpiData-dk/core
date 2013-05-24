@@ -30,6 +30,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
+    <Version Major="1" Minor="4"/>
     <Files Count="1">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
