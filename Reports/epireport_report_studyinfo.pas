@@ -48,10 +48,11 @@ procedure TEpiReportStudyInfo.RunReport;
 
 var
   I: Integer;
+  S: String;
 begin
   inherited RunReport;
 
-  DoTableHeader('Study information:', 2, 15);
+  DoTableHeader('Study information:', 2, 17);
 
   DoTableCell(0, 0, 'Name:');
   DoTableCell(1, 0, 'Value:');
@@ -65,11 +66,16 @@ begin
     DoTableCell(0, I         , 'Purpose');
     DoTableCell(1, PostInc(i), Purpose.Text);
 
-    DoTableCell(0, I         , 'GeographicalCoverage');
+    DoTableCell(0, I         , 'Geographical Coverage');
     DoTableCell(1, PostInc(i), GeographicalCoverage.Text);
 
-    DoTableCell(0, I         , 'TimeCoverage');
-    DoTableCell(1, PostInc(i), TimeCoverage.Text);
+    DoTableCell(0, I         , 'Data Collection');
+    S := '';
+    if (DataCollectionStart <> MaxDateTime) then
+      S += DateToStr(DataCollectionStart);
+    if (DataCollectionEnd <> MaxDateTime) then
+      S += ' - ' + DateToStr(DataCollectionEnd);
+    DoTableCell(1, PostInc(i), S);
 
     DoTableCell(0, I         , 'Author');
     DoTableCell(1, PostInc(i), Author);
@@ -100,6 +106,12 @@ begin
 
     DoTableCell(0, I         , 'Abstract');
     DoTableCell(1, PostInc(i), AbstractText.Text);
+
+    DoTableCell(0, I         , 'Design');
+    DoTableCell(1, PostInc(i), Design.Text);
+
+    DoTableCell(0, I         , 'Unit of Observation');
+    DoTableCell(1, PostInc(i), UnitOfObservation.Text);
   end;
   DoTableFooter('');
 end;

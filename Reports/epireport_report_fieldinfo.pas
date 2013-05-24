@@ -56,7 +56,7 @@ begin
 
   with Field do
   begin
-    j := 2;  // Type + Length
+    j := 1;  // Type + Length
     if Assigned(Comparison)     then inc(j);
     if Assigned(Jumps)          then inc(j);
     if Assigned(Calculation)    then inc(j);
@@ -70,20 +70,20 @@ begin
     if Assigned(ValueLabelWriteField) then inc(j);
     if (Notes.Text <> '')             then inc(j);
 
-    DoTableHeader('Field: ' + Name + ': ' + Question.Text, 2, j + 1);
-    DoTableCell(0, 0, 'Extension:');
-    DoTableCell(1, 0, 'Content/Value:');
+    DoTableHeader('Field: ' + Name + ': ' + Question.Text, 2, j + 1, []);
+//    DoTableCell(0, 0, 'Extension:');
+//    DoTableCell(1, 0, 'Content/Value:');
 
-    DoTableCell(0, 1, 'Type');
-    DoTableCell(1, 1, EpiTypeNames[FieldType], tcaRightAdjust);
+    DoTableCell(0, 0, 'Type');
+    DoTableCell(1, 0, EpiTypeNames[FieldType], tcaRightAdjust);
 
-    DoTableCell(0, 2, 'Length');
+    DoTableCell(0, 1, 'Length');
     if FieldType in FloatFieldTypes then
-      DoTableCell(1, 2, Format('%d.%d', [Length-Decimals-1, Decimals]), tcaRightAdjust)
+      DoTableCell(1, 1, Format('%d.%d', [Length-Decimals-1, Decimals]), tcaRightAdjust)
     else
-      DoTableCell(1, 2, IntToStr(Length), tcaRightAdjust);
+      DoTableCell(1, 1, IntToStr(Length), tcaRightAdjust);
 
-    j := 3;
+    j := 2;
     if (EntryMode <> emDefault) then
     begin
       DoTableCell(0, j, 'Entry Mode');
@@ -223,6 +223,7 @@ begin
     DoTableFooter('');
   end;
 
+  DoLineText('');
   if Assigned(Field.ValueLabelSet) then
   begin
     Report := TEpiReportValueLabelSetList.Create(FReportGenerator);

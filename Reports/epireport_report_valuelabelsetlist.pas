@@ -49,14 +49,15 @@ begin
   inherited RunReport;
 
   DoTableHeader(
-    'Value label: ' + ValueLabelSet.Name + ': (' + EpiTypeNames[ValueLabelSet.LabelType] + ')',
+//    'Value label: ' + ValueLabelSet.Name + ': (' + EpiTypeNames[ValueLabelSet.LabelType] + ')',
+    '',
     3,
     ValueLabelSet.Count + 1
   );
 
-  DoTableCell(0, 0, 'Category');
+  DoTableCell(0, 0, 'Value');
   DoTableCell(1, 0, 'Label');
-  DoTableCell(2, 0, 'Missing (M)');
+  DoTableCell(2, 0, 'Missing (M), set: ' + ValueLabelSet.Name, tcaLeftAdjust);
 
   for i := 0 to ValueLabelSet.Count - 1 do
   with ValueLabelSet[i] do

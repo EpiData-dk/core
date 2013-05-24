@@ -73,86 +73,13 @@ type
   { TEpiDDIExportSetting }
 
   TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
-  { Citation }
-  private
-    FCitCopyRight: string;
-    FCitCreator: string;
-    FCitPublisher: string;
-    FCitSubTitle: string;
-    FCitTitle: string;
-  public
-    // Citation->Title
-    property  CitTitle: string read FCitTitle write FCitTitle;
-    // Citation->Subtitle
-    property  CitSubTitle: string read FCitSubTitle write FCitSubTitle;
-    // Citation->Creator
-    property  CitCreator: string read FCitCreator write FCitCreator;
-    // Citation->Publisher
-    property  CitPublisher: string read FCitPublisher write FCitPublisher;
-    // Citation->CopyRight
-    property  CitCopyRight: string read FCitCopyRight write FCitCopyRight;
-
-  { Abstract }
-  private
-    FAbstractText: string;
-  public
-    // Abstract->Content
-    property AbstractText: string read FAbstractText write FAbstractText;
-
   { Funding }
-  private
-    FFundAgencyAddress: string;
-    FFundAgencyName: string;
-  public
-    // FundingInformation->AgencyOrganizationReference
-    // Archive->OrganizationScheme->Organization
-    property FundAgencyName: string read FFundAgencyName write FFundAgencyName;
-    property FundAgencyAddress: string read FFundAgencyAddress write FFundAgencyAddress;
-
-  { Purpose }
-  private
-    FPurpose: string;
-  public
-    // Purpose->Content
-    property Purpose: string read FPurpose write FPurpose;
-
-  { Coverage }
-  private
-    FCoverSpatial: string;
-    FCoverTmpEndDate: TDateTime;
-    FCoverTmpStartDate: TDateTime;
-    FCoverTopSubjects: TStringList;
-    FCoverTopKeyWords: TStringList;
-  public
-    // Coverage->TopicalCoverage->Subject*
-    property  CoverTopSubjects: TStringList read FCoverTopSubjects;
-    // Coverage->TopicalCoverage->Keyword*
-    property  CoverTopKeyWords: TStringList read FCoverTopKeyWords;
-    // Coverage->SpatialCoverage->[Top|Bottom]LevelReference->LevelReference->ID
-    // ConceptualComponent->GeographicStructureScheme->GeographicStructure->Geography
-    property  CoverSpatial: string read FCoverSpatial write FCoverSpatial;
-    // Coverage->TemporalCoverage->ReferenceData->StartDate
-    property  CoverTmpStartDate: TDateTime read FCoverTmpStartDate write FCoverTmpStartDate;
-    // Coverage->TemporalCoverage->ReferenceData->EndDate
-    property  CoverTmpEndDate: TDateTime read FCoverTmpEndDate write FCoverTmpEndDate;
-
-  { Conceptual }
-  private
-    FConMainConcept: string;
-    FConUniverse: String;
-  public
-    // ConceptualConponent->UniverseScheme->Universe->HumanReadable
-    property ConMainConcept: string read FConMainConcept write FConMainConcept;
-    property ConUniverse: String read FConUniverse write FConUniverse;
-
   { Other }
   private
-    FAgency: string;
     FSoftwareName: string;
     FSoftwareVersion: string;
     FVersion: string;
   public
-    property Agency: string  read FAgency  write FAgency;
     property SoftwareName: string read FSoftwareName write FSoftwareName;
     property SoftwareVersion: string read FSoftwareVersion write FSoftwareVersion;
     property Version: string read FVersion write FVersion;
@@ -204,14 +131,14 @@ implementation
 constructor TEpiDDIExportSetting.Create;
 begin
   inherited Create;
-  FCoverTopKeyWords := TStringList.Create;
-  FCoverTopSubjects := TStringList.Create;
+//  FCoverTopKeyWords := TStringList.Create;
+//  FCoverTopSubjects := TStringList.Create;
 end;
 
 destructor TEpiDDIExportSetting.Destroy;
 begin
-  FCoverTopKeyWords.Free;
-  FCoverTopSubjects.Free;
+//  FCoverTopKeyWords.Free;
+//  FCoverTopSubjects.Free;
   inherited Destroy;
 end;
 
@@ -224,8 +151,7 @@ end;
 function TEpiDDIExportSetting.SanetyCheck: boolean;
 begin
   Result :=
-    (inherited SanetyCheck) and
-    (CitTitle <> '');
+    (inherited SanetyCheck);
 end;
 
 { TEpiCustomValueLabelExportSetting }

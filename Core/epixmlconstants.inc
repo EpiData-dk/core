@@ -7,6 +7,7 @@ const
   rsText        = 'Text';
   rsVersionAttr = 'version';
   rsCreatedAttr = 'created';
+  rsModifiedAttr = 'modified';
 
   // - CustomItem
   rsId   = 'id';
@@ -16,6 +17,7 @@ const
 
   // XML Tree structure.
   rsEpiData         = 'EpiData';
+   rsCycle          = 'cycle';
    // Settings
    rsSettings        = 'Settings';
 //    rsScrambled       = 'Scrambled';
@@ -67,6 +69,10 @@ const
     rsTimeCoverage    = 'TimeCoverage';
     rsTitle           = 'Title';
     rsVersion         = 'Version';
+    rsDataColectionStart = 'DataCollectionStart';
+    rsDataColectionEnd   = 'DataCollectionEnd';
+    rsDesign             = 'StudyDesign';
+    rsUnitOfObservation  = 'UnitOfObservation';
 
    rsValueLabelSets  = 'ValueLabelSets';
     rsValueLabelSet   = 'ValueLabelSet';

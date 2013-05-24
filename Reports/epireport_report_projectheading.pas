@@ -53,6 +53,7 @@ procedure TEpiReportProjectHeader.RunReport;
 var
   i: Integer;
   S: String;
+  j: Integer;
 begin
   inherited RunReport;
 
@@ -67,10 +68,10 @@ begin
   DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
   S := '';
   if Document.ProjectSettings.BackupOnShutdown then
-    S += 'Backup on shutdown: active';
+    S += 'Backup on shutdown: active' + LineEnding;
   if Document.PassWord <> '' then
     S += 'Encrypted data: active';
-  DoTableFooter(S);
+  DoTableFooter(Trim(S));
 
   DoLineText('');
 
@@ -99,6 +100,17 @@ begin
 //    DoTableCell(8, 1, Caption.Text);
   end;
   DoTableFooter('');
+
+  for i := 0 to Document.DataFiles.Count -1 do
+  with Document.DataFiles[i] do
+  begin
+    if KeyFields.Count = 0 then continue;
+
+    DoHeading('Key Fields for ' + Name);
+    for j := 0 to KeyFields.Count -1 do
+      DoLineText(KeyFields[j].Name + ' - ' + KeyFields[j].Question.Text);
+    DoLineText('');
+  end;
 end;
 
 end.
