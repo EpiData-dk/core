@@ -17,6 +17,9 @@ type
     ExportFileName: string;
     Doc: TEpiDocument;
     DataFileIndex: integer;
+    // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
+    // (usually used for secondary file export settings, assigned during export).
+    AdditionalExportSettings: TEpiExportSetting;
 
     // Filters
     FromRecord: integer;
@@ -28,6 +31,7 @@ type
 
     // Helpers
     constructor Create; virtual;
+    destructor Destroy; override;
     procedure   Assign(Const ASettings: TEpiExportSetting); virtual;
     function SanetyCheck: boolean; virtual;
   end;
@@ -175,6 +179,7 @@ begin
   ExportFileName := '';
   Doc            := nil;
   DataFileIndex  := -1;
+  AdditionalExportSettings := nil;
 
   // Filters
   FromRecord     := -1;
@@ -182,6 +187,14 @@ begin
   Encoding       := eeUTF8;
   Condition      := '';
   ExportDeleted  := false;
+end;
+
+destructor TEpiExportSetting.Destroy;
+begin
+//  Fields.Free;
+  if Assigned(AdditionalExportSettings) then
+    AdditionalExportSettings.Free;
+  inherited Destroy;
 end;
 
 procedure TEpiExportSetting.Assign(const ASettings: TEpiExportSetting);
