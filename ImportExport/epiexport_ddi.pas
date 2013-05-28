@@ -197,14 +197,17 @@ function TEpiDDIExport.AppendElemVersionableType(Root: TDOMElement;
 begin
   Result := AppendElemIdentifiableType(Root, NameSpace, NodeName, Prefix);
   Result.SetAttribute('version', FSettings.Version);
-  Result.SetAttribute('versionDate', FormatDateTime('YYYY/MM/DD"T"HH:MM:SS"."ZZZ', Now));
+  Result.SetAttribute('versionDate', FormatDateTime('YYYY"-"MM"-"DD"T"HH":"MM":"SS"."ZZZ', Now));
 end;
 
 function TEpiDDIExport.AppendElemMaintainableType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Prefix: String): TDOMElement;
 begin
   Result := AppendElemVersionableType(Root, NameSpace, NodeName, Prefix);
-  Result.SetAttribute('agency', EpiDoc.Study.Agency);
+  if EpiDoc.Study.Agency <> '' then
+    Result.SetAttribute('agency', EpiDoc.Study.Agency)
+  else
+    Result.SetAttribute('agency', 'Unknown');
 end;
 
 function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
@@ -220,7 +223,10 @@ function TEpiDDIExport.AppendElemReferenceType(Root: TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName);
   AppendElem(Result, NSreuseable, 'ID', ReferenceId);
-  AppendElem(Result, NSreuseable, 'IdentifyingAgency', EpiDoc.Study.Agency);
+  if EpiDoc.Study.Agency <> '' then
+    AppendElem(Result, NSreuseable, 'IdentifyingAgency', EpiDoc.Study.Agency)
+  else
+    AppendElem(Result, NSreuseable, 'IdentifyingAgency', 'Unknown');
   AppendElem(Result, NSreuseable, 'Version', FSettings.Version);
 end;
 
@@ -247,6 +253,7 @@ begin
 
   CSVExporter := TEpiExport.Create;
   CSVExporter.ExportCSV(TxtExportSetting);
+  FSettings.AdditionalExportSettings := TxtExportSetting;
 end;
 
 procedure TEpiDDIExport.BuildCitations;
