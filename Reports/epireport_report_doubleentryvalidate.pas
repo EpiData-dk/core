@@ -1,4 +1,4 @@
-unit epireport_doubleentry_validate;
+unit epireport_report_doubleentryvalidate;
 
 {$codepage UTF8}
 {$mode objfpc}{$H+}

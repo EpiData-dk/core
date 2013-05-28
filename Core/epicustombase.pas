@@ -1238,11 +1238,17 @@ procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
   Idx: integer;
+  Val: String;
 begin
+  Val := '';
   if FTextList.Find(LangCode, Idx) then
-    TString(FTextList.Objects[Idx]).Str := AText
-  else
+  begin
+    Val := TString(FTextList.Objects[Idx]).Str;
+    TString(FTextList.Objects[Idx]).Str := AText;
+  end else
     FTextList.AddObject(LangCode, TString.Create(AText));
+  if Assigned(Owner) then
+    Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
 function TEpiTranslatedText.GetText(const LangCode: string): string;

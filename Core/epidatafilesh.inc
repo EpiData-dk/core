@@ -52,10 +52,6 @@ type
     function    GetSize: Integer;
     function    GetVerifiedCount: Integer;
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
-    function    SaveRecords(Lvl: integer): string;
-    procedure   LoadRecords(Root: TDOMNode);
-    function    SaveKeyFields(Lvl: integer): string;
-    procedure   LoadKeyFields(Root: TDOMNode);
     function    SaveScripts(Lvl: integer): string;
     procedure   LoadScripts(Root: TDOMNode; ScriptList: TStrings);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
@@ -63,8 +59,15 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
     function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+  { Load/Save methods }
+  private
+    function    SaveRecords(Lvl: integer): string;
+    procedure   LoadRecords(Root: TDOMNode);
+    function    SaveKeyFields(Lvl: integer): string;
+    procedure   LoadKeyFields(Root: TDOMNode);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
+    procedure   SetModified(const AValue: Boolean); override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
@@ -104,6 +107,10 @@ type
     FBeforeRecordScript: TStrings;
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
+    FRecModified: boolean;
+    FRecModifiedDate: TDateTime;
+    FStructureModified: boolean;
+    FStructureModifiedDate: TDateTime;
     FKeyFields: TEpiFields;
     FNotes:     TEpiTranslatedText;
     FVersion:   string;
@@ -111,6 +118,8 @@ type
   public
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Created: TDateTime read FCreated;
+    property    RecModifiedDate: TDateTime read FRecModifiedDate write FRecModifiedDate;  // version 2
+    property    StructureModifiedDate: TDateTime read FStructureModifiedDate write FStructureModifiedDate;
     property    Version: string read FVersion write SetVersion;
     property    Notes: TEpiTranslatedText read FNotes;
     property    KeyFields: TEpiFields read FKeyFields;

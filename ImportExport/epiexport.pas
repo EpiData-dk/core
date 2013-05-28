@@ -131,6 +131,10 @@ begin
   // SAS
   if Settings is TEpiSASExportSetting then
     Exit(ExportSAS(TEpiSASExportSetting(Settings)));
+
+  // DDI
+  IF Settings is TEpiDDIExportSetting then
+    Exit(ExportDDI(TEpiDDIExportSetting(Settings)));
 end;
 
 function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting
@@ -410,7 +414,7 @@ begin
       then
         TmpStr := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey')).Name;
 
-      WriteString(DataStream, VLblSet.Name, FieldNameLength);
+      WriteString(DataStream, TmpStr, FieldNameLength);
     end;
 
     // ********************************
@@ -546,7 +550,9 @@ begin
             begin
               if IsMissing[CurRec] then
                 WriteMissingFloat(0)
-              else if IsMissingValue[CurRec] then
+              else if (IsMissingValue[CurRec]) and
+                      (FieldType = ftInteger)
+              then
               begin
                 VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
                 TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
@@ -788,6 +794,7 @@ begin
   end;
 
   if not ExportCSV(CSVSetting) then exit;
+  Settings.AdditionalExportSettings := CSVSetting;
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
 
 
@@ -982,6 +989,8 @@ begin
   end;
 
   if not ExportCSV(CSVSetting) then exit;
+  Settings.AdditionalExportSettings := CSVSetting;
+
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
   Flds := Settings.Fields;
 

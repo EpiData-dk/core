@@ -20,6 +20,7 @@ type
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
+    FCycleNo: Int64;
     FLoading: boolean;
     FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
@@ -58,6 +59,11 @@ type
     Property   Version: integer read FVersion;
     // EpiData XML Version 2 perperties:
     property   PassWord: string read FPassWord write SetPassWord;
+
+  { Cycle numbering }
+  public
+    procedure  IncCycleNo;
+    property   CycleNo: Int64 read FCycleNo;
 
   { Cloning }
   protected
@@ -111,6 +117,7 @@ begin
   // Version 2 Properties:
   if PassWord <> '' then
     Result += SaveAttr(rsPassword, StrToSHA1Base64(PassWord));
+  Result += SaveAttr(rsCycle, CycleNo)
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -126,6 +133,7 @@ begin
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiRelations.Create(Self);
+  FCycleNo         := 0;
 
   RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
 
@@ -215,6 +223,7 @@ begin
       Raise EEpiBadPassword.Create('Incorrect Password');
 
     PassWord := UserPW;
+    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
   end;
 
   LoadNode(Node, Root, rsStudy, true);
@@ -269,6 +278,11 @@ begin
   Fs.Free;
 end;
 
+procedure TEpiDocument.IncCycleNo;
+begin
+  Inc(FCycleNo);
+end;
+
 function TEpiDocument.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
 begin
   Result := TEpiDocument.Create(Self.DefaultLang);
@@ -279,7 +293,10 @@ function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
 begin
   Result := inherited DoClone(AOwner, Dest);
   with TEpiDocument(Result) do
+  begin
     FPassWord := Self.FPassWord;
+    FCycleNo  := Self.FCycleNo;
+  end;
 end;
 
 end.

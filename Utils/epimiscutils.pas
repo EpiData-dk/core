@@ -46,7 +46,7 @@ const
     );
 
 type
-  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfCollection, dfAll);
+  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfCollection, dfAll);
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
@@ -136,6 +136,11 @@ const
     FilterExt:  '*.sas';
   );
 
+  EpiDialogFilterDDI: TEpiDialogFilterPair = (
+    FilterName: 'DDI XML File (*.xml)';
+    FilterExt:  '*.xml';
+  );
+
   EpiDialogFilterAll: TEpiDialogFilterPair = (
     FilterName: 'Show All (*.*)';
     FilterExt:  '*.*';
@@ -152,6 +157,7 @@ const
     @EpiDialogFilterDBF,
     @EpiDialogFilterSPSS,
     @EpiDialogFilterSAS,
+    @EpiDialogFilterDDI,
     @EpiDialogFilterCollection,
     @EpiDialogFilterAll
     );

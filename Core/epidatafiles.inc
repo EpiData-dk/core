@@ -281,8 +281,11 @@ var
   end;
 
 begin
+  if FRecModified then
+    FRecModifiedDate := Now;
+
   Lst := TStringList.Create;
-  Lst.Add(Indent(Lvl) + '<' + rsRecords + '>');
+  Lst.Add(Indent(Lvl) + '<' + rsRecords + SaveAttr(rsModifiedAttr, RecModifiedDate) + '>');
 
   Edoc := TEpiDocument(RootOwner);
   BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
@@ -358,6 +361,7 @@ var
 
 begin
   // Root = <Records>
+  FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
 
   CurRec := 0;
 //  Size := Root.ChildNodes.Count;
@@ -593,6 +597,17 @@ begin
   Create(AOwner, 0);
 end;
 
+procedure TEpiDataFile.SetModified(const AValue: Boolean);
+begin
+  inherited SetModified(AValue);
+
+  if (not AValue) then
+  begin
+    FStructureModified := AValue;
+    FRecModified       := AValue;
+  end;
+end;
+
 function ControlItemListSort(Item1, Item2: Pointer): integer;
 var
   C1: TEpiCustomControlItem;
@@ -662,6 +677,8 @@ begin
   FNotes := TEpiTranslatedText.Create(Self, rsNotes);
   FVersion := '';
   FCreated := Now;
+  FRecModifiedDate := Now;
+  FStructureModifiedDate := Now;
 
   // Scripts
   FBeforeRecordScript := TStringList.Create;
@@ -735,8 +752,12 @@ end;
 
 function TEpiDataFile.SaveAttributesToXml: string;
 begin
+  if FStructureModified then
+    FStructureModifiedDate := Now;
+
   Result := inherited SaveAttributesToXml +
     SaveAttr(rsCreatedAttr, Created) +
+    SaveAttr(rsModifiedAttr, StructureModifiedDate);
     SaveAttr(rsVersionAttr, Version);
 end;
 
@@ -758,6 +779,9 @@ begin
   Caption.LoadFromXml(Root);
   FVersion := LoadAttrString(Root, rsVersion, FVersion, false);
   FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
+
+  // Version 2:
+  FStructureModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FStructureModifiedDate, false);
 
   // VERSION 3 PROPERTY
   if LoadNode(Node, Root, 'BeforeRecordScript', false) then
@@ -962,6 +986,8 @@ begin
   begin
     FVersion := Self.FVersion;
     FCreated := Self.FCreated;
+    FRecModifiedDate := Self.FRecModifiedDate;
+    FStructureModifiedDate := self.FStructureModifiedDate;
     Size := Self.Size;
     Fields.Sort;
 
