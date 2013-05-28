@@ -794,6 +794,7 @@ begin
   end;
 
   if not ExportCSV(CSVSetting) then exit;
+  Settings.AdditionalExportSettings := CSVSetting;
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
 
 
@@ -988,6 +989,8 @@ begin
   end;
 
   if not ExportCSV(CSVSetting) then exit;
+  Settings.AdditionalExportSettings := CSVSetting;
+
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
   Flds := Settings.Fields;
 
