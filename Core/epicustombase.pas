@@ -10,7 +10,7 @@ uses
   contnrs, LazMethodList;
 
 const
-  EPI_XML_DATAFILE_VERSION = 2;
+  EPI_XML_DATAFILE_VERSION = 3;
 
 type
   TEpiCustomBase = class;

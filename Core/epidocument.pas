@@ -108,9 +108,9 @@ function TEpiDocument.SaveAttributesToXml: string;
 begin
   Result :=
     inherited SaveAttributesToXml +
-    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.0') +
+    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.3') +
     SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd') +
+    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd') +
     SaveAttr(rsVersionAttr, Version) +
     SaveAttr('xml:lang', DefaultLang);
 
