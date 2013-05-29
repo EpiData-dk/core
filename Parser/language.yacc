@@ -137,7 +137,7 @@ program		:	statementlist					{ AST := $1 }
 		;
 
 statementlist	:	statement OPSemicolon statementlist		{ $$ := TStatementList.Create($1, $3); }
-		| 	/* empty */					{ $$ := nil; }
+		| 	/* empty */					{ $$ := TStatementList.Create(nil, nil); }
 		;
 
 statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }  

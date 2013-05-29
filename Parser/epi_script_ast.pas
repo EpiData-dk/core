@@ -1138,9 +1138,10 @@ end;
 
 function TStatementList.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  Result :=
-    inherited TypeCheck(Parser) and
-    FStatement.TypeCheck(Parser);
+  Result := inherited TypeCheck(Parser);
+
+  if Result and Assigned(FStatement) then
+    result := FStatement.TypeCheck(Parser);
 
   if Result and Assigned(FStatementList) then
     result := FStatementList.TypeCheck(Parser);

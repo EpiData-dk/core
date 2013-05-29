@@ -329,7 +329,7 @@ begin
     Result += Indent(Lvl) + '<BeforeEntryScript>';
     for i := 0 to FBeforeEntryScript.Count - 2 do
       Result += FBeforeEntryScript[i] + LineEnding;
-    Result += FAfterEntryScript[FBeforeEntryScript.Count - 1];
+    Result += FBeforeEntryScript[FBeforeEntryScript.Count - 1];
     Result += Indent(Lvl) + '</BeforeEntryScript>' + LineEnding;
   end;
 

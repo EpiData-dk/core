@@ -14,15 +14,15 @@ type
 
   TEpiScriptParser = class(TObject)
   private
-    FEpiExecutor: TEpiScriptExecutor;
+    FEpiExecutor: IEpiScriptParser;
     function InternalParse(Out ResultAST: TStatementList): boolean;
     procedure ResetFile;
   public
-    constructor Create(Const EpiExecutor: TEpiScriptExecutor);
+    constructor Create(Const EpiExecutor: IEpiScriptParser);
     destructor Destroy; override;
     function Parse(Const Line: String; out StatementList: TStatementList): boolean; overload;
     function Parse(Const Lines: TStrings; out StatementList: TStatementList): boolean; overload;
-    property EpiExecutor: TEpiScriptExecutor read FEpiExecutor;
+    property EpiExecutor: IEpiScriptParser read FEpiExecutor;
   end;
 
 implementation
@@ -39,24 +39,23 @@ begin
   result := yyparse(FEpiExecutor, ResultAST);
 end;
 
-constructor TEpiScriptParser.Create(const EpiExecutor: TEpiScriptExecutor);
+constructor TEpiScriptParser.Create(const EpiExecutor: IEpiScriptParser);
 begin
   Assign(yyinput, GetTempFileName('', 'epidata_parser'));
-  Rewrite(yyinput);
-
   FEpiExecutor := EpiExecutor;
 end;
 
 destructor TEpiScriptParser.Destroy;
 begin
-//  Close(yyinput);
-//  Erase(yyinput);
+  if TextRec(yyinput).Mode <> fmClosed then
+    Close(yyinput);
+  Erase(yyinput);
   inherited Destroy;
 end;
 
 procedure TEpiScriptParser.ResetFile;
 begin
-  //Rewrite(yyinput);
+  Rewrite(yyinput);
 end;
 
 function TEpiScriptParser.Parse(const Line: String; out StatementList: TStatementList

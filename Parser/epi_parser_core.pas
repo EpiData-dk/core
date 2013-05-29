@@ -132,7 +132,7 @@ begin
          yyval.yyTStatementList := TStatementList.Create(yyv[yysp-2].yyTCustomStatement, yyv[yysp-0].yyTStatementList); 
        end;
    3 : begin
-         yyval.yyTStatementList := nil; 
+         yyval.yyTStatementList := TStatementList.Create(nil, nil); 
        end;
    4 : begin
          yyval.yyTCustomStatement := yyv[yysp-1].yyTStatementList; 

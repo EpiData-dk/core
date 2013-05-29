@@ -78,7 +78,7 @@ type
 
   TExecutorGetRecordIndex = function(Sender: TObject): integer;
   TExecutorError = procedure(const Msg: string; const LineNo,
-      ColNo: integer; const TextFound: string);
+      ColNo: integer; const TextFound: string) of object;
 
 implementation
 
