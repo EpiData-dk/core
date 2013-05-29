@@ -8,16 +8,17 @@ interface
 
 uses
   sysutils,
+  yacclib,
   epi_parser_types,
   epi_script_parser,
   epi_script_AST;
 
 function yyparse(Const EpiParser: IEpiScriptParser; Out AST: TStatementList): boolean;
+procedure yyerror(msg : string);
 
 implementation
 
 uses
-  yacclib,
   lexlib;
 
 var

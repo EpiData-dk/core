@@ -5,7 +5,7 @@ unit epi_script_parser;
 interface
 
 uses
-  Classes, SysUtils, epi_script_AST, epidatafiles,
+  Classes, SysUtils, epi_script_AST,
   epi_parser_types, epi_script_executor;
 
 type
@@ -28,20 +28,31 @@ type
 implementation
 
 uses
-  LexLib, epi_parser_core, epidatafilestypes;
+  LexLib, epi_parser_core;
 
 { TEpiScriptParser }
 
 function TEpiScriptParser.InternalParse(out ResultAST: TStatementList): boolean;
+var
+  I: Word;
 begin
   Flush(yyinput);
   Reset(yyinput);
+  Rewrite(yyoutput);
   result := yyparse(FEpiExecutor, ResultAST);
+  I := IOResult;
+  if I <> 0 then
+    halt;
 end;
 
 constructor TEpiScriptParser.Create(const EpiExecutor: IEpiScriptParser);
+var
+  I: Word;
 begin
   Assign(yyinput, GetTempFileName('', 'epidata_parser'));
+  I := IOResult;
+  if I <> 0 then
+    halt;
   FEpiExecutor := EpiExecutor;
 end;
 
