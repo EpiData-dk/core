@@ -15,6 +15,7 @@ uses
 
 function yyparse(Const EpiParser: IEpiScriptParser; Out AST: TStatementList): boolean;
 procedure yyerror(msg : string);
+procedure yy_set_start_state;
 
 implementation
 
@@ -1668,7 +1669,8 @@ end(*yyparse*);
 
 {$I epi_parser_core.inc}
 
-initialization
+procedure yy_set_start_state;
+begin
   start(normal);
-
+end;
 end.

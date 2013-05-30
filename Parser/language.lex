@@ -109,7 +109,7 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>\n              yyaccept;
 
  (* Identifiers *)
-<normal>{U}+({U}{D})*
+<normal>{U}+({U}|{D})*
                         begin
                           yylval.yyIdString := yytext;
                           return(OPIdentifier);

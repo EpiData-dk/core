@@ -37,6 +37,7 @@ type
   protected
     constructor Create; virtual;
     procedure DoTypeCheckError(Const Msg: String; Parser: IEpiScriptParser);
+    procedure DoTypeCheckError(Const Msg: String; Const Args: Array of const; Parser: IEpiScriptParser);
   public
     destructor Destroy; override;
     function ResultType: TParserResultType; virtual;
@@ -292,9 +293,8 @@ uses
   YaccLib, epi_parser_core, math;
 
 resourcestring
-  rsExpressionReturnTypeBool     = 'Expression return type must be boolean';
-  rsExpressionReturnTypeInt      = 'Expression return type must be integer';
-  rsExpressionReturnTypeIntFloat = 'Expression return type must be integer or float';
+  rsExpressionReturnType1 = 'Expression return type must be %s';
+  rsExpressionReturnType2 = 'Expression return type must be %s or %s';
 
 
 { TAbstractSyntaxTreeBase }
@@ -314,6 +314,15 @@ begin
     FLineNo,
     FColNo,
     FLine
+  );
+end;
+
+procedure TAbstractSyntaxTreeBase.DoTypeCheckError(const Msg: String;
+  const Args: array of const; Parser: IEpiScriptParser);
+begin
+  DoTypeCheckError(
+    Format(Msg, Args),
+    Parser
   );
 end;
 
@@ -597,12 +606,14 @@ begin
                 (Rr = rtBoolean);
       if not (Lr = rtBoolean) then
         DoTypeCheckError(
-          'Left ' + rsExpressionReturnTypeBool,
+          'Left ' + rsExpressionReturnType1,
+          [SParserResultType[rtBoolean]],
           Parser
         );
       if not (Rr = rtBoolean) then
         DoTypeCheckError(
-          'Right ' + rsExpressionReturnTypeBool,
+          'Right ' + rsExpressionReturnType1,
+          [SParserResultType[rtBoolean]],
           Parser
         );
     end;
@@ -614,12 +625,14 @@ begin
                 (Rr = rtInteger);
       if not (Lr = rtInteger) then
         DoTypeCheckError(
-          'Left ' + rsExpressionReturnTypeInt,
+          'Left ' + rsExpressionReturnType1,
+          [SParserResultType[rtInteger]],
           Parser
         );
       if not (Rr = rtInteger) then
         DoTypeCheckError(
-          'Right ' + rsExpressionReturnTypeInt,
+          'Right ' + rsExpressionReturnType1,
+          [SParserResultType[rtInteger]],
           Parser
         );
     end;
@@ -632,12 +645,14 @@ begin
                 (Rr in [rtInteger, rtFloat]);
       if not (Lr in [rtInteger, rtFloat]) then
         DoTypeCheckError(
-          'Left ' + rsExpressionReturnTypeIntFloat,
+          'Left ' + rsExpressionReturnType1,
+          [SParserResultType[rtFloat]],
           Parser
         );
       if not (Rr in [rtInteger, rtFloat]) then
         DoTypeCheckError(
-          'Right ' + rsExpressionReturnTypeIntFloat,
+          'Right ' + rsExpressionReturnType1,
+          [SParserResultType[rtFloat]],
           Parser
         );
     end;
@@ -737,7 +752,8 @@ begin
         result := Left.ResultType = rtBoolean;
         if not Result then
           DoTypeCheckError(
-            rsExpressionReturnTypeBool,
+            rsExpressionReturnType1,
+            [SParserResultType[rtBoolean]],
             Parser
           );
       end;
@@ -746,7 +762,8 @@ begin
         result := Left.ResultType in [rtFloat, rtInteger];
         if not Result then
           DoTypeCheckError(
-            rsExpressionReturnTypeIntFloat,
+            rsExpressionReturnType1,
+            [SParserResultType[rtFloat]],
             Parser
           );
       end;
@@ -840,16 +857,23 @@ begin
 end;
 
 function TAssignment.TypeCheck(Parser: IEpiScriptParser): boolean;
+var
+  VarT: TParserResultType;
+  ExpT: TParserResultType;
 begin
   Result := FVAriable.TypeCheck(Parser) and FExpr.TypeCheck(Parser);
 
   if Result then
   begin
-    Result := Ord(FVAriable.ResultType) >= Ord(FExpr.ResultType);
+    VarT := FVAriable.ResultType;
+    ExpT := FExpr.ResultType;
+    Result := Ord(VarT) >= Ord(ExpT);
 
     if not result then
       DoTypeCheckError(
-        'Incompatible types',
+        'Incompatible types: ' + LineEnding +
+        'Variable ' + FVAriable.FIdent + ' expect result to be of type ' +  SParserResultType[VarT] + LineEnding +
+        'but expression is of type ' + SParserResultType[ExpT],
         Parser
       );
   end;
@@ -882,9 +906,13 @@ begin
      (not (Expr.ResultType = rtBoolean))
   then
     DoTypeCheckError(
-      rsExpressionReturnTypeBool,
+      rsExpressionReturnType1,
+      [SParserResultType[rtBoolean]],
       Parser
     );
+
+  if Result and Assigned(ThenStatement) then
+    result := ThenStatement.TypeCheck(Parser);
 
   if Result and Assigned(ElseStatement) then
     result := ElseStatement.TypeCheck(Parser);

@@ -16,7 +16,17 @@ type
     rtUndefined
   );
 
+const
+  SParserResultType: array[TParserResultType] of string = (
+    'boolean',
+    'integer',
+    'float',
+    'string',
+    'object',
+    'undefined'
+  );
 
+type
   TParserOperationType = (
     // Literals
     otTrue,

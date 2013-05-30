@@ -28,7 +28,7 @@ type
 implementation
 
 uses
-  LexLib, epi_parser_core;
+  LexLib, YaccLib, epi_parser_core;
 
 { TEpiScriptParser }
 
@@ -39,7 +39,11 @@ begin
   Flush(yyinput);
   Reset(yyinput);
   Rewrite(yyoutput);
+  yy_set_start_state;
   result := yyparse(FEpiExecutor, ResultAST);
+  writeln('===================================');
+  yyclearin;
+  yyclear;
   I := IOResult;
   if I <> 0 then
     halt;
