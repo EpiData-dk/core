@@ -35,6 +35,8 @@ var
 %token OPDefine
  /* Info statement  */
 %token OPInfo OPNote OPWarning 
+ /* Goto statement  */
+%token OPGoto
 
  /* General tokens 		                           *
   * Do not edit anything below this line unless you know   *
@@ -72,7 +74,7 @@ var
  /* Special case tokens */
 %token <Extended> OPFloat
 %token <Integer> OPNumber OPHexNumber
-%token <IdString> OPStringText OPIdentifier
+%token <IdString> OPStringText OPIdentifier OPWrite
 
 %token OPIllegal		/* illegal token */
 
@@ -82,10 +84,10 @@ var
 %type <TCustomStatement>	statement opt_else
 %type <Word>			typicalcommands emptycommands
 %type <TParserResultType>	definetype
-%type <TVarList>		varlist
-%type <TCustomVariable>		variable
+%type <TCustomVariable>		variable ident_or_write
 %type <TExpr>			opt_bracket expr term
 %type <TParserOperationType>	typecast
+%type <TGotoOption>		goto_opt
 
 
 
@@ -139,20 +141,19 @@ program		:	statementlist					{ AST := $1 }
 		;
 
 statementlist	:	statement OPSemicolon statementlist		{ $$ := TStatementList.Create($1, $3); }
-		| 	/* empty */					{ $$ := TStatementList.Create(nil, nil); }
+		| 	/* empty */					{ $$ := nil; }
 		;
 
 statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }  
 		| 	OPIf expr OPThen statement opt_else		{ $$ := TIfThen.Create($2, $4, $5); } 
 		|	variable OPAssign expr				{ $$ := TAssignment.Create($1, $3); } 
-/*	 	|	typicalcommands varlist				{ $$ := TStatement.Create($1, $2); }  */
-/*		|       OPDefine definetype OPIdentifier		{ $$ := TDefine.Create($2, $3, FParser); } */
                 |       OPDefine ident_list OPColon definetype
 {
   $$ := TDefine.Create($4, IdentList, FParser);
   ClearIdentList;
 } 
-		|	OPInfo OPStringText infotype			{ }
+/*		|	OPInfo OPStringText infotype			{ }  */
+		|	OPGoto ident_or_write goto_opt			{ $$ := TGoto.Create($2, $3); }
 		;
 
 opt_else	:	OPElse statement				{ $$ := $2; }
@@ -163,12 +164,9 @@ ident_list	:	ident_list OPComma OPIdentifier			{ AddToIdentList($3); }
 		|	OPIdentifier					{ AddToIdentList($1); }
 		;
 
+/*
 infotype	:	OPNote
 		|	OPWarning
-		;
-
-/*
-typicalcommands	:       OPClear 					{ $$ := OPClear; }
 		;
 */
 
@@ -178,11 +176,14 @@ definetype	:	OPInteger					{ $$ := rtInteger; }
 		|	OPBoolean					{ $$ := rtBoolean; }
 		;
 
-/*
-varlist		:	variable varlist    				{ $$ := TVarlist.Create($1, $2); }
-		|							{ $$ := nil; }
+ident_or_write	:	variable					{ $$ := $1; }
+		|	OPWrite						{ $$ := nil; }
 		;
-*/
+
+goto_opt	:	"clear"						{ $$ := goClear; }
+		|	"missing"					{ $$ := goMissing; }
+		|	/* empty */					{ $$ := goNoOpt; }
+		;
 
 variable	:	OPIdentifier					{ $$ := TCustomVariable.FindVariable($1, FParser); }
 		;

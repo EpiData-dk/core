@@ -4,6 +4,9 @@ unit epi_parser_types;
 
 interface
 
+uses
+  epidatafiles;
+
 type
   IdString = String[64];
 
@@ -86,9 +89,19 @@ type
     otVariable
   );
 
+  TGotoOption = (
+    goClear,
+    goMissing,
+    goNoOpt
+  );
+
   TExecutorGetRecordIndex = function(Sender: TObject): integer;
   TExecutorError = procedure(const Msg: string; const LineNo,
-      ColNo: integer; const TextFound: string) of object;
+    ColNo: integer; const TextFound: string) of object;
+  TExecutorSetFieldValue = procedure(Const Sender: TObject;
+    Const F: TEpiField; Const Value: Variant) of object;
+  TExecutorGetFieldValue = function(Const Sender: TObject;
+    Const F: TEpiField): Variant of object;
 
 implementation
 

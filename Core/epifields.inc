@@ -328,8 +328,8 @@ begin
   begin
     Result += Indent(Lvl) + '<BeforeEntryScript>';
     for i := 0 to FBeforeEntryScript.Count - 2 do
-      Result += FBeforeEntryScript[i] + LineEnding;
-    Result += FBeforeEntryScript[FBeforeEntryScript.Count - 1];
+      Result += StringToXml(FBeforeEntryScript[i]) + LineEnding;
+    Result += StringToXml(FBeforeEntryScript[FBeforeEntryScript.Count - 1]);
     Result += Indent(Lvl) + '</BeforeEntryScript>' + LineEnding;
   end;
 
@@ -337,8 +337,8 @@ begin
   begin
     Result += Indent(Lvl) + '<AfterEntryScript>';
     for i := 0 to FAfterEntryScript.Count - 2 do
-      Result += FAfterEntryScript[i] + LineEnding;
-    Result += FAfterEntryScript[FAfterEntryScript.Count - 1];
+      Result += StringToXml(FAfterEntryScript[i]) + LineEnding;
+    Result += StringToXml(FAfterEntryScript[FAfterEntryScript.Count - 1]);
     Result += Indent(Lvl) + '</AfterEntryScript>' + LineEnding;
   end;
 end;

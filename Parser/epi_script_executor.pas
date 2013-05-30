@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epi_script_ast, epidatafiles, epi_parser_types,
-  contnrs;
+  contnrs, epidatafilestypes;
 
 type
 
@@ -15,26 +15,34 @@ type
   TEpiScriptExecutor = class(TObject, IEpiScriptParser)
   private
     FOnError: TExecutorError;
+    FOnSetFieldValue: TExecutorSetFieldValue;
     FVariables: TFPObjectHashTable;
     FDataFile: TEpiDataFile;
     FOnGetRecordIndex: TExecutorGetRecordIndex;
     procedure SetDataFile(AValue: TEpiDataFile);
   protected
-    procedure ProcessAssignment(Assignment: TAssignment);
-    procedure ProcessCustomStatement(Stm: TCustomStatement);
-    procedure ProcessDefine(Define: TDefine);
-//    procedure ProcessGoto();
-    procedure ProcessIfThenElse(IfThen: TIfThen);
+    procedure ProcessAssignment(Assignment: TAssignment); virtual;
+    procedure ProcessCustomStatement(Stm: TCustomStatement); virtual;
+    procedure ProcessDefine(Define: TDefine); virtual;
+    procedure ProcessGoto(AGoto: TGoto); virtual;
+    procedure ProcessIfThenElse(IfThen: TIfThen); virtual;
 //    procedure ProcessInfo();
-    procedure ProcessStatementList(List: TStatementList);
+    procedure ProcessStatementList(List: TStatementList); virtual;
+  private
+    FOnGetFieldValue: TExecutorGetFieldValue;
+    FStatementList: TStatementList;
   public
     constructor Create;
     destructor Destroy; override;
+    function ParseScript(Lines: TStrings): boolean;
     function RunScript(Lines: TStrings): boolean;
-    function ExecuteScript(StatementList: TStatementList): boolean;
+    function ExecuteScript(StatementList: TStatementList = nil): boolean;
+  public
     property DataFile: TEpiDataFile read FDataFile write SetDataFile;
     property OnGetRecordIndex: TExecutorGetRecordIndex read FOnGetRecordIndex write FOnGetRecordIndex;
     property OnError: TExecutorError read FOnError write FOnError;
+    property OnSetFieldValue: TExecutorSetFieldValue read FOnSetFieldValue write FOnSetFieldValue;
+    property OnGetFieldValue: TExecutorGetFieldValue read FOnGetFieldValue write FOnGetFieldValue;
   public
     { IEpiScriptParser }
     function VariableExists(const Ident: string): boolean;
@@ -43,6 +51,12 @@ type
     procedure ParseError(const Msg: string; const LineNo,
       ColNo: integer; const TextFound: string);
     function RecordIndex: Integer;
+    procedure SetFieldInteger(Const F: TEpiField; Const Value: EpiInteger);
+    procedure SetFieldFloat(Const F: TEpiField; Const Value: EpiFloat);
+    procedure SetFieldBoolean(Const F: TEpiField; Const Value: Boolean);
+    function  GetFieldInteger(Const F: TEpiField): EpiInteger;
+    function  GetFieldFloat(Const F: TEpiField): EpiFloat;
+    function  GetFieldBoolean(Const F: TEpiField): EpiBool;
   end;
 
 implementation
@@ -82,6 +96,11 @@ end;
 procedure TEpiScriptExecutor.ProcessDefine(Define: TDefine);
 begin
   //  Do nothing - handling during parsing.
+end;
+
+procedure TEpiScriptExecutor.ProcessGoto(AGoto: TGoto);
+begin
+  // Do nothing - should be overridden in classes who has a GUI.
 end;
 
 procedure TEpiScriptExecutor.ProcessIfThenElse(IfThen: TIfThen);
@@ -129,25 +148,34 @@ begin
   inherited Destroy;
 end;
 
-function TEpiScriptExecutor.RunScript(Lines: TStrings): boolean;
+function TEpiScriptExecutor.ParseScript(Lines: TStrings): boolean;
 var
   Parser: TEpiScriptParser;
   Stm: TStatementList;
 begin
   Parser := TEpiScriptParser.Create(Self);
   if Parser.Parse(Lines, Stm) then
-    ExecuteScript(Stm);
+    FStatementList := Stm;
   Parser.Free;
+end;
+
+function TEpiScriptExecutor.RunScript(Lines: TStrings): boolean;
+begin
+  ParseScript(Lines);
+  ExecuteScript(FStatementList);
 end;
 
 function TEpiScriptExecutor.ExecuteScript(StatementList: TStatementList
   ): boolean;
-var
-  Stm: TCustomStatement;
 begin
   Result := false;
 
-  if not Assigned(StatementList) then exit;
+  if not Assigned(StatementList) then
+    StatementList := FStatementList;
+
+  if not Assigned(StatementList) then
+    Exit;
+
   ProcessStatementList(StatementList);
 
   result := true;
@@ -184,6 +212,45 @@ begin
     result := OnGetRecordIndex(Self)
   else
     result := -1;
+end;
+
+procedure TEpiScriptExecutor.SetFieldInteger(const F: TEpiField;
+  const Value: EpiInteger);
+begin
+  if Assigned(FOnSetFieldValue) then
+    FOnSetFieldValue(Self, F, Value);
+end;
+
+procedure TEpiScriptExecutor.SetFieldFloat(const F: TEpiField;
+  const Value: EpiFloat);
+begin
+  if Assigned(FOnSetFieldValue) then
+    FOnSetFieldValue(Self, F, Value);
+end;
+
+procedure TEpiScriptExecutor.SetFieldBoolean(const F: TEpiField;
+  const Value: Boolean);
+begin
+  if Assigned(FOnSetFieldValue) then
+    FOnSetFieldValue(Self, F, Value);
+end;
+
+function TEpiScriptExecutor.GetFieldInteger(const F: TEpiField): EpiInteger;
+begin
+  if Assigned(FOnGetFieldValue) then
+    Result := FOnGetFieldValue(Self, F);
+end;
+
+function TEpiScriptExecutor.GetFieldFloat(const F: TEpiField): EpiFloat;
+begin
+  if Assigned(FOnGetFieldValue) then
+    Result := FOnGetFieldValue(Self, F);
+end;
+
+function TEpiScriptExecutor.GetFieldBoolean(const F: TEpiField): EpiBool;
+begin
+  if Assigned(FOnGetFieldValue) then
+    Result := FOnGetFieldValue(Self, F);
 end;
 
 end.

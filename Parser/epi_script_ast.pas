@@ -24,7 +24,13 @@ type
     function  VariableExists(Const Ident: string): boolean;
     procedure AddVariable(Const Variable: TCustomVariable);
     function  FindVariable(Const Ident: string): TCustomVariable;
-    function  RecordIndex: Integer;
+//    function  RecordIndex: Integer;
+    procedure SetFieldInteger(Const F: TEpiField; Const Value: EpiInteger);
+    procedure SetFieldFloat(Const F: TEpiField; Const Value: EpiFloat);
+    procedure SetFieldBoolean(Const F: TEpiField; Const Value: Boolean);
+    function  GetFieldInteger(Const F: TEpiField): EpiInteger;
+    function  GetFieldFloat(Const F: TEpiField): EpiFloat;
+    function  GetFieldBoolean(Const F: TEpiField): EpiBool;
   end;
 
   { TAbstractSyntaxTreeBase }
@@ -78,6 +84,20 @@ type
     property Expr: TExpr read FExpr;
     property ThenStatement: TCustomStatement read FThenStatement;
     property ElseStatement: TCustomStatement read FElseStatement;
+  end;
+
+  { TGoto }
+
+  TGoto = class(TCustomStatement)
+  private
+    FOption: TGotoOption;
+    FVariable: TCustomVariable;
+  public
+    constructor Create(Const Variable: TCustomVariable;
+      Const Option: TGotoOption);
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
+    property Variable: TCustomVariable read FVariable;
+    property Option: TGotoOption read FOption;
   end;
 
 
@@ -200,6 +220,7 @@ type
     constructor Create(Const Field: TEpiField;
       Parser: IEpiScriptParser);
     function ResultType: TParserResultType; override;
+    property Field: TEpiField read FField;
   public
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
@@ -295,6 +316,27 @@ uses
 resourcestring
   rsExpressionReturnType1 = 'Expression return type must be %s';
   rsExpressionReturnType2 = 'Expression return type must be %s or %s';
+
+{ TGoto }
+
+constructor TGoto.Create(const Variable: TCustomVariable;
+  const Option: TGotoOption);
+begin
+  inherited Create;
+  FVariable := Variable;
+  FOption := Option;
+end;
+
+function TGoto.TypeCheck(Parser: IEpiScriptParser): boolean;
+begin
+  Result := inherited TypeCheck(Parser);
+
+  if not (Variable is TFieldVariable) then
+  begin
+    DoTypeCheckError('Variable %1 is not a Field', [Variable.Ident], Parser);
+    result := false;
+  end;
+end;
 
 
 { TAbstractSyntaxTreeBase }
@@ -455,32 +497,32 @@ end;
 
 function TFieldVariable.AsInteger: EpiInteger;
 begin
-  Result := FField.AsInteger[FParser.RecordIndex];
+  Result := FParser.GetFieldInteger(FField);
 end;
 
 function TFieldVariable.AsFloat: EpiFloat;
 begin
-  Result := FField.AsFloat[FParser.RecordIndex];
+  Result := FParser.GetFieldFloat(FField);
 end;
 
 function TFieldVariable.AsBoolean: Boolean;
 begin
-  Result := Boolean(FField.AsBoolean[FParser.RecordIndex]);
+  Result := Boolean(FParser.GetFieldBoolean(FField));
 end;
 
 procedure TFieldVariable.SetInteger(const Value: EpiInteger);
 begin
-  FField.AsInteger[FParser.RecordIndex] := Value;
+  FParser.SetFieldInteger(FField, Value);
 end;
 
 procedure TFieldVariable.SetFloat(const Value: EpiFloat);
 begin
-  FField.AsFloat[FParser.RecordIndex] := Value;
+  FParser.SetFieldFloat(FField, Value);
 end;
 
 procedure TFieldVariable.SetBoolean(const Value: Boolean);
 begin
-  FField.AsBoolean[FParser.RecordIndex] := EpiBool(Value);
+  FParser.SetFieldBoolean(FField, Value);
 end;
 
 

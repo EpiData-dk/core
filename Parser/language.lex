@@ -39,7 +39,8 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"info"		return(OPInfo);
 <normal>"note"		return(OPNote);
 <normal>"warning"	return(OPWarning);
-
+<normal>"goto"		return(OPGoto);
+<normal>"write"		return(OPWrite);
 
  (* General tokens *)
  (* Do not edit anything below this line unless you know   *)
