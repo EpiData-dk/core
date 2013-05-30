@@ -23,7 +23,9 @@ type
     procedure ProcessAssignment(Assignment: TAssignment);
     procedure ProcessCustomStatement(Stm: TCustomStatement);
     procedure ProcessDefine(Define: TDefine);
+//    procedure ProcessGoto();
     procedure ProcessIfThenElse(IfThen: TIfThen);
+//    procedure ProcessInfo();
     procedure ProcessStatementList(List: TStatementList);
   public
     constructor Create;
