@@ -36,7 +36,7 @@ var
  /* Info statement  */
 %token OPInfo OPNote OPWarning 
  /* Goto statement  */
-%token OPGoto
+%token OPGoto OPClear OPMissing
 
  /* General tokens 		                           *
   * Do not edit anything below this line unless you know   *
@@ -180,8 +180,8 @@ ident_or_write	:	variable					{ $$ := $1; }
 		|	OPWrite						{ $$ := nil; }
 		;
 
-goto_opt	:	"clear"						{ $$ := goClear; }
-		|	"missing"					{ $$ := goMissing; }
+goto_opt	:	OPClear						{ $$ := goClear; }
+		|	OPMissing					{ $$ := goMissing; }
 		|	/* empty */					{ $$ := goNoOpt; }
 		;
 

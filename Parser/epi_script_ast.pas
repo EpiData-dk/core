@@ -24,13 +24,11 @@ type
     function  VariableExists(Const Ident: string): boolean;
     procedure AddVariable(Const Variable: TCustomVariable);
     function  FindVariable(Const Ident: string): TCustomVariable;
-//    function  RecordIndex: Integer;
-    procedure SetFieldInteger(Const F: TEpiField; Const Value: EpiInteger);
-    procedure SetFieldFloat(Const F: TEpiField; Const Value: EpiFloat);
-    procedure SetFieldBoolean(Const F: TEpiField; Const Value: Boolean);
-    function  GetFieldInteger(Const F: TEpiField): EpiInteger;
-    function  GetFieldFloat(Const F: TEpiField): EpiFloat;
-    function  GetFieldBoolean(Const F: TEpiField): EpiBool;
+  end;
+
+  IEpiScriptExecutor = interface ['IEpiScriptExecutor']
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: Variant);
+    function GetFieldValue(Const Sender: TObject; Const F: TEpiField): Variant;
   end;
 
   { TAbstractSyntaxTreeBase }
@@ -214,11 +212,11 @@ type
 
   TFieldVariable = class(TCustomVariable)
   private
-    FParser: IEpiScriptParser;
+    FParser: IEpiScriptExecutor;
     FField: TEpiField;
   public
     constructor Create(Const Field: TEpiField;
-      Parser: IEpiScriptParser);
+      Parser: IEpiScriptExecutor);
     function ResultType: TParserResultType; override;
     property Field: TEpiField read FField;
   public
@@ -331,7 +329,9 @@ function TGoto.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
   Result := inherited TypeCheck(Parser);
 
-  if not (Variable is TFieldVariable) then
+  if Assigned(Variable) and
+     (not (Variable is TFieldVariable))
+  then
   begin
     DoTypeCheckError('Variable %1 is not a Field', [Variable.Ident], Parser);
     result := false;
@@ -461,7 +461,7 @@ end;
 { TFieldVariable }
 
 constructor TFieldVariable.Create(const Field: TEpiField;
-  Parser: IEpiScriptParser);
+  Parser: IEpiScriptExecutor);
 begin
   inherited Create(otVariable, nil, nil);
   FField := Field;
@@ -497,32 +497,32 @@ end;
 
 function TFieldVariable.AsInteger: EpiInteger;
 begin
-  Result := FParser.GetFieldInteger(FField);
+  Result := FParser.GetFieldValue(Self, FField);
 end;
 
 function TFieldVariable.AsFloat: EpiFloat;
 begin
-  Result := FParser.GetFieldFloat(FField);
+  Result := FParser.GetFieldValue(Self, FField);
 end;
 
 function TFieldVariable.AsBoolean: Boolean;
 begin
-  Result := Boolean(FParser.GetFieldBoolean(FField));
+  Result := FParser.GetFieldValue(Self, FField);
 end;
 
 procedure TFieldVariable.SetInteger(const Value: EpiInteger);
 begin
-  FParser.SetFieldInteger(FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetFloat(const Value: EpiFloat);
 begin
-  FParser.SetFieldFloat(FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetBoolean(const Value: Boolean);
 begin
-  FParser.SetFieldBoolean(FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 
@@ -1123,6 +1123,7 @@ begin
   begin
     yyerror('Variable "' + Ident + '" not defined');
     yyabort;
+    exit;
   end;
 
   Result := Parser.FindVariable(Ident);

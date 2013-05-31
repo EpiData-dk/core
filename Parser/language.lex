@@ -16,8 +16,8 @@ U3		({U3_1}|{U3_2}|{U3_3}|{U3_4})
  (* 4 bytes unicodes  *)
 U4_1		([\360][\220-\277][\200-\277][\200-\277])
 U4_2		([\361-\363][\200-\277][\200-\277][\200-\277])
- (* U4_3		([\364][\200-\217][\200-\277][\200-\277]) *)
-U4		({U4_1}|{U4_2})
+U4_3		([\364][\200-\217][\200-\277][\200-\277])
+U4		({U4_1}|{U4_2}|{U4_3})
 
  (* compound *)
 U		({L}|{U2}|{U3}|{U4})
@@ -41,6 +41,9 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"warning"	return(OPWarning);
 <normal>"goto"		return(OPGoto);
 <normal>"write"		return(OPWrite);
+<normal>"clear"		return(OPClear);
+<normal>"missing"	return(OPMissing);
+
 
  (* General tokens *)
  (* Do not edit anything below this line unless you know   *)
