@@ -309,7 +309,7 @@ type
 implementation
 
 uses
-  YaccLib, epi_parser_core, math;
+  YaccLib, epi_parser_core, math, variants;
 
 resourcestring
   rsExpressionReturnType1 = 'Expression return type must be %s';
@@ -496,18 +496,40 @@ begin
 end;
 
 function TFieldVariable.AsInteger: EpiInteger;
+var
+  V: Variant;
 begin
-  Result := FParser.GetFieldValue(Self, FField);
+  V := FParser.GetFieldValue(Self, FField);
+  if VarIsStr(V) and
+     (V = '')
+  then
+    Result := TEpiIntField.DefaultMissing
+  else
+    Result := EpiInteger(V);
 end;
 
 function TFieldVariable.AsFloat: EpiFloat;
+var
+  V: Variant;
 begin
-  Result := FParser.GetFieldValue(Self, FField);
+  if VarIsStr(V) and
+     (V = '')
+  then
+    Result := TEpiFloatField.DefaultMissing
+  else
+    Result := EpiFloat(V);
 end;
 
 function TFieldVariable.AsBoolean: Boolean;
+var
+  V: Variant;
 begin
-  Result := FParser.GetFieldValue(Self, FField);
+  if VarIsStr(V) and
+     (V = '')
+  then
+    Result := Boolean(TEpiBoolField.DefaultMissing)
+  else
+    Result := Boolean(V);
 end;
 
 procedure TFieldVariable.SetInteger(const Value: EpiInteger);

@@ -78,9 +78,9 @@ function TEpiScriptParser.Parse(const Line: String; out StatementList: TStatemen
 begin
   ResetFile;
   WriteLn(yyinput, line);
-  result :=
-    InternalParse(StatementList) and
-    StatementList.TypeCheck(FEpiExecutor);
+  result := InternalParse(StatementList);
+  if Assigned(StatementList) then
+    result := result and StatementList.TypeCheck(FEpiExecutor);
 end;
 
 function TEpiScriptParser.Parse(const Lines: TStrings; out StatementList: TStatementList
@@ -93,9 +93,9 @@ begin
   for i := 0 to Lines.Count -1 do
     WriteLn(yyinput, Lines[i]);
 
-  result :=
-    InternalParse(StatementList) and
-    StatementList.TypeCheck(FEpiExecutor);
+  result := InternalParse(StatementList);
+  if Assigned(StatementList) then
+    result := result and StatementList.TypeCheck(FEpiExecutor);
 end;
 
 end.
