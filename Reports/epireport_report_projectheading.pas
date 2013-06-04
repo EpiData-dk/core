@@ -57,15 +57,17 @@ var
 begin
   inherited RunReport;
 
-  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + ExtractFileName(Filename), 2, 4, []);
+  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + ExtractFileName(Filename), 2, 5, []);
   DoTableCell(0, 0, 'Title');
   DoTableCell(0, 1, 'Created');
   DoTableCell(0, 2, 'Last Edited');
   DoTableCell(0, 3, 'Version');
+  DoTableCell(0, 4, 'Cycle');
   DoTableCell(1, 0, Document.Study.Title.Text);
   DoTableCell(1, 1, DateTimeToStr(Document.Study.Created));
   DoTableCell(1, 2, DateTimeToStr(Document.Study.ModifiedDate));
   DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
+  DoTableCell(1, 4, IntToStr(Document.CycleNo), tcaLeftAdjust);
   S := '';
   if Document.ProjectSettings.BackupOnShutdown then
     S += 'Backup on shutdown: active' + LineEnding;
@@ -77,7 +79,7 @@ begin
 
   DoTableHeader('Dataforms:', 8{9}, Document.DataFiles.Count + 1);
   // Header row:
-  DoTableCell(0, 0, 'Name');
+  DoTableCell(0, 0, 'Title');
   DoTableCell(1, 0, 'Created');
   DoTableCell(2, 0, 'Last Edited');
   DoTableCell(3, 0, 'Version');
@@ -89,7 +91,7 @@ begin
   for i := 0 to Document.DataFiles.Count -1 do
   with Document.DataFiles[i] do
   begin
-    DoTableCell(0, 1, Name);
+    DoTableCell(0, 1, Caption.Text);
     DoTableCell(1, 1, DateTimeToStr(Created));
     DoTableCell(2, 1, '----');
     DoTableCell(3, 1, Version);
