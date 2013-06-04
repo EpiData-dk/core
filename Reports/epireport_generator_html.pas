@@ -12,6 +12,9 @@ type
   { TEpiReportHTMLGenerator }
 
   TEpiReportHTMLGenerator = class(TEpiReportGeneratorBase)
+  private
+    FTableList: TStringList;
+    function  GetCellAdjust(Idx: Integer): TEpiReportGeneratorTableCellAdjustment;
   public
     procedure Section(Const Text: string); override;
     procedure Heading(Const Text: string); override;
@@ -50,7 +53,7 @@ begin
       S[i] := '?';
   Result := StringsReplace(S,
    [LineEnding, '&',     '"',      '<',    '>',    ''''],
-   ['<br>',   '&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
+   ['<br>',     '&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
    [rfReplaceAll]);
 
   if Result = '' then
@@ -58,6 +61,12 @@ begin
 end;
 
 { TEpiReportHTMLGenerator }
+
+function TEpiReportHTMLGenerator.GetCellAdjust(Idx: Integer
+  ): TEpiReportGeneratorTableCellAdjustment;
+begin
+  Result := TEpiReportGeneratorTableCellAdjustment(Integer(PtrInt(FTableList.Objects[Idx])));
+end;
 
 procedure TEpiReportHTMLGenerator.Section(const Text: string);
 begin
@@ -80,22 +89,70 @@ end;
 procedure TEpiReportHTMLGenerator.TableHeader(const Text: string;
   const AColCount, ARowCount: Integer;
   const HeaderOptions: TEpiReportGeneratorTableHeaderOptionSet);
+var
+  i: Integer;
 begin
   inherited TableHeader(Text, AColCount, ARowCount, HeaderOptions);
 
-  AddLine('<TABLE cellspacing=0 class=simple>');
-  AddLine('<CAPTION class=caption>' + HtmlString(Text) + '</CAPTION>');
+  FTableList := TStringList.Create;
+  FTableList.Capacity := (ColCount * RowCount) + 2;
+  for i := 0 to FTableList.Capacity -1 do
+    FTableList.Add('');
+  FTableList[0] := Text;
 end;
 
 procedure TEpiReportHTMLGenerator.TableFooter(const Text: string);
+var
+  S: String;
+  i: Integer;
+  j: Integer;
+  Idx: Integer;
 begin
   inherited TableFooter(Text);
+  FTableList[1] := Text;
 
-  if Text <> '' then
+  AddLine('<TABLE cellspacing=0 class=simple>');
+  AddLine('<CAPTION class=caption>' + HtmlString(FTableList[0]) + '</CAPTION>');
+
+  for i := 0 to RowCount - 1 do
+  begin
+    S := '<TR>';
+
+    for j := 0 to ColCount - 1 do
+    begin
+      Idx := (ColCount * i) + j + 2;
+
+      if (i = 0) and (thoRowHeader in FHeaderOptions) then
+        S += '<TD class=firstrow>'
+      else if (j = 0) and (thoColHeader in FHeaderOptions) then
+        S += '<TD class=firstcol>'
+      else
+        case GetCellAdjust(Idx) of
+          tcaAutoAdjust:
+            S += '<TD class=cell>';
+          tcaLeftAdjust:
+            S += '<TD class=cell style="text-align: left">';
+          tcaCenter:
+            S += '<TD class=cell style="text-align: center">';
+          tcaRightAdjust:
+            S += '<TD class=cell style="text-align: right">';
+        end;
+
+      if FTableList[Idx] <> '' then
+        S += HtmlString(FTableList[Idx]) + '</TD>'
+      else
+        S += '&nbsp;</TD>';
+    end;
+
+    S += '</TR>';
+    AddLine(S);
+  end;
+
+  if FTableList[1] <> '' then
   begin
     AddLine('<TR>');
     AddLine('<TD class=cellfoot colspan=' + IntToStr(ColCount) + '>' +
-            HtmlString(Text) + '</TD>');
+            HtmlString(FTableList[1]) + '</TD>');
     AddLine('</TR>');
   end;
   AddLine('</TABLE>');
@@ -104,38 +161,13 @@ end;
 procedure TEpiReportHTMLGenerator.TableCell(const Text: string; const Col,
   Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment);
 var
-  S: String;
+  Idx: Integer;
 begin
   inherited TableCell(Text, Col, Row, CellAdjust);
 
-  S := '';
-  if (Col = 0) then
-    S += '<TR>';
-
-  if (Row = 0) and (thoRowHeader in FHeaderOptions) then
-    S += '<TD class=firstrow>'
-  else if (Col = 0) and (thoColHeader in FHeaderOptions) then
-    S += '<TD class=firstcol>'
-  else
-    // TODO : Implement cell adjustments
-    case CellAdjust of
-      tcaAutoAdjust:
-        S += '<TD class=cell>';
-      tcaLeftAdjust:
-        S += '<TD class=cell style="text-align: left">';
-      tcaCenter:
-        S += '<TD class=cell style="text-align: center">';
-      tcaRightAdjust:
-        S += '<TD class=cell style="text-align: right">';
-    end;
-
-  S += HtmlString(Text) + '</TD>';
-
-
-  if (Col = (ColCount - 1)) then
-    S += '</TR>';
-
-  AddLine(S);
+  Idx := (ColCount * Row) + Col + 2;
+  FTableList[Idx] := Text;
+  FTableList.Objects[Idx] := TObject(PtrInt(Integer(CellAdjust)));
 end;
 
 procedure TEpiReportHTMLGenerator.StartReport(const Title: string);

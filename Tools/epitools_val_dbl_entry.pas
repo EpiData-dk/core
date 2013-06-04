@@ -97,7 +97,7 @@ type
 implementation
 
 uses
-  epidatafilestypes, epidatafileutils, math, epiglobals;
+  epidocument, epidatafilestypes, epidatafileutils, math, epiglobals;
 
 const
   ValTexts: array[ValOK..ValDupKeyFail] of string = (
@@ -389,7 +389,7 @@ begin
     begin
       FResultField := FMainDF.NewField(ftInteger);
       FResultField.Name := EpiDoubleEntryFieldName;
-      FResultField.Question.Text := Copy(EpiDoubleEntryFieldName, 2, Length(EpiDoubleEntryFieldName) - 1);
+      FResultField.Question.Text := 'Double Entry Verification Status';
       FResultField.Length := 1;
     end;
 
@@ -429,6 +429,17 @@ begin
     ValidateWithSort
   else
     ValidateSequencial;
+
+  // Set DF's to non-modified, since all sorting changes
+  // were reverted.
+  if not (devAddResultToField in FValidateOptions) then
+  begin
+    if Assigned(TEpiDocument(MainDF.RootOwner)) then
+      TEpiDocument(MainDF.RootOwner).Modified := false;
+    if Assigned(TEpiDocument(DuplDF.RootOwner)) then
+      TEpiDocument(DuplDF.RootOwner).Modified := false;
+  end;
+
 
   if Length(FExtraDuplRecords) > 0 then
     ExtraDuplRecords := FExtraDuplRecords;
