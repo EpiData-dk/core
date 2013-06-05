@@ -119,6 +119,7 @@ type
     function AsInteger: EpiInteger; virtual;
     function AsFloat: EpiFloat; virtual;
     function AsBoolean: Boolean; virtual;
+    function IsMissing: Boolean; virtual;
   end;
 
   { TTypeCast }
@@ -131,6 +132,7 @@ type
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TLiteral }
@@ -145,6 +147,7 @@ type
     constructor Create(Const Value: Integer); overload;
     constructor Create(Const Value: Extended); overload;
     constructor Create(Const Value: Boolean); overload;
+    constructor Create(); overload;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
     property ValueType: TParserResultType read FValueType;
@@ -152,6 +155,7 @@ type
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
+    function IsMissing: Boolean; override;
   end;
 
 
@@ -165,6 +169,7 @@ type
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TBinaryExpr }
@@ -177,6 +182,7 @@ type
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TRelationalExpr }
@@ -553,14 +559,15 @@ end;
 function TRelationalExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 const
   RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean =
-           //    rtBoolean, rtInteger, rtFloat, rtString, rtObject, rtUndefined
+           //    rtBoolean, rtInteger, rtDate, rtFloat, rtString, rtObject, rtUndefined
                (
- {rtBoolean}    ( true,     false,     false,   false,    false,    false),
- {rtInteger}    (false,     true,      true,    false,    false,    false),
- {rtFloat}      (false,     true,      true,    false,    false,    false),
- {rtString}     (false,     false,     false,   true,     false,    false),
- {rtObject}     (false,     false,     false,   false,    true ,    false),
- {rtUndefined}  (false,     false,     false,   false,    false,    false)
+ {rtBoolean}    ( true,     false,     false,  false,   false,    false,    false),
+ {rtInteger}    (false,     true,      true,   true,    false,    false,    false),
+ {rtDate}       (false,     true,      true,   true,    false,    false,    false),
+ {rtFloat}      (false,     true,      true,   true,    false,    false,    false),
+ {rtString}     (false,     false,     false,  false,   true,     false,    false),
+ {rtObject}     (false,     false,     false,  false,   false,    true ,    false),
+ {rtUndefined}  (false,     false,     false,  false,   false,    false,    false)
                );
 begin
   result := inherited TypeCheck(Parser);
@@ -803,6 +810,11 @@ begin
   end;
 end;
 
+function TBinaryExpr.IsMissing: Boolean;
+begin
+  Result := inherited IsMissing;
+end;
+
 { TUnaryExpr }
 
 function TUnaryExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
@@ -858,6 +870,11 @@ begin
   case Operation of
     otNot: result := (not Left.AsBoolean);
   end;
+end;
+
+function TUnaryExpr.IsMissing: Boolean;
+begin
+  Result := Left.IsMissing;
 end;
 
 { TDefine }
@@ -1005,6 +1022,12 @@ begin
   FBoolVal := Value;
 end;
 
+constructor TLiteral.Create;
+begin
+  inherited Create(otMissing, nil, nil);
+  FValueType := rtBoolean;
+end;
+
 function TLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
   result := inherited TypeCheck(Parser);
@@ -1043,6 +1066,11 @@ begin
     rtFloat:   result := (FExtVal <> 0);
     rtBoolean: Result := FBoolVal;
   end;
+end;
+
+function TLiteral.IsMissing: Boolean;
+begin
+  Result := FOp = otMissing;
 end;
 
 { TTypeCast }
@@ -1086,6 +1114,11 @@ begin
     otIntegerCast: ; // Get's caught in TypeChecking.
     otBoolCast:    result := Left.AsBoolean;
   end;
+end;
+
+function TTypeCast.IsMissing: Boolean;
+begin
+  Result := Left.IsMissing;
 end;
 
 { TExpr }
@@ -1134,6 +1167,11 @@ end;
 function TExpr.AsBoolean: Boolean;
 begin
   result := Boolean(TEpiBoolField.DefaultMissing);
+end;
+
+function TExpr.IsMissing: Boolean;
+begin
+  result := false;
 end;
 
 { TCustomVariable }

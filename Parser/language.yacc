@@ -20,10 +20,11 @@ procedure yy_set_start_state;
 implementation
 
 uses
-  lexlib;
+  lexlib, epiconvertutils, epidatafilestypes;
 
 var
   FParser: IEpiScriptParser;
+  DummyStr: string;
 
 %}
 
@@ -72,9 +73,10 @@ var
  /* %token OPOpenBracket OPCloseBracket OPHash */
 
  /* Special case tokens */
-%token <Extended> OPFloat
-%token <Integer> OPNumber OPHexNumber
+%token <EpiFloat> OPFloat
+%token <EpiInteger> OPNumber OPHexNumber
 %token <IdString> OPStringText OPIdentifier OPWrite
+%token <EpiDate> OPDate
 
 %token OPIllegal		/* illegal token */
 
@@ -174,6 +176,7 @@ definetype	:	OPInteger					{ $$ := rtInteger; }
 /*		|	OPString					{ $$ := rtString; } */
 		|	OPFloat						{ $$ := rtFloat; }
 		|	OPBoolean					{ $$ := rtBoolean; }
+		|	OPDate						{ $$ := rtDate; }
 		;
 
 ident_or_write	:	variable					{ $$ := $1; }
@@ -217,6 +220,7 @@ term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
 		|	OPNumber					{ $$ := TLiteral.Create($1);  }
 		|	OPHexNumber             			{ $$ := TLiteral.Create($1);  }
 		|	OPFloat						{ $$ := TLiteral.Create($1);  }
+		|	OPPeriod					{ $$ := TLiteral.Create(); }
 		|	OPTrue						{ $$ := TLiteral.Create(true); }
 		|	OPFalse						{ $$ := TLiteral.Create(false); }
 		;

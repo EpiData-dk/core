@@ -96,6 +96,7 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"integer"       return(OPInteger);
 <normal>"float"         return(OPFloat);
 <normal>"boolean"       return(OPBoolean);
+<normal>"date"		return(OPDate);
 
  (* Misc. tokens *)
 <normal>":="            return(OPAssign);      
@@ -127,7 +128,7 @@ U		({L}|{U2}|{U3}|{U4})
 
  (* Integer *)
 <normal>{D}+            begin
-                          val(yytext, yylval.yyInteger, result);
+                          val(yytext, yylval.yyEpiInteger, result);
                           if result=0 then
                             return(OPNumber)
                           else
@@ -137,7 +138,7 @@ U		({L}|{U2}|{U3}|{U4})
  (* Floating point *)
 <normal>{D}+(\.{D}+)?([Ee][+-]?{D}+)?
                         begin
-                          val(yytext, yylval.yyExtended, result);
+                          val(yytext, yylval.yyEpiFloat, result);
                           if result=0 then
                             return(OPFloat)
                           else
@@ -146,12 +147,28 @@ U		({L}|{U2}|{U3}|{U4})
 
  (* Hex numbers (starts with $) *)
 <normal>\${H}+          begin
-                          val(yytext, yylval.yyInteger, result);
+                          val(yytext, yylval.yyEpiInteger, result);
                           if result=0 then
                             return(OPHexNumber)
                           else
                             return(OPIllegal);
                         end;
+
+ (* Dates *)
+<normal>{D}{D}-{D}{D}-{D}{D}{D}{D} begin
+			  if EpiStrToDate(yytext, '-', ftDMYDate, yylval.yyEpiDate, DummyStr) then
+			  begin
+			    return(OPDate);
+			    exit;
+			  end;
+			  if EpiStrToDate(yytext, '-', ftMDYDate, yylval.yyEpiDate, DummyStr) then
+			  begin
+			    return(OPDate);
+			    exit;
+			  end;
+			  return(OPIllegal);
+			end;
+
 
 <normal>.		yyerror('NOT ACCEPTED: ' + yytext );
 
