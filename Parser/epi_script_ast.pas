@@ -286,6 +286,7 @@ type
 
   TScriptVariable = class(TCustomVariable)
   private
+    FIsMissing: Boolean;
     FValue: Variant;
     FResultType: TParserResultType;
   public
@@ -314,6 +315,16 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Variable: TCustomVariable read FVariable;
     property VarList: TVarList read FVarList;
+  end;
+
+  { TWrite }
+
+  TWrite = class(TCustomStatement)
+  private
+    FExpr: TExpr;
+  public
+    constructor Create(Expr: TExpr);
+    property Expr: TExpr read FExpr;
   end;
 
   { TDefine }
@@ -367,6 +378,13 @@ resourcestring
   rsExpressionReturnType1 = 'Expression return type must be %s';
   rsExpressionReturnType2 = 'Expression return type must be %s or %s';
   rsExpressionReturnType3 = 'Expression return type must be %s, %s or %s';
+
+{ TWrite }
+
+constructor TWrite.Create(Expr: TExpr);
+begin
+  FExpr := Expr;
+end;
 
 { TGoto }
 
@@ -460,37 +478,53 @@ end;
 
 function TScriptVariable.AsInteger: EpiInteger;
 begin
-  result := FValue;
+  if FIsMissing then
+    result := TEpiIntField.DefaultMissing
+  else
+    result := FValue;
 end;
 
 function TScriptVariable.AsFloat: EpiFloat;
 begin
-  result := FValue;
+  if FIsMissing then
+    result := TEpiFloatField.DefaultMissing
+  else
+    result := FValue;
 end;
 
 function TScriptVariable.AsString: EpiString;
 begin
-  Result := FValue;
+  if FIsMissing then
+    result := TEpiStringField.DefaultMissing
+  else
+    result := FValue;
 end;
 
 procedure TScriptVariable.SetBoolean(const Value: Boolean);
 begin
   FValue := Value;
+  FIsMissing := false;
 end;
 
 procedure TScriptVariable.SetInteger(const Value: EpiInteger);
 begin
-  FValue := Value;
+  FIsMissing := TEpiIntField.CheckMissing(Value);
+  if not FIsMissing then
+    FValue := Value;
 end;
 
 procedure TScriptVariable.SetFloat(const Value: EpiFloat);
 begin
-  FValue := Value;
+  FIsMissing := TEpiFloatField.CheckMissing(Value);
+  if not FIsMissing then
+    FValue := Value;
 end;
 
 procedure TScriptVariable.SetString(const Value: EpiString);
 begin
-  FValue := Value;
+  FIsMissing := TEpiStringField.CheckMissing(Value);
+  if not FIsMissing then
+    FValue := Value;
 end;
 
 { TFieldVariable }
@@ -656,6 +690,7 @@ end;
 function TRelationalExpr.AsBoolean: Boolean;
 var
   CType: TParserResultType;
+  Res: PtrInt;
 begin
   CType := CommonType(Left, Right);
   case CType of
@@ -685,15 +720,18 @@ begin
       otGTE: result := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
     end;
 
-{    rtString:
-    case Operation of
-      otEQ:  result := FL.AsS;
-      otNEQ: ;
-      otLT: ;
-      otLTE: ;
-      otGT: ;
-      otGTE: ;
-    end;}
+    rtString:
+    begin
+      Res := UnicodeCompareStr(UTF8Decode(Left.AsString), UTF8Decode(Right.AsString));
+      case Operation of
+        otEQ:  result := Res = 0;
+        otNEQ: result := Res <> 0;
+        otLT:  result := Res < 0;
+        otLTE: result := Res <= 0;
+        otGT:  result := Res > 0;
+        otGTE: result := Res >= 0;
+      end;
+    end;
 
 {    rtObject:
     case Operation of

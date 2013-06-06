@@ -156,6 +156,8 @@ statement 	:	OPBegin statementlist OPEnd			{ $$ := $2; }
 } 
 /*		|	OPInfo OPStringText infotype			{ }  */
 		|	OPGoto ident_or_write goto_opt			{ $$ := TGoto.Create($2, $3); }
+ /* DEBUG ONLY - DELETE FOR RELEASE */
+		|	OPWrite expr					{ $$ := TWrite.Create($2); }
 		;
 
 opt_else	:	OPElse statement				{ $$ := $2; }
@@ -219,8 +221,13 @@ term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
                 |       variable					{ $$ := $1; }
 		|	OPIntegerLiteral				{ $$ := TIntegerLiteral.Create($1);  }
 		|	OPFloatLiteral					{ $$ := TFloatLiteral.Create($1);  }
-		|	OPStringLiteral					{ $$ := TStringLiteral.Create($1^);
-									  DisposeStr($1);  }
+		|	OPStringLiteral					{
+									  if Assigned($1) then
+									    $$ := TStringLiteral.Create($1^)
+									  else
+									    $$ := TStringLiteral.Create('');
+									  DisposeStr($1);
+									}
 		|	OPTrue						{ $$ := TBooleanLiteral.Create(true); }
 		|	OPFalse						{ $$ := TBooleanLiteral.Create(false); }
 		;

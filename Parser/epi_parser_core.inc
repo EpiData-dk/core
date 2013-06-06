@@ -64,7 +64,10 @@ begin
 
  (* Begin text reading state *)
   13:
-                        start(text);
+                        begin
+			  yylval.yyPString := nil;
+			  start(text);
+			end;
 
  (* Constants tokens *)
   14:
@@ -234,15 +237,15 @@ begin
 
  (* String reading (for filenames, OPtions, etc.) *)
   61:
-                        start(normal);
+                        begin
+                          return(OPStringLiteral);
+			  start(normal);
+                        end;  
   62:
         		return(OPIllegal);  (* Unterminated string *)
   63:
-              
-                        begin
-			  yylval.yyPString := NewStr(yytext);
-                          return(OPStringLiteral);
-                        end;  
+              		yylval.yyPString := NewStr(yytext);
+
 
   end;
 end(*yyaction*);

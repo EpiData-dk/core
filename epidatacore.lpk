@@ -31,7 +31,7 @@
           <UseMsgFile Value="True"/>
         </CompilerMessages>
         <CustomOptions Value="-dEPI_INTEGRITY_DEBUG1
--dyydebug"/>
+-dyydebug1"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>

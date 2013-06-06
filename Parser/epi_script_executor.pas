@@ -29,6 +29,7 @@ type
     procedure ProcessIfThenElse(IfThen: TIfThen); virtual;
 //    procedure ProcessInfo();
     procedure ProcessStatementList(List: TStatementList); virtual;
+    procedure ProcessWrite(Write: TWrite);
   private
     FStatementList: TStatementList;
   public
@@ -122,6 +123,15 @@ begin
   end;
 end;
 
+procedure TEpiScriptExecutor.ProcessWrite(Write: TWrite);
+begin
+  if not Assigned(Write) then exit;
+  if not Assigned(Write.Expr) then exit;
+  if not IsConsole then exit;
+
+  Writeln(Write.Expr.AsString);
+end;
+
 procedure TEpiScriptExecutor.ProcessCustomStatement(Stm: TCustomStatement);
 begin
   if not Assigned(Stm) then exit;
@@ -140,6 +150,9 @@ begin
 
   if Stm is TGoto then
     ProcessGoto(TGoto(Stm));
+
+  if Stm is TWrite then
+    ProcessWrite(TWrite(Stm));
 end;
 
 constructor TEpiScriptExecutor.Create;

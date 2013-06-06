@@ -55,7 +55,10 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"(*"		start(mcomment); (* Comments using "(* *)" *)
 
  (* Begin text reading state *)
-<normal>\"              start(text);
+<normal>\"              begin
+			  yylval.yyPString := nil;
+			  start(text);
+			end;
 
  (* Constants tokens *)
 <normal>"true"          return(OPTrue);
@@ -177,12 +180,12 @@ U		({L}|{U2}|{U3}|{U4})
 
 
  (* String reading (for filenames, OPtions, etc.) *)
-<text>\"                start(normal);
-<text>\n		return(OPIllegal);  (* Unterminated string *)
-<text>[^\"\n]*
-                        begin
-			  yylval.yyPString := NewStr(yytext);
+<text>\"                begin
                           return(OPStringLiteral);
+			  start(normal);
                         end;  
+<text>\n		return(OPIllegal);  (* Unterminated string *)
+<text>[^\"\n]*		yylval.yyPString := NewStr(yytext);
+
 
 %%
