@@ -13,7 +13,6 @@ type
   TParserResultType = (
     rtBoolean,
     rtInteger,
-    rtDate,
     rtFloat,
     rtString,
     rtObject,
@@ -24,7 +23,6 @@ const
   SParserResultType: array[TParserResultType] of string = (
     'boolean',
     'integer',
-    'date',
     'float',
     'string',
     'object',
@@ -36,11 +34,10 @@ type
     // Literals
     otTrue,
     otFalse,
-    otFloat,
-    otNumber,
-    otHexNumber,
-    otMissing,
-    otString,
+    otBoolLiteral,
+    otIntegerLiteral,
+    otFloatLiteral,
+    otStringLiteral,
     otIdentifier,
 
     // Binary ops

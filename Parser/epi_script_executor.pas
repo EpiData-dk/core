@@ -87,6 +87,7 @@ begin
     rtBoolean: SetBoolean(Assignment.Expr.AsBoolean);
     rtInteger: SetInteger(Assignment.Expr.AsInteger);
     rtFloat:   SetFloat(Assignment.Expr.AsFloat);
+    rtString:  SetString(Assignment.Expr.AsString);
   end;
 end;
 
@@ -166,7 +167,7 @@ end;
 
 function TEpiScriptExecutor.RunScript(Lines: TStrings): boolean;
 begin
-  ParseScript(Lines);
+  result := ParseScript(Lines);
   ExecuteScript(FStatementList);
 end;
 
@@ -214,14 +215,26 @@ end;
 
 procedure TEpiScriptExecutor.SetFieldValue(const Sender: TObject;
   const F: TEpiField; const Value: Variant);
+var
+  Idx: Integer;
 begin
-  //
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  F.AsValue[Idx];
 end;
 
 function TEpiScriptExecutor.GetFieldValue(const Sender: TObject;
   const F: TEpiField): Variant;
+var
+  Idx: Integer;
 begin
-  //
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  Result := F.AsValue[Idx];
 end;
 
 end.

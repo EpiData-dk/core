@@ -64,7 +64,7 @@ var
 %token OPIf OPThen OPElse
 
  /* Type tokens */
-%token OPString OPInteger OPFloat OPBoolean
+%token OPStringType OPIntegerType OPFloatType OPBooleanType OPDateType
 
  /* Misc. tokens */
 %token OPOpenParan OPCloseParan
@@ -73,10 +73,10 @@ var
  /* %token OPOpenBracket OPCloseBracket OPHash */
 
  /* Special case tokens */
-%token <EpiFloat> OPFloat
-%token <EpiInteger> OPNumber OPHexNumber
-%token <IdString> OPStringText OPIdentifier OPWrite
-%token <EpiDate> OPDate
+%token <EpiFloat> OPFloatLiteral
+%token <EpiInteger> OPIntegerLiteral
+%token <IdString> OPIdentifier OPWrite
+%token <PString> OPStringLiteral
 
 %token OPIllegal		/* illegal token */
 
@@ -172,11 +172,11 @@ infotype	:	OPNote
 		;
 */
 
-definetype	:	OPInteger					{ $$ := rtInteger; }
-/*		|	OPString					{ $$ := rtString; } */
-		|	OPFloat						{ $$ := rtFloat; }
-		|	OPBoolean					{ $$ := rtBoolean; }
-		|	OPDate						{ $$ := rtDate; }
+definetype	:	OPIntegerType					{ $$ := rtInteger; }
+		|	OPStringType					{ $$ := rtString; } 
+		|	OPFloatType					{ $$ := rtFloat; }
+		|	OPBooleanType					{ $$ := rtBoolean; }
+/*		|	OPDateType					{ $$ := rtDate; } */
 		;
 
 ident_or_write	:	variable					{ $$ := $1; }
@@ -217,18 +217,18 @@ expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
 term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
 		|	typecast OPOpenParan expr OPCloseParan		{ $$ := TTypeCast.Create($1, $3, nil) }
                 |       variable					{ $$ := $1; }
-		|	OPNumber					{ $$ := TLiteral.Create($1);  }
-		|	OPHexNumber             			{ $$ := TLiteral.Create($1);  }
-		|	OPFloat						{ $$ := TLiteral.Create($1);  }
-		|	OPPeriod					{ $$ := TLiteral.Create(); }
-		|	OPTrue						{ $$ := TLiteral.Create(true); }
-		|	OPFalse						{ $$ := TLiteral.Create(false); }
+		|	OPIntegerLiteral				{ $$ := TIntegerLiteral.Create($1);  }
+		|	OPFloatLiteral					{ $$ := TFloatLiteral.Create($1);  }
+		|	OPStringLiteral					{ $$ := TStringLiteral.Create($1^);
+									  DisposeStr($1);  }
+		|	OPTrue						{ $$ := TBooleanLiteral.Create(true); }
+		|	OPFalse						{ $$ := TBooleanLiteral.Create(false); }
 		;
 
-typecast	:	OPInteger					{ $$ := otIntegerCast }
-/*		|	OPString					{ $$ := otStringCast } */
-		|	OPFloat						{ $$ := otFloatCast }
-		|	OPBoolean					{ $$ := otBoolCast }
+typecast	:	OPIntegerType					{ $$ := otIntegerCast }
+		|	OPStringType					{ $$ := otStringCast } 
+		|	OPFloatType					{ $$ := otFloatCast }
+		|	OPBooleanType					{ $$ := otBoolCast }
 		;
 
 %%

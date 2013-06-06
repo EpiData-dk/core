@@ -91,12 +91,12 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"then"          return(OPThen);
 <normal>"else"          return(OPElse);
 
- (* Typecast tokens *)
-<normal>"string"        return(OPString);
-<normal>"integer"       return(OPInteger);
-<normal>"float"         return(OPFloat);
-<normal>"boolean"       return(OPBoolean);
-<normal>"date"		return(OPDate);
+ (* Typeident/Typecast tokens *)
+<normal>"string"        return(OPStringType);
+<normal>"integer"       return(OPIntegerType);
+<normal>"float"         return(OPFloatType);
+<normal>"boolean"       return(OPBooleanType);
+<normal>"date"		return(OPDateType);
 
  (* Misc. tokens *)
 <normal>":="            return(OPAssign);      
@@ -130,17 +130,19 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>{D}+            begin
                           val(yytext, yylval.yyEpiInteger, result);
                           if result=0 then
-                            return(OPNumber)
+                            return(OPIntegerLiteral)
                           else
                             return(OPIllegal);
                         end;
 
  (* Floating point *)
-<normal>{D}+(\.{D}+)?([Ee][+-]?{D}+)?
+<normal>{D}+([\.\,]{D}+)?([Ee][+-]?{D}+)?
                         begin
                           val(yytext, yylval.yyEpiFloat, result);
-                          if result=0 then
-                            return(OPFloat)
+                          if (Result = 0) or
+                             TryStrToFloat(yytext, yylval.yyEpiFloat)
+                          then
+                            return(OPFloatLiteral)
                           else
                             return(OPIllegal);
                         end;
@@ -149,26 +151,10 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>\${H}+          begin
                           val(yytext, yylval.yyEpiInteger, result);
                           if result=0 then
-                            return(OPHexNumber)
+                            return(OPIntegerLiteral)
                           else
                             return(OPIllegal);
                         end;
-
- (* Dates *)
-<normal>{D}{D}-{D}{D}-{D}{D}{D}{D} begin
-			  if EpiStrToDate(yytext, '-', ftDMYDate, yylval.yyEpiDate, DummyStr) then
-			  begin
-			    return(OPDate);
-			    exit;
-			  end;
-			  if EpiStrToDate(yytext, '-', ftMDYDate, yylval.yyEpiDate, DummyStr) then
-			  begin
-			    return(OPDate);
-			    exit;
-			  end;
-			  return(OPIllegal);
-			end;
-
 
 <normal>.		yyerror('NOT ACCEPTED: ' + yytext );
 
@@ -193,10 +179,10 @@ U		({L}|{U2}|{U3}|{U4})
  (* String reading (for filenames, OPtions, etc.) *)
 <text>\"                start(normal);
 <text>\n		return(OPIllegal);  (* Unterminated string *)
-<text>{U}*
+<text>[^\"\n]*
                         begin
-			  yylval.yyIdString := yytext;
-                          return(OPStringText);
+			  yylval.yyPString := NewStr(yytext);
+                          return(OPStringLiteral);
                         end;  
 
 %%

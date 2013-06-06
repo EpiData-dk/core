@@ -116,10 +116,10 @@ type
     property Left: TExpr read FL;
     property Right: TExpr read FR;
   public
+    function AsBoolean: Boolean; virtual;
     function AsInteger: EpiInteger; virtual;
     function AsFloat: EpiFloat; virtual;
-    function AsBoolean: Boolean; virtual;
-    function IsMissing: Boolean; virtual;
+    function AsString: EpiString; virtual;
   end;
 
   { TTypeCast }
@@ -129,35 +129,80 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
+    function AsBoolean: Boolean; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
-    function IsMissing: Boolean; override;
+    function AsString: EpiString; override;
   end;
 
   { TLiteral }
 
-  TLiteral = class(TExpr)
+  TLiteral = class(TExpr);
+
+  { TBooleanLiteral }
+
+  TBooleanLiteral = class(TLiteral)
   private
-    FValueType: TParserResultType;
-    FIntVal: integer;
-    FExtVal: extended;
-    FBoolVal: boolean;
+    FValue: EpiBool;
   public
-    constructor Create(Const Value: Integer); overload;
-    constructor Create(Const Value: Extended); overload;
-    constructor Create(Const Value: Boolean); overload;
-    constructor Create(); overload;
+    constructor Create(const Value: EpiBool); overload;
+    constructor Create(const Value: Boolean); overload;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
-    property ValueType: TParserResultType read FValueType;
   public
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsBoolean: Boolean; override;
-    function IsMissing: Boolean; override;
+    function AsString: EpiString; override;
   end;
 
+  { TIntegerLiteral }
+
+  TIntegerLiteral = class(TLiteral)
+  private
+    FValue: EpiInteger;
+  public
+    constructor Create(const Value: EpiInteger);
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
+    function ResultType: TParserResultType; override;
+  public
+    function AsBoolean: Boolean; override;
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsString: EpiString; override;
+  end;
+
+  { TFloatLiteral }
+
+  TFloatLiteral = class(TLiteral)
+  private
+    FValue: EpiFloat;
+  public
+    constructor Create(const Value: EpiFloat);
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
+    function ResultType: TParserResultType; override;
+  public
+    function AsBoolean: Boolean; override;
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsString: EpiString; override;
+  end;
+
+  { TStringLiteral }
+
+  TStringLiteral = class(TLiteral)
+  private
+    FValue: EpiString;
+  public
+    constructor Create(const Value: EpiString);
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
+    function ResultType: TParserResultType; override;
+  public
+    function AsBoolean: Boolean; override;
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsString: EpiString; override;
+  end;
 
   { TUnaryExpr }
 
@@ -166,10 +211,9 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
+    function AsBoolean: Boolean; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
-    function IsMissing: Boolean; override;
   end;
 
   { TBinaryExpr }
@@ -179,10 +223,10 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
+    function AsBoolean: Boolean; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
-    function IsMissing: Boolean; override;
+    function AsString: EpiString; override;
   end;
 
   { TRelationalExpr }
@@ -192,9 +236,10 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
+    function AsBoolean: Boolean; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
+    function AsString: EpiString; override;
   end;
 
   { TCustomVariable }
@@ -212,6 +257,7 @@ type
     procedure SetInteger(Const Value: EpiInteger); virtual; abstract;
     procedure SetFloat(Const Value: EpiFloat); virtual; abstract;
     procedure SetBoolean(Const Value: Boolean); virtual; abstract;
+    procedure SetString(Const Value: EpiString); virtual; abstract;
   end;
 
   { TFieldVariable }
@@ -226,32 +272,34 @@ type
     function ResultType: TParserResultType; override;
     property Field: TEpiField read FField;
   public
+    function AsBoolean: Boolean; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
+    function AsString: EpiString; override;
+    procedure SetBoolean(Const Value: Boolean); override;
     procedure SetInteger(Const Value: EpiInteger); override;
     procedure SetFloat(Const Value: EpiFloat); override;
-    procedure SetBoolean(Const Value: Boolean); override;
+    procedure SetString(const Value: EpiString); override;
   end;
 
   { TScriptVariable }
 
   TScriptVariable = class(TCustomVariable)
   private
+    FValue: Variant;
     FResultType: TParserResultType;
-    FIntValue: EpiInteger;
-    FFloatValue: EpiFloat;
-    FBoolValue: Boolean;
   public
     constructor Create(Const AIdent: string; AResultType: TParserResultType);
     function ResultType: TParserResultType; override;
   public
+    function AsBoolean: Boolean; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
+    function AsString: EpiString; override;
+    procedure SetBoolean(Const Value: Boolean); override;
     procedure SetInteger(Const Value: EpiInteger); override;
     procedure SetFloat(Const Value: EpiFloat); override;
-    procedure SetBoolean(Const Value: Boolean); override;
+    procedure SetString(const Value: EpiString); override;
   end;
 
   { TVarList }
@@ -275,8 +323,6 @@ type
     FIdent: string;
     FType: TParserResultType;
   public
-    constructor Create(Const DefineType: TParserResultType;
-      Const Ident: string; Const Parser: IEpiScriptParser);
     constructor Create(Const DefineType: TParserResultType;
       IdentList: array of IdString; Const Parser: IEpiScriptParser);
     destructor Destroy; override;
@@ -320,6 +366,7 @@ uses
 resourcestring
   rsExpressionReturnType1 = 'Expression return type must be %s';
   rsExpressionReturnType2 = 'Expression return type must be %s or %s';
+  rsExpressionReturnType3 = 'Expression return type must be %s, %s or %s';
 
 { TGoto }
 
@@ -406,62 +453,44 @@ begin
   Result := FResultType;
 end;
 
+function TScriptVariable.AsBoolean: Boolean;
+begin
+  result := FValue;
+end;
+
 function TScriptVariable.AsInteger: EpiInteger;
 begin
-  case FResultType of
-    rtInteger: result := FIntValue;
-    rtFloat:   result := Trunc(SimpleRoundTo(FFloatValue, 0));
-    rtBoolean: Result := Integer(FBoolValue);
-  end;
+  result := FValue;
 end;
 
 function TScriptVariable.AsFloat: EpiFloat;
 begin
-  case FResultType of
-    rtInteger: result := FIntValue;
-    rtFloat:   result := FFloatValue;
-    rtBoolean: if FBoolValue then
-                 result := 1
-               else
-                 result := 0;
-  end;
+  result := FValue;
 end;
 
-function TScriptVariable.AsBoolean: Boolean;
+function TScriptVariable.AsString: EpiString;
 begin
-  case FResultType of
-    rtInteger: result := (FIntValue <> 0);
-    rtFloat:   result := (FFloatValue <> 0);
-    rtBoolean: Result := FBoolValue;
-  end;
-end;
-
-procedure TScriptVariable.SetInteger(const Value: EpiInteger);
-begin
-  case FResultType of
-    rtInteger: FIntValue := Value;
-    rtFloat:   FFloatValue := Value;
-    rtBoolean: FBoolValue := Boolean(Value);
-  end;
-end;
-
-procedure TScriptVariable.SetFloat(const Value: EpiFloat);
-begin
-  case FResultType of
-    rtInteger: FIntValue := Trunc(SimpleRoundTo(Value, 0));
-    rtFloat:   FFloatValue := Value;
-    rtBoolean: FBoolValue := Boolean(Trunc(Value));
-  end;
+  Result := FValue;
 end;
 
 procedure TScriptVariable.SetBoolean(const Value: Boolean);
 begin
+  FValue := Value;
+end;
 
-  case FResultType of
-    rtInteger: FIntValue := Integer(Value);
-    rtFloat:   FFloatValue := Integer(Value);
-    rtBoolean: FBoolValue := Value;
-  end;
+procedure TScriptVariable.SetInteger(const Value: EpiInteger);
+begin
+  FValue := Value;
+end;
+
+procedure TScriptVariable.SetFloat(const Value: EpiFloat);
+begin
+  FValue := Value;
+end;
+
+procedure TScriptVariable.SetString(const Value: EpiString);
+begin
+  FValue := Value;
 end;
 
 { TFieldVariable }
@@ -501,6 +530,19 @@ begin
   Result := FieldTypeToParserType[FField.FieldType];
 end;
 
+function TFieldVariable.AsBoolean: Boolean;
+var
+  V: Variant;
+begin
+  V := FParser.GetFieldValue(Self, FField);
+  if VarIsStr(V) and
+     (V = '')
+  then
+    Result := Boolean(TEpiBoolField.DefaultMissing)
+  else
+    Result := Boolean(V);
+end;
+
 function TFieldVariable.AsInteger: EpiInteger;
 var
   V: Variant;
@@ -518,6 +560,7 @@ function TFieldVariable.AsFloat: EpiFloat;
 var
   V: Variant;
 begin
+  V := FParser.GetFieldValue(Self, FField);
   if VarIsStr(V) and
      (V = '')
   then
@@ -526,16 +569,22 @@ begin
     Result := EpiFloat(V);
 end;
 
-function TFieldVariable.AsBoolean: Boolean;
+function TFieldVariable.AsString: EpiString;
 var
   V: Variant;
 begin
+  V := FParser.GetFieldValue(Self, FField);
   if VarIsStr(V) and
      (V = '')
   then
-    Result := Boolean(TEpiBoolField.DefaultMissing)
+    Result := TEpiStringField.DefaultMissing
   else
-    Result := Boolean(V);
+    Result := EpiString(V);
+end;
+
+procedure TFieldVariable.SetBoolean(const Value: Boolean);
+begin
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetInteger(const Value: EpiInteger);
@@ -548,7 +597,7 @@ begin
   FParser.SetFieldValue(Self, FField, Value);
 end;
 
-procedure TFieldVariable.SetBoolean(const Value: Boolean);
+procedure TFieldVariable.SetString(const Value: EpiString);
 begin
   FParser.SetFieldValue(Self, FField, Value);
 end;
@@ -556,18 +605,31 @@ end;
 
 { TRelationExpr }
 
+(*  Backup if rtDate is needed...
+RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean =
+         //    rtBoolean, rtInteger, rtDate, rtFloat, rtString, rtObject, rtUndefined
+             (
+{rtBoolean}    ( true,     false,     false,  false,   false,    false,    false),
+{rtInteger}    (false,     true,      true,   true,    false,    false,    false),
+{rtDate}       (false,     true,      true,   true,    false,    false,    false),
+{rtFloat}      (false,     true,      true,   true,    false,    false,    false),
+{rtString}     (false,     false,     false,  false,   true,     false,    false),
+{rtObject}     (false,     false,     false,  false,   false,    true ,    false),
+{rtUndefined}  (false,     false,     false,  false,   false,    false,    false)
+             );
+*)
+
 function TRelationalExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 const
   RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean =
-           //    rtBoolean, rtInteger, rtDate, rtFloat, rtString, rtObject, rtUndefined
+           //    rtBoolean, rtInteger, rtFloat, rtString, rtObject, rtUndefined
                (
- {rtBoolean}    ( true,     false,     false,  false,   false,    false,    false),
- {rtInteger}    (false,     true,      true,   true,    false,    false,    false),
- {rtDate}       (false,     true,      true,   true,    false,    false,    false),
- {rtFloat}      (false,     true,      true,   true,    false,    false,    false),
- {rtString}     (false,     false,     false,  false,   true,     false,    false),
- {rtObject}     (false,     false,     false,  false,   false,    true ,    false),
- {rtUndefined}  (false,     false,     false,  false,   false,    false,    false)
+ {rtBoolean}    ( true,     false,     false,   false,    false,    false),
+ {rtInteger}    (false,     true,      true,    false,    false,    false),
+ {rtFloat}      (false,     true,      true,    false,    false,    false),
+ {rtString}     (false,     false,     false,   true,     false,    false),
+ {rtObject}     (false,     false,     false,   false,    true ,    false),
+ {rtUndefined}  (false,     false,     false,   false,    false,    false)
                );
 begin
   result := inherited TypeCheck(Parser);
@@ -589,16 +651,6 @@ end;
 function TRelationalExpr.ResultType: TParserResultType;
 begin
   Result := rtBoolean;
-end;
-
-function TRelationalExpr.AsInteger: EpiInteger;
-begin
-  Result := Integer(AsBoolean);
-end;
-
-function TRelationalExpr.AsFloat: EpiFloat;
-begin
-  Result := AsInteger;
 end;
 
 function TRelationalExpr.AsBoolean: Boolean;
@@ -657,6 +709,21 @@ begin
   end;
 end;
 
+function TRelationalExpr.AsInteger: EpiInteger;
+begin
+  Result := Integer(AsBoolean);
+end;
+
+function TRelationalExpr.AsFloat: EpiFloat;
+begin
+  Result := AsInteger;
+end;
+
+function TRelationalExpr.AsString: EpiString;
+begin
+  Result := BoolToStr(AsBoolean);
+end;
+
 { TBinaryExpr }
 
 function TBinaryExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
@@ -708,7 +775,6 @@ begin
         );
     end;
     otMult,
-    otPlus,
     otMinus,
     otDivide:
     begin
@@ -716,17 +782,34 @@ begin
                 (Rr in [rtInteger, rtFloat]);
       if not (Lr in [rtInteger, rtFloat]) then
         DoTypeCheckError(
-          'Left ' + rsExpressionReturnType1,
-          [SParserResultType[rtFloat]],
+          'Left ' + rsExpressionReturnType2,
+          [SParserResultType[rtInteger], SParserResultType[rtFloat]],
           Parser
         );
       if not (Rr in [rtInteger, rtFloat]) then
         DoTypeCheckError(
-          'Right ' + rsExpressionReturnType1,
-          [SParserResultType[rtFloat]],
+          'Right ' + rsExpressionReturnType2,
+          [SParserResultType[rtInteger], SParserResultType[rtFloat]],
           Parser
         );
     end;
+    otPlus:
+      begin
+        result := (Lr in [rtInteger, rtFloat, rtString]) and
+                  (Rr in [rtInteger, rtFloat, rtString]);
+        if not (Lr in [rtInteger, rtFloat, rtString]) then
+          DoTypeCheckError(
+            'Left ' + rsExpressionReturnType3,
+            [SParserResultType[rtInteger], SParserResultType[rtFloat], SParserResultType[rtString]],
+            Parser
+          );
+        if not (Rr in [rtInteger, rtFloat, rtString]) then
+          DoTypeCheckError(
+            'Right ' + rsExpressionReturnType3,
+            [SParserResultType[rtInteger], SParserResultType[rtFloat], SParserResultType[rtString]],
+            Parser
+          );
+      end;
 {    otXor,
     otShl,
     otShr:         }
@@ -752,6 +835,16 @@ begin
       otShr,
       otXor,
       ;}
+  end;
+end;
+
+function TBinaryExpr.AsBoolean: Boolean;
+begin
+  case Operation of
+    otOr:  result := Left.AsBoolean or Right.AsBoolean;
+    otAnd: result := Left.AsBoolean and Right.AsBoolean;
+  else
+    result := inherited AsBoolean;
   end;
 end;
 
@@ -800,19 +893,31 @@ begin
   end;
 end;
 
-function TBinaryExpr.AsBoolean: Boolean;
+function TBinaryExpr.AsString: EpiString;
 begin
-  case Operation of
-    otOr:  result := Left.AsBoolean or Right.AsBoolean;
-    otAnd: result := Left.AsBoolean and Right.AsBoolean;
-  else
-    result := inherited AsBoolean;
-  end;
-end;
+  case ResultType of
+    rtBoolean:
+      result := BoolToStr(AsBoolean);
 
-function TBinaryExpr.IsMissing: Boolean;
-begin
-  Result := inherited IsMissing;
+    rtInteger:
+      result := IntToStr(AsInteger);
+
+    rtFloat:
+      result := FloatToStr(AsFloat);
+
+    rtString:
+      case Operation of
+        otPlus: Result := Left.AsString + Right.AsString;
+      else
+        result := inherited AsString;
+      end;
+
+    rtObject:
+      ;
+
+    rtUndefined:
+      ;
+  end;
 end;
 
 { TUnaryExpr }
@@ -851,6 +956,13 @@ begin
   Result := FL.ResultType;
 end;
 
+function TUnaryExpr.AsBoolean: Boolean;
+begin
+  case Operation of
+    otNot: result := (not Left.AsBoolean);
+  end;
+end;
+
 function TUnaryExpr.AsInteger: EpiInteger;
 begin
   case Operation of
@@ -865,35 +977,7 @@ begin
   end;
 end;
 
-function TUnaryExpr.AsBoolean: Boolean;
-begin
-  case Operation of
-    otNot: result := (not Left.AsBoolean);
-  end;
-end;
-
-function TUnaryExpr.IsMissing: Boolean;
-begin
-  Result := Left.IsMissing;
-end;
-
 { TDefine }
-
-constructor TDefine.Create(const DefineType: TParserResultType;
-  const Ident: string; const Parser: IEpiScriptParser);
-begin
-  inherited Create;
-  FType := DefineType;
-  FIdent := Ident;
-
-  if Parser.VariableExists(Ident) then
-  begin
-    yyerror('Variable "' + Ident + '" already defined');
-    yyabort
-  end;
-
-  Parser.AddVariable(TScriptVariable.Create(Ident, DefineType));
-end;
 
 constructor TDefine.Create(const DefineType: TParserResultType;
   IdentList: array of IdString; const Parser: IEpiScriptParser);
@@ -902,7 +986,6 @@ var
 begin
   inherited Create;
   FType := DefineType;
-//  FIdent := Ident;
 
   for i := Low(IdentList) to High(IdentList) do
   begin
@@ -999,78 +1082,170 @@ begin
     result := ElseStatement.TypeCheck(Parser);
 end;
 
-{ TLiteral }
+{ TBooleanLiteral }
 
-constructor TLiteral.Create(const Value: Integer);
+constructor TBooleanLiteral.Create(const Value: EpiBool);
 begin
-  inherited Create(otNumber, nil, nil);
-  FValueType := rtInteger;
-  FIntVal := Value;
+  inherited Create(otBoolLiteral, nil, nil);
+  FValue := Value;
 end;
 
-constructor TLiteral.Create(const Value: Extended);
+constructor TBooleanLiteral.Create(const Value: Boolean);
 begin
-  inherited Create(otFloat, nil, nil);
-  FValueType := rtFloat;
-  FExtVal := Value;
+  Create(EpiBool(Value));
 end;
 
-constructor TLiteral.Create(const Value: Boolean);
+function TBooleanLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  inherited Create(otNumber, nil, nil);
-  FValueType := rtBoolean;
-  FBoolVal := Value;
+  Result := inherited TypeCheck(Parser);
 end;
 
-constructor TLiteral.Create;
+function TBooleanLiteral.ResultType: TParserResultType;
 begin
-  inherited Create(otMissing, nil, nil);
-  FValueType := rtBoolean;
+  Result := rtBoolean;
 end;
 
-function TLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
+function TBooleanLiteral.AsInteger: EpiInteger;
 begin
-  result := inherited TypeCheck(Parser);
+  Result := EpiInteger(AsBoolean);
 end;
 
-function TLiteral.ResultType: TParserResultType;
+function TBooleanLiteral.AsFloat: EpiFloat;
 begin
-  Result := FValueType;
+  Result := EpiFloat(AsInteger);
 end;
 
-function TLiteral.AsInteger: EpiInteger;
+function TBooleanLiteral.AsBoolean: Boolean;
 begin
-  case FValueType of
-    rtInteger: result := FIntVal;
-    rtFloat:   result := Trunc(SimpleRoundTo(FExtVal, 0));
-    rtBoolean: Result := Integer(FBoolVal);
-  end;
+  Result := Boolean(FValue);
 end;
 
-function TLiteral.AsFloat: EpiFloat;
+function TBooleanLiteral.AsString: EpiString;
 begin
-  case FValueType of
-    rtInteger: result := FIntVal;
-    rtFloat:   result := FExtVal;
-    rtBoolean: if FBoolVal then
-                 result := 1
-               else
-                 result := 0;
-  end;
+  Result := BoolToStr(AsBoolean);
 end;
 
-function TLiteral.AsBoolean: Boolean;
+{ TIntegerLiteral }
+
+constructor TIntegerLiteral.Create(const Value: EpiInteger);
 begin
-  case FValueType of
-    rtInteger: result := (FIntVal <> 0);
-    rtFloat:   result := (FExtVal <> 0);
-    rtBoolean: Result := FBoolVal;
-  end;
+  inherited Create(otIntegerLiteral, nil, nil);
+  FValue := Value;
 end;
 
-function TLiteral.IsMissing: Boolean;
+function TIntegerLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
-  Result := FOp = otMissing;
+  Result := inherited TypeCheck(Parser);
+end;
+
+function TIntegerLiteral.ResultType: TParserResultType;
+begin
+  Result := rtInteger;
+end;
+
+function TIntegerLiteral.AsBoolean: Boolean;
+begin
+  Result := Boolean(AsInteger);
+end;
+
+function TIntegerLiteral.AsInteger: EpiInteger;
+begin
+  Result := FValue;
+end;
+
+function TIntegerLiteral.AsFloat: EpiFloat;
+begin
+  Result := AsInteger;
+end;
+
+function TIntegerLiteral.AsString: EpiString;
+begin
+  Result := IntToStr(AsInteger);
+end;
+
+
+{ TFloatLiteral }
+
+constructor TFloatLiteral.Create(const Value: EpiFloat);
+begin
+  inherited Create(otFloatLiteral, nil, nil);
+  FValue := Value;
+end;
+
+function TFloatLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
+begin
+  Result := inherited TypeCheck(Parser);
+end;
+
+function TFloatLiteral.ResultType: TParserResultType;
+begin
+  Result := rtFloat;
+end;
+
+function TFloatLiteral.AsBoolean: Boolean;
+begin
+  Result := Boolean(AsInteger);
+end;
+
+function TFloatLiteral.AsInteger: EpiInteger;
+begin
+  Result := Trunc(AsFloat)
+end;
+
+function TFloatLiteral.AsFloat: EpiFloat;
+begin
+  Result := FValue;
+end;
+
+function TFloatLiteral.AsString: EpiString;
+begin
+  Result := FloatToStr(AsFloat);
+end;
+
+{ TStringLiteral }
+
+constructor TStringLiteral.Create(const Value: EpiString);
+begin
+  inherited Create(otStringLiteral, nil, nil);
+  FValue := Value;
+end;
+
+function TStringLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
+begin
+  Result := inherited TypeCheck(Parser);
+end;
+
+function TStringLiteral.ResultType: TParserResultType;
+begin
+  Result := rtString;
+end;
+
+function TStringLiteral.AsBoolean: Boolean;
+var
+  Val: EpiInteger;
+begin
+  Val := AsInteger;
+  if TEpiIntField.CheckMissing(Val) then
+    Result := Boolean(TEpiBoolField.DefaultMissing)
+  else
+    Result := Boolean(Val);
+end;
+
+function TStringLiteral.AsInteger: EpiInteger;
+begin
+  if not TryStrToInt64(FValue, Result) then
+    Result := TEpiIntField.DefaultMissing;
+end;
+
+function TStringLiteral.AsFloat: EpiFloat;
+begin
+  if not TryStrToFloat(FValue, Result) then
+    Result := TEpiFloatField.DefaultMissing;
+end;
+
+function TStringLiteral.AsString: EpiString;
+begin
+  Result := FValue;
 end;
 
 { TTypeCast }
@@ -1083,42 +1258,52 @@ end;
 function TTypeCast.ResultType: TParserResultType;
 begin
   Case FOp of
+    otBoolCast:    result := rtBoolean;
     otIntegerCast: result := rtInteger;
     otFloatCast:   result := rtFloat;
-    otBoolCast:    result := rtBoolean;
-  end;
-end;
-
-function TTypeCast.AsInteger: EpiInteger;
-begin
-  Case FOp of
-    otFloatCast:   ; // Get's caught in TypeChecking.
-    otIntegerCast: result := Left.AsInteger;
-    otBoolCast:    result := Integer(AsBoolean);
-  end;
-end;
-
-function TTypeCast.AsFloat: EpiFloat;
-begin
-  Case FOp of
-    otFloatCast:   result := Left.AsFloat;
-    otIntegerCast: result := AsInteger;
-    otBoolCast:    result := AsInteger;
+    otStringCast:  result := rtString;
   end;
 end;
 
 function TTypeCast.AsBoolean: Boolean;
 begin
   Case FOp of
-    otFloatCast:   ; // Get's caught in TypeChecking.
-    otIntegerCast: ; // Get's caught in TypeChecking.
     otBoolCast:    result := Left.AsBoolean;
+    otIntegerCast: ; // Get's caught in TypeChecking.
+    otFloatCast:   ; // Get's caught in TypeChecking.
+    otStringCast:  ; // Get's caught in TypeChecking.
   end;
 end;
 
-function TTypeCast.IsMissing: Boolean;
+function TTypeCast.AsInteger: EpiInteger;
 begin
-  Result := Left.IsMissing;
+  Case FOp of
+    otBoolCast:    result := Integer(AsBoolean);
+    otIntegerCast: result := Left.AsInteger;
+    otFloatCast:   ; // Get's caught in TypeChecking.
+    otStringCast:  ; // Get's caught in TypeChecking.
+  end;
+end;
+
+function TTypeCast.AsFloat: EpiFloat;
+begin
+  Case FOp of
+    otBoolCast:    result := AsInteger;
+    otIntegerCast: result := AsInteger;
+    otFloatCast:   result := Left.AsFloat;
+    otStringCast:  ; // Get's caught in TypeChecking.
+  end;
+end;
+
+
+function TTypeCast.AsString: EpiString;
+begin
+  Case FOp of
+    otBoolCast:    result := BoolToStr(Left.AsBoolean);
+    otIntegerCast: result := IntToStr(AsInteger);
+    otFloatCast:   result := FloatToStr(Left.AsFloat);
+    otStringCast:  result := Left.AsString;
+  end;
 end;
 
 { TExpr }
@@ -1154,6 +1339,12 @@ begin
     result := FR.TypeCheck(Parser);
 end;
 
+
+function TExpr.AsBoolean: Boolean;
+begin
+  result := Boolean(TEpiBoolField.DefaultMissing);
+end;
+
 function TExpr.AsInteger: EpiInteger;
 begin
   result := TEpiIntField.DefaultMissing;
@@ -1164,14 +1355,9 @@ begin
   result := TEpiFloatField.DefaultMissing;
 end;
 
-function TExpr.AsBoolean: Boolean;
+function TExpr.AsString: EpiString;
 begin
-  result := Boolean(TEpiBoolField.DefaultMissing);
-end;
-
-function TExpr.IsMissing: Boolean;
-begin
-  result := false;
+  result := TEpiStringField.DefaultMissing;
 end;
 
 { TCustomVariable }
