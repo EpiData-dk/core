@@ -32,9 +32,7 @@ U		({L}|{U2}|{U3}|{U4})
   var
     result : integer;
   
- (* Command tokens - add here for new commands *)
-<normal>"begin"		return(OPBegin);
-<normal>"end"		return(OPEnd);
+ (* Statement tokens - add here for new commands *)
 <normal>"define"	return(OPDefine);
 <normal>"info"		return(OPInfo);
 <normal>"note"		return(OPNote);
@@ -73,13 +71,10 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"+"             return(OPPlus);
 <normal>"-"             return(OPMinus);
 <normal>"/"             return(OPDivide);
- (* <normal>"shl"           return(OPShl);
-<normal>"shr"           return(OPShr);
-<normal>"xor"           return(OPXor); *)
 
  (* Unary OPerators *)
 <normal>"not"           return(OPNot);
- (* unary minus would be here too, but is identified in the binary OPerator section *)
+ (* unary minus would be here too, but is identified in the binary Operator section *)
    
  (* Comparison tokens *)
 <normal>"="             return(OPEQ);
@@ -89,7 +84,9 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>">"             return(OPGT);
 <normal>">="            return(OPGTE);
 
- (* Keyword tokens *)
+ (* Internal Keyword tokens *)
+<normal>"begin"		return(OPBegin);
+<normal>"end"		return(OPEnd);
 <normal>"if"            return(OPIf);
 <normal>"then"          return(OPThen);
 <normal>"else"          return(OPElse);

@@ -228,6 +228,7 @@ term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
 									    $$ := TStringLiteral.Create('');
 									  DisposeStr($1);
 									}
+		|	OPPeriod					{ $$ := TMissingLiteral.Create; }
 		|	OPTrue						{ $$ := TBooleanLiteral.Create(true); }
 		|	OPFalse						{ $$ := TBooleanLiteral.Create(false); }
 		;

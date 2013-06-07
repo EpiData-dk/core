@@ -29,6 +29,8 @@ type
   IEpiScriptExecutor = interface ['IEpiScriptExecutor']
     procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: Variant);
     function GetFieldValue(Const Sender: TObject; Const F: TEpiField): Variant;
+    procedure SetFieldIsMissing(Const Sender: TObject; Const F: TEpiField; Const Value: Boolean);
+    function GetFieldIsMissing(Const Sender: TObject; Const F: TEpiField): Boolean;
   end;
 
   { TAbstractSyntaxTreeBase }
@@ -116,10 +118,12 @@ type
     property Left: TExpr read FL;
     property Right: TExpr read FR;
   public
-    function AsBoolean: Boolean; virtual;
+    function AsTrueBoolean: Boolean;
+    function AsBoolean: EpiBool; virtual;
     function AsInteger: EpiInteger; virtual;
     function AsFloat: EpiFloat; virtual;
     function AsString: EpiString; virtual;
+    function IsMissing: Boolean; virtual;
   end;
 
   { TTypeCast }
@@ -129,10 +133,11 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TLiteral }
@@ -143,16 +148,14 @@ type
 
   TBooleanLiteral = class(TLiteral)
   private
-    FValue: EpiBool;
+    FValue: Boolean;
   public
-    constructor Create(const Value: EpiBool); overload;
     constructor Create(const Value: Boolean); overload;
-    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
-    function AsBoolean: Boolean; override;
     function AsString: EpiString; override;
   end;
 
@@ -163,10 +166,9 @@ type
     FValue: EpiInteger;
   public
     constructor Create(const Value: EpiInteger);
-    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
@@ -179,10 +181,9 @@ type
     FValue: EpiFloat;
   public
     constructor Create(const Value: EpiFloat);
-    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
@@ -195,13 +196,21 @@ type
     FValue: EpiString;
   public
     constructor Create(const Value: EpiString);
-    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
+  end;
+
+  { TMissingLiteral }
+
+  TMissingLiteral = class(TLiteral)
+  public
+    constructor Create;
+    function ResultType: TParserResultType; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TUnaryExpr }
@@ -211,9 +220,10 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TBinaryExpr }
@@ -223,10 +233,11 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
+    function IsMissing: Boolean; override;
   end;
 
   { TRelationalExpr }
@@ -236,7 +247,7 @@ type
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
@@ -251,12 +262,11 @@ type
     class function FindVariable(Const Ident: String;
       Parser: IEpiScriptParser): TCustomVariable;
     destructor Destroy; override;
-    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Ident: string read FIdent;
   public
     procedure SetInteger(Const Value: EpiInteger); virtual; abstract;
     procedure SetFloat(Const Value: EpiFloat); virtual; abstract;
-    procedure SetBoolean(Const Value: Boolean); virtual; abstract;
+    procedure SetBoolean(Const Value: EpiBool); virtual; abstract;
     procedure SetString(Const Value: EpiString); virtual; abstract;
   end;
 
@@ -272,11 +282,12 @@ type
     function ResultType: TParserResultType; override;
     property Field: TEpiField read FField;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
-    procedure SetBoolean(Const Value: Boolean); override;
+    function IsMissing: Boolean; override;
+    procedure SetBoolean(Const Value: EpiBool); override;
     procedure SetInteger(Const Value: EpiInteger); override;
     procedure SetFloat(Const Value: EpiFloat); override;
     procedure SetString(const Value: EpiString); override;
@@ -293,11 +304,12 @@ type
     constructor Create(Const AIdent: string; AResultType: TParserResultType);
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: Boolean; override;
+    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
-    procedure SetBoolean(Const Value: Boolean); override;
+    function IsMissing: Boolean; override;
+    procedure SetBoolean(Const Value: EpiBool); override;
     procedure SetInteger(Const Value: EpiInteger); override;
     procedure SetFloat(Const Value: EpiFloat); override;
     procedure SetString(const Value: EpiString); override;
@@ -378,6 +390,23 @@ resourcestring
   rsExpressionReturnType1 = 'Expression return type must be %s';
   rsExpressionReturnType2 = 'Expression return type must be %s or %s';
   rsExpressionReturnType3 = 'Expression return type must be %s, %s or %s';
+
+{ TMissingLiteral }
+
+constructor TMissingLiteral.Create;
+begin
+  inherited Create(otMissingLiteral, nil, nil);
+end;
+
+function TMissingLiteral.ResultType: TParserResultType;
+begin
+  Result := rtAny;
+end;
+
+function TMissingLiteral.IsMissing: Boolean;
+begin
+  Result := true;
+end;
 
 { TWrite }
 
@@ -471,9 +500,12 @@ begin
   Result := FResultType;
 end;
 
-function TScriptVariable.AsBoolean: Boolean;
+function TScriptVariable.AsBoolean: EpiBool;
 begin
-  result := FValue;
+  if FIsMissing then
+    result := TEpiBoolField.DefaultMissing
+  else
+    result := FValue;
 end;
 
 function TScriptVariable.AsInteger: EpiInteger;
@@ -497,13 +529,22 @@ begin
   if FIsMissing then
     result := TEpiStringField.DefaultMissing
   else
-    result := FValue;
+    if ResultType = rtBoolean then
+      result := BoolToStr(AsTrueBoolean, true)
+    else
+      result := FValue;
 end;
 
-procedure TScriptVariable.SetBoolean(const Value: Boolean);
+function TScriptVariable.IsMissing: Boolean;
 begin
-  FValue := Value;
-  FIsMissing := false;
+  Result := FIsMissing;
+end;
+
+procedure TScriptVariable.SetBoolean(const Value: EpiBool);
+begin
+  FIsMissing := TEpiBoolField.CheckMissing(Value);
+  if not FIsMissing then
+    FValue := Value;
 end;
 
 procedure TScriptVariable.SetInteger(const Value: EpiInteger);
@@ -564,7 +605,7 @@ begin
   Result := FieldTypeToParserType[FField.FieldType];
 end;
 
-function TFieldVariable.AsBoolean: Boolean;
+function TFieldVariable.AsBoolean: EpiBool;
 var
   V: Variant;
 begin
@@ -572,9 +613,9 @@ begin
   if VarIsStr(V) and
      (V = '')
   then
-    Result := Boolean(TEpiBoolField.DefaultMissing)
+    Result := TEpiBoolField.DefaultMissing
   else
-    Result := Boolean(V);
+    Result := EpiBool(V);
 end;
 
 function TFieldVariable.AsInteger: EpiInteger;
@@ -616,24 +657,41 @@ begin
     Result := EpiString(V);
 end;
 
-procedure TFieldVariable.SetBoolean(const Value: Boolean);
+function TFieldVariable.IsMissing: Boolean;
 begin
-  FParser.SetFieldValue(Self, FField, Value);
+  result := FParser.GetFieldIsMissing(Self, FField);
+end;
+
+procedure TFieldVariable.SetBoolean(const Value: EpiBool);
+begin
+  if TEpiBoolField.CheckMissing(Value) then
+    FParser.SetFieldIsMissing(Self, FField, true)
+  else
+    FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetInteger(const Value: EpiInteger);
 begin
-  FParser.SetFieldValue(Self, FField, Value);
+  if TEpiIntField.CheckMissing(Value) then
+    FParser.SetFieldIsMissing(Self, FField, true)
+  else
+    FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetFloat(const Value: EpiFloat);
 begin
-  FParser.SetFieldValue(Self, FField, Value);
+  if TEpiFloatField.CheckMissing(Value) then
+    FParser.SetFieldIsMissing(Self, FField, true)
+  else
+    FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetString(const Value: EpiString);
 begin
-  FParser.SetFieldValue(Self, FField, Value);
+  if TEpiStringField.CheckMissing(Value) then
+    FParser.SetFieldIsMissing(Self, FField, true)
+  else
+    FParser.SetFieldValue(Self, FField, Value);
 end;
 
 
@@ -656,14 +714,15 @@ RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean
 function TRelationalExpr.TypeCheck(Parser: IEpiScriptParser): boolean;
 const
   RelationalOperationCheck: array[TParserResultType, TParserResultType] of Boolean =
-           //    rtBoolean, rtInteger, rtFloat, rtString, rtObject, rtUndefined
+           //    rtAny,     rtBoolean, rtInteger, rtFloat, rtString, rtObject, rtUndefined
                (
- {rtBoolean}    ( true,     false,     false,   false,    false,    false),
- {rtInteger}    (false,     true,      true,    false,    false,    false),
- {rtFloat}      (false,     true,      true,    false,    false,    false),
- {rtString}     (false,     false,     false,   true,     false,    false),
- {rtObject}     (false,     false,     false,   false,    true ,    false),
- {rtUndefined}  (false,     false,     false,   false,    false,    false)
+ {rtAny}        ( true,     true,      true,      true,    true,     true,     false),
+ {rtBoolean}    ( true,     true,      false,     false,   false,    false,    false),
+ {rtInteger}    ( true,     false,     true,      true,    false,    false,    false),
+ {rtFloat}      ( true,     false,     true,      true,    false,    false,    false),
+ {rtString}     ( true,     false,     false,     false,   true,     false,    false),
+ {rtObject}     ( true,     false,     false,     false,   false,    true ,    false),
+ {rtUndefined}  ( false,    false,     false,     false,   false,    false,    false)
                );
 begin
   result := inherited TypeCheck(Parser);
@@ -687,49 +746,67 @@ begin
   Result := rtBoolean;
 end;
 
-function TRelationalExpr.AsBoolean: Boolean;
+function TRelationalExpr.AsBoolean: EpiBool;
 var
   CType: TParserResultType;
   Res: PtrInt;
+  BoolResult: Boolean;
 begin
+  if Left.IsMissing or Right.IsMissing then
+  begin
+    case Operation of
+      otEQ:  BoolResult := not (Left.IsMissing xor Right.IsMissing);
+      otNEQ: BoolResult := Left.IsMissing xor Right.IsMissing;
+      otLT:  BoolResult := not Left.IsMissing;
+      otLTE: BoolResult := Right.IsMissing;
+      otGT:  BoolResult := not Right.IsMissing;
+      otGTE: BoolResult := Left.IsMissing;
+    end;
+    Exit(EpiBool(BoolResult));
+  end;
+
   CType := CommonType(Left, Right);
   case CType of
     rtBoolean:
     case Operation of
-      otEQ:  result := Left.AsBoolean = Right.AsBoolean;
-      otNEQ: result := Left.AsBoolean <> Right.AsBoolean;
+      otEQ:  BoolResult := Left.AsBoolean = Right.AsBoolean;
+      otNEQ: BoolResult := Left.AsBoolean <> Right.AsBoolean;
+      otLT:  BoolResult := Left.AsBoolean < Right.AsBoolean;
+      otLTE: BoolResult := Left.AsBoolean <= Right.AsBoolean;
+      otGT:  BoolResult := Left.AsBoolean > Right.AsBoolean;
+      otGTE: BoolResult := Left.AsBoolean >= Right.AsBoolean;
     end;
 
     rtInteger:
     case Operation of
-      otEQ:  result := Left.AsInteger = Right.AsInteger;
-      otNEQ: result := Left.AsInteger <>Right.AsInteger;
-      otLT:  result := Left.AsInteger < Right.AsInteger;
-      otLTE: result := Left.AsInteger <= Right.AsInteger;
-      otGT:  result := Left.AsInteger > Right.AsInteger;
-      otGTE: result := Left.AsInteger >= Right.AsInteger;
+      otEQ:  BoolResult := Left.AsInteger = Right.AsInteger;
+      otNEQ: BoolResult := Left.AsInteger <>Right.AsInteger;
+      otLT:  BoolResult := Left.AsInteger < Right.AsInteger;
+      otLTE: BoolResult := Left.AsInteger <= Right.AsInteger;
+      otGT:  BoolResult := Left.AsInteger > Right.AsInteger;
+      otGTE: BoolResult := Left.AsInteger >= Right.AsInteger;
     end;
 
     rtFloat:
     case Operation of
-      otEQ:  result := SameValue(Left.AsFloat, Right.AsFloat, 0.0);
-      otNEQ: result := not SameValue(Left.AsFloat, Right.AsFloat, 0.0);
-      otLT:  result := Left.AsFloat < Right.AsFloat;
-      otLTE: result := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
-      otGT:  result := Left.AsFloat > Right.AsFloat;
-      otGTE: result := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
+      otEQ:  BoolResult := SameValue(Left.AsFloat, Right.AsFloat, 0.0);
+      otNEQ: BoolResult := not SameValue(Left.AsFloat, Right.AsFloat, 0.0);
+      otLT:  BoolResult := Left.AsFloat < Right.AsFloat;
+      otLTE: BoolResult := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
+      otGT:  BoolResult := Left.AsFloat > Right.AsFloat;
+      otGTE: BoolResult := (Left.AsFloat < Right.AsFloat) or (SameValue(Left.AsFloat, Right.AsFloat, 0.0));
     end;
 
     rtString:
     begin
       Res := UnicodeCompareStr(UTF8Decode(Left.AsString), UTF8Decode(Right.AsString));
       case Operation of
-        otEQ:  result := Res = 0;
-        otNEQ: result := Res <> 0;
-        otLT:  result := Res < 0;
-        otLTE: result := Res <= 0;
-        otGT:  result := Res > 0;
-        otGTE: result := Res >= 0;
+        otEQ:  BoolResult := Res = 0;
+        otNEQ: BoolResult := Res <> 0;
+        otLT:  BoolResult := Res < 0;
+        otLTE: BoolResult := Res <= 0;
+        otGT:  BoolResult := Res > 0;
+        otGTE: BoolResult := Res >= 0;
       end;
     end;
 
@@ -745,6 +822,8 @@ begin
 
 //    rtUndefined: ;
   end;
+
+  Result := EpiBool(BoolResult);
 end;
 
 function TRelationalExpr.AsInteger: EpiInteger;
@@ -759,7 +838,10 @@ end;
 
 function TRelationalExpr.AsString: EpiString;
 begin
-  Result := BoolToStr(AsBoolean);
+  if IsMissing then
+    Result := TEpiStringField.DefaultMissing
+  else
+    Result := BoolToStr(AsTrueBoolean, true);
 end;
 
 { TBinaryExpr }
@@ -876,7 +958,7 @@ begin
   end;
 end;
 
-function TBinaryExpr.AsBoolean: Boolean;
+function TBinaryExpr.AsBoolean: EpiBool;
 begin
   case Operation of
     otOr:  result := Left.AsBoolean or Right.AsBoolean;
@@ -933,9 +1015,17 @@ end;
 
 function TBinaryExpr.AsString: EpiString;
 begin
+  if IsMissing and
+     (not (ResultType = rtString))
+  then
+  begin
+    Result := inherited AsString;
+    Exit;
+  end;
+
   case ResultType of
     rtBoolean:
-      result := BoolToStr(AsBoolean);
+      result := BoolToStr(AsTrueBoolean);
 
     rtInteger:
       result := IntToStr(AsInteger);
@@ -956,6 +1046,11 @@ begin
     rtUndefined:
       ;
   end;
+end;
+
+function TBinaryExpr.IsMissing: Boolean;
+begin
+  Result := Left.IsMissing or Right.IsMissing;
 end;
 
 { TUnaryExpr }
@@ -994,7 +1089,7 @@ begin
   Result := FL.ResultType;
 end;
 
-function TUnaryExpr.AsBoolean: Boolean;
+function TUnaryExpr.AsBoolean: EpiBool;
 begin
   case Operation of
     otNot: result := (not Left.AsBoolean);
@@ -1013,6 +1108,11 @@ begin
   case Operation of
     otMinus: result := -Left.AsFloat;
   end;
+end;
+
+function TUnaryExpr.IsMissing: Boolean;
+begin
+  Result := Left.IsMissing;
 end;
 
 { TDefine }
@@ -1122,25 +1222,20 @@ end;
 
 { TBooleanLiteral }
 
-constructor TBooleanLiteral.Create(const Value: EpiBool);
+constructor TBooleanLiteral.Create(const Value: Boolean);
 begin
   inherited Create(otBoolLiteral, nil, nil);
   FValue := Value;
 end;
 
-constructor TBooleanLiteral.Create(const Value: Boolean);
-begin
-  Create(EpiBool(Value));
-end;
-
-function TBooleanLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
-begin
-  Result := inherited TypeCheck(Parser);
-end;
-
 function TBooleanLiteral.ResultType: TParserResultType;
 begin
   Result := rtBoolean;
+end;
+
+function TBooleanLiteral.AsBoolean: EpiBool;
+begin
+  Result := EpiBool(FValue);
 end;
 
 function TBooleanLiteral.AsInteger: EpiInteger;
@@ -1153,14 +1248,9 @@ begin
   Result := EpiFloat(AsInteger);
 end;
 
-function TBooleanLiteral.AsBoolean: Boolean;
-begin
-  Result := Boolean(FValue);
-end;
-
 function TBooleanLiteral.AsString: EpiString;
 begin
-  Result := BoolToStr(AsBoolean);
+  Result := BoolToStr(AsTrueBoolean);
 end;
 
 { TIntegerLiteral }
@@ -1171,19 +1261,14 @@ begin
   FValue := Value;
 end;
 
-function TIntegerLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
-begin
-  Result := inherited TypeCheck(Parser);
-end;
-
 function TIntegerLiteral.ResultType: TParserResultType;
 begin
   Result := rtInteger;
 end;
 
-function TIntegerLiteral.AsBoolean: Boolean;
+function TIntegerLiteral.AsBoolean: EpiBool;
 begin
-  Result := Boolean(AsInteger);
+  Result := EpiBool(AsInteger);
 end;
 
 function TIntegerLiteral.AsInteger: EpiInteger;
@@ -1210,19 +1295,14 @@ begin
   FValue := Value;
 end;
 
-function TFloatLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
-begin
-  Result := inherited TypeCheck(Parser);
-end;
-
 function TFloatLiteral.ResultType: TParserResultType;
 begin
   Result := rtFloat;
 end;
 
-function TFloatLiteral.AsBoolean: Boolean;
+function TFloatLiteral.AsBoolean: EpiBool;
 begin
-  Result := Boolean(AsInteger);
+  Result := EpiBool(AsInteger);
 end;
 
 function TFloatLiteral.AsInteger: EpiInteger;
@@ -1248,25 +1328,20 @@ begin
   FValue := Value;
 end;
 
-function TStringLiteral.TypeCheck(Parser: IEpiScriptParser): boolean;
-begin
-  Result := inherited TypeCheck(Parser);
-end;
-
 function TStringLiteral.ResultType: TParserResultType;
 begin
   Result := rtString;
 end;
 
-function TStringLiteral.AsBoolean: Boolean;
+function TStringLiteral.AsBoolean: EpiBool;
 var
   Val: EpiInteger;
 begin
   Val := AsInteger;
   if TEpiIntField.CheckMissing(Val) then
-    Result := Boolean(TEpiBoolField.DefaultMissing)
+    Result := TEpiBoolField.DefaultMissing
   else
-    Result := Boolean(Val);
+    Result := EpiBool(Val);
 end;
 
 function TStringLiteral.AsInteger: EpiInteger;
@@ -1303,7 +1378,7 @@ begin
   end;
 end;
 
-function TTypeCast.AsBoolean: Boolean;
+function TTypeCast.AsBoolean: EpiBool;
 begin
   Case FOp of
     otBoolCast:    result := Left.AsBoolean;
@@ -1315,6 +1390,9 @@ end;
 
 function TTypeCast.AsInteger: EpiInteger;
 begin
+  if Left.IsMissing then
+    Exit(Left.AsInteger);
+
   Case FOp of
     otBoolCast:    result := Integer(AsBoolean);
     otIntegerCast: result := Left.AsInteger;
@@ -1325,6 +1403,9 @@ end;
 
 function TTypeCast.AsFloat: EpiFloat;
 begin
+  if Left.IsMissing then
+    Exit(Left.AsFloat);
+
   Case FOp of
     otBoolCast:    result := AsInteger;
     otIntegerCast: result := AsInteger;
@@ -1336,12 +1417,20 @@ end;
 
 function TTypeCast.AsString: EpiString;
 begin
+  if Left.IsMissing then
+    Exit(Left.AsString);
+
   Case FOp of
-    otBoolCast:    result := BoolToStr(Left.AsBoolean);
+    otBoolCast:    result := BoolToStr(Left.AsTrueBoolean);
     otIntegerCast: result := IntToStr(AsInteger);
     otFloatCast:   result := FloatToStr(Left.AsFloat);
     otStringCast:  result := Left.AsString;
   end;
+end;
+
+function TTypeCast.IsMissing: Boolean;
+begin
+  Result := Left.IsMissing;
 end;
 
 { TExpr }
@@ -1377,10 +1466,17 @@ begin
     result := FR.TypeCheck(Parser);
 end;
 
-
-function TExpr.AsBoolean: Boolean;
+function TExpr.AsTrueBoolean: Boolean;
 begin
-  result := Boolean(TEpiBoolField.DefaultMissing);
+  if TEpiBoolField.CheckMissing(AsBoolean) then
+    result := false
+  else
+    result := Boolean(AsBoolean);
+end;
+
+function TExpr.AsBoolean: EpiBool;
+begin
+  result := TEpiBoolField.DefaultMissing;
 end;
 
 function TExpr.AsInteger: EpiInteger;
@@ -1396,6 +1492,11 @@ end;
 function TExpr.AsString: EpiString;
 begin
   result := TEpiStringField.DefaultMissing;
+end;
+
+function TExpr.IsMissing: Boolean;
+begin
+  result := false;
 end;
 
 { TCustomVariable }
@@ -1417,11 +1518,6 @@ destructor TCustomVariable.Destroy;
 begin
   FIdent := '';
   inherited Destroy;
-end;
-
-function TCustomVariable.TypeCheck(Parser: IEpiScriptParser): boolean;
-begin
-  result := inherited TypeCheck(Parser);
 end;
 
 { TVarList }

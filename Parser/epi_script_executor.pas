@@ -55,6 +55,10 @@ type
       Const F: TEpiField; Const Value: Variant); virtual;
     function GetFieldValue(Const Sender: TObject;
       Const F: TEpiField): Variant; virtual;
+    procedure SetFieldIsMissing(const Sender: TObject; const F: TEpiField;
+      const Value: Boolean);
+    function GetFieldIsMissing(const Sender: TObject; const F: TEpiField
+      ): Boolean;
   end;
 
 implementation
@@ -106,7 +110,7 @@ end;
 
 procedure TEpiScriptExecutor.ProcessIfThenElse(IfThen: TIfThen);
 begin
-  if IfThen.Expr.asBoolean then
+  if IfThen.Expr.AsTrueBoolean then
     ProcessCustomStatement(IfThen.ThenStatement)
   else
     ProcessCustomStatement(IfThen.ElseStatement);
@@ -235,7 +239,7 @@ begin
     Idx := FOnGetRecordIndex(Self)
   else
     Exit;
-  F.AsValue[Idx];
+  F.AsValue[Idx] := Value;
 end;
 
 function TEpiScriptExecutor.GetFieldValue(const Sender: TObject;
@@ -248,6 +252,30 @@ begin
   else
     Exit;
   Result := F.AsValue[Idx];
+end;
+
+procedure TEpiScriptExecutor.SetFieldIsMissing(const Sender: TObject;
+  const F: TEpiField; const Value: Boolean);
+var
+  Idx: Integer;
+begin
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  F.IsMissing[Idx] := Value;
+end;
+
+function TEpiScriptExecutor.GetFieldIsMissing(const Sender: TObject;
+  const F: TEpiField): Boolean;
+var
+  Idx: Integer;
+begin
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  Result := F.IsMissing[Idx];
 end;
 
 end.

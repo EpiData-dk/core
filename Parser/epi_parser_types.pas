@@ -11,16 +11,18 @@ type
   IdString = String[64];
 
   TParserResultType = (
+    rtAny,          // Special result type that is always compatible/covertable with/to other result types (except rtUndefined). (Eg. missing literal)
     rtBoolean,
     rtInteger,
     rtFloat,
     rtString,
     rtObject,
-    rtUndefined
+    rtUndefined     // Default result type which is ALWAYS incompatible with all other types. Classes should always override the default value.
   );
 
 const
   SParserResultType: array[TParserResultType] of string = (
+    'any',
     'boolean',
     'integer',
     'float',
@@ -34,6 +36,7 @@ type
     // Literals
     otTrue,
     otFalse,
+    otMissingLiteral,
     otBoolLiteral,
     otIntegerLiteral,
     otFloatLiteral,
