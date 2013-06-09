@@ -49,6 +49,8 @@ type
     function FindVariable(const Ident: string): TCustomVariable;
     procedure ParseError(const Msg: string; const LineNo,
       ColNo: integer; const TextFound: string);
+    function CreateFunction(const FunctionName: string;
+       const ParamList: TParamList): TFunction;
   public
     { IEpiScriptExecutor }
     procedure SetFieldValue(Const Sender: TObject;
@@ -228,6 +230,12 @@ begin
   else
     if IsConsole then
       writeln('(', LineNo, ',', ColNo, '): ', Msg);
+end;
+
+function TEpiScriptExecutor.CreateFunction(const FunctionName: string;
+  const ParamList: TParamList): TFunction;
+begin
+  result := nil;
 end;
 
 procedure TEpiScriptExecutor.SetFieldValue(const Sender: TObject;

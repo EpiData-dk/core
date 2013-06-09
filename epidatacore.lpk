@@ -7,7 +7,7 @@
       <Version Value="11"/>
       <SearchPaths>
         <IncludeFiles Value="Core;."/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services;Parser"/>
+        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services;Parser;Parser/Functions"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -36,7 +36,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="61">
+    <Files Count="63">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -281,6 +281,14 @@
         <Filename Value="Parser/epi_parser_core.pas"/>
         <UnitName Value="epi_parser_core"/>
       </Item61>
+      <Item62>
+        <Filename Value="Parser/Functions/epi_script_function_abs.pas"/>
+        <UnitName Value="epi_script_function_abs"/>
+      </Item62>
+      <Item63>
+        <Filename Value="Parser/Functions/epi_script_function_lower.pas"/>
+        <UnitName Value="epi_script_function_lower"/>
+      </Item63>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>

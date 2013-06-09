@@ -20,7 +20,7 @@ procedure yy_set_start_state;
 implementation
 
 uses
-  lexlib, epiconvertutils, epidatafilestypes;
+  classes, lexlib, epiconvertutils, epidatafilestypes;
 
 var
   FParser: IEpiScriptParser;
@@ -90,6 +90,7 @@ var
 %type <TExpr>			opt_bracket expr term
 %type <TParserOperationType>	typecast
 %type <TGotoOption>		goto_opt
+%type <TParamList>		expr_list
 
 
 
@@ -117,6 +118,7 @@ procedure yyerror(msg : string);
 
 var
   IdentList: array of IdString;
+  ParamList: TList;
 
 procedure ClearIdentList;
 begin
@@ -130,6 +132,13 @@ begin
   l := Length(IdentList);
   SetLength(IdentList, l+1);
   IdentList[l] := Ident;
+end;
+
+procedure AddToParamList(Expr: TExpr);
+begin
+  if not Assigned(ParamList) then
+    ParamList := TList.Create;
+  ParamList.Add(Expr);
 end;
 
 %}
@@ -217,7 +226,8 @@ expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
 		;
 
 term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
-		|	typecast OPOpenParan expr OPCloseParan		{ $$ := TTypeCast.Create($1, $3, nil) }
+		|	OPIdentifier OPOpenParan expr_list OPCloseParan	{ $$ := TFunction.CreateFunction($1, $3); }
+		|	typecast OPOpenParan expr OPCloseParan		{ $$ := TTypeCast.Create($1, $3, nil); }
                 |       variable					{ $$ := $1; }
 		|	OPIntegerLiteral				{ $$ := TIntegerLiteral.Create($1);  }
 		|	OPFloatLiteral					{ $$ := TFloatLiteral.Create($1);  }
@@ -231,6 +241,14 @@ term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
 		|	OPPeriod					{ $$ := TMissingLiteral.Create; }
 		|	OPTrue						{ $$ := TBooleanLiteral.Create(true); }
 		|	OPFalse						{ $$ := TBooleanLiteral.Create(false); }
+		;
+
+expr_list	:	expr_list_wrap					{ $$ := TParamList.Create(ParamList); FreeAndNil(ParamList); }
+		|	/* empty */					{ $$ := TParamList.Create(nil); }
+		;	
+
+expr_list_wrap  :       expr OPComma expr_list_wrap			{ AddToParamList($1); }
+		|	expr						{ AddToParamList($1); }
 		;
 
 typecast	:	OPIntegerType					{ $$ := otIntegerCast }

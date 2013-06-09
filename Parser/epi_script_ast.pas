@@ -15,6 +15,8 @@ uses
 type
   TExpr = class;
   TCustomVariable = class;
+  TParamList = class;
+  TFunction = class;
 
   { IEpiScriptParser }
 
@@ -24,6 +26,8 @@ type
     function  VariableExists(Const Ident: string): boolean;
     procedure AddVariable(Const Variable: TCustomVariable);
     function  FindVariable(Const Ident: string): TCustomVariable;
+    function  CreateFunction(Const FunctionName: string;
+      Const ParamList: TParamList): TFunction;
   end;
 
   IEpiScriptExecutor = interface ['IEpiScriptExecutor']
@@ -253,6 +257,35 @@ type
     function AsString: EpiString; override;
   end;
 
+  { TParamList }
+
+  TParamList = class(TList)
+  private
+    function GetParam(const Index: Integer): TExpr;
+  public
+    constructor Create(AList: TList);
+    property    Param[Const Index: Integer]: TExpr read GetParam;
+  end;
+
+  { TFunction }
+
+  TFunction = class(TExpr)
+  private
+    function GetParam(const Index: integer): TExpr;
+  protected
+    FParamList: TParamList;
+    constructor Create(Const ParamList: TParamList); virtual;
+    function    TestParameters: Boolean; virtual;
+    function MinParamCount: Integer; virtual;
+    function MaxParamCount: Integer; virtual;
+  public
+    class function CreateFunction(Const FunctionName: string;
+      Const ParamList: TParamList;
+      Parser: IEpiScriptParser): TFunction;
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
+    property  Param[Const Index: integer]: TExpr read GetParam;
+  end;
+
   { TCustomVariable }
 
   TCustomVariable = class(TExpr)
@@ -384,12 +417,32 @@ type
 implementation
 
 uses
-  YaccLib, epi_parser_core, math, variants;
+  YaccLib, epi_parser_core, math, variants,
+
+
+  // SCRIPT FUNCTIONS (placed ind ./functions/epi_script_function_<name>.pas
+  epi_script_function_abs,
+  epi_script_function_lower
+  ;
 
 resourcestring
   rsExpressionReturnType1 = 'Expression return type must be %s';
   rsExpressionReturnType2 = 'Expression return type must be %s or %s';
   rsExpressionReturnType3 = 'Expression return type must be %s, %s or %s';
+
+{ TParamList }
+
+function TParamList.GetParam(const Index: Integer): TExpr;
+begin
+  result := TExpr(Items[Index]);
+end;
+
+constructor TParamList.Create(AList: TList);
+begin
+  inherited Create;
+  if Assigned(AList) then
+    Self.Assign(AList);
+end;
 
 { TMissingLiteral }
 
@@ -1113,6 +1166,68 @@ end;
 function TUnaryExpr.IsMissing: Boolean;
 begin
   Result := Left.IsMissing;
+end;
+
+{ TFunction }
+
+function TFunction.GetParam(const Index: integer): TExpr;
+begin
+  result := FParamList.Param[Index];
+end;
+
+constructor TFunction.Create(const ParamList: TParamList);
+begin
+  FParamList := ParamList;
+end;
+
+function TFunction.TestParameters: Boolean;
+begin
+  result := true;
+end;
+
+function TFunction.MinParamCount: Integer;
+begin
+  result := 0;
+end;
+
+function TFunction.MaxParamCount: Integer;
+begin
+  result := MaxInt;
+end;
+
+class function TFunction.CreateFunction(const FunctionName: string;
+  const ParamList: TParamList; Parser: IEpiScriptParser): TFunction;
+var
+  Func: String;
+begin
+  Func := LowerCase(FunctionName);
+  case Func of
+    'abs': result := TEpiScriptFunction_ABS.Create(ParamList);
+    'lower': result := TEpiScriptFunction_Lower.Create(ParamList);
+  else
+    result := Parser.CreateFunction(FunctionName, ParamList);
+  end;
+end;
+
+function TFunction.TypeCheck(Parser: IEpiScriptParser): boolean;
+begin
+  Result := inherited TypeCheck(Parser);
+
+  if FParamList.Count < MinParamCount then
+  begin
+    DoTypeCheckError('Too few parameters. Required: %d Given %d',
+      [MinParamCount, FParamList.Count],
+      Parser
+    );
+  end;
+
+  if FParamList.Count > MaxParamCount then
+  begin
+    DoTypeCheckError('Too many parameters. Required: %d Given %d',
+      [MinParamCount, FParamList.Count],
+      Parser
+    );
+  end;
 end;
 
 { TDefine }
