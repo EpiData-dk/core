@@ -5,7 +5,8 @@ unit epi_script_function_abs;
 interface
 
 uses
-    Classes, SysUtils, epi_script_AST, epidatafilestypes;
+    Classes, SysUtils, epi_script_AST, epidatafilestypes,
+    epi_parser_types;
 
 type
 
@@ -13,9 +14,12 @@ type
 
   TEpiScriptFunction_ABS = class(TFunction)
   protected
-    function TestParameters: Boolean; override;
+    function MinParamCount: Integer; override;
+    function MaxParamCount: Integer; override;
+    function ParamAcceptType(ParamNo: Integer): TParserResultTypes; override;
   public
     constructor Create(const ParamList: TParamList); override;
+    function ResultType: TParserResultType; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
@@ -23,16 +27,37 @@ type
 
 implementation
 
+uses
+  epi_script_function_resourcestrings;
+
 { TEpiScriptFunction_ABS }
 
-function TEpiScriptFunction_ABS.TestParameters: Boolean;
+function TEpiScriptFunction_ABS.MinParamCount: Integer;
 begin
-  Result := (FParamList.Count = 1);
+  Result := 1;
+end;
+
+function TEpiScriptFunction_ABS.MaxParamCount: Integer;
+begin
+  Result := 1;
+end;
+
+function TEpiScriptFunction_ABS.ParamAcceptType(ParamNo: Integer
+  ): TParserResultTypes;
+begin
+  Result := [rtAny, rtInteger, rtFloat]
 end;
 
 constructor TEpiScriptFunction_ABS.Create(const ParamList: TParamList);
 begin
   inherited Create(ParamList);
+end;
+
+function TEpiScriptFunction_ABS.ResultType: TParserResultType;
+begin
+  Result := inherited ResultType;
+  if FParamList.Count > 0 then
+    Result := Param[0].ResultType;
 end;
 
 function TEpiScriptFunction_ABS.AsInteger: EpiInteger;

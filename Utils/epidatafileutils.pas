@@ -87,14 +87,14 @@ var
   j: Integer;
 begin
   for i := 0 to DF.Fields.Count - 1 do
-    Write(Format('%-' + IntToStr(Width) +'s', [UTF8ToSys(EpiCutString(Df.Fields[i].Name, Width-1, false))]));
+    Write(Format('%-' + IntToStr(Width+1) +'s', [UTF8ToSys(EpiCutString(Df.Fields[i].Name, Width, false))]));
   WriteLn('');
   WriteLn('----------------------------------');
 
   for j := 0 to DF.Size - 1 do
   begin
     for i := 0 to DF.Fields.Count -1 do
-      Write(Format('%-' + IntToStr(Width) +'s', [UTF8ToSys(EpiCutString(DF.Fields[i].AsString[j], Width - 1, false))]));
+      Write(Format('%-' + IntToStr(Width+1) +'s', [UTF8ToSys(EpiCutString(DF.Fields[i].AsString[j], Width, false))]));
     WriteLn('');
   end;
 end;

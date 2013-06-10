@@ -20,7 +20,9 @@ uses
   epireport_report_fieldinfo, epireport_report_countbyid, 
   epireport_report_doubleentryvalidate, epi_script_AST, epi_script_parser, 
   epi_parser_types, epi_script_executor, epi_parser_core, 
-  epi_script_function_abs, epi_script_function_lower;
+  epi_script_function_abs, epi_script_function_lower, 
+  epi_script_function_resourcestrings, epi_script_function_createdate, 
+  epi_script_function_time;
 
 implementation
 

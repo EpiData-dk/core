@@ -17,17 +17,17 @@ type
   protected
     function MinParamCount: Integer; override;
     function MaxParamCount: Integer; override;
+    function ParamAcceptType(ParamNo: Integer): TParserResultTypes; override;
   public
     constructor Create(const ParamList: TParamList); override;
     function ResultType: TParserResultType; override;
-    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function AsString: EpiString; override;
   end;
 
 implementation
 
 uses
-  LazUTF8;
+  LazUTF8, epi_script_function_resourcestrings;
 
 { TEpiScriptFunction_Lower }
 
@@ -41,6 +41,12 @@ begin
   Result := 1;
 end;
 
+function TEpiScriptFunction_Lower.ParamAcceptType(ParamNo: Integer
+  ): TParserResultTypes;
+begin
+  Result := [rtAny, rtString]
+end;
+
 constructor TEpiScriptFunction_Lower.Create(const ParamList: TParamList);
 begin
   inherited Create(ParamList);
@@ -49,13 +55,6 @@ end;
 function TEpiScriptFunction_Lower.ResultType: TParserResultType;
 begin
   Result := rtString;
-end;
-
-function TEpiScriptFunction_Lower.TypeCheck(Parser: IEpiScriptParser): boolean;
-begin
-  Result := inherited TypeCheck(Parser);
-
-  Result := Result and (Param[0].ResultType = rtString);
 end;
 
 function TEpiScriptFunction_Lower.AsString: EpiString;

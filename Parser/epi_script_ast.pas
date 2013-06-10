@@ -50,7 +50,6 @@ type
     procedure DoTypeCheckError(Const Msg: String; Const Args: Array of const; Parser: IEpiScriptParser);
   public
     destructor Destroy; override;
-    function ResultType: TParserResultType; virtual;
     function TypeCheck(Parser: IEpiScriptParser): boolean; virtual;
     property LineNo: integer read FLineNo;
     property ColNo: integer read FColNo;
@@ -118,6 +117,7 @@ type
     constructor Create(Const Op: TParserOperationType; Const L, R: TExpr);
     destructor Destroy; override;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
+    function ResultType: TParserResultType; virtual;
     property Operation: TParserOperationType read FOp;
     property Left: TExpr read FL;
     property Right: TExpr read FR;
@@ -275,9 +275,9 @@ type
   protected
     FParamList: TParamList;
     constructor Create(Const ParamList: TParamList); virtual;
-    function    TestParameters: Boolean; virtual;
     function MinParamCount: Integer; virtual;
     function MaxParamCount: Integer; virtual;
+    function ParamAcceptType(ParamNo: Integer): TParserResultTypes; virtual;
   public
     class function CreateFunction(Const FunctionName: string;
       Const ParamList: TParamList;
@@ -291,6 +291,7 @@ type
   TCustomVariable = class(TExpr)
   protected
     FIdent: string;
+    function FieldTypeToParserType(FieldType: TEpiFieldType): TParserResultType;
   public
     class function FindVariable(Const Ident: String;
       Parser: IEpiScriptParser): TCustomVariable;
@@ -332,9 +333,9 @@ type
   private
     FIsMissing: Boolean;
     FValue: Variant;
-    FResultType: TParserResultType;
+    FEpiFieldType: TEpiFieldType;
   public
-    constructor Create(Const AIdent: string; AResultType: TParserResultType);
+    constructor Create(Const AIdent: string; VarType: TEpiFieldType);
     function ResultType: TParserResultType; override;
   public
     function AsBoolean: EpiBool; override;
@@ -369,6 +370,7 @@ type
     FExpr: TExpr;
   public
     constructor Create(Expr: TExpr);
+    function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Expr: TExpr read FExpr;
   end;
 
@@ -376,14 +378,11 @@ type
 
   TDefine = class(TCustomStatement)
   private
-    FIdent: string;
-    FType: TParserResultType;
+    FType: TEpiFieldType;
   public
-    constructor Create(Const DefineType: TParserResultType;
+    constructor Create(Const DefineType: TEpiFieldType;
       IdentList: array of IdString; Const Parser: IEpiScriptParser);
-    destructor Destroy; override;
-    property Ident: string read FIdent;
-    property IdentType: TParserResultType read FType;
+    property IdentType: TEpiFieldType read FType;
   end;
 
   { TStatement }
@@ -418,17 +417,15 @@ implementation
 
 uses
   YaccLib, epi_parser_core, math, variants,
+  epi_script_function_resourcestrings,
 
 
   // SCRIPT FUNCTIONS (placed ind ./functions/epi_script_function_<name>.pas
   epi_script_function_abs,
+  epi_script_function_createdate,
+  epi_script_function_time,
   epi_script_function_lower
   ;
-
-resourcestring
-  rsExpressionReturnType1 = 'Expression return type must be %s';
-  rsExpressionReturnType2 = 'Expression return type must be %s or %s';
-  rsExpressionReturnType3 = 'Expression return type must be %s, %s or %s';
 
 { TParamList }
 
@@ -466,6 +463,11 @@ end;
 constructor TWrite.Create(Expr: TExpr);
 begin
   FExpr := Expr;
+end;
+
+function TWrite.TypeCheck(Parser: IEpiScriptParser): boolean;
+begin
+  Result := inherited TypeCheck(Parser) and FExpr.TypeCheck(Parser);
 end;
 
 { TGoto }
@@ -527,12 +529,6 @@ begin
   inherited Destroy;
 end;
 
-function TAbstractSyntaxTreeBase.ResultType: TParserResultType;
-begin
-  // Default result type is rtUndefined
-  result := rtUndefined;
-end;
-
 function TAbstractSyntaxTreeBase.TypeCheck(Parser: IEpiScriptParser): boolean;
 begin
   result := true;
@@ -540,17 +536,19 @@ end;
 
 { TScriptVariable }
 
-constructor TScriptVariable.Create(const AIdent: string;
-  AResultType: TParserResultType);
+constructor TScriptVariable.Create(const AIdent: string; VarType: TEpiFieldType
+  );
+var
+  Vtype: String;
 begin
   inherited Create(otVariable, nil, nil);
   FIdent := AIdent;
-  FResultType := AResultType;
+  FEpiFieldType := VarType;
 end;
 
 function TScriptVariable.ResultType: TParserResultType;
 begin
-  Result := FResultType;
+  Result := FieldTypeToParserType(FEpiFieldType);
 end;
 
 function TScriptVariable.AsBoolean: EpiBool;
@@ -582,10 +580,16 @@ begin
   if FIsMissing then
     result := TEpiStringField.DefaultMissing
   else
-    if ResultType = rtBoolean then
-      result := BoolToStr(AsTrueBoolean, true)
-    else
-      result := FValue;
+    case FEpiFieldType of
+      ftBoolean: result := BoolToStr(AsTrueBoolean, true);
+      ftInteger: result := IntToStr(FValue);
+      ftFloat:   result := FloatToStr(FValue);
+      ftDMYDate: result := DateToStr(FValue);
+      ftMDYDate: ;
+      ftYMDDate: ;
+      ftTime:    result := TimeToStr(FValue);
+      ftString:  result := FValue;
+    end;
 end;
 
 function TScriptVariable.IsMissing: Boolean;
@@ -633,29 +637,8 @@ begin
 end;
 
 function TFieldVariable.ResultType: TParserResultType;
-const
-  FieldTypeToParserType: array[TEpiFieldType] of TParserResultType =
-    (
-//    ftBoolean,
-      rtBoolean,
-
-//    ftInteger, ftAutoInc, ftFloat,
-      rtInteger, rtInteger, rtFloat,
-
-//    ftDMYDate, ftMDYDate, ftYMDDate,
-      rtInteger, rtInteger, rtInteger,
-
-//    ftDMYAuto, ftMDYAuto, ftYMDAuto,
-      rtInteger, rtInteger, rtInteger,
-
-//    ftTime, ftTimeAuto,
-      rtFloat, rtFloat,
-
-//    ftString, ftUpperString
-      rtString, rtString
-    );
 begin
-  Result := FieldTypeToParserType[FField.FieldType];
+  Result := FieldTypeToParserType(FField.FieldType);
 end;
 
 function TFieldVariable.AsBoolean: EpiBool;
@@ -1177,12 +1160,8 @@ end;
 
 constructor TFunction.Create(const ParamList: TParamList);
 begin
+  inherited Create(otFunction, nil, nil);
   FParamList := ParamList;
-end;
-
-function TFunction.TestParameters: Boolean;
-begin
-  result := true;
 end;
 
 function TFunction.MinParamCount: Integer;
@@ -1195,6 +1174,11 @@ begin
   result := MaxInt;
 end;
 
+function TFunction.ParamAcceptType(ParamNo: Integer): TParserResultTypes;
+begin
+  result := [rtUndefined];
+end;
+
 class function TFunction.CreateFunction(const FunctionName: string;
   const ParamList: TParamList; Parser: IEpiScriptParser): TFunction;
 var
@@ -1202,16 +1186,30 @@ var
 begin
   Func := LowerCase(FunctionName);
   case Func of
-    'abs': result := TEpiScriptFunction_ABS.Create(ParamList);
-    'lower': result := TEpiScriptFunction_Lower.Create(ParamList);
+    'abs':
+      result := TEpiScriptFunction_ABS.Create(ParamList);
+    'dmy',
+    'mdy',
+    'ymd':
+      result := TEpiScriptFunction_CreateDate.Create(ParamList, Func);
+    'lower':
+      result := TEpiScriptFunction_Lower.Create(ParamList);
+    'hour':
+      result := TEpiScriptFunction_Time.Create(ParamList);
   else
     result := Parser.CreateFunction(FunctionName, ParamList);
   end;
 end;
 
 function TFunction.TypeCheck(Parser: IEpiScriptParser): boolean;
+var
+  AcceptTypes: TParserResultTypes;
+  AType: TParserResultType;
+  i: Integer;
+  S: String;
 begin
   Result := inherited TypeCheck(Parser);
+  if not Result then exit;
 
   if FParamList.Count < MinParamCount then
   begin
@@ -1219,6 +1217,7 @@ begin
       [MinParamCount, FParamList.Count],
       Parser
     );
+    Exit(False);
   end;
 
   if FParamList.Count > MaxParamCount then
@@ -1227,12 +1226,41 @@ begin
       [MinParamCount, FParamList.Count],
       Parser
     );
+    Exit(False);
+  end;
+
+  for i := 0 to FParamList.Count -1 do
+  begin
+    AcceptTypes := ParamAcceptType(0);
+    if not (Param[i].ResultType in AcceptTypes) then
+    begin
+      S := '';
+      for AType in AcceptTypes do
+      begin
+        if AType = rtAny then
+          S += 'missing,'
+        else
+          S += SParserResultType[AType] + ',';
+      end;
+
+      Delete(S, Length(S), 1);
+
+
+      DoTypeCheckError(
+        'Parameter no. %d accept types: %s' + LineEnding +
+        'But was given: %s',
+        [i + 1, S, SParserResultType[Param[i].ResultType]],
+        Parser
+      );
+
+      Exit(False);
+    end;
   end;
 end;
 
 { TDefine }
 
-constructor TDefine.Create(const DefineType: TParserResultType;
+constructor TDefine.Create(const DefineType: TEpiFieldType;
   IdentList: array of IdString; const Parser: IEpiScriptParser);
 var
   i: Integer;
@@ -1249,12 +1277,6 @@ begin
     end;
     Parser.AddVariable(TScriptVariable.Create(IdentList[i], DefineType));
   end;
-end;
-
-destructor TDefine.Destroy;
-begin
-  FIdent := '';
-  inherited Destroy;
 end;
 
 { TAssignment }
@@ -1581,6 +1603,12 @@ begin
     result := FR.TypeCheck(Parser);
 end;
 
+function TExpr.ResultType: TParserResultType;
+begin
+  // Default result type is rtUndefined
+  result := rtUndefined;
+end;
+
 function TExpr.AsTrueBoolean: Boolean;
 begin
   if TEpiBoolField.CheckMissing(AsBoolean) then
@@ -1615,6 +1643,33 @@ begin
 end;
 
 { TCustomVariable }
+
+function TCustomVariable.FieldTypeToParserType(FieldType: TEpiFieldType
+  ): TParserResultType;
+const
+  FieldTypeToParserTypeTable: array[TEpiFieldType] of TParserResultType =
+    (
+//    ftBoolean,
+      rtBoolean,
+
+//    ftInteger, ftAutoInc, ftFloat,
+      rtInteger, rtInteger, rtFloat,
+
+//    ftDMYDate, ftMDYDate, ftYMDDate,
+      rtInteger, rtInteger, rtInteger,
+
+//    ftDMYAuto, ftMDYAuto, ftYMDAuto,
+      rtInteger, rtInteger, rtInteger,
+
+//    ftTime, ftTimeAuto,
+      rtFloat, rtFloat,
+
+//    ftString, ftUpperString
+      rtString, rtString
+    );
+begin
+  result := FieldTypeToParserTypeTable[FieldType];
+end;
 
 class function TCustomVariable.FindVariable(const Ident: String;
   Parser: IEpiScriptParser): TCustomVariable;

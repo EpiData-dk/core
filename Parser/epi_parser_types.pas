@@ -19,6 +19,7 @@ type
     rtObject,
     rtUndefined     // Default result type which is ALWAYS incompatible with all other types. Classes should always override the default value.
   );
+  TParserResultTypes = set of TParserResultType;
 
 const
   SParserResultType: array[TParserResultType] of string = (
@@ -89,7 +90,10 @@ type
     otAssign,
 
     // Term
-    otVariable
+    otVariable,
+
+    // Function
+    otFunction
   );
 
   TGotoOption = (

@@ -33,14 +33,14 @@ U		({L}|{U2}|{U3}|{U4})
     result : integer;
   
  (* Statement tokens - add here for new commands *)
-<normal>"define"	return(OPDefine);
-<normal>"info"		return(OPInfo);
-<normal>"note"		return(OPNote);
-<normal>"warning"	return(OPWarning);
-<normal>"goto"		return(OPGoto);
-<normal>"write"		return(OPWrite);
-<normal>"clear"		return(OPClear);
-<normal>"missing"	return(OPMissing);
+<normal>[Dd][Ee][Ff][Ii][Nn][Ee]	return(OPDefine);
+<normal>[Ii][Nn][Ff][Oo]		return(OPInfo);
+<normal>[Nn][Oo][Tt][Ee]		return(OPNote);
+<normal>[Ww][Aa][Rr][Nn][Ii][Nn][Gg]	return(OPWarning);
+<normal>[Gg][Oo][Tt][Oo]		return(OPGoto);
+<normal>[Ww][Rr][Ii][Tt][Ee]		return(OPWrite);
+<normal>[Cc][Ll][Ee][Aa][Rr]		return(OPClear);
+<normal>[Mm][Ii][Ss][Ss][Ii][Nn][Gg]	return(OPMissing);
 
 
  (* General tokens *)
@@ -59,21 +59,21 @@ U		({L}|{U2}|{U3}|{U4})
 			end;
 
  (* Constants tokens *)
-<normal>"true"          return(OPTrue);
-<normal>"false"         return(OPFalse);
+<normal>[Tt][Rr][Uu][Ee]          return(OPTrue);
+<normal>[Ff][Aa][Ll][Ss][Ee]         return(OPFalse);
 
  (* Binary OPerator tokens *)
-<normal>"or"            return(OPOr);
-<normal>"and"           return(OPAnd);
-<normal>"mod"           return(OPMod);
-<normal>"div"           return(OPDiv);
+<normal>[Oo][Rr]        return(OPOr);
+<normal>[Aa][Nn][Dd]    return(OPAnd);
+<normal>[Mm][Oo][Dd]    return(OPMod);
+<normal>[Dd][Ii][Vv]    return(OPDiv);
 <normal>"*"             return(OPMult);
 <normal>"+"             return(OPPlus);
 <normal>"-"             return(OPMinus);
 <normal>"/"             return(OPDivide);
 
  (* Unary OPerators *)
-<normal>"not"           return(OPNot);
+<normal>[Nn][Oo][Tt]           return(OPNot);
  (* unary minus would be here too, but is identified in the binary Operator section *)
    
  (* Comparison tokens *)
@@ -85,18 +85,19 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>">="            return(OPGTE);
 
  (* Internal Keyword tokens *)
-<normal>"begin"		return(OPBegin);
-<normal>"end"		return(OPEnd);
-<normal>"if"            return(OPIf);
-<normal>"then"          return(OPThen);
-<normal>"else"          return(OPElse);
+<normal>[Bb][Ee][Gg][Ii][Nn]		return(OPBegin);
+<normal>[Ee][Nn][Dd]		return(OPEnd);
+<normal>[Ii][Ff]            return(OPIf);
+<normal>[Tt][Hh][Ee][Nn]         return(OPThen);
+<normal>[Ee][Ll][Ss][Ee]          return(OPElse);
 
  (* Typeident/Typecast tokens *)
-<normal>"string"        return(OPStringType);
-<normal>"integer"       return(OPIntegerType);
-<normal>"float"         return(OPFloatType);
-<normal>"boolean"       return(OPBooleanType);
-<normal>"date"		return(OPDateType);
+<normal>[Ss][Tt][Rr][Ii][Nn][Gg]        return(OPStringType);
+<normal>[Ii][Nn][Tt][Ee][Gg][Ee][Rr]    return(OPIntegerType);
+<normal>[Ff][Ll][Oo][Aa][Tt]            return(OPFloatType);
+<normal>[Bb][Oo][Oo][Ll][Ee][Aa][Nn]    return(OPBooleanType);
+<normal>[Dd][Aa][Tt][Ee]		return(OPDateType);
+<normal>[Tt][Ii][Mm][Ee]		return(OPTimeType);
 
  (* Misc. tokens *)
 <normal>":="            return(OPAssign);      
@@ -114,7 +115,7 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>\n              yyaccept;
 
  (* Identifiers *)
-<normal>{U}+({U}|{D})*
+<normal>\_?{U}+({U}|{D})*
                         begin
                           yylval.yyIdString := yytext;
                           return(OPIdentifier);
@@ -136,11 +137,10 @@ U		({L}|{U2}|{U3}|{U4})
                         end;
 
  (* Floating point *)
-<normal>{D}+([\.\,]{D}+)?([Ee][+-]?{D}+)?
+<normal>{D}+(\.{D}+)?([Ee][+-]?{D}+)?
                         begin
                           val(yytext, yylval.yyEpiFloat, result);
-                          if (Result = 0) or
-                             TryStrToFloat(yytext, yylval.yyEpiFloat)
+                          if (Result = 0)
                           then
                             return(OPFloatLiteral)
                           else

@@ -64,7 +64,7 @@ var
 %token OPIf OPThen OPElse
 
  /* Type tokens */
-%token OPStringType OPIntegerType OPFloatType OPBooleanType OPDateType
+%token OPStringType OPIntegerType OPFloatType OPBooleanType OPDateType OPTimeType
 
  /* Misc. tokens */
 %token OPOpenParan OPCloseParan
@@ -85,7 +85,7 @@ var
 %type <TStatementList>		statementlist program
 %type <TCustomStatement>	statement opt_else
 %type <Word>			typicalcommands emptycommands
-%type <TParserResultType>	definetype
+%type <TEpiFieldType>		definetype
 %type <TCustomVariable>		variable ident_or_write
 %type <TExpr>			opt_bracket expr term
 %type <TParserOperationType>	typecast
@@ -183,11 +183,12 @@ infotype	:	OPNote
 		;
 */
 
-definetype	:	OPIntegerType					{ $$ := rtInteger; }
-		|	OPStringType					{ $$ := rtString; } 
-		|	OPFloatType					{ $$ := rtFloat; }
-		|	OPBooleanType					{ $$ := rtBoolean; }
-/*		|	OPDateType					{ $$ := rtDate; } */
+definetype	:	OPIntegerType					{ $$ := ftInteger; }
+		|	OPStringType					{ $$ := ftString; } 
+		|	OPFloatType					{ $$ := ftFloat; }
+		|	OPBooleanType					{ $$ := ftBoolean; }
+		|	OPDateType					{ $$ := ftDMYDate; } 
+		|	OPTimeType					{ $$ := ftTime; } 
 		;
 
 ident_or_write	:	variable					{ $$ := $1; }
@@ -226,7 +227,7 @@ expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
 		;
 
 term		:	OPOpenParan expr OPCloseParan			{ $$ := $2; }
-		|	OPIdentifier OPOpenParan expr_list OPCloseParan	{ $$ := TFunction.CreateFunction($1, $3); }
+		|	OPIdentifier OPOpenParan expr_list OPCloseParan	{ $$ := TFunction.CreateFunction($1, $3, FParser); }
 		|	typecast OPOpenParan expr OPCloseParan		{ $$ := TTypeCast.Create($1, $3, nil); }
                 |       variable					{ $$ := $1; }
 		|	OPIntegerLiteral				{ $$ := TIntegerLiteral.Create($1);  }
@@ -247,14 +248,16 @@ expr_list	:	expr_list_wrap					{ $$ := TParamList.Create(ParamList); FreeAndNil(
 		|	/* empty */					{ $$ := TParamList.Create(nil); }
 		;	
 
-expr_list_wrap  :       expr OPComma expr_list_wrap			{ AddToParamList($1); }
+expr_list_wrap  :       expr_list_wrap OPComma expr 			{ AddToParamList($3); }
 		|	expr						{ AddToParamList($1); }
 		;
 
-typecast	:	OPIntegerType					{ $$ := otIntegerCast }
-		|	OPStringType					{ $$ := otStringCast } 
-		|	OPFloatType					{ $$ := otFloatCast }
-		|	OPBooleanType					{ $$ := otBoolCast }
+typecast	:	OPIntegerType					{ $$ := otIntegerCast; }
+		|	OPStringType					{ $$ := otStringCast; } 
+		|	OPFloatType					{ $$ := otFloatCast; }
+		|	OPBooleanType					{ $$ := otBoolCast; }
+		|	OPDateType					{ $$ := otIntegerCast; }
+		|	OPTimeType					{ $$ := otFloatCast; }
 		;
 
 %%

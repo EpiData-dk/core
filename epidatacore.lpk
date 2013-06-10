@@ -36,7 +36,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="63">
+    <Files Count="66">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -289,6 +289,18 @@
         <Filename Value="Parser/Functions/epi_script_function_lower.pas"/>
         <UnitName Value="epi_script_function_lower"/>
       </Item63>
+      <Item64>
+        <Filename Value="Parser/Functions/epi_script_function_resourcestrings.pas"/>
+        <UnitName Value="epi_script_function_resourcestrings"/>
+      </Item64>
+      <Item65>
+        <Filename Value="Parser/Functions/epi_script_function_createdate.pas"/>
+        <UnitName Value="epi_script_function_createdate"/>
+      </Item65>
+      <Item66>
+        <Filename Value="Parser/Functions/epi_script_function_time.pas"/>
+        <UnitName Value="epi_script_function_time"/>
+      </Item66>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>
