@@ -14,8 +14,7 @@ type
 
   TEpiScriptFunction_ABS = class(TFunction)
   protected
-    function MinParamCount: Integer; override;
-    function MaxParamCount: Integer; override;
+    function ParamCounts: TBoundArray; override;
     function ParamAcceptType(ParamNo: Integer): TParserResultTypes; override;
   public
     constructor Create(const ParamList: TParamList); override;
@@ -32,14 +31,10 @@ uses
 
 { TEpiScriptFunction_ABS }
 
-function TEpiScriptFunction_ABS.MinParamCount: Integer;
+function TEpiScriptFunction_ABS.ParamCounts: TBoundArray;
 begin
-  Result := 1;
-end;
-
-function TEpiScriptFunction_ABS.MaxParamCount: Integer;
-begin
-  Result := 1;
+  Result := inherited ParamCounts;
+  Result[0] := 1;
 end;
 
 function TEpiScriptFunction_ABS.ParamAcceptType(ParamNo: Integer
@@ -62,12 +57,12 @@ end;
 
 function TEpiScriptFunction_ABS.AsInteger: EpiInteger;
 begin
-  Result := Abs(FParamList.Param[0].AsInteger);
+  Result := Abs(Param[0].AsInteger);
 end;
 
 function TEpiScriptFunction_ABS.AsFloat: EpiFloat;
 begin
-  Result := Abs(FParamList.Param[0].AsFloat);
+  Result := Abs(Param[0].AsFloat);
 end;
 
 function TEpiScriptFunction_ABS.AsString: EpiString;

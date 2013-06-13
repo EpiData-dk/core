@@ -71,6 +71,7 @@ U		({L}|{U2}|{U3}|{U4})
 <normal>"+"             return(OPPlus);
 <normal>"-"             return(OPMinus);
 <normal>"/"             return(OPDivide);
+<normal>"^"             return(OPExponential);
 
  (* Unary OPerators *)
 <normal>[Nn][Oo][Tt]           return(OPNot);

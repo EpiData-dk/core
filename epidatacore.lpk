@@ -36,7 +36,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="66">
+    <Files Count="68">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -282,25 +282,33 @@
         <UnitName Value="epi_parser_core"/>
       </Item61>
       <Item62>
-        <Filename Value="Parser/Functions/epi_script_function_abs.pas"/>
-        <UnitName Value="epi_script_function_abs"/>
+        <Filename Value="Parser/Functions/epi_script_function_mathfunctions.pas"/>
+        <UnitName Value="epi_script_function_mathfunctions"/>
       </Item62>
       <Item63>
-        <Filename Value="Parser/Functions/epi_script_function_lower.pas"/>
-        <UnitName Value="epi_script_function_lower"/>
-      </Item63>
-      <Item64>
         <Filename Value="Parser/Functions/epi_script_function_resourcestrings.pas"/>
         <UnitName Value="epi_script_function_resourcestrings"/>
-      </Item64>
-      <Item65>
+      </Item63>
+      <Item64>
         <Filename Value="Parser/Functions/epi_script_function_createdate.pas"/>
         <UnitName Value="epi_script_function_createdate"/>
+      </Item64>
+      <Item65>
+        <Filename Value="Parser/Functions/epi_script_function_createtime.pas"/>
+        <UnitName Value="epi_script_function_createtime"/>
       </Item65>
       <Item66>
-        <Filename Value="Parser/Functions/epi_script_function_time.pas"/>
-        <UnitName Value="epi_script_function_time"/>
+        <Filename Value="Parser/Functions/epi_script_function_datefunctions.pas"/>
+        <UnitName Value="epi_script_function_datefunctions"/>
       </Item66>
+      <Item67>
+        <Filename Value="Parser/Functions/epi_script_function_timefunctions.pas"/>
+        <UnitName Value="epi_script_function_timefunctions"/>
+      </Item67>
+      <Item68>
+        <Filename Value="Parser/Functions/epi_script_function_stringfunctions.pas"/>
+        <UnitName Value="epi_script_function_stringfunctions"/>
+      </Item68>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>

@@ -39,15 +39,23 @@ type
 
   { TAbstractSyntaxTreeBase }
 
-  TAbstractSyntaxTreeBase = class(TObject)
+  TAbstractSyntaxTreeBase = class(TObject, IFPObserver)
   private
     FLineNo: integer;
     FColNo: integer;
     FLine: string;
+    FObservedList: TFpList;
   protected
     constructor Create; virtual;
     procedure DoTypeCheckError(Const Msg: String; Parser: IEpiScriptParser);
     procedure DoTypeCheckError(Const Msg: String; Const Args: Array of const; Parser: IEpiScriptParser);
+  { Observer / IFPObserver }
+  protected
+    procedure DoObserve(O: TObject);
+    procedure DoObservedChange(Sender: TObject); virtual; abstract;
+  public
+    procedure FPOObservedChanged(ASender: TObject;
+       Operation: TFPObservedOperation; Data: Pointer);
   public
     destructor Destroy; override;
     function TypeCheck(Parser: IEpiScriptParser): boolean; virtual;
@@ -64,6 +72,8 @@ type
   private
     FVAriable: TCustomVariable;
     FExpr: TExpr;
+  protected
+    procedure DoObservedChange(Sender: TObject); override;
   public
     constructor Create(Const Variable: TCustomVariable; Const Expr: TExpr);
     destructor Destroy; override;
@@ -79,6 +89,8 @@ type
     FExpr: TExpr;
     FThenStatement: TCustomStatement;
     FElseStatement: TCustomStatement;
+  protected
+    procedure DoObservedChange(Sender: TObject); override;
   public
     constructor Create(Const Expr: TExpr; Const ThenStatement: TCustomStatement;
       Const ElseStatement: TCustomStatement);
@@ -95,9 +107,12 @@ type
   private
     FOption: TGotoOption;
     FVariable: TCustomVariable;
+  protected
+    procedure DoObservedChange(Sender: TObject); override;
   public
     constructor Create(Const Variable: TCustomVariable;
       Const Option: TGotoOption);
+    destructor Destroy; override;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Variable: TCustomVariable read FVariable;
     property Option: TGotoOption read FOption;
@@ -113,8 +128,9 @@ type
     FR:  TExpr;
   protected
     function CommonType(Const A, B: TExpr): TParserResultType;
+    procedure DoObservedChange(Sender: TObject); override;
   public
-    constructor Create(Const Op: TParserOperationType; Const L, R: TExpr);
+    constructor Create(Const Op: TParserOperationType; Const L, R: TExpr); virtual;
     destructor Destroy; override;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     function ResultType: TParserResultType; virtual;
@@ -200,6 +216,7 @@ type
     FValue: EpiString;
   public
     constructor Create(const Value: EpiString);
+    destructor Destroy; override;
     function ResultType: TParserResultType; override;
   public
     function AsBoolean: EpiBool; override;
@@ -259,12 +276,18 @@ type
 
   { TParamList }
 
-  TParamList = class(TList)
+  TParamList = class(TAbstractSyntaxTreeBase)
   private
+    FList: TList;
+    function GetCount: Integer;
     function GetParam(const Index: Integer): TExpr;
+  protected
+    procedure DoObservedChange(Sender: TObject); override;
   public
     constructor Create(AList: TList);
+    destructor  Destroy; override;
     property    Param[Const Index: Integer]: TExpr read GetParam;
+    property    Count: Integer read GetCount;
   end;
 
   { TFunction }
@@ -275,22 +298,27 @@ type
   protected
     FParamList: TParamList;
     constructor Create(Const ParamList: TParamList); virtual;
-    function MinParamCount: Integer; virtual;
-    function MaxParamCount: Integer; virtual;
+    function ParamCounts: TBoundArray; virtual;
     function ParamAcceptType(ParamNo: Integer): TParserResultTypes; virtual;
   public
     class function CreateFunction(Const FunctionName: string;
       Const ParamList: TParamList;
       Parser: IEpiScriptParser): TFunction;
+    destructor Destroy; override;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property  Param[Const Index: integer]: TExpr read GetParam;
+  public
+    function AsInteger: EpiInteger; override;
+    function AsFloat: EpiFloat; override;
+    function AsString: EpiString; override;
   end;
 
   { TCustomVariable }
 
-  TCustomVariable = class(TExpr)
+  TCustomVariable = class(TExpr, IFPObserved)
   protected
     FIdent: string;
+    FObservers: TFPList;
     function FieldTypeToParserType(FieldType: TEpiFieldType): TParserResultType;
   public
     class function FindVariable(Const Ident: String;
@@ -302,6 +330,12 @@ type
     procedure SetFloat(Const Value: EpiFloat); virtual; abstract;
     procedure SetBoolean(Const Value: EpiBool); virtual; abstract;
     procedure SetString(Const Value: EpiString); virtual; abstract;
+  public
+    { IFPObserved }
+    procedure FPOAttachObserver(AObserver: TObject);
+    procedure FPODetachObserver(AObserver: TObject);
+    procedure FPONotifyObservers(ASender: TObject;
+      AOperation: TFPObservedOperation; Data: Pointer);
   end;
 
   { TFieldVariable }
@@ -313,6 +347,7 @@ type
   public
     constructor Create(Const Field: TEpiField;
       Parser: IEpiScriptExecutor);
+    destructor Destroy; override;
     function ResultType: TParserResultType; override;
     property Field: TEpiField read FField;
   public
@@ -336,6 +371,7 @@ type
     FEpiFieldType: TEpiFieldType;
   public
     constructor Create(Const AIdent: string; VarType: TEpiFieldType);
+    destructor Destroy; override;
     function ResultType: TParserResultType; override;
   public
     function AsBoolean: EpiBool; override;
@@ -368,8 +404,11 @@ type
   TWrite = class(TCustomStatement)
   private
     FExpr: TExpr;
+  protected
+    procedure DoObservedChange(Sender: TObject); override;
   public
     constructor Create(Expr: TExpr);
+    destructor Destroy; override;
     function TypeCheck(Parser: IEpiScriptParser): boolean; override;
     property Expr: TExpr read FExpr;
   end;
@@ -382,6 +421,7 @@ type
   public
     constructor Create(Const DefineType: TEpiFieldType;
       IdentList: array of IdString; Const Parser: IEpiScriptParser);
+    destructor Destroy; override;
     property IdentType: TEpiFieldType read FType;
   end;
 
@@ -421,24 +461,51 @@ uses
 
 
   // SCRIPT FUNCTIONS (placed ind ./functions/epi_script_function_<name>.pas
-  epi_script_function_abs,
+  epi_script_function_mathfunctions,
   epi_script_function_createdate,
-  epi_script_function_time,
-  epi_script_function_lower
+  epi_script_function_createtime,
+  epi_script_function_datefunctions,
+  epi_script_function_timefunctions,
+  epi_script_function_stringfunctions
   ;
 
 { TParamList }
 
 function TParamList.GetParam(const Index: Integer): TExpr;
 begin
-  result := TExpr(Items[Index]);
+  result := TExpr(FList.Items[Index]);
+end;
+
+function TParamList.GetCount: Integer;
+begin
+  result := FList.Count;
+end;
+
+procedure TParamList.DoObservedChange(Sender: TObject);
+begin
+  FList.Remove(Sender);
 end;
 
 constructor TParamList.Create(AList: TList);
+var
+  i: Integer;
 begin
-  inherited Create;
+  FList := TList.Create;
   if Assigned(AList) then
-    Self.Assign(AList);
+    FList.Assign(AList);
+
+  for i := 0 to FList.Count - 1 do
+    DoObserve(TObject(FList[i]));
+end;
+
+destructor TParamList.Destroy;
+var
+  Item: Pointer;
+begin
+  for Item in FList do
+    TExpr(Item).Free;
+  FList.Free;
+  inherited Destroy;
 end;
 
 { TMissingLiteral }
@@ -460,9 +527,22 @@ end;
 
 { TWrite }
 
+procedure TWrite.DoObservedChange(Sender: TObject);
+begin
+  if Sender = FExpr then
+    FExpr := nil;
+end;
+
 constructor TWrite.Create(Expr: TExpr);
 begin
   FExpr := Expr;
+  DoObserve(FExpr);
+end;
+
+destructor TWrite.Destroy;
+begin
+  FExpr.Free;
+  inherited Destroy;
 end;
 
 function TWrite.TypeCheck(Parser: IEpiScriptParser): boolean;
@@ -472,12 +552,25 @@ end;
 
 { TGoto }
 
+procedure TGoto.DoObservedChange(Sender: TObject);
+begin
+  if Sender = FVariable then
+    FVariable := nil;
+end;
+
 constructor TGoto.Create(const Variable: TCustomVariable;
   const Option: TGotoOption);
 begin
   inherited Create;
   FVariable := Variable;
   FOption := Option;
+  DoObserve(FVariable);
+end;
+
+destructor TGoto.Destroy;
+begin
+  FVariable.Free;
+  inherited Destroy;
 end;
 
 function TGoto.TypeCheck(Parser: IEpiScriptParser): boolean;
@@ -523,9 +616,49 @@ begin
   );
 end;
 
+procedure TAbstractSyntaxTreeBase.DoObserve(O: TObject);
+var
+  Obs: IFPObserved;
+begin
+  if not Assigned(O) then exit;
+
+  if O.GetInterface(SGUIDObserved, Obs) then
+  begin
+    Obs.FPOAttachObserver(Self);
+
+    if not Assigned(FObservedList) then
+      FObservedList := TFPList.Create;
+
+    FObservedList.Add(O);
+  end;
+end;
+
+procedure TAbstractSyntaxTreeBase.FPOObservedChanged(ASender: TObject;
+  Operation: TFPObservedOperation; Data: Pointer);
+var
+  Obs: IFPObserved;
+begin
+  DoObservedChange(ASender);
+  if Asender.GetInterface(SGUIDObserved, Obs) then
+    Obs.FPODetachObserver(Self);
+  FObservedList.Remove(ASender);
+end;
+
 destructor TAbstractSyntaxTreeBase.Destroy;
+var
+  Obs: IFPObserved;
+  i: Integer;
 begin
   FLine := '';
+
+  if Assigned(FObservedList) then
+  begin
+    for i := 0 to FObservedList.Count - 1 do
+      if TObject(FObservedList[i]).GetInterface(SGUIDObserved, Obs) then
+        Obs.FPODetachObserver(Self);
+    FreeAndNil(FObservedList);
+  end;
+
   inherited Destroy;
 end;
 
@@ -538,12 +671,16 @@ end;
 
 constructor TScriptVariable.Create(const AIdent: string; VarType: TEpiFieldType
   );
-var
-  Vtype: String;
 begin
   inherited Create(otVariable, nil, nil);
   FIdent := AIdent;
   FEpiFieldType := VarType;
+end;
+
+destructor TScriptVariable.Destroy;
+begin
+  VarClear(FValue);
+  inherited Destroy;
 end;
 
 function TScriptVariable.ResultType: TParserResultType;
@@ -634,6 +771,13 @@ begin
   FField := Field;
   FParser := Parser;
   FIdent := FField.Name;
+end;
+
+destructor TFieldVariable.Destroy;
+begin
+  FField := nil;
+  FParser := nil;
+  inherited Destroy;
 end;
 
 function TFieldVariable.ResultType: TParserResultType;
@@ -864,7 +1008,7 @@ end;
 
 function TRelationalExpr.AsInteger: EpiInteger;
 begin
-  Result := Integer(AsBoolean);
+  Result := EpiInteger(AsBoolean);
 end;
 
 function TRelationalExpr.AsFloat: EpiFloat;
@@ -983,7 +1127,8 @@ begin
       Result := rtInteger;
     otMult,
     otPlus,
-    otMinus:
+    otMinus,
+    otExponential:
       result := CommonType(FL, FR);
     otDivide:
       result := rtFloat;
@@ -996,6 +1141,12 @@ end;
 
 function TBinaryExpr.AsBoolean: EpiBool;
 begin
+  if IsMissing then
+  begin
+    Result := inherited AsInteger;
+    Exit;
+  end;
+
   case Operation of
     otOr:  result := Left.AsBoolean or Right.AsBoolean;
     otAnd: result := Left.AsBoolean and Right.AsBoolean;
@@ -1008,20 +1159,28 @@ function TBinaryExpr.AsInteger: EpiInteger;
 var
   Tmp: EpiInteger;
 begin
+  if IsMissing then
+  begin
+    Result := inherited AsInteger;
+    Exit;
+  end;
+
   case Operation of
     otPlus:  result := Left.AsInteger + Right.AsInteger;
     otMinus: result := Left.AsInteger - Right.AsInteger;
     otMult:  result := Left.AsInteger * Right.AsInteger;
     otDiv:
-    begin
-      // Catch ZeroDivide before is happens
-      Tmp := Right.AsInteger;
-      if Tmp = 0 then
-        result := inherited AsInteger
-      else
-        result := Left.AsInteger div Tmp;
-    end;
+      begin
+        // Catch ZeroDivide before is happens
+        Tmp := Right.AsInteger;
+        if Tmp = 0 then
+          result := inherited AsInteger
+        else
+          result := Left.AsInteger div Tmp;
+      end;
     otMod:   result := Left.AsInteger mod Right.AsInteger;
+    otExponential:
+      result := Left.AsInteger ** Right.AsInteger;
   else
     result := inherited AsInteger;
   end;
@@ -1031,19 +1190,27 @@ function TBinaryExpr.AsFloat: EpiFloat;
 var
   Tmp: EpiFloat;
 begin
+  if IsMissing then
+  begin
+    Result := inherited AsInteger;
+    Exit;
+  end;
+
   case Operation of
     otPlus:   result := Left.AsFloat + Right.AsFloat;
     otMinus:  result := Left.AsFloat - Right.AsFloat;
     otMult:   result := Left.AsFloat * Right.AsFloat;
     otDivide:
-    begin
-      // Catch ZeroDivide before is happens
-      Tmp := Right.AsFloat;
-      if Tmp = 0 then
-        result := inherited AsFloat
-      else
-        result := Left.AsFloat / Tmp;
-    end;
+      begin
+        // Catch ZeroDivide before is happens
+        Tmp := Right.AsFloat;
+        if Tmp = 0 then
+          result := inherited AsFloat
+        else
+          result := Left.AsFloat / Tmp;
+      end;
+    otExponential:
+      result := Left.AsFloat ** Right.AsFloat;
   else
     result := inherited AsFloat;
   end;
@@ -1127,6 +1294,9 @@ end;
 
 function TUnaryExpr.AsBoolean: EpiBool;
 begin
+  if IsMissing then
+    Result := inherited AsBoolean
+  else
   case Operation of
     otNot: result := (not Left.AsBoolean);
   end;
@@ -1134,6 +1304,9 @@ end;
 
 function TUnaryExpr.AsInteger: EpiInteger;
 begin
+  if IsMissing then
+    Result := inherited AsInteger
+  else
   case Operation of
     otMinus: result := -Left.AsInteger;
   end;
@@ -1141,6 +1314,9 @@ end;
 
 function TUnaryExpr.AsFloat: EpiFloat;
 begin
+  if IsMissing then
+    Result := inherited AsFloat
+  else
   case Operation of
     otMinus: result := -Left.AsFloat;
   end;
@@ -1164,14 +1340,16 @@ begin
   FParamList := ParamList;
 end;
 
-function TFunction.MinParamCount: Integer;
+destructor TFunction.Destroy;
 begin
-  result := 0;
+  FParamList.Free;
+  inherited Destroy;
 end;
 
-function TFunction.MaxParamCount: Integer;
+function TFunction.ParamCounts: TBoundArray;
 begin
-  result := MaxInt;
+  SetLength(Result, 1);
+  Result[0] := 0;
 end;
 
 function TFunction.ParamAcceptType(ParamNo: Integer): TParserResultTypes;
@@ -1185,19 +1363,79 @@ var
   Func: String;
 begin
   Func := LowerCase(FunctionName);
+
+  result := Parser.CreateFunction(FunctionName, ParamList);
+
+  if Assigned(Result) then exit;
+
   case Func of
+    { Math }
     'abs':
-      result := TEpiScriptFunction_ABS.Create(ParamList);
-    'dmy',
-    'mdy',
-    'ymd':
-      result := TEpiScriptFunction_CreateDate.Create(ParamList, Func);
-    'lower':
-      result := TEpiScriptFunction_Lower.Create(ParamList);
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncAbs, ParamList);
+    'exp':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncExp, ParamList);
+    'fraction':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncFraction, ParamList);
+    'ln':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncLn, ParamList);
+    'log':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncLog, ParamList);
+    'round':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncRound, ParamList);
+    'sqrt':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncSqrt, ParamList);
+    'random':
+      result := TEpiScriptFunction_MathFunctions.Create(otFuncRandom, ParamList);
+
+    { Date functions }
+    'createdate':
+      result := TEpiScriptFunction_CreateDate.Create(ParamList);
+    'today':
+      result := TEpiScriptFunction_DateFunctions.Create(otFuncToday, ParamList);
+    'day':
+      result := TEpiScriptFunction_DateFunctions.Create(otFuncDay, ParamList);
+    'month':
+      result := TEpiScriptFunction_DateFunctions.Create(otFuncMonth, ParamList);
+    'year':
+      result := TEpiScriptFunction_DateFunctions.Create(otFuncYear, ParamList);
+    'dayofweek':
+      result := TEpiScriptFunction_DateFunctions.Create(otFuncDayOfWeek, ParamList);
+    'week':
+      result := TEpiScriptFunction_DateFunctions.Create(otFuncWeek, ParamList);
+
+    { Time functions }
+    'createtime':
+      result := TEpiScriptFunction_CreateTime.Create(ParamList);
+    'now':
+      result := TEpiScriptFunction_TimeFunctions.Create(otFuncNow, ParamList);
     'hour':
-      result := TEpiScriptFunction_Time.Create(ParamList);
+      result := TEpiScriptFunction_TimeFunctions.Create(otFuncHour, ParamList);
+    'minut':
+      result := TEpiScriptFunction_TimeFunctions.Create(otFuncMinut, ParamList);
+    'second':
+      result := TEpiScriptFunction_TimeFunctions.Create(otFuncSecond, ParamList);
+
+    { String }
+    'substring':
+      result := TEpiScriptFunction_StringFunctions.Create(otFuncSubString, ParamList);
+    'length':
+      result := TEpiScriptFunction_StringFunctions.Create(otFuncLength, ParamList);
+    'pos':
+      result := TEpiScriptFunction_StringFunctions.Create(otFuncPos, ParamList);
+    'trim':
+      result := TEpiScriptFunction_StringFunctions.Create(otFuncTrim, ParamList);
+    'lower':
+      result := TEpiScriptFunction_StringFunctions.Create(otFuncLower, ParamList);
+    'upper':
+      result := TEpiScriptFunction_StringFunctions.Create(otFuncUpper, ParamList);
   else
-    result := Parser.CreateFunction(FunctionName, ParamList);
+    result := nil;
+  end;
+
+  if not Assigned(Result) then
+  begin
+    yyerror('Function "' + FunctionName + '" not found!');
+    yyabort;
   end;
 end;
 
@@ -1207,10 +1445,12 @@ var
   AType: TParserResultType;
   i: Integer;
   S: String;
+  AllowedCounts: TBoundArray;
+  CurrentCount: Integer;
 begin
   Result := inherited TypeCheck(Parser);
   if not Result then exit;
-
+{
   if FParamList.Count < MinParamCount then
   begin
     DoTypeCheckError('Too few parameters. Required: %d Given %d',
@@ -1227,11 +1467,36 @@ begin
       Parser
     );
     Exit(False);
+  end;       }
+
+  S := '';
+  Result := false;
+  AllowedCounts := ParamCounts;
+  CurrentCount := FParamList.Count;
+  for i := Low(AllowedCounts) to High(AllowedCounts) do
+  begin
+    if AllowedCounts[i] = CurrentCount then
+    begin
+      Result := true;
+      break;
+    end;
+    S := S + IntToStr(AllowedCounts[i]) + ',';
   end;
+  Delete(S,Length(S),1);
+
+  if not result then
+  begin
+    DoTypeCheckError('Incorrect number of parameters given. Accepts: %s Given %d',
+      [S, FParamList.Count],
+      Parser
+    );
+    Exit(False);
+  end;
+
 
   for i := 0 to FParamList.Count -1 do
   begin
-    AcceptTypes := ParamAcceptType(0);
+    AcceptTypes := ParamAcceptType(i);
     if not (Param[i].ResultType in AcceptTypes) then
     begin
       S := '';
@@ -1258,6 +1523,51 @@ begin
   end;
 end;
 
+function TFunction.AsInteger: EpiInteger;
+begin
+  if IsMissing then
+    Result := inherited AsInteger
+  else
+  case ResultType of
+    rtBoolean:
+      result := AsBoolean;
+  else
+    Result := inherited AsInteger;
+  end;
+end;
+
+function TFunction.AsFloat: EpiFloat;
+begin
+  if IsMissing then
+    Result := inherited AsFloat
+  else
+  case ResultType of
+    rtBoolean:
+      result := AsBoolean;
+    rtInteger:
+      result := AsInteger;
+  else
+    Result := inherited AsFloat;
+  end;
+end;
+
+function TFunction.AsString: EpiString;
+begin
+  if IsMissing then
+    Result := inherited AsString
+  else
+  case ResultType of
+    rtBoolean:
+      result := BoolToStr(AsTrueBoolean, True);
+    rtInteger:
+      result := IntToStr(AsInteger);
+    rtFloat:
+      result := FloatToStr(AsFloat);
+  else
+    Result := inherited AsString;
+  end;
+end;
+
 { TDefine }
 
 constructor TDefine.Create(const DefineType: TEpiFieldType;
@@ -1273,19 +1583,34 @@ begin
     if Parser.VariableExists(IdentList[i]) then
     begin
       yyerror('Variable "' + IdentList[i] + '" already defined');
-      yyabort
+      yyabort;
     end;
     Parser.AddVariable(TScriptVariable.Create(IdentList[i], DefineType));
   end;
 end;
 
+destructor TDefine.Destroy;
+begin
+  inherited Destroy;
+end;
+
 { TAssignment }
+
+procedure TAssignment.DoObservedChange(Sender: TObject);
+begin
+  if Sender = FExpr then
+    FExpr := nil;
+  if Sender = FVAriable then
+    FVAriable := nil;
+end;
 
 constructor TAssignment.Create(const Variable: TCustomVariable; const Expr: TExpr);
 begin
   inherited Create;
   FExpr := Expr;
   FVAriable := Variable;
+  DoObserve(FExpr);
+  DoObserve(FVAriable);
 end;
 
 destructor TAssignment.Destroy;
@@ -1320,11 +1645,18 @@ end;
 
 { TIfThen }
 
+procedure TIfThen.DoObservedChange(Sender: TObject);
+begin
+  if Sender = FExpr then
+    FExpr := nil;
+end;
+
 constructor TIfThen.Create(const Expr: TExpr;
   const ThenStatement: TCustomStatement; const ElseStatement: TCustomStatement);
 begin
   inherited Create;
   FExpr := Expr;
+  DoObserve(FExpr);
   FThenStatement := ThenStatement;
   FElseStatement := ElseStatement;
 end;
@@ -1465,6 +1797,12 @@ begin
   FValue := Value;
 end;
 
+destructor TStringLiteral.Destroy;
+begin
+  FValue := '';
+  inherited Destroy;
+end;
+
 function TStringLiteral.ResultType: TParserResultType;
 begin
   Result := rtString;
@@ -1577,12 +1915,22 @@ begin
   result := TParserResultType(Math.Max(Ord(A.ResultType), Ord(B.ResultType)));
 end;
 
+procedure TExpr.DoObservedChange(Sender: TObject);
+begin
+  if Sender = FL then
+    FL := nil;
+  if Sender = FR then
+    FR := nil;
+end;
+
 constructor TExpr.Create(const Op: TParserOperationType; const L, R: TExpr);
 begin
   inherited Create;
   FOp := Op;
   FL := L;
   FR := R;
+  DoObserve(L);
+  DoObserve(R);
 end;
 
 destructor TExpr.Destroy;
@@ -1687,7 +2035,41 @@ end;
 destructor TCustomVariable.Destroy;
 begin
   FIdent := '';
+  FPONotifyObservers(Self, ooFree, nil);
+  If Assigned(FObservers) then
+    FreeAndNil(FObservers);
   inherited Destroy;
+end;
+
+procedure TCustomVariable.FPOAttachObserver(AObserver: TObject);
+begin
+  if not Assigned(FObservers) then
+    FObservers := TFPList.Create;
+
+  FObservers.Add(AObserver);
+end;
+
+procedure TCustomVariable.FPODetachObserver(AObserver: TObject);
+begin
+  if not Assigned(FObservers) then exit;
+
+  FObservers.Remove(AObserver);
+end;
+
+procedure TCustomVariable.FPONotifyObservers(ASender: TObject;
+  AOperation: TFPObservedOperation; Data: Pointer);
+Var
+  O : TObject;
+  I : Integer;
+  Obs : IFPObserver;
+begin
+  If Assigned(FObservers) then
+    For I := FObservers.Count - 1 downto 0 do
+      begin
+        O := TObject(FObservers[i]);
+        If O.GetInterface(SGUIDObserver, Obs) then
+          Obs.FPOObservedChanged(Self, AOperation, Data);
+      end;
 end;
 
 { TVarList }

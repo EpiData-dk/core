@@ -53,6 +53,7 @@ var
  /* Binary OPerator tokens */
 %token OPOr OPAnd OPMod OPDiv /* OPShl OPShr OPXor */
 %token OPMult OPPlus OPMinus OPDivide 
+%token OPExponential
 
  /* Unary OPerators */
 %token OPNot
@@ -95,15 +96,17 @@ var
 
 
 
-  /*   Precedence rulse:                       */
-  /*   =, <>, <, >, <=, >=             Lowest  */
-  /*   +, -, or, xor                   Second  */
-  /*   *, /, div, mod, and, shl, shr   Third   */
-  /*   not, unaryminus                 Highest */ 
+  /*   Precedence rulse:                        */
+  /*   =, <>, <, >, <=, >=		Lowest  */
+  /*   +, -, or, xor			Second  */
+  /*   *, /, div, mod, and, shl, shr	Third   */
+  /*   ^				Fourth  */
+  /*   not, unaryminus			Highest */ 
 
 %nonassoc OPEQ OPNEQ OPLT OPLTE OPGT OPGTE
 %left OPPlus OPMinus OPOr /*OPXor*/
 %left OPMult OPDivide OPDiv OPMod OPAnd /*OPShl OPShr*/
+%left OPExponential
 %right OPNot UMINUS
 
 %{
@@ -220,6 +223,7 @@ expr		:	expr OPEQ expr					{ $$ := TRelationalExpr.Create(otEQ, $1, $3); }
 		|	expr OPAnd expr					{ $$ := TBinaryExpr.Create(otAnd, $1, $3); }
 /*		|       expr OPShl expr					{ $$ := TBinaryExpr.Create(otShl, $1, $3); } */
 /*		|	expr OPShr expr					{ $$ := TBinaryExpr.Create(otShr, $1, $3); } */
+		|	expr OPExponential expr				{ $$ := TBinaryExpr.Create(otExponential, $1, $3); }
                 |       OPNot expr					{ $$ := TUnaryExpr.Create(otNot,  $2, nil); }
                 |       OPMinus expr					{ $$ := TUnaryExpr.Create(otMinus, $2, nil); }
                         %prec UMINUS

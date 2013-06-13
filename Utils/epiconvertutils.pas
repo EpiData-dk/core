@@ -14,6 +14,9 @@ function EpiStrToDate(Const Str: string; Const Separator: Char;
   Const FT: TEpiFieldType; out ErrMsg: string): EpiDate; overload;
 function EpiStrToDate(Const Str: string; Const Separator: Char;
   Const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean; overload;
+function EpiStrToDateGuess(Const Str: string; out TheDate: EpiDate;
+  out ErrMsg: string): boolean;
+
 
 function EpiStrToTime(Const Str: string; Const Separator: Char;
   out H, M, S: Word; out ErrMsg: string): boolean; overload;
@@ -21,6 +24,8 @@ function EpiStrToTime(Const Str: string; Const Separator: Char;
   out ErrMsg: string): EpiTime; overload;
 function EpiStrToTime(Const Str: string; Const Separator: Char;
   out TheTime: EpiTime; out ErrMsg: string): boolean; overload;
+function EpiStrToTimeGues(Const Str: string; out TheTime: EpiTime;
+  out ErrMsg: string): boolean; overload;
 
 implementation
 
@@ -143,6 +148,27 @@ begin
     TheDate := Trunc(EncodeDate(Y, M, D));
 end;
 
+function EpiStrToDateGuess(const Str: string; out TheDate: EpiDate; out
+  ErrMsg: string): boolean;
+const
+  Separators: array[0..2] of Char =
+    ('-', '/', '.');
+var
+  Sep: Char;
+  Ft: TEpiFieldType;
+begin
+  Result := true;
+  for Sep in Separators do
+    for Ft in (DateFieldTypes - AutoFieldTypes) do
+      begin
+        if EpiStrToDate(Str, Sep, Ft, TheDate, ErrMsg) then
+          Exit;
+      end;
+  TheDate := 0;
+  ErrMsg := 'Could not guess String-to-Date';
+  Result := false;
+end;
+
 function EpiStrToTime(const Str: string; const Separator: Char; out H, M,
   S: Word; out ErrMsg: string): boolean;
 var
@@ -166,9 +192,14 @@ begin
   Cl := Length(C);
 
   H := 0; M := 0; S := 0;
-  if Al > 0 then H := StrToInt(A);
-  if Bl > 0 then M := StrToInt(B);
-  if Cl > 0 then S := StrToInt(C);
+  try
+    if Al > 0 then H := StrToInt(A);
+    if Bl > 0 then M := StrToInt(B);
+    if Cl > 0 then S := StrToInt(C);
+  except
+    Result := false;
+    Exit;
+  end;
 
   if H > 23 then exit(ValidateError(Format('Incorrect hour: %d', [H])));
   if M > 59 then exit(ValidateError(Format('Incorrect minut: %d', [M])));
@@ -195,6 +226,23 @@ begin
   result := EpiStrToTime(Str, Separator, H, M, S, ErrMsg);
   if result then
     TheTime := EncodeTime(H, M, S, 0);
+end;
+
+function EpiStrToTimeGues(const Str: string; out TheTime: EpiTime; out
+  ErrMsg: string): boolean;
+const
+  Separators: array[0..1] of Char =
+    ('.', ':');
+var
+  Sep: Char;
+begin
+  Result := True;
+  for Sep in Separators do
+    if EpiStrToTime(Str, Sep, TheTime, ErrMsg) then
+      Exit;
+  TheTime := 0;
+  ErrMsg := 'Could not guess String-to-Time';
+  Result := false;
 end;
 
 end.

@@ -164,12 +164,14 @@ end;
 constructor TEpiScriptExecutor.Create;
 begin
   FVariables := TFPObjectHashTable.Create(False);
+  FVariables.OwnsObjects := false;
   FStopExecuting := false;
 end;
 
 destructor TEpiScriptExecutor.Destroy;
 begin
   FVariables.Free;
+  FStatementList.Free;
   inherited Destroy;
 end;
 
@@ -179,15 +181,15 @@ var
   Stm: TStatementList;
 begin
   Parser := TEpiScriptParser.Create(Self);
-  if Parser.Parse(Lines, Stm) then
-    FStatementList := Stm;
+  result := Parser.Parse(Lines, FStatementList);
   Parser.Free;
 end;
 
 function TEpiScriptExecutor.RunScript(Lines: TStrings): boolean;
 begin
   result := ParseScript(Lines);
-  ExecuteScript(FStatementList);
+  if result then
+    ExecuteScript(FStatementList);
 end;
 
 function TEpiScriptExecutor.ExecuteScript(StatementList: TStatementList
