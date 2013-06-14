@@ -319,7 +319,7 @@ type
   protected
     FIdent: string;
     FObservers: TFPList;
-    function FieldTypeToParserType(FieldType: TEpiFieldType): TParserResultType;
+    class function FieldTypeToParserType(FieldType: TEpiFieldType): TParserResultType;
   public
     class function FindVariable(Const Ident: String;
       Parser: IEpiScriptParser): TCustomVariable;
@@ -366,22 +366,59 @@ type
 
   TScriptVariable = class(TCustomVariable)
   private
-    FIsMissing: Boolean;
-    FValue: Variant;
     FEpiFieldType: TEpiFieldType;
   public
-    constructor Create(Const AIdent: string; VarType: TEpiFieldType);
-    destructor Destroy; override;
+    class function CreateVariable(Const AIdent: string;
+      VarType: TEpiFieldType): TScriptVariable;
     function ResultType: TParserResultType; override;
   public
-    function AsBoolean: EpiBool; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
+  end;
+
+  { TBooleanVariable }
+
+  TBooleanVariable = class(TScriptVariable)
+  private
+    FValue: EpiBool;
+  public
     function IsMissing: Boolean; override;
-    procedure SetBoolean(Const Value: EpiBool); override;
-    procedure SetInteger(Const Value: EpiInteger); override;
-    procedure SetFloat(Const Value: EpiFloat); override;
+    function AsBoolean: EpiBool; override;
+    procedure SetBoolean(const Value: EpiBool); override;
+  end;
+
+  { TIntegerVariable }
+
+  TIntegerVariable = class(TScriptVariable)
+  private
+    FValue: EpiInteger;
+  public
+    function IsMissing: Boolean; override;
+    function AsInteger: EpiInteger; override;
+    procedure SetInteger(const Value: EpiInteger); override;
+  end;
+
+  { TFloatVariable }
+
+  TFloatVariable = class(TScriptVariable)
+  private
+    FValue: EpiFloat;
+  public
+    function IsMissing: Boolean; override;
+    function AsFloat: EpiFloat; override;
+    procedure SetFloat(const Value: EpiFloat); override;
+  end;
+
+  { TStringVariable }
+
+  TStringVariable = class(TScriptVariable)
+  private
+    FValue: EpiString;
+  public
+    destructor Destroy; override;
+    function IsMissing: Boolean; override;
+    function AsString: EpiString; override;
     procedure SetString(const Value: EpiString); override;
   end;
 
@@ -669,18 +706,17 @@ end;
 
 { TScriptVariable }
 
-constructor TScriptVariable.Create(const AIdent: string; VarType: TEpiFieldType
-  );
+class function TScriptVariable.CreateVariable(const AIdent: string;
+  VarType: TEpiFieldType): TScriptVariable;
 begin
-  inherited Create(otVariable, nil, nil);
-  FIdent := AIdent;
-  FEpiFieldType := VarType;
-end;
-
-destructor TScriptVariable.Destroy;
-begin
-  VarClear(FValue);
-  inherited Destroy;
+  case FieldTypeToParserType(VarType) of
+    rtBoolean: Result := TBooleanVariable.Create(otVariable, nil, nil);
+    rtInteger: Result := TIntegerVariable.Create(otVariable, nil, nil);
+    rtFloat:   Result := TFloatVariable.Create(otVariable, nil, nil);
+    rtString:  Result := TStringVariable.Create(otVariable, nil, nil);
+  end;
+  Result.FIdent := AIdent;
+  Result.FEpiFieldType := VarType;
 end;
 
 function TScriptVariable.ResultType: TParserResultType;
@@ -688,78 +724,123 @@ begin
   Result := FieldTypeToParserType(FEpiFieldType);
 end;
 
-function TScriptVariable.AsBoolean: EpiBool;
-begin
-  if FIsMissing then
-    result := TEpiBoolField.DefaultMissing
-  else
-    result := FValue;
-end;
-
 function TScriptVariable.AsInteger: EpiInteger;
 begin
-  if FIsMissing then
-    result := TEpiIntField.DefaultMissing
+  if IsMissing then
+    result := inherited AsInteger
   else
-    result := FValue;
+    if FEpiFieldType = ftBoolean then
+      result := AsBoolean
+    else
+      inherited AsInteger;
 end;
 
 function TScriptVariable.AsFloat: EpiFloat;
 begin
-  if FIsMissing then
-    result := TEpiFloatField.DefaultMissing
+  if IsMissing then
+    result := inherited AsFloat
   else
-    result := FValue;
+    case FEpiFieldType of
+      ftBoolean: result := AsBoolean;
+      ftInteger: result := AsInteger;
+      ftDMYDate: result := AsInteger;
+      ftMDYDate: ;
+      ftYMDDate: ;
+    else
+      result := inherited AsFloat;
+    end;
 end;
 
 function TScriptVariable.AsString: EpiString;
 begin
-  if FIsMissing then
-    result := TEpiStringField.DefaultMissing
+  if IsMissing then
+    result := inherited AsString
   else
     case FEpiFieldType of
       ftBoolean: result := BoolToStr(AsTrueBoolean, true);
-      ftInteger: result := IntToStr(FValue);
-      ftFloat:   result := FloatToStr(FValue);
-      ftDMYDate: result := DateToStr(FValue);
+      ftInteger: result := IntToStr(AsInteger);
+      ftFloat:   result := FloatToStr(AsFloat);
+      ftDMYDate: result := DateToStr(AsInteger);
       ftMDYDate: ;
       ftYMDDate: ;
-      ftTime:    result := TimeToStr(FValue);
-      ftString:  result := FValue;
+      ftTime:    result := TimeToStr(AsFloat);
+    else
+      result := inherited AsString;
     end;
 end;
 
-function TScriptVariable.IsMissing: Boolean;
+{ TBooleanVariable }
+
+function TBooleanVariable.IsMissing: Boolean;
 begin
-  Result := FIsMissing;
+  Result := TEpiBoolField.CheckMissing(FValue);
 end;
 
-procedure TScriptVariable.SetBoolean(const Value: EpiBool);
+function TBooleanVariable.AsBoolean: EpiBool;
 begin
-  FIsMissing := TEpiBoolField.CheckMissing(Value);
-  if not FIsMissing then
-    FValue := Value;
+  Result := FValue;
 end;
 
-procedure TScriptVariable.SetInteger(const Value: EpiInteger);
+procedure TBooleanVariable.SetBoolean(const Value: EpiBool);
 begin
-  FIsMissing := TEpiIntField.CheckMissing(Value);
-  if not FIsMissing then
-    FValue := Value;
+  FValue := Value;
 end;
 
-procedure TScriptVariable.SetFloat(const Value: EpiFloat);
+{ TIntegerVariable }
+
+function TIntegerVariable.IsMissing: Boolean;
 begin
-  FIsMissing := TEpiFloatField.CheckMissing(Value);
-  if not FIsMissing then
-    FValue := Value;
+  Result := TEpiIntField.CheckMissing(FValue);
 end;
 
-procedure TScriptVariable.SetString(const Value: EpiString);
+function TIntegerVariable.AsInteger: EpiInteger;
 begin
-  FIsMissing := TEpiStringField.CheckMissing(Value);
-  if not FIsMissing then
-    FValue := Value;
+  Result := FValue;
+end;
+
+procedure TIntegerVariable.SetInteger(const Value: EpiInteger);
+begin
+  FValue := Value;
+end;
+
+{ TFloatVariable }
+
+function TFloatVariable.IsMissing: Boolean;
+begin
+  Result := TEpiFloatField.CheckMissing(FValue);
+end;
+
+function TFloatVariable.AsFloat: EpiFloat;
+begin
+  Result := FValue;
+end;
+
+procedure TFloatVariable.SetFloat(const Value: EpiFloat);
+begin
+  FValue := Value;
+end;
+
+{ TStringVariable }
+
+destructor TStringVariable.Destroy;
+begin
+  FValue := '';
+  inherited Destroy;
+end;
+
+function TStringVariable.IsMissing: Boolean;
+begin
+  Result := TEpiStringField.CheckMissing(FValue);
+end;
+
+function TStringVariable.AsString: EpiString;
+begin
+  Result := FValue;
+end;
+
+procedure TStringVariable.SetString(const Value: EpiString);
+begin
+  FValue := Value;
 end;
 
 { TFieldVariable }
@@ -1585,7 +1666,7 @@ begin
       yyerror('Variable "' + IdentList[i] + '" already defined');
       yyabort;
     end;
-    Parser.AddVariable(TScriptVariable.Create(IdentList[i], DefineType));
+    Parser.AddVariable(TScriptVariable.CreateVariable(IdentList[i], DefineType));
   end;
 end;
 
@@ -1958,11 +2039,14 @@ begin
 end;
 
 function TExpr.AsTrueBoolean: Boolean;
+var
+  Val: EpiBool;
 begin
-  if TEpiBoolField.CheckMissing(AsBoolean) then
+  Val := AsBoolean;
+  if TEpiBoolField.CheckMissing(Val) then
     result := false
   else
-    result := Boolean(AsBoolean);
+    result := Boolean(Val);
 end;
 
 function TExpr.AsBoolean: EpiBool;
@@ -1992,7 +2076,7 @@ end;
 
 { TCustomVariable }
 
-function TCustomVariable.FieldTypeToParserType(FieldType: TEpiFieldType
+class function TCustomVariable.FieldTypeToParserType(FieldType: TEpiFieldType
   ): TParserResultType;
 const
   FieldTypeToParserTypeTable: array[TEpiFieldType] of TParserResultType =
