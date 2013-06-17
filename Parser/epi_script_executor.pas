@@ -29,7 +29,7 @@ type
     procedure ProcessIfThenElse(IfThen: TIfThen); virtual;
 //    procedure ProcessInfo();
     procedure ProcessStatementList(List: TStatementList); virtual;
-    procedure ProcessWrite(Write: TWrite);
+    procedure ProcessWrite(Write: TWrite); virtual;
   private
     FStatementList: TStatementList;
   public
@@ -58,9 +58,9 @@ type
     function GetFieldValue(Const Sender: TObject;
       Const F: TEpiField): Variant; virtual;
     procedure SetFieldIsMissing(const Sender: TObject; const F: TEpiField;
-      const Value: Boolean);
+      const Value: Boolean); virtual;
     function GetFieldIsMissing(const Sender: TObject; const F: TEpiField
-      ): Boolean;
+      ): Boolean; virtual;
   end;
 
 implementation
