@@ -42,6 +42,11 @@ function TEpiCalculation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
 begin
   Result := inherited DoClone(AOwner, Dest);
   with TEpiCalculation(Result) do
+  if (not Assigned(OwnerField.DataFile)) or
+     (OwnerField.DataFile = Self.OwnerField.DataFile)
+  then
+    FResultField := Self.FResultField
+  else
     FResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name];
 end;
 
@@ -144,10 +149,20 @@ begin
   Result := inherited DoClone(AOwner, Dest);
   with TEpiTimeCalc(Result) do
   begin
-    FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
-    FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
-    FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
-    FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
+    if (not Assigned(OwnerField.DataFile)) or
+       (OwnerField.DataFile = Self.OwnerField.DataFile)
+    then
+    begin
+      FEndDate    := Self.FEndDate;
+      FEndTime    := Self.FEndTime;
+      FStartDate  := Self.FStartDate;
+      FStartTime  := Self.FStartTime;
+    end else begin
+      FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
+      FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
+      FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
+      FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
+    end;
     FTimeCalcType := Self.FTimeCalcType;
   end;
 end;
@@ -255,9 +270,18 @@ begin
 
   with TEpiCombineDateCalc(Result) do
   begin
-    FDay   := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FDay.Name]);
-    FMonth := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FMonth.Name]);
-    FYear  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
+    if (not Assigned(OwnerField.DataFile)) or
+       (OwnerField.DataFile = Self.OwnerField.DataFile)
+    then
+    begin
+      FDay   := Self.FDay;
+      FMonth := Self.FMonth;
+      FYear  := Self.FYear;
+    end else begin
+      FDay   := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FDay.Name]);
+      FMonth := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FMonth.Name]);
+      FYear  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
+    end;
   end;
 end;
 
@@ -347,14 +371,28 @@ function TEpiCombineStringCalc.DoClone(AOwner: TEpiCustomBase;
   Dest: TEpiCustomBase): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest);
+
   with TEpiCombineStringCalc(Result) do
   begin
-    if Assigned(Self.FField1) then
-      FField1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
-    if Assigned(Self.FField2) then
-      FField2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
-    if Assigned(Self.FField3) then
-      FField3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
+    if (not Assigned(OwnerField.DataFile)) or
+       (OwnerField.DataFile = Self.OwnerField.DataFile)
+    then
+    begin
+      if Assigned(Self.FField1) then
+        FField1 := Self.FField1;
+      if Assigned(Self.FField2) then
+        FField2 := Self.FField2;
+      if Assigned(Self.FField3) then
+        FField3 := Self.FField3;
+    end else begin
+      if Assigned(Self.FField1) then
+        FField1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
+      if Assigned(Self.FField2) then
+        FField2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
+      if Assigned(Self.FField3) then
+        FField3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
+    end;
+
     FDelim1 := Self.FDelim1;
     FDelim2 := Self.FDelim2;
   end;

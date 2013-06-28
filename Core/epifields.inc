@@ -437,6 +437,15 @@ begin
 
   if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
     F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
+
+  if Assigned(Jumps) then
+    F.Jumps := TEpiJumps(Jumps.Clone(F));
+
+  if Assigned(Calculation) then
+    F.Calculation := TEpiCalculation(Calculation.Clone(F));
+
+  if Assigned(Comparison) then
+    F.Comparison := TEpiComparison(Comparison.Clone(F));
 end;
 
 procedure TEpiField.PostCloneUpdate(Dest: TEpiField);
@@ -446,7 +455,6 @@ begin
 
   if Assigned(ValueLabelWriteField) then
     Dest.FValueLabelWriteField := Dest.DataFile.Fields.FieldByName[FValueLabelWriteField.Name];
-
 
   if Assigned(Jumps) then
     Dest.FJumps := TEpiJumps(Jumps.Clone(Dest));
