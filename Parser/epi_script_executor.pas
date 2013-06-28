@@ -48,19 +48,19 @@ type
     procedure AddVariable(const Variable: TCustomVariable);
     function FindVariable(const Ident: string): TCustomVariable;
     procedure ParseError(const Msg: string; const LineNo,
-      ColNo: integer; const TextFound: string);
+      ColNo: integer; const TextFound: string); virtual;
     function CreateFunction(const FunctionName: string;
        const ParamList: TParamList): TFunction;
   public
     { IEpiScriptExecutor }
-    procedure SetFieldValue(Const Sender: TObject;
-      Const F: TEpiField; Const Value: Variant); virtual;
-    function GetFieldValue(Const Sender: TObject;
-      Const F: TEpiField): Variant; virtual;
-    procedure SetFieldIsMissing(const Sender: TObject; const F: TEpiField;
-      const Value: Boolean); virtual;
-    function GetFieldIsMissing(const Sender: TObject; const F: TEpiField
-      ): Boolean; virtual;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiBool); virtual; overload;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiInteger); virtual; overload;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiFloat); virtual; overload;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiString); virtual; overload;
+    function GetFieldValueBool(Const Sender: TObject; Const F: TEpiField): EpiBool; virtual;
+    function GetFieldValueInt(Const Sender: TObject; Const F: TEpiField): EpiInteger; virtual;
+    function GetFieldValueFloat(Const Sender: TObject; Const F: TEpiField): EpiFloat; virtual;
+    function GetFieldValueString(Const Sender: TObject; Const F: TEpiField): EpiString; virtual;
   end;
 
 implementation
@@ -204,9 +204,16 @@ begin
   if not Assigned(StatementList) then
     Exit;
 
-  ProcessStatementList(StatementList);
-
-  result := true;
+  try
+    ProcessStatementList(StatementList);
+    result := true;
+  except
+    On E: Exception do
+    begin
+      ParseError(E.Message, ASTCurrentExecutionObject.LineNo, ASTCurrentExecutionObject.ColNo, ASTCurrentExecutionObject.Line);
+      ASTCurrentExecutionObject := nil;
+    end;
+  end;
 end;
 
 function TEpiScriptExecutor.VariableExists(const Ident: string): boolean;
@@ -241,7 +248,7 @@ begin
 end;
 
 procedure TEpiScriptExecutor.SetFieldValue(const Sender: TObject;
-  const F: TEpiField; const Value: Variant);
+  const F: TEpiField; const Value: EpiBool);
 var
   Idx: Integer;
 begin
@@ -249,11 +256,11 @@ begin
     Idx := FOnGetRecordIndex(Self)
   else
     Exit;
-  F.AsValue[Idx] := Value;
+  F.AsBoolean[Idx] := Value;
 end;
 
-function TEpiScriptExecutor.GetFieldValue(const Sender: TObject;
-  const F: TEpiField): Variant;
+procedure TEpiScriptExecutor.SetFieldValue(const Sender: TObject;
+  const F: TEpiField; const Value: EpiInteger);
 var
   Idx: Integer;
 begin
@@ -261,11 +268,11 @@ begin
     Idx := FOnGetRecordIndex(Self)
   else
     Exit;
-  Result := F.AsValue[Idx];
+  F.AsInteger[Idx] := Value;
 end;
 
-procedure TEpiScriptExecutor.SetFieldIsMissing(const Sender: TObject;
-  const F: TEpiField; const Value: Boolean);
+procedure TEpiScriptExecutor.SetFieldValue(const Sender: TObject;
+  const F: TEpiField; const Value: EpiFloat);
 var
   Idx: Integer;
 begin
@@ -273,11 +280,11 @@ begin
     Idx := FOnGetRecordIndex(Self)
   else
     Exit;
-  F.IsMissing[Idx] := Value;
+  F.AsFloat[Idx] := Value;
 end;
 
-function TEpiScriptExecutor.GetFieldIsMissing(const Sender: TObject;
-  const F: TEpiField): Boolean;
+procedure TEpiScriptExecutor.SetFieldValue(const Sender: TObject;
+  const F: TEpiField; const Value: EpiString);
 var
   Idx: Integer;
 begin
@@ -285,7 +292,55 @@ begin
     Idx := FOnGetRecordIndex(Self)
   else
     Exit;
-  Result := F.IsMissing[Idx];
+  F.AsString[Idx] := Value;
+end;
+
+function TEpiScriptExecutor.GetFieldValueBool(const Sender: TObject;
+  const F: TEpiField): EpiBool;
+var
+  Idx: Integer;
+begin
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  Result := F.AsBoolean[Idx];
+end;
+
+function TEpiScriptExecutor.GetFieldValueInt(const Sender: TObject;
+  const F: TEpiField): EpiInteger;
+var
+  Idx: Integer;
+begin
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  Result := F.AsInteger[Idx];
+end;
+
+function TEpiScriptExecutor.GetFieldValueFloat(const Sender: TObject;
+  const F: TEpiField): EpiFloat;
+var
+  Idx: Integer;
+begin
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  Result := F.AsFloat[Idx];
+end;
+
+function TEpiScriptExecutor.GetFieldValueString(const Sender: TObject;
+  const F: TEpiField): EpiString;
+var
+  Idx: Integer;
+begin
+  if Assigned(OnGetRecordIndex) then
+    Idx := FOnGetRecordIndex(Self)
+  else
+    Exit;
+  Result := F.AsString[Idx];
 end;
 
 end.

@@ -98,18 +98,20 @@ end;
 
 function TEpiScriptFunction_MathFunctions.AsInteger: EpiInteger;
 begin
+  result := inherited AsInteger;
+
   case FOp of
     otFuncAbs:
       Result := Abs(Param[0].AsInteger);
     otFuncRandom:
       result := Random(Param[0].AsInteger);
-  else
-    result := inherited AsInteger;
   end;
 end;
 
 function TEpiScriptFunction_MathFunctions.AsFloat: EpiFloat;
 begin
+  result := inherited AsFloat;
+
   case FOp of
     otFuncAbs:
       Result := Abs(Param[0].AsFloat);
@@ -125,13 +127,13 @@ begin
       Result := sqrt(Param[0].AsFloat);
     otFuncRound:
       result := RoundTo(Param[0].AsFloat, -Param[1].AsInteger);
-  else
-    result := inherited AsFloat;
   end;
 end;
 
 function TEpiScriptFunction_MathFunctions.IsMissing: Boolean;
 begin
+  ASTCurrentExecutionObject := self;
+
   case FOp of
     otFuncAbs,
     otFuncExp,

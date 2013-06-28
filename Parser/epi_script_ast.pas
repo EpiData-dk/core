@@ -13,10 +13,16 @@ uses
   epidatafiles;
 
 type
+  TAbstractSyntaxTreeBase = class;
   TExpr = class;
   TCustomVariable = class;
   TParamList = class;
   TFunction = class;
+
+var
+  ASTCurrentExecutionObject: TAbstractSyntaxTreeBase;
+
+type
 
   { IEpiScriptParser }
 
@@ -31,10 +37,14 @@ type
   end;
 
   IEpiScriptExecutor = interface ['IEpiScriptExecutor']
-    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: Variant);
-    function GetFieldValue(Const Sender: TObject; Const F: TEpiField): Variant;
-    procedure SetFieldIsMissing(Const Sender: TObject; Const F: TEpiField; Const Value: Boolean);
-    function GetFieldIsMissing(Const Sender: TObject; Const F: TEpiField): Boolean;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiBool); overload;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiInteger); overload;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiFloat); overload;
+    procedure SetFieldValue(Const Sender: TObject; Const F: TEpiField; Const Value: EpiString); overload;
+    function GetFieldValueBool(Const Sender: TObject; Const F: TEpiField): EpiBool;
+    function GetFieldValueInt(Const Sender: TObject; Const F: TEpiField): EpiInteger;
+    function GetFieldValueFloat(Const Sender: TObject; Const F: TEpiField): EpiFloat;
+    function GetFieldValueString(Const Sender: TObject; Const F: TEpiField): EpiString;
   end;
 
   { TAbstractSyntaxTreeBase }
@@ -51,7 +61,7 @@ type
     procedure DoTypeCheckError(Const Msg: String; Const Args: Array of const; Parser: IEpiScriptParser);
   { Observer / IFPObserver }
   protected
-    procedure DoObserve(O: TObject);
+    procedure ObserveObject(O: TObject);
     procedure DoObservedChange(Sender: TObject); virtual; abstract;
   public
     procedure FPOObservedChanged(ASender: TObject;
@@ -532,7 +542,7 @@ begin
     FList.Assign(AList);
 
   for i := 0 to FList.Count - 1 do
-    DoObserve(TObject(FList[i]));
+    ObserveObject(TObject(FList[i]));
 end;
 
 destructor TParamList.Destroy;
@@ -573,7 +583,7 @@ end;
 constructor TWrite.Create(Expr: TExpr);
 begin
   FExpr := Expr;
-  DoObserve(FExpr);
+  ObserveObject(FExpr);
 end;
 
 destructor TWrite.Destroy;
@@ -601,7 +611,7 @@ begin
   inherited Create;
   FVariable := Variable;
   FOption := Option;
-  DoObserve(FVariable);
+  ObserveObject(FVariable);
 end;
 
 destructor TGoto.Destroy;
@@ -618,7 +628,7 @@ begin
      (not (Variable is TFieldVariable))
   then
   begin
-    DoTypeCheckError('Variable %1 is not a Field', [Variable.Ident], Parser);
+    DoTypeCheckError('Variable %s is not a Field', [Variable.Ident], Parser);
     result := false;
   end;
 end;
@@ -653,7 +663,7 @@ begin
   );
 end;
 
-procedure TAbstractSyntaxTreeBase.DoObserve(O: TObject);
+procedure TAbstractSyntaxTreeBase.ObserveObject(O: TObject);
 var
   Obs: IFPObserved;
 begin
@@ -867,92 +877,69 @@ begin
 end;
 
 function TFieldVariable.AsBoolean: EpiBool;
-var
-  V: Variant;
 begin
-  V := FParser.GetFieldValue(Self, FField);
-  if VarIsStr(V) and
-     (V = '')
-  then
-    Result := TEpiBoolField.DefaultMissing
-  else
-    Result := EpiBool(V);
+  Result := FParser.GetFieldValueBool(Self, Field);
 end;
 
 function TFieldVariable.AsInteger: EpiInteger;
-var
-  V: Variant;
 begin
-  V := FParser.GetFieldValue(Self, FField);
-  if VarIsStr(V) and
-     (V = '')
-  then
-    Result := TEpiIntField.DefaultMissing
-  else
-    Result := EpiInteger(V);
+  Result := FParser.GetFieldValueInt(Self, Field);
 end;
 
 function TFieldVariable.AsFloat: EpiFloat;
-var
-  V: Variant;
 begin
-  V := FParser.GetFieldValue(Self, FField);
-  if VarIsStr(V) and
-     (V = '')
-  then
-    Result := TEpiFloatField.DefaultMissing
-  else
-    Result := EpiFloat(V);
+  Result := FParser.GetFieldValueFloat(Self, Field);
 end;
 
 function TFieldVariable.AsString: EpiString;
-var
-  V: Variant;
 begin
-  V := FParser.GetFieldValue(Self, FField);
-  if VarIsStr(V) and
-     (V = '')
-  then
-    Result := TEpiStringField.DefaultMissing
-  else
-    Result := EpiString(V);
+  Result := FParser.GetFieldValueString(Self, Field);
 end;
 
 function TFieldVariable.IsMissing: Boolean;
 begin
-  result := FParser.GetFieldIsMissing(Self, FField);
+  Case FField.FieldType of
+    ftBoolean:
+      result :=  TEpiBoolField.CheckMissing(FParser.GetFieldValueBool(Self, FField));
+    ftInteger,
+    ftAutoInc:
+      result :=  TEpiIntField.CheckMissing(FParser.GetFieldValueInt(Self, FField));
+    ftFloat:
+      result :=  TEpiFloatField.CheckMissing(FParser.GetFieldValueFloat(Self, FField));
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate,
+    ftDMYAuto,
+    ftMDYAuto,
+    ftYMDAuto:
+      result :=  TEpiDateField.CheckMissing(FParser.GetFieldValueInt(Self, FField));
+    ftTime,
+    ftTimeAuto:
+      result :=  TEpiDateTimeField.CheckMissing(FParser.GetFieldValueFloat(Self, FField));
+    ftString,
+    ftUpperString:
+      result :=  TEpiStringField.CheckMissing(FParser.GetFieldValueString(Self, FField));
+  end;
 end;
 
 procedure TFieldVariable.SetBoolean(const Value: EpiBool);
 begin
-  if TEpiBoolField.CheckMissing(Value) then
-    FParser.SetFieldIsMissing(Self, FField, true)
-  else
-    FParser.SetFieldValue(Self, FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetInteger(const Value: EpiInteger);
 begin
-  if TEpiIntField.CheckMissing(Value) then
-    FParser.SetFieldIsMissing(Self, FField, true)
-  else
-    FParser.SetFieldValue(Self, FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetFloat(const Value: EpiFloat);
 begin
-  if TEpiFloatField.CheckMissing(Value) then
-    FParser.SetFieldIsMissing(Self, FField, true)
-  else
-    FParser.SetFieldValue(Self, FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 procedure TFieldVariable.SetString(const Value: EpiString);
 begin
-  if TEpiStringField.CheckMissing(Value) then
-    FParser.SetFieldIsMissing(Self, FField, true)
-  else
-    FParser.SetFieldValue(Self, FField, Value);
+  FParser.SetFieldValue(Self, FField, Value);
 end;
 
 
@@ -1013,6 +1000,8 @@ var
   Res: PtrInt;
   BoolResult: Boolean;
 begin
+  Result := inherited AsBoolean;
+
   if Left.IsMissing or Right.IsMissing then
   begin
     case Operation of
@@ -1099,6 +1088,7 @@ end;
 
 function TRelationalExpr.AsString: EpiString;
 begin
+  inherited AsString;
   if IsMissing then
     Result := TEpiStringField.DefaultMissing
   else
@@ -1222,17 +1212,14 @@ end;
 
 function TBinaryExpr.AsBoolean: EpiBool;
 begin
+  Result := inherited AsBoolean;
+
   if IsMissing then
-  begin
-    Result := inherited AsInteger;
     Exit;
-  end;
 
   case Operation of
     otOr:  result := Left.AsBoolean or Right.AsBoolean;
     otAnd: result := Left.AsBoolean and Right.AsBoolean;
-  else
-    result := inherited AsBoolean;
   end;
 end;
 
@@ -1240,30 +1227,23 @@ function TBinaryExpr.AsInteger: EpiInteger;
 var
   Tmp: EpiInteger;
 begin
-  if IsMissing then
-  begin
-    Result := inherited AsInteger;
-    Exit;
-  end;
+  Result := inherited AsInteger;
 
-  case Operation of
-    otPlus:  result := Left.AsInteger + Right.AsInteger;
-    otMinus: result := Left.AsInteger - Right.AsInteger;
-    otMult:  result := Left.AsInteger * Right.AsInteger;
-    otDiv:
-      begin
-        // Catch ZeroDivide before is happens
-        Tmp := Right.AsInteger;
-        if Tmp = 0 then
-          result := inherited AsInteger
-        else
-          result := Left.AsInteger div Tmp;
+  if IsMissing then
+    Exit;
+
+  case ResultType of
+    rtBoolean:
+      Result := AsBoolean;
+    rtInteger:
+      case Operation of
+        otPlus:        result := Left.AsInteger + Right.AsInteger;
+        otMinus:       result := Left.AsInteger - Right.AsInteger;
+        otMult:        result := Left.AsInteger * Right.AsInteger;
+        otDiv:         result := Left.AsInteger div Right.AsInteger;
+        otMod:         result := Left.AsInteger mod Right.AsInteger;
+        otExponential: result := Left.AsInteger ** Right.AsInteger;
       end;
-    otMod:   result := Left.AsInteger mod Right.AsInteger;
-    otExponential:
-      result := Left.AsInteger ** Right.AsInteger;
-  else
-    result := inherited AsInteger;
   end;
 end;
 
@@ -1271,41 +1251,35 @@ function TBinaryExpr.AsFloat: EpiFloat;
 var
   Tmp: EpiFloat;
 begin
-  if IsMissing then
-  begin
-    Result := inherited AsInteger;
-    Exit;
-  end;
+  Result := inherited AsFloat;
 
-  case Operation of
-    otPlus:   result := Left.AsFloat + Right.AsFloat;
-    otMinus:  result := Left.AsFloat - Right.AsFloat;
-    otMult:   result := Left.AsFloat * Right.AsFloat;
-    otDivide:
-      begin
-        // Catch ZeroDivide before is happens
-        Tmp := Right.AsFloat;
-        if Tmp = 0 then
-          result := inherited AsFloat
-        else
-          result := Left.AsFloat / Tmp;
+  if IsMissing then
+    Exit;
+
+  case ResultType of
+    rtBoolean:
+      result := AsBoolean;
+    rtInteger:
+      result := AsInteger;
+    rtFloat:
+      case Operation of
+        otPlus:        result := Left.AsFloat + Right.AsFloat;
+        otMinus:       result := Left.AsFloat - Right.AsFloat;
+        otMult:        result := Left.AsFloat * Right.AsFloat;
+        otDivide:      result := Left.AsFloat / Right.AsFloat;
+        otExponential: result := Left.AsFloat ** Right.AsFloat;
       end;
-    otExponential:
-      result := Left.AsFloat ** Right.AsFloat;
-  else
-    result := inherited AsFloat;
   end;
 end;
 
 function TBinaryExpr.AsString: EpiString;
 begin
+  Result := inherited AsString;
+
   if IsMissing and
      (not (ResultType = rtString))
   then
-  begin
-    Result := inherited AsString;
     Exit;
-  end;
 
   case ResultType of
     rtBoolean:
@@ -1320,15 +1294,7 @@ begin
     rtString:
       case Operation of
         otPlus: Result := Left.AsString + Right.AsString;
-      else
-        result := inherited AsString;
       end;
-
-    rtObject:
-      ;
-
-    rtUndefined:
-      ;
   end;
 end;
 
@@ -1690,8 +1656,8 @@ begin
   inherited Create;
   FExpr := Expr;
   FVAriable := Variable;
-  DoObserve(FExpr);
-  DoObserve(FVAriable);
+  ObserveObject(FExpr);
+  ObserveObject(FVAriable);
 end;
 
 destructor TAssignment.Destroy;
@@ -1737,7 +1703,7 @@ constructor TIfThen.Create(const Expr: TExpr;
 begin
   inherited Create;
   FExpr := Expr;
-  DoObserve(FExpr);
+  ObserveObject(FExpr);
   FThenStatement := ThenStatement;
   FElseStatement := ElseStatement;
 end;
@@ -2010,8 +1976,8 @@ begin
   FOp := Op;
   FL := L;
   FR := R;
-  DoObserve(L);
-  DoObserve(R);
+  ObserveObject(L);
+  ObserveObject(R);
 end;
 
 destructor TExpr.Destroy;
@@ -2051,21 +2017,25 @@ end;
 
 function TExpr.AsBoolean: EpiBool;
 begin
+  ASTCurrentExecutionObject := self;
   result := TEpiBoolField.DefaultMissing;
 end;
 
 function TExpr.AsInteger: EpiInteger;
 begin
+  ASTCurrentExecutionObject := self;
   result := TEpiIntField.DefaultMissing;
 end;
 
 function TExpr.AsFloat: EpiFloat;
 begin
+  ASTCurrentExecutionObject := self;
   result := TEpiFloatField.DefaultMissing;
 end;
 
 function TExpr.AsString: EpiString;
 begin
+  ASTCurrentExecutionObject := self;
   result := TEpiStringField.DefaultMissing;
 end;
 

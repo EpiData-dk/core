@@ -41,7 +41,6 @@ begin
   Rewrite(yyoutput);
   yy_set_start_state;
   result := yyparse(FEpiExecutor, ResultAST);
-  writeln('===================================');
   yyclearin;
   yyclear;
   I := IOResult;
