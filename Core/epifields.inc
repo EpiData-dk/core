@@ -644,7 +644,7 @@ end;
 
 procedure TEpiIntField.SetDefaultValue(const AValue: EpiInteger);
 var
-  Val: LongInt;
+  Val: EpiInteger;
 begin
   if FDefaultValue = AValue then exit;
   Val := FDefaultValue;
