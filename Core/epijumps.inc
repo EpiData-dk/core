@@ -110,7 +110,6 @@ function TEpiJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
   ): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest);
-  // Cloning a jump should only be done if a full Datafile exists.
 
   with TEpiJump(Result) do
   begin
@@ -118,7 +117,14 @@ begin
     FResetType := Self.FResetType;
 
     if Assigned(Self.FJumpToField) then
-      FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+    begin
+      if (not Assigned(TEpiField(Owner.Owner).DataFile)) or
+         (TEpiField(Owner.Owner).DataFile = (TEpiField(SElf.Owner.Owner).DataFile))
+      then
+        FJumpToField := Self.FJumpToField
+      else
+        FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+    end;
   end;
 end;
 

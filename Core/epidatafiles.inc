@@ -398,7 +398,7 @@ begin
     CheckNode(Node, rsRecord);
 
     case TEpiRecordState(LoadAttrEnum(Node, rsRecordStatus, TypeInfo(TEpiRecordState))) of
-      rsNormal:   ; // Do nothing
+      rsNormal:   Verified[CurRec] := false;
       rsDeleted:  Deleted[CurRec] := true;
       rsVerified: Verified[CurRec] := true;
     end;
@@ -883,6 +883,9 @@ begin
 
   FRecordStatus.Capacity := NewCapacity;
   FRecordStatus.Size     := NewSize;
+  for i := CurrentSize to NewSize - 1 do
+    Verified[i] := false;
+
   for i := 0 to Fields.Count -1 do
   begin
     Field[i].Capacity    := NewCapacity;

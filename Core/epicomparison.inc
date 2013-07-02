@@ -41,8 +41,13 @@ begin
   Result := inherited DoClone(AOwner, Dest);
   with TEpiComparison(Result) do
   begin
+    if (not Assigned(OwnerField.DataFile)) or
+       (OwnerField.DataFile = Self.OwnerField.DataFile)
+    then
+      FCompareField := Self.FCompareField
+    else
+      FCompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
     FCompareType := Self.FCompareType;
-    FCompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
   end;
 end;
 
