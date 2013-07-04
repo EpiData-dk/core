@@ -20,7 +20,10 @@ type
     function ResultType: TParserResultType; override;
     function AsInteger: EpiInteger; override;
     function AsFloat: EpiFloat; override;
+    function AsString: EpiString; override;
   end;
+
+  EEpiScriptFunction_CreateTime = class(Exception);
 
 implementation
 
@@ -62,13 +65,13 @@ var
   ResultTime: EpiTime;
   Msg: string;
 begin
+  result := inherited;
+
   if FParamList.Count = 1 then
   begin
     if not EpiStrToTimeGues(Param[0].AsString, ResultTime, Msg) then
-    begin
-      // TODO : Error message during parsing.
+      RuntimeError(EEpiScriptFunction_CreateTime, Msg);
 
-    end;
     Result := ResultTime;
     Exit;
   end;
@@ -96,6 +99,11 @@ begin
 
     Exit;
   end;
+end;
+
+function TEpiScriptFunction_CreateTime.AsString: EpiString;
+begin
+  Result := TimeToStr(AsFloat);
 end;
 
 end.

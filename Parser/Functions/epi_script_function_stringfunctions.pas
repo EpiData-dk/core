@@ -21,7 +21,6 @@ type
     constructor Create(Const AOperation: TParserOperationType; const ParamList: TParamList);
     function ResultType: TParserResultType; override;
     function AsInteger: EpiInteger; override;
-    function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
   end;
 
@@ -90,6 +89,8 @@ end;
 
 function TEpiScriptFunction_StringFunctions.AsInteger: EpiInteger;
 begin
+  result := inherited;
+
   case FOp of
     otFuncPos:
       begin
@@ -105,13 +106,10 @@ begin
   end;
 end;
 
-function TEpiScriptFunction_StringFunctions.AsFloat: EpiFloat;
-begin
-  Result := inherited AsInteger;
-end;
-
 function TEpiScriptFunction_StringFunctions.AsString: EpiString;
 begin
+  result := inherited;
+
   case FOp of
     otFuncLower:
       result := UTF8LowerCase(Param[0].AsString);
@@ -119,7 +117,8 @@ begin
       result := UTF8UpperCase(Param[0].AsString);
     otFuncSubString:
       begin
-        if Param[0].IsMissing then Exit(inherited AsString);
+        if Param[0].IsMissing then Exit;
+
         if Param[1].IsMissing or Param[2].IsMissing then
            // TODO : Error in execution
         else
@@ -130,8 +129,6 @@ begin
         Exit(inherited AsString)
       else
         Result := UTF8Trim(Param[0].AsString);
-  else
-    result := IntToStr(AsInteger);
   end;
 end;
 

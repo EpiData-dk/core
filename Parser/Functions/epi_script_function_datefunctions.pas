@@ -21,7 +21,6 @@ type
     constructor Create(Const AOperation: TParserOperationType; const ParamList: TParamList);
     function ResultType: TParserResultType; override;
     function AsInteger: EpiInteger; override;
-    function AsFloat: EpiFloat; override;
     function AsString: EpiString; override;
   end;
 
@@ -72,6 +71,8 @@ end;
 
 function TEpiScriptFunction_DateFunctions.AsInteger: EpiInteger;
 begin
+  result := inherited;
+
   case FOp of
     otFuncToday:
       result := Trunc(Today);
@@ -82,15 +83,14 @@ begin
     otFuncYear:
       result := YearOf(Param[0].AsInteger);
     otFuncDayOfWeek:
-      result := DayOfWeek(Param[0].AsInteger);
+      begin
+        Result := ((Param[0].AsInteger - 1) mod 7);
+        If (Result<=0) then
+          Inc(Result,7);
+      end;
     otFuncWeek:
       result := WeekOf(Param[0].AsInteger);
   end;
-end;
-
-function TEpiScriptFunction_DateFunctions.AsFloat: EpiFloat;
-begin
-  Result := AsInteger;
 end;
 
 function TEpiScriptFunction_DateFunctions.AsString: EpiString;
@@ -98,7 +98,7 @@ begin
   if FOp = otFuncToday then
     Result := DateToStr(AsInteger)
   else
-    Result := IntToStr(AsInteger);
+    Result := inherited;
 end;
 
 end.

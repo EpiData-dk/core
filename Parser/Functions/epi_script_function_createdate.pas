@@ -19,8 +19,9 @@ type
   public
     function ResultType: TParserResultType; override;
     function AsInteger: EpiInteger; override;
-    function AsFloat: EpiFloat; override;
   end;
+
+  EEpiScriptFunction_CreateDate = class(Exception);
 
 implementation
 
@@ -62,13 +63,13 @@ var
   Msg: string;
   DateResult: EpiDate;
 begin
+  result := inherited;
+
   if FParamList.Count = 1 then
   begin
     if (not EpiStrToDateGuess(Param[0].AsString, DateResult, Msg)) then
-    begin
-      // TODO: Error during execution
+      RuntimeError(EEpiScriptFunction_CreateDate, Msg);
 
-    end;
     Result := DateResult;
     Exit;
   end;
@@ -80,13 +81,13 @@ begin
       'dmy': Ft := ftDMYDate;
       'mdy': Ft := ftMDYDate;
       'ymd': Ft := ftYMDDate;
+    else
+      RuntimeError(EEpiScriptFunction_CreateDate, 'Incorrect format specified: ' + Param[1].AsString);
     end;
 
     if (not EpiStrToDate(Param[0].AsString, '-', ft, DateResult, Msg)) then
-    begin
-      // TODO: Error during execution
+      RuntimeError(EEpiScriptFunction_CreateDate, Msg);
 
-    end;
     Result := DateResult;
     Exit;
   end;
@@ -114,13 +115,6 @@ begin
 
     Exit;
   end;
-
-
-end;
-
-function TEpiScriptFunction_CreateDate.AsFloat: EpiFloat;
-begin
-  Result := AsInteger;
 end;
 
 end.

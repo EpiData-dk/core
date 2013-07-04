@@ -139,6 +139,7 @@ type
   protected
     function CommonType(Const A, B: TExpr): TParserResultType;
     procedure DoObservedChange(Sender: TObject); override;
+    procedure RuntimeError(EClass: TExceptionClass; Const Msg: string);
   public
     constructor Create(Const Op: TParserOperationType; Const L, R: TExpr); virtual;
     destructor Destroy; override;
@@ -1968,6 +1969,11 @@ begin
     FL := nil;
   if Sender = FR then
     FR := nil;
+end;
+
+procedure TExpr.RuntimeError(EClass: TExceptionClass; const Msg: string);
+begin
+  Raise EClass.Create(Msg);
 end;
 
 constructor TExpr.Create(const Op: TParserOperationType; const L, R: TExpr);

@@ -50,7 +50,7 @@ begin
     otFuncNow:    result := [];  // Current time
     otFuncHour,                 // Hour part of a time
     otFuncMinut,                // Minut part of a time
-    otFuncSecond: result := [rtAny, rtInteger];  // Seconds part of a time
+    otFuncSecond: result := [rtAny, rtInteger, rtFloat];  // Seconds part of a time
   end;
 end;
 
@@ -75,14 +75,9 @@ end;
 
 function TEpiScriptFunction_TimeFunctions.AsInteger: EpiInteger;
 begin
-  Result := trunc(AsInteger);
-end;
+  Result := inherited;
 
-function TEpiScriptFunction_TimeFunctions.AsFloat: EpiFloat;
-begin
   case FOp of
-    otFuncNow:
-      result := Now;
     otFuncHour:
       result := HourOf(Param[0].AsFloat);
     otFuncMinut:
@@ -92,15 +87,23 @@ begin
   end;
 end;
 
+function TEpiScriptFunction_TimeFunctions.AsFloat: EpiFloat;
+begin
+  Result := inherited;
+
+  case FOp of
+    otFuncNow:
+      result := Now;
+  end;
+end;
+
 function TEpiScriptFunction_TimeFunctions.AsString: EpiString;
 begin
+  Result := inherited;
+
   case FOp of
     otFuncNow:
       Result := TimeToStr(AsFloat);
-    otFuncHour,
-    otFuncMinut,
-    otFuncSecond:
-      result := IntToStr(AsInteger);
   end;
 end;
 

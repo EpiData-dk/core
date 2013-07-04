@@ -110,7 +110,11 @@ end;
 
 function TEpiScriptFunction_MathFunctions.AsFloat: EpiFloat;
 begin
-  result := inherited AsFloat;
+  // Do not call inherited here, because we may end up calling Abs()
+  // twice - one time in AsInteger and one time here. This is NOT allowed
+  // if the calling of Param[0]... result in computational changes.
+  // Hence we need to set ASTCurrentExecutionObject manually!
+  ASTCurrentExecutionObject := self;
 
   case FOp of
     otFuncAbs:
@@ -127,6 +131,8 @@ begin
       Result := sqrt(Param[0].AsFloat);
     otFuncRound:
       result := RoundTo(Param[0].AsFloat, -Param[1].AsInteger);
+  else
+    result := inherited AsFloat;
   end;
 end;
 
