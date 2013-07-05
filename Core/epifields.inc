@@ -424,13 +424,15 @@ begin
   Result := inherited DoClone(AOwner, Dest);
   F := TEpiField(Result);
 
-  F.FConfirmEntry := FConfirmEntry;
-  F.FDecimals     := FDecimals;
-  F.FEntryMode    := FEntryMode;
-  F.FLength       := FLength;
-  F.FShowValueLabel := FShowValueLabel;
-  F.FRepeatValue    := FRepeatValue;
-  F.HasDefaultValue := HasDefaultValue;
+  F.FConfirmEntry        := FConfirmEntry;
+  F.FDecimals            := FDecimals;
+  F.FEntryMode           := FEntryMode;
+  F.FLength              := FLength;
+  F.FShowValueLabel      := FShowValueLabel;
+  F.FRepeatValue         := FRepeatValue;
+  F.HasDefaultValue      := HasDefaultValue;
+  F.FShowValueLabelNotes := FShowValueLabelNotes;
+  F.FForcePickList       := FForcePickList;
 
   if Assigned(FRanges) then
     F.FRanges := TEpiRanges(FRanges.Clone(F));
