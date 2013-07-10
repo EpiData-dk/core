@@ -24,6 +24,8 @@ type
     function AsString: EpiString; override;
   end;
 
+  EEpiScriptFunction_StringFunctions = class(Exception);
+
 implementation
 
 uses
@@ -120,7 +122,7 @@ begin
         if Param[0].IsMissing then Exit;
 
         if Param[1].IsMissing or Param[2].IsMissing then
-           // TODO : Error in execution
+          RuntimeError(EEpiScriptFunction_StringFunctions, 'Substring: Pos or Len value is missing!') // TODO : Error in execution
         else
           result := UTF8Copy(Param[0].AsString, Param[1].AsInteger, Param[2].AsInteger);
       end;
