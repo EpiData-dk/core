@@ -4,10 +4,12 @@
 const
   NA_INT       = High(EpiInteger); //  $7FFFFFFFFFFFFFFF;
   NA_FLOAT     = MaxFloat;
-  NA_DATE      = NA_INT;
+  NA_DATE      = High(EpiDate);    // NA_INT;
   NA_TIME      = $FFFFFFFF; //MaxDouble;
   NA_STRING    = '.';
   NA_BOOL      = $7F;
+
+  JMP_ANY      = '*';
 
 { TEpiFields }
 
@@ -55,6 +57,12 @@ begin
   Result := 'V';
 end;
 
+function TEpiFields.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+end;
+
 constructor TEpiFields.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -76,10 +84,18 @@ var
   NField: TEpiField;
   JumpNode: TDOMNode;
 begin
+  // We do NOT call inherited in this method,
+  // since we have no way to call NewField during load of node!
+
   // Root = <Fields>
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then exit;
+
     CheckNode(Node, rsField);
 
     NField := NewField(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
@@ -174,6 +190,13 @@ begin
     Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
+procedure TEpiField.SetDataModified;
+begin
+  if Assigned(DataFile)
+  then
+    DataFile.FRecModified := true;
+end;
+
 procedure TEpiField.SetLength(const AValue: Cardinal);
 var
   Val: LongWord;
@@ -181,7 +204,7 @@ begin
   if Length = AValue then exit;
   Val := Length;
   FLength := AValue;
-  DoChange(eegDataFiles, Word(efceSetLength), @Val);
+  DoChange(eegFields, Word(efceSetLength), @Val);
 end;
 
 procedure TEpiField.SetRepeatValue(const AValue: boolean);
@@ -228,7 +251,19 @@ begin
   DoChange(eegFields, word(efceShowValueLabel), @Val);
 end;
 
+procedure TEpiField.SetShowValueLabelNotes(AValue: boolean);
+var
+  Val: Boolean;
+begin
+  if FShowValueLabelNotes = AValue then exit;
+  Val := FShowValueLabelNotes;
+  FShowValueLabelNotes := AValue;
+  DoChange(eegFields, word(efceShowValueLabelNotes), @Val);
+end;
+
 procedure TEpiField.SetValueLabelSet(const AValue: TEpiValueLabelSet);
+var
+  Val: TEpiValueLabelSet;
 begin
   if FValueLabelSet = AValue then exit;
 
@@ -240,7 +275,7 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.UnRegisterOnChangeHook(@LocalEventHook);
   end;
-
+  Val := FValueLabelSet;
   FValueLabelSet := AValue;
 
   if Assigned(FValueLabelSet) then
@@ -249,6 +284,7 @@ begin
     if Assigned(FValueLabelSet.Owner) then
       FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
   end;
+  DoChange(eegFields, Word(efceValueLabelSet), Val);
 end;
 
 procedure TEpiField.SetValueLabelWriteField(const AValue: TEpiField);
@@ -322,6 +358,14 @@ begin
   FSize := AValue;
 end;
 
+function TEpiField.Compare(i, j: integer): integer;
+begin
+  if IsMissing[i] and IsMissing[j] then exit(0);         // Both missing, sort even.
+  if IsMissing[i] and (not IsMissing[j]) then exit(1);   // A missing, sort A last
+  if (not IsMissing[i]) and IsMissing[j] then exit(-1);  // B missing, sort A first
+  result := DoCompare(i,j);                              // Compare normal values.
+end;
+
 procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
 var
   OrgField: TEpiField absolute AEpiCustomBase;
@@ -367,6 +411,63 @@ begin
   EndUpdate;
 end;
 
+function TEpiField.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := CreateField(AOwner, FieldType);
+end;
+
+function TEpiField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  F: TEpiField;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  F := TEpiField(Result);
+
+  F.FConfirmEntry        := FConfirmEntry;
+  F.FDecimals            := FDecimals;
+  F.FEntryMode           := FEntryMode;
+  F.FLength              := FLength;
+  F.FShowValueLabel      := FShowValueLabel;
+  F.FRepeatValue         := FRepeatValue;
+  F.HasDefaultValue      := HasDefaultValue;
+  F.FShowValueLabelNotes := FShowValueLabelNotes;
+  F.FForcePickList       := FForcePickList;
+
+  if Assigned(FRanges) then
+    F.FRanges := TEpiRanges(FRanges.Clone(F));
+
+  if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
+    F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
+
+  if Assigned(Jumps) then
+    F.Jumps := TEpiJumps(Jumps.Clone(F));
+
+  if Assigned(Calculation) then
+    F.Calculation := TEpiCalculation(Calculation.Clone(F));
+
+  if Assigned(Comparison) then
+    F.Comparison := TEpiComparison(Comparison.Clone(F));
+end;
+
+procedure TEpiField.PostCloneUpdate(Dest: TEpiField);
+begin
+  // PostCloneUpdate is called from TEpiDataFile, hence we know a datafile exists and all fields exist.
+
+
+  if Assigned(ValueLabelWriteField) then
+    Dest.FValueLabelWriteField := Dest.DataFile.Fields.FieldByName[FValueLabelWriteField.Name];
+
+  if Assigned(Jumps) then
+    Dest.FJumps := TEpiJumps(Jumps.Clone(Dest));
+
+  if Assigned(Comparison) then
+    Dest.FComparison := TEpiComparison(Comparison.Clone(Dest));
+
+  if Assigned(Calculation) then
+    Dest.FCalculation := TEpiCalculation(Calculation.Clone(Dest));
+end;
+
 constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
   inherited Create(AOwner);
@@ -380,39 +481,49 @@ begin
   FLength       := 2;
   FShowValueLabel := false;
   FRepeatValue  := false;
+  FForcePickList := false;
   HasDefaultValue := false;
 
   RegisterClasses([Notes, Question]);
 end;
 
-class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
+procedure TEpiField.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  case AFieldType of
-    ftInteger, ftAutoInc:
-      Result := TEpiIntField.Create(AOwner, AFieldType);
+  inherited DoChange(EventGroup, EventType, Data);
 
-    ftDMYDate,  ftMDYDate,  ftYMDDate,
-    ftDMYAuto, ftMDYAuto, ftYMDAuto:
-      Result := TEpiDateField.Create(AOwner, AFieldType);
+  // Sanity checks!
+  if not Assigned(DataFile) then exit;
 
-    ftTime, ftTimeAuto:
-      result := TEpiDateTimeField.Create(AOwner, AFieldType);
-
-    ftFloat:
-      Result := TEpiFloatField.Create(AOwner, AFieldType);
-
-    ftBoolean:
-      Result := TEpiBoolField.Create(AOwner, AFieldType);
-
-    ftString, ftUpperString:
-      Result := TEpiStringField.Create(AOwner, AFieldType);
+  if (EventGroup = eegFields) and
+     (TEpiFieldsChangeEventType(EventType) = efceData)
+  then
+    FDataFile.FRecModified := true
   else
-    result := nil;
-  end;
+    if not
+         ((EventGroup = eegCustomBase) and
+          (TEpiCustomChangeEventType(EventType) = ecceUpdate))
+    then
+      FDataFile.FStructureModified := true;
+end;
+
+class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
+var
+  FC: TEpiFieldClass;
+begin
+  FC := FieldClassFromFieldType(AFieldType);
+  if Assigned(FC) then
+    Result := FC.Create(AOwner, AFieldType)
+  else
+    Result := nil;
 end;
 
 destructor TEpiField.Destroy;
 begin
+  // nil in order to remove LocalEventHook from other objects.
+  ValueLabelSet := nil;
+  ValueLabelWriteField := nil;
+
   FQuestion.Free;
   if Assigned(FJumps) then
     FJumps.Free;
@@ -454,6 +565,9 @@ begin
     Result += SaveAttr(rsRepeatValue, RepeatValue);
   if ShowValueLabel then
     Result += SaveAttr(rsShowValueLabel, ShowValueLabel);
+  // VERSION 2 Property
+  if ShowValueLabelNotes then
+    Result += SaveAttr(rsShowValueLabelNotes, ShowValueLabelNotes);
   if ForcePickList then
     Result += SaveAttr(rsForcePickList, ForcePickList);
   if HasDefaultValue then
@@ -480,6 +594,8 @@ begin
   RepeatValue := LoadAttrBool(Root, rsRepeatValue, RepeatValue, false);
   DefaultValueAsString := LoadAttrString(Root, rsDefaultValue, DefaultValueAsString, false);
   ShowValueLabel := LoadAttrBool(Root, rsShowValueLabel, ShowValueLabel, false);
+  // VERSION 2 Property
+  ShowValueLabelNotes := LoadAttrBool(Root, rsShowValueLabelNotes, ShowValueLabelNotes, false);
   ForcePickList := LoadAttrBool(Root, rsForcePickList, ForcePickList, false);
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
     ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
@@ -530,7 +646,7 @@ end;
 
 procedure TEpiIntField.SetDefaultValue(const AValue: EpiInteger);
 var
-  Val: LongInt;
+  Val: EpiInteger;
 begin
   if FDefaultValue = AValue then exit;
   Val := FDefaultValue;
@@ -718,6 +834,14 @@ begin
   if not AValue then FDefaultValue := DefaultMissing;
 end;
 
+constructor TEpiIntField.Create(AOwner: TEpiCustomBase;
+  AFieldType: TEpiFieldType);
+begin
+  inherited Create(AOwner, AFieldType);
+  if AFieldType = ftAutoInc then
+    FLength := 6;
+end;
+
 procedure TEpiIntField.MovePackData(const SrcIdx, DstIdx, Count: integer);
 begin
   Move(FData[SrcIdx], FData[DstIdx], Count * SizeOf(EpiInteger));
@@ -733,9 +857,23 @@ begin
   result := NA_INT;
 end;
 
-function TEpiIntField.Compare(i, j: integer): integer;
+function TEpiIntField.DoCompare(i, j: integer): integer;
 begin
   result := AsInteger[i] - AsInteger[j];
+end;
+
+function TEpiIntField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiIntField(Result) do
+  begin
+    Capacity := Self.Capacity;
+    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiInteger));
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+  end;
 end;
 
 procedure TEpiIntField.Exchange(i, j: integer);
@@ -753,6 +891,11 @@ begin
     result := format('%%%dd', [Length])
   else
     result := '%d';
+end;
+
+procedure TEpiIntField.ResetData;
+begin
+  FillQWord(FData[0], FSize, DefaultMissing);
 end;
 
 { TEpiFloatField }
@@ -972,9 +1115,23 @@ begin
   result := NA_FLOAT;
 end;
 
-function TEpiFloatField.Compare(i, j: integer): integer;
+function TEpiFloatField.DoCompare(i, j: integer): integer;
 begin
-  Result := Sign(AsFloat[i] - AsFloat[j]);
+  Result := CompareValue(AsFloat[i], AsFloat[j], 0.0);  // Sign(AsFloat[i] - AsFloat[j]);
+end;
+
+function TEpiFloatField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiFloatField(Result) do
+  begin
+    Capacity := Self.Capacity;
+    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiFloat));
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+  end;
 end;
 
 procedure TEpiFloatField.Exchange(i, j: integer);
@@ -1001,6 +1158,15 @@ begin
     Decimals := TEpiFloatField(AEpiCustomBase).Decimals
   else
     Decimals := 1;
+end;
+
+procedure TEpiFloatField.ResetData;
+var
+  i: Integer;
+begin
+//  FillDWord(FData[0], FSize, DefaultMissing);  Wrong type Extended vs. Q/DWord
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
 end;
 
 { TEpiBoolField }
@@ -1234,9 +1400,23 @@ begin
   result := NA_BOOL;
 end;
 
-function TEpiBoolField.Compare(i, j: integer): integer;
+function TEpiBoolField.DoCompare(i, j: integer): integer;
 begin
   Result := Sign(AsBoolean[i]) - Sign(AsBoolean[j]);
+end;
+
+function TEpiBoolField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiBoolField(Result) do
+  begin
+    Capacity := Self.Capacity;
+    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiBool));
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+  end;
 end;
 
 procedure TEpiBoolField.Exchange(i, j: integer);
@@ -1251,6 +1431,11 @@ end;
 function TEpiBoolField.FormatString(const FillSpace: boolean): string;
 begin
   Result := '%d';
+end;
+
+procedure TEpiBoolField.ResetData;
+begin
+  FillByte(FData[0], FSize, DefaultMissing);
 end;
 
 { TEpiStringField }
@@ -1472,9 +1657,27 @@ begin
   result := NA_STRING;
 end;
 
-function TEpiStringField.Compare(i, j: integer): integer;
+function TEpiStringField.DoCompare(i, j: integer): integer;
 begin
-  Result := CompareStr(AsString[i], AsString[j]);
+  // TODO: Use UTF8Compare[Text|Str]
+  Result := AnsiCompareText(AsString[i], AsString[j]);
+end;
+
+function TEpiStringField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiStringField(Result) do
+  begin
+    Capacity := Self.Capacity;
+    for i := 0 to Self.Size - 1 do
+      FData[i] := Self.FData[i];
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+  end;
 end;
 
 procedure TEpiStringField.Exchange(i, j: integer);
@@ -1494,6 +1697,14 @@ begin
     Result := '%s';
 end;
 
+procedure TEpiStringField.ResetData;
+var
+  i: Integer;
+begin
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
+end;
+
 { TEpiCustomAutoField }
 
 procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
@@ -1509,6 +1720,13 @@ begin
   Result :=
     inherited SaveAttributesToXml +
     Result;
+end;
+
+function TEpiCustomAutoField.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiCustomAutoField(Result).FAutoMode := FAutoMode;
 end;
 
 procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode);
@@ -1638,9 +1856,23 @@ begin
   result := NA_DATE;
 end;
 
-function TEpiDateField.Compare(i, j: integer): integer;
+function TEpiDateField.DoCompare(i, j: integer): integer;
 begin
   Result := AsDate[i] - AsDate[j];
+end;
+
+function TEpiDateField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiDateField(Result) do
+  begin
+    Capacity := Self.Capacity;
+    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiDate));
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+  end;
 end;
 
 procedure TEpiDateField.Exchange(i, j: integer);
@@ -1659,6 +1891,11 @@ begin
     ftMDYDate, ftMDYAuto: result := 'MM/DD/YYYY';
     ftYMDDate, ftYMDAuto: result := 'YYYY/MM/DD';
   end;
+end;
+
+procedure TEpiDateField.ResetData;
+begin
+  FillDWord(FData[0], FSize, DefaultMissing);
 end;
 
 procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -1828,7 +2065,9 @@ function TEpiDateTimeField.GetAsString(const index: Integer): EpiString;
 begin
   if IsMissing[Index] then
     Exit(TEpiStringField.DefaultMissing);
-  result := TimeToStr(AsDateTime[Index]);
+  // Always format the Time according to HH:NN:SS -> we only support the 24h
+  // time entry (no AM/PM)
+  result := FormatDateTime(FormatString(), AsDateTime[Index]);
 end;
 
 function TEpiDateTimeField.GetAsTime(const index: Integer): EpiTime;
@@ -1987,9 +2226,23 @@ begin
   result := NA_TIME;
 end;
 
-function TEpiDateTimeField.Compare(i, j: integer): integer;
+function TEpiDateTimeField.DoCompare(i, j: integer): integer;
 begin
   Result := Sign(AsDateTime[i] - AsDateTime[j]);
+end;
+
+function TEpiDateTimeField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiDateTimeField(Result) do
+  begin
+    Capacity := Self.Capacity;
+    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiDateTime));
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+  end;
 end;
 
 procedure TEpiDateTimeField.Exchange(i, j: integer);
@@ -2005,4 +2258,13 @@ function TEpiDateTimeField.FormatString(const FillSpace: boolean): string;
 begin
   result := 'HH:NN:SS';
 end;
+
+procedure TEpiDateTimeField.ResetData;
+var
+  i: Integer;
+begin
+  for i := 0 to FSize - 1 do
+    FData[i] := DefaultMissing;
+end;
+
 

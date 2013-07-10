@@ -4,7 +4,7 @@ type
 
   { TEpiComparison }
 
-  TEpiComparisonType = (fcLT, fcLEq, fcGEq, fcGT);
+  TEpiComparisonType = (fcEq, fcNEq, fcLT, fcLEq, fcGEq, fcGT);
   TEpiComparison = class(TEpiCustomBase)
   private
     function GetOwnerField: TEpiField;
@@ -16,6 +16,9 @@ type
     procedure   FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
     property    OwnerField: TEpiField read GetOwnerField;
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    XMLName: string; override;

@@ -15,6 +15,8 @@ type
   TEpiGroups = class;
   TEpiGroup = class;
 
+  EEpiBadPassword = class(Exception);
+
   TEpiAdminRight = (
     // Data access
     earCreate, earRead, earUpdate, earDelete, earVerify,
@@ -66,6 +68,10 @@ type
     // OnChange-hook methods
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiUsers }
@@ -108,15 +114,19 @@ type
     // - this gives approx. 2^32 different ways to store the same password.
     FSalt: string;
     function GetAdmin: TEpiAdmin;
+    function GetName: string;
     procedure SetExpireDate(const AValue: TDateTime);
     procedure SetFirstName(const AValue: string);
     procedure SetGroup(const AValue: TEpiGroup);
     procedure SetLastLogin(const AValue: TDateTime);
     procedure SetLastName(const AValue: string);
     procedure SetMasterPassword(const AValue: string);
+    procedure SetName(AValue: string);
     procedure SetPassword(const AValue: string);
   protected
     property  Salt: string read FSalt;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -163,6 +173,9 @@ type
     FCaption: TEpiTranslatedTextWrapper;
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -176,22 +189,7 @@ type
 implementation
 
 uses
-  DCPsha1, DCPbase64, epistringutils,
-  XMLRead, epidocument;
-
-function GetSHA1Base64EncodedStr(const Key: string): string;
-var
-  Sha1: TDCP_sha1;
-  Digest: string;
-begin
-  SetLength(Digest, 20);
-  Sha1 := TDCP_sha1.Create(nil);
-  Sha1.Init;
-  Sha1.UpdateStr(Key);
-  Sha1.Final(Digest[1]);
-  result := Base64EncodeStr(Digest);
-  Sha1.Free;
-end;
+  DCPbase64, epistringutils, XMLRead, epidocument, epimiscutils;
 
 { TEpiAdmin }
 
@@ -209,7 +207,7 @@ begin
   TheUser := Users.GetUserByLogin(Login);
   if not Assigned(TheUser) then exit;
 
-  result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + GetSHA1Base64EncodedStr(TheUser.Salt + Password + Login) = TheUser.Password;
+  result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
   if not result then exit;
 
   InitCrypt(TheUser.Salt + Password + Login);
@@ -315,6 +313,13 @@ end;
 procedure TEpiAdmin.EndUpdate;
 begin
   inherited EndUpdate;
+end;
+
+function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiAdmin(Result).FMasterPassword := FMasterPassword;
 end;
 
 { TEpiUsers }
@@ -455,6 +460,11 @@ begin
   result := TEpiAdmin(TEpiUsers(Owner).Owner);
 end;
 
+function TEpiUser.GetName: string;
+begin
+
+end;
+
 procedure TEpiUser.SetLastLogin(const AValue: TDateTime);
 var
   Val: TDateTime;
@@ -481,6 +491,11 @@ begin
   FMasterPassword := AValue;
 end;
 
+procedure TEpiUser.SetName(AValue: string);
+begin
+
+end;
+
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   SaltInt: LongInt;
@@ -490,7 +505,7 @@ begin
   FSalt := String(SaltByte);
 
   // Sha1 the new password and Base64 it..
-  FPassword := '$' + Base64EncodeStr(Salt) + '$' + GetSHA1Base64EncodedStr(Salt + AValue + Login);
+  FPassword := '$' + Base64EncodeStr(Salt) + '$' + StrToSHA1Base64(Salt + AValue + Login);
 
   // Scramble master password with own key.
   InitCrypt(Salt + AValue + Login);
@@ -498,6 +513,24 @@ begin
   InitCrypt(Admin.MasterPassword);
 
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
+end;
+
+function TEpiUser.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiUser(Result) do
+  begin
+    FGroup      := TEpiGroup(Admin.Groups.GetItemByName(Self.FGroup.Name));
+    FExpireDate := Self.FExpireDate;
+    FLastLogin  := Self.FLastLogin;
+    FFirstName  := Self.FFirstName;
+    FLastName   := Self.FLastName;
+    FMasterPassword := Self.FMasterPassword;
+    FPassword       := Self.FPassword;
+    FSalt           := Self.FSalt;
+  end;
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
@@ -652,6 +685,13 @@ begin
   DoChange(eegAdmin, Word(eaceGroupSetRights), @Val);
 end;
 
+function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiGroup(Result).FRights := FRights;
+end;
+
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -685,7 +725,7 @@ begin
 
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root);
-  Rights := TEpiAdminRights(LoadAttrInt(Root, rsRights));
+//  Rights := TEpiAdminRights(LoadAttrInt(Root, rsRights));
 end;
 
 end.

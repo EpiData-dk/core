@@ -6,10 +6,11 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo;
+  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
+  contnrs, LazMethodList;
 
 const
-  EPI_XML_DATAFILE_VERSION = 1;
+  EPI_XML_DATAFILE_VERSION = 3;
 
 type
   TEpiCustomBase = class;
@@ -37,7 +38,8 @@ type
     eegGroups,
     eegHeading,
     // epivaluelabels.pas
-    eegValueLabels,
+    eegValueLabel,
+    eegValueLabelSet,
     // epirelations.pas
     eegRelates
     );
@@ -77,6 +79,7 @@ type
     function   ScrambleXml: boolean; virtual;
 
     { Check methods }
+    function   NodeIsWhiteSpace(Const Node: TDomNode): boolean;
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
     { Load methods }
     function   LoadNode(out Node: TDOMNode; const Root: TDOMNode;
@@ -84,17 +87,17 @@ type
     function   LoadAttr(out Attr: TDOMAttr; const Root: TDOMNode;
       const AttrName: string; Fatal: boolean): boolean; overload;
     // Direct loading of node are always fatal, since they must return some value.
-    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: Integer = 0; Fatal: boolean = true): integer;
-    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: extended = 0; Fatal: boolean = true): extended;
-    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: string = ''; Fatal: boolean = true): String;
-    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: TDateTime = 0; Fatal: boolean = true): TDateTime;
+    function   LoadNodeInt(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiInteger = 0; Fatal: boolean = true): EpiInteger;
+    function   LoadNodeFloat(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiFloat = 0; Fatal: boolean = true): EpiFloat;
+    function   LoadNodeString(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiString = ''; Fatal: boolean = true): EpiString;
+    function   LoadNodeDateTime(const Root: TDOMNode; Const NodeName: string; DefaultVal: EpiDateTime = 0; Fatal: boolean = true): EpiDateTime;
     function   LoadNodeBool(const Root: TDOMNode; Const NodeName: string; DefaultVal: Boolean = false; Fatal: boolean = true): boolean;
     // Loading attributes
-    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
-    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer = 0; Fatal: Boolean = true): integer;
-    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: Extended = 0; Fatal: Boolean = true): extended;
-    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: String = ''; Fatal: Boolean = true): String;
-    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: TDateTime = 0; Fatal: Boolean = true): TDateTime; overload;
+    function   LoadAttrInt(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiInteger = 0; Fatal: Boolean = true): EpiInteger;
+    function   LoadAttrEnum(const Root: TDOMNode; Const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String = ''; Fatal: Boolean = true): integer;
+    function   LoadAttrFloat(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiFloat = 0; Fatal: Boolean = true): EpiFloat;
+    function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiString = ''; Fatal: Boolean = true): EpiString;
+    function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: EpiDateTime = 0; Fatal: Boolean = true): EpiDateTime; overload;
     function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string; DefaultVal: Boolean = false; Fatal: Boolean = true): boolean;
     // Singleton saves
     function   SaveNode(const Lvl: integer; const NodeName: string;
@@ -107,7 +110,12 @@ type
       const Val: TDateTime): string; overload;
     function   SaveNode(const Lvl: integer; const NodeName: string;
       const Val: boolean): string; overload;
+
     // Attributes save
+  private
+    // - used internally by SaveAttr
+    function   SaveAttrRaw(const AttrName: string; const Val: string): string;
+  protected
     function   SaveAttr(const AttrName: string; const Val: string): string; overload;
     function   SaveAttr(const AttrName: string; const Val: integer): string; overload;
     function   SaveAttr(const AttrName: string; const Val: extended): string; overload;
@@ -122,13 +130,9 @@ type
 
     { Change-event hooks }
   private
-    FOnChangeList: ^TEpiChangeEvent;
-    FOnChangeListCount: Integer;
-    FOnChangeListIgnoreUpdate: ^TEpiChangeEvent;
-    FOnChangeListCountIgnoreUpdate: Integer;
+    FOnChangeList: TMethodList;
+    FOnChangeListIgnoreUpdate: TMethodList;
     FUpdateCount: Integer;
-    function   GetOnChangeListCount: integer;
-    function   GetOnChangeListCountIgnoreUpdate: integer;
   protected
     procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
   public
@@ -170,13 +174,19 @@ type
     property    State: TEpiCustomBaseState read FState;
     property    Modified: Boolean read FModified write SetModified;
     property    OnModified: TNotifyEvent read FOnModified write SetOnModified;
-    // ObjectData is a custom property that can be used freely to store some data
-    // along with the object. It is NEVER used by the internals of Core, hence will
-    // not be copied/assigned/freed etc.
-    // It is entirely up to the user to keep track of it's use throught a program.
-    property    ObjectData: PtrUInt read FObjectData write FObjectData;
+
+  { Cloning }
+  protected
+    // DoCloneCreate should only be overridden if a special constructor is used.
+    function    DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; virtual;
+    // DoClone should normally be overridden, since this is where data should be copied.
+    function    DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase = nil): TEpiCustomBase; virtual;
+  public
+    function    Clone: TEpiCustomBase;
+    function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
   end;
   {$static off}
+  TEpiCustomBaseClass = class of TEpiCustomBase;
 
   { TEpiTranslatedText }
 
@@ -200,6 +210,11 @@ type
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
     property    TextLang[LangCode: string]: string read GetText write SetText;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiTranslatedTextWrapper }
@@ -211,6 +226,9 @@ type
     constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
   end;
 
   { TEpiCustomItem }
@@ -228,6 +246,22 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
+  { CustomData }
+  // CustomData is a custom property that can be used freely to store some data
+  // along with the object. User added content is NEVER used by the internals of
+  // Core.
+  // In addition data will not be copied/assigned/freed etc., hence it is
+  // entirely up to the user to keep track of it's use throught a program.
+  private
+    FCustomData: TFPObjectHashTable;
+  public
+    procedure AddCustomData(const Key: string; Const Obj: TObject);
+    function  FindCustomData(const Key: string): TObject;
+    function  RemoveCustomData(Const Key: string): TObject;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -246,6 +280,10 @@ type
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
   TEpiCustomControlItemClass = class of TEpiCustomControlItem;
 
@@ -261,19 +299,29 @@ type
     procedure   SetItemOwner(const AValue: boolean);
     procedure   OnChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    procedure   RegisterItem(Item: TEpiCustomItem);
+    procedure   UnRegisterItem(Item: TEpiCustomItem);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     function    GetCount: Integer; virtual;
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
     function    WriteNameToXml: boolean; override;
+    procedure   LoadFromXml(Root: TDOMNode); override;
     property    List: TFPList read FList;
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    NewItem(ItemClass: TEpiCustomItemClass): TEpiCustomItem; virtual;
+  { Standard Item Methods }
+  public
+    procedure   Clear;
+    procedure   ClearAndFree;
+    function    ItemClass: TEpiCustomItemClass; virtual;
+    function    NewItem(AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; virtual;
+    // AddItem uses InsertItem internally, so only that method need overriding if needed.
     procedure   AddItem(Item: TEpiCustomItem); virtual;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
+    // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
     function    GetItemByName(AName: string): TEpiCustomItem; virtual;
@@ -282,7 +330,6 @@ type
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
-
   { Naming and Validation }
   private
     FOnGetPrefix: TEpiPrefixEvent;
@@ -295,43 +342,51 @@ type
     function  ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; override;
     property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
     property  OnGetPrefix: TEpiPrefixEvent read FOnGetPrefix write FOnGetPrefix;
-
   { New Item Hook }
   private
     FOnNewItemClass: TEpiOnNewItemClass;
   public
     property   OnNewItemClass: TEpiOnNewItemClass read FOnNewItemClass write FOnNewItemClass;
-
   { Change-event hooks overrides }
   public
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
-
   { Tanslation overrides }
   public
     procedure SetLanguage(Const LangCode: string;
       Const DefaultLanguage: boolean); override;
-
   { Class properties overrides }
   protected
     procedure SetModified(const AValue: Boolean); override;
     procedure DoAssignList(Const EpiCustomList: TEpiCustomList); virtual;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  { Sorting }
+  private
+    FOnSort: TListSortCompare;
+    FSorted: boolean;
+    procedure SetSorted(AValue: boolean);
+  protected
+    procedure DoSort; virtual;
+  public
+    procedure Sort;
+    property  Sorted: boolean read FSorted write SetSorted;
+    property  OnSort: TListSortCompare read FOnSort write FOnSort;
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;
 
   { TEpiCustomControlItemList }
 
   TEpiCustomControlItemList = class(TEpiCustomList)
   private
-    FOnSort: TListSortCompare;
     procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-    procedure Sort;
+  protected
+    procedure DoSort; override;
   public
-    procedure   AddItem(Item: TEpiCustomItem); override;
-    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
-    function    DeleteItem(Index: integer): TEpiCustomItem; override;
-    procedure   RemoveItem(Item: TEpiCustomItem); override;
-    property    OnSort: TListSortCompare read FOnSort write FOnSort;
+    procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function  DeleteItem(Index: integer): TEpiCustomItem; override;
   end;
 
 {$I epixmlconstants.inc}
@@ -410,6 +465,43 @@ begin
   for i := 0 to OrgBase.ClassList.Count - 1 do
     TEpiCustomBase(ClassList[i]).Assign(TEpiCustomBase(OrgBase.ClassList[i]));
   EndUpdate;
+end;
+
+function TEpiCustomBase.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  result := TEpiCustomBaseClass(Self.ClassType).Create(AOwner);
+end;
+
+function TEpiCustomBase.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  OrgClass: TEpiCustomBase;
+  NewClass: TEpiCustomBase;
+  i: Integer;
+begin
+  Result := Dest;
+  if not Assigned(Result) then
+    Result := DoCloneCreate(AOwner);
+
+  // TODO: OnChangeEvents - Copy or Not?
+
+  for i := 0 to Result.ClassList.Count - 1 do
+  begin
+    NewClass := TEpiCustomBase(Result.ClassList[i]);
+    OrgClass := TEpiCustomBase(ClassList[i]);
+
+    OrgClass.DoClone(Result, NewClass);
+  end;
+end;
+
+function TEpiCustomBase.Clone: TEpiCustomBase;
+begin
+  Result := DoClone(nil);
+end;
+
+function TEpiCustomBase.Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := DoClone(AOwner);
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
@@ -543,6 +635,20 @@ begin
   result := false;
 end;
 
+function TEpiCustomBase.NodeIsWhiteSpace(const Node: TDomNode): boolean;
+var
+  P: PWideChar;
+begin
+  result := false;
+  if (Assigned(Node)) and
+     (Node.NodeType = TEXT_NODE) then
+  begin
+    P := @Node.NodeValue[1];
+    while P^ in [#10, #13, #32] do inc(p);
+    result := (P^ = #0);
+  end;
+end;
+
 procedure TEpiCustomBase.CheckNode(const Node: TDOMNode; const NodeName: string
   );
 begin
@@ -582,18 +688,18 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeInt(const Root: TDOMNode;
-  Const NodeName: string; DefaultVal: Integer; Fatal: boolean = true): integer;
+  const NodeName: string; DefaultVal: EpiInteger; Fatal: boolean): EpiInteger;
 var
   Node: TDOMNode;
 begin
   if LoadNode(Node, Root, NodeName, Fatal) then
-    result := StrToInt(Node.TextContent)
+    result := StrToInt64(Node.TextContent)
   else
     result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadNodeFloat(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: extended; Fatal: boolean): extended;
+  const NodeName: string; DefaultVal: EpiFloat; Fatal: boolean): EpiFloat;
 var
   Node: TDOMNode;
 begin
@@ -608,7 +714,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
-  const NodeName: string; DefaultVal: string; Fatal: boolean): String;
+  const NodeName: string; DefaultVal: EpiString; Fatal: boolean): EpiString;
 var
   Node: TDOMNode;
 begin
@@ -619,7 +725,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode;
-  Const NodeName: string; DefaultVal: TDateTime; Fatal: boolean = true): TDateTime;
+  const NodeName: string; DefaultVal: EpiDateTime; Fatal: boolean): EpiDateTime;
 var
   Node: TDOMNode;
 begin
@@ -634,7 +740,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
-  Const NodeName: string; DefaultVal: Boolean; Fatal: boolean = true): boolean;
+  const NodeName: string; DefaultVal: Boolean; Fatal: boolean): boolean;
 var
   Node: TDOMNode;
 begin
@@ -645,26 +751,26 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: Integer; Fatal: Boolean): integer;
+  const AttrName: string; DefaultVal: EpiInteger; Fatal: Boolean): EpiInteger;
 var
   Attr: TDOMAttr;
 begin
   ALogInfo('TEpiCustomBase.LoadAttrInt (1)');
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    Result := StrToInt(Attr.Value)
+    Result := StrToInt64(Attr.Value)
   else
     Result := DefaultVal;
 end;
 
 function TEpiCustomBase.LoadAttrEnum(const Root: TDOMNode;
-  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: Integer;
+  const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String;
   Fatal: Boolean): integer;
 begin
-  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, '', Fatal));
+  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, DefaultVal, Fatal));
 end;
 
 function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: Extended; Fatal: Boolean): extended;
+  const AttrName: string; DefaultVal: EpiFloat; Fatal: Boolean): EpiFloat;
 var
   Attr: TDOMAttr;
 begin
@@ -679,7 +785,7 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrString(const Root: TDOMNode;
-  const AttrName: string; DefaultVal: String; Fatal: Boolean): String;
+  const AttrName: string; DefaultVal: EpiString; Fatal: Boolean): EpiString;
 var
   Attr: TDOMAttr;
 begin
@@ -690,8 +796,8 @@ begin
 end;
 
 function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
-  const AttrName: string; const Format: string; DefaultVal: TDateTime;
-  Fatal: Boolean): TDateTime;
+  const AttrName: string; const Format: string; DefaultVal: EpiDateTime;
+  Fatal: Boolean): EpiDateTime;
 var
   Attr: TDOMAttr;
 begin
@@ -761,22 +867,31 @@ begin
   result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
 end;
 
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: string
+// This function writes the raw content of Val and AttrName without further
+// checking. If val need to be XML'ified it should go through SaveAttr(... val: string)
+function TEpiCustomBase.SaveAttrRaw(const AttrName: string; const Val: string
   ): string;
 begin
   result := Format(' %s="%s"', [AttrName, Val]);
 end;
 
+function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: string
+  ): string;
+begin
+  // Check that Val is not malformed (according to XML standard).
+  result := SaveAttrRaw(AttrName, StringToXml(Val));
+end;
+
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: integer
   ): string;
 begin
-  result := SaveAttr(AttrName, IntToStr(Val));
+  result := SaveAttrRaw(AttrName, IntToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
   ): string;
 begin
-  result := SaveAttr(AttrName, FloatToStr(Val));
+  result := SaveAttrRaw(AttrName, FloatToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
@@ -789,14 +904,13 @@ begin
     result := SaveAttr(AttrName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
     RestoreFormatSettings;
   end else
-    result := SaveAttr(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
-//  result := SaveAttr(AttrName, DateToStr(Val));
+    result := SaveAttrRaw(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: boolean
   ): string;
 begin
-  result := SaveAttr(AttrName, BoolToStr(Val, 'true', 'false'));
+  result := SaveAttrRaw(AttrName, BoolToStr(Val, 'true', 'false'));
 end;
 
 function TEpiCustomBase.SaveAttrEnum(const AttrName: string;
@@ -842,27 +956,14 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
-function TEpiCustomBase.GetOnChangeListCount: integer;
-begin
-  result := FOnChangeListCount;
-end;
-
-function TEpiCustomBase.GetOnChangeListCountIgnoreUpdate: integer;
-begin
-  result := FOnChangeListCountIgnoreUpdate;
-end;
-
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 var
   i: Integer;
 begin
-  i := 0;
-  while i < GetOnChangeListCountIgnoreUpdate do
-  begin
-    FOnChangeListIgnoreUpdate[i](Self, EventGroup, EventType, Data);
-    inc(i);
-  end;
+  I := FOnChangeListIgnoreUpdate.Count;
+  while FOnChangeListIgnoreUpdate.NextDownIndex(I) do
+    TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I])(Self, EventGroup, EventType, Data);
 
   if ((EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate))) or
      (EventGroup <> eegCustomBase)
@@ -871,12 +972,9 @@ begin
 
   if FUpdateCount > 0 then exit;
 
-  i := 0;
-  while i < GetOnChangeListCount do
-  begin
-    FOnChangeList[i](Self, EventGroup, EventType, Data);
-    inc(i);
-  end;
+  I := FOnChangeList.Count;
+  while FOnChangeList.NextDownIndex(I) do
+    TEpiChangeEvent(FOnChangeList.Items[I])(Self, EventGroup, EventType, Data);
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
@@ -914,13 +1012,13 @@ procedure TEpiCustomBase.RegisterOnChangeHook(Event: TEpiChangeEvent;
 begin
   if IgnoreUpdate then
   begin
-    Inc(FOnChangeListCountIgnoreUpdate);
-    ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate * SizeOf(TEpiChangeEvent));
-    FOnChangeListIgnoreUpdate[FOnChangeListCountIgnoreUpdate-1] := Event;
+    if not Assigned(FOnChangeListIgnoreUpdate) then
+      FOnChangeListIgnoreUpdate := TMethodList.Create;
+    FOnChangeListIgnoreUpdate.Add(TMethod(Event), false);
   end else begin
-    Inc(FOnChangeListCount);
-    ReAllocMem(FOnChangeList, FOnChangeListCount * SizeOf(TEpiChangeEvent));
-    FOnChangeList[FOnChangeListCount-1] := Event;
+    if not Assigned(FOnChangeList) then
+      FOnChangeList := TMethodList.Create;
+    FOnChangeList.Add(TMethod(Event), false);
   end;
 end;
 
@@ -928,36 +1026,13 @@ procedure TEpiCustomBase.UnRegisterOnChangeHook(Event: TEpiChangeEvent);
 var
   Idx: LongInt;
 begin
-  Idx := 0;
-  while Idx <= FOnChangeListCountIgnoreUpdate -1 do
-  begin
-    if (TMethod(FOnChangeListIgnoreUpdate[Idx]).Code = TMethod(Event).Code) and
-       (TMethod(FOnChangeListIgnoreUpdate[Idx]).Data = TMethod(Event).Data) then
-      break;
-    Inc(Idx)
-  end;
-  if (Idx < FOnChangeListCountIgnoreUpdate) then
-  begin
-    dec(FOnChangeListCountIgnoreUpdate);
-    if FOnChangeListCountIgnoreUpdate > Idx then
-      System.Move(FOnChangeListIgnoreUpdate[Idx+1],FOnChangeListIgnoreUpdate[Idx],(FOnChangeListCountIgnoreUpdate-Idx)*SizeOf(TEpiChangeEvent));
-    ReAllocMem(FOnChangeListIgnoreUpdate, FOnChangeListCountIgnoreUpdate*SizeOf(TEpiChangeEvent));
-  end;
+  FOnChangeListIgnoreUpdate.Remove(TMethod(Event));
+  if FOnChangeListIgnoreUpdate.Count = 0 then
+    FreeAndNil(FOnChangeListIgnoreUpdate);
 
-  Idx := 0;
-  while Idx <= FOnChangeListCount -1 do
-  begin
-    if (TMethod(FOnChangeList[Idx]).Code = TMethod(Event).Code) and
-       (TMethod(FOnChangeList[Idx]).Data = TMethod(Event).Data) then
-      break;
-    Inc(Idx)
-  end;
-  if Idx = FOnChangeListCount then exit;
-
-  dec(FOnChangeListCount);
-  if FOnChangeListCount > Idx then
-    System.Move(FOnChangeList[Idx+1],FOnChangeList[Idx],(FOnChangeListCount-Idx)*SizeOf(TEpiChangeEvent));
-  ReAllocMem(FOnChangeList, FOnChangeListCount*SizeOf(TEpiChangeEvent));
+  FOnChangeList.Remove(TMethod(Event));
+  if FOnChangeList.Count = 0 then
+    FreeAndNil(FOnChangeList);
 end;
 
 procedure TEpiCustomBase.SetLanguage(const LangCode: string;
@@ -1036,14 +1111,16 @@ begin
   begin
     Val := FCurrentText;
     FCurrentText := TString(FTextList.Objects[Idx]).Str;
-    DoChange(eegCustomBase, Word(ecceText), @Val);
+    if Assigned(Owner) then
+      Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
   end
   // Fallback to default language
   else if (FTextList.Find(FDefaultLang, Idx)) and (not DefaultLanguage) then
   begin
     Val := FCurrentText;
     FCurrentText := TString(FTextList.Objects[Idx]).Str;
-    DoChange(eegCustomBase, Word(ecceText), @Val);
+    if Assigned(Owner) then
+      Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
   end
   // If new default language does not exists create empty entry.
   else if DefaultLanguage then
@@ -1136,15 +1213,43 @@ begin
   EndUpdate;
 end;
 
+function TEpiTranslatedText.DoCloneCreate(AOwner: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := TEpiTranslatedText.Create(AOwner, XMLName);
+end;
+
+function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiTranslatedText(Result) do
+  begin
+    FTextList.Clear;
+    for i := 0 to Self.FTextList.Count - 1 do
+      FTextList.AddObject(Self.FTextList[i], TString.Create(TString(Self.FTextList.Objects[i]).Str));
+
+    FCurrentText := Self.FCurrentText;
+  end;
+end;
+
 procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
   Idx: integer;
+  Val: String;
 begin
+  Val := '';
   if FTextList.Find(LangCode, Idx) then
-    TString(FTextList.Objects[Idx]).Str := AText
-  else
+  begin
+    Val := TString(FTextList.Objects[Idx]).Str;
+    TString(FTextList.Objects[Idx]).Str := AText;
+  end else
     FTextList.AddObject(LangCode, TString.Create(AText));
+  if Assigned(Owner) then
+    Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
 function TEpiTranslatedText.GetText(const LangCode: string): string;
@@ -1187,6 +1292,12 @@ begin
   // Root = Parent for FNodeName (since this is a wrapped object.
   if LoadNode(NRoot, Root, FNodeName, false) then
     inherited LoadFromXml(NRoot);
+end;
+
+function TEpiTranslatedTextWrapper.DoCloneCreate(AOwner: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
 end;
 
 { TEpiCustomItem }
@@ -1233,6 +1344,8 @@ end;
 destructor TEpiCustomItem.Destroy;
 begin
   FName := '';
+  if Assigned(FCustomData) then
+    FreeAndNil(FCustomData);
   inherited Destroy;
 end;
 
@@ -1252,6 +1365,43 @@ function TEpiCustomItem.ValidateRename(const NewName: string;
 begin
   if NewName = Name then exit(true);
   result := DoValidateRename(NewName);
+end;
+
+function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiCustomItem(Result).FName := FName;
+end;
+
+procedure TEpiCustomItem.AddCustomData(const Key: string; const Obj: TObject);
+begin
+  if not Assigned(FCustomData) then
+    FCustomData := TFPObjectHashTable.Create(false);
+
+  try
+    FCustomData.Items[Key] := Obj;
+  except
+    raise Exception.Create('TEpiCustomItem: Duplicate CustomData - key=' + Key);
+  end;
+end;
+
+function TEpiCustomItem.FindCustomData(const Key: string): TObject;
+begin
+  result := nil;
+  if Assigned(FCustomData) then
+    result := FCustomData.Items[Key];
+end;
+
+function TEpiCustomItem.RemoveCustomData(const Key: string): TObject;
+begin
+  Result := FindCustomData(Key);
+  if not Assigned(Result) then exit;
+
+  FCustomData.Delete(Key);
+
+  if FCustomData.Count = 0 then
+    FreeAndNil(FCustomData);
 end;
 
 { TEpiCustomControlItem }
@@ -1304,6 +1454,17 @@ begin
   EndUpdate;
 end;
 
+function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiCustomControlItem(Result) do
+  begin
+    FTop  := Self.FTop;
+    FLeft := Self.FLeft;
+  end;
+end;
+
 { TEpiCustomList }
 
 procedure TEpiCustomList.SetItemOwner(const AValue: boolean);
@@ -1321,13 +1482,43 @@ begin
 
   case TEpiCustomChangeEventType(EventType) of
     ecceDestroy: RemoveItem(EpiSender);
+    ecceAddItem: Sort;
+    ecceDelItem: Sort;
+    ecceUpdate:  Sort;
   end;
+end;
+
+procedure TEpiCustomList.RegisterItem(Item: TEpiCustomItem);
+begin
+  if ItemOwner then Item.FOwner := Self;
+  Item.RegisterOnChangeHook(@OnChangeHook, true);
+
+  if ItemOwner then
+  begin
+    Item.SetLanguage(FDefaultLang, true);
+    Item.SetLanguage(FCurrentLang, false);
+  end;
+
+  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+  if Sorted then Sort;
+end;
+
+procedure TEpiCustomList.UnRegisterItem(Item: TEpiCustomItem);
+begin
+//  if not (ebsDestroying in Item.State) then
+  Item.UnRegisterOnChangeHook(@OnChangeHook);
+
+  if ItemOwner then Item.FOwner := nil;
+  DoChange(eegCustomBase, Word(ecceDelItem), Item);
+  if Sorted then Sort;
 end;
 
 constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FList := TFPList.Create;
+  FItemOwner := false;
+  FSorted := false;
 end;
 
 function TEpiCustomList.GetCount: Integer;
@@ -1357,11 +1548,34 @@ begin
   Result := false;
 end;
 
+procedure TEpiCustomList.LoadFromXml(Root: TDOMNode);
+var
+  NItem: TEpiCustomItem;
+  Node: TDOMNode;
+begin
+  inherited LoadFromXml(Root);
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    NItem := NewItem();
+    CheckNode(Node, NItem.XMLName);
+    NItem.LoadFromXml(Node);
+
+    Node := Node.NextSibling;
+  end;
+end;
+
 function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
 var
   i: Integer;
 begin
-  i := Count;
+  i := Count + 1;
   repeat
     result := DoPrefix + IntToStr(i);
     Inc(i);
@@ -1393,17 +1607,7 @@ destructor TEpiCustomList.Destroy;
 var
   F: TEpiCustomItem;
 begin
-  while FList.Count > 0 do
-  begin
-    // Using this unusual construct in destroying list items (when owned)
-    // ensures that destroy notifications from Items is defered until after
-    // the item is removed from the list.
-    F := TEpiCustomItem(FList.Last);
-    // Deleting is faster than removing...
-    FList.Delete(FList.Count - 1);
-    if ItemOwner then
-      FreeAndNil(F);
-  end;
+  ClearAndFree;
   FreeAndNil(FList);
   inherited Destroy;
 end;
@@ -1420,34 +1624,54 @@ begin
   result := inherited SaveToXml(Content, Lvl);
 end;
 
-function TEpiCustomList.NewItem(ItemClass: TEpiCustomItemClass
+procedure TEpiCustomList.Clear;
+begin
+  while Count > 0 do
+    DeleteItem(Count - 1);
+end;
+
+procedure TEpiCustomList.ClearAndFree;
+var
+  F: TEpiCustomItem;
+begin
+  while FList.Count > 0 do
+  begin
+    // Using this unusual construct in destroying list items (when owned)
+    // ensures that destroy notifications from Items is defered until after
+    // the item is removed from the list.
+    F := TEpiCustomItem(FList.Last);
+    RemoveItem(F);
+    if ItemOwner then
+      FreeAndNil(F);
+  end;
+end;
+
+function TEpiCustomList.ItemClass: TEpiCustomItemClass;
+begin
+  result := nil;
+end;
+
+function TEpiCustomList.NewItem(AItemClass: TEpiCustomItemClass
   ): TEpiCustomItem;
 begin
+  if not Assigned(AItemClass) then
+    AItemClass := ItemClass;
+
   if Assigned(OnNewItemClass) then
-    ItemClass := OnNewItemClass(Self, ItemClass);
-  if not Assigned(ItemClass) then
-    Exception.Create('');
-  Result := ItemClass.Create(Self);
-  Result.Name := GetUniqueItemName(ItemClass);
+    AItemClass := OnNewItemClass(Self, AItemClass);
+
+  if not Assigned(AItemClass) then
+    Exception.Create('TEpiCustomList: No ItemClass Defined!');
+
+  Result := AItemClass.Create(Self);
+  Result.Name := GetUniqueItemName(AItemClass);
   AddItem(Result);
 end;
 
 procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
 begin
-  if (not ValidateRename(Item.Name, false)) then
-    raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
-
-  if ItemOwner then Item.FOwner := Self;
-  FList.Add(Item);
-  Item.RegisterOnChangeHook(@OnChangeHook, true);
-
-  if ItemOwner then
-  begin
-    Item.SetLanguage(FDefaultLang, true);
-    Item.SetLanguage(FCurrentLang, false);
-  end;
-
-  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+  // AddItem uses InsertItem internally, so only that method need overriding if needed.
+  InsertItem(Count, Item);
 end;
 
 procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
@@ -1455,37 +1679,21 @@ procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
 begin
   if (not ValidateRename(Item.Name, false)) then
     raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
-
-  if ItemOwner then Item.FOwner := Self;
   FList.Insert(Index, Item);
-  Item.RegisterOnChangeHook(@OnChangeHook, true);
-
-  if ItemOwner then
-  begin
-    Item.SetLanguage(FDefaultLang, true);
-    Item.SetLanguage(FCurrentLang, false);
-  end;
-
-  DoChange(eegCustomBase, Word(ecceAddItem), Item);
+  RegisterItem(Item);
 end;
 
 procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
 begin
-  FList.Remove(Item);
-  if not (ebsDestroying in Item.State) then
-    Item.UnRegisterOnChangeHook(@OnChangeHook);
-  if ItemOwner then Item.FOwner := nil;
-  DoChange(eegCustomBase, Word(ecceDelItem), Item);
+  // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
+  DeleteItem(FList.IndexOf(Item));
 end;
 
 function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := TEpiCustomItem(FList[Index]);
   FList.Delete(Index);
-  if not (ebsDestroying in Result.State) then
-    Result.UnRegisterOnChangeHook(@OnChangeHook);
-  if ItemOwner then Result.FOwner := nil;
-  DoChange(eegCustomBase, Word(ecceDelItem), Result);
+  UnRegisterItem(Result);
 end;
 
 function TEpiCustomList.GetItemByName(AName: string): TEpiCustomItem;
@@ -1554,17 +1762,17 @@ end;
 procedure TEpiCustomList.DoAssignList(const EpiCustomList: TEpiCustomList);
 var
   i: Integer;
-  ItemClass: TEpiCustomItemClass;
+  NItemClass: TEpiCustomItemClass;
   Item: TEpiCustomItem;
 begin
   BeginUpdate;
   OnNewItemClass := EpiCustomList.OnNewItemClass;
   if EpiCustomList.Count > 0 then
   begin
-    ItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
+    NItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
     for i := 0 to EpiCustomList.Count - 1 do
     begin
-      Item := NewItem(ItemClass);
+      Item := NewItem(NItemClass);
       Item.Assign(EpiCustomList[i]);
     end;
   end;
@@ -1577,6 +1785,69 @@ begin
 
   if AEpiCustomBase is TEpiCustomList then
     DoAssignList(TEpiCustomList(AEpiCustomBase));
+end;
+
+procedure TEpiCustomList.SetSorted(AValue: boolean);
+begin
+  if FSorted = AValue then Exit;
+  FSorted := AValue;
+end;
+
+procedure TEpiCustomList.DoSort;
+begin
+  if not Sorted then exit;
+
+  if Assigned(FOnSort) then
+    FList.Sort(FOnSort)
+end;
+
+procedure TEpiCustomList.Sort;
+begin
+  DoSort;
+end;
+
+function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  i: Integer;
+  NItem: TEpiCustomItem;
+
+  function GetRandomName: string;
+  var
+    GUID: TGUID;
+  begin
+    // Hack: Create a GUID to use as name.
+    //  - the comp. name is not used in other parts of the program anyway,
+    //  - so using GUID is a valid way to create random components names... :)
+    //  - And the chance of creating to equal component name are very-very-very unlikely.
+    CreateGUID(GUID);
+    Result := '_' + StringsReplace(GUIDToString(GUID), ['{','}','-'], ['','',''], [rfReplaceAll]);
+  end;
+
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  // Set itemowner before copying the items - otherwise
+  // owner is not set properly.
+  TEpiCustomList(Result).FItemOwner := FItemOwner;
+  for i := 0 to Count - 1 do
+  begin
+    NItem := TEpiCustomItem(Items[i].DoCloneCreate(Result));
+    // Set a random name, otherwise calling Add will fail.
+    // Name is correctly set in Items[i].DoClone...
+    NItem.FName := GetRandomName;
+    if TEpiCustomList(Result).IndexOf(NItem) = -1 then
+      TEpiCustomList(Result).AddItem(NItem);
+    Items[i].DoClone(Result, NItem);
+  end;
+
+  // Set Sorting last, otherwise each AddItem triggers a sort.
+  with TEpiCustomList(Result) do
+  begin
+    FOnSort := Self.FOnSort;
+    FSorted := Self.FSorted;
+    Sort;
+  end;
 end;
 
 { TEpiCustomControlItemList }
@@ -1604,30 +1875,20 @@ begin
   if (EventGroup <> eegCustomBase) then exit;
 
   case TEpiCustomChangeEventType(EventType) of
-    ecceDestroy: ;
-    ecceUpdate,
-    ecceAddItem,
-    ecceDelItem, ecceSetItem,
-    ecceText, ecceName:
-      Exit;
     ecceSetTop:  Sort;
     ecceSetLeft: Sort;
   end;
 end;
 
-procedure TEpiCustomControlItemList.Sort;
+procedure TEpiCustomControlItemList.DoSort;
 begin
-  if Assigned(FOnSort) then
-    FList.Sort(FOnSort)
-  else
-    FList.Sort(@SortControlItems);
-end;
+  if not Assigned(FOnSort) then
+    FOnSort := @SortControlItems;
 
-procedure TEpiCustomControlItemList.AddItem(Item: TEpiCustomItem);
-begin
-  inherited AddItem(Item);
-  Item.RegisterOnChangeHook(@ChangeHook, true);
-  Sort;
+  inherited DoSort;
+
+  if FOnSort = @SortControlItems then
+    FOnSort := nil;
 end;
 
 procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
@@ -1635,21 +1896,12 @@ procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
 begin
   inherited InsertItem(Index, Item);
   Item.RegisterOnChangeHook(@ChangeHook, true);
-  Sort;
 end;
 
 function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := inherited DeleteItem(Index);
   Result.UnRegisterOnChangeHook(@ChangeHook);
-  Sort;
-end;
-
-procedure TEpiCustomControlItemList.RemoveItem(Item: TEpiCustomItem);
-begin
-  inherited RemoveItem(Item);
-  Item.UnRegisterOnChangeHook(@ChangeHook);
-  Sort;
 end;
 
 end.

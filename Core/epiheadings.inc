@@ -22,29 +22,14 @@ begin
   Result := rsHeadings;
 end;
 
-procedure TEpiHeadings.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
-  NHeading: TEpiHeading;
+function TEpiHeadings.ItemClass: TEpiCustomItemClass;
 begin
-  // Root = <Headings>
-  if not Assigned(Root) then exit;
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsHeading);
-
-    NHeading := NewHeading;
-    NHeading.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
+  result := TEpiHeading;
 end;
 
 function TEpiHeadings.NewHeading: TEpiHeading;
 begin
-  result := TEpiHeading(NewItem(TEpiHeading));
+  result := TEpiHeading(NewItem);
 end;
 
 function TEpiHeadings.GetHeadingByName(const AName: string): TEpiHeading;
@@ -64,10 +49,21 @@ begin
   result := TEpiSection(AOwner);
 end;
 
+procedure TEpiHeading.SetHeadingType(AValue: TEpiHeadingType);
+var
+  Val: TEpiHeadingType;
+begin
+  if FHeadingType = AValue then Exit;
+  Val := FHeadingType;
+  FHeadingType := AValue;
+  DoChange(eegHeading, Word(ehceType), @Val);
+end;
+
 constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
+  FHeadingType := htH4;
   RegisterClasses([FCaption]);
 end;
 
@@ -85,7 +81,18 @@ end;
 procedure TEpiHeading.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
+
+  if TEpiDocument(RootOwner).Version >= 2 then
+    HeadingType := TEpiHeadingType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiHeadingType), GetEnumName(TypeInfo(TEpiHeadingType), Integer(htH4)), false));
+
   FCaption.LoadFromXml(Root);
+end;
+
+function TEpiHeading.SaveAttributesToXml: string;
+begin
+  Result :=
+    inherited SaveAttributesToXml +
+    SaveAttrEnum(rsType, Integer(HeadingType), TypeInfo(TEpiHeadingType));
 end;
 
 

@@ -30,6 +30,7 @@ type
     function    ReEncodeString(Const Str: string): string;
     function    StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
   private
+    FImportCasing: TEpiFieldNamingCase;
     function    TruncToInt(e: Extended): integer;
   public
     constructor Create;
@@ -43,6 +44,8 @@ type
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
+    // Import casing only relevant for .rec files, since they are considere case-incensitive.
+    property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
   end;
 
 implementation
@@ -150,6 +153,7 @@ var
   TempInt: Int64;
   HeaderLineCount: Integer;
   ValCode: Integer;
+  ValCodeFloat: Extended;
   TotFieldLength: Integer;
   CurrentLine: Integer;
   TmpFieldChar, Dummy: Char;
@@ -180,6 +184,7 @@ var
   VLSet: TEpiValueLabelSet;
   VL: TEpiCustomValueLabel;
   Lines: TStringList;
+  ImportFormatSettings: TFormatSettings;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -209,18 +214,33 @@ const
        ftYMDAuto
   );
 
-
   function RequestPassword(Const EncryptedString: string): boolean;
   var
     S, FPassword: string;
+    Digest: Pointer;
+    Hash: TDCP_sha1;
+    InitVector: array[0..15] of byte;
   begin
     result := false;
     if Assigned(FOnRequestPassword) then
       FOnRequestPassword(Self, S, FPassword);
     try
+      // The initialization of the IV like this, makes importing encrypted .rec
+      // files possible, without using the DCP1COMPAT defines
+      // in DCPCrypt package.
+      GetMem(Digest,TDCP_sha1.GetHashSize div 8);
+      Hash:= TDCP_sha1.Create(nil);
+      Hash.Init;
+      Hash.UpdateStr(FPassword);
+      Hash.Final(Digest^);
+      Hash.Free;
+
       S := Base64DecodeStr(EncryptedString);
+      FillChar(InitVector, 16, $FF);
       Decrypter := TDCP_rijndael.Create(nil);
-      DeCrypter.InitStr(FPassword, TDCP_sha1);
+      Decrypter.Init(Digest^, TDCP_sha1.GetHashSize, @InitVector);
+      Decrypter.EncryptECB(InitVector, InitVector);
+      Decrypter.SetIV(InitVector);
       DeCrypter.DecryptCFB8bit(S[1], S[1], Length(S));
       DeCrypter.Reset;
       Result := (AnsiCompareText(FPassword, S) = 0);
@@ -251,6 +271,10 @@ begin
 
   if not Assigned(DataFile) then
     DataFile := TEpiDataFile.Create(nil);
+
+  ImportFormatSettings := DefaultFormatSettings;
+  ImportFormatSettings.DecimalSeparator := '.';
+  ImportFormatSettings.DateSeparator := '/';
 
   with DataFile do
   try
@@ -309,7 +333,7 @@ begin
 
         // This is an encrypted field... (new XML does not have single encrypted fields.)
         if (TmpFieldTypeInt = 18) then
-          IsCrypt.Bits[CurrentLine-1] := true;
+          IsCrypt.Bits[Fields.Count] := true;
 
         // This is not a data field, but a question field.
         if (TmpFieldTypeInt = 15) or (TmpLength = 0) then
@@ -322,6 +346,12 @@ begin
 
       // Trim text information.
       TmpName := Trim(TmpName);
+      case ImportCasing of
+        fncUpper: TmpName := UTF8UpperCase(TmpName);
+        fncLower: TmpName := UTF8LowerCase(TmpName);
+        fncAsIs: ;
+      end;
+
       TmpLabel := Trim(TmpLabel);
 
       if FieldIsQuestion then
@@ -372,7 +402,7 @@ begin
     CloseFile(TxtFile);
 
     LocalDateSeparator := DateSeparator;
-    DateSeparator := '/';  // This was standard in old .rec files.
+    DefaultFormatSettings.DateSeparator := '/';  // This was standard in old .rec files.
 
     if ImportData then
     begin
@@ -467,12 +497,20 @@ begin
               UTmpStr := UTF8UpperCase(TmpStr);
               while not ((Pos('END', UTmpStr) > 0) and (Length(UTmpStr) = 3)) do
               begin // Read individual labels.
-                StrBuf := Trim(Copy2SpaceDel(TmpStr));
+                // Values may be incapsulated in "..."
+                if TmpStr[1] = '"' then
+                begin
+                  StrBuf := AnsiDequotedStr(Trim(TmpStr), '"');
+                  Delete(TmpStr, 1, Length(StrBuf)+2);
+                end else
+                  StrBuf := Trim(Copy2SpaceDel(TmpStr));
 
                 if NewVLset then
                 begin
                   if TryStrToInt(StrBuf, ValCode) then
                     TmpFieldType := ftInteger
+                  else if TryStrToFloat(StrBuf, ValCodeFloat) then
+                    TmpFieldType := ftFloat
                   else
                     TmpFieldType := ftString;
                   VLSet := ValueLabels.NewValueLabelSet(TmpFieldType);
@@ -483,6 +521,7 @@ begin
                 VL := VLSet.NewValueLabel;
                 case VLSet.LabelType of
                   ftInteger: TEpiIntValueLabel(VL).Value := StrToInt(Strbuf);
+                  ftFloat:   TEpiFloatValueLabel(VL).Value := StrToFloat(StrBuf, ImportFormatSettings);
                   ftString:  TEpiStringValueLabel(VL).Value := StrBuf;
                 end;
                 VL.TheLabel.Text := AnsiDequotedStr(Trim(TmpStr), '"');
@@ -507,8 +546,7 @@ begin
       Lines.Free;
     end;
   finally
-//    CloseFile(TxtFile);
-    DateSeparator := LocalDateSeparator;
+    DefaultFormatSettings.DateSeparator := LocalDateSeparator;
     if Assigned(DataStream) then DataStream.Free;
   end;
   result := true;
@@ -581,9 +619,11 @@ begin
   if not Assigned(DataFile) then
     DataFile := Doc.DataFiles.NewDataFile;
 
+  DataFile.Fields.Sorted := false;
+
   With DataFile do
   try
-    DataStream := TFileStream.Create(aFileName, fmOpenRead);
+    DataStream := TFileStream.Create(UTF8ToSys(aFileName), fmOpenRead);
 
     // ********************************
     //           STATA HEADER
@@ -824,13 +864,16 @@ begin
     BEGIN
       TmpField := Fields[i];
       StrBuf := Trim(StringFromBuffer(PChar(@CharBuf[i * FieldNameLength]), FieldNameLength));
+      StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
 
       IF StrBuf <> '' THEN
       BEGIN
         VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);
         if not Assigned(VLSet) then
+        begin
           VLSet := ValueLabels.NewValueLabelSet(ftInteger);
-        VLSet.Name := StrBuf;
+          VLSet.Name := StrBuf
+        end;
 
         TmpField.ValueLabelSet := VLSet;
       END;
@@ -854,6 +897,8 @@ begin
       // No more field information exists. The update may complete.
       TmpField.EndUpdate;
     END;
+
+
 
     // ********************************
     //      STATA EXPANSION FIELDS
@@ -1116,7 +1161,9 @@ begin
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
-          VLSet := ValueLabels.GetValueLabelSetByName(StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength));  // Get ValueLabelSet
+          StrBuf := StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength);
+          StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
+          VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);  // Get ValueLabelSet
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(DataStream, 4);                                               // Number of entries in label
@@ -1144,6 +1191,8 @@ begin
       END;  //if stataversion 6+
     END;
     // successfully loaded the file.
+
+    DataFile.Fields.Sorted := true;
     Result := true;
   finally
     if Assigned(DataStream) then FreeAndNil(DataStream);

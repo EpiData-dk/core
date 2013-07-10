@@ -10,6 +10,7 @@ uses
 type
 
   TEpiValueLabelChangeEvent = (evceValue, evceMissing);
+  TEpiValueLabelSetChangeEvent = (evlsMaxValueLength);
 
   { TEpiCustomValueLabel }
 
@@ -21,8 +22,11 @@ type
     procedure SetIsMissingValue(AValue: boolean);
   protected
     function GetValueAsString: string; virtual; abstract;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -41,6 +45,8 @@ type
     procedure SetValue(AValue: EpiInteger);
   protected
     function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -55,6 +61,8 @@ type
     procedure SetValue(AValue: EpiFloat);
   protected
     function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -69,6 +77,8 @@ type
     procedure SetValue(AValue: EpiString);
   protected
     function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -95,6 +105,7 @@ type
   private
     FLabelScope: TValueLabelSetScope;
     FLabelType: TEpiFieldType;
+    FWriteNameToXml: boolean;
     function    GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
     function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
@@ -102,6 +113,13 @@ type
     function    GetValueLabelExists(const AValue: variant): boolean;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
     procedure   SetLabelType(const AValue: TEpiFieldType);
+  private
+    { House-keeping for MaxValueLengt }
+    FDirtyCache: boolean;
+    FCachedLength: LongInt;
+    procedure   DirtyCacheAndSendChangeEvent;
+    procedure   ItemChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
+                  EventType: Word; Data: Pointer);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     function    SaveInternal(Lvl: integer): string; virtual;
@@ -109,14 +127,19 @@ type
     function    SaveExternal(Lvl: integer): string; virtual;
     function    WriteNameToXml: boolean; override;
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
+    function    ItemClass: TEpiCustomItemClass; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewValueLabel: TEpiCustomValueLabel;
+    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function    DeleteItem(Index: integer): TEpiCustomItem; override;
     property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
     property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
@@ -162,7 +185,18 @@ begin
   if FIsMissingValue = AValue then Exit;
   Val := FIsMissingValue;
   FIsMissingValue := AValue;
-  DoChange(eegValueLabels, Word(evceMissing), @Val);
+  DoChange(eegValueLabel, Word(evceMissing), @Val);
+end;
+
+function TEpiCustomValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiCustomValueLabel(Result) do
+  begin
+    FIsMissingValue := Self.FIsMissingValue;
+    FOrder          := Self.FOrder;
+  end;
 end;
 
 constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
@@ -171,6 +205,11 @@ begin
   IsMissingValue := false;
   FLabel := TEpiTranslatedText.Create(Self, rsLabel);
   RegisterClasses([FLabel]);
+end;
+
+function TEpiCustomValueLabel.XMLName: string;
+begin
+  Result := rsValueLabel;
 end;
 
 function TEpiCustomValueLabel.SaveToXml(Content: String; Lvl: integer): string;
@@ -186,16 +225,16 @@ begin
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   Result +=
     Indent(LvL + 1) +
-      '<' + rsValueLabel +
-         ' order="' + IntToStr(Order) +
-        '" value="' + GetValueAsString;
+    '<ValueLabel' +
+    SaveAttr(rsOrder, Order) +
+    SaveAttr(rsValue, GetValueAsString);
   RestoreFormatSettings;
 
   // Add missing if set
   if IsMissingValue then
-    Result += '" missing="true">'
-  else
-    Result += '">';
+    Result += SaveAttr(rsMissing, IsMissingValue);
+
+  Result += '>';
 
   // Inset labels (language dependant)
   Result += LineEnding + FLabel.SaveToXml('', Lvl + 2) +
@@ -241,12 +280,19 @@ begin
   if FValue = AValue then Exit;
   Val := FValue;
   FValue := AValue;
-  DoChange(eegValueLabels, Word(evceValue), @Val);
+  DoChange(eegValueLabel, Word(evceValue), @Val);
 end;
 
 function TEpiIntValueLabel.GetValueAsString: string;
 begin
   Result := IntToStr(Value);
+end;
+
+function TEpiIntValueLabel.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiIntValueLabel(Result).FValue := FValue;
 end;
 
 procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode);
@@ -272,12 +318,19 @@ begin
   if FValue = AValue then Exit;
   Val := FValue;
   FValue := AValue;
-  DoChange(eegValueLabels, Word(evceValue), @Val);
+  DoChange(eegValueLabel, Word(evceValue), @Val);
 end;
 
 function TEpiFloatValueLabel.GetValueAsString: string;
 begin
   Result := FloatToStr(Value);
+end;
+
+function TEpiFloatValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiFloatValueLabel(Result).FValue := FValue;
 end;
 
 procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode);
@@ -303,12 +356,19 @@ begin
   if FValue = AValue then Exit;
   Val := FValue;
   FValue := AValue;
-  DoChange(eegValueLabels, Word(evceValue), @Val);
+  DoChange(eegValueLabel, Word(evceValue), @Val);
 end;
 
 function TEpiStringValueLabel.GetValueAsString: string;
 begin
   Result := Value;
+end;
+
+function TEpiStringValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiStringValueLabel(Result).FValue := FValue;
 end;
 
 procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode);
@@ -374,6 +434,12 @@ begin
   FLabelType := AValue;
 end;
 
+procedure TEpiValueLabelSet.DirtyCacheAndSendChangeEvent;
+begin
+  FDirtyCache := true;
+  DoChange(eegValueLabelSet, Word(evlsMaxValueLength), @FCachedLength);
+end;
+
 function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
 var
   i: Integer;
@@ -394,6 +460,15 @@ function TEpiValueLabelSet.GetValueLabels(const index: integer
   ): TEpiCustomValueLabel;
 begin
   result := TEpiCustomValueLabel(Items[index]);
+end;
+
+procedure TEpiValueLabelSet.ItemChangeHook(Sender: TObject;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  if (EventGroup <> eegValueLabel) then Exit;
+
+  if TEpiValueLabelChangeEvent(EventType) = evceValue then
+    DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
@@ -449,6 +524,10 @@ begin
   // Root = <Internal>
   LabelScope := vlsInternal;
 
+  FWriteNameToXml := false;
+  inherited LoadFromXml(Root);
+  FWriteNameToXml := true;
+{
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
@@ -459,7 +538,7 @@ begin
     NValueLabel.LoadFromXml(Node);
 
     Node := TDOMElement(Node.NextSibling);
-  end;
+  end;        }
 end;
 
 function TEpiValueLabelSet.SaveInternal(Lvl: integer): string;
@@ -493,7 +572,7 @@ end;
 
 function TEpiValueLabelSet.WriteNameToXml: boolean;
 begin
-  Result := true;
+  Result := FWriteNameToXml;
 end;
 
 procedure TEpiValueLabelSet.DoAssignList(const EpiCustomList: TEpiCustomList);
@@ -513,12 +592,26 @@ begin
   EndUpdate;
 end;
 
+function TEpiValueLabelSet.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiValueLabelSet(Result) do
+  begin
+    FLabelScope := Self.FLabelScope;
+    FLabelType := Self.FLabelType;
+    FName := Self.FName;
+  end;
+end;
+
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FWriteNameToXml := true;
   FLabelScope := vlsInternal;
   FLabelType  := ftInteger;
   FName       := '';
+  FDirtyCache := false;
 end;
 
 destructor TEpiValueLabelSet.Destroy;
@@ -547,11 +640,22 @@ begin
     SaveAttrEnum(rsType, Integer(LabelType), TypeInfo(TEpiFieldType));
 end;
 
+function TEpiValueLabelSet.ItemClass: TEpiCustomItemClass;
+begin
+  case LabelType of
+    ftInteger: Result := TEpiIntValueLabel;
+    ftFloat:   Result := TEpiFloatValueLabel;
+    ftString:  Result := TEpiStringValueLabel;
+  end;
+end;
+
 procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
+  Attr: TDOMAttr;
 begin
-  inherited LoadFromXml(Root);
+  if LoadAttr(Attr, Root, rsId, True) then
+    FName := LoadAttrString(Root, rsId);
 
   // Root = <ValueLabel>
   if LoadNode(Node, Root, rsInternal, false) then
@@ -562,16 +666,24 @@ begin
 end;
 
 function TEpiValueLabelSet.NewValueLabel: TEpiCustomValueLabel;
-var
-  CT: TEpiCustomItemClass;
 begin
-  case LabelType of
-    ftInteger: CT := TEpiIntValueLabel;
-    ftFloat:   CT := TEpiFloatValueLabel;
-    ftString:  CT := TEpiStringValueLabel;
-  end;
-  Result := TEpiCustomValueLabel(NewItem(CT));
+  Result := TEpiCustomValueLabel(NewItem);
   result.Order := Count + 1;
+end;
+
+procedure TEpiValueLabelSet.InsertItem(const Index: integer;
+  Item: TEpiCustomItem);
+begin
+  inherited InsertItem(Index, Item);
+  Item.RegisterOnChangeHook(@ItemChangeHook, true);
+  DirtyCacheAndSendChangeEvent;
+end;
+
+function TEpiValueLabelSet.DeleteItem(Index: integer): TEpiCustomItem;
+begin
+  Result := inherited DeleteItem(Index);
+  Result.UnRegisterOnChangeHook(@ItemChangeHook);
+  DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.MissingCount: LongInt;
@@ -587,9 +699,14 @@ function TEpiValueLabelSet.MaxValueLength: LongInt;
 var
   i: Integer;
 begin
+  if not FDirtyCache then
+    Exit(FCachedLength);
+
   Result := 0;
   for i := 0 to Count -1 do
     Result := Max(Result, UTF8Length(ValueLabels[i].ValueAsString));
+  FCachedLength := Result;
+  FDirtyCache := false;
 end;
 
 { TEpiValueLabelSets }
@@ -641,13 +758,16 @@ procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
   NValueLabelSet: TEpiValueLabelSet;
+  Attr: TDOMAttr;
 begin
-  inherited LoadFromXml(Root);
-
   // Root = <ValueLabelSets>
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then exit;
+
     CheckNode(Node, rsValueLabelSet);
 
     NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));

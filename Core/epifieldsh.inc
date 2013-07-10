@@ -5,8 +5,8 @@ type
   TEpiFieldsChangeEventType = (
     efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
-    efceShowValueLabel, efceRepeatValue, efceDefaultValue, efceValueLabelWriteTo,
-    efceForcePickList
+    efceShowValueLabel, efceShowValueLabelNotes, efceRepeatValue, efceDefaultValue,
+    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet
   );
 
   { TEpiFields }
@@ -19,6 +19,9 @@ type
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function    Prefix: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
+
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -90,6 +93,7 @@ type
     FRanges: TEpiRanges;
     FRepeatValue: boolean;
     FShowValueLabel: Boolean;
+    FShowValueLabelNotes: boolean;
     FValueLabelSet: TEpiValueLabelSet;
     FQuestion:  TEpiTranslatedTextWrapper;
     FValueLabelWriteField: TEpiField;
@@ -102,6 +106,7 @@ type
     procedure   SetLength(const AValue: Cardinal);
     procedure   SetRepeatValue(const AValue: boolean);
     procedure   SetShowValueLabel(const AValue: Boolean);
+    procedure   SetShowValueLabelNotes(AValue: boolean);
     procedure   SetValueLabelSet(const AValue: TEpiValueLabelSet);
     procedure   SetValueLabelWriteField(const AValue: TEpiField);
   protected
@@ -126,6 +131,7 @@ type
     property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
     property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
     property    ForcePickList: Boolean read FForcePickList write SetForcePickList;
+    property    ShowValueLabelNotes: boolean read FShowValueLabelNotes write SetShowValueLabelNotes;
     property    ValueLabelWriteField: TEpiField read FValueLabelWriteField write SetValueLabelWriteField;
     property    Ranges:    TEpiRanges read FRanges write FRanges;
     property    Jumps:     TEpiJumps read FJumps write FJumps;
@@ -144,14 +150,17 @@ type
     function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
   protected
+    procedure   SetDataModified;
     function    GetSize: Integer; virtual;
     procedure   SetSize(const AValue: Integer); virtual;
     property    Capacity: Integer read GetCapacity write SetCapacity;
     property    Settings: TEpiXMLSettings read GetSettings;
+    function    DoCompare(i, j: integer): integer; virtual; abstract;
   public
     procedure   Exchange(i,j: integer); virtual; abstract;
-    function    Compare(i,j: integer): integer; virtual; abstract;
+    function    Compare(i,j: integer): integer;
     function    FormatString(Const FillSpace: boolean = false): string; virtual; abstract;
+    procedure   ResetData; virtual; abstract;
     property    Size:      Integer read GetSize write SetSize;
     property    DataFile: TEpiDataFile read FDataFile;
     property    Section:  TEpiSection read GetSection;
@@ -160,6 +169,8 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
+    procedure DoChange(EventGroup: TEpiEventGroup; EventType: Word;
+       Data: Pointer); override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;
@@ -169,7 +180,14 @@ type
     function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
+    procedure PostCloneUpdate(Dest: TEpiField);
   end;
+  TEpiFieldClass = class of TEpiField;
 
   { TEpiIntField }
   // Handles following field types:
@@ -204,13 +222,18 @@ type
     procedure SetCapacity(AValue: Integer); override;
     procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
     procedure SetHasDefaultValue(const AValue: boolean); override;
+    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
+       override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
   end;
 
@@ -250,13 +273,16 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    procedure ResetData; override;
     property  DefaultValue: EpiFloat read FDefaultValue write SetDefaultValue;
   end;
 
@@ -296,12 +322,15 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
   end;
 
@@ -341,12 +370,15 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
   end;
 
@@ -354,13 +386,15 @@ type
   { TEpiCustomAutoField }
 
   // State indication whether to update value on creation or on update/save.
-  TEpiAutoUpdateMode = (umCreated, umUpdated);
+  TEpiAutoUpdateMode = (umCreated, umFirstSave, umUpdated);
   TEpiCustomAutoField = class(TEpiField)
   private
     FAutoMode: TEpiAutoUpdateMode;
     procedure SetAutoMode(const AValue: TEpiAutoUpdateMode);
   protected
     function  SaveAttributesToXml: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     property AutoMode: TEpiAutoUpdateMode read FAutoMode write SetAutoMode;
@@ -404,12 +438,15 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
   end;
 
@@ -449,12 +486,15 @@ type
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
+    function  DoCompare(i, j: integer): integer; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;
-    function Compare(i, j: integer): integer; override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
+    procedure ResetData; override;
     property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;
   end;
 

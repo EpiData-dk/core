@@ -10,7 +10,6 @@ type
 
   TEpiDataFiles = class(TEpiCustomList)
   private
-    FValueLabelSets: TEpiValueLabelSets;
     function    GetDataFile(Index: integer): TEpiDataFile;
     function    GetSettings: TEpiXMLSettings;
   protected
@@ -20,6 +19,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
+    function    ItemClass: TEpiCustomItemClass; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -34,6 +34,7 @@ type
     { Data containers }
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
+    FAllControlItems: TEpiCustomControlItemList;
     FSections: TEpiSections;
     FMainSection: TEpiSection;
     function    GetField(Index: integer): TEpiField;
@@ -43,6 +44,7 @@ type
   private
     { Private housekeeping }
     FRecordStatus: TEpiField;
+    function    GetControlItem(Index: integer): TEpiCustomControlItem;
     function    GetDeleted(Index: integer): boolean;
     function    GetDeletedCount: Integer;
     function    GetValueLabelSets: TEpiValueLabelSets;
@@ -50,13 +52,20 @@ type
     function    GetSize: Integer;
     function    GetVerifiedCount: Integer;
     procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
-    function    SaveRecords(Lvl: integer): string;
-    procedure   LoadRecords(Root: TDOMNode);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
+    function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
+    procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+  { Load/Save methods }
+  private
+    function    SaveRecords(Lvl: integer): string;
+    procedure   LoadRecords(Root: TDOMNode);
+    function    SaveKeyFields(Lvl: integer): string;
+    procedure   LoadKeyFields(Root: TDOMNode);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
+    procedure   SetModified(const AValue: Boolean); override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
@@ -70,11 +79,16 @@ type
     function    NewHeading: TEpiHeading;
     procedure   NewRecords(Const Count: Cardinal = 1);
     procedure   Pack; // Removes records marked for deletion.
+    procedure   ExchangeRecords(Const Index1, Index2: Integer);
+    procedure   SortRecords(SortFields: TEpiFields); overload;
+    procedure   SortRecords(SortField: TEpiField); overload;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
     property    Section[Index: integer]: TEpiSection read GetSection;
     property    Fields: TEpiFields read FAllFields;
     property    Field[Index: integer]: TEpiField read GetField; default;
+    property    ControlItems: TEpiCustomControlItemList read FAllControlItems;
+    property    ControlItem[Index: integer]: TEpiCustomControlItem read GetControlItem;
     property    Headings: TEpiHeadings read FAllHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
     property    ValueLabels: TEpiValueLabelSets read GetValueLabelSets;
@@ -89,17 +103,31 @@ type
   private
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
+    FRecModified: boolean;
+    FRecModifiedDate: TDateTime;
+    FStructureModified: boolean;
+    FStructureModifiedDate: TDateTime;
+    FKeyFields: TEpiFields;
     FNotes:     TEpiTranslatedText;
     FVersion:   string;
     procedure   SetVersion(const AValue: string);
   public
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Created: TDateTime read FCreated;
+    property    RecModifiedDate: TDateTime read FRecModifiedDate write FRecModifiedDate;  // version 2
+    property    StructureModifiedDate: TDateTime read FStructureModifiedDate write FStructureModifiedDate;
     property    Version: string read FVersion write SetVersion;
     property    Notes: TEpiTranslatedText read FNotes;
+    property    KeyFields: TEpiFields read FKeyFields;
 
   { Update Overrides}
   public
     procedure BeginUpdate; override;
     procedure EndUpdate; override;
+
+  { Cloning }
+  protected
+    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
   end;

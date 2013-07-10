@@ -13,12 +13,16 @@ uses
 
 type
 
+  TEpiDocumentChangeEvent = (edcePassword);
+
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
+    FCycleNo: Int64;
     FLoading: boolean;
+    FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
     FVersion: integer;
@@ -28,6 +32,7 @@ type
     FRelations: TEpiRelations;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
+    procedure  SetPassWord(AValue: string);
   protected
     procedure  SetModified(const AValue: Boolean); override;
     function   SaveAttributesToXml: string; override;
@@ -52,13 +57,32 @@ type
     property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
+    // EpiData XML Version 2 perperties:
+    property   PassWord: string read FPassWord write SetPassWord;
+
+  { Cycle numbering }
+  public
+    procedure  IncCycleNo;
+    property   CycleNo: Int64 read FCycleNo;
+
+  { Cloning }
+  protected
+    function   DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+    function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
   end;
 
 implementation
 
+<<<<<<< .working
 uses
   androidutils;
 
+=======
+uses
+  epimiscutils;
+
+>>>>>>> .merge-right.r769
 { TEpiDocument }
 
 function TEpiDocument.GetOnPassword: TRequestPasswordEvent;
@@ -71,6 +95,16 @@ begin
   Admin.OnPassword := AValue;
 end;
 
+procedure TEpiDocument.SetPassWord(AValue: string);
+var
+  Val: String;
+begin
+  if FPassWord = AValue then Exit;
+  Val := FPassWord;
+  FPassWord := AValue;
+  DoChange(eegDocument, Word(edcePassword), @Val);
+end;
+
 procedure TEpiDocument.SetModified(const AValue: Boolean);
 begin
   inherited SetModified(AValue);
@@ -80,11 +114,20 @@ function TEpiDocument.SaveAttributesToXml: string;
 begin
   Result :=
     inherited SaveAttributesToXml +
-    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.0') +
+    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.3') +
     SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
+<<<<<<< .working
     SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd') +
+=======
+    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd') +
+>>>>>>> .merge-right.r769
     SaveAttr(rsVersionAttr, Version) +
     SaveAttr('xml:lang', DefaultLang);
+
+  // Version 2 Properties:
+  if PassWord <> '' then
+    Result += SaveAttr(rsPassword, StrToSHA1Base64(PassWord));
+  Result += SaveAttr(rsCycle, CycleNo)
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -100,6 +143,7 @@ begin
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiRelations.Create(Self);
+  FCycleNo         := 0;
 
   RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
 
@@ -129,17 +173,29 @@ procedure TEpiDocument.LoadFromFile(const AFileName: string);
 var
   St: TFileStream;
 begin
-  St := TFileStream.Create(AFileName, fmOpenRead);
-  LoadFromStream(St);
-  St.Free;
+  St := nil;
+  try
+    St := TFileStream.Create(AFileName, fmOpenRead);
+    LoadFromStream(St);
+  finally
+    St.Free;
+  end;
 end;
 
 procedure TEpiDocument.LoadFromStream(const St: TStream);
 var
   RecXml: TXMLDocument;
   RootNode: TDOMElement;
+  P: TDOMParser;
+  Xin: TXMLInputSource;
 begin
-  ReadXMLFile(RecXml, St);
+  //ReadXMLFile(RecXml, St);
+  P := TDOMParser.Create;
+  P.Options.PreserveWhitespace := true;
+  Xin := TXMLInputSource.Create(St);
+  P.Parse(Xin, RecXml);
+  Xin.Free;
+  P.Free;
 
   // **********************
   // Global <EpiData> structure
@@ -152,6 +208,7 @@ end;
 procedure TEpiDocument.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
+  PW, Login, UserPW: String;
 begin
   // Root = <EpiData>
   FLoading := true;
@@ -163,6 +220,21 @@ begin
   // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
   XMLSettings.LoadFromXml(Node);
+
+  // XML Version 2:
+  if Version >= 2 then
+  begin
+    PW := LoadAttrString(Root, rsPassword, '', false);
+
+    if (PW <> '') and (Assigned(OnPassword)) then
+      OnPassword(Self, Login, UserPW);
+
+    if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
+      Raise EEpiBadPassword.Create('Incorrect Password');
+
+    PassWord := UserPW;
+    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
+  end;
 
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node);
@@ -189,6 +261,7 @@ begin
 
   FLoading := false;
   Modified := false;
+  FVersion := EPI_XML_DATAFILE_VERSION;
 end;
 
 function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;
@@ -217,6 +290,27 @@ begin
   Fs := TFileStream.Create(AFileName, fmCreate);
   SaveToStream(Fs);
   Fs.Free;
+end;
+
+procedure TEpiDocument.IncCycleNo;
+begin
+  Inc(FCycleNo);
+end;
+
+function TEpiDocument.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
+begin
+  Result := TEpiDocument.Create(Self.DefaultLang);
+end;
+
+function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiDocument(Result) do
+  begin
+    FPassWord := Self.FPassWord;
+    FCycleNo  := Self.FCycleNo;
+  end;
 end;
 
 end.

@@ -9,6 +9,10 @@ uses
 
 type
 
+
+  TEpiStudyChangeEvent = (esceAgency, esceAuthor, esceIdentifier,
+    esceKeywords, esceModifiedDate, esceNotes, esceVersion);
+
   { TEpiStudy }
 
   TEpiStudy = class(TEpiCustomBase)
@@ -18,6 +22,9 @@ type
     FAuthor: string;
     FCitations: TEpiTranslatedTextWrapper;
     FCreated: TDateTime;
+    FDataCollectionEnd: TDateTime;
+    FDataCollectionStart: TDateTime;
+    FDesign: TEpiTranslatedTextWrapper;
     FFunding: TEpiTranslatedTextWrapper;
     FGeographicalCoverage: TEpiTranslatedTextWrapper;
     FIdentifier: string;
@@ -28,8 +35,9 @@ type
     FPublisher: TEpiTranslatedTextWrapper;
     FPurpose: TEpiTranslatedTextWrapper;
     FRights: TEpiTranslatedTextWrapper;
-    FTimeCoverage: TEpiTranslatedTextWrapper;
+//    FTimeCoverage: TEpiTranslatedTextWrapper;
     FTitle: TEpiTranslatedTextWrapper;
+    FUnitOfObservation: TEpiTranslatedTextWrapper;
     FVersion: string;
     procedure SetAgency(AValue: string);
     procedure SetAuthor(const AValue: string);
@@ -44,6 +52,7 @@ type
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode); override;
+
     Property   AbstractText: TEpiTranslatedTextWrapper read FAbstractText;
     Property   Author: string read FAuthor write SetAuthor;
     property   Agency: string read FAgency write SetAgency;
@@ -58,10 +67,22 @@ type
     property   Purpose: TEpiTranslatedTextWrapper read FPurpose;
     property   Population: TEpiTranslatedTextWrapper read FPopulation;
     property   Rights: TEpiTranslatedTextWrapper read FRights;
-    property   TimeCoverage: TEpiTranslatedTextWrapper read FTimeCoverage;
+//    property   TimeCoverage: TEpiTranslatedTextWrapper read FTimeCoverage;
     Property   Title: TEpiTranslatedTextWrapper read FTitle;
     Property   Keywords: string read FKeywords write SetKeywords;
     property   Version: string read FVersion write SetVersion;
+
+    // version 2 properties:
+    property   DataCollectionStart: TDateTime read FDataCollectionStart write FDataCollectionStart;
+    property   DataCollectionEnd: TDateTime read FDataCollectionEnd write FDataCollectionEnd;
+    property   Design: TEpiTranslatedTextWrapper read FDesign;
+    property   UnitOfObservation: TEpiTranslatedTextWrapper read FUnitOfObservation;
+
+
+  { Cloning }
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+      nil): TEpiCustomBase; override;
   end;
 
 implementation
@@ -71,46 +92,74 @@ uses
 
 { TEpiStudy }
 
-procedure TEpiStudy.SetAuthor(const AValue: string);
-begin
-  if FAuthor = AValue then exit;
-  FAuthor := AValue;
-end;
-
 procedure TEpiStudy.SetAgency(AValue: string);
+var
+  Val: String;
 begin
+  Val := FAgency;
   if FAgency = AValue then Exit;
   FAgency := AValue;
+  DoChange(eegStudy, Word(esceAgency), @Val);
+end;
+
+procedure TEpiStudy.SetAuthor(const AValue: string);
+var
+  Val: String;
+begin
+  Val := FAuthor;
+  if FAuthor = AValue then exit;
+  FAuthor := AValue;
+  DoChange(eegStudy, Word(esceAuthor), @Val);
 end;
 
 procedure TEpiStudy.SetIdentifier(const AValue: string);
+var
+  Val: String;
 begin
+  Val := FIdentifier;
   if FIdentifier = AValue then exit;
   FIdentifier := AValue;
+  DoChange(eegStudy, Word(esceIdentifier), @Val);
 end;
 
 procedure TEpiStudy.SetKeywords(AValue: string);
+var
+  Val: String;
 begin
+  Val := FKeywords;
   if FKeywords = AValue then Exit;
   FKeywords := AValue;
+  DoChange(eegStudy, Word(esceKeywords), @Val);
 end;
 
 procedure TEpiStudy.SetModifiedDate(const AValue: TDateTime);
+var
+  Val: TDateTime;
 begin
+  Val := ModifiedDate;
   if FModifiedDate = AValue then exit;
   FModifiedDate := AValue;
+  DoChange(eegStudy, Word(esceModifiedDate), @Val);
 end;
 
 procedure TEpiStudy.SetNotes(AValue: string);
+var
+  Val: String;
 begin
+  Val := Notes;
   if FNotes = AValue then Exit;
   FNotes := AValue;
+  DoChange(eegStudy, Word(esceNotes), @Val);
 end;
 
 procedure TEpiStudy.SetVersion(const AValue: string);
+var
+  Val: String;
 begin
+  Val := Version;
   if FVersion = AValue then exit;
   FVersion := AValue;
+  DoChange(eegStudy, Word(esceVersion), @Val);
 end;
 
 constructor TEpiStudy.Create(AOwner: TEpiCustomBase);
@@ -129,16 +178,22 @@ begin
   FPurpose              := TEpiTranslatedTextWrapper.Create(Self, rsPurpose, rsText);
   FPopulation           := TEpiTranslatedTextWrapper.Create(Self, rsPopulation, rsText);
   FRights               := TEpiTranslatedTextWrapper.Create(Self, rsRights, rsText);
-  FTimeCoverage         := TEpiTranslatedTextWrapper.Create(Self, rsTimeCoverage, rsText);
+//  FTimeCoverage         := TEpiTranslatedTextWrapper.Create(Self, rsTimeCoverage, rsText);
   FTitle                := TEpiTranslatedTextWrapper.Create(Self, rsTitle, rsText);
   FVersion              := '';
+  FCreated              := Now;
+  FModifiedDate         := FCreated;
 
-  FCreated := Now;
-  FModifiedDate := FCreated;
+  // version 2 properties:
+  FDataCollectionStart  := MaxDateTime;
+  FDataCollectionEnd    := MaxDateTime;
+  FDesign               := TEpiTranslatedTextWrapper.Create(Self, rsDesign, rsText);
+  FUnitOfObservation    := TEpiTranslatedTextWrapper.Create(Self, rsUnitOfObservation, rsText);
 
-  RegisterClasses([FAbstractText, FCitations, FFunding,
-    FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights, FTimeCoverage,
-    FTitle]);
+
+  RegisterClasses([FAbstractText, FCitations, FDesign, FFunding,
+    FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights, //FTimeCoverage,
+    FTitle, FUnitOfObservation]);
 end;
 
 destructor TEpiStudy.Destroy;
@@ -151,7 +206,7 @@ begin
   FPurpose.Free;
   FPopulation.Free;
   FRights.Free;
-  FTimeCoverage.Free;
+//  FTimeCoverage.Free;
   FTitle.Free;
   inherited Destroy;
 end;
@@ -163,6 +218,9 @@ end;
 
 function TEpiStudy.SaveToXml(Content: String; Lvl: integer): string;
 begin
+  if Modified then
+    ModifiedDate := Now;
+
   Content :=
     SaveNode(Lvl + 1, rsAuthor, Author) +
     SaveNode(Lvl + 1, rsAgency, Agency) +
@@ -172,6 +230,10 @@ begin
     SaveNode(Lvl + 1, rsModified, ModifiedDate) +
     SaveNode(Lvl + 1, rsNotes, Notes) +
     SaveNode(Lvl + 1, rsVersion, Version);
+  if (DataCollectionStart <> MaxDateTime) then
+    Content += SaveNode(Lvl + 1, rsDataColectionStart, DataCollectionStart);
+  if (DataCollectionEnd <> MaxDateTime) then
+    Content += SaveNode(Lvl + 1, rsDataColectionEnd,   DataCollectionEnd);
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
@@ -195,9 +257,34 @@ begin
   FGeographicalCoverage.LoadFromXml(Root);
   FPublisher.LoadFromXml(Root);
   FPurpose.LoadFromXml(Root);
+  FPopulation.LoadFromXml(Root);
   FRights.LoadFromXml(Root);
-  FTimeCoverage.LoadFromXml(Root);
+//  FTimeCoverage.LoadFromXml(Root);
   FTitle.LoadFromXml(Root);
+
+  // Version 2:
+  // -- all loads defaults to fatal=false, since none of them are required.
+  FDataCollectionStart := LoadNodeDateTime(Root, rsDataColectionStart, FDataCollectionStart, false);
+  FDataCollectionEnd   := LoadNodeDateTime(Root, rsDataColectionEnd,   FDataCollectionEnd,   false);
+  FDesign.LoadFromXml(Root);
+  FUnitOfObservation.LoadFromXml(Root);
+end;
+
+function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  with TEpiStudy(Result) do
+  begin
+    FAuthor          := Self.FAuthor;
+    FAgency          := Self.FAgency;
+    FCreated         := Self.Created;
+    FIdentifier      := Self.FIdentifier;
+    FKeywords        := Self.FKeywords;
+    FModifiedDate    := Self.FModifiedDate;
+    FNotes           := Self.FNotes;
+    FVersion         := Self.FVersion;
+  end;
 end;
 
 end.

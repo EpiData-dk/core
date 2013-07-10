@@ -14,7 +14,9 @@ type
     // - combine string...
     ltCalcField1, ltCalcField2, ltCalcField3,
     // TEpiComparison
-    ltCompare
+    ltCompare,
+    // Special Case for KeyFields
+    ltKeyField
     );
 
   { TLinkMap }

@@ -13,7 +13,9 @@ var
 begin
   result := nil;
   for i := 0 to Count - 1 do
-    if Jump[i].JumpValueAsString = Value then
+    if (Jump[i].JumpValueAsString = Value) or
+       (Jump[i].JumpValueAsString = TEpiJump.DefaultOnAnyValue)
+    then
       Exit(Jump[i]);
 end;
 
@@ -37,29 +39,8 @@ begin
   Result := rsJumps;
 end;
 
-procedure TEpiJumps.LoadFromXml(Root: TDOMNode);
+function TEpiJumps.ItemClass: TEpiCustomItemClass;
 var
-  Node: TDOMNode;
-  NJump: TEpiJump;
-begin
-  // Root = <Jumps>
-  inherited LoadFromXml(Root);
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsJump);
-
-    NJump := NewJump;
-    NJump.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
-end;
-
-function TEpiJumps.NewJump: TEpiJump;
-var
-  ItemClass: TEpiCustomItemClass;
   Ft: TEpiFieldType;
 begin
   Ft := TEpiField(Owner).FieldType;
@@ -70,12 +51,15 @@ begin
             'Please Contact EpiData',
             [TEpiCustomItem(Owner).Name]);
 
-  if Ft in BoolFieldTypes   then ItemClass := TEpiBoolJump;
-  if Ft in IntFieldTypes    then ItemClass := TEpiIntJump;
-  if Ft in FloatFieldTypes  then ItemClass := TEpiFloatJump;
-  if Ft in StringFieldTypes then ItemClass := TEpiStringJump;
+  if Ft in BoolFieldTypes   then Result := TEpiBoolJump;
+  if Ft in IntFieldTypes    then Result := TEpiIntJump;
+  if Ft in FloatFieldTypes  then Result := TEpiFloatJump;
+  if Ft in StringFieldTypes then Result := TEpiStringJump;
+end;
 
-  Result := TEpiJump(NewItem(ItemClass));
+function TEpiJumps.NewJump: TEpiJump;
+begin
+  Result := TEpiJump(NewItem());
 end;
 
 { TEpiJump }
@@ -120,6 +104,28 @@ end;
 function TEpiJump.WriteNameToXml: boolean;
 begin
   Result := false;
+end;
+
+function TEpiJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+
+  with TEpiJump(Result) do
+  begin
+    FJumpType := Self.FJumpType;
+    FResetType := Self.FResetType;
+
+    if Assigned(Self.FJumpToField) then
+    begin
+      if (not Assigned(TEpiField(Owner.Owner).DataFile)) or
+         (TEpiField(Owner.Owner).DataFile = (TEpiField(SElf.Owner.Owner).DataFile))
+      then
+        FJumpToField := Self.FJumpToField
+      else
+        FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+    end;
+  end;
 end;
 
 function TEpiJump.XMLName: string;
@@ -172,6 +178,11 @@ begin
   EndUpdate;
 end;
 
+class function TEpiJump.DefaultOnAnyValue: string;
+begin
+  result := JMP_ANY;
+end;
+
 { TEpiBoolJump }
 
 procedure TEpiBoolJump.SetJumpValue(const AValue: EpiBool);
@@ -182,15 +193,30 @@ end;
 
 function TEpiBoolJump.GetJumpValueAsString: string;
 begin
-  Result := IntToStr(JumpValue);
+  if JumpValue = TEpiBoolField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := IntToStr(JumpValue);
+end;
+
+function TEpiBoolJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiBoolJump(Result).FJumpValue := FJumpValue;
 end;
 
 procedure TEpiBoolJump.LoadFromXml(Root: TDOMNode);
 var
   Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrInt(Root, rsJumpReset);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiBoolField.DefaultMissing
+  else
+    JumpValue := StrToInt(S);
 end;
 
 procedure TEpiBoolJump.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -209,15 +235,29 @@ end;
 
 function TEpiIntJump.GetJumpValueAsString: string;
 begin
-  Result := IntToStr(JumpValue);
+  if JumpValue = TEpiIntField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := IntToStr(JumpValue);
+end;
+
+function TEpiIntJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiIntJump(Result).FJumpValue := FJumpValue;
 end;
 
 procedure TEpiIntJump.LoadFromXml(Root: TDOMNode);
 var
-  Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrInt(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiIntField.DefaultMissing
+  else
+    JumpValue := StrToInt64(S);
 end;
 
 procedure TEpiIntJump.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -236,15 +276,29 @@ end;
 
 function TEpiFloatJump.GetJumpValueAsString: string;
 begin
-  Result := FloatToStr(JumpValue);
+  if JumpValue = TEpiFloatField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := FloatToStr(JumpValue);
+end;
+
+function TEpiFloatJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiFloatJump(Result).FJumpValue := FJumpValue;
 end;
 
 procedure TEpiFloatJump.LoadFromXml(Root: TDOMNode);
 var
-  Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrFloat(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiFloatField.DefaultMissing
+  else
+    JumpValue := LoadAttrFloat(Root, rsJumpOn);
 end;
 
 procedure TEpiFloatJump.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -263,15 +317,30 @@ end;
 
 function TEpiStringJump.GetJumpValueAsString: string;
 begin
-  Result := JumpValue;
+  if JumpValue = TEpiStringField.DefaultMissing then
+    result := DefaultOnAnyValue
+  else
+    Result := JumpValue;
+end;
+
+function TEpiStringJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest);
+  TEpiStringJump(Result).FJumpValue := FJumpValue;
 end;
 
 procedure TEpiStringJump.LoadFromXml(Root: TDOMNode);
 var
   Attr: TDOMAttr;
+  S: String;
 begin
   inherited LoadFromXml(Root);
-  JumpValue := LoadAttrString(Root, rsJumpOn);
+  S := LoadAttrString(Root, rsJumpOn);
+  if S = DefaultOnAnyValue then
+    JumpValue := TEpiStringField.DefaultMissing
+  else
+    JumpValue := S;
 end;
 
 procedure TEpiStringJump.Assign(const AEpiCustomBase: TEpiCustomBase);
