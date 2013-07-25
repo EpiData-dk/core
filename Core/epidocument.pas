@@ -74,15 +74,9 @@ type
 
 implementation
 
-<<<<<<< .working
 uses
-  androidutils;
+  androidutils, epimiscutils;
 
-=======
-uses
-  epimiscutils;
-
->>>>>>> .merge-right.r769
 { TEpiDocument }
 
 function TEpiDocument.GetOnPassword: TRequestPasswordEvent;
@@ -116,11 +110,7 @@ begin
     inherited SaveAttributesToXml +
     SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.3') +
     SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-<<<<<<< .working
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.0 http://www.epidata.dk/XML/1.0/epx.xsd') +
-=======
     SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd') +
->>>>>>> .merge-right.r769
     SaveAttr(rsVersionAttr, Version) +
     SaveAttr('xml:lang', DefaultLang);
 
