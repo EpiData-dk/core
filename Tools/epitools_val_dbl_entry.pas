@@ -56,7 +56,6 @@ type
     FResultArray:   TEpiDblEntryResultArray;
     FExtraDuplRecords:   TBoundArray;
     FValidateOptions: TEpiToolsDblEntryValidateOptions;
-    procedure   ValidateSequencial;
     procedure   RaiseError(ErrorClass: ExceptClass; Const msg: String);
 
   { KeyFields Validation }
@@ -65,7 +64,7 @@ type
     FSortFields: TEpiFields;
     MainSortField: TEpiField;
     DuplSortField: TEpiField;
-    procedure   ValidateWithSort;
+    procedure   InternalValidate;
     function    NewResultRecord: PEpiDblEntryResultRecord;
     procedure   AddResult(Const SortedRecNo: integer; Const Value: Integer);
     function    DoCompareFields(Const MIndex, DIndex: Integer): integer;
@@ -145,18 +144,15 @@ begin
   end;
 end;
 
-procedure TEpiToolsDblEntryValidator.ValidateSequencial;
-begin
-
-end;
-
-procedure TEpiToolsDblEntryValidator.ValidateWithSort;
+procedure TEpiToolsDblEntryValidator.InternalValidate;
 var
   MRunner: Integer;
   DRunner: Integer;
   i: Integer;
   MSize: Integer;
   DSize: Integer;
+  SortedCompare: Boolean;
+  TestResult: TValueSign;
 
   function CompareSortFieldRecords(Const FL1, FL2: TEpiFields; Const Idx1, Idx2: Integer): TValueSign;
   var
@@ -172,6 +168,8 @@ var
   end;
 
 begin
+  SortedCompare := Assigned(SortFields) and (SortFields.Count > 0);
+
   MainSortField := nil;
   DuplSortField := nil;
   FDuplKeyFields := nil;
@@ -179,23 +177,27 @@ begin
   DuplDF.BeginUpdate;
 
   try
-    // Create temporary fields to preserver sorting.
-    MainSortField := MainDF.NewField(ftInteger);
-    for i := 0 to MainDF.Size - 1 do
-      MainSortField.AsInteger[i] := i;
 
-    DuplSortField := DuplDF.NewField(ftInteger);
-    for i := 0 to DuplDF.Size - 1 do
-      DuplSortField.AsInteger[i] := i;
+    if SortedCompare then
+    begin
+      // Create temporary fields to preserver sorting.
+      MainSortField := MainDF.NewField(ftInteger);
+      for i := 0 to MainDF.Size - 1 do
+        MainSortField.AsInteger[i] := i;
 
-    // Create a copy of the list of field to sort.
-    FDuplKeyFields := TEpiFields.Create(nil);
-    for i := 0 to SortFields.Count - 1 do
-      FDuplKeyFields.AddItem(DuplDF.Fields.FieldByName[SortFields.Field[i].Name]);
+      DuplSortField := DuplDF.NewField(ftInteger);
+      for i := 0 to DuplDF.Size - 1 do
+        DuplSortField.AsInteger[i] := i;
 
-    // Now sort both DF's before we are going to compare.
-    MainDF.SortRecords(SortFields);
-    DuplDF.SortRecords(FDuplKeyFields);
+      // Create a copy of the list of field to sort.
+      FDuplKeyFields := TEpiFields.Create(nil);
+      for i := 0 to SortFields.Count - 1 do
+        FDuplKeyFields.AddItem(DuplDF.Fields.FieldByName[SortFields.Field[i].Name]);
+
+      // Now sort both DF's before we are going to compare.
+      MainDF.SortRecords(SortFields);
+      DuplDF.SortRecords(FDuplKeyFields);
+    end;
 
     // Do the validation!
     MRunner := 0;
@@ -216,7 +218,8 @@ begin
         Continue;
       end;
 
-      if (MRunner > 0) and
+      if (SortedCompare) and
+         (MRunner > 0) and
          (CompareSortFieldRecords(SortFields, SortFields, MRunner, MRunner - 1) = ZeroValue) then
       begin
         AddResult(MRunner, ValDupKeyFail);
@@ -224,7 +227,12 @@ begin
         Continue;
       end;
 
-      case CompareSortFieldRecords(SortFields, FDuplKeyFields, MRunner, DRunner) of
+      if SortedCompare then
+        TestResult := CompareSortFieldRecords(SortFields, FDuplKeyFields, MRunner, DRunner)
+      else
+        TestResult := ZeroValue;
+
+      case TestResult of
         NegativeValue:
           begin
             // Record does not exists in duplicate file
@@ -261,7 +269,10 @@ begin
     begin
       // If DRunner < DSize, then records exists in Dupl. DF with no matching
       // records in Main DF. Hence mark them as InDulpDF
-      AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF);
+      if SortedCompare then
+        AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF)
+      else
+        AddResult(DRunner, ValInDuplDF);
       Inc(DRunner);
     end;
 
@@ -425,10 +436,10 @@ begin
     end;
   end;
 
-  if Assigned(SortFields) and (SortFields.Count > 0) then
-    ValidateWithSort
-  else
-    ValidateSequencial;
+//  if Assigned(SortFields) and (SortFields.Count > 0) then
+    InternalValidate;
+//  else
+//    ValidateSequencial;
 
   // Set DF's to non-modified, since all sorting changes
   // were reverted.
