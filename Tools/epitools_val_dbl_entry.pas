@@ -178,17 +178,17 @@ begin
 
   try
 
+    // Create temporary fields to preserver sorting.
+    MainSortField := MainDF.NewField(ftInteger);
+    for i := 0 to MainDF.Size - 1 do
+      MainSortField.AsInteger[i] := i;
+
+    DuplSortField := DuplDF.NewField(ftInteger);
+    for i := 0 to DuplDF.Size - 1 do
+      DuplSortField.AsInteger[i] := i;
+
     if SortedCompare then
     begin
-      // Create temporary fields to preserver sorting.
-      MainSortField := MainDF.NewField(ftInteger);
-      for i := 0 to MainDF.Size - 1 do
-        MainSortField.AsInteger[i] := i;
-
-      DuplSortField := DuplDF.NewField(ftInteger);
-      for i := 0 to DuplDF.Size - 1 do
-        DuplSortField.AsInteger[i] := i;
-
       // Create a copy of the list of field to sort.
       FDuplKeyFields := TEpiFields.Create(nil);
       for i := 0 to SortFields.Count - 1 do
@@ -269,19 +269,20 @@ begin
     begin
       // If DRunner < DSize, then records exists in Dupl. DF with no matching
       // records in Main DF. Hence mark them as InDulpDF
-      if SortedCompare then
-        AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF)
-      else
-        AddResult(DRunner, ValInDuplDF);
+//      if SortedCompare then
+        AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF);
+//      else
+//        AddResult(DRunner, ValInDuplDF);
       Inc(DRunner);
     end;
 
   finally
-    // Restore sorting on both DF's
-    if Assigned(MainSortField) then
+    if SortedCompare then
+    begin
+      // Restore sorting on both DF's is only nessesary if comparing DF's with key-fields.
       MainDF.SortRecords(MainSortField);
-    if Assigned(DuplSortField) then
       DuplDF.SortRecords(DuplSortField);
+    end;
 
     MainSortField.Free;
     DuplSortField.Free;

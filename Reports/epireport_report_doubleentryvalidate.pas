@@ -131,8 +131,11 @@ var
   j: Integer;
   MCmpField: TEpiField;
   DCmpField: TEpiField;
+  SortedCompare: Boolean;
 begin
   inherited RunReport;
+
+  SortedCompare := Assigned(KeyFields) and (KeyFields.Count > 0);
 
   FValidator := TEpiToolsDblEntryValidator.Create;
   FValidator.MainDF := MainDF;
@@ -151,11 +154,14 @@ begin
   DoTableCell(0, 4, 'Case sensitive text');    DoTableCell(1, 4, BoolToStr(devCaseSensitiveText in DblEntryValidateOptions, 'Yes', 'No'));
   DoTableFooter('');
 
-  DoHeading('Key Fields:');
-  S := '';
-  for i := 0 to FKeyFields.Count - 1 do
-    S := S + FKeyFields[i].Name + ' ';
-  DoLineText(S);
+  if SortedCompare then
+  begin
+    DoHeading('Key Fields:');
+    S := '';
+    for i := 0 to FKeyFields.Count - 1 do
+      S := S + FKeyFields[i].Name + ' ';
+    DoLineText(S);
+  end;
 
   DoHeading('Compared Fields:');
   for i := 0 to FCompareFields.Count - 1 do
@@ -186,12 +192,15 @@ begin
     else
       DText := '';
 
-    MText += 'Key Fields: ' + LineEnding;
-    DText += LineEnding;
-    for j := 0 to FKeyFields.Count - 1 do
+    if SortedCompare then
     begin
-      MText += ' ' + FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[MRecNo] + LineEnding;
+      MText += 'Key Fields: ' + LineEnding;
       DText += LineEnding;
+      for j := 0 to FKeyFields.Count - 1 do
+      begin
+        MText += ' ' + FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[MRecNo] + LineEnding;
+        DText += LineEnding;
+      end;
     end;
 
     case ValResult of
@@ -230,13 +239,16 @@ begin
     MText := LineEnding;
     DText := 'Record no: ' + IntToStr(FExtraRecs[i] + 1) + LineEnding;
 
-    MText += LineEnding;
-    DText += 'Key Fields: ' + LineEnding;
-    for j := 0 to FValidator.DuplKeyFields.Count - 1 do
+    if SortedCompare then
     begin
-      DCmpField := FValidator.DuplKeyFields[j];
       MText += LineEnding;
-      DText += DCmpField.Name + ' = ' + DCmpField.AsString[FExtraRecs[i]] + LineEnding;
+      DText += 'Key Fields: ' + LineEnding;
+      for j := 0 to FValidator.DuplKeyFields.Count - 1 do
+      begin
+        DCmpField := FValidator.DuplKeyFields[j];
+        MText += LineEnding;
+        DText += DCmpField.Name + ' = ' + DCmpField.AsString[FExtraRecs[i]] + LineEnding;
+      end;
     end;
 
 //    MText += 'Record not found';
