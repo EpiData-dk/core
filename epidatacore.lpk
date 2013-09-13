@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <Package Version="4">
     <Name Value="epidatacore"/>
@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="56">
+    <Files Count="57">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -259,6 +259,10 @@
         <Filename Value="Reports/epireport_report_doubleentryvalidate.pas"/>
         <UnitName Value="epireport_report_doubleentryvalidate"/>
       </Item56>
+      <Item57>
+        <Filename Value="Utils/epiopenfile.pas"/>
+        <UnitName Value="epiopenfile"/>
+      </Item57>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>
