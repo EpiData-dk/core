@@ -510,7 +510,12 @@ begin
   if not Assigned(Document) then exit;
 
   FirstSave := false;
-  if FileName = '' then
+
+    // Document haven't been saved before
+  if (FileName = '') or
+    // Document is being saved under a new name.
+     (FileName <> AFileName)
+  then
     FirstSave := true;
 
   FFileName := AFileName;
@@ -532,7 +537,7 @@ begin
         Msg := 'You are trying to save the file: ' + FileName + LineEnding +
                'But the lock file is missing' + LineEnding +
                'The file may have been edited by another program!' + LineEnding +
-               + LineEnding +
+               LineEnding +
                'Continuing may overwrite data! Are you sure?';
         if OnWarning(wtLockFile, Msg) <> wrYes then exit;
       end;
@@ -559,6 +564,7 @@ begin
     CreateLockFile;
 
   Dispose(LF);
+  Result := true;
 end;
 
 function TEpiDocumentFile.SaveBackupFile: boolean;
