@@ -558,13 +558,16 @@ begin
     if OnWarning(wtLockFile, Msg) <> wrYes then exit;
   end;
 
-  DoSaveFile(FileName);
+  try
+    DoSaveFile(FileName);
 
-  if not IsEqualGUID(LF^.GUID, FGuid) then
-    CreateLockFile;
+    if not IsEqualGUID(LF^.GUID, FGuid) then
+      CreateLockFile;
 
-  Dispose(LF);
-  Result := true;
+    Result := true;
+  finally
+    Dispose(LF);
+  end;
 end;
 
 function TEpiDocumentFile.SaveBackupFile: boolean;
