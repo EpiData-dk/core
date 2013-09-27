@@ -771,6 +771,7 @@ var
   Df: TEpiDataFile;
   TmpLines: TStringList;
   j: Integer;
+  CurrentDecimalSeparator: Char;
 begin
   Result := false;
 
@@ -785,12 +786,15 @@ begin
     ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
 
     // CSV Settings
+    Encoding         := eeUTF8;
     QuoteChar        := '';
-    FixedFormat      := true;
+    FixedFormat      := false;
     ExportFieldNames := false;
     DateSeparator    := '/';
     TimeSeparator    := ':';
     DecimalSeparator := '.';
+    FieldSeparator   := '|';
+    NewLine          := LineEnding;
   end;
 
   if not ExportCSV(CSVSetting) then exit;
@@ -812,8 +816,6 @@ begin
   ExpLines.Append('* Uncomment (remove the *) the last command (SAVE) if the');
   ExpLines.Append('* command file should save the data as a SPSS datafile');
   ExpLines.Append('');
-  // Currently we ALWAYS export in unicode... this could be changed in the future.
-  ExpLines.Append('SET UNICODE=yes.');
   // Always export using "." as decimal separator. SPSS only supports "." and ","
   // so we go for safe option and make exporting to CSV easier.
   ExpLines.Append('SET DECIMAL=dot.');
@@ -821,6 +823,9 @@ begin
   ExpLines.Append('DATA LIST');
   // The CSV file.
   ExpLines.append('  FILE = "' + CSVSetting.ExportFileName + '"');
+  ExpLines.append('  ENCODING="UTF8"');
+  ExpLines.Append('  FREE {("' + CSVSetting.FieldSeparator  + '")}');
+
   // RECORDS is basically the number of lines used to define a single record (in epidata).
   // SPSS does not seem to have a max character count on the length of lines in the CSV file
   // so we export: 1 .epx record -> 1 .csv line.
@@ -828,7 +833,6 @@ begin
 
   // Field name and position information!
   S := '  / ';
-  Col := 1;
   for i := 0 to Settings.Fields.Count - 1 do
   with TEpiField(Settings.Fields[i]) do
   begin
@@ -842,45 +846,36 @@ begin
 
     {
       Fieldname formatting in SPSS looks like this:
-        / varname {col location  [(format)]} [varname...]
+        / varname {[(format)]} [varname...]
     }
-    // varname {col "start"}
-    S += Copy(Name, 1, 64) + ' ' + IntToStr(Col);
-    //  col "end"
-    if (FieldType in StringFieldTypes) then
-      S += '-' + IntToStr(Col + (Length * 3) - 1)   // To cover up for UTF-8 lengths.
-    else if Length > 1 then
-      S += '-' + IntToStr(Col + Length - 1);
+    // varname
+    S += Copy(Name, 1, 64);
 
     // [(format)]
     case FieldType of
       ftBoolean,
       ftInteger,
       ftAutoInc:
-        ; // Do nothing since length defines the format by itself.
+        S += '(F' + IntToStr(Length) + ')';
       ftFloat:
-        S += '(' + IntToStr(Decimals) + ')';
+        S += '(F' + IntToStr(Length) + '.' + IntToStr(Decimals) + ')';
       ftDMYDate,
       ftDMYAuto:
-        S += '(EDATE)';
+        S += '(EDATE10)';
       ftMDYDate,
       ftMDYAuto:
-        S += '(ADATE)';
+        S += '(ADATE10)';
       ftYMDDate,
       ftYMDAuto:
-        S += '(SDATE)';
+        S += '(SDATE10)';
       ftTime,
       ftTimeAuto:
-        S += '(TIME)';
+        S += '(TIME8)';
       ftString,
       ftUpperString:
-        S += '(A)';
+        S += '(A' + IntToStr(Length) + ')';
     end;
     S += ' ';
-    if (FieldType in StringFieldTypes) then
-      Inc(Col, Length * 3)
-    else
-      Inc(Col, Length);
   end;
   // Write the last line along with the trailing "."
   ExpLines.Append(S + '.');
@@ -918,23 +913,23 @@ begin
   //  / <varname(s)> ...
   TmpLines.Clear;
   S := '  ';
+  CurrentDecimalSeparator := DefaultFormatSettings.DecimalSeparator;
+  DefaultFormatSettings.DecimalSeparator := '.';
   for i := 0 to Settings.Fields.Count - 1 do
   with TEpiField(Settings.Fields[i]) do
   begin
     if not (Assigned(ValueLabelSet)) then continue;
-    if not (FieldType in IntFieldTypes + StringFieldTypes) then continue;
 
     // [/] <varname>
     TmpLines.Add(' ' + S + Name);
 
     // <value> <"label">
     for j := 0 to ValueLabelSet.Count - 1 do
-      if FieldType in StringFieldTypes then
-        TmpLines.Add('    ' + AnsiQuotedStr(ValueLabelSet[j].ValueAsString, '"') + ' ' + AnsiQuotedStr(ValueLabelSet[j].TheLabel.Text, '"'))
-      else
-        TmpLines.Add('    ' + ValueLabelSet[j].ValueAsString + ' ' + AnsiQuotedStr(ValueLabelSet[j].TheLabel.Text, '"'));
+      TmpLines.Add('    "' + ValueLabelSet[j].ValueAsString + '" "' + ValueLabelSet[j].TheLabel.Text + '"');
+
     S := '/ ';
   end;
+  DefaultFormatSettings.DecimalSeparator := CurrentDecimalSeparator;
 
   if TmpLines.Count > 0 then
   begin
