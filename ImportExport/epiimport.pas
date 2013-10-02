@@ -1180,7 +1180,13 @@ begin
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
           StrBuf := StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength);
           StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
-          VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);  // Get ValueLabelSet
+          VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);             // Get ValueLabelSet
+          if not Assigned(VLSet) then
+          begin
+            VLSet := ValueLabels.NewValueLabelSet(ftInteger);
+            VLset.Name := StrBuf;
+          end;
+
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(DataStream, 4);                                               // Number of entries in label
