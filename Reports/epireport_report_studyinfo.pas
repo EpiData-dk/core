@@ -81,10 +81,10 @@ begin
     DoTableCell(1, PostInc(i), Author);
 
     DoTableCell(0, I         , 'Created');
-    DoTableCell(1, PostInc(i), DateToStr(Created));
+    DoTableCell(1, PostInc(i), DateTimeToStr(Created));
 
     DoTableCell(0, I         , 'Last Edited');
-    DoTableCell(1, PostInc(i), DateToStr(ModifiedDate));
+    DoTableCell(1, PostInc(i), DateTimeToStr(ModifiedDate));
 
     DoTableCell(0, I         , 'Version');
     DoTableCell(1, PostInc(i), Version);
