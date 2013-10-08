@@ -628,6 +628,23 @@ begin
     // ********************************
     //           STATA HEADER
     // ********************************
+
+    // With Stata 13 (dta 117), the format have changed significantly
+    // ie. to XML like structure, hence we must make a test for this
+    // first.
+    SetLength(CharBuf, 11);
+    DataStream.Read(CharBuf[0], 11);
+    if (CharBuf[0] = '<') and (CharBuf[10] = '>')
+    then
+      begin
+        RaiseError(Exception,
+          'Stata 13 is not yet supported' + LineEnding +
+          'Use "saveold" command in Stata to import in EpiData.');
+        Exit;
+      end;
+
+    DataStream.Position := 0;
+
     SetLength(ByteBuf, 4);
     DataStream.Read(ByteBuf[0], 4);
     FileVersion := TEpiStataVersion(ByteBuf[0]);
@@ -1163,7 +1180,13 @@ begin
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
           StrBuf := StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength);
           StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
-          VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);  // Get ValueLabelSet
+          VLSet := ValueLabels.GetValueLabelSetByName(StrBuf);             // Get ValueLabelSet
+          if not Assigned(VLSet) then
+          begin
+            VLSet := ValueLabels.NewValueLabelSet(ftInteger);
+            VLset.Name := StrBuf;
+          end;
+
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
           J := ReadInts(DataStream, 4);                                               // Number of entries in label

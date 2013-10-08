@@ -51,7 +51,7 @@ begin
 
   DoSection(
     'Report:  ' + FTitle + LineEnding +
-    'Created: ' + FormatDateTime('YYYY-MM-DD HH:NN:SS', Now)
+    'Created: ' + DateTimeToStr(Now)
   );
 
   DoLineText('');

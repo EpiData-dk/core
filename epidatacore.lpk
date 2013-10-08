@@ -36,7 +36,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="68">
+    <Files Count="69">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -309,6 +309,10 @@
         <Filename Value="Parser/Functions/epi_script_function_stringfunctions.pas"/>
         <UnitName Value="epi_script_function_stringfunctions"/>
       </Item68>
+      <Item69>
+        <Filename Value="Utils/epiopenfile.pas"/>
+        <UnitName Value="epiopenfile"/>
+      </Item69>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>
