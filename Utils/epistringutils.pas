@@ -36,6 +36,10 @@ type
 
   // Other UTF8 routines.
   function EpiCutString(Const S: string; Const MaxLength: integer; Const AddDots: boolean = true): string;
+  // Case sensitive sort
+  function EpiStringListSortStr(List: TStringList; Index1, Index2: Integer): Integer;
+  // Case insensitive sort
+  function EpiStringListSortText(List: TStringList; Index1, Index2: Integer): Integer;
 
   function FirstWord(Const S: string; MaxLength: Cardinal = (MaxInt-1)): string;
   function AutoFieldName(Const S: string): string;
@@ -150,6 +154,18 @@ begin
     Result := UTF8Copy(S, 1, MaxLength - 3) + '...'
   else
     Result := S;
+end;
+
+function EpiStringListSortStr(List: TStringList; Index1, Index2: Integer
+  ): Integer;
+begin
+  result := UTF8CompareStr(List[Index1], List[Index2]);
+end;
+
+function EpiStringListSortText(List: TStringList; Index1, Index2: Integer
+  ): Integer;
+begin
+  result := UTF8CompareText(List[Index1], List[Index2]);
 end;
 
 function FirstWord(Const S: string; MaxLength: Cardinal): string;
