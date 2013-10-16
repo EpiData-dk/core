@@ -824,7 +824,7 @@ begin
   // The CSV file.
   ExpLines.append('  FILE = "' + CSVSetting.ExportFileName + '"');
   ExpLines.append('  ENCODING="UTF8"');
-  ExpLines.Append('  FREE {("' + CSVSetting.FieldSeparator  + '")}');
+  ExpLines.Append('  FREE ("' + CSVSetting.FieldSeparator  + '")');
 
   // RECORDS is basically the number of lines used to define a single record (in epidata).
   // SPSS does not seem to have a max character count on the length of lines in the CSV file
