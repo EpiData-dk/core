@@ -40,7 +40,8 @@ type
 
   { Data access properties }
   private
-    procedure   LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
+    procedure   LocalEventHook(Const Sender: TEpiCustomBase;
+      Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
     function    GetIsMissingValue(const index: Integer): boolean;
     procedure   SetIsMissingValue(const index: Integer; const AValue: boolean);
@@ -169,8 +170,7 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
-    procedure DoChange(EventGroup: TEpiEventGroup; EventType: Word;
-       Data: Pointer); override;
+    procedure DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;

@@ -217,8 +217,9 @@ begin
   DoChange(eegFields, word(efceRepeatValue), @Val);
 end;
 
-procedure TEpiField.LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
+procedure TEpiField.LocalEventHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
   if (Sender is TEpiValueLabelSet) or (Sender is TEpiField) then
   begin

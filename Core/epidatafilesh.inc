@@ -51,7 +51,9 @@ type
     function    GetVerified(Index: integer): boolean;
     function    GetSize: Integer;
     function    GetVerifiedCount: Integer;
-    procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+    procedure   LocalEventHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase; EventGrp: TEpiEventGroup;
+       EventType: Word; Data: pointer);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);

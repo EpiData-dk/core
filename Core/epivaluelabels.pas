@@ -118,8 +118,10 @@ type
     FDirtyCache: boolean;
     FCachedLength: LongInt;
     procedure   DirtyCacheAndSendChangeEvent;
-    procedure   ItemChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
-                  EventType: Word; Data: Pointer);
+    procedure   ItemChangeHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup;
+       EventType: Word; Data: Pointer);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     function    SaveInternal(Lvl: integer): string; virtual;
@@ -462,8 +464,9 @@ begin
   result := TEpiCustomValueLabel(Items[index]);
 end;
 
-procedure TEpiValueLabelSet.ItemChangeHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiValueLabelSet.ItemChangeHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
   if (EventGroup <> eegValueLabel) then Exit;
 

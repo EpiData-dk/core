@@ -37,6 +37,7 @@ type
     eegFields,
     eegGroups,
     eegHeading,
+    eegJumps,
     // epivaluelabels.pas
     eegValueLabel,
     eegValueLabelSet,
@@ -48,7 +49,13 @@ type
     ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
     ecceSetTop, ecceSetLeft, ecceText
   );
-  TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
+  TEpiChangeEvent = procedure(
+    Const Sender: TEpiCustomBase;     // Who is currently transmitting the event.
+    Const Initiator: TEpiCustomBase;  // Who initiated the event
+    EventGroup: TEpiEventGroup;       // Grouping of eventtypes
+    EventType: Word;                  // Actual event type.
+    Data: Pointer                     // Data associated with the event
+  ) of object;
 
   TEpiCustomBaseState = set of (ebsDestroying, ebsUpdating);
 
@@ -134,7 +141,9 @@ type
     FOnChangeListIgnoreUpdate: TMethodList;
     FUpdateCount: Integer;
   protected
-    procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
+    procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual; overload;
+    procedure  DoChange(Const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual; overload;
   public
     procedure  BeginUpdate; virtual;
     procedure  EndUpdate; virtual;
@@ -297,8 +306,10 @@ type
     FItemOwner: boolean;
     FList: TFPList;
     procedure   SetItemOwner(const AValue: boolean);
-    procedure   OnChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
+    procedure   OnChangeHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup;
+       EventType: Word; Data: Pointer);
     procedure   RegisterItem(Item: TEpiCustomItem);
     procedure   UnRegisterItem(Item: TEpiCustomItem);
   protected
@@ -381,7 +392,9 @@ type
 
   TEpiCustomControlItemList = class(TEpiCustomList)
   private
-    procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure ChangeHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
   protected
     procedure DoSort; override;
   public
@@ -957,23 +970,43 @@ end;
 
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
+begin
+  DoChange(Self, EventGroup, EventType, Data);
+end;
+
+procedure TEpiCustomBase.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 var
   i: Integer;
+  S: String;
+  M: TEpiChangeEvent;
 begin
+  S := Self.ClassName;
+
   I := FOnChangeListIgnoreUpdate.Count;
   while FOnChangeListIgnoreUpdate.NextDownIndex(I) do
-    TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I])(Self, EventGroup, EventType, Data);
+  begin
+    M := TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I]);
+    M(Self, Initiator, EventGroup, EventType, Data);
+  end;
 
   if ((EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate))) or
      (EventGroup <> eegCustomBase)
   then
     Modified := true;
 
-  if FUpdateCount > 0 then exit;
+  if FUpdateCount = 0 then
+  begin
+    I := FOnChangeList.Count;
+    while FOnChangeList.NextDownIndex(I) do
+    begin
+      M := TEpiChangeEvent(FOnChangeList.Items[I]);
+      M(Self, Initiator, EventGroup, EventType, Data);
+    end;
+  end;
 
-  I := FOnChangeList.Count;
-  while FOnChangeList.NextDownIndex(I) do
-    TEpiChangeEvent(FOnChangeList.Items[I])(Self, EventGroup, EventType, Data);
+  if Assigned(Owner) then
+    Owner.DoChange(Initiator, EventGroup, EventType, Data);
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
@@ -1472,12 +1505,16 @@ begin
   FItemOwner := AValue;
 end;
 
-procedure TEpiCustomList.OnChangeHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCustomList.OnChangeHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 var
   EpiSender: TEpiCustomItem absolute Sender;
+  EpiInitiator: TEpiCustomItem absolute Initiator;
 begin
   if EventGroup <> eegCustomBase then exit;
+  if not (Initiator is TEpiCustomItem) then exit;
+  if IndexOf(EpiInitiator) = -1 then exit;
 
   case TEpiCustomChangeEventType(EventType) of
     ecceDestroy: RemoveItem(EpiSender);
@@ -1868,10 +1905,15 @@ begin
     result := Item1 - Item2;
 end;
 
-procedure TEpiCustomControlItemList.ChangeHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCustomControlItemList.ChangeHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  EpiInitiator: TEpiCustomControlItem absolute Initiator;
 begin
   if (EventGroup <> eegCustomBase) then exit;
+  if not (Initiator is TEpiCustomControlItem) then exit;
+  if IndexOf(EpiInitiator) = -1 then exit;
 
   case TEpiCustomChangeEventType(EventType) of
     ecceSetTop:  Sort;

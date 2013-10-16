@@ -13,7 +13,8 @@ type
     FCompareType: TEpiComparisonType;
     procedure   SetCompareField(const AValue: TEpiField);
     procedure   SetCompareType(const AValue: TEpiComparisonType);
-    procedure   FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
+    procedure   FieldHook(Const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
     property    OwnerField: TEpiField read GetOwnerField;
   protected

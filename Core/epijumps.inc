@@ -24,6 +24,24 @@ begin
   Result := 'jump_id_'
 end;
 
+procedure TEpiJumps.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+var
+  EpiJump: TEpiJump absolute Initiator;
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  if (Initiator is TEpiJump) and
+     (IndexOf(EpiJump) > -1) and
+     (EventGroup = eegJumps) and
+     (TEpiJumpChangeEvent(EventType) = ejceJumpToFieldDestroyed)
+  then
+  begin
+    RemoveItem(EpiJump);
+    EpiJump.Free;
+  end;
+end;
+
 constructor TEpiJumps.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -75,10 +93,29 @@ begin
   Result := TEpiDataFile(AParent);
 end;
 
+procedure TEpiJump.JumpToFieldChange(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (Initiator <> FJumpToField) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
+
+  DoChange(eegJumps, Word(ejceJumpToFieldDestroyed), FJumpToField);
+  FJumpToField.UnRegisterOnChangeHook(@JumpToFieldChange);
+end;
+
 procedure TEpiJump.SetJumpToField(const AValue: TEpiField);
 begin
   if FJumpToField = AValue then exit;
+
+  if Assigned(FJumpToField) then
+    FJumpToField.UnRegisterOnChangeHook(@JumpToFieldChange);
+
   FJumpToField := AValue;
+
+  if Assigned(FJumpToField) then
+    FJumpToField.RegisterOnChangeHook(@JumpToFieldChange, true);
 end;
 
 procedure TEpiJump.SetJumpType(const AValue: TEpiJumpType);

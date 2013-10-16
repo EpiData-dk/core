@@ -2,6 +2,8 @@
 
 type
 
+  TEpiJumpChangeEvent = (ejceJumpToFieldDestroyed);
+
   { TEpiJumps }
 
   TEpiJumps = class(TEpiCustomList)
@@ -10,6 +12,9 @@ type
     function GetJumpFromValue(const Value: string): TEpiJump;
   protected
     function Prefix: string; override;
+    procedure DoChange(const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+       overload;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -23,6 +28,10 @@ type
   { TEpiJump }
 
   TEpiJump = class(TEpiCustomItem)
+  private
+    procedure JumpToFieldChange(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   private
     FJumpToField: TEpiField;
     FJumpType: TEpiJumpType;

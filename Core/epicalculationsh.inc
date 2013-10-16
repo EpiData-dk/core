@@ -13,7 +13,8 @@ type
   protected
     function GetCalcType: TEpiCalcType; virtual; abstract;
     procedure RegisterFieldHook(NewField: TEpiField; OldField: TEpiField);
-    procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
+    procedure FieldHook(Const Sender: TEpiCustomBase;
+      Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
     property OwnerField: TEpiField read GetOwnerField;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
@@ -44,10 +45,11 @@ type
     procedure SetTimeCalcType(const AValue: TEpiTimeCalcType);
   protected
     function GetCalcType: TEpiCalcType; override;
-    procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
-       EventType: Word; Data: Pointer); override;
+    procedure FieldHook(Const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+      nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
@@ -70,8 +72,9 @@ type
     procedure SetYear(const AValue: TEpiIntField);
   protected
     function GetCalcType: TEpiCalcType; override;
-    procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
-       EventType: Word; Data: Pointer); override;
+    procedure FieldHook(Const Sender: TEpiCustomBase;
+      Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
   public
@@ -98,8 +101,9 @@ type
     procedure SetField3(const AValue: TEpiField);
   protected
     function GetCalcType: TEpiCalcType; override;
-    procedure FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
-       EventType: Word; Data: Pointer); override;
+    procedure FieldHook(Const Sender: TEpiCustomBase;
+      Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
   public

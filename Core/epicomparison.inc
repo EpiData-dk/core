@@ -24,8 +24,9 @@ begin
   FCompareType := AValue;
 end;
 
-procedure TEpiComparison.FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
+procedure TEpiComparison.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 var
   Field: TEpiField absolute Sender;
 begin

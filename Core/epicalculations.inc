@@ -26,8 +26,9 @@ begin
     NewField.RegisterOnChangeHook(@FieldHook, true);
 end;
 
-procedure TEpiCalculation.FieldHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCalculation.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 var
   Field: TEpiField absolute Sender;
 begin
@@ -130,10 +131,11 @@ begin
   Result := ctTimeDiff;
 end;
 
-procedure TEpiTimeCalc.FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
+procedure TEpiTimeCalc.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  inherited FieldHook(Sender, EventGroup, EventType, Data);
+  inherited FieldHook(Sender, Initiator, EventGroup, EventType, Data);
 
   if not ((EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy))) then exit;
 
@@ -251,10 +253,11 @@ begin
   Result := ctCombineDate;
 end;
 
-procedure TEpiCombineDateCalc.FieldHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCombineDateCalc.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  inherited FieldHook(Sender, EventGroup, EventType, Data);
+  inherited FieldHook(Sender, Initiator, EventGroup, EventType, Data);
 
   if not ((EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy))) then exit;
 
@@ -355,10 +358,11 @@ begin
   Result := ctCombineString;
 end;
 
-procedure TEpiCombineStringCalc.FieldHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCombineStringCalc.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  inherited FieldHook(Sender, EventGroup, EventType, Data);
+  inherited FieldHook(Sender, Initiator, EventGroup, EventType, Data);
 
   if not ((EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy))) then exit;
 
