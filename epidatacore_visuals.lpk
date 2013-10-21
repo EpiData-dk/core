@@ -31,11 +31,15 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="4" Release="3"/>
-    <Files Count="1">
+    <Files Count="2">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
         <UnitName Value="epiv_dataset_viewer_frame"/>
       </Item1>
+      <Item2>
+        <Filename Value="Visuals/epiv_documentfile.pas"/>
+        <UnitName Value="epiv_documentfile"/>
+      </Item2>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">
