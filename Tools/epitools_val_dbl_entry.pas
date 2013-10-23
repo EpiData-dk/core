@@ -101,7 +101,7 @@ uses
 const
   ValTexts: array[ValOK..ValDupKeyFail] of string = (
     'Validated',
-    'Record does not exists in duplicate file',
+    'Record not found in duplicate file',
 //    'Failed due to different case in text',
     'Failed due to different text',
     'Failed due to different values',
