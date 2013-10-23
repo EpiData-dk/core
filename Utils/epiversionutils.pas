@@ -52,11 +52,10 @@ end;
 
 function BuildVersionInfoString(Version, Major, Minor, Build: integer): string;
 begin
-  result := IntToStr(Version) + '.' + IntToStr(Major);
-  if Minor + Build > 0 then
-    result := result + '.' + IntToStr(Minor);
-  if Build > 0 then
-    result := result + '.' + IntToStr(Build);
+  result := IntToStr(Version) + '.' +
+            IntToStr(Major)   + '.' +
+            IntToStr(Minor)   + '.' +
+            IntToStr(Build);
 end;
 
 function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
