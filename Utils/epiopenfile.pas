@@ -54,6 +54,7 @@ type
     FTimeStamp: TTimeStamp;
     FEpiDoc: TEpiDocument;
     procedure DocumentChange(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure WriteLockFile(Const Fn: string; LF: PLockFile);
     procedure CreateLockFile;
@@ -88,6 +89,7 @@ type
     property FileName: string read GetFileName;
     property Document: TEpiDocument read FEpiDoc;
     property ReadOnly: Boolean read FReadOnly;
+    property IsSaved: boolean read GetIsSaved;
   end;
 
 implementation
@@ -194,6 +196,11 @@ begin
   if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
   DeleteLockFile;
+end;
+
+function TEpiDocumentFile.GetIsSaved: boolean;
+begin
+  result := FFileName <> '';
 end;
 
 function TEpiDocumentFile.GetFileName: string;
@@ -521,7 +528,7 @@ begin
   FirstSave := false;
 
     // Document haven't been saved before
-  if (FileName = '') or
+  if (not IsSaved) or
     // Document is being saved under a new name.
      (FileName <> AFileName)
   then
