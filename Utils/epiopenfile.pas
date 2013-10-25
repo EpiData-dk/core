@@ -54,12 +54,14 @@ type
     FTimeStamp: TTimeStamp;
     FEpiDoc: TEpiDocument;
     procedure DocumentChange(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure WriteLockFile(Const Fn: string; LF: PLockFile);
     procedure CreateLockFile;
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
   protected
+  function GetFileName: string; virtual;
     function LockFileExists(Const FileName: string;
       out Msg: string): boolean;
     function DatePatternExists(Const FileName: string;
@@ -84,9 +86,10 @@ type
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
   public
     // Other properties
-    property FileName: string read FFileName;
+    property FileName: string read GetFileName;
     property Document: TEpiDocument read FEpiDoc;
     property ReadOnly: Boolean read FReadOnly;
+    property IsSaved: boolean read GetIsSaved;
   end;
 
 implementation
@@ -193,6 +196,19 @@ begin
   if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
   DeleteLockFile;
+end;
+
+function TEpiDocumentFile.GetIsSaved: boolean;
+begin
+  result := FFileName <> '';
+end;
+
+function TEpiDocumentFile.GetFileName: string;
+begin
+  if FFilename = '' then
+    Result := '(Not Saved)'
+  else
+    Result := FFilename;
 end;
 
 function TEpiDocumentFile.ReadLockFile(const Fn: string): PLockFile;
@@ -512,7 +528,7 @@ begin
   FirstSave := false;
 
     // Document haven't been saved before
-  if (FileName = '') or
+  if (not IsSaved) or
     // Document is being saved under a new name.
      (FileName <> AFileName)
   then
