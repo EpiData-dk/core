@@ -2,8 +2,6 @@
 
 type
 
-  TEpiJumpChangeEvent = (ejceJumpToFieldDestroyed);
-
   { TEpiJumps }
 
   TEpiJumps = class(TEpiCustomList)
@@ -12,9 +10,6 @@ type
     function GetJumpFromValue(const Value: string): TEpiJump;
   protected
     function Prefix: string; override;
-    procedure DoChange(const Initiator: TEpiCustomBase;
-       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
-       overload;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -41,6 +36,7 @@ type
     procedure   SetResetType(const AValue: TEpiJumpResetType);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
     function    GetJumpValueAsString: string; virtual; abstract;
     function    WriteNameToXml: boolean; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =

@@ -40,9 +40,6 @@ type
 
   { Data access properties }
   private
-    procedure   LocalEventHook(Const Sender: TEpiCustomBase;
-      Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
     function    GetIsMissingValue(const index: Integer): boolean;
     procedure   SetIsMissingValue(const index: Integer; const AValue: boolean);
   protected
@@ -79,6 +76,17 @@ type
     property    IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
     property    IsMissingValue[const index: Integer]: boolean read GetIsMissingValue write SetIsMissingValue;
 
+  { Hooks }
+  private
+    // Hook into ValueLabelSet and ValueLabelWriteToField
+    procedure LocalEventHook(Const Sender: TEpiCustomBase;
+      Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+  protected
+    // "Hook" that process changes in Calculations, Comparison.
+    procedure DoChange(const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+       overload;
   { Field Properties }
   private
     FCalculation: TEpiCalculation;
@@ -117,27 +125,25 @@ type
     procedure   SetHasDefaultValue(Const AValue: boolean); virtual; abstract;
   public
     procedure   ResetDefaultValue; virtual; abstract;
-    property    FieldType: TEpiFieldType read FFieldType;
-    property    Length:    Cardinal read FLength write SetLength;
-    property    Decimals:  Cardinal read FDecimals write SetDecimals;
-    property    EntryMode: TEpiEntryMode read FEntryMode write SetEntryMode;
-    property    ConfirmEntry: Boolean read FConfirmEntry write SetConfirmEntry;
-    property    RepeatValue: boolean read FRepeatValue write SetRepeatValue;
-    // Since DefaultValue is Type Specific - it's implemented in sub-classes
-//    property    DefaultValue: Variant read FDefaultValue write SetDefaultValue;
+    property    FieldType:            TEpiFieldType read FFieldType;
+    property    Length:               Cardinal read FLength write SetLength;
+    property    Decimals:             Cardinal read FDecimals write SetDecimals;
+    property    EntryMode:            TEpiEntryMode read FEntryMode write SetEntryMode;
+    property    ConfirmEntry:         Boolean read FConfirmEntry write SetConfirmEntry;
+    property    RepeatValue:          boolean read FRepeatValue write SetRepeatValue;
     property    DefaultValueAsString: string read GetDefaultValueAsString write SetDefaultValueAsString;
-    property    HasDefaultValue: boolean read GetHasDefaultValue write SetHasDefaultValue;
-    property    Notes: TEpiTranslatedTextWrapper read FNotes;
-    property    Question:  TEpiTranslatedTextWrapper read FQuestion;
-    property    ValueLabelSet: TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
-    property    ShowValueLabel: Boolean read FShowValueLabel write SetShowValueLabel;
-    property    ForcePickList: Boolean read FForcePickList write SetForcePickList;
-    property    ShowValueLabelNotes: boolean read FShowValueLabelNotes write SetShowValueLabelNotes;
+    property    HasDefaultValue:      boolean read GetHasDefaultValue write SetHasDefaultValue;
+    property    Notes:                TEpiTranslatedTextWrapper read FNotes;
+    property    Question:             TEpiTranslatedTextWrapper read FQuestion;
+    property    ValueLabelSet:        TEpiValueLabelSet read FValueLabelSet write SetValueLabelSet;
+    property    ShowValueLabel:       Boolean read FShowValueLabel write SetShowValueLabel;
+    property    ForcePickList:        Boolean read FForcePickList write SetForcePickList;
+    property    ShowValueLabelNotes:  boolean read FShowValueLabelNotes write SetShowValueLabelNotes;
     property    ValueLabelWriteField: TEpiField read FValueLabelWriteField write SetValueLabelWriteField;
-    property    Ranges:    TEpiRanges read FRanges write FRanges;
-    property    Jumps:     TEpiJumps read FJumps write FJumps;
-    property    Calculation: TEpiCalculation read FCalculation write FCalculation;
-    property    Comparison:  TEpiComparison read FComparison write FComparison;
+    property    Ranges:               TEpiRanges read FRanges write FRanges;
+    property    Jumps:                TEpiJumps read FJumps write FJumps;
+    property    Calculation:          TEpiCalculation read FCalculation write FCalculation;
+    property    Comparison:           TEpiComparison read FComparison write FComparison;
 
   { Pack Data}
   protected
@@ -170,7 +176,6 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
-    procedure DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;

@@ -106,6 +106,7 @@ type
 
 
 function NativeFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
+function OrderedFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
 
 implementation
 
@@ -126,6 +127,37 @@ begin
     ftTimeAuto:  result := TimeFieldTypes;
     ftString,
     ftUpperString: result := StringFieldTypes;
+  end;
+end;
+
+function OrderedFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
+begin
+  case Ft of
+    // Bool
+    ftBoolean:
+      result := BoolFieldTypes;
+
+    // Int / Date
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate,
+    ftDMYAuto,
+    ftMDYAuto,
+    ftYMDAuto,
+    ftInteger,
+    ftAutoInc:
+      result := IntFieldTypes + DateFieldTypes;
+
+    // Float / Time
+    ftTime,
+    ftTimeAuto,
+    ftFloat:
+      result := FloatFieldTypes + TimeFieldTypes;
+
+    // String
+    ftString,
+    ftUpperString:
+      result := StringFieldTypes;
   end;
 end;
 

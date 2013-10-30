@@ -123,6 +123,15 @@ type
     property    KeyFields: TEpiFields read FKeyFields;
 
   { Update Overrides}
+  private
+    procedure DoControlChange(Const Initiator: TEpiCustomBase;
+       EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
+    procedure DoModifiedChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+  protected
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
   public
     procedure BeginUpdate; override;
     procedure EndUpdate; override;

@@ -30,10 +30,13 @@ procedure TEpiComparison.FieldHook(const Sender: TEpiCustomBase;
 var
   Field: TEpiField absolute Sender;
 begin
-  if Sender <> FCompareField then exit;
+  if (Initiator <> FCompareField) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  if (EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy)) then
-    FCompareField := nil;
+  FCompareField := nil;
+  Initiator.UnRegisterOnChangeHook(@FieldHook);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 function TEpiComparison.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -57,6 +60,12 @@ begin
   inherited Create(AOwner);
   FCompareField := nil;
   FCompareType := fcLT;
+end;
+
+destructor TEpiComparison.Destroy;
+begin
+  CompareField := nil;
+  inherited Destroy;
 end;
 
 function TEpiComparison.XMLName: string;

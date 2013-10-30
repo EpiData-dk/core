@@ -74,18 +74,16 @@ begin
   DoTableCell(1, 2, DateTimeToStr(LastEdit));
   DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
   DoTableCell(1, 4, IntToStr(Document.CycleNo), tcaLeftAdjust);
-  S := '';
-  if Document.ProjectSettings.BackupOnShutdown then
-    S += 'Backup on shutdown: active' + LineEnding;
-  if Document.PassWord <> '' then
-    S += 'Encrypted data: active';
+  S :=
+    'Backup on shutdown: ' + BoolToStr(Document.ProjectSettings.BackupOnShutdown, 'yes', 'no') + LineEnding +
+    'Encrypted data: '     + BoolToStr(Document.PassWord <> '',                   'yes', 'no');
   DoTableFooter(Trim(S));
 
   DoLineText('');
 
   DoTableHeader('Dataforms:', 9, Document.DataFiles.Count + 1);
   // Header row:
-  DoTableCell(0, 0, 'Title');
+  DoTableCell(0, 0, 'Name');
   DoTableCell(1, 0, 'Created');
   DoTableCell(2, 0, 'Structure Edited');
   DoTableCell(3, 0, 'Data Edited');
@@ -112,7 +110,7 @@ begin
   begin
     if KeyFields.Count = 0 then continue;
 
-    DoHeading('Key Fields for ' + Name);
+    DoHeading('Key Fields for ' + Caption.Text);
     for j := 0 to KeyFields.Count -1 do
       DoLineText(KeyFields[j].Name + ' - ' + KeyFields[j].Question.Text);
     DoLineText('');

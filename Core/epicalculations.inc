@@ -32,10 +32,13 @@ procedure TEpiCalculation.FieldHook(const Sender: TEpiCustomBase;
 var
   Field: TEpiField absolute Sender;
 begin
-  if Sender <> FResultField then exit;
+  if Initiator <> FResultField then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  if (EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy)) then
-    FResultField := nil;
+  FResultField := nil;
+  Initiator.UnRegisterOnChangeHook(@FieldHook);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 function TEpiCalculation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -55,6 +58,12 @@ constructor TEpiCalculation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FResultField := nil;
+end;
+
+destructor TEpiCalculation.Destroy;
+begin
+  RegisterFieldHook(nil, FResultField);
+  inherited Destroy;
 end;
 
 function TEpiCalculation.XMLName: string;
@@ -136,13 +145,24 @@ procedure TEpiTimeCalc.FieldHook(const Sender: TEpiCustomBase;
   Data: Pointer);
 begin
   inherited FieldHook(Sender, Initiator, EventGroup, EventType, Data);
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  if not ((EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy))) then exit;
+  if not (
+    (Initiator = FStartDate) or
+    (Initiator = FEndDate) or
+    (Initiator = FStartTime) or
+    (Initiator = FEndTime)
+    )
+  then
+    Exit;
 
-  if Sender = FStartDate then FStartDate := nil;
-  if Sender = FEndDate   then FEndDate   := nil;
-  if Sender = FStartTime then FStartTime := nil;
-  if Sender = FEndTime   then FEndTime   := nil;
+  if Initiator = FStartDate then FStartDate := nil;
+  if Initiator = FEndDate   then FEndDate   := nil;
+  if Initiator = FStartTime then FStartTime := nil;
+  if Initiator = FEndTime   then FEndTime   := nil;
+  Initiator.UnRegisterOnChangeHook(@FieldHook);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 function TEpiTimeCalc.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -167,6 +187,15 @@ begin
     end;
     FTimeCalcType := Self.FTimeCalcType;
   end;
+end;
+
+destructor TEpiTimeCalc.Destroy;
+begin
+  RegisterFieldHook(nil, FStartDate);
+  RegisterFieldHook(nil, FStartTime);
+  RegisterFieldHook(nil, FEndDate);
+  RegisterFieldHook(nil, FEndTime);
+  inherited Destroy;
 end;
 
 procedure TEpiTimeCalc.LoadFromXml(Root: TDOMNode);
@@ -258,12 +287,23 @@ procedure TEpiCombineDateCalc.FieldHook(const Sender: TEpiCustomBase;
   Data: Pointer);
 begin
   inherited FieldHook(Sender, Initiator, EventGroup, EventType, Data);
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  if not ((EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy))) then exit;
+  if not (
+    (Initiator = FDay) or
+    (Initiator = FMonth) or
+    (Initiator = FYear)
+    )
+  then
+    Exit;
 
   if Sender = FDay   then FDay   := nil;
   if Sender = FMonth then FMonth := nil;
   if Sender = FYear  then FYear  := nil;
+
+  Initiator.UnRegisterOnChangeHook(@FieldHook);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 function TEpiCombineDateCalc.DoClone(AOwner: TEpiCustomBase;
@@ -286,6 +326,14 @@ begin
       FYear  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
     end;
   end;
+end;
+
+destructor TEpiCombineDateCalc.Destroy;
+begin
+  RegisterFieldHook(nil, FYear);
+  RegisterFieldHook(nil, FDay);
+  RegisterFieldHook(nil, FMonth);
+  inherited Destroy;
 end;
 
 procedure TEpiCombineDateCalc.LoadFromXml(Root: TDOMNode);
@@ -363,12 +411,23 @@ procedure TEpiCombineStringCalc.FieldHook(const Sender: TEpiCustomBase;
   Data: Pointer);
 begin
   inherited FieldHook(Sender, Initiator, EventGroup, EventType, Data);
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  if not ((EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy))) then exit;
+  if not (
+    (Initiator = FField1) or
+    (Initiator = FField2) or
+    (Initiator = FField3)
+    )
+  then
+    Exit;
 
   if Sender = FField1 then FField1 := nil;
   if Sender = FField2 then FField2 := nil;
   if Sender = FField3 then FField3 := nil;
+
+  Initiator.UnRegisterOnChangeHook(@FieldHook);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 function TEpiCombineStringCalc.DoClone(AOwner: TEpiCustomBase;
@@ -400,6 +459,14 @@ begin
     FDelim1 := Self.FDelim1;
     FDelim2 := Self.FDelim2;
   end;
+end;
+
+destructor TEpiCombineStringCalc.Destroy;
+begin
+  RegisterFieldHook(nil, FField1);
+  RegisterFieldHook(nil, FField2);
+  RegisterFieldHook(nil, FField3);
+  inherited Destroy;
 end;
 
 procedure TEpiCombineStringCalc.LoadFromXml(Root: TDOMNode);

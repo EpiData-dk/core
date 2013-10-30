@@ -3,7 +3,6 @@
 type
 
   { TEpiComparison }
-
   TEpiComparisonType = (fcEq, fcNEq, fcLT, fcLEq, fcGEq, fcGT);
   TEpiComparison = class(TEpiCustomBase)
   private
@@ -22,6 +21,7 @@ type
        nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;

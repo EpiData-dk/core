@@ -24,24 +24,6 @@ begin
   Result := 'jump_id_'
 end;
 
-procedure TEpiJumps.DoChange(const Initiator: TEpiCustomBase;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-var
-  EpiJump: TEpiJump absolute Initiator;
-begin
-  inherited DoChange(Initiator, EventGroup, EventType, Data);
-
-  if (Initiator is TEpiJump) and
-     (IndexOf(EpiJump) > -1) and
-     (EventGroup = eegJumps) and
-     (TEpiJumpChangeEvent(EventType) = ejceJumpToFieldDestroyed)
-  then
-  begin
-    RemoveItem(EpiJump);
-    EpiJump.Free;
-  end;
-end;
-
 constructor TEpiJumps.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -101,8 +83,15 @@ begin
   if (EventGroup <> eegCustomBase) then exit;
   if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  DoChange(eegJumps, Word(ejceJumpToFieldDestroyed), FJumpToField);
-  FJumpToField.UnRegisterOnChangeHook(@JumpToFieldChange);
+  // Our reference field has been (or is being) destroyed,
+  // change this jump to a SAVERECORD, with jrLeaveAsIs.
+
+  FJumpToField := nil;
+  FJumpType    := jtSaveRecord;
+  FResetType   := jrLeaveAsIs;
+
+  Initiator.UnRegisterOnChangeHook(@JumpToFieldChange);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 procedure TEpiJump.SetJumpToField(const AValue: TEpiField);
@@ -136,6 +125,12 @@ begin
   FJumpType := jtToField;
   FResetType := jrLeaveAsIs;
   FJumpToField := nil;
+end;
+
+destructor TEpiJump.Destroy;
+begin
+  JumpToField := nil;
+  inherited Destroy;
 end;
 
 function TEpiJump.WriteNameToXml: boolean;

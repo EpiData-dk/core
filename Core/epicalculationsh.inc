@@ -21,6 +21,7 @@ type
        nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
     function XMLName: string; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
@@ -51,6 +52,7 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
       nil): TEpiCustomBase; override;
   public
+    destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     property StartDate: TEpiDateField read FStartDate write SetStartDate;
@@ -78,6 +80,7 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
   public
+    destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     property Day: TEpiIntField read FDay write SetDay;
@@ -107,6 +110,7 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
   public
+    destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     property Field1: TEpiField read FField1 write SetField1;

@@ -118,10 +118,6 @@ type
     FDirtyCache: boolean;
     FCachedLength: LongInt;
     procedure   DirtyCacheAndSendChangeEvent;
-    procedure   ItemChangeHook(Const Sender: TEpiCustomBase;
-       Const Initiator: TEpiCustomBase;
-       EventGroup: TEpiEventGroup;
-       EventType: Word; Data: Pointer);
   protected
     procedure   LoadInternal(Root: TDOMNode); virtual;
     function    SaveInternal(Lvl: integer): string; virtual;
@@ -131,6 +127,9 @@ type
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -464,16 +463,6 @@ begin
   result := TEpiCustomValueLabel(Items[index]);
 end;
 
-procedure TEpiValueLabelSet.ItemChangeHook(const Sender: TEpiCustomBase;
-  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-begin
-  if (EventGroup <> eegValueLabel) then Exit;
-
-  if TEpiValueLabelChangeEvent(EventType) = evceValue then
-    DirtyCacheAndSendChangeEvent;
-end;
-
 function TEpiValueLabelSet.GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
 var
   I: LongInt;
@@ -607,6 +596,16 @@ begin
   end;
 end;
 
+procedure TEpiValueLabelSet.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+  if (EventGroup <> eegValueLabel) then Exit;
+
+  if TEpiValueLabelChangeEvent(EventType) = evceValue then
+    DirtyCacheAndSendChangeEvent;
+end;
+
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -678,14 +677,12 @@ procedure TEpiValueLabelSet.InsertItem(const Index: integer;
   Item: TEpiCustomItem);
 begin
   inherited InsertItem(Index, Item);
-  Item.RegisterOnChangeHook(@ItemChangeHook, true);
   DirtyCacheAndSendChangeEvent;
 end;
 
 function TEpiValueLabelSet.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := inherited DeleteItem(Index);
-  Result.UnRegisterOnChangeHook(@ItemChangeHook);
   DirtyCacheAndSendChangeEvent;
 end;
 
