@@ -41,59 +41,6 @@ resourcestring
   rsDocumentsNotAssigned = 'Documents not assigned to report';
   rsFieldlistNotAssigned = 'Fieldlist not assigned to report';
 
-
-const
-  COUNTS_CUSTDATA = 'counts_customdata_key';
-
-var
-  DFCount: integer;
-
-type
-
-  { TCountsList }
-
-  TCountsList = class
-  private
-    FData: array of integer;
-    function GetData(Index: integer): integer;
-    function GetSize: integer;
-    procedure SetData(Index: integer; AValue: integer);
-  public
-    constructor Create(Const Size: integer);
-    destructor Destroy; override;
-    property Data[Index: integer]: integer read GetData write SetData; default;
-    property Size: integer read GetSize;
-  end;
-
-{ TCountsList }
-
-function TCountsList.GetData(Index: integer): integer;
-begin
-  result := FData[Index];
-end;
-
-function TCountsList.GetSize: integer;
-begin
-  result := Length(FData);
-end;
-
-procedure TCountsList.SetData(Index: integer; AValue: integer);
-begin
-  FData[Index] := AValue;
-end;
-
-constructor TCountsList.Create(const Size: integer);
-begin
-  SetLength(FData, Size);
-end;
-
-destructor TCountsList.Destroy;
-begin
-  SetLength(FData, 0);
-  inherited Destroy;
-end;
-
-
 { TEpiReportCountById }
 
 procedure TEpiReportCountById.DoCounts(const DF: TEpiDataFile;
@@ -159,7 +106,7 @@ begin
       begin
         F := ValueFieldList.FieldByName[LocalValueFields[j].Name];
         if Assigned(F) then
-          F.AsValue[ResultDf.Size - 1] := LocalValueFields[j].AsValue[i]
+          F.AsString[ResultDf.Size - 1] := LocalValueFields[j].AsString[i]
       end;
     end;
 
@@ -242,17 +189,33 @@ procedure TEpiReportCountById.RunReport;
 var
   i: Integer;
   F: TEpiField;
+  Df: TEpiDataFile;
+  Fn: TEpiField;
+  Ft: TEpiFieldType;
+  j: Integer;
 begin
   inherited RunReport;
 
-
+  // Since we allow fields with various type to be compared,
+  // loop through all DF's for a given fieldname and find the
+  // best common field type.
+  // We do this to avoid cases were sorting using string fields
+  // unnessesary -> the sorting of numbers as strings are a mess!
   for i := 0 to FieldList.Count - 1 do
-  with FieldList[i] do
   begin
-    F := ResultDF.NewField(FieldType);
-    F.Name := Name;
-    F.Length := Length;
-    F.Decimals := Decimals;
+    F := FieldList[i];
+
+    Ft := F.FieldType;
+
+    for j := 0 to Documents.Count - 1 do
+    begin
+      Df := TEpiDocument(Documents.Objects[j]).DataFiles[0];
+      Fn := Df.Fields.FieldByName[F.Name];
+      Ft := Max(Ft, Fn.FieldType);
+    end;
+
+    F := ResultDF.NewField(Ft);
+    F.Name := FieldList[i].Name;
     ValueFieldList.AddItem(F);
   end;
 

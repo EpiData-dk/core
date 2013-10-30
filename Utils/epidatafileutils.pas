@@ -15,6 +15,10 @@ function CompareFieldRecords(Out CmpResult: TValueSign;
 
 procedure DumpDatafileRecords(Const DF: TEpiDataFile);
 
+function Max(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType; overload;
+function Min(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType; overload;
+function CompareFieldTypeOrder(Const Ft1, Ft2: TEpiFieldType): integer;
+
 implementation
 
 uses
@@ -97,6 +101,72 @@ begin
       Write(Format('%-' + IntToStr(Width) +'s', [UTF8ToSys(EpiCutString(DF.Fields[i].AsString[j], Width - 1, false))]));
     WriteLn('');
   end;
+end;
+
+function Max(const Ft1, Ft2: TEpiFieldType): TEpiFieldType;
+begin
+  if CompareFieldTypeOrder(Ft1, Ft2) < 0
+  then
+    Result := Ft1
+  else
+    Result := Ft2;
+end;
+
+function Min(const Ft1, Ft2: TEpiFieldType): TEpiFieldType;
+begin
+  if CompareFieldTypeOrder(Ft1, Ft2) > 0
+  then
+    Result := Ft1
+  else
+    Result := Ft2;
+end;
+
+function CompareFieldTypeOrder(const Ft1, Ft2: TEpiFieldType): integer;
+var
+  CompareSet: TEpiFieldTypes;
+  Ft1Set: TEpiFieldTypes;
+  Ft2Set: TEpiFieldTypes;
+begin
+  Ft1Set := OrderedFieldTypeSetFromFieldType(Ft1);
+  Ft2Set := OrderedFieldTypeSetFromFieldType(Ft2);
+
+  if Ft1Set = Ft2Set then Exit(0);
+  Result := 1;
+
+  // The "order" of field types should be as follows:
+  //  1: Bool
+  //  2: Int/Date
+  //  3: Float/Time
+  //  4: String
+  //
+  // Reason:
+  //  It is always possible to "convert" a higher type to a
+  //  lower type without loss of data/precission. But the
+  //  other way is not always possible.
+
+  CompareSet := BoolFieldTypes;
+  if (Ft2 in BoolFieldTypes) and
+     (not (Ft1 in CompareSet))
+  then
+    Exit(-1);
+
+  CompareSet := CompareSet + (IntFieldTypes + DateFieldTypes);
+  if (Ft2 in IntFieldTypes + DateFieldTypes) and
+     (not (Ft1 in CompareSet))
+  then
+    Exit(-1);
+
+  CompareSet := CompareSet + (FloatFieldTypes + TimeFieldTypes);
+  if (Ft2 in FloatFieldTypes + TimeFieldTypes) and
+     (not (Ft1 in CompareSet))
+  then
+    Exit(-1);
+
+  CompareSet := CompareSet + StringFieldTypes;
+  if (Ft2 in StringFieldTypes) and
+     (not (Ft1 in CompareSet))
+  then
+    Exit(-1);
 end;
 
 end.

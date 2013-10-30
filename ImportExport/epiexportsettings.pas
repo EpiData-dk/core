@@ -64,7 +64,7 @@ type
 
   TEpiSPSSExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
-
+    Delimiter: char;
   end;
 
   { TEpiSASExportSetting }

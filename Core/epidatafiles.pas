@@ -50,7 +50,7 @@ implementation
 
 uses
   epidocument, math, epistringutils, epiconvertutils, epidatafileutils,
-  DCPrijndael, DCPsha256, contnrs, typinfo;
+  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8;
 
 {$I epidatafiles_helper.inc}
 {$I epidatafiles.inc}

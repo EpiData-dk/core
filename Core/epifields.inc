@@ -1659,8 +1659,8 @@ end;
 
 function TEpiStringField.DoCompare(i, j: integer): integer;
 begin
-  // TODO: Use UTF8Compare[Text|Str]
-  Result := AnsiCompareText(AsString[i], AsString[j]);
+  Result := UTF8CompareStr(AsString[i], AsString[j]);
+//  Result := AnsiCompareText(AsString[i], AsString[j]);
 end;
 
 function TEpiStringField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase

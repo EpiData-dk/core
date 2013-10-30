@@ -793,7 +793,7 @@ begin
     DateSeparator    := '/';
     TimeSeparator    := ':';
     DecimalSeparator := '.';
-    FieldSeparator   := '|';
+    FieldSeparator   := Settings.Delimiter;
     NewLine          := LineEnding;
   end;
 
