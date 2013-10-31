@@ -657,7 +657,8 @@ begin
   // Skip event if initiated from AllControls.
   if (Initiator = FAllControlItems) or
      (Initiator = FAllFields) or
-     (Initiator = FAllHeadings)
+     (Initiator = FAllHeadings) or
+     (Initiator = FKeyFields)
   then
     Exit;
 
@@ -907,6 +908,7 @@ begin
 
   // Container for Key Fields.
   FKeyFields := TEpiFields.Create(Self);
+  FKeyFields.Name := '@KEYFIELDS';
 
   RegisterClasses([Caption, Notes, Sections]);
 end;
