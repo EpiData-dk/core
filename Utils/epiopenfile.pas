@@ -556,7 +556,7 @@ begin
         //  --\------------\---------------\-----------------\-------------->  (time)
         Msg := 'You are trying to save the file: ' + FileName + LineEnding +
                'But the lock file is missing' + LineEnding +
-               'The file may have been edited by another program!' + LineEnding +
+               'The project file may have been edited by another EntryClient/Manager program!' + LineEnding +
                LineEnding +
                'Continuing may overwrite data! Are you sure?';
         if OnWarning(wtLockFile, Msg) <> wrYes then exit;
