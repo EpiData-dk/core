@@ -158,10 +158,14 @@ begin
       FStartDate  := Self.FStartDate;
       FStartTime  := Self.FStartTime;
     end else begin
-      FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
-      FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
-      FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
-      FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
+      if Assigned(Self.FEndDate) then
+        FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
+      if Assigned(Self.FEndTime) then
+        FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
+      if Assigned(Self.FStartDate) then
+        FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
+      if Assigned(Self.FStartTime) then
+        FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
     end;
     FTimeCalcType := Self.FTimeCalcType;
   end;
