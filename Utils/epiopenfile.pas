@@ -223,7 +223,7 @@ begin
   if not FileExistsUTF8(Fn) then exit;
 
   Result := New(PLockFile);
-  St := TFileStream.Create(Fn, fmOpenRead);
+  St := TFileStream.Create(UTF8ToSys(Fn), fmOpenRead);
   St.Read(Result^, SizeOf(TLockFile));
   St.Free;
 end;
@@ -235,7 +235,7 @@ begin
   if FileExistsUTF8(Fn) and
      FileIsReadOnlyUTF8(Fn) then exit;
 
-  St := TFileStream.Create(Fn, fmCreate);
+  St := TFileStream.Create(UTF8ToSys(Fn), fmCreate);
   St.Write(LF^, SizeOf(TLockFile));
   St.Free;
 end;
@@ -381,10 +381,10 @@ begin
   Ms.Position := 0;
 
   if UTF8Pos('.epz', UTF8LowerCase(AFileName)) > 0 then
-    StreamToZipFile(Ms, AFileName)
+    StreamToZipFile(Ms, UTF8ToSys(AFileName))
   else
     begin
-      Fs := TFileStream.Create(AFileName, fmCreate);
+      Fs := TFileStream.Create(UTF8ToSys(AFileName), fmCreate);
       Fs.CopyFrom(Ms, Ms.Size);
       Fs.Free;
     end;

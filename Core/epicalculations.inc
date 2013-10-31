@@ -180,10 +180,14 @@ begin
       FStartDate  := Self.FStartDate;
       FStartTime  := Self.FStartTime;
     end else begin
-      FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
-      FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
-      FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
-      FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
+      if Assigned(Self.FEndDate) then
+        FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
+      if Assigned(Self.FEndTime) then
+        FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
+      if Assigned(Self.FStartDate) then
+        FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
+      if Assigned(Self.FStartTime) then
+        FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
     end;
     FTimeCalcType := Self.FTimeCalcType;
   end;
@@ -298,9 +302,9 @@ begin
   then
     Exit;
 
-  if Sender = FDay   then FDay   := nil;
-  if Sender = FMonth then FMonth := nil;
-  if Sender = FYear  then FYear  := nil;
+  if Initiator = FDay   then FDay   := nil;
+  if Initiator = FMonth then FMonth := nil;
+  if Initiator = FYear  then FYear  := nil;
 
   Initiator.UnRegisterOnChangeHook(@FieldHook);
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
@@ -422,9 +426,9 @@ begin
   then
     Exit;
 
-  if Sender = FField1 then FField1 := nil;
-  if Sender = FField2 then FField2 := nil;
-  if Sender = FField3 then FField3 := nil;
+  if Initiator = FField1 then FField1 := nil;
+  if Initiator = FField2 then FField2 := nil;
+  if Initiator = FField3 then FField3 := nil;
 
   Initiator.UnRegisterOnChangeHook(@FieldHook);
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
