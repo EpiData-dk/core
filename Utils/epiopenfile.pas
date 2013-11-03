@@ -534,6 +534,11 @@ begin
   then
     FirstSave := true;
 
+  if (IsSaved) and
+     (FileName <> AFileName)
+  then
+    DeleteLockFile;
+
   FFileName := AFileName;
   LockFileName := FileName + '.lock';
 
