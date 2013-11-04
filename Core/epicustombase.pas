@@ -60,8 +60,7 @@ type
 
   TEpiCoreException = class (Exception);
 
-  {$static on}
-  TEpiCustomBase = class
+  TEpiCustomBase = class(TComponent)
   { Scrambling }
   private
     FCrypter:   TDCP_rijndael; static;
@@ -173,7 +172,6 @@ type
   private
     FClassList: TFPList;
     FModified:  Boolean;
-    FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
     FState:     TEpiCustomBaseState;
@@ -203,7 +201,6 @@ type
     function    Clone: TEpiCustomBase;
     function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
   end;
-  {$static off}
   TEpiCustomBaseClass = class of TEpiCustomBase;
 
   { TEpiTranslatedText }
@@ -427,8 +424,7 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument,
-  epidatafiles;
+  StrUtils, DCPsha256, XMLRead, epistringutils, epidocument;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
