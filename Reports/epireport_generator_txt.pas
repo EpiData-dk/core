@@ -31,7 +31,8 @@ type
       thoRowHeader]); override;
     procedure TableFooter(Const Text: string); override;
     procedure TableCell(const Text: string; const Col, Row: Integer;
-      const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust
+      const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust;
+      Const CellOptions: TEpiReportGeneratorTableCellOptionSet = []
       ); override;
 
     procedure StartReport(Const Title: string); override;
@@ -155,6 +156,14 @@ var
 begin
   inherited TableHeader(Text, AColCount, ARowCount, HeaderOptions);
 
+  // Txt tables ALWAYS start with a line...
+  for i := 0 to AColCount - 1 do
+    TableCellOptions[i, 0] := TableCellOptions[i, 0] + [tcoTopBorder];
+
+  // Txt tables ALWAYS ends with a line...
+  for i := 0 to AColCount - 1 do
+    TableCellOptions[i, RowCount - 1] := TableCellOptions[i, RowCount - 1] + [tcoBottomBorder];
+
   FTableList := TStringList.Create;
   FTableList.Capacity := (ColCount * RowCount) + 2;
   for i := 0 to FTableList.Capacity -1 do
@@ -176,8 +185,28 @@ var
   HasMoreText: Boolean;
   W: PtrInt;
   StartRow: Integer;
+
+
+  function GetAdjacentCellBorder(Col, Row: Integer;
+    Const Border: TEpiReportGeneratorTableCellOptions): TEpiReportGeneratorTableCellOptionSet;
+  begin
+    result := [];
+
+    if (Col = 0) and (Border = tcoLeftBorder) then exit;
+    if (Col = (ColCount - 1)) and (Border = tcoRightBorder) then exit;
+    if (Row = 0) and (Border = tcoTopBorder) then exit;
+    if (Row = (RowCount - 1)) and (Border = tcoBottomBorder) then exit;
+
+    case Border of
+      tcoTopBorder:    Dec(Row);
+      tcoBottomBorder: Inc(Row);
+      tcoLeftBorder:   Dec(Col);
+      tcoRightBorder:  Inc(Col);
+    end;
+    Result := TableCellOptions[Col, Row];
+  end;
+
 begin
-  inherited TableFooter(Text);
   FTableList[1] := Text;
 
   // Find max with of each column.
@@ -195,6 +224,19 @@ begin
     end;
   end;
 
+{  for i := 0 to ColCount - 1 do
+    for j := 0 to RowCount - 1 do
+    begin
+      if tcoLeftBorder in TableCellOptions[i, j] then
+        ColWidths[i] := ColWidths[i] + 1;
+
+      if tcoRightBorder in TableCellOptions[i, j] then
+        ColWidths[i] := ColWidths[i] + 1;
+
+      if [tcoRightBorder, tcoLeftBorder]*TableCellOptions[i, j] <> [] then
+        break;
+    end;      }
+
   ColWidthTotal := 0;
   for i := 0 to ColCount - 1 do
     ColWidthTotal += ColWidths[i];
@@ -205,30 +247,45 @@ begin
   // Do not write an empty header... looks goofy :)
   if Length(FTableList[0]) > 0 then
     AddLine(FTableList[0]);
-  AddLine(DupeString('-', ColWidthTotal));
-
-  // Table - first row:
-  if thoRowHeader in FHeaderOptions then
-  begin
-    for i := 0 to ColCount - 1 do
-      Txt += LeftAdjustText(FTableList[i+2], ColWidths[i]) + ' ';
-    AddLine(Txt);
-    AddLine(DupeString('-', ColWidthTotal));
-    StartRow := 1;
-  end else
-    StartRow := 0;
 
   // Table cells
-  for i := StartRow to RowCount - 1 do
+  for i := 0 to RowCount - 1 do
   begin
+    Txt := '';
+
+    // Create top border!
+    for j := 0 to ColCount - 1 do
+    begin
+      S := ' ';
+      if (tcoTopBorder in TableCellOptions[j, i]) and
+         (not (tcoBottomBorder in GetAdjacentCellBorder(j, i, tcoTopBorder)))
+      then
+        S := '-';
+
+      Txt += DupeString(S, ColWidths[j]);
+      if j < (ColCount - 1) then
+        Txt += S;
+    end;
+
+    if Trim(txt) <> '' then
+      AddLine(Txt);
+
     HasMoreText := true;
     while HasMoreText do
     begin
       Txt := '';
+
+      // Accumulate text in Each Cell.
       HasMoreText := false;
       for j := 0 to ColCount - 1 do
       begin
         Idx := (ColCount * i) + j + 2;
+
+ {       // Left border!
+        if (tcoLeftBorder in TableCellOptions[j, i]) and
+           (not (tcoRightBorder in GetAdjacentCellBorder(j, i, tcoLeftBorder)))
+        then
+          Txt += '| ';     }
 
         T := FTableList[Idx];
         S := LineFromLines(T);
@@ -250,26 +307,52 @@ begin
           tcaRightAdjust:
             Txt += RightAdjustText(S, ColWidths[j]);
         end;
-        Txt += ' ';
+
+ {       // Right border
+        if (tcoRightBorder in TableCellOptions[j, i])
+        then
+          Txt += '| '
+        else          }
+          Txt += ' ';
+
         HasMoreText := HasMoreText or (Length(T) > 0);
       end;
       AddLine(Txt);
     end;
+
+    // Create bottom border!
+    Txt := '';
+    for j := 0 to ColCount - 1 do
+    begin
+      S := ' ';
+      if (tcoBottomBorder in TableCellOptions[j, i])
+      then
+        S := '-';
+
+      Txt += DupeString(S, ColWidths[j]);
+      if j < (ColCount - 1) then
+        Txt += S;
+    end;
+
+    if Trim(txt) <> '' then
+      AddLine(Txt);
   end;
-  AddLine(DupeString('-', ColWidthTotal));
+
   // Table footer
   if FTableList[1] <> '' then
     AddLine(FTableList[1]);
 
   FTableList.Free;
+  inherited TableFooter(Text);
 end;
 
 procedure TEpiReportTXTGenerator.TableCell(const Text: string; const Col,
-  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment);
+  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment;
+  const CellOptions: TEpiReportGeneratorTableCellOptionSet);
 var
   Idx: Integer;
 begin
-  inherited TableCell(Text, Col, Row, CellAdjust);
+  inherited TableCell(Text, Col, Row, CellAdjust, CellOptions);
 
   Idx := (ColCount * Row) + Col + 2;
   FTableList[Idx] := Text;
