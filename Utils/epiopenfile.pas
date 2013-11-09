@@ -538,6 +538,11 @@ begin
   then
     FirstSave := true;
 
+  if (IsSaved) and
+     (FileName <> AFileName)
+  then
+    DeleteLockFile;
+
   FFileName := AFileName;
   LockFileName := FileName + '.lock';
 
@@ -563,25 +568,29 @@ begin
       end;
 
   LF := ReadLockFile(LockFileName);
-  if not IsEqualGUID(LF^.GUID, FGuid) then
-  begin
-    // This file is locked by another program -> most likely because the "stole"
-    // our .lock file.
-    Msg := 'You are trying to save the file: ' + FileName + LineEnding +
-           'But this file is locked by another program' + LineEnding +
-           'The file was locked at: ' + DateTimeToStr(TimeStampToDateTime(LF^.TimeStamp)) + LineEnding +
-           'By user: ' + LF^.UserName + LineEnding +
-           'On computer: ' + LF^.ComputerName + LineEnding +
-           LineEnding +
-           'Continuing may overwrite data! Are you sure?';
+  if Assigned(LF) and
+     (not IsEqualGUID(LF^.GUID, FGuid))
+  then
+    begin
+      // This file is locked by another program -> most likely because the "stole"
+      // our .lock file.
+      Msg := 'You are trying to save the file: ' + FileName + LineEnding +
+             'But this file is locked by another program' + LineEnding +
+             'The file was locked at: ' + DateTimeToStr(TimeStampToDateTime(LF^.TimeStamp)) + LineEnding +
+             'By user: ' + LF^.UserName + LineEnding +
+             'On computer: ' + LF^.ComputerName + LineEnding +
+             LineEnding +
+             'Continuing may overwrite data! Are you sure?';
 
-    if OnWarning(wtLockFile, Msg) <> wrYes then exit;
-  end;
+      if OnWarning(wtLockFile, Msg) <> wrYes then exit;
+    end;
 
   try
     DoSaveFile(FileName);
 
-    if not IsEqualGUID(LF^.GUID, FGuid) then
+    if (Not Assigned(LF)) or
+       (not IsEqualGUID(LF^.GUID, FGuid))
+    then
       CreateLockFile;
 
     Result := true;

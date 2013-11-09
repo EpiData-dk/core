@@ -123,6 +123,8 @@ type
     function SanetyCheck: boolean; override;
   end;
 
+  TEpiEPXExportSetting = class(TEpiCustomValueLabelExportSetting);
+
 {  TEpiSpreadSheetExportSetting = class(TEpiCustomTextExportSettings)
   public
     SpreadSheetVersion: byte;  //TODO: Export to spreadsheet using TFPSpreadSheet.

@@ -252,7 +252,7 @@ begin
     TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].Field[i]);
 
   CSVExporter := TEpiExport.Create;
-  CSVExporter.ExportCSV(TxtExportSetting);
+  CSVExporter.Export(TxtExportSetting);
   FSettings.AdditionalExportSettings := TxtExportSetting;
 end;
 
@@ -1135,7 +1135,6 @@ end;
 
 function TEpiDDIExport.ExportDDI(const Settings: TEpiDDIExportSetting): boolean;
 begin
-  Settings.SanetyCheck;
   FSettings := Settings;
   EpiDoc := Settings.Doc;
 

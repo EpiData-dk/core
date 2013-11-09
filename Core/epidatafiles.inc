@@ -842,6 +842,13 @@ begin
   // Same section! Regular compare
   if S1 = S2 then
   begin
+    // Could be a compare between a Control IN a section
+    if (C1 = S1) then
+      Exit(-1);
+    if (C2 = S2) then
+      Exit(1);
+
+    // Else
     // C1 := C1
     // C2 := C2
   end else
