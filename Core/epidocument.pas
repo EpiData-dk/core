@@ -9,7 +9,7 @@ uses
   Classes, sysutils, XMLRead, DOM,
   episettings, epiadmin, epidatafiles,
   epistudy, epirelations, epivaluelabels,
-  epicustombase;
+  epicustombase, epidatafilestypes;
 
 type
 
@@ -199,12 +199,22 @@ procedure TEpiDocument.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
   PW, Login, UserPW: String;
+  TmpVersion: EpiInteger;
 begin
   // Root = <EpiData>
   FLoading := true;
 
   // First read version no!
-  FVersion := LoadAttrInt(Root, rsVersionAttr);
+  TmpVersion := LoadAttrInt(Root, rsVersionAttr);
+  if TmpVersion > EPI_XML_DATAFILE_VERSION then
+    Raise EEpiBadVersion.CreateFmt(
+      'Project has incorrect XML version!' + LineEnding +
+      'Max supported XML Version: %d' + LineEnding +
+      'Project XML Version: %d',
+      [EPI_XML_DATAFILE_VERSION, TmpVersion]
+      );
+  FVersion := TmpVersion;
+
   // Then language!
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
   // And last - file settings.

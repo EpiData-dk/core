@@ -888,6 +888,7 @@ end;
 procedure TEpiIntField.ResetData;
 begin
   FillQWord(FData[0], FSize, DefaultMissing);
+  DoChange(eegFields, Word(efceData), nil);
 end;
 
 { TEpiFloatField }
@@ -1159,6 +1160,7 @@ begin
 //  FillDWord(FData[0], FSize, DefaultMissing);  Wrong type Extended vs. Q/DWord
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
+  DoChange(eegFields, Word(efceData), nil);
 end;
 
 { TEpiBoolField }
@@ -1428,6 +1430,7 @@ end;
 procedure TEpiBoolField.ResetData;
 begin
   FillByte(FData[0], FSize, DefaultMissing);
+  DoChange(eegFields, Word(efceData), nil);
 end;
 
 { TEpiStringField }
@@ -1695,6 +1698,7 @@ var
 begin
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
+  DoChange(eegFields, Word(efceData), nil);
 end;
 
 { TEpiCustomAutoField }
@@ -1888,6 +1892,7 @@ end;
 procedure TEpiDateField.ResetData;
 begin
   FillDWord(FData[0], FSize, DefaultMissing);
+  DoChange(eegFields, Word(efceData), nil);
 end;
 
 procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -2257,6 +2262,7 @@ var
 begin
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
+  DoChange(eegFields, Word(efceData), nil);
 end;
 
 
