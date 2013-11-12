@@ -491,6 +491,9 @@ begin
                LineEnding +
                'Invalid Password!';
 
+      on E: EEpiBadVersion do
+        Msg := E.Message;
+
       on E: Exception do
         Msg := 'Unable to open the file: ' + Fn + LineEnding +
                'An error occured:' + LineEnding +
@@ -533,6 +536,11 @@ begin
      (FileName <> AFileName)
   then
     FirstSave := true;
+
+  if (IsSaved) and
+     (FileName <> AFileName)
+  then
+    DeleteLockFile;
 
   FFileName := AFileName;
   LockFileName := FileName + '.lock';

@@ -26,7 +26,8 @@ type
       thoRowHeader]); override;
     procedure TableFooter(Const Text: string); override;
     procedure TableCell(const Text: string; const Col, Row: Integer;
-      const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust
+      const CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust;
+      Const CellOptions: TEpiReportGeneratorTableCellOptionSet = []
       ); override;
 
 
@@ -159,7 +160,8 @@ begin
 end;
 
 procedure TEpiReportHTMLGenerator.TableCell(const Text: string; const Col,
-  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment);
+  Row: Integer; const CellAdjust: TEpiReportGeneratorTableCellAdjustment;
+  const CellOptions: TEpiReportGeneratorTableCellOptionSet);
 var
   Idx: Integer;
 begin

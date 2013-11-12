@@ -38,6 +38,10 @@ type
     function    GetHeading(Index: integer): TEpiHeading;
     procedure   SetHeight(const AValue: integer);
     procedure   SetWidth(const AValue: integer);
+  private
+    FAllControls: TEpiCustomControlItemList;  // Stores a local list of all fields/headings in sorted order.
+    procedure ItemsHook(Sender: TObject; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -57,6 +61,7 @@ type
     property    DataFile: TEpiDataFile read FDataFile;
     property    Width: integer read FWidth write SetWidth;
     property    Height: integer read FHeight write SetHeight;
+    property    AllControls: TEpiCustomControlItemList read FAllControls;
   { Cloning }
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =

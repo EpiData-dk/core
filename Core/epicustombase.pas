@@ -13,6 +13,8 @@ const
   EPI_XML_DATAFILE_VERSION = 2;
 
 type
+  EEpiBadVersion  = class(Exception);
+
   TEpiCustomBase = class;
   TEpiCustomItem = class;
   TEpiCustomList = class;
