@@ -491,6 +491,9 @@ begin
                LineEnding +
                'Invalid Password!';
 
+      on E: EEpiBadVersion do
+        Msg := E.Message;
+
       on E: Exception do
         Msg := 'Unable to open the file: ' + Fn + LineEnding +
                'An error occured:' + LineEnding +
