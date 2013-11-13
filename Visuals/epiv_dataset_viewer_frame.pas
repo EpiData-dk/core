@@ -20,7 +20,6 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
-    ListGrid: TStringGrid;
     Panel1: TPanel;
     ShowIndexOrAllFieldsAction: TAction;
     ShowValuesOrLabelsAction: TAction;
@@ -50,12 +49,13 @@ type
     procedure SetDisplayFields(AValue: TEpiFields);
     procedure SetKeyFields(AValue: TEpiFields);
     procedure SetOnSelectRecord(AValue: TSelectRecordEvent);
+    procedure AssignFields(Const ToFields, FromFields: TEpiFields);
+    procedure UpdateFields;
     procedure UpdateGrid;
     procedure GridColumnSort(Sender: TObject; ACol, ARow, BCol,
       BRow: Integer; var Result: integer);
     procedure  GridIndexSort(Sender: TObject; ACol, ARow, BCol,
       BRow: Integer; var Result: integer);
-
   private
     { Virtual String Tree }
     FVLG: TVirtualStringTree;
@@ -65,7 +65,7 @@ type
       Column: TColumnIndex; var MaxWidth: Integer);
   public
     constructor Create(TheOwner: TComponent; Const DataFile: TEpiDataFile);
-    destructor Destroy; override;
+    destructor  Destroy; override;
     procedure   ShowRecords(const Records: TBoundArray);
     procedure   InitVisual;
     property    KeyFields: TEpiFields read GetKeyFields write SetKeyFields;
@@ -92,6 +92,7 @@ end;
 procedure TDatasetViewerFrame.ShowIndexOrAllFieldsActionExecute(Sender: TObject);
 begin
   FShowAllFields := not FShowAllFields;
+  UpdateFields;
   UpdateGrid;
 end;
 
@@ -115,12 +116,12 @@ begin
     if FSortCol = Index then exit;
 
     FSortCol := Index;
-    ListGrid.OnCompareCells := @GridColumnSort;
-    ListGrid.SortColRow(true, FSortCol);
+//    ListGrid.OnCompareCells := @GridColumnSort;
+//    ListGrid.SortColRow(true, FSortCol);
   end else begin
     // If click on row -> then notify a "jump to record"
 
-    SelectedRecordNo := StrToInt(ListGrid.Cells[0, Index]) - 1;
+//    SelectedRecordNo := StrToInt(ListGrid.Cells[0, Index]) - 1;
     DoSelectedRecord(SelectedRecordNo, nil);
   end;
 end;
@@ -131,11 +132,11 @@ var
   SelectedRecordNo: Integer;
   SelectedField: TEpiField;
 begin
-  P := ListGrid.MouseToCell(ListGrid.ScreenToClient(Mouse.CursorPos));
+//  P := ListGrid.MouseToCell(ListGrid.ScreenToClient(Mouse.CursorPos));
   if P.Y <= 0 then exit;
   if P.X <= 0 then exit;
 
-  SelectedRecordNo := StrToInt(ListGrid.Cells[0, P.Y]) - 1;
+//  SelectedRecordNo := StrToInt(ListGrid.Cells[0, P.Y]) - 1;
   SelectedField := FCurrentDisplayField[P.X - 1];
   DoSelectedRecord(SelectedRecordNo, SelectedField);
 end;
@@ -143,17 +144,17 @@ end;
 procedure TDatasetViewerFrame.ListGridPrepareCanvas(sender: TObject; aCol,
   aRow: Integer; aState: TGridDrawState);
 begin
-  if (aRow = 0) and (aCol = FSortCol) then
-    ListGrid.Canvas.Brush.Color := clSkyBlue;
+//  if (aRow = 0) and (aCol = FSortCol) then
+//    ListGrid.Canvas.Brush.Color := clSkyBlue;
 end;
 
 procedure TDatasetViewerFrame.SortByIndexActionExecute(Sender: TObject);
 begin
-  if FSortCol = -1 then exit;
+{  if FSortCol = -1 then exit;
 
   FSortCol := -1;
   ListGrid.OnCompareCells := @GridIndexSort;
-  ListGrid.SortColRow(true, 0);
+  ListGrid.SortColRow(true, 0);   }
 end;
 
 procedure TDatasetViewerFrame.SortByIndexActionUpdate(Sender: TObject);
@@ -178,6 +179,8 @@ procedure TDatasetViewerFrame.VLGGetNodeText(Sender: TBaseVirtualTree;
 var
   F: TEpiField;
 begin
+  if Column < 0 then exit;
+
   if Column = 0 then
   begin
     CellText := IntToSTr(Node^.Index + 1);
@@ -210,6 +213,8 @@ procedure TDatasetViewerFrame.SetDisplayFields(AValue: TEpiFields);
 begin
   if Assigned(AValue) then
     FDisplayFields := AValue;
+
+  AssignFields(FCurrentDisplayField, FDisplayFields);
 end;
 
 procedure TDatasetViewerFrame.SetKeyFields(AValue: TEpiFields);
@@ -225,7 +230,7 @@ begin
   if FOnSelectRecord = AValue then Exit;
   FOnSelectRecord := AValue;
 
-  with ListGrid do
+{  with ListGrid do
     if Assigned(FOnSelectRecord) then
     begin
       HeaderHotZones  := HeaderHotZones + [gzFixedRows];
@@ -233,97 +238,25 @@ begin
     end else begin
       HeaderHotZones  := HeaderHotZones - [gzFixedRows];
       HeaderPushZones := HeaderPushZones - [gzFixedRows];
-    end;
+    end;  }
 end;
 
-procedure TDatasetViewerFrame.UpdateGrid;
-  procedure AssignFields(ToFields, FromFields: TEpiFields);
-  var
-    i: integer;
-  begin
-    for i := 0 to FromFields.Count - 1 do
-      ToFields.AddItem(FromFields[i]);
-  end;
-
-{$IFNDEF EPI_GRID_TEST}
+procedure TDatasetViewerFrame.AssignFields(const ToFields,
+  FromFields: TEpiFields);
 var
-  i: Integer;
-  j: Integer;
-  F: TEpiField;
-
+  i: integer;
 begin
-  FCurrentDisplayField.Clear;
-
-  if FShowAllFields then
-    AssignFields(FCurrentDisplayField, FDisplayFields)
-  else begin
-    AssignFields(FCurrentDisplayField, FKeyFields);
-    F := FDataFile.Fields.FieldByName[EpiIndexIntegrityFieldName];
-    if Assigned(F) then
-      FCurrentDisplayField.AddItem(F);
-  end;
-
-  ListGrid.BeginUpdate;
-
-  ListGrid.ColCount := FCurrentDisplayField.Count + 1;
-  if Length(FRecords) > 0 then
-    ListGrid.RowCount := Length(FRecords) + 1
-  else
-    ListGrid.RowCount := FDataFile.Size + 1;
-
-  for i := 0 to FCurrentDisplayField.Count - 1 do
-  with FCurrentDisplayField[i] do
-    ListGrid.Cells[i+1, 0] := Name;
-
-  if Length(FRecords) > 0 then
-  begin
-    for i := 0 to Length(FRecords) - 1 do
-    begin
-      ListGrid.Cells[0, i + 1] := IntToStr(FRecords[i] + 1);
-
-      for j := 0 to FCurrentDisplayField.Count - 1 do
-      with FCurrentDisplayField[j] do
-        if (FShowValueLabels) and (Assigned(ValueLabelSet)) and (not IsMissing[FRecords[i]]) then
-          ListGrid.Cells[j + 1, i + 1] := ValueLabelSet.ValueLabelString[AsValue[FRecords[i]]]
-        else
-          ListGrid.Cells[j + 1, i + 1] := AsString[FRecords[i]];
-    end;
-  end else begin
-    for i := 0 to FDataFile.Size - 1 do
-    begin
-      ListGrid.Cells[0, i + 1] := IntToStr(i + 1);
-
-      for j := 0 to FCurrentDisplayField.Count - 1 do
-      with FCurrentDisplayField[j] do
-        if (FShowValueLabels) and (Assigned(ValueLabelSet)) and (not IsMissing[i]) then
-          ListGrid.Cells[j + 1, i + 1] := ValueLabelSet.ValueLabelString[AsValue[i]]
-        else
-          ListGrid.Cells[j + 1, i + 1] := AsString[i];
-    end;
-  end;
-  if FSortCol > (ListGrid.ColCount - 1) then
-    FSortCol := 0;
-  ListGrid.SortColRow(true, Max(FSortCol,0));
-  ListGrid.AutoSizeColumns;
-  ListGrid.EndUpdate();
+  ToFields.Clear;
+  for i := 0 to FromFields.Count - 1 do
+    ToFields.AddItem(FromFields[i]);
 end;
-{$ELSE}
+
+procedure TDatasetViewerFrame.UpdateFields;
 var
   VSTHeader: TVTHeader;
   F: TEpiField;
   i: Integer;
 begin
-  FCurrentDisplayField.Clear;
-
-  if FShowAllFields then
-    AssignFields(FCurrentDisplayField, FDisplayFields)
-  else begin
-    AssignFields(FCurrentDisplayField, FKeyFields);
-    F := FDataFile.Fields.FieldByName[EpiIndexIntegrityFieldName];
-    if Assigned(F) then
-      FCurrentDisplayField.AddItem(F);
-  end;
-
   FVLG.BeginUpdate;
   with FVLG.Header do
   begin
@@ -352,19 +285,23 @@ begin
     AutoSizeIndex := -1;
     Height := 25;
     MainColumn := 0;
-    FVLG.RootNodeCount := FDataFile.Size;
   end;
   FVLG.EndUpdate;
 end;
-{$ENDIF}
+
+procedure TDatasetViewerFrame.UpdateGrid;
+begin
+  VLG.InvalidateToBottom(VLG.GetFirstVisible(nil, true));
+  VLG.Header.AutoFitColumns(true, smaUseColumnOption);
+end;
 
 procedure TDatasetViewerFrame.GridColumnSort(Sender: TObject; ACol, ARow, BCol,
   BRow: Integer; var Result: integer);
 begin
   if ACol <> BCol then exit;
 
-  ARow := StrToInt(ListGrid.Cells[0, ARow]) - 1;
-  BRow := StrToInt(ListGrid.Cells[0, BRow]) - 1;
+//  ARow := StrToInt(ListGrid.Cells[0, ARow]) - 1;
+//  BRow := StrToInt(ListGrid.Cells[0, BRow]) - 1;
 
   if ACol = 0 then
     result := ARow - BRow
@@ -380,8 +317,8 @@ begin
   result := 0;
   if not FKeyFields.Count = 0 then exit;
 
-  ARow := StrToInt(ListGrid.Cells[0, ARow]) - 1;
-  BRow := StrToInt(ListGrid.Cells[0, BRow]) - 1;
+//  ARow := StrToInt(ListGrid.Cells[0, ARow]) - 1;
+//  BRow := StrToInt(ListGrid.Cells[0, BRow]) - 1;
 
   for i := 0 to FKeyFields.Count - 1 do
   begin
@@ -393,7 +330,6 @@ end;
 constructor TDatasetViewerFrame.Create(TheOwner: TComponent;
   const DataFile: TEpiDataFile);
 var
-//  VLG: TVirtualStringTree;
   i: Integer;
 begin
   inherited Create(TheOwner);
@@ -401,6 +337,7 @@ begin
   FKeyFields := FDataFile.KeyFields;
   FDisplayFields := FDataFile.Fields;
   FCurrentDisplayField := TEpiFields.Create(nil);
+  AssignFields(FCurrentDisplayField, FDisplayFields);
   FShowValueLabels := false;
   FShowAllFields := true;
   FSortCol := 0;
@@ -408,18 +345,15 @@ begin
   FVLG := TVirtualStringTree.Create(Self);
   with FVLG do
   begin
-    ScrollBarOptions.AlwaysVisible := False;
-    ScrollBarOptions.ScrollBars := ssBoth;
-
     Align := alClient;
 
     Parent := Self;
     Color := clNone;
     WantTabs := true;
     TabStop := true;
+    RootNodeCount := FDataFile.Size;
 
     // Events:
-//    OnInitNode      := @VLGInitNode;
     OnGetText := @VLGGetNodeText;
     OnAfterGetMaxColumnWidth := @VLGAfterGetMaxColumnWidth;
   end;
@@ -432,16 +366,6 @@ begin
     PaintOptions := [toShowHorzGridLines, toShowVertGridLines, toThemeAware];
     SelectionOptions := [toExtendedFocus, toRightClickSelect, toCenterScrollIntoView];
   end;
-
-  UpdateGrid;
-  with ListGrid do
-  begin
-{    Align := alClient;
-    Cells[0,0] := 'Record No:';
-    OnCompareCells := @GridColumnSort;
-    UpdateGrid;
-    Parent := Self;  }
-  end;
 end;
 
 destructor TDatasetViewerFrame.Destroy;
@@ -453,12 +377,15 @@ end;
 procedure TDatasetViewerFrame.ShowRecords(const Records: TBoundArray);
 begin
   FRecords := Records;
+  VLG.RootNodeCount := Length(FRecords);
   UpdateGrid;
 end;
 
 procedure TDatasetViewerFrame.InitVisual;
 begin
-  VLG.Header.AutoFitColumns(false, smaUseColumnOption);
+  UpdateFields;
+  FVLG.RootNodeCount := FDataFile.Size;
+  UpdateGrid;
 end;
 
 end.
