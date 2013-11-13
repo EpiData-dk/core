@@ -326,9 +326,9 @@ var
   LF: PLockFile;
   LockFileName: String;
 begin
-  if FFileName = '' then exit;
+  if not IsSaved then exit;
 
-  LockFileName := FFileName + '.lock';
+  LockFileName := FileName + '.lock';
 
   LF := New(PLockFile);
   with LF^ do
@@ -346,7 +346,7 @@ procedure TEpiDocumentFile.DeleteLockFile;
 var
   LockFileName: String;
 begin
-  if FileName = '' then exit;
+  if not IsSaved then exit;
 
   LockFileName := FileName + '.lock';
 
@@ -358,7 +358,7 @@ procedure TEpiDocumentFile.DeleteBackupFile;
 var
   BackupFileName: String;
 begin
-  if FileName = '' then exit;
+  if not IsSaved then exit;
 
   BackupFileName := FileName + '.bak';
 
@@ -414,15 +414,6 @@ var
   Fn: String;
   LoadBackupFile: Boolean;
 begin
-  {
-  ************************************************
-  Option:
-    When reading the file make an md5sum of the file before any edits,
-    then before save then do the md5 again. This may prevent others from
-    stealing the .lock file, editing and then deleting the .lock file.
-    Otherwise detecting a change in the original may be a problem.
-  ************************************************
-  }
   Result         := false;
   FFileName      := AFileName;
   FReadOnly      := AReadOnly;
@@ -602,7 +593,7 @@ function TEpiDocumentFile.SaveBackupFile: boolean;
 var
   BackupFileName: String;
 begin
-  if FileName = '' then exit;
+  if not IsSaved then exit;
 
   BackupFileName := FileName + '.bak';
   DoSaveFile(BackupFileName);
