@@ -6,8 +6,8 @@ object DatasetViewerFrame: TDatasetViewerFrame
   ClientHeight = 675
   ClientWidth = 750
   TabOrder = 0
-  DesignLeft = 603
-  DesignTop = 264
+  DesignLeft = 584
+  DesignTop = 240
   object Panel1: TPanel
     Left = 0
     Height = 42
