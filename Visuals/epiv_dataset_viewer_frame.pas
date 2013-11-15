@@ -212,7 +212,8 @@ begin
   F := FDataFile.Field[Column-1];
 
   if (FShowValueLabels) and
-     (Assigned(F.ValueLabelSet))
+     (Assigned(F.ValueLabelSet)) and
+     (not F.IsMissing[Idx])
   then
     CellText := F.ValueLabelSet.ValueLabelString[F.AsValue[Idx]]
   else
