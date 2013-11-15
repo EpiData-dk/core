@@ -340,6 +340,9 @@ const
 var
   DeCrypter: TDCP_rijndael;
   n: String;
+  ProgressMethod: TEpiProgressEvent;
+  NodeCount: LongWord;
+  NodeNum: LongWord;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -359,12 +362,19 @@ var
     Result := S;
   end;
 
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
+  end;
+
 begin
   // Root = <Records>
   FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
 
   CurRec := 0;
-//  Size := Root.ChildNodes.Count;
   DeCrypter := nil;
 
   FieldList := TFPDataHashTable.CreateWith(Fields.Count, @RSHash);
@@ -385,10 +395,20 @@ begin
     DeCrypter.InitStr(TEpiDocument(RootOwner).PassWord, TDCP_sha256);
   end;
 
+  ProgressMethod := TEpiDocument(RootOwner).OnProgress;
+  // div 2: Because all nodes have a single whitespace node after each "normal" node.
+  NodeCount := (Root.ChildNodes.Count div 2);
+  DoProgress(eptInit, 0, NodeCount);
+
+
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
   begin
+    if DoProgress(eptRecords, CurRec, NodeCount) then
+      HaltLoading;
+    Inc(NodeNum);
+
     while NodeIsWhiteSpace(Node) do
       Node := TDOMElement(Node.NextSibling);
     if not Assigned(Node) then break;
@@ -417,6 +437,8 @@ begin
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
+  DoProgress(eptFinish, NodeCount, NodeCount);
+
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
 end;
@@ -543,6 +565,11 @@ begin
   until I>J;
   if L<J then InternalSortRecords(SortList, L,J);
   if I < R then InternalSortRecords(SortList, I, R);
+end;
+
+procedure TEpiDataFile.HaltLoading;
+begin
+  Raise EEpiDataFileHaltLoading.Create('Loading aborted by user!');
 end;
 
 procedure TEpiDataFile.SetVersion(const AValue: string);

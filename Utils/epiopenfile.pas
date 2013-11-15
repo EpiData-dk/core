@@ -43,6 +43,7 @@ type
     FOnError: TOpenEpiErrorEvent;
     FOnPassword: TRequestPasswordEvent;
     FOnWarning: TOpenEpiWarningEvent;
+    FOnProgress: TEpiProgressEvent;
   private
     // Aux. functions
     function GetHostNameWrapper: string;
@@ -84,6 +85,7 @@ type
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
+    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
   public
     // Other properties
     property FileName: string read GetFileName;
@@ -399,7 +401,8 @@ begin
     St.LoadFromFile(UTF8ToSys(AFileName));
   St.Position := 0;
 
-  FEpiDoc.OnPassword := FOnPassword;
+  FEpiDoc.OnPassword := OnPassword;
+  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.LoadFromStream(St);
   St.Free;
 end;
