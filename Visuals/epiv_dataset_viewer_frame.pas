@@ -133,7 +133,10 @@ end;
 procedure TDatasetViewerFrame.VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
   Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 begin
-  PCardinal(Sender.GetNodeData(Node))^ := Node^.Index;
+  if Assigned(FRecords) then
+    PCardinal(Sender.GetNodeData(Node))^ := FRecords[Node^.Index]
+  else
+    PCardinal(Sender.GetNodeData(Node))^ := Node^.Index;
 end;
 
 procedure TDatasetViewerFrame.VLGHeaderClick(Sender: TVTHeader;
@@ -374,7 +377,13 @@ end;
 procedure TDatasetViewerFrame.ShowRecords(const Records: TBoundArray);
 begin
   FRecords := Records;
-  VLG.RootNodeCount := Length(FRecords);
+  if Assigned(FRecords) then
+    VLG.RootNodeCount := Length(FRecords)
+  else
+    VLG.RootNodeCount := FDataFile.Size;
+
+  With VLG do
+    ReinitChildren(RootNode, true);
   UpdateGrid;
 end;
 

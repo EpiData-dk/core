@@ -272,12 +272,21 @@ var
   R: String;
   EnCrypter: TDCP_rijndael;
   Edoc: TEpiDocument;
+  ProgressMethod: TEpiProgressEvent;
 
   function LocalEncrypt(S: String): string;
   begin
     if Assigned(EnCrypter) then
       S := EnCrypter.EncryptString(S);
     Result := S;
+  end;
+
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
   end;
 
 begin
@@ -288,6 +297,8 @@ begin
   Lst.Add(Indent(Lvl) + '<' + rsRecords + SaveAttr(rsModifiedAttr, RecModifiedDate) + '>');
 
   Edoc := TEpiDocument(RootOwner);
+  ProgressMethod := Edoc.OnProgress;
+
   BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
@@ -299,8 +310,10 @@ begin
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
   end;
 
+  DoProgress(eptInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
   begin
+    DoProgress(eptRecords, CurRec, Sz);
     R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
 
     S := '';
@@ -320,6 +333,8 @@ begin
   Lst.Add(Indent(Lvl) + '</' + rsRecords + '>');
   Result := Lst.Text;
   Lst.Free;
+
+  DoProgress(eptFinish, Sz, Sz);
 end;
 
 procedure TEpiDataFile.LoadRecords(Root: TDOMNode);

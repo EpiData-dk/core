@@ -375,6 +375,7 @@ var
 begin
   Ms := TMemoryStream.Create;
 
+  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.SaveToStream(Ms);
   Ms.Position := 0;
 
