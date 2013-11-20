@@ -29,9 +29,6 @@ type
     procedure ShowValuesOrLabelsActionExecute(Sender: TObject);
     procedure SortByIndexActionExecute(Sender: TObject);
     procedure SortByIndexActionUpdate(Sender: TObject);
-    procedure VLGBeforeCellPaint(Sender: TBaseVirtualTree;
-      TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
   private
     FCurrentDisplayField: TEpiFields;
     FDataFile: TEpiDataFile;
@@ -54,6 +51,12 @@ type
   private
     { Virtual String Tree }
     FVLG: TVirtualStringTree;
+    procedure VLGBeforeCellPaint(Sender: TBaseVirtualTree;
+      TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+      CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
+    procedure VLGColumnWidthTracking(Sender: TVTHeader; Column: TColumnIndex;
+      Shift: TShiftState; var TrackPoint: TPoint; P: TPoint;
+      var Allowed: Boolean);
     procedure VLGClick(Sender: TObject);
     procedure VLGDoubleClick(Sender: TObject);
     procedure VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -131,6 +134,13 @@ begin
   if CellPaintMode <> cpmPaint then exit;
 
   DrawEdge(TargetCanvas.Handle, CellRect, BDR_RAISEDINNER, BF_RECT or BF_MIDDLE);
+end;
+
+procedure TDatasetViewerFrame.VLGColumnWidthTracking(Sender: TVTHeader;
+  Column: TColumnIndex; Shift: TShiftState; var TrackPoint: TPoint; P: TPoint;
+  var Allowed: Boolean);
+begin
+  if (P.X - TrackPoint.X) < 30 then Allowed := false;
 end;
 
 procedure TDatasetViewerFrame.VLGClick(Sender: TObject);
@@ -371,6 +381,7 @@ begin
     OnHeaderClick := @VLGHeaderClick;
     OnClick := @VLGClick;
     OnDblClick := @VLGDoubleClick;
+    OnColumnWidthTracking := @VLGColumnWidthTracking;
   end;
 
   with VLG.TreeOptions do
