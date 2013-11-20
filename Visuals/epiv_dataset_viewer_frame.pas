@@ -5,8 +5,8 @@ unit epiv_dataset_viewer_frame;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Grids, ExtCtrls, StdCtrls,
-  ActnList, VirtualTrees, epidatafiles, Graphics;
+  Classes, SysUtils, types, FileUtil, Forms, Controls, Grids, ExtCtrls,
+  StdCtrls, ActnList, VirtualTrees, epidatafiles, Graphics;
 
 type
 
@@ -42,6 +42,7 @@ type
     FShowAllFields: boolean;
     FShowValueLabels: boolean;
     FSortOnIndex: boolean;
+    procedure DoMouseClick(ADblClick: boolean);
     procedure DoSelectedRecord(RecordNo: Integer; Const Field: TEpiField);
     function GetKeyFields: TEpiFields;
     procedure SetDisplayFields(AValue: TEpiFields);
@@ -53,6 +54,8 @@ type
   private
     { Virtual String Tree }
     FVLG: TVirtualStringTree;
+    procedure VLGClick(Sender: TObject);
+    procedure VLGDoubleClick(Sender: TObject);
     procedure VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure VLGGetNodeText(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -128,6 +131,48 @@ begin
   if CellPaintMode <> cpmPaint then exit;
 
   DrawEdge(TargetCanvas.Handle, CellRect, BDR_RAISEDINNER, BF_RECT or BF_MIDDLE);
+end;
+
+procedure TDatasetViewerFrame.VLGClick(Sender: TObject);
+begin
+  DoMouseClick(false);
+end;
+
+procedure TDatasetViewerFrame.DoMouseClick(ADblClick: boolean);
+var
+  HitInfo: THitInfo;
+  Node: PVirtualNode;
+  RecNo: LongWord;
+  P: TPoint;
+  Field: TEpiField;
+begin
+  P := Mouse.CursorPos;
+  P := VLG.ScreenToClient(P);
+
+  VLG.GetHitTestInfoAt(P.X, P.Y, True, HitInfo);
+
+  if (HitInfo.HitColumn <> 0) and
+     (not ADblClick)
+  then
+    exit;
+
+  if not (hiOnItem in HitInfo.HitPositions) then exit;
+
+  Node := HitInfo.HitNode;
+  RecNo := PCardinal(VLG.GetNodeData(Node))^;
+  if HitInfo.HitColumn > 0 then
+    Field := FDataFile.Field[HitInfo.HitColumn - 1]
+  else
+    Field := nil;
+
+  DoSelectedRecord(RecNo, Field);
+end;
+
+procedure TDatasetViewerFrame.VLGDoubleClick(Sender: TObject);
+var
+  P: types.TPoint;
+begin
+  DoMouseClick(true);
 end;
 
 procedure TDatasetViewerFrame.VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
@@ -324,6 +369,8 @@ begin
     OnBeforeCellPaint := @VLGBeforeCellPaint;
     OnCompareNodes := @VLGCompareNodes;
     OnHeaderClick := @VLGHeaderClick;
+    OnClick := @VLGClick;
+    OnDblClick := @VLGDoubleClick;
   end;
 
   with VLG.TreeOptions do
