@@ -6,7 +6,7 @@
     <CompilerOptions>
       <Version Value="11"/>
       <SearchPaths>
-        <IncludeFiles Value="Core;."/>
+        <IncludeFiles Value="Core;.;Utils"/>
         <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
@@ -35,7 +35,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="57">
+    <Files Count="60">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -264,6 +264,18 @@
         <Filename Value="Utils/epiopenfile.pas"/>
         <UnitName Value="epiopenfile"/>
       </Item57>
+      <Item58>
+        <Filename Value="Utils/epi_iso639.pas"/>
+        <UnitName Value="epi_iso639"/>
+      </Item58>
+      <Item59>
+        <Filename Value="Utils/desc.inc"/>
+        <Type Value="Include"/>
+      </Item59>
+      <Item60>
+        <Filename Value="Utils/lang.inc"/>
+        <Type Value="Include"/>
+      </Item60>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>

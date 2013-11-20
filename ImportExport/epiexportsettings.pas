@@ -77,9 +77,8 @@ type
   { TEpiDDIExportSetting }
 
   TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
-  { Funding }
-  { Other }
   private
+    FExportLang: string;
     FSoftwareName: string;
     FSoftwareVersion: string;
     FVersion: string;
@@ -87,6 +86,7 @@ type
     property SoftwareName: string read FSoftwareName write FSoftwareName;
     property SoftwareVersion: string read FSoftwareVersion write FSoftwareVersion;
     property Version: string read FVersion write FVersion;
+    property ExportLang: string read FExportLang write FExportLang;
 
   { Common }
   public
@@ -137,14 +137,10 @@ implementation
 constructor TEpiDDIExportSetting.Create;
 begin
   inherited Create;
-//  FCoverTopKeyWords := TStringList.Create;
-//  FCoverTopSubjects := TStringList.Create;
 end;
 
 destructor TEpiDDIExportSetting.Destroy;
 begin
-//  FCoverTopKeyWords.Free;
-//  FCoverTopSubjects.Free;
   inherited Destroy;
 end;
 
@@ -157,6 +153,7 @@ end;
 function TEpiDDIExportSetting.SanetyCheck: boolean;
 begin
   Result :=
+    (ExportLang <> '') and
     (inherited SanetyCheck);
 end;
 

@@ -173,7 +173,8 @@ function TEpiDDIExport.AppendElem(Root: TDOMElement; const NameSpace,
   NodeName: string; const Text: String): TDOMElement;
 begin
   Result := XMLDoc.CreateElementNS(NameSpace, NodeName);
-  Result.TextContent := Text;
+  if Text <> '' then
+    Result.TextContent := Text;
   if Assigned(Root) then
     Root.AppendChild(Result);
 end;
@@ -182,7 +183,7 @@ function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Text: String): TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName, Text);
-  AddAttrLang(Result, EpiDoc.DefaultLang);
+  AddAttrLang(Result, FSettings.ExportLang {EpiDoc.DefaultLang});
 end;
 
 function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;
@@ -238,18 +239,18 @@ var
 begin
   TxtExportSetting := TEpiCSVExportSetting.Create;
   TxtExportSetting.Assign(FSettings);
-  TxtExportSetting.FieldSeparator := '!';
-  TxtExportSetting.DecimalSeparator := '.';
+  TxtExportSetting.FieldSeparator := #9;
+  TxtExportSetting.DecimalSeparator := ',';
   TxtExportSetting.DateSeparator  := '-';
   TxtExportSetting.TimeSeparator  := ':';
-  TxtExportSetting.QuoteChar      := '';
-  TxtExportSetting.FixedFormat    := true;
+  TxtExportSetting.QuoteChar      := '"';
+  TxtExportSetting.FixedFormat    := false;
   TxtExportSetting.NewLine        := LineEnding;
   TxtExportSetting.Encoding       := eeUTF8;
   TxtExportSetting.ExportFieldNames := false;
   TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
-  for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
-    TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].Field[i]);
+  for i := 0 to EpiDoc.DataFiles[0].ControlItems.Count - 1 do
+    TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].ControlItems[i]);
 
   CSVExporter := TEpiExport.Create;
   CSVExporter.Export(TxtExportSetting);
@@ -608,11 +609,14 @@ begin
     // Missing Value
     if Assigned(ValueLabelSet) and (ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to ValueLabelSet.Count -1 do
         if ValueLabelSet[j].IsMissingValue then
           S += ValueLabelSet[j].ValueAsString + ' ';
       Domain.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
     Domain.SetAttribute('blankIsMissingValue', 'true');
 
@@ -914,11 +918,14 @@ begin
     // Missing Value
     if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to F.ValueLabelSet.Count -1 do
         if F.ValueLabelSet[j].IsMissingValue then
           S += F.ValueLabelSet[j].ValueAsString + ' ';
       ReprElem.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
     ReprElem.SetAttribute('blankIsMissingValue', 'true');
   end;
