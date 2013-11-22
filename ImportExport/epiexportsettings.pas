@@ -303,29 +303,17 @@ end;
 
 function TEpiCSVExportSetting.SanetyCheck: boolean;
 begin
-  Result :=
-    (inherited SanetyCheck) and
-    // FieldSep compare
-    (
-      (not FixedFormat) and
-        (
-          (FieldSeparator <> DateSeparator) and
-          (FieldSeparator <> TimeSeparator) and
-          (FieldSeparator <> DecimalSeparator) and
-          (FieldSeparator <> QuoteChar)
-        )
-      or
-      ( FixedFormat )
-    ) and
-    // Date compare
-    (DateSeparator  <> TimeSeparator) and
-    (DateSeparator  <> DecimalSeparator) and
-    (DateSeparator  <> QuoteChar) and
-    // Time compare
-    (TimeSeparator  <> DecimalSeparator) and
-    (TimeSeparator  <> QuoteChar) and
-    // Decimal compare
-    (DecimalSeparator <> QuoteChar);
+  Result := inherited SanetyCheck;
+
+  // With fixed format delimiters do not interfere.
+  if FixedFormat then Exit;
+
+  // Only make sure that FieldSeparator <> QuoteChar
+  // otherwise an CSV export will enclose data with a delimiter if it
+  // is the same as the FieldSeparator.
+
+  Result := Result and
+    (FieldSeparator <> QuoteChar);
 end;
 
 end.
