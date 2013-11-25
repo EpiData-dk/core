@@ -184,6 +184,8 @@ function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName, Text);
   AddAttrLang(Result, FSettings.ExportLang {EpiDoc.DefaultLang});
+  Result.SetAttribute('translatable', 'true');
+  Result.SetAttribute('translated',   'false');
 end;
 
 function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;

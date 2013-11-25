@@ -100,6 +100,7 @@ type
 
   TEpiCustomTextExportSettings = class(TEpiExportSetting)
   public
+    ByteOrderMark: boolean;
     ExportFieldNames: boolean;
     QuoteChar: string;
 
@@ -260,6 +261,7 @@ constructor TEpiCustomTextExportSettings.Create;
 begin
   inherited Create;
   QuoteChar := '"';
+  ByteOrderMark := false;
 end;
 
 procedure TEpiCustomTextExportSettings.Assign(const ASettings: TEpiExportSetting
@@ -270,6 +272,7 @@ begin
 
   ExportFieldNames := TEpiCustomTextExportSettings(ASettings).ExportFieldNames;
   QuoteChar        := TEpiCustomTextExportSettings(ASettings).QuoteChar;
+  ByteOrderMark    := TEpiCustomTextExportSettings(ASettings).ByteOrderMark;
 end;
 
 { TEpiCSVExportSetting }

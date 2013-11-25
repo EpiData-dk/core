@@ -767,6 +767,16 @@ begin
 //    FieldCount := Settings.Fields.Count;
     Fixed      := Settings.FixedFormat;
 
+    {ByteOrder Mark}
+    if (Settings.ByteOrderMark) and
+       (Settings.Encoding = eeUTF8)
+    then
+    begin
+      DataStream.WriteByte($EF);
+      DataStream.WriteByte($BB);
+      DataStream.WriteByte($BF);
+    end;
+
     {Write Field Names}
     if Settings.ExportFieldNames then
     begin
