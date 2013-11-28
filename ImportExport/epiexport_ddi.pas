@@ -1180,7 +1180,7 @@ begin
   BuildPhysicalInstance;
 //  BuildArchive;
 
-  WriteXML(XMLDoc, Settings.ExportFileName)
+  WriteXML(XMLDoc, Settings.ExportStream)
 end;
 
 end.

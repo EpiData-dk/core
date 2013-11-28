@@ -14,6 +14,7 @@ type
   TEpiExportSetting = class
   public
     // Basic properties
+    ExportStream: TStream;
     ExportFileName: string;
     Doc: TEpiDocument;
     DataFileIndex: integer;
@@ -31,9 +32,9 @@ type
 
     // Helpers
     constructor Create; virtual;
-    destructor Destroy; override;
+    destructor  Destroy; override;
     procedure   Assign(Const ASettings: TEpiExportSetting); virtual;
-    function SanetyCheck: boolean; virtual;
+    function    SanetyCheck: boolean; virtual;
   end;
   TEpiExportSettingClass = class of TEpiExportSetting;
 
@@ -221,9 +222,13 @@ begin
   if FromRecord = -1 then FromRecord := 0;
   if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
 
+  if (ExportStream = nil) and (ExportFileName <> '') then
+    ExportStream := TFileStream.Create(ExportFileName, fmCreate + fmOpenReadWrite);
+
+
   result :=
-    (ExportFileName <> '') and
-    (Fields.Count > 0) and
+    (Assigned(ExportStream)) and
+//    (Fields.Count > 0) and
     (FromRecord >= 0) and
     (ToRecord < Doc.DataFiles[DataFileIndex].Size);
 end;
