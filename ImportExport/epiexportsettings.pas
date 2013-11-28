@@ -223,7 +223,7 @@ begin
   if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
 
   if (ExportStream = nil) and (ExportFileName <> '') then
-    ExportStream := TFileStream.Create(ExportFileName, fmCreate);
+    ExportStream := TFileStream.Create(ExportFileName, fmCreate + fmOpenReadWrite);
 
 
   result :=

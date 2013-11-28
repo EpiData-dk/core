@@ -754,6 +754,7 @@ var
   TimeQuoted: Boolean;
 begin
   Result := false;
+  if not Settings.SanetyCheck then exit;
 
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
   Fields := Df.Fields;
