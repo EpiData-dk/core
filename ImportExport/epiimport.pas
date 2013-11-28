@@ -22,6 +22,8 @@ type
     FImportEncoding: TEpiEncoding;
     FOnClipBoardRead: TEpiClipBoardReadHook;
     FOnRequestPassword: TRequestPasswordEvent;
+  private
+    { Stata help functions }
     procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
     procedure   ReadBuf(Const St: TStream; var Buf: Array of Byte; Count: Integer);
     function    ReadInts(Const St: TStream; Count: Integer): Integer;
@@ -29,6 +31,11 @@ type
     function    ReadDouble(Const St: TStream): Double;
     function    ReEncodeString(Const Str: string): string;
     function    StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
+  private
+    { Rec help functions }
+    function    ReadInteger(Const St: TStream; Width: Byte): Integer;
+    function    ReadString(Const St: TStream; Width: Byte): String; overload;
+    function    ReadString(Const St: TStream): string; overload;
   private
     FImportCasing: TEpiFieldNamingCase;
     FOnProgress: TEpiProgressEvent;
@@ -38,11 +45,13 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ImportRec(Const aFileName: string; var DataFile: TEpiDataFile;
-      ImportData: boolean = true): boolean;
-    function    ImportStata(Const aFilename: string; Const Doc: TEpiDocument;
-      var DataFile: TEpiDataFile;
-      ImportData: boolean = true): Boolean;
+
+    function    ImportRec(const DataStream: TStream; var DataFile: TEpiDataFile; ImportData: boolean): boolean; overload;
+    function    ImportRec(Const aFileName: string;   var DataFile: TEpiDataFile; ImportData: boolean = true): boolean; overload;
+
+    function    ImportStata(Const DataStream: TStream; Const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean = true): Boolean; overload;
+    function    ImportStata(Const aFilename: string;   Const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean = true): Boolean; overload;
+
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
@@ -62,6 +71,33 @@ var
   BigEndian: boolean = false;
 
 { TEpiImport }
+
+function TEpiImport.ReadInteger(const St: TStream; Width: Byte): Integer;
+begin
+  Result := StrToInt(ReadString(St, Width));
+end;
+
+function TEpiImport.ReadString(const St: TStream; Width: Byte): String;
+var
+  Buf: Array of char;
+begin
+  SetLength(Buf, Width + 1);
+  St.Read(Buf[0], Width);
+  Buf[Width] := #0;
+  Result := trim(String(Buf));
+end;
+
+function TEpiImport.ReadString(const St: TStream): string;
+var
+  C: Char;
+begin
+  C := #0;
+  Result := '';
+  repeat
+   C := Char(St.ReadByte);
+   Result += C;
+  until (C = #10) and (Result[Length(Result) - 1] = #13);
+end;
 
 procedure TEpiImport.RaiseError(EClass: ExceptClass; const Msg: string);
 begin
@@ -157,7 +193,7 @@ begin
   inherited Destroy;
 end;
 
-function TEpiImport.ImportRec(const aFileName: string;
+function TEpiImport.ImportRec(const DataStream: TStream;
   var DataFile: TEpiDataFile; ImportData: boolean): boolean;
 var
   TxtFile: TextFile;
@@ -184,7 +220,7 @@ var
   EHeading: TEpiHeading;
   EField: TEpiField;
   VariableLabel: String;
-  DataStream: TMemoryStream;
+//  DataStream: TMemoryStream;
   CharBuf: Array of char;
   IsCrypt: TBits;
   i: Integer;
@@ -198,6 +234,7 @@ var
   Lines: TStringList;
   ImportFormatSettings: TFormatSettings;
   ApproxRecCount: Integer;
+  C: Char;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -276,11 +313,6 @@ const
 
 begin
   result := false;
-  DataStream := nil;
-
-  if aFilename = '' then exit;
-  if not FileExistsUTF8(aFilename) then
-    RaiseError(EOSError, 'File does not exists');
 
   if not Assigned(DataFile) then
     DataFile := TEpiDataFile.Create(nil);
@@ -291,15 +323,10 @@ begin
 
   with DataFile do
   try
-    AssignFile(TxtFile, UTF8ToSys(aFilename));
-    {$PUSH}
-    {$I-}
-    System.Reset(TxtFile);
-    {$POP}
-    if IOResult() > 0 then
-      RaiseError(Exception, Format('Data file %s could not be opened.',[AFilename]));
+    TxtLine := ReadString(DataStream);
+
     // --- Read "First Line" header ---
-    ReadLn(TxtFile, TxtLine);
+    //ReadLn(TxtFile, TxtLine);
 
     // - Password
     TempInt := Pos('~KQ:', AnsiUpperCase(TxtLine));
@@ -318,7 +345,7 @@ begin
     if TempInt = -1 then TempInt := Length(TxtLine);
     Val(Copy(TxtLine, 1, TempInt), HeaderLineCount, ValCode);
     if ValCode > 0 then
-      RaiseError(Exception, Format('Incorrect format of file: %S', [aFilename]));
+      RaiseError(Exception, 'Incorrect format!');
 
     // Read field defining header lines.
     TotFieldLength := 0;
@@ -326,10 +353,49 @@ begin
     IsCrypt := TBits.Create(HeaderLineCount);
     for CurrentLine := 1 to HeaderLineCount do
     begin
-      ReadLn(TxtFile,
+      // Display Character (pos: 1        => width: 1)
+      TmpFieldChar := Char(DataStream.ReadByte);
+
+      // FieldName         (pos: 2-11     => width: 10)
+      TmpName := ReadString(DataStream, 10);
+
+      // byte pad          (pos: 12       => width: 1) (skipped)
+      DataStream.ReadByte;
+
+      // Question Column   (pos: 13-16    => width: 4)
+      TmpQuestX := ReadInteger(DataStream, 4);
+
+      // Question Line     (pos: 17-20    => width: 4)
+      TmpQuestX := ReadInteger(DataStream, 4);
+
+      // Question Color    (pos: 21-24    => widht: 4) (skipped)
+      ReadInteger(DataStream, 4);
+
+      // Field Column      (pos: 25-28    => width: 4)
+      TmpFieldX := ReadInteger(DataStream, 4);
+
+      // Field Line        (pos: 29-32    => width: 4)
+      TmpFieldY := ReadInteger(DataStream, 4);
+
+      // Field Type        (pos: 33-36    => widht: 4)
+      TmpFieldTypeInt := ReadInteger(DataStream, 4);
+
+      // Field Width       (pos: 37-40    => widht: 4)
+      TmpLength :=  ReadInteger(DataStream, 4);
+
+      // Field Color       (pos: 41-44    => widht: 4)
+      TmpFieldColor :=  ReadInteger(DataStream, 4);
+
+      // byte pad          (pos: 45       => width: 1) (skipped)
+      DataStream.ReadByte;
+
+      // Question          (pos: 46+      => width: until end of line)
+      TmpLabel := ReadString(DataStream);
+
+{      ReadLn(TxtFile,
              TmpFieldChar, TmpName, TmpQuestX, TmpQuestY,
              TmpQuestColor, TmpFieldX, TmpFieldY, TmpFieldTypeInt, TmpLength,
-             TmpFieldColor, dummy, TmpLabel);
+             TmpFieldColor, dummy, TmpLabel);      }
 
       // Field types.
       FieldIsQuestion := false;
@@ -411,17 +477,17 @@ begin
 
     // Position for reading and check for corruptness.
     TotFieldLength := TotFieldLength + (((TotFieldLength - 1) DIV 78) + 1) * 3; { MaxRecLineLength = 78 }
-    TmpLength := TextPos(TxtFile);
-    CloseFile(TxtFile);
+//    TmpLength := TextPos(TxtFile);
+//    CloseFile(TxtFile);
 
     LocalDateSeparator := DateSeparator;
     DefaultFormatSettings.DateSeparator := '/';  // This was standard in old .rec files.
 
     if ImportData then
     begin
-      DataStream := TMemoryStream.Create;
+{      DataStream := TMemoryStream.Create;
       DataStream.LoadFromFile(UTF8ToSys(AFilename));
-      DataStream.Position := TmpLength;
+      DataStream.Position := TmpLength; }
 
 
       ApproxRecCount := (DataStream.Size - TmpLength) div TotFieldLength;
@@ -481,10 +547,15 @@ begin
       EndUpdate;
     end;
 
-    // TODO : Import .CHK files.
-    TmpStr := ChangeFileExt(aFileName, '.chk');
+    // A little hack to extract filename and load the .chk file.
+    TmpStr := '';
+    if DataStream is TFileStream then
+      TmpStr := TFileStream(DataStream).FileName;
+
+    TmpStr := ChangeFileExt(TmpStr, '.chk');
     if Not FileExistsUTF8(TmpStr) then
-      TmpStr := ChangeFileExt(aFileName, '.CHK');
+      TmpStr := ChangeFileExt(TmpStr, '.CHK');
+
     if FileExistsUTF8(TmpStr) then
     try
       // Import CHK files.
@@ -572,7 +643,20 @@ begin
   result := true;
 end;
 
-function TEpiImport.ImportStata(const aFilename: string;
+function TEpiImport.ImportRec(const aFileName: string;
+  var DataFile: TEpiDataFile; ImportData: boolean): boolean;
+var
+  FS: TFileStream;
+begin
+  if not FileExistsUTF8(aFilename) then exit(false);
+
+  FS := TFileStream.Create(UTF8ToSys(aFilename), fmOpenRead);
+  Result := ImportRec(FS, DataFile, ImportData);
+  FS.Free;
+end;
+
+
+function TEpiImport.ImportStata(const DataStream: TStream;
   const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean
   ): Boolean;
 type
@@ -597,7 +681,6 @@ var
   MissingBaseNum: Cardinal;
   DecS: Char;
   TmpFieldType: TEpiFieldType;
-  DataStream: TFileStream;
   FileVersion: TEpiStataVersion;
   VarDataLength: Integer;
 
@@ -643,8 +726,6 @@ begin
 
   With DataFile do
   try
-    DataStream := TFileStream.Create(UTF8ToSys(aFileName), fmOpenRead);
-
     // ********************************
     //           STATA HEADER
     // ********************************
@@ -1244,8 +1325,21 @@ begin
     DataFile.Fields.Sorted := true;
     Result := true;
   finally
-    if Assigned(DataStream) then FreeAndNil(DataStream);
+
   end;
+end;
+
+function TEpiImport.ImportStata(const aFilename: string;
+  const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean
+  ): Boolean;
+var
+  FS: TFileStream;
+begin
+  if not FileExistsUTF8(aFilename) then exit(false);
+
+  FS := TFileStream.Create(UTF8ToSys(aFilename), fmOpenRead);
+  Result := ImportStata(FS, Doc, DataFile, ImportData);
+  FS.Free;
 end;
 
 end.

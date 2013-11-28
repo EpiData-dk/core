@@ -235,7 +235,7 @@ var
   CurField: Integer;
   DataFile: TEpiDataFile;
   FieldNames: TStrings;
-  DataStream: TFileStream;
+  DataStream: TStream;
   VLblSet: TEpiValueLabelSet;
   TimeFields: TStringList;
   Fn: String;
@@ -286,14 +286,14 @@ var
 begin
   Result := false;
 
-  Fn := ExportSettings.ExportFileName;
+//  Fn := ExportSettings.ExportFileName;
   Df := ExportSettings.Doc.DataFiles[ExportSettings.DataFileIndex];
   Flds := Df.Fields;
 
 
   with Df do
   try
-    DataStream := TFileStream.Create(UTF8ToSys(Fn), fmCreate);
+    DataStream := ExportSettings.ExportStream;
 
     // Version specific settings:
     // - "original" setting from Ver. 4
@@ -736,7 +736,7 @@ end;
 
 function TEpiExport.ExportCSV(const Settings: TEpiCSVExportSetting): boolean;
 var
-  DataStream: TFileStream;
+  DataStream: TStream;
   FieldSep: String;
   QuoteCh: String;
   i: Integer;
@@ -759,7 +759,7 @@ begin
   Fields := Df.Fields;
 
   try
-    DataStream := TFileStream.Create(UTF8ToSys(Settings.ExportFileName), fmCreate);
+    DataStream := Settings.ExportStream; //TFileStream.Create(UTF8ToSys(Settings.ExportFileName), fmCreate);
 
     FieldSep := Settings.FieldSeparator;
     QuoteCh  := Settings.QuoteChar;
@@ -878,22 +878,28 @@ begin
   Result := false;
 
   // First export the data:
-  CSVSetting := TEpiCSVExportSetting.Create;
-  CSVSetting.Assign(Settings);
-  with CSVSetting do begin
-    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
-
-    // CSV Settings
-    Encoding         := eeUTF8;
-    QuoteChar        := '';
-    FixedFormat      := false;
-    ExportFieldNames := false;
-    DateSeparator    := '/';
-    TimeSeparator    := ':';
-    DecimalSeparator := '.';
-    FieldSeparator   := Settings.Delimiter;
-    NewLine          := LineEnding;
-  end;
+  if Assigned(Settings.AdditionalExportSettings) and
+     (Settings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    CSVSetting := TEpiCSVExportSetting(Settings.AdditionalExportSettings)
+  else
+    begin
+      CSVSetting := TEpiCSVExportSetting.Create;
+      CSVSetting.Assign(Settings);
+      with CSVSetting do begin
+        ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+        // CSV Settings
+        Encoding         := eeUTF8;
+        QuoteChar        := '';
+        FixedFormat      := false;
+        ExportFieldNames := false;
+        DateSeparator    := '/';
+        TimeSeparator    := ':';
+        DecimalSeparator := '.';
+        FieldSeparator   := Settings.Delimiter;
+        NewLine          := LineEnding;
+      end;
+    end;
 
   if not ExportCSV(CSVSetting) then exit;
   Settings.AdditionalExportSettings := CSVSetting;
@@ -1042,7 +1048,9 @@ begin
   ExpLines.Append('***************************************************************.');
   ExpLines.Append('*.');
 
-  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  S := ExpLines.Text;
+  Settings.ExportStream.Write(S[1], Length(S));
+//  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   result := true;
 end;
 
@@ -1063,19 +1071,25 @@ begin
   Result := false;
 
   // First export the data:
-  CSVSetting := TEpiCSVExportSetting.Create;
-  CSVSetting.Assign(Settings);
-  with CSVSetting do begin
-    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
-
-    // CSV Settings
-    QuoteChar        := '';
-    FixedFormat      := true;
-    ExportFieldNames := false;
-    DateSeparator    := '/';
-    TimeSeparator    := ':';
-    DecimalSeparator := '.';
-  end;
+  if Assigned(Settings.AdditionalExportSettings) and
+     (Settings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    CSVSetting := TEpiCSVExportSetting(Settings.AdditionalExportSettings)
+  else
+    begin
+      CSVSetting := TEpiCSVExportSetting.Create;
+      CSVSetting.Assign(Settings);
+      with CSVSetting do begin
+        ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+        // CSV Settings
+        QuoteChar        := '';
+        FixedFormat      := true;
+        ExportFieldNames := false;
+        DateSeparator    := '/';
+        TimeSeparator    := ':';
+        DecimalSeparator := '.';
+      end;
+    end;
 
   if not ExportCSV(CSVSetting) then exit;
   Settings.AdditionalExportSettings := CSVSetting;
@@ -1229,7 +1243,9 @@ begin
     ExpLines.AddStrings(TmpLines);
   end;
 
-  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  S := ExpLines.Text;
+  Settings.ExportStream.Write(S[1], Length(S));
+//  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   Result := true;
 end;
 
@@ -1246,7 +1262,7 @@ function TEpiExport.ExportEPX(const Settings: TEpiEPXExportSetting): boolean;
 begin
   Result := false;
   try
-    Settings.Doc.SaveToFile(Settings.ExportFileName);
+    Settings.Doc.SaveToStream(Settings.ExportStream);
     Result := true;
   finally
 
