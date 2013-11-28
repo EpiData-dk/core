@@ -27,6 +27,8 @@ type
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 
+  EEpiDataFileHaltLoading = class(Exception);
+
   { TEpiDataFile }
 
   TEpiDataFile = class(TEpiCustomItem)
@@ -61,6 +63,7 @@ type
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
   { Load/Save methods }
   private
+    procedure   HaltLoading;
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
     function    SaveKeyFields(Lvl: integer): string;

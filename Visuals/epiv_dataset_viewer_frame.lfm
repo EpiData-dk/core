@@ -1,36 +1,22 @@
 object DatasetViewerFrame: TDatasetViewerFrame
   Left = 0
-  Height = 517
+  Height = 675
   Top = 0
-  Width = 708
-  ClientHeight = 517
-  ClientWidth = 708
+  Width = 750
+  ClientHeight = 675
+  ClientWidth = 750
   TabOrder = 0
-  DesignLeft = 1953
-  DesignTop = 72
-  object ListGrid: TStringGrid
-    Left = 0
-    Height = 475
-    Top = 42
-    Width = 708
-    Align = alClient
-    HeaderHotZones = [gzFixedCols, gzFixedRows]
-    HeaderPushZones = [gzFixedCols, gzFixedRows]
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goSmoothScroll, goHeaderHotTracking, goHeaderPushedLook]
-    TabOrder = 0
-    OnDblClick = ListGridDblClick
-    OnHeaderClick = ListGridHeaderClick
-    OnPrepareCanvas = ListGridPrepareCanvas
-  end
+  DesignLeft = 584
+  DesignTop = 240
   object Panel1: TPanel
     Left = 0
     Height = 42
     Top = 0
-    Width = 708
+    Width = 750
     Align = alTop
     ClientHeight = 42
-    ClientWidth = 708
-    TabOrder = 1
+    ClientWidth = 750
+    TabOrder = 0
     object Button1: TButton
       Left = 16
       Height = 25

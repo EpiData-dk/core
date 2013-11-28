@@ -45,10 +45,16 @@ end;
 
 { TEpiSection }
 
-procedure TEpiSection.ItemsHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
+procedure TEpiSection.ItemsHook(const Sender, Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
-  if EventGroup <> eegCustomBase then exit;
+{  if EventGroup <> eegCustomBase then exit;
+  if not (
+    (Initiator = Fields) or
+    (Initiator = Headings)
+    )
+  then
+    Exit;
 
   case TEpiCustomChangeEventType(EventType) of
 {    ecceDestroy: ;
@@ -62,7 +68,7 @@ begin
     ecceSetTop: ;
     ecceSetLeft: ;
     ecceText: ;}
-  end;
+  end; }
 end;
 
 function TEpiSection.GetField(Index: integer): TEpiField;

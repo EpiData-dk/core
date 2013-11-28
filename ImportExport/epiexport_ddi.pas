@@ -173,7 +173,8 @@ function TEpiDDIExport.AppendElem(Root: TDOMElement; const NameSpace,
   NodeName: string; const Text: String): TDOMElement;
 begin
   Result := XMLDoc.CreateElementNS(NameSpace, NodeName);
-  Result.TextContent := Text;
+  if Text <> '' then
+    Result.TextContent := Text;
   if Assigned(Root) then
     Root.AppendChild(Result);
 end;
@@ -182,7 +183,9 @@ function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Text: String): TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName, Text);
-  AddAttrLang(Result, EpiDoc.DefaultLang);
+  AddAttrLang(Result, FSettings.ExportLang {EpiDoc.DefaultLang});
+  Result.SetAttribute('translatable', 'true');
+  Result.SetAttribute('translated',   'false');
 end;
 
 function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;
@@ -236,20 +239,25 @@ var
   TxtExportSetting: TEpiCSVExportSetting;
   i: Integer;
 begin
-  TxtExportSetting := TEpiCSVExportSetting.Create;
-  TxtExportSetting.Assign(FSettings);
-  TxtExportSetting.FieldSeparator := '!';
-  TxtExportSetting.DecimalSeparator := '.';
-  TxtExportSetting.DateSeparator  := '-';
-  TxtExportSetting.TimeSeparator  := ':';
-  TxtExportSetting.QuoteChar      := '';
-  TxtExportSetting.FixedFormat    := true;
-  TxtExportSetting.NewLine        := LineEnding;
-  TxtExportSetting.Encoding       := eeUTF8;
-  TxtExportSetting.ExportFieldNames := false;
+  if Assigned(FSettings.AdditionalExportSettings) and
+     (FSettings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    TxtExportSetting := TEpiCSVExportSetting(FSettings.AdditionalExportSettings)
+  else begin
+    TxtExportSetting := TEpiCSVExportSetting.Create;
+    TxtExportSetting.Assign(FSettings);
+    TxtExportSetting.FieldSeparator := #9;
+    TxtExportSetting.DecimalSeparator := ',';
+    TxtExportSetting.DateSeparator  := '-';
+    TxtExportSetting.TimeSeparator  := ':';
+    TxtExportSetting.QuoteChar      := '"';
+    TxtExportSetting.FixedFormat    := false;
+    TxtExportSetting.NewLine        := LineEnding;
+    TxtExportSetting.ExportFieldNames := false;
+  end;
+
   TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
-  for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
-    TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].Field[i]);
+  TxtExportSetting.Encoding       := eeUTF8;
 
   CSVExporter := TEpiExport.Create;
   CSVExporter.Export(TxtExportSetting);
@@ -266,9 +274,6 @@ begin
   // Title MUST be present, so assume it is...
   AppendElemInternationalStringType(Citation, NSreuseable, 'Title', EpiDoc.Study.Title.Text);
 
-{  if FSettings.CitSubTitle <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle); }
-
   if EpiDoc.Study.Author <> '' then
     AppendElemInternationalStringType(Citation, NSreuseable, 'Creator', EpiDoc.Study.Author);
 
@@ -282,9 +287,6 @@ begin
     Elem := AppendElemInternationalStringType(Citation, NSreuseable, 'InternationalIdentifier', EpiDoc.Study.Identifier);
     Elem.SetAttribute('type', 'Other');
   end;
-
-{  if FSettings.CitCopyRight <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'Copyright', EpiDoc.Study.ri);   }
 end;
 
 procedure TEpiDDIExport.BuildAbstract;
@@ -550,9 +552,9 @@ begin
     QuieMap.Add(@F, @QItem);
 
     Elem := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionItemName', F.Name);
-    QText := AppendElem(QItem, NSdatacollection, 'QuestionText');
+    QText := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText');
-    AppendElemInternationalStringType(QLiteralText, NSdatacollection, 'Text', Question.Text);
+    AppendElem(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
     if Assigned(ValueLabelSet) then
     begin
@@ -608,11 +610,14 @@ begin
     // Missing Value
     if Assigned(ValueLabelSet) and (ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to ValueLabelSet.Count -1 do
         if ValueLabelSet[j].IsMissingValue then
           S += ValueLabelSet[j].ValueAsString + ' ';
       Domain.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
     Domain.SetAttribute('blankIsMissingValue', 'true');
 
@@ -914,11 +919,14 @@ begin
     // Missing Value
     if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to F.ValueLabelSet.Count -1 do
         if F.ValueLabelSet[j].IsMissingValue then
           S += F.ValueLabelSet[j].ValueAsString + ' ';
       ReprElem.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
     ReprElem.SetAttribute('blankIsMissingValue', 'true');
   end;
@@ -991,7 +999,9 @@ var
   StartPos: Integer;
   i: Integer;
   S: String;
+  CSVSettings: TEpiCSVExportSetting;
 begin
+  CSVSettings := TEpiCSVExportSetting(FSettings.AdditionalExportSettings);
   PhysDataProd := AppendElemMaintainableType(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct', 'phdp');
 
   // *********************
@@ -1002,8 +1012,9 @@ begin
 
   AppendElemReferenceType(PhysStruct, NSphysicaldataproduct, 'LogicalProductReference', DDILogicalProd);
 
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'FIXED');
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', '.');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'Delimited file');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDelimiter', CSVSettings.FieldSeparator);
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', CSVSettings.DecimalSeparator);
 
   GrossRecStr := AppendElemIdentifiableType(PhysStruct, NSphysicaldataproduct, 'GrossRecordStructure', 'grst');
   AppendElemReferenceType(GrossRecStr, NSphysicaldataproduct, 'LogicalRecordReference', DDILogicalRec);
@@ -1027,7 +1038,6 @@ begin
   AppendElemReferenceType(DDIRely, NSphysicaldataproduct, 'DefaultVariableSchemeReference', DDIVarScheme);
 
   Df := EpiDoc.DataFiles[0];
-  StartPos := 1;
   for i := 0 to Df.Fields.Count - 1 do
   begin
     F := DF.Field[i];
@@ -1053,11 +1063,10 @@ begin
       ftUpperString: S := 'string';
     end;
     AppendElem(Elem, NSphysicaldataproduct, 'StorageFormat', S);
-    AppendElem(Elem, NSphysicaldataproduct, 'StartPosition', IntToStr(StartPos));
+    AppendElem(Elem, NSphysicaldataproduct, 'ArrayPosition', IntToStr(I + 1));
     AppendElem(Elem, NSphysicaldataproduct, 'Width', IntToStr(F.Length));
     if F.FieldType in FloatFieldTypes then
       AppendElem(Elem, NSphysicaldataproduct, 'DecimalPositions', IntToStr(F.Decimals));
-    Inc(StartPos, F.Length);
   end;
 end;
 

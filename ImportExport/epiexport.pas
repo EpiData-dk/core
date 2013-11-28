@@ -749,6 +749,9 @@ var
   Df: TEpiDataFile;
   Fixed: Boolean;
   Fields: TEpiFields;
+  FloatQuoted: Boolean;
+  DateQuoted: Boolean;
+  TimeQuoted: Boolean;
 begin
   Result := false;
 
@@ -763,6 +766,16 @@ begin
     NewLine  := Settings.NewLine;
 //    FieldCount := Settings.Fields.Count;
     Fixed      := Settings.FixedFormat;
+
+    {ByteOrder Mark}
+    if (Settings.ByteOrderMark) and
+       (Settings.Encoding = eeUTF8)
+    then
+    begin
+      DataStream.WriteByte($EF);
+      DataStream.WriteByte($BB);
+      DataStream.WriteByte($BF);
+    end;
 
     {Write Field Names}
     if Settings.ExportFieldNames then
@@ -790,8 +803,11 @@ begin
     FormatSettings.TimeSeparator := Settings.TimeSeparator[1];
     FormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
 
+    FloatQuoted := Settings.FieldSeparator = Settings.DecimalSeparator;
+    DateQuoted  := Settings.FieldSeparator = Settings.DateSeparator;
+    TimeQuoted  := Settings.FieldSeparator = Settings.TimeSeparator;
+
     { Write Data }
-//    for CurRec := Settings.FromRecord to Settings.ToRecord do
     for CurRec := 0 to Df.Size - 1 do
     begin
       TmpStr := '';
@@ -807,6 +823,12 @@ begin
           S := ''
         else
           S := AsString[CurRec];
+
+        if ((FieldType in FloatFieldTypes) and FloatQuoted) or
+           ((FieldType in DateFieldTypes) and DateQuoted) or
+           ((FieldType in TimeFieldTypes) and TimeQuoted)
+        then
+          S := AnsiQuotedStr(S, QuoteCh[1]);
 
         L := Length;
         if (FieldType in StringFieldTypes) then

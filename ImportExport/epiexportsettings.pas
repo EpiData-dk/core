@@ -77,9 +77,8 @@ type
   { TEpiDDIExportSetting }
 
   TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
-  { Funding }
-  { Other }
   private
+    FExportLang: string;
     FSoftwareName: string;
     FSoftwareVersion: string;
     FVersion: string;
@@ -87,6 +86,7 @@ type
     property SoftwareName: string read FSoftwareName write FSoftwareName;
     property SoftwareVersion: string read FSoftwareVersion write FSoftwareVersion;
     property Version: string read FVersion write FVersion;
+    property ExportLang: string read FExportLang write FExportLang;
 
   { Common }
   public
@@ -100,6 +100,7 @@ type
 
   TEpiCustomTextExportSettings = class(TEpiExportSetting)
   public
+    ByteOrderMark: boolean;
     ExportFieldNames: boolean;
     QuoteChar: string;
 
@@ -137,14 +138,10 @@ implementation
 constructor TEpiDDIExportSetting.Create;
 begin
   inherited Create;
-//  FCoverTopKeyWords := TStringList.Create;
-//  FCoverTopSubjects := TStringList.Create;
 end;
 
 destructor TEpiDDIExportSetting.Destroy;
 begin
-//  FCoverTopKeyWords.Free;
-//  FCoverTopSubjects.Free;
   inherited Destroy;
 end;
 
@@ -157,6 +154,7 @@ end;
 function TEpiDDIExportSetting.SanetyCheck: boolean;
 begin
   Result :=
+    (ExportLang <> '') and
     (inherited SanetyCheck);
 end;
 
@@ -263,6 +261,7 @@ constructor TEpiCustomTextExportSettings.Create;
 begin
   inherited Create;
   QuoteChar := '"';
+  ByteOrderMark := false;
 end;
 
 procedure TEpiCustomTextExportSettings.Assign(const ASettings: TEpiExportSetting
@@ -273,6 +272,7 @@ begin
 
   ExportFieldNames := TEpiCustomTextExportSettings(ASettings).ExportFieldNames;
   QuoteChar        := TEpiCustomTextExportSettings(ASettings).QuoteChar;
+  ByteOrderMark    := TEpiCustomTextExportSettings(ASettings).ByteOrderMark;
 end;
 
 { TEpiCSVExportSetting }
@@ -306,29 +306,17 @@ end;
 
 function TEpiCSVExportSetting.SanetyCheck: boolean;
 begin
-  Result :=
-    (inherited SanetyCheck) and
-    // FieldSep compare
-    (
-      (not FixedFormat) and
-        (
-          (FieldSeparator <> DateSeparator) and
-          (FieldSeparator <> TimeSeparator) and
-          (FieldSeparator <> DecimalSeparator) and
-          (FieldSeparator <> QuoteChar)
-        )
-      or
-      ( FixedFormat )
-    ) and
-    // Date compare
-    (DateSeparator  <> TimeSeparator) and
-    (DateSeparator  <> DecimalSeparator) and
-    (DateSeparator  <> QuoteChar) and
-    // Time compare
-    (TimeSeparator  <> DecimalSeparator) and
-    (TimeSeparator  <> QuoteChar) and
-    // Decimal compare
-    (DecimalSeparator <> QuoteChar);
+  Result := inherited SanetyCheck;
+
+  // With fixed format delimiters do not interfere.
+  if FixedFormat then Exit;
+
+  // Only make sure that FieldSeparator <> QuoteChar
+  // otherwise an CSV export will enclose data with a delimiter if it
+  // is the same as the FieldSeparator.
+
+  Result := Result and
+    (FieldSeparator <> QuoteChar);
 end;
 
 end.

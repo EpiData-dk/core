@@ -31,7 +31,10 @@ type
     function    StringFromBuffer(AChar: PChar; MaxLength: Integer): string;
   private
     FImportCasing: TEpiFieldNamingCase;
+    FOnProgress: TEpiProgressEvent;
     function    TruncToInt(e: Extended): integer;
+    function    DoProgress(ProgressType: TEpiProgressType;
+      Const Current, Max: Cardinal): boolean;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -43,6 +46,7 @@ type
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
+    property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
     // Import casing only relevant for .rec files, since they are considere case-incensitive.
     property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
@@ -135,6 +139,14 @@ begin
   Result:=integer(Trunc(e));
 end;
 
+function TEpiImport.DoProgress(ProgressType: TEpiProgressType; const Current,
+  Max: Cardinal): boolean;
+begin
+  result := false;
+  if Assigned(OnProgress) then
+    OnProgress(nil, ProgressType, Current, Max, Result);
+end;
+
 constructor TEpiImport.Create;
 begin
   FImportEncoding := eeGuess;
@@ -185,6 +197,7 @@ var
   VL: TEpiCustomValueLabel;
   Lines: TStringList;
   ImportFormatSettings: TFormatSettings;
+  ApproxRecCount: Integer;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -410,12 +423,18 @@ begin
       DataStream.LoadFromFile(UTF8ToSys(AFilename));
       DataStream.Position := TmpLength;
 
+
+      ApproxRecCount := (DataStream.Size - TmpLength) div TotFieldLength;
+      DoProgress(eptInit, 0, ApproxRecCount);
+
       SetLength(CharBuf, TotFieldLength);
       BeginUpdate;
       CurRec := 0;
 
       while true do
       begin
+        DoProgress(eptRecords, CurRec, ApproxRecCount);
+
         I := DataStream.Read(CharBuf[0], TotFieldLength);
         if (I <> TotFieldLength) then
         begin
@@ -458,6 +477,7 @@ begin
         end;
         Inc(CurRec);
       end;
+      DoProgress(eptFinish, ApproxRecCount, ApproxRecCount);
       EndUpdate;
     end;
 
@@ -1004,8 +1024,12 @@ begin
       // ********************************
       //          STATA DATA
       // ********************************
+      DoProgress(eptInit, 0, NObs);
+
       FOR CurRec := 0 TO nObs -1 DO
       BEGIN
+        DoProgress(eptRecords, CurRec, NObs);
+
         FOR CurField := 0 TO Fields.Count - 1 DO
         BEGIN
           TmpField := Field[Curfield];
@@ -1139,6 +1163,8 @@ begin
           end;
         END;  //for CurField
       END;  //for CurRec
+
+      DoProgress(eptFinish, CurRec, NObs);
     EXCEPT
       RaiseError(Exception, 'Error reading data from Stata-file');
       Exit;

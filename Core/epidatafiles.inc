@@ -367,12 +367,21 @@ var
   R: String;
   EnCrypter: TDCP_rijndael;
   Edoc: TEpiDocument;
+  ProgressMethod: TEpiProgressEvent;
 
   function LocalEncrypt(S: String): string;
   begin
     if Assigned(EnCrypter) then
       S := EnCrypter.EncryptString(S);
     Result := S;
+  end;
+
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
   end;
 
 begin
@@ -383,6 +392,8 @@ begin
   Lst.Add(Indent(Lvl) + '<' + rsRecords + SaveAttr(rsModifiedAttr, RecModifiedDate) + '>');
 
   Edoc := TEpiDocument(RootOwner);
+  ProgressMethod := Edoc.OnProgress;
+
   BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
@@ -394,8 +405,10 @@ begin
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
   end;
 
+  DoProgress(eptInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
   begin
+    DoProgress(eptRecords, CurRec, Sz);
     R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
 
     S := '';
@@ -415,6 +428,8 @@ begin
   Lst.Add(Indent(Lvl) + '</' + rsRecords + '>');
   Result := Lst.Text;
   Lst.Free;
+
+  DoProgress(eptFinish, Sz, Sz);
 end;
 
 procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
@@ -435,6 +450,9 @@ const
 var
   DeCrypter: TDCP_rijndael;
   n: String;
+  ProgressMethod: TEpiProgressEvent;
+  NodeCount: LongWord;
+  NodeNum: LongWord;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -454,12 +472,19 @@ var
     Result := S;
   end;
 
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
+  end;
+
 begin
   // Root = <Records>
   FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
 
   CurRec := 0;
-//  Size := Root.ChildNodes.Count;
   DeCrypter := nil;
 
   FieldList := TFPDataHashTable.CreateWith(Fields.Count, @RSHash);
@@ -480,10 +505,20 @@ begin
     DeCrypter.InitStr(TEpiDocument(RootOwner).PassWord, TDCP_sha256);
   end;
 
+  ProgressMethod := TEpiDocument(RootOwner).OnProgress;
+  // div 2: Because all nodes have a single whitespace node after each "normal" node.
+  NodeCount := (Root.ChildNodes.Count div 2);
+  DoProgress(eptInit, 0, NodeCount);
+
+
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
   begin
+    if DoProgress(eptRecords, CurRec, NodeCount) then
+      HaltLoading;
+    Inc(NodeNum);
+
     while NodeIsWhiteSpace(Node) do
       Node := TDOMElement(Node.NextSibling);
     if not Assigned(Node) then break;
@@ -512,6 +547,8 @@ begin
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
+  DoProgress(eptFinish, NodeCount, NodeCount);
+
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
 end;
@@ -638,6 +675,11 @@ begin
   until I>J;
   if L<J then InternalSortRecords(SortList, L,J);
   if I < R then InternalSortRecords(SortList, I, R);
+end;
+
+procedure TEpiDataFile.HaltLoading;
+begin
+  Raise EEpiDataFileHaltLoading.Create('Loading aborted by user!');
 end;
 
 procedure TEpiDataFile.SetVersion(const AValue: string);
