@@ -18,7 +18,8 @@ uses
   epireport_report_projectheading, epireport_report_studyinfo, 
   epireport_report_fieldlist, epireport_report_valuelabelsetlist, 
   epireport_report_fieldinfo, epireport_report_countbyid, 
-  epireport_report_doubleentryvalidate, epiopenfile, epi_iso639;
+  epireport_report_doubleentryvalidate, epiopenfile, epi_iso639, 
+  epireport_report_projectvalidator, epitools_projectvalidate;
 
 implementation
 
