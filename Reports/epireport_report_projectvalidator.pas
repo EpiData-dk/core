@@ -5,7 +5,8 @@ unit epireport_report_projectvalidator;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epidocument, epireport_generator_base,
+  Classes, SysUtils, epireport_base, epidocument, epidatafiles,
+  epireport_generator_base,
   epitools_projectvalidate;
 
 type
@@ -15,8 +16,12 @@ type
   TEpiReportProjectValidator = class(TEpiReportBase)
   private
     FDocument: TEpiDocument;
+    FKeyFields: TEpiFields;
+    FOptions: TEpiToolsProjectValidateOptions;
     FProjectValidationOptions: TEpiToolsProjectValidateOptions;
+    FValidationFields: TEpiFields;
     function   RunTool: TEpiProjectResultArray;
+    procedure  SortResultArray;
   protected
     procedure DoSanityCheck; override;
   public
@@ -24,12 +29,15 @@ type
     procedure   RunReport; override;
     property    Document: TEpiDocument read FDocument write FDocument;
     property    ProjectValidationOptions: TEpiToolsProjectValidateOptions read FProjectValidationOptions write FProjectValidationOptions;
+    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
+    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
+    property    Options: TEpiToolsProjectValidateOptions read FOptions write FOptions;
   end;
 
 implementation
 
 uses
-  epidatafiles, LazUTF8;
+  LazUTF8;
 
 { TEpiReportProjectValidator }
 resourcestring
@@ -41,8 +49,14 @@ var
 begin
   T := TEpiProjectValidationTool.Create;
   T.Document := Document;
-  T.ValidateProject(Result{, ProjectValidationOptions});
+  T.ValidationFields := ValidationFields;
+  T.ValidateProject(Result, Options);
   T.Free;
+end;
+
+procedure TEpiReportProjectValidator.SortResultArray;
+begin
+  //
 end;
 
 procedure TEpiReportProjectValidator.DoSanityCheck;
@@ -70,6 +84,7 @@ begin
   inherited RunReport;
 
   ResultArray := RunTool;
+
 
   i := Low(ResultArray);
 

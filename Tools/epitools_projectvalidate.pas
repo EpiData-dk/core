@@ -21,6 +21,15 @@ type
 const
   EpiDefaultProjectValidationOptions = [pvIgnoreDeleted..pvCheckDataLength];
 
+  EpiToolProjectValidationOptionText: Array[TEpiToolsProjectValidateOption] of string =
+    ('Ignore records marked for deletion',
+     'Check data if it has system missing',
+     'Check data for range correctness',
+     'Check data for valid valuelabel',
+     'Check data for compared value',
+     'Check data for valid length'
+    );
+
 type
 
   TEpiProjectValidateResultRecord = record
@@ -38,7 +47,9 @@ type
   TEpiProjectValidationTool = class
   private
     FDocument: TEpiDocument;
+    FKeyFields: TEpiFields;
     FResultArray: TEpiProjectResultArray;
+    FValidationFields: TEpiFields;
     function    NewResultRecord: PEpiProjectResultArray;
   public
     constructor Create;
@@ -46,6 +57,7 @@ type
     procedure   ValidateProject(out ResultArray: TEpiProjectResultArray;
       Options: TEpiToolsProjectValidateOptions = EpiDefaultProjectValidationOptions);
     property    Document: TEpiDocument read FDocument write FDocument;
+    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
   end;
 
 implementation
@@ -93,9 +105,9 @@ begin
   begin
     if Df.Deleted[i] and (pvIgnoreDeleted in Options) then continue;
 
-    for j := 0 to Df.Fields.Count - 1 do
+    for j := 0 to ValidationFields.Count - 1 do
     begin
-      F := Df.Field[j];
+      F := ValidationFields[j];
 
       if (pvCheckSystemMissing in Options) then
       begin
