@@ -58,12 +58,13 @@ type
       Options: TEpiToolsProjectValidateOptions = EpiDefaultProjectValidationOptions);
     property    Document: TEpiDocument read FDocument write FDocument;
     property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
+    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
   end;
 
 implementation
 
 uses
-  epidatafileutils, LazUTF8;
+  epidatafilestypes, epidatafileutils, LazUTF8;
 
 { TEpiProjectValidationTool }
 
@@ -99,15 +100,25 @@ var
   CmpResult: TValueSign;
   S: String;
   LValidationFields: TEpiFields;
+  MainSortField: TEpiField;
 begin
   Df := Document.DataFiles[0];
 
-  if Assinged(ValidationFields) and
-     ValidationFields.Count > 0
+  if Assigned(ValidationFields) and
+     (ValidationFields.Count > 0)
   then
     LValidationFields := ValidationFields
   else
     LValidationFields := DF.Fields;
+
+  MainSortField := Df.NewField(ftInteger);
+  for i := 0 to Df.Size -1 do
+    MainSortField.AsInteger[i] := i;
+
+  if Assigned(KeyFields) and
+     (KeyFields.Count > 0)
+  then
+    Df.SortRecords(KeyFields);
 
   for i := 0 to Df.Size - 1 do
   begin
@@ -124,7 +135,7 @@ begin
         if F.IsMissing[i] then
         with NewResultRecord^ do
         begin
-          RecNo := i;
+          RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckSystemMissing;
         end;
@@ -138,7 +149,7 @@ begin
         if not F.Ranges.InRange(F.AsValue[i]) then
         with NewResultRecord^ do
         begin
-          RecNo := i;
+          RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckRange;
         end;
@@ -151,7 +162,7 @@ begin
         if not F.ValueLabelSet.ValueLabelExists[F.AsValue[i]] then
         with NewResultRecord^ do
         begin
-          RecNo := i;
+          RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckValueLabels;
         end;
@@ -179,7 +190,7 @@ begin
         if not Res then
         with NewResultRecord^ do
         begin
-          RecNo := i;
+          RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckComparison;
         end;
@@ -192,13 +203,21 @@ begin
         if UTF8Length(S) > F.Length then
         with NewResultRecord^ do
         begin
-          RecNo := i;
+          RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckDataLength;
         end;
       end;
     end;
   end;
+
+  Df.SortRecords(MainSortField);
+  MainSortField.Free;
+
+  // No "real" changes were made...
+
+  if Assigned(Df.RootOwner) then
+    DF.RootOwner.Modified := false;
 
   ResultArray := FResultArray;
 end;

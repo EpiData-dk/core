@@ -21,7 +21,6 @@ type
     FProjectValidationOptions: TEpiToolsProjectValidateOptions;
     FValidationFields: TEpiFields;
     function   RunTool: TEpiProjectResultArray;
-    procedure  SortResultArray;
   protected
     procedure DoSanityCheck; override;
   public
@@ -50,13 +49,9 @@ begin
   T := TEpiProjectValidationTool.Create;
   T.Document := Document;
   T.ValidationFields := ValidationFields;
+  T.KeyFields        := KeyFields;
   T.ValidateProject(Result, Options);
   T.Free;
-end;
-
-procedure TEpiReportProjectValidator.SortResultArray;
-begin
-  //
 end;
 
 procedure TEpiReportProjectValidator.DoSanityCheck;
@@ -80,17 +75,28 @@ var
   ResRecord: TEpiProjectValidateResultRecord;
   S: String;
   i: Integer;
+  j: Integer;
 begin
   inherited RunReport;
 
   ResultArray := RunTool;
 
-
   i := Low(ResultArray);
-
   while i <= High(ResultArray) do
   begin
     DoSection('Record no: ' + IntToStr(ResultArray[i].RecNo + 1));
+
+    if Assigned(KeyFields) and
+       (KeyFields.Count > 0)
+    then
+      begin
+        S := 'Key Fields:';
+
+        for j := 0 to KeyFields.Count -1 do
+          S += '  ' + KeyFields[j].Name + ' = ' + KeyFields[j].AsString[ResultArray[i].RecNo];
+
+        DoLineText(S);
+      end;
 
     repeat
       ResRecord := ResultArray[i];
@@ -116,10 +122,6 @@ begin
                          ComparisonTypeToString(Comparison.CompareType),
                          Comparison.CompareField.Name, Comparison.CompareField.AsString[ResRecord.RecNo]
                         ]);
-{
-            'Comparison: ' + Name + ':' + AsString[ResRecord.RecNo] + ' ' +
-                 ComparisonTypeToString(Comparison.CompareType) +
-                 Comparison.CompareField.Name + ':' + Comparison.CompareField.AsString[ResRecord.RecNo];     }
         pvCheckDataLength:
           with ResRecord.Field do
             S += Format('Field length = %d, Data length: %d',
