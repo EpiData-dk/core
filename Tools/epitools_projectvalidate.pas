@@ -98,8 +98,16 @@ var
   Res: Boolean;
   CmpResult: TValueSign;
   S: String;
+  LValidationFields: TEpiFields;
 begin
   Df := Document.DataFiles[0];
+
+  if Assinged(ValidationFields) and
+     ValidationFields.Count > 0
+  then
+    LValidationFields := ValidationFields
+  else
+    LValidationFields := DF.Fields;
 
   for i := 0 to Df.Size - 1 do
   begin
