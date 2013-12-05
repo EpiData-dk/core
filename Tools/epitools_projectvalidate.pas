@@ -14,7 +14,8 @@ type
     pvCheckRange,                     // Check data for range correctness
     pvCheckValueLabels,               // Check data for valid valuelabel
     pvCheckComparison,                // Check data for compared value
-    pvCheckDataLength                 // Check data for valid length
+    pvCheckDataLength,                // Check data for valid length
+    pvCheckJumpValues                 // Check data for valid jump values
   );
   TEpiToolsProjectValidateOptions = set of TEpiToolsProjectValidateOption;
 
@@ -27,7 +28,8 @@ const
      'Check data for range correctness',
      'Check data for valid valuelabel',
      'Check data for compared value',
-     'Check data for valid length'
+     'Check data for valid length',
+     'Check data for valid jump values'
     );
 
 type
@@ -159,7 +161,9 @@ begin
          (Assigned(F.ValueLabelSet))
       then
       begin
-        if not F.ValueLabelSet.ValueLabelExists[F.AsValue[i]] then
+        if F.IsMissing[i] or
+          (not F.ValueLabelSet.ValueLabelExists[F.AsValue[i]])
+        then
         with NewResultRecord^ do
         begin
           RecNo := MainSortField.AsInteger[i];
@@ -206,6 +210,19 @@ begin
           RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckDataLength;
+        end;
+      end;
+
+      if (pvCheckJumpValues in Options) and
+         (Assigned(F.Jumps))
+      then
+      begin
+        if not Assigned(F.Jumps.JumpFromValue[F.AsString[i]]) then
+        with NewResultRecord^ do
+        begin
+          RecNo := MainSortField.AsInteger[i];
+          Field := F;
+          FailedCheck := pvCheckJumpValues;
         end;
       end;
     end;

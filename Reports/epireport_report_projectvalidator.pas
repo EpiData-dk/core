@@ -36,7 +36,7 @@ type
 implementation
 
 uses
-  LazUTF8;
+  LazUTF8, typinfo;
 
 { TEpiReportProjectValidator }
 resourcestring
@@ -113,7 +113,7 @@ begin
                          Ranges[0].AsString[false]
                         ]);
         pvCheckValueLabels:
-          S += Format('Value = %s, has no valid valuelabel!',
+          S += Format('Value = %s, is not a valid valuelabel value!',
                       [ResRecord.Field.AsString[ResRecord.RecNo]]);
         pvCheckComparison:
           with ResRecord.Field do
@@ -126,6 +126,12 @@ begin
           with ResRecord.Field do
             S += Format('Field length = %d, Data length: %d',
                         [Length, UTF8Length(AsString[ResRecord.RecNo])]);
+        pvCheckJumpValues:
+          with ResRecord.Field do
+            S += Format('Value = %s, is not a valid jump value!', [AsString[ResRecord.RecNo]]);
+      else
+          S += Format('Report not implemented for ToolCheck: %s',
+                      [GetEnumName(TypeInfo(TEpiToolsProjectValidateOption), Integer(ResRecord.FailedCheck))]);
       end;
       DoLineText(S);
       Inc(i);
