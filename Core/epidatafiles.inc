@@ -872,7 +872,8 @@ begin
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
   T2 := Now;
-  Writeln('Load Nodes: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
+  if IsConsole then
+    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;

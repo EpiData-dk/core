@@ -6,7 +6,7 @@ unit epidatafiles;
 interface
 
 uses
-  Classes, SysUtils, DOM, epicustombase, episettings, epidatafilestypes,
+  Classes, SysUtils, Laz2_DOM, epicustombase, episettings, epidatafilestypes,
   epivaluelabels, epiadmin, epiranges;
 
 type
