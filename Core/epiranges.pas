@@ -5,7 +5,7 @@ unit epiranges;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, epidatafilestypes, DOM;
+  Classes, SysUtils, epicustombase, epidatafilestypes, Laz2_DOM;
 
 type
   TEpiRange = class;
