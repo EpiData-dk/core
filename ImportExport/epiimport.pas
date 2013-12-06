@@ -96,7 +96,14 @@ begin
   repeat
    C := Char(St.ReadByte);
    Result += C;
-  until (C = #10) and (Result[Length(Result) - 1] = #13);
+  until (C = #10) or (C = #13);
+
+  if (C = #13) then
+    C := Char(St.ReadByte);
+
+  if C <> #10 then
+    // Rewind that one byte, this was a MAC ending...
+    St.Seek(-1, soCurrent);
 end;
 
 procedure TEpiImport.RaiseError(EClass: ExceptClass; const Msg: string);
@@ -638,7 +645,7 @@ begin
     end;
   finally
     DefaultFormatSettings.DateSeparator := LocalDateSeparator;
-    if Assigned(DataStream) then DataStream.Free;
+//    if Assigned(DataStream) then DataStream.Free;
   end;
   result := true;
 end;
