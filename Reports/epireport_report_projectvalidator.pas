@@ -20,7 +20,14 @@ type
     FOptions: TEpiToolsProjectValidateOptions;
     FProjectValidationOptions: TEpiToolsProjectValidateOptions;
     FValidationFields: TEpiFields;
-    function   RunTool: TEpiProjectResultArray;
+    function   RunTool(out RecordResult: TEpiProjectResultArray;
+      out StudyResult: TEpiProjectStudyArray): Boolean;
+
+  private
+    { Report parts }
+    procedure DoReportStart;
+    procedure DoStudyReport(Const StudyResult: TEpiProjectStudyArray);
+    procedure DoRecordsReport(Const RecordResult: TEpiProjectResultArray);
   protected
     procedure DoSanityCheck; override;
   public
@@ -42,49 +49,105 @@ uses
 resourcestring
   SEpiReportProjectValidationNoDocument = 'EpiReport: No Document assigned to Project Validation';
 
-function TEpiReportProjectValidator.RunTool: TEpiProjectResultArray;
+function TEpiReportProjectValidator.RunTool(out
+  RecordResult: TEpiProjectResultArray; out StudyResult: TEpiProjectStudyArray
+  ): Boolean;
 var
   T: TEpiProjectValidationTool;
+  Dummy: TEpiProjectStudyArray;
 begin
   T := TEpiProjectValidationTool.Create;
   T.Document := Document;
   T.ValidationFields := ValidationFields;
   T.KeyFields        := KeyFields;
-  T.ValidateProject(Result, Options);
+  T.ValidateProject(RecordResult, StudyResult, Options);
   T.Free;
+  Result := true;
 end;
 
-procedure TEpiReportProjectValidator.DoSanityCheck;
-begin
-  inherited DoSanityCheck;
-
-  if not Assigned(Document) then
-    DoError(EEpiReportBaseException, SEpiReportProjectValidationNoDocument);
-end;
-
-constructor TEpiReportProjectValidator.Create(
-  ReportGenerator: TEpiReportGeneratorBase);
-begin
-  inherited Create(ReportGenerator);
-  FProjectValidationOptions := EpiDefaultProjectValidationOptions;
-end;
-
-procedure TEpiReportProjectValidator.RunReport;
+procedure TEpiReportProjectValidator.DoReportStart;
 var
-  ResultArray: TEpiProjectResultArray;
-  ResRecord: TEpiProjectValidateResultRecord;
+  OptCount: Integer;
+  Opt: TEpiToolsProjectValidateOption;
+  I: Integer;
+  S: String;
+begin
+  DoSection('Selections for validation:');
+  DoLineText('');
+
+  DoTableHeader('Options:', 2, Integer(High(TEpiToolsProjectValidateOption)) + 2);
+  DoTableCell(0, 0, 'Option');
+  DoTableCell(1, 0, 'Selected');
+
+  I := 1;
+  for Opt in TEpiToolsProjectValidateOption do
+  begin
+    DoTableCell(0, I, EpiToolProjectValidationOptionText[Opt]);
+    DoTableCell(1, I, BoolToStr(Opt in Options, 'Yes', 'No'));
+    Inc(I);
+  end;
+  DoTableFooter('');
+
+  if Assigned(KeyFields) and
+     (KeyFields.Count > 0)
+  then
+    begin
+      DoLineText('');
+      DoHeading('Key Fields:');
+      S := '';
+      for i := 0 to KeyFields.Count - 1 do
+        S := S + KeyFields[i].Name + ' ';
+      DoLineText(S);
+    end;
+
+  DoLineText('');
+  DoHeading('Validation Fields:');
+  for i := 0 to ValidationFields.Count - 1 do
+    DoLineText(ValidationFields[i].Name + ': ' + ValidationFields[i].Question.Text);
+
+{  DoLineText('');
+  DoTableHeader('Overview', 2, 9);
+  DoTableCell(0, 0, 'Test');                              DoTableCell(1, 0, 'Result');
+  DoTableCell(0, 1, 'Records missing in main file');      DoTableCell(1, 1, IntToStr(CalcMissingInMainDF));
+  DoTableCell(0, 2, 'Records missing in duplicate file'); DoTableCell(1, 2, IntToStr(CalcMissingInDuplDF));
+  DoTableCell(0, 3, 'Number of fields checked');          DoTableCell(1, 3, IntToStr(FCompareFields.Count));
+  DoTableCell(0, 4, 'Common records');                    DoTableCell(1, 4, IntToStr(CalcCommonRecords));
+  DoTableCell(0, 5, 'Records with errors');               DoTableCell(1, 5, IntToStr(CalcErrorRecords));
+  DoTableCell(0, 6, 'Field entries with errors');         DoTableCell(1, 6, IntToStr(CalcErrorFields));
+  DoTableCell(0, 7, 'Error percentage (#records)');       DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, 8, 'Error percentage (#fields)');        DoTableCell(1, 8, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  DoTableFooter(''); }
+end;
+
+procedure TEpiReportProjectValidator.DoStudyReport(
+  const StudyResult: TEpiProjectStudyArray);
+var
+  Res: TEpiProjectValidateStudyRecord;
+begin
+  if Length(StudyResult) = 0 then exit;
+
+  DoHeading('Study Information:');
+  DoLineText('');
+
+  DoLineText('No study information for:');
+  for Res in StudyResult do
+    DoLineText('  ' + Res.StudyObjectName);
+
+  DoLineText('');
+end;
+
+procedure TEpiReportProjectValidator.DoRecordsReport(
+  const RecordResult: TEpiProjectResultArray);
+var
   S: String;
   i: Integer;
   j: Integer;
+  ResRecord: TEpiProjectValidateResultRecord;
 begin
-  inherited RunReport;
-
-  ResultArray := RunTool;
-
-  i := Low(ResultArray);
-  while i <= High(ResultArray) do
+  i := Low(RecordResult);
+  while i <= High(RecordResult) do
   begin
-    DoSection('Record no: ' + IntToStr(ResultArray[i].RecNo + 1));
+    DoHeading('Record no: ' + IntToStr(RecordResult[i].RecNo + 1));
 
     if Assigned(KeyFields) and
        (KeyFields.Count > 0)
@@ -93,13 +156,13 @@ begin
         S := 'Key Fields:';
 
         for j := 0 to KeyFields.Count -1 do
-          S += '  ' + KeyFields[j].Name + ' = ' + KeyFields[j].AsString[ResultArray[i].RecNo];
+          S += '  ' + KeyFields[j].Name + ' = ' + KeyFields[j].AsString[RecordResult[i].RecNo];
 
         DoLineText(S);
       end;
 
     repeat
-      ResRecord := ResultArray[i];
+      ResRecord := RecordResult[i];
 
       S := ResRecord.Field.Name + ': ';
       case ResRecord.FailedCheck of
@@ -135,9 +198,43 @@ begin
       end;
       DoLineText(S);
       Inc(i);
-    until (i > High(ResultArray)) or (ResultArray[i].RecNo <> ResRecord.RecNo);
+    until (i > High(RecordResult)) or (RecordResult[i].RecNo <> ResRecord.RecNo);
     DoLineText('');
   end;
+end;
+
+procedure TEpiReportProjectValidator.DoSanityCheck;
+begin
+  inherited DoSanityCheck;
+
+  if not Assigned(Document) then
+    DoError(EEpiReportBaseException, SEpiReportProjectValidationNoDocument);
+end;
+
+constructor TEpiReportProjectValidator.Create(
+  ReportGenerator: TEpiReportGeneratorBase);
+begin
+  inherited Create(ReportGenerator);
+  FProjectValidationOptions := EpiDefaultProjectValidationOptions;
+end;
+
+procedure TEpiReportProjectValidator.RunReport;
+var
+  RecordResult: TEpiProjectResultArray;
+  StudyResult: TEpiProjectStudyArray;
+begin
+  inherited RunReport;
+
+  RunTool(RecordResult, StudyResult);
+
+  DoReportStart;
+  DoLineText('');
+
+  DoSection('Result of Validation:');
+  DoStudyReport(StudyResult);
+  DoLineText('');
+
+  DoRecordsReport(RecordResult);
 end;
 
 end.

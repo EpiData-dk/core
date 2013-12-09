@@ -15,7 +15,8 @@ type
     pvCheckValueLabels,               // Check data for valid valuelabel
     pvCheckComparison,                // Check data for compared value
     pvCheckDataLength,                // Check data for valid length
-    pvCheckJumpValues                 // Check data for valid jump values
+    pvCheckJumpValues,                // Check data for valid jump values
+    pvCheckStudyInfo                  // Check study information for completeness
   );
   TEpiToolsProjectValidateOptions = set of TEpiToolsProjectValidateOption;
 
@@ -29,7 +30,8 @@ const
      'Check data for valid valuelabel',
      'Check data for compared value',
      'Check data for valid length',
-     'Check data for valid jump values'
+     'Check data for valid jump values',
+     'Check study information for completeness'
     );
 
 type
@@ -40,9 +42,15 @@ type
     FailedCheck: TEpiToolsProjectValidateOption;  // Indicates which check that failed.
   end;
   PEpiProjectResultArray = ^TEpiProjectValidateResultRecord;
-
   // NOTE: Consecutive records may have same RecNo, if the same record have more than one failed field.
   TEpiProjectResultArray = array of TEpiProjectValidateResultRecord;
+
+
+  TEpiProjectValidateStudyRecord = record
+    StudyObject: Pointer;
+    StudyObjectName: String;
+  end;
+  TEpiProjectStudyArray = array of TEpiProjectValidateStudyRecord;
 
   { TEpiProjectValidationTool }
 
@@ -51,12 +59,16 @@ type
     FDocument: TEpiDocument;
     FKeyFields: TEpiFields;
     FResultArray: TEpiProjectResultArray;
+    FStudyArray: TEpiProjectStudyArray;
     FValidationFields: TEpiFields;
     function    NewResultRecord: PEpiProjectResultArray;
+    procedure   NewStudyRecord(Const AObject: Pointer;
+      Const AName: string);
   public
     constructor Create;
     destructor  Destroy; override;
-    procedure   ValidateProject(out ResultArray: TEpiProjectResultArray;
+    procedure   ValidateProject(out FieldResultArray: TEpiProjectResultArray;
+      Out StudyResultArray: TEpiProjectStudyArray;
       Options: TEpiToolsProjectValidateOptions = EpiDefaultProjectValidationOptions);
     property    Document: TEpiDocument read FDocument write FDocument;
     property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
@@ -80,6 +92,22 @@ begin
   Result := @FResultArray[L-1];
 end;
 
+procedure TEpiProjectValidationTool.NewStudyRecord(const AObject: Pointer;
+  const AName: string);
+var
+  L: Integer;
+begin
+  L := Length(FStudyArray);
+  Inc(L);
+  SetLength(FStudyArray, L);
+
+  with FStudyArray[L-1] do
+  begin
+    StudyObject := AObject;
+    StudyObjectName := AName;
+  end;
+end;
+
 constructor TEpiProjectValidationTool.Create;
 begin
   //
@@ -91,8 +119,9 @@ begin
 end;
 
 procedure TEpiProjectValidationTool.ValidateProject(out
-  ResultArray: TEpiProjectResultArray; Options: TEpiToolsProjectValidateOptions
-  );
+  FieldResultArray: TEpiProjectResultArray; out
+  StudyResultArray: TEpiProjectStudyArray;
+  Options: TEpiToolsProjectValidateOptions);
 var
   i, j: Integer;
   Df: TEpiDataFile;
@@ -105,6 +134,29 @@ var
   MainSortField: TEpiField;
 begin
   Df := Document.DataFiles[0];
+
+  if (pvCheckStudyInfo in Options) then
+  with Document.Study do
+  begin
+    if AbstractText.Text = '' then NewStudyRecord(AbstractText, 'Abstract');
+    if Author = ''            then NewStudyRecord(@Author,      'Author');
+    if Agency = ''            then NewStudyRecord(@Agency,      'Agency');
+    if Citations.Text = ''    then NewStudyRecord(Citations,    'Citations');
+    if (DataCollectionStart = MaxDateTime) or
+       (DataCollectionEnd = MaxDateTime)
+    then
+      NewStudyRecord(nil, 'Data Time Coverage');
+    if Design.Text = ''       then NewStudyRecord(Design,       'Design');
+    if Funding.Text = ''      then NewStudyRecord(Funding,      'Funding');
+    if GeographicalCoverage.Text = '' then NewStudyRecord(GeographicalCoverage, 'Geographical Coverage');
+    if Publisher.Text = ''    then NewStudyRecord(Publisher,    'Publisher');
+    if Purpose.Text = ''      then NewStudyRecord(Purpose,      'Purpose');
+    if Population.Text = ''   then NewStudyRecord(Population,   'Population');
+    if Rights.Text = ''       then NewStudyRecord(Rights,       'Rights');
+    if Title.Text = ''        then NewStudyRecord(Title,        'Title');
+    if Keywords = ''          then NewStudyRecord(@Keywords,    'Keywords');
+    if UnitOfObservation.Text = '' then NewStudyRecord(UnitOfObservation, 'Unit of obs.');
+  end;
 
   if Assigned(ValidationFields) and
      (ValidationFields.Count > 0)
@@ -236,7 +288,8 @@ begin
   if Assigned(Df.RootOwner) then
     DF.RootOwner.Modified := false;
 
-  ResultArray := FResultArray;
+  FieldResultArray := FResultArray;
+  StudyResultArray := FStudyArray;
 end;
 
 end.
