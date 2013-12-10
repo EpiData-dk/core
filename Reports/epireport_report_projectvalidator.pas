@@ -26,6 +26,7 @@ type
   private
     { Report parts }
     procedure DoReportStart;
+    procedure DoReportResultTable(Const RecordArray: TEpiProjectResultArray);
     procedure DoStudyReport(Const StudyResult: TEpiProjectStudyArray);
     procedure DoRecordsReport(Const RecordResult: TEpiProjectResultArray);
   protected
@@ -104,19 +105,55 @@ begin
   DoHeading('Validation Fields:');
   for i := 0 to ValidationFields.Count - 1 do
     DoLineText(ValidationFields[i].Name + ': ' + ValidationFields[i].Question.Text);
+end;
 
-{  DoLineText('');
-  DoTableHeader('Overview', 2, 9);
+procedure TEpiReportProjectValidator.DoReportResultTable(
+  const RecordArray: TEpiProjectResultArray);
+var
+  RecordErrorCount: Integer;
+  i: Integer;
+  FieldErrorCount: Integer;
+  DF: TEpiDataFile;
+  RecordCount: Integer;
+
+
+  function CalcErrorPct: Extended;
+  begin
+    Result := RecordErrorCount / RecordCount;
+  end;
+
+  function CalcErrorFieldPct: Extended;
+  begin
+    Result := FieldErrorCount / (RecordCount * ValidationFields.Count);
+  end;
+
+begin
+  RecordErrorCount := 0;
+  FieldErrorCount  := Length(RecordArray);
+
+  RecordCount := 0;
+  DF := Document.DataFiles[0];
+  for i := 0 to DF.Size - 1 do
+    if not DF.Deleted[i] then
+      Inc(RecordCount);
+
+  if Length(RecordArray) > 0 then
+    Inc(RecordErrorCount);
+  for i := Low(RecordArray) + 1 to High(RecordArray) do
+  begin
+    if RecordArray[i-1].RecNo <> RecordArray[i].RecNo then
+      Inc(RecordErrorCount);
+  end;
+
+  DoTableHeader('Overview', 2, 7);
   DoTableCell(0, 0, 'Test');                              DoTableCell(1, 0, 'Result');
-  DoTableCell(0, 1, 'Records missing in main file');      DoTableCell(1, 1, IntToStr(CalcMissingInMainDF));
-  DoTableCell(0, 2, 'Records missing in duplicate file'); DoTableCell(1, 2, IntToStr(CalcMissingInDuplDF));
-  DoTableCell(0, 3, 'Number of fields checked');          DoTableCell(1, 3, IntToStr(FCompareFields.Count));
-  DoTableCell(0, 4, 'Common records');                    DoTableCell(1, 4, IntToStr(CalcCommonRecords));
-  DoTableCell(0, 5, 'Records with errors');               DoTableCell(1, 5, IntToStr(CalcErrorRecords));
-  DoTableCell(0, 6, 'Field entries with errors');         DoTableCell(1, 6, IntToStr(CalcErrorFields));
-  DoTableCell(0, 7, 'Error percentage (#records)');       DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorPct * 100));
-  DoTableCell(0, 8, 'Error percentage (#fields)');        DoTableCell(1, 8, FormatFloat('##0.00', CalcErrorFieldPct * 100));
-  DoTableFooter(''); }
+  DoTableCell(0, 1, 'Number of fields checked');          DoTableCell(1, 1, IntToStr(ValidationFields.Count));
+  DoTableCell(0, 2, 'Number of records checked');         DoTableCell(1, 2, IntToStr(RecordCount));
+  DoTableCell(0, 3, 'Records with errors');               DoTableCell(1, 3, IntToStr(RecordErrorCount));
+  DoTableCell(0, 4, 'Field entries with errors');         DoTableCell(1, 4, IntToStr(FieldErrorCount));
+  DoTableCell(0, 5, 'Error percentage (#records)');       DoTableCell(1, 5, FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, 6, 'Error percentage (#fields)');        DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  DoTableFooter('');
 end;
 
 procedure TEpiReportProjectValidator.DoStudyReport(
@@ -228,6 +265,8 @@ begin
   RunTool(RecordResult, StudyResult);
 
   DoReportStart;
+  DoLineText('');
+  DoReportResultTable(RecordResult);
   DoLineText('');
 
   DoSection('Result of Validation:');
