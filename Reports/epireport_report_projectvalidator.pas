@@ -26,7 +26,8 @@ type
   private
     { Report parts }
     procedure DoReportStart;
-    procedure DoReportResultTable(Const RecordArray: TEpiProjectResultArray);
+    procedure DoReportResultTable(Const RecordArray: TEpiProjectResultArray;
+      Const StudyArray: TEpiProjectStudyArray);
     procedure DoStudyReport(Const StudyResult: TEpiProjectStudyArray);
     procedure DoRecordsReport(Const RecordResult: TEpiProjectResultArray);
   protected
@@ -108,7 +109,8 @@ begin
 end;
 
 procedure TEpiReportProjectValidator.DoReportResultTable(
-  const RecordArray: TEpiProjectResultArray);
+  const RecordArray: TEpiProjectResultArray;
+  const StudyArray: TEpiProjectStudyArray);
 var
   RecordErrorCount: Integer;
   i: Integer;
@@ -145,14 +147,15 @@ begin
       Inc(RecordErrorCount);
   end;
 
-  DoTableHeader('Overview', 2, 7);
+  DoTableHeader('Overview', 2, 8);
   DoTableCell(0, 0, 'Test');                              DoTableCell(1, 0, 'Result');
-  DoTableCell(0, 1, 'Number of fields checked');          DoTableCell(1, 1, IntToStr(ValidationFields.Count));
-  DoTableCell(0, 2, 'Number of records checked');         DoTableCell(1, 2, IntToStr(RecordCount));
-  DoTableCell(0, 3, 'Records with errors');               DoTableCell(1, 3, IntToStr(RecordErrorCount));
-  DoTableCell(0, 4, 'Field entries with errors');         DoTableCell(1, 4, IntToStr(FieldErrorCount));
-  DoTableCell(0, 5, 'Error percentage (#records)');       DoTableCell(1, 5, FormatFloat('##0.00', CalcErrorPct * 100));
-  DoTableCell(0, 6, 'Error percentage (#fields)');        DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  DoTableCell(0, 1, 'Number of unspecified study items'); DoTableCell(1, 1, IntToStr(Length(StudyArray)));
+  DoTableCell(0, 2, 'Number of fields checked');          DoTableCell(1, 2, IntToStr(ValidationFields.Count));
+  DoTableCell(0, 3, 'Number of records checked');         DoTableCell(1, 3, IntToStr(RecordCount));
+  DoTableCell(0, 4, 'Records with errors');               DoTableCell(1, 4, IntToStr(RecordErrorCount));
+  DoTableCell(0, 5, 'Field entries with errors');         DoTableCell(1, 5, IntToStr(FieldErrorCount));
+  DoTableCell(0, 6, 'Error percentage (#records)');       DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, 7, 'Error percentage (#fields)');        DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorFieldPct * 100));
   DoTableFooter('');
 end;
 
@@ -266,10 +269,11 @@ begin
 
   DoReportStart;
   DoLineText('');
-  DoReportResultTable(RecordResult);
-  DoLineText('');
 
   DoSection('Result of Validation:');
+  DoReportResultTable(RecordResult, StudyResult);
+  DoLineText('');
+
   DoStudyReport(StudyResult);
   DoLineText('');
 
