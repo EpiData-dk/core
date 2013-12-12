@@ -15,7 +15,9 @@ type
     pvCheckValueLabels,               // Check data for valid valuelabel
     pvCheckComparison,                // Check data for compared value
     pvCheckDataLength,                // Check data for valid length
-    pvCheckJumpValues,                // Check data for valid jump values
+    pvCheckJumpValues,                // Check data for valid jumps
+
+    // StudyInfo should always be last - used in report.
     pvCheckStudyInfo                  // Check study information for completeness
   );
   TEpiToolsProjectValidateOptions = set of TEpiToolsProjectValidateOption;
@@ -30,10 +32,20 @@ const
      'Check data for valid valuelabel',
      'Check data for compared value',
      'Check data for valid length',
-     'Check data for valid jump values',
+     'Check data for valid jumps',
      'Check study information for completeness'
     );
 
+  EpiToolProjectValidationOptionTextShort: Array[TEpiToolsProjectValidateOption] of string =
+    ('Del rec.',
+     'Sys.mis.',
+     'Range',
+     'V.label',
+     'Compare',
+     'Length',
+     'Jumps',
+     'Study'
+    );
 type
 
   TEpiProjectValidateResultRecord = record
@@ -132,6 +144,7 @@ var
   S: String;
   LValidationFields: TEpiFields;
   MainSortField: TEpiField;
+  Jmp: TEpiJump;
 begin
   Df := Document.DataFiles[0];
 
@@ -269,13 +282,27 @@ begin
          (Assigned(F.Jumps))
       then
       begin
-        if not Assigned(F.Jumps.JumpFromValue[F.AsString[i]]) then
+        Jmp := F.Jumps.JumpFromValue[F.AsString[i]];
+
+        if not Assigned(Jmp) then
         with NewResultRecord^ do
         begin
           RecNo := MainSortField.AsInteger[i];
           Field := F;
           FailedCheck := pvCheckJumpValues;
         end;
+
+        if Assigned(Jmp) and
+           (Jmp.JumpType = jtToField) and
+           // Jump backwards in flow.
+           (Df.Fields.IndexOf(Jmp.JumpToField) < Df.Fields.IndexOf(F))
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckJumpValues;
+          end;
       end;
     end;
   end;

@@ -45,7 +45,7 @@ type
 implementation
 
 uses
-  LazUTF8, typinfo;
+  LazUTF8, typinfo, epireport_types;
 
 { TEpiReportProjectValidator }
 resourcestring
@@ -117,7 +117,13 @@ var
   FieldErrorCount: Integer;
   DF: TEpiDataFile;
   RecordCount: Integer;
-
+  OptCount: Integer;
+  SumTable: array[TEpiToolsProjectValidateOption] of array of cardinal;
+  TotalTable: array[TEpiToolsProjectValidateOption] of cardinal;
+  Opt: TEpiToolsProjectValidateOption;
+  Rec: TEpiProjectValidateResultRecord;
+  S: String;
+  j: Integer;
 
   function CalcErrorPct: Extended;
   begin
@@ -148,15 +154,55 @@ begin
   end;
 
   DoTableHeader('Overview', 2, 8);
-  DoTableCell(0, 0, 'Test');                              DoTableCell(1, 0, 'Result');
-  DoTableCell(0, 1, 'Number of unspecified study items'); DoTableCell(1, 1, IntToStr(Length(StudyArray)));
-  DoTableCell(0, 2, 'Number of fields checked');          DoTableCell(1, 2, IntToStr(ValidationFields.Count));
-  DoTableCell(0, 3, 'Number of records checked');         DoTableCell(1, 3, IntToStr(RecordCount));
-  DoTableCell(0, 4, 'Records with errors');               DoTableCell(1, 4, IntToStr(RecordErrorCount));
-  DoTableCell(0, 5, 'Field entries with errors');         DoTableCell(1, 5, IntToStr(FieldErrorCount));
-  DoTableCell(0, 6, 'Error percentage (#records)');       DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorPct * 100));
-  DoTableCell(0, 7, 'Error percentage (#fields)');        DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  DoTableCell(0, 0, 'Test');                               DoTableCell(1, 0, 'Result');
+  DoTableCell(0, 1, 'Unspecified studyinformation items'); DoTableCell(1, 1, IntToStr(Length(StudyArray)));
+  DoTableCell(0, 2, 'Number of fields checked');           DoTableCell(1, 2, IntToStr(ValidationFields.Count));
+  DoTableCell(0, 3, 'Number of records checked');          DoTableCell(1, 3, IntToStr(RecordCount));
+  DoTableCell(0, 4, 'Records with errors');                DoTableCell(1, 4, IntToStr(RecordErrorCount));
+  DoTableCell(0, 5, 'Field entries with errors');          DoTableCell(1, 5, IntToStr(FieldErrorCount));
+  DoTableCell(0, 6, 'Error percentage (#records)');        DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, 7, 'Error percentage (#fields)');         DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorFieldPct * 100));
   DoTableFooter('');
+
+
+  DoLineText('');
+  OptCount := 0;
+  for Opt in TEpiToolsProjectValidateOption do
+  begin
+    SetLength(SumTable[Opt], ValidationFields.Count);
+    Inc(OptCount);
+    TotalTable[Opt] := 0;
+  end;
+  Dec(OptCount, 2);
+
+  for i := Low(RecordArray) to High(RecordArray) do
+  begin
+    Rec := RecordArray[i];
+    Inc(SumTable[Rec.FailedCheck, ValidationFields.IndexOf(Rec.Field)]);
+    Inc(TotalTable[Rec.FailedCheck]);
+  end;
+
+  DoTableHeader('Summarised overview', OptCount + 1, ValidationFields.Count + 2);
+  for i := 0 to ValidationFields.Count - 1 do
+    DoTableCell(0, i + 1, ValidationFields[i].Name);
+  DoTableCell(0, ValidationFields.Count + 1, 'Total', tcaLeftAdjust, [tcoTopBorder]);
+
+  for i := 0 to OptCount - 1 do
+    DoTableCell(i + 1, 0, EpiToolProjectValidationOptionTextShort[TEpiToolsProjectValidateOption(i + 1)]);
+
+  for i := 0 to ValidationFields.Count - 1 do
+    for j := 0 to OptCount - 1 do
+    DoTableCell(j + 1, i + 1, IntToStr(SumTable[TEpiToolsProjectValidateOption(j + 1), i]), tcaCenter);
+
+  for i := 0 to OptCount - 1 do
+    DoTableCell(
+      i + 1,
+      ValidationFields.Count + 1,
+      IntToStr(TotalTable[TEpiToolsProjectValidateOption(i + 1)]),
+      tcaCenter,
+      [tcoTopBorder]);
+
+  DoTableFooter('Counts indicate number of records.');
 end;
 
 procedure TEpiReportProjectValidator.DoStudyReport(
@@ -183,6 +229,7 @@ var
   i: Integer;
   j: Integer;
   ResRecord: TEpiProjectValidateResultRecord;
+  Jmp: TEpiJump;
 begin
   i := Low(RecordResult);
   while i <= High(RecordResult) do
@@ -230,8 +277,15 @@ begin
             S += Format('Field length = %d, Data length: %d',
                         [Length, UTF8Length(AsString[ResRecord.RecNo])]);
         pvCheckJumpValues:
+          // Either an invalid value OR a jump back in flow.
           with ResRecord.Field do
-            S += Format('Value = %s, is not a valid jump value!', [AsString[ResRecord.RecNo]]);
+          begin
+            Jmp := Jumps.JumpFromValue[AsString[ResRecord.RecNo]];
+            if not Assigned(Jmp) then
+              S += Format('Value = %s, is not a valid jump value!', [AsString[ResRecord.RecNo]])
+            else
+              S += Format('Value = %s, is a jump backward in flow!', [AsString[ResRecord.RecNo]]);
+          end;
       else
           S += Format('Report not implemented for ToolCheck: %s',
                       [GetEnumName(TypeInfo(TEpiToolsProjectValidateOption), Integer(ResRecord.FailedCheck))]);
