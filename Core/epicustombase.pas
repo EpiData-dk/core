@@ -821,7 +821,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    result := WideLowerCase(Attr.Value) = 'true'
+    result := LowerCase(Attr.Value) = 'true'
   else
     Result := DefaultVal;
 end;

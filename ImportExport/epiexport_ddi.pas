@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes, epiexportsettings, DOM, epicustombase, fgl;
+  epieximtypes, epiexportsettings, Laz2_DOM, epicustombase, fgl;
 
 type
   { TEpiDDIExport }
@@ -114,7 +114,7 @@ type
 implementation
 
 uses
-  XMLWrite, epiexport, LazUTF8;
+  laz2_XMLWrite, epiexport, LazUTF8;
 
 const
   NSreuseable           = 'ddi:reusable:3_1';
@@ -901,6 +901,7 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Date');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftTime,
         ftTimeAuto:
@@ -908,14 +909,17 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Time');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftString,
         ftUpperString:
           begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'TextRepresentation');
             ReprElem.SetAttribute('maxLength', IntToStr(F.Length));
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
       end;
+
     // Missing Value
     if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
@@ -928,7 +932,14 @@ begin
       ReprElem.SetAttribute('missingValue', TrimRight(S));
       RestoreFormatSettings;
     end;
-    ReprElem.SetAttribute('blankIsMissingValue', 'true');
+
+    // Only add blankIsMissingValue if the field actually contains data.
+    for j := 0 to F.Size -1 do
+      if F.IsMissing[j] then
+      begin
+        ReprElem.SetAttribute('blankIsMissingValue', 'true');
+        Continue;
+      end;
   end;
 end;
 
@@ -967,9 +978,12 @@ begin
 
     AppendElemReferenceType(CodScheme, NSlogicalproduct, 'CategorySchemeReference', CatScheme);
 
+    BackupFormatSettings;
+    FormatSettings.DecimalSeparator := '.';
     for j := 0 to VSet.Count - 1 do
     begin
       V := VSet[j];
+      if V.IsMissingValue and FSettings.RemoveMissingVL then continue;
 
       Cat := AppendElemVersionableType(CatScheme, NSlogicalproduct, 'Category', 'cat');
       AppendElem(Cat, NSreuseable, 'Label', V.TheLabel.Text);
@@ -979,6 +993,7 @@ begin
 
       AppendElem(Cod, NSlogicalproduct, 'Value', V.ValueAsString);
     end;
+    RestoreFormatSettings;
   end;
 
   for i := 0 to CodSchemeList.Count - 1 do
