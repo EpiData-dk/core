@@ -176,21 +176,24 @@ var
   L: TList;
   FI: TEpiToolFilterInfo;
   i: Integer;
+  FIList: TList;
 begin
+  FIList := TList.Create;
+
   for i := 0 to DF.Fields.Count - 1 do
   begin
     F := DF.Field[i];
 
     L := TList(F.RemoveCustomData(EPITOOL_FILTER_CUSTDATA));
     if Assigned(L) then
-      while Assigned(L.Last) do
-      begin
-        FI := TEpiToolFilterInfo(L.Last);
-        L.Remove(FI);
-        FI.Free;
-      end;
+      FIList.Assign(L, laOr);
+
     L.Free;
   end;
+  For i := 0 to FIList.Count - 1 do
+    TObject(FIList[i]).Free;
+  FIList.Clear;
+  FIList.Free;
 end;
 
 end.

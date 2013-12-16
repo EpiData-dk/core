@@ -114,7 +114,7 @@ type
 implementation
 
 uses
-  laz2_XMLWrite, epiexport, LazUTF8;
+  laz2_XMLWrite, epiexport, LazUTF8, epitools_filterinfo;
 
 const
   NSreuseable           = 'ddi:reusable:3_1';
@@ -846,24 +846,51 @@ var
   ReprElem: TDOMElement;
   j: Integer;
   S: String;
+  L: TList;
 begin
   Result := AppendElemMaintainableType(nil, NSlogicalproduct, 'VariableScheme', 'vars');
 
   Df := EpiDoc.DataFiles[0];
+  EpiTool_UpdateFilterInformation(DF);
+
   for i := 0 to Df.Fields.Count -1 do
   begin
     F := Df.Field[i];
+    L := TList(F.FindCustomData(EPITOOL_FILTER_CUSTDATA));
+    S := '';
+
+    // Create Filter Element.
+    if (Assigned(L))
+    then
+      begin
+        S := 'Filter: ' + TEpiToolFilterInfo(L[0]).Field.Name;
+        for j := 1 to L.Count - 1 do
+          if TEpiToolFilterInfo(L[j]).Field = TEpiToolFilterInfo(L[J-1]).Field then
+            continue
+          else
+            S += ', ' + TEpiToolFilterInfo(L[j]).Field.Name;
+      end;
 
     VarElem := AppendElemVersionableType(Result, NSlogicalproduct, 'Variable', 'vari');
     VarsMap.Add(@F, @VarElem);
 
+    // DDA specific coding... remove when appropriate! :)
+    if (FSettings.FilterTagIsUserId) and (S <> '') then
+      begin
+        Elem := AppendElem(VarElem, NSreuseable, 'UserID', S);
+        Elem.SetAttribute('type', 'filter');
+      end;
+
     AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
+
+    if (not FSettings.FilterTagIsUserId) and (S <> '') then
+      AppendElemInternationalStringType(VarElem, NSreuseable, 'Description', S);
+
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'ConceptReference',  idFromMap(ConcMap, F.Section));
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
-
 
     if Assigned(F.ValueLabelSet) then
     begin
@@ -941,6 +968,7 @@ begin
         Continue;
       end;
   end;
+  EpiTool_RemoveFilterInformation(DF);
 end;
 
 procedure TEpiDDIExport.BuildCodeScheme(LogicalProduct: TDOMElement);
