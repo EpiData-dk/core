@@ -30,7 +30,7 @@ type
 implementation
 
 uses
-  contnrs, LCLIntf, fgl;
+  contnrs, fgl;
 
 type
   TIntegrityList = specialize TFPGMap<Integer, Integer>;  // Maps RecNo -> FailValue

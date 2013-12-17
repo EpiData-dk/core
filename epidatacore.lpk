@@ -289,26 +289,18 @@
         <UnitName Value="epitools_filterinfo"/>
       </Item63>
     </Files>
-    <RequiredPkgs Count="5">
+    <RequiredPkgs Count="3">
       <Item1>
-        <PackageName Value="LCLBase"/>
+        <PackageName Value="LazUtils"/>
         <MinVersion Major="1" Valid="True"/>
       </Item1>
       <Item2>
-        <PackageName Value="LazUtils"/>
-        <MinVersion Major="1" Valid="True"/>
-      </Item2>
-      <Item3>
         <PackageName Value="lnetbase"/>
         <MinVersion Minor="6" Valid="True"/>
-      </Item3>
-      <Item4>
+      </Item2>
+      <Item3>
         <PackageName Value="dcpcrypt"/>
-      </Item4>
-      <Item5>
-        <PackageName Value="FCL"/>
-        <MinVersion Major="1" Valid="True"/>
-      </Item5>
+      </Item3>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

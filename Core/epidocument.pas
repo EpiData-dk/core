@@ -90,7 +90,7 @@ type
 implementation
 
 uses
-  epimiscutils, LCLIntf;
+  epimiscutils;
 
 { TEpiDocument }
 
