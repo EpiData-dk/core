@@ -45,7 +45,7 @@ type
 implementation
 
 uses
-  LazUTF8, typinfo, epireport_types;
+  LazUTF8, typinfo, epireport_types, epireport_report_fieldlist;
 
 { TEpiReportProjectValidator }
 resourcestring
@@ -73,6 +73,7 @@ var
   Opt: TEpiToolsProjectValidateOption;
   I: Integer;
   S: String;
+  R: TEpiReportFieldList;
 begin
   DoSection('Selections for validation:');
   DoLineText('');
@@ -103,9 +104,11 @@ begin
     end;
 
   DoLineText('');
-  DoHeading('Validation Fields:');
-  for i := 0 to ValidationFields.Count - 1 do
-    DoLineText(ValidationFields[i].Name + ': ' + ValidationFields[i].Question.Text);
+  R := TEpiReportFieldList.Create(FReportGenerator);
+  R.Fields := ValidationFields;
+  R.TableHeader := 'Validation Fields:';
+  R.RunReport;
+  R.Free;
 end;
 
 procedure TEpiReportProjectValidator.DoReportResultTable(
