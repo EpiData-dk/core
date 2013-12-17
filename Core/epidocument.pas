@@ -6,7 +6,7 @@ unit epidocument;
 interface
 
 uses
-  Classes, sysutils, XMLRead, DOM,
+  Classes, sysutils, laz2_XMLRead, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
   epistudy, epirelations, epivaluelabels,
   epicustombase, epidatafilestypes;
@@ -195,12 +195,14 @@ var
   Xin: TXMLInputSource;
 begin
   //ReadXMLFile(RecXml, St);
-  P := TDOMParser.Create;
+  ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
+
+{  P := TDOMParser.Create;
   P.Options.PreserveWhitespace := true;
   Xin := TXMLInputSource.Create(St);
   P.Parse(Xin, RecXml);
   Xin.Free;
-  P.Free;
+  P.Free;    }
 
   // **********************
   // Global <EpiData> structure

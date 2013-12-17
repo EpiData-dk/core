@@ -453,6 +453,10 @@ var
   ProgressMethod: TEpiProgressEvent;
   NodeCount: LongWord;
   NodeNum: LongWord;
+  PStr: PChar;
+  L: Integer;
+  PEnd: PChar;
+  PCur: PChar;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -533,6 +537,7 @@ begin
       rsVerified: Verified[CurRec] := true;
     end;
 
+    {$IFNDEF EPI_TEST_LOAD}
     DataList.DelimitedText := Dummyfy(LocalDeCrypt(UTF8Encode(Node.TextContent)));
     for i := 0 to DataList.Count - 1 do
     begin
@@ -544,6 +549,34 @@ begin
         continue;
       TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
+    {$ELSE}
+    FN := LocalDeCrypt(UTF8Encode(Node.TextContent))[1];
+    PStr := @FN[1];
+    PCur := PStr;
+    L := Length(FN);
+
+    while (PCur - PStr) < L do
+    begin
+      PEnd := PCur;
+      while PEnd^ <> '=' do Inc(PEnd);
+      PEnd^ := #0;
+      FN := StrPas(PCur);
+
+      PCur := PEnd;
+      Inc(PCur);
+      repeat
+        if (PCur^ = #0) or
+           (
+            (PCur^ = ',') and
+            ((PCur - 1)^ <> '\')
+           )
+        then
+          break;
+
+        Inc(PCur);
+      until false;
+    end;
+    {$ENDIF EPI_TEST_LOAD}
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
@@ -1010,6 +1043,8 @@ var
   Jump: TEpiJump;
   i: Integer;
   AField: TEpiField;
+  T1: TDateTime;
+  T2: TDateTime;
 begin
   // Since the main section is autocreated we remove it during load.
   Sections.RemoveItem(MainSection);
@@ -1075,8 +1110,12 @@ begin
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := Sections.GetSectionByName('MAIN');
 
+  T1 := Now;
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
+  T2 := Now;
+  if IsConsole then
+    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;

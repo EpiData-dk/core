@@ -6,7 +6,7 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
+  Classes, SysUtils, Laz2_DOM, DCPrijndael, epidatafilestypes, typinfo,
   contnrs, LazMethodList;
 
 const
@@ -429,7 +429,7 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument,
+  StrUtils, DCPsha256, laz2_XMLRead, epistringutils, episettings, epidocument,
   epidatafiles;
 
 var
@@ -668,7 +668,7 @@ end;
 
 function TEpiCustomBase.NodeIsWhiteSpace(const Node: TDomNode): boolean;
 var
-  P: PWideChar;
+  P: PChar;
 begin
   result := false;
   if (Assigned(Node)) and
@@ -850,7 +850,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    result := WideLowerCase(Attr.Value) = 'true'
+    result := LowerCase(Attr.Value) = 'true'
   else
     Result := DefaultVal;
 end;

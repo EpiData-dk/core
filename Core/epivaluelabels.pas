@@ -5,7 +5,7 @@ unit epivaluelabels;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, epidatafilestypes, variants, DOM;
+  Classes, SysUtils, epicustombase, epidatafilestypes, variants, Laz2_DOM;
 
 type
 

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes, epiexportsettings, DOM, epicustombase, fgl;
+  epieximtypes, epiexportsettings, Laz2_DOM, epicustombase, fgl;
 
 type
   { TEpiDDIExport }
@@ -114,7 +114,7 @@ type
 implementation
 
 uses
-  XMLWrite, epiexport, LazUTF8;
+  laz2_XMLWrite, epiexport, LazUTF8, epitools_filterinfo;
 
 const
   NSreuseable           = 'ddi:reusable:3_1';
@@ -846,24 +846,51 @@ var
   ReprElem: TDOMElement;
   j: Integer;
   S: String;
+  L: TList;
 begin
   Result := AppendElemMaintainableType(nil, NSlogicalproduct, 'VariableScheme', 'vars');
 
   Df := EpiDoc.DataFiles[0];
+  EpiTool_UpdateFilterInformation(DF);
+
   for i := 0 to Df.Fields.Count -1 do
   begin
     F := Df.Field[i];
+    L := TList(F.FindCustomData(EPITOOL_FILTER_CUSTDATA));
+    S := '';
+
+    // Create Filter Element.
+    if (Assigned(L))
+    then
+      begin
+        S := 'Filter: ' + TEpiToolFilterInfo(L[0]).Field.Name;
+        for j := 1 to L.Count - 1 do
+          if TEpiToolFilterInfo(L[j]).Field = TEpiToolFilterInfo(L[J-1]).Field then
+            continue
+          else
+            S += ', ' + TEpiToolFilterInfo(L[j]).Field.Name;
+      end;
 
     VarElem := AppendElemVersionableType(Result, NSlogicalproduct, 'Variable', 'vari');
     VarsMap.Add(@F, @VarElem);
 
+    // DDA specific coding... remove when appropriate! :)
+    if (FSettings.FilterTagIsUserId) and (S <> '') then
+      begin
+        Elem := AppendElem(VarElem, NSreuseable, 'UserID', S);
+        Elem.SetAttribute('type', 'filter');
+      end;
+
     AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
+
+    if (not FSettings.FilterTagIsUserId) and (S <> '') then
+      AppendElemInternationalStringType(VarElem, NSreuseable, 'Description', S);
+
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'ConceptReference',  idFromMap(ConcMap, F.Section));
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
-
 
     if Assigned(F.ValueLabelSet) then
     begin
@@ -901,6 +928,7 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Date');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftTime,
         ftTimeAuto:
@@ -908,14 +936,17 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Time');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftString,
         ftUpperString:
           begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'TextRepresentation');
             ReprElem.SetAttribute('maxLength', IntToStr(F.Length));
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
       end;
+
     // Missing Value
     if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
@@ -928,8 +959,16 @@ begin
       ReprElem.SetAttribute('missingValue', TrimRight(S));
       RestoreFormatSettings;
     end;
-    ReprElem.SetAttribute('blankIsMissingValue', 'true');
+
+    // Only add blankIsMissingValue if the field actually contains data.
+    for j := 0 to F.Size -1 do
+      if F.IsMissing[j] then
+      begin
+        ReprElem.SetAttribute('blankIsMissingValue', 'true');
+        Continue;
+      end;
   end;
+  EpiTool_RemoveFilterInformation(DF);
 end;
 
 procedure TEpiDDIExport.BuildCodeScheme(LogicalProduct: TDOMElement);
@@ -967,9 +1006,12 @@ begin
 
     AppendElemReferenceType(CodScheme, NSlogicalproduct, 'CategorySchemeReference', CatScheme);
 
+    BackupFormatSettings;
+    FormatSettings.DecimalSeparator := '.';
     for j := 0 to VSet.Count - 1 do
     begin
       V := VSet[j];
+      if V.IsMissingValue and FSettings.RemoveMissingVL then continue;
 
       Cat := AppendElemVersionableType(CatScheme, NSlogicalproduct, 'Category', 'cat');
       AppendElem(Cat, NSreuseable, 'Label', V.TheLabel.Text);
@@ -979,6 +1021,7 @@ begin
 
       AppendElem(Cod, NSlogicalproduct, 'Value', V.ValueAsString);
     end;
+    RestoreFormatSettings;
   end;
 
   for i := 0 to CodSchemeList.Count - 1 do
@@ -1180,7 +1223,7 @@ begin
   BuildPhysicalInstance;
 //  BuildArchive;
 
-  WriteXML(XMLDoc, Settings.ExportFileName)
+  WriteXML(XMLDoc, Settings.ExportStream)
 end;
 
 end.
