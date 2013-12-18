@@ -187,6 +187,7 @@ type
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
+    procedure   BeforeDestruction; override;
     destructor  Destroy; override;
     procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
     property    Owner: TEpiCustomBase read FOwner;
@@ -474,13 +475,18 @@ begin
     ClassList.Add(AClasses[i]);
 end;
 
-destructor TEpiCustomBase.Destroy;
+procedure TEpiCustomBase.BeforeDestruction;
 begin
   // Do the last Free notification to the event hooks.
   // - this allows for objects pointing the "self" to remove reference if needed.
   Include(FState, ebsDestroying);
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
+  inherited BeforeDestruction;
+end;
+
+destructor TEpiCustomBase.Destroy;
+begin
   FClassList.Free;
   Freemem(FOnChangeList);
   Freemem(FOnChangeListIgnoreUpdate);
