@@ -164,15 +164,110 @@ begin
     if Verified[i] then inc(Result);
 end;
 
-procedure TEpiDataFile.LocalEventHook(Sender: TObject;
-  EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+procedure TEpiDataFile.LocalEventHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGrp: TEpiEventGroup; EventType: Word;
+  Data: pointer);
 var
   F: TEpiField;
   H: TEpiHeading;
   i: Integer;
   S: TEpiSection;
+  Item: TEpiCustomItem;
 begin
-  case EventGrp of
+  // Skip hook if we recieve messages we do not care about.
+  if EventGrp <> eegCustomBase
+  then
+    Exit;
+
+  if not (TEpiCustomChangeEventType(EventType) in [ecceAddItem, ecceDelItem])
+  then
+    Exit;
+
+  // Skip event if initiated from AllControls.
+  if (Initiator = FAllControlItems) or
+     (Initiator = FAllFields) or
+     (Initiator = FAllHeadings)
+  then
+    Exit;
+
+  if (Initiator is TEpiFields) then
+  begin
+    F := TEpiField(Data);
+
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      Fields.RemoveItem(F)
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(F.Name) then
+          F.Name := Fields.GetUniqueItemName(TEpiField);
+        Fields.AddItem(F);
+        F.Size := Size;
+        F.FDataFile := Self;
+      end
+  end;
+
+  if (Initiator is TEpiHeadings) then
+  begin
+    H := TEpiHeading(Data);
+
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      Headings.RemoveItem(H)
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(H.Name) then
+          H.Name := Headings.GetUniqueItemName(TEpiHeading);
+        Headings.AddItem(TEpiHeading(Data));
+      end
+  end;
+
+  if (Initiator is TEpiSections) then
+  begin
+    S := TEpiSection(Data);
+
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      begin
+        if (ebsDestroying in State) then exit;
+
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceDelItem), S.Fields[i]);
+        S.Fields.OnValidateRename := nil;
+
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceDelItem), Heading[i]);
+        S.Headings.OnValidateRename := nil;
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not Self.ValidateRename(S.Name) then
+          S.Name := Sections.GetUniqueItemName(TEpiSection);
+
+        S.FDataFile := Self;
+        S.Fields.OnValidateRename := @Self.ValidateRename;
+        S.Fields.Sorted := true;
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceAddItem), S.Fields[i]);
+
+        S.Headings.OnValidateRename := @Self.ValidateRename;
+        S.Headings.Sorted := true;
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceAddItem), S.Heading[i]);
+      end;
+  end;
+
+  if TObject(Data).InheritsFrom(TEpiCustomControlItem) then
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      ControlItems.RemoveItem(TEpiCustomItem(Data))
+    else
+      ControlItems.AddItem(TEpiCustomItem(Data));
+
+{  case EventGrp of
     eegCustomBase:
       begin
         case TEpiCustomChangeEventType(EventType) of
@@ -258,7 +353,7 @@ begin
             end;
         end;
       end;
-  end;
+  end;     }
 end;
 
 function TEpiDataFile.SaveRecords(Lvl: integer): string;
@@ -626,6 +721,146 @@ begin
   FVersion := AValue;
 end;
 
+procedure TEpiDataFile.DoControlChange(const Initiator: TEpiCustomBase;
+  EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
+var
+  F: TEpiField;
+  H: TEpiHeading;
+  S: TEpiSection;
+  i: Integer;
+begin
+  // Skip event if initiated from AllControls.
+  if (Initiator = FAllControlItems) or
+     (Initiator = FAllFields) or
+     (Initiator = FAllHeadings) or
+     (Initiator = FKeyFields)
+  then
+    Exit;
+
+  if (Initiator is TEpiFields) then
+  begin
+    F := TEpiField(Data);
+
+    if EventType = ecceDelItem
+    then
+      begin
+        // APPLIES TO FIELDS AND HEADING!
+        // Make this test because:
+        // 1) If F is being destroyed, then F will at this point have been
+        //    removed from FAllFields due to the internal hook of TEpiCustomList.
+        //    Hence we will get an error trying to remove it!
+        // 2) If F is being removed/deleted, then F will at this point STILL be
+        //    in the list of FAllFields. Hence we MUST remove it, otherwise our
+        //    internal structures will be in an inconsistent state.
+        if FAllFields.IndexOf(F) > -1 then
+          FAllFields.RemoveItem(F)
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(F.Name) then
+          F.Name := FAllFields.GetUniqueItemName(TEpiField);
+        FAllFields.AddItem(F);
+        F.Size := Size;
+        F.FDataFile := Self;
+      end;
+  end;
+
+  if (Initiator is TEpiHeadings) then
+  begin
+    if EventType = ecceDelItem
+    then
+      begin
+        if FAllHeadings.IndexOf(Data) > -1 then
+          FAllHeadings.RemoveItem(Data)
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(Data.Name) then
+          Data.Name := FAllHeadings.GetUniqueItemName(TEpiHeading);
+        FAllHeadings.AddItem(Data);
+      end;
+  end;
+
+  if (Initiator is TEpiSections) then
+  begin
+    S := TEpiSection(Data);
+
+    if EventType = ecceDelItem
+    then
+      begin
+        if (ebsDestroying in S.State) then exit;
+
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceDelItem), S.Fields[i]);
+        S.Fields.OnValidateRename := nil;
+
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceDelItem), S.Heading[i]);
+        S.Headings.OnValidateRename := nil;
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not Self.ValidateRename(S.Name) then
+          S.Name := Sections.GetUniqueItemName(TEpiSection);
+
+        S.FDataFile := Self;
+        S.Fields.OnValidateRename := @Self.ValidateRename;
+        S.Fields.Sorted := true;
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceAddItem), S.Fields[i]);
+
+        S.Headings.OnValidateRename := @Self.ValidateRename;
+        S.Headings.Sorted := true;
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceAddItem), S.Heading[i]);
+      end;
+  end;
+
+  if EventType = ecceDelItem
+  then
+    begin
+      if FAllControlItems.IndexOf(Data) > -1 then
+        FAllControlItems.RemoveItem(Data)
+    end
+  else
+    FAllControlItems.AddItem(Data);
+end;
+
+procedure TEpiDataFile.DoModifiedChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  if (EventGroup = eegFields) and
+     (TEpiFieldsChangeEventType(EventType) = efceData)
+  then
+    FRecModified := true
+  else
+    if not
+         ((EventGroup = eegCustomBase) and
+          (TEpiCustomChangeEventType(EventType) = ecceUpdate))
+    then
+      FStructureModified := true;
+end;
+
+procedure TEpiDataFile.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  // This check for housekeeping!
+  if (EventGroup = eegCustomBase) and
+     (TEpiCustomChangeEventType(EventType) in [ecceAddItem, ecceDelItem]) and
+     (TObject(Data).InheritsFrom(TEpiCustomControlItem))
+  then
+    DoControlChange(Initiator,
+                    TEpiCustomChangeEventType(EventType),
+                    TEpiCustomControlItem(Data));
+
+  DoModifiedChange(Initiator, EventGroup, EventType, Data);
+end;
+
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
 begin
   Create(AOwner, 0);
@@ -713,6 +948,9 @@ constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
 
+  // MASTER HOOK!
+//  Self.RegisterOnChangeHook(@LocalEventHook, true);
+
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FNotes := TEpiTranslatedText.Create(Self, rsNotes);
@@ -724,7 +962,7 @@ begin
   // Sections
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
-  FSections.RegisterOnChangeHook(@LocalEventHook, true);
+//  FSections.RegisterOnChangeHook(@LocalEventHook, true);
   FSections.OnValidateRename := @ValidateRename;
   FSections.Sorted := true;
 
@@ -732,12 +970,15 @@ begin
   FAllFields := TEpiFields.Create(Self);
   FAllFields.OnSort := @ControlItemListSort;
   FAllFields.Sorted := true;
+  FAllFields.Name := '@ALLFIELDS';
   FAllHeadings := TEpiHeadings.Create(Self);
   FAllHeadings.OnSort := @ControlItemListSort;
   FAllHeadings.Sorted := true;
+  FAllHeadings.Name := '@ALLHEADINGS';
   FAllControlItems := TAllItemsList.Create(Self);
   FAllControlItems.OnSort := @ControlItemListSort;
   FAllControlItems.Sorted := true;
+  FAllControlItems.Name := '@ALLCONTROLS';
 
   // The special main section...
   FMainSection := NewSection;
@@ -749,6 +990,7 @@ begin
 
   // Container for Key Fields.
   FKeyFields := TEpiFields.Create(Self);
+  FKeyFields.Name := '@KEYFIELDS';
 
   RegisterClasses([Caption, Notes, Sections]);
 end;

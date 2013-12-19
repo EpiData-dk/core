@@ -24,15 +24,19 @@ begin
   FCompareType := AValue;
 end;
 
-procedure TEpiComparison.FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
+procedure TEpiComparison.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 var
   Field: TEpiField absolute Sender;
 begin
-  if Sender <> FCompareField then exit;
+  if (Initiator <> FCompareField) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
 
-  if (EventGroup = eegCustomBase) and (EventType = Word(ecceDestroy)) then
-    FCompareField := nil;
+  FCompareField := nil;
+  Initiator.UnRegisterOnChangeHook(@FieldHook);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
 function TEpiComparison.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
@@ -44,9 +48,9 @@ begin
     if (not Assigned(OwnerField.DataFile)) or
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
-      FCompareField := Self.FCompareField
+      CompareField := Self.FCompareField
     else
-      FCompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
+      CompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
     FCompareType := Self.FCompareType;
   end;
 end;
@@ -56,6 +60,12 @@ begin
   inherited Create(AOwner);
   FCompareField := nil;
   FCompareType := fcLT;
+end;
+
+destructor TEpiComparison.Destroy;
+begin
+  CompareField := nil;
+  inherited Destroy;
 end;
 
 function TEpiComparison.XMLName: string;

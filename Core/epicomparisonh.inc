@@ -3,7 +3,6 @@
 type
 
   { TEpiComparison }
-
   TEpiComparisonType = (fcEq, fcNEq, fcLT, fcLEq, fcGEq, fcGT);
   TEpiComparison = class(TEpiCustomBase)
   private
@@ -13,7 +12,8 @@ type
     FCompareType: TEpiComparisonType;
     procedure   SetCompareField(const AValue: TEpiField);
     procedure   SetCompareType(const AValue: TEpiComparisonType);
-    procedure   FieldHook(Sender: TObject; EventGroup: TEpiEventGroup;
+    procedure   FieldHook(Const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
     property    OwnerField: TEpiField read GetOwnerField;
   protected
@@ -21,6 +21,7 @@ type
        nil): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;

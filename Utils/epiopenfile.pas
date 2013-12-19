@@ -54,7 +54,9 @@ type
     FFileName: string;
     FTimeStamp: TTimeStamp;
     FEpiDoc: TEpiDocument;
-    procedure DocumentChange(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure DocumentChange(Const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
     function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure WriteLockFile(Const Fn: string; LF: PLockFile);
@@ -189,13 +191,15 @@ begin
     Result := 'Unknown';
 end;
 
-procedure TEpiDocumentFile.DocumentChange(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiDocumentFile.DocumentChange(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
   // Housekeeping to know if document is being destroyed.
 
   if not (EventGroup = eegCustomBase) then exit;
   if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
+  if (Initiator <> FEpiDoc) then exit;
 
   DeleteLockFile;
 end;
