@@ -49,9 +49,9 @@ begin
   if (not Assigned(OwnerField.DataFile)) or
      (OwnerField.DataFile = Self.OwnerField.DataFile)
   then
-    FResultField := Self.FResultField
+    ResultField := Self.FResultField
   else
-    FResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name];
+    ResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name];
 end;
 
 constructor TEpiCalculation.Create(AOwner: TEpiCustomBase);
@@ -175,19 +175,19 @@ begin
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
     begin
-      FEndDate    := Self.FEndDate;
-      FEndTime    := Self.FEndTime;
-      FStartDate  := Self.FStartDate;
-      FStartTime  := Self.FStartTime;
+      EndDate    := Self.FEndDate;
+      EndTime    := Self.FEndTime;
+      StartDate  := Self.FStartDate;
+      StartTime  := Self.FStartTime;
     end else begin
       if Assigned(Self.FEndDate) then
-        FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
+        EndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
       if Assigned(Self.FEndTime) then
-        FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
+        EndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
       if Assigned(Self.FStartDate) then
-        FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
+        StartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
       if Assigned(Self.FStartTime) then
-        FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
+        StartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
     end;
     FTimeCalcType := Self.FTimeCalcType;
   end;
@@ -321,13 +321,13 @@ begin
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
     begin
-      FDay   := Self.FDay;
-      FMonth := Self.FMonth;
-      FYear  := Self.FYear;
+      Day   := Self.FDay;
+      Month := Self.FMonth;
+      Year  := Self.FYear;
     end else begin
-      FDay   := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FDay.Name]);
-      FMonth := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FMonth.Name]);
-      FYear  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
+      Day   := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FDay.Name]);
+      Month := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FMonth.Name]);
+      Year  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
     end;
   end;
 end;
@@ -446,18 +446,18 @@ begin
     then
     begin
       if Assigned(Self.FField1) then
-        FField1 := Self.FField1;
+        Field1 := Self.FField1;
       if Assigned(Self.FField2) then
-        FField2 := Self.FField2;
+        Field2 := Self.FField2;
       if Assigned(Self.FField3) then
-        FField3 := Self.FField3;
+        Field3 := Self.FField3;
     end else begin
       if Assigned(Self.FField1) then
-        FField1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
+        Field1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
       if Assigned(Self.FField2) then
-        FField2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
+        Field2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
       if Assigned(Self.FField3) then
-        FField3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
+        Field3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
     end;
 
     FDelim1 := Self.FDelim1;

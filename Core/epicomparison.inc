@@ -48,9 +48,9 @@ begin
     if (not Assigned(OwnerField.DataFile)) or
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
-      FCompareField := Self.FCompareField
+      CompareField := Self.FCompareField
     else
-      FCompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
+      CompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
     FCompareType := Self.FCompareType;
   end;
 end;

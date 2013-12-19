@@ -467,13 +467,22 @@ begin
     Dest.FValueLabelWriteField := Dest.DataFile.Fields.FieldByName[FValueLabelWriteField.Name];
 
   if Assigned(Jumps) then
+  begin
+    if Assigned(Dest.FJumps) then Dest.FJumps.Free;
     Dest.FJumps := TEpiJumps(Jumps.Clone(Dest));
+  end;
 
   if Assigned(Comparison) then
+  begin
+    if Assigned(Dest.Comparison) then Dest.Comparison.Free;
     Dest.FComparison := TEpiComparison(Comparison.Clone(Dest));
+  end;
 
   if Assigned(Calculation) then
+  begin
+    if Assigned(Dest.Calculation) then Dest.Calculation.Free;
     Dest.FCalculation := TEpiCalculation(Calculation.Clone(Dest));
+  end;
 end;
 
 constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);

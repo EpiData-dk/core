@@ -153,9 +153,10 @@ begin
       if (not Assigned(TEpiField(Owner.Owner).DataFile)) or
          (TEpiField(Owner.Owner).DataFile = (TEpiField(SElf.Owner.Owner).DataFile))
       then
-        FJumpToField := Self.FJumpToField
+        JumpToField := Self.FJumpToField
       else
-        FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+        JumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+      // Do NOT use FJumpToField - else the event hooks are not attached appropriately.
     end;
   end;
 end;
