@@ -286,17 +286,11 @@ var
   I: Integer;
   B: Boolean;
 begin
-  ALogInfo('TEpiProjectSettings.LoadFromXml (1)');
   AutoIncStartValue := LoadAttrInt(Root, rsAutoIncStart, AutoIncStartValue, false);
-  ALogInfo('TEpiProjectSettings.LoadFromXml (2)');
   BackupInterval    := LoadAttrInt(Root, rsTimedBackupInterval, BackupInterval, false);
-  ALogInfo('TEpiProjectSettings.LoadFromXml (3)');
   BackupOnShutdown  := LoadAttrBool(Root,rsBackupOnShutdown, BackupOnShutdown, false);
-  ALogInfo('TEpiProjectSettings.LoadFromXml (4)');
   ShowFieldNames    := LoadAttrBool(Root, rsShowFieldNames, ShowFieldNames, false);
-  ALogInfo('TEpiProjectSettings.LoadFromXml (5)');
   ShowFieldBorders  := LoadAttrBool(Root, rsShowFieldBorders, ShowFieldBorders, false);
-  ALogInfo('TEpiProjectSettings.LoadFromXml (6)');
 end;
 
 function TEpiProjectSettings.ScrambleXml: boolean;

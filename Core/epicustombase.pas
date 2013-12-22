@@ -856,11 +856,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-  begin
-    ALogInfo('LoadAttrBool(2)');
-    result := LowerCase(Attr.Value) = 'true';
-    ALogInfo('LoadAttrBool(3)');
-  end
+    result := LowerCase(Attr.Value) = 'true'
   else
     Result := DefaultVal;
 end;
