@@ -8,7 +8,7 @@ uses
   jni, sysutils;
 
 const
-  EpiDataFilesJNI = 'Java_dk_epidata_androidclient_core_EpiDataFiles_';
+  EpiDataFilesJNI = 'Java_dk_epidata_androidclient_core_DataFiles_';
 
 function DataFiles_GetDataFile(Env: PJNIEnv; This: jobject; DataFiles: jint; Index: jint): jint; cdecl;
 function DataFiles_NewDataFile(Env: PJNIEnv; This: jobject; DataFiles: jint): jint; cdecl;

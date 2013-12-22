@@ -6,7 +6,7 @@ unit episettings;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, DOM, epidatafilestypes;
+  Classes, SysUtils, epicustombase, Laz2_DOM, epidatafilestypes;
 
 type
 

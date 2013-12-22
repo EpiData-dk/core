@@ -5,7 +5,7 @@ unit epirelations;
 interface
 
 uses
-  Classes, SysUtils, DOM, epicustombase, epidatafiles, epidatafilestypes;
+  Classes, SysUtils, Laz2_DOM, epicustombase, epidatafiles, epidatafilestypes;
 
 type
  TEpiRelations = class;

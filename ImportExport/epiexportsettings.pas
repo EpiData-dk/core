@@ -14,9 +14,13 @@ type
   TEpiExportSetting = class
   public
     // Basic properties
+    ExportStream: TStream;
     ExportFileName: string;
     Doc: TEpiDocument;
     DataFileIndex: integer;
+    // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
+    // (usually used for secondary file export settings, assigned during export).
+    AdditionalExportSettings: TEpiExportSetting;
 
     // Filters
     FromRecord: integer;
@@ -28,8 +32,9 @@ type
 
     // Helpers
     constructor Create; virtual;
+    destructor  Destroy; override;
     procedure   Assign(Const ASettings: TEpiExportSetting); virtual;
-    function SanetyCheck: boolean; virtual;
+    function    SanetyCheck: boolean; virtual;
   end;
   TEpiExportSettingClass = class of TEpiExportSetting;
 
@@ -41,13 +46,11 @@ type
     procedure Assign(Const ASettings: TEpiExportSetting); override;
   end;
 
-  TEpiStataFieldNamingCase = (fncUpper, fncLower, fncAsIs);
-
   { TEpiStataExportSetting }
 
   TEpiStataExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
-    FieldNameCase: TEpiStataFieldNamingCase;
+    FieldNameCase: TEpiFieldNamingCase;
     Version:       TEpiStataVersion;
     ExportLines:   TStrings;
 
@@ -62,7 +65,7 @@ type
 
   TEpiSPSSExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
-
+    Delimiter: char;
   end;
 
   { TEpiSASExportSetting }
@@ -72,10 +75,37 @@ type
 
   end;
 
+  { TEpiDDIExportSetting }
+
+  TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
+  private
+    FExportLang: string;
+    FFilterTagIsUserId: boolean;
+    FRemoveMissingVL: boolean;
+    FSoftwareName: string;
+    FSoftwareVersion: string;
+    FVersion: string;
+  public
+    property SoftwareName: string read FSoftwareName write FSoftwareName;
+    property SoftwareVersion: string read FSoftwareVersion write FSoftwareVersion;
+    property Version: string read FVersion write FVersion;
+    property ExportLang: string read FExportLang write FExportLang;
+    property RemoveMissingVL: boolean read FRemoveMissingVL write FRemoveMissingVL;
+    property FilterTagIsUserId: boolean read FFilterTagIsUserId write FFilterTagIsUserId;
+
+  { Common }
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure Assign(const ASettings: TEpiExportSetting); override;
+    function SanetyCheck: boolean; override;
+  end;
+
   { TEpiCustomTextExportSettings }
 
   TEpiCustomTextExportSettings = class(TEpiExportSetting)
   public
+    ByteOrderMark: boolean;
     ExportFieldNames: boolean;
     QuoteChar: string;
 
@@ -99,12 +129,41 @@ type
     function SanetyCheck: boolean; override;
   end;
 
+  TEpiEPXExportSetting = class(TEpiCustomValueLabelExportSetting);
+
 {  TEpiSpreadSheetExportSetting = class(TEpiCustomTextExportSettings)
   public
     SpreadSheetVersion: byte;  //TODO: Export to spreadsheet using TFPSpreadSheet.
   end;}
 
 implementation
+
+{ TEpiDDIExportSetting }
+
+constructor TEpiDDIExportSetting.Create;
+begin
+  inherited Create;
+  RemoveMissingVL := false;
+  FilterTagIsUserId := false;
+end;
+
+destructor TEpiDDIExportSetting.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TEpiDDIExportSetting.Assign(const ASettings: TEpiExportSetting);
+begin
+  inherited Assign(ASettings);
+  // TODO
+end;
+
+function TEpiDDIExportSetting.SanetyCheck: boolean;
+begin
+  Result :=
+    (ExportLang <> '') and
+    (inherited SanetyCheck);
+end;
 
 { TEpiCustomValueLabelExportSetting }
 
@@ -127,6 +186,7 @@ begin
   ExportFileName := '';
   Doc            := nil;
   DataFileIndex  := -1;
+  AdditionalExportSettings := nil;
 
   // Filters
   FromRecord     := -1;
@@ -134,6 +194,14 @@ begin
   Encoding       := eeUTF8;
   Condition      := '';
   ExportDeleted  := false;
+end;
+
+destructor TEpiExportSetting.Destroy;
+begin
+//  Fields.Free;
+  if Assigned(AdditionalExportSettings) then
+    AdditionalExportSettings.Free;
+  inherited Destroy;
 end;
 
 procedure TEpiExportSetting.Assign(const ASettings: TEpiExportSetting);
@@ -160,9 +228,13 @@ begin
   if FromRecord = -1 then FromRecord := 0;
   if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
 
+  if (ExportStream = nil) and (ExportFileName <> '') then
+    ExportStream := TFileStream.Create(ExportFileName, fmCreate + fmOpenReadWrite);
+
+
   result :=
-    (ExportFileName <> '') and
-    (Fields.Count > 0) and
+    (Assigned(ExportStream)) and
+//    (Fields.Count > 0) and
     (FromRecord >= 0) and
     (ToRecord < Doc.DataFiles[DataFileIndex].Size);
 end;
@@ -200,6 +272,7 @@ constructor TEpiCustomTextExportSettings.Create;
 begin
   inherited Create;
   QuoteChar := '"';
+  ByteOrderMark := false;
 end;
 
 procedure TEpiCustomTextExportSettings.Assign(const ASettings: TEpiExportSetting
@@ -210,6 +283,7 @@ begin
 
   ExportFieldNames := TEpiCustomTextExportSettings(ASettings).ExportFieldNames;
   QuoteChar        := TEpiCustomTextExportSettings(ASettings).QuoteChar;
+  ByteOrderMark    := TEpiCustomTextExportSettings(ASettings).ByteOrderMark;
 end;
 
 { TEpiCSVExportSetting }
@@ -243,22 +317,17 @@ end;
 
 function TEpiCSVExportSetting.SanetyCheck: boolean;
 begin
-  Result :=
-    (inherited SanetyCheck) and
-    // FieldSep compare
-    (FieldSeparator <> DateSeparator) and
-    (FieldSeparator <> TimeSeparator) and
-    (FieldSeparator <> DecimalSeparator) and
-    (FieldSeparator <> QuoteChar) and
-    // Date compare
-    (DateSeparator  <> TimeSeparator) and
-    (DateSeparator  <> DecimalSeparator) and
-    (DateSeparator  <> QuoteChar) and
-    // Time compare
-    (TimeSeparator  <> DecimalSeparator) and
-    (TimeSeparator  <> QuoteChar) and
-    // Decimal compare
-    (DecimalSeparator <> QuoteChar);
+  Result := inherited SanetyCheck;
+
+  // With fixed format delimiters do not interfere.
+  if FixedFormat then Exit;
+
+  // Only make sure that FieldSeparator <> QuoteChar
+  // otherwise an CSV export will enclose data with a delimiter if it
+  // is the same as the FieldSeparator.
+
+  Result := Result and
+    (FieldSeparator <> QuoteChar);
 end;
 
 end.

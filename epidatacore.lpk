@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <Package Version="4">
     <Name Value="epidatacore"/>
@@ -6,7 +6,7 @@
     <CompilerOptions>
       <Version Value="11"/>
       <SearchPaths>
-        <IncludeFiles Value="Core;."/>
+        <IncludeFiles Value="Core;.;Utils"/>
         <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services;Android"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
@@ -23,6 +23,7 @@
       <Linking>
         <Debugging>
           <DebugInfoType Value="dsDwarf2Set"/>
+          <UseValgrind Value="True"/>
         </Debugging>
       </Linking>
       <Other>
@@ -34,7 +35,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="57">
+    <Files Count="65">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -260,30 +261,54 @@
         <UnitName Value="epireport_report_doubleentryvalidate"/>
       </Item56>
       <Item57>
+        <Filename Value="Utils/epiopenfile.pas"/>
+        <UnitName Value="epiopenfile"/>
+      </Item57>
+      <Item58>
+        <Filename Value="Utils/epi_iso639.pas"/>
+        <UnitName Value="epi_iso639"/>
+      </Item58>
+      <Item59>
+        <Filename Value="Utils/desc.inc"/>
+        <Type Value="Include"/>
+      </Item59>
+      <Item60>
+        <Filename Value="Utils/lang.inc"/>
+        <Type Value="Include"/>
+      </Item60>
+      <Item61>
+        <Filename Value="Reports/epireport_report_projectvalidator.pas"/>
+        <UnitName Value="epireport_report_projectvalidator"/>
+      </Item61>
+      <Item62>
+        <Filename Value="Tools/epitools_projectvalidate.pas"/>
+        <UnitName Value="epitools_projectvalidate"/>
+      </Item62>
+      <Item63>
+        <Filename Value="Tools/epitools_filterinfo.pas"/>
+        <UnitName Value="epitools_filterinfo"/>
+      </Item63>
+      <Item64>
         <Filename Value="Android/androidutils.pas"/>
         <UnitName Value="androidutils"/>
-      </Item57>
+      </Item64>
+      <Item65>
+        <Filename Value="Android/log.pas"/>
+        <UnitName Value="log"/>
+      </Item65>
     </Files>
-    <RequiredPkgs Count="5">
+    <RequiredPkgs Count="3">
       <Item1>
-        <PackageName Value="LCLBase"/>
+        <PackageName Value="LazUtils"/>
         <MinVersion Major="1" Valid="True"/>
       </Item1>
       <Item2>
-        <PackageName Value="LazUtils"/>
-        <MinVersion Major="1" Valid="True"/>
-      </Item2>
-      <Item3>
         <PackageName Value="lnetbase"/>
         <MinVersion Minor="6" Valid="True"/>
-      </Item3>
-      <Item4>
+      </Item2>
+      <Item3>
         <PackageName Value="dcpcrypt"/>
-      </Item4>
-      <Item5>
-        <PackageName Value="FCL"/>
-        <MinVersion Major="1" Valid="True"/>
-      </Item5>
+      </Item3>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

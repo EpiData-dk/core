@@ -27,6 +27,8 @@ type
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 
+  EEpiDataFileHaltLoading = class(Exception);
+
   { TEpiDataFile }
 
   TEpiDataFile = class(TEpiCustomItem)
@@ -51,7 +53,9 @@ type
     function    GetVerified(Index: integer): boolean;
     function    GetSize: Integer;
     function    GetVerifiedCount: Integer;
-    procedure   LocalEventHook(Sender: TObject; EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+    procedure   LocalEventHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase; EventGrp: TEpiEventGroup;
+       EventType: Word; Data: pointer);
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
@@ -59,6 +63,7 @@ type
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
   { Load/Save methods }
   private
+    procedure   HaltLoading;
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
     function    SaveKeyFields(Lvl: integer): string;
@@ -121,6 +126,15 @@ type
     property    KeyFields: TEpiFields read FKeyFields;
 
   { Update Overrides}
+  private
+    procedure DoControlChange(Const Initiator: TEpiCustomBase;
+       EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
+    procedure DoModifiedChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+  protected
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
   public
     procedure BeginUpdate; override;
     procedure EndUpdate; override;

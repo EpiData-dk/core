@@ -45,6 +45,32 @@ end;
 
 { TEpiSection }
 
+procedure TEpiSection.ItemsHook(const Sender, Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+{  if EventGroup <> eegCustomBase then exit;
+  if not (
+    (Initiator = Fields) or
+    (Initiator = Headings)
+    )
+  then
+    Exit;
+
+  case TEpiCustomChangeEventType(EventType) of
+{    ecceDestroy: ;
+    ecceUpdate: ;
+    ecceName: ;}
+    ecceAddItem:
+      FAllControls.AddItem(TEpiCustomControlItem(Data));
+    ecceDelItem:
+      FAllControls.RemoveItem(TEpiCustomControlItem(Data));
+{    ecceSetItem: ;
+    ecceSetTop: ;
+    ecceSetLeft: ;
+    ecceText: ;}
+  end; }
+end;
+
 function TEpiSection.GetField(Index: integer): TEpiField;
 begin
   result := TEpiField(Fields[Index]);
@@ -82,9 +108,14 @@ begin
 
   FFields := TEpiFields.Create(self);
   FFields.ItemOwner := true;
+  FFields.RegisterOnChangeHook(@ItemsHook, true);
 
   FHeadings := TEpiHeadings.Create(self);
   FHeadings.ItemOwner := true;
+  FHeadings.RegisterOnChangeHook(@ItemsHook, true);
+
+  FAllControls := TAllItemsList.Create(self);
+  FAllControls.ItemOwner := false;
 
   FGroups := TEpiGroups.Create(Self);
 
@@ -93,8 +124,11 @@ end;
 
 destructor TEpiSection.Destroy;
 begin
+  FAllControls.Destroy;
   FGroups.Free;
+  FHeadings.UnRegisterOnChangeHook(@ItemsHook);
   FHeadings.Free;
+  FFields.UnRegisterOnChangeHook(@ItemsHook);
   FFields.Free;
   FCaption.Free;
   inherited Destroy;

@@ -6,13 +6,15 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
+  Classes, SysUtils, Laz2_DOM, DCPrijndael, epidatafilestypes, typinfo,
   contnrs, LazMethodList;
 
 const
   EPI_XML_DATAFILE_VERSION = 3;
 
 type
+  EEpiBadVersion  = class(Exception);
+
   TEpiCustomBase = class;
   TEpiCustomItem = class;
   TEpiCustomList = class;
@@ -46,9 +48,15 @@ type
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
     ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
-    ecceSetTop, ecceSetLeft, ecceText
+    ecceSetTop, ecceSetLeft, ecceText, ecceReferenceDestroyed
   );
-  TEpiChangeEvent = procedure(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer) of object;
+  TEpiChangeEvent = procedure(
+    Const Sender: TEpiCustomBase;     // Who is currently transmitting the event.
+    Const Initiator: TEpiCustomBase;  // Who initiated the event
+    EventGroup: TEpiEventGroup;       // Grouping of eventtypes
+    EventType: Word;                  // Actual event type.
+    Data: Pointer                     // Data associated with the event
+  ) of object;
 
   TEpiCustomBaseState = set of (ebsDestroying, ebsUpdating);
 
@@ -134,7 +142,19 @@ type
     FOnChangeListIgnoreUpdate: TMethodList;
     FUpdateCount: Integer;
   protected
-    procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual;
+    procedure  DoChange(EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); overload;
+    { CONTRACT:
+      All objects part of the an object-chain (owned->owner...) should override DoChange
+      and perform actions related to the event being chained. All other objects that want
+      to be notified of changes should do so using ChangeHooks!
+      Eg.:
+        1) If an TEpiCustomItem is destroyed, it will end an ecceDestroy event through the chain.
+        2) The owning TEpiCustomList should (if it wants/needs to) handle this during DoChange.
+        3) Any other objects not being part of this chain, eg. sibling TEpiCustomItem's should
+           add a ChangeHook using RegisterOnChangeHook.
+    }
+    procedure  DoChange(Const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); virtual; overload;
   public
     procedure  BeginUpdate; virtual;
     procedure  EndUpdate; virtual;
@@ -167,6 +187,7 @@ type
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
+    procedure   BeforeDestruction; override;
     destructor  Destroy; override;
     procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
     property    Owner: TEpiCustomBase read FOwner;
@@ -297,8 +318,10 @@ type
     FItemOwner: boolean;
     FList: TFPList;
     procedure   SetItemOwner(const AValue: boolean);
-    procedure   OnChangeHook(Sender: TObject; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
+    procedure   OnChangeHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup;
+       EventType: Word; Data: Pointer);
     procedure   RegisterItem(Item: TEpiCustomItem);
     procedure   UnRegisterItem(Item: TEpiCustomItem);
   protected
@@ -348,6 +371,10 @@ type
   public
     property   OnNewItemClass: TEpiOnNewItemClass read FOnNewItemClass write FOnNewItemClass;
   { Change-event hooks overrides }
+  protected
+    procedure DoChange(const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+       overload;
   public
     procedure  BeginUpdate; override;
     procedure  EndUpdate; override;
@@ -381,9 +408,14 @@ type
 
   TEpiCustomControlItemList = class(TEpiCustomList)
   private
-    procedure ChangeHook(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure ChangeHook(Const Sender: TEpiCustomBase;
+       Const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
   protected
     procedure DoSort; override;
+    procedure DoChange(const Initiator: TEpiCustomBase;
+       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+       overload;
   public
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  DeleteItem(Index: integer): TEpiCustomItem; override;
@@ -398,7 +430,7 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils, episettings, epidocument,
+  StrUtils, DCPsha256, laz2_XMLRead, epistringutils, episettings, epidocument,
   epidatafiles, androidutils;
 
 var
@@ -443,13 +475,18 @@ begin
     ClassList.Add(AClasses[i]);
 end;
 
-destructor TEpiCustomBase.Destroy;
+procedure TEpiCustomBase.BeforeDestruction;
 begin
   // Do the last Free notification to the event hooks.
   // - this allows for objects pointing the "self" to remove reference if needed.
   Include(FState, ebsDestroying);
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
+  inherited BeforeDestruction;
+end;
+
+destructor TEpiCustomBase.Destroy;
+begin
   FClassList.Free;
   Freemem(FOnChangeList);
   Freemem(FOnChangeListIgnoreUpdate);
@@ -637,7 +674,7 @@ end;
 
 function TEpiCustomBase.NodeIsWhiteSpace(const Node: TDomNode): boolean;
 var
-  P: PWideChar;
+  P: PChar;
 begin
   result := false;
   if (Assigned(Node)) and
@@ -755,7 +792,6 @@ function TEpiCustomBase.LoadAttrInt(const Root: TDOMNode;
 var
   Attr: TDOMAttr;
 begin
-  ALogInfo('TEpiCustomBase.LoadAttrInt (1)');
   if LoadAttr(Attr, Root, AttrName, Fatal) then
     Result := StrToInt64(Attr.Value)
   else
@@ -820,7 +856,11 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    result := WideLowerCase(Attr.Value) = 'true'
+  begin
+    ALogInfo('LoadAttrBool(2)');
+    result := LowerCase(Attr.Value) = 'true';
+    ALogInfo('LoadAttrBool(3)');
+  end
   else
     Result := DefaultVal;
 end;
@@ -958,23 +998,43 @@ end;
 
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
+begin
+  DoChange(Self, EventGroup, EventType, Data);
+end;
+
+procedure TEpiCustomBase.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 var
   i: Integer;
+  S: String;
+  M: TEpiChangeEvent;
 begin
+  S := Self.ClassName;
+
   I := FOnChangeListIgnoreUpdate.Count;
   while FOnChangeListIgnoreUpdate.NextDownIndex(I) do
-    TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I])(Self, EventGroup, EventType, Data);
+  begin
+    M := TEpiChangeEvent(FOnChangeListIgnoreUpdate.Items[I]);
+    M(Self, Initiator, EventGroup, EventType, Data);
+  end;
 
   if ((EventGroup = eegCustomBase) and (EventType <> Word(ecceUpdate))) or
      (EventGroup <> eegCustomBase)
   then
     Modified := true;
 
-  if FUpdateCount > 0 then exit;
+  if FUpdateCount = 0 then
+  begin
+    I := FOnChangeList.Count;
+    while FOnChangeList.NextDownIndex(I) do
+    begin
+      M := TEpiChangeEvent(FOnChangeList.Items[I]);
+      M(Self, Initiator, EventGroup, EventType, Data);
+    end;
+  end;
 
-  I := FOnChangeList.Count;
-  while FOnChangeList.NextDownIndex(I) do
-    TEpiChangeEvent(FOnChangeList.Items[I])(Self, EventGroup, EventType, Data);
+  if Assigned(Owner) then
+    Owner.DoChange(Initiator, EventGroup, EventType, Data);
 end;
 
 procedure TEpiCustomBase.BeginUpdate;
@@ -1096,8 +1156,7 @@ begin
   Val := FCurrentText;
   SetText(FCurrentLang, AValue);
   FCurrentText := AValue;
-  if Assigned(Owner) then
-    Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
+  DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
 procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
@@ -1111,16 +1170,14 @@ begin
   begin
     Val := FCurrentText;
     FCurrentText := TString(FTextList.Objects[Idx]).Str;
-    if Assigned(Owner) then
-      Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
+    DoChange(eegCustomBase, Word(ecceText), @Val);
   end
   // Fallback to default language
   else if (FTextList.Find(FDefaultLang, Idx)) and (not DefaultLanguage) then
   begin
     Val := FCurrentText;
     FCurrentText := TString(FTextList.Objects[Idx]).Str;
-    if Assigned(Owner) then
-      Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
+    DoChange(eegCustomBase, Word(ecceText), @Val);
   end
   // If new default language does not exists create empty entry.
   else if DefaultLanguage then
@@ -1187,7 +1244,7 @@ begin
   ElemList := TDOMElement(Root).GetElementsByTagName(XMLName);
   for i := 0 to ElemList.Count -1 do
   begin
-    // Ugly hack to prevent looking at nodes that is not directly benieth the root.
+    // Ugly hack to prevent looking at nodes that is not directly below the root.
     if ElemList[i].ParentNode <> Root then continue;
     LangCode := UTF8Encode(TDOMElement(ElemList[i]).AttribStrings['xml:lang']);
     Val := UTF8Encode(ElemList[i].TextContent);
@@ -1248,8 +1305,7 @@ begin
     TString(FTextList.Objects[Idx]).Str := AText;
   end else
     FTextList.AddObject(LangCode, TString.Create(AText));
-  if Assigned(Owner) then
-    Owner.DoChange(eegCustomBase, Word(ecceText), @Val);
+  DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
 function TEpiTranslatedText.GetText(const LangCode: string): string;
@@ -1473,15 +1529,19 @@ begin
   FItemOwner := AValue;
 end;
 
-procedure TEpiCustomList.OnChangeHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCustomList.OnChangeHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 var
-  EpiSender: TEpiCustomItem absolute Sender;
+  EpiInitiator: TEpiCustomItem absolute Initiator;
 begin
+  if Initiator = self then exit;
   if EventGroup <> eegCustomBase then exit;
+  if not (Initiator is TEpiCustomItem) then exit;
+  if IndexOf(EpiInitiator) = -1 then exit;
 
   case TEpiCustomChangeEventType(EventType) of
-    ecceDestroy: RemoveItem(EpiSender);
+    ecceDestroy: RemoveItem(EpiInitiator);
     ecceAddItem: Sort;
     ecceDelItem: Sort;
     ecceUpdate:  Sort;
@@ -1490,14 +1550,13 @@ end;
 
 procedure TEpiCustomList.RegisterItem(Item: TEpiCustomItem);
 begin
-  if ItemOwner then Item.FOwner := Self;
-  Item.RegisterOnChangeHook(@OnChangeHook, true);
-
   if ItemOwner then
   begin
+    Item.FOwner := Self;
     Item.SetLanguage(FDefaultLang, true);
     Item.SetLanguage(FCurrentLang, false);
-  end;
+  end else
+    Item.RegisterOnChangeHook(@OnChangeHook, true);
 
   DoChange(eegCustomBase, Word(ecceAddItem), Item);
   if Sorted then Sort;
@@ -1603,6 +1662,13 @@ begin
     result := result and OnValidateRename(NewName);
 end;
 
+procedure TEpiCustomList.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+  OnChangeHook(Self, Initiator, EventGroup, EventType, Data);
+end;
+
 destructor TEpiCustomList.Destroy;
 var
   F: TEpiCustomItem;
@@ -1642,7 +1708,7 @@ begin
     F := TEpiCustomItem(FList.Last);
     RemoveItem(F);
     if ItemOwner then
-      FreeAndNil(F);
+      F.Free;
   end;
 end;
 
@@ -1869,10 +1935,15 @@ begin
     result := Item1 - Item2;
 end;
 
-procedure TEpiCustomControlItemList.ChangeHook(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiCustomControlItemList.ChangeHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  EpiInitiator: TEpiCustomControlItem absolute Initiator;
 begin
   if (EventGroup <> eegCustomBase) then exit;
+  if not (Initiator is TEpiCustomControlItem) then exit;
+  if IndexOf(EpiInitiator) = -1 then exit;
 
   case TEpiCustomChangeEventType(EventType) of
     ecceSetTop:  Sort;
@@ -1891,11 +1962,19 @@ begin
     FOnSort := nil;
 end;
 
+procedure TEpiCustomControlItemList.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+  ChangeHook(Self, Initiator, EventGroup, EventType, Data);
+end;
+
 procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
   Item: TEpiCustomItem);
 begin
   inherited InsertItem(Index, Item);
-  Item.RegisterOnChangeHook(@ChangeHook, true);
+  if not ItemOwner then
+    Item.RegisterOnChangeHook(@ChangeHook, true);
 end;
 
 function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;

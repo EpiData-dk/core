@@ -17,6 +17,7 @@ type
 
   TEpiReportBase = class
   private
+    FSelfCreatedReportGenerator: Boolean;
     procedure SanityCheck;
   protected
     FReportGenerator: TEpiReportGeneratorBase;
@@ -29,7 +30,9 @@ type
       );
     procedure DoTableFooter(Const Text: string);
     procedure DoTableCell(Const Col, Row: Integer; Const Text: string;
-      CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust);
+      CellAdjust: TEpiReportGeneratorTableCellAdjustment = tcaAutoAdjust;
+      Const CellOptions: TEpiReportGeneratorTableCellOptionSet = []
+      );
     procedure DoSection(Const Text: string);
     procedure DoHeading(Const Text: string);
     procedure DoLineText(Const Text: string);
@@ -41,6 +44,7 @@ type
     // multiple reports. In addition this is the contructor sub-classes should override
     // since it is called from the other constructor.
     constructor Create(ReportGenerator: TEpiReportGeneratorBase); virtual; overload;
+    destructor Destroy; override;
     procedure RunReport; virtual;
     property ReportText: string read GetReportText;
   end;
@@ -81,9 +85,10 @@ begin
 end;
 
 procedure TEpiReportBase.DoTableCell(const Col, Row: Integer;
-  const Text: string; CellAdjust: TEpiReportGeneratorTableCellAdjustment);
+  const Text: string; CellAdjust: TEpiReportGeneratorTableCellAdjustment;
+  const CellOptions: TEpiReportGeneratorTableCellOptionSet);
 begin
-  FReportGenerator.TableCell(Text, Col, Row, CellAdjust);
+  FReportGenerator.TableCell(Text, Col, Row, CellAdjust, CellOptions);
 end;
 
 procedure TEpiReportBase.DoSection(const Text: string);
@@ -105,11 +110,19 @@ constructor TEpiReportBase.Create(
   ReportGeneratorClass: TEpiReportGeneratorBaseClass);
 begin
   Create(ReportGeneratorClass.Create);
+  FSelfCreatedReportGenerator := true;
 end;
 
 constructor TEpiReportBase.Create(ReportGenerator: TEpiReportGeneratorBase);
 begin
   FReportGenerator := ReportGenerator;
+end;
+
+destructor TEpiReportBase.Destroy;
+begin
+  if FSelfCreatedReportGenerator then
+    FReportGenerator.Free;
+  inherited Destroy;
 end;
 
 procedure TEpiReportBase.RunReport;

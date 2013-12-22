@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes, epiexportsettings, DOM, epicustombase, fgl;
+  epieximtypes, epiexportsettings, Laz2_DOM, epicustombase, fgl;
 
 type
   { TEpiDDIExport }
@@ -114,7 +114,7 @@ type
 implementation
 
 uses
-  XMLWrite, epiexport, LazUTF8;
+  laz2_XMLWrite, epiexport, LazUTF8, epitools_filterinfo;
 
 const
   NSreuseable           = 'ddi:reusable:3_1';
@@ -173,7 +173,8 @@ function TEpiDDIExport.AppendElem(Root: TDOMElement; const NameSpace,
   NodeName: string; const Text: String): TDOMElement;
 begin
   Result := XMLDoc.CreateElementNS(NameSpace, NodeName);
-  Result.TextContent := Text;
+  if Text <> '' then
+    Result.TextContent := Text;
   if Assigned(Root) then
     Root.AppendChild(Result);
 end;
@@ -182,7 +183,9 @@ function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Text: String): TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName, Text);
-  AddAttrLang(Result, EpiDoc.DefaultLang);
+  AddAttrLang(Result, FSettings.ExportLang {EpiDoc.DefaultLang});
+  Result.SetAttribute('translatable', 'true');
+  Result.SetAttribute('translated',   'false');
 end;
 
 function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;
@@ -236,23 +239,28 @@ var
   TxtExportSetting: TEpiCSVExportSetting;
   i: Integer;
 begin
-  TxtExportSetting := TEpiCSVExportSetting.Create;
-  TxtExportSetting.Assign(FSettings);
-  TxtExportSetting.FieldSeparator := '!';
-  TxtExportSetting.DecimalSeparator := '.';
-  TxtExportSetting.DateSeparator  := '-';
-  TxtExportSetting.TimeSeparator  := ':';
-  TxtExportSetting.QuoteChar      := '';
-  TxtExportSetting.FixedFormat    := true;
-  TxtExportSetting.NewLine        := LineEnding;
-  TxtExportSetting.Encoding       := eeUTF8;
-  TxtExportSetting.ExportFieldNames := false;
+  if Assigned(FSettings.AdditionalExportSettings) and
+     (FSettings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    TxtExportSetting := TEpiCSVExportSetting(FSettings.AdditionalExportSettings)
+  else begin
+    TxtExportSetting := TEpiCSVExportSetting.Create;
+    TxtExportSetting.Assign(FSettings);
+    TxtExportSetting.FieldSeparator := #9;
+    TxtExportSetting.DecimalSeparator := ',';
+    TxtExportSetting.DateSeparator  := '-';
+    TxtExportSetting.TimeSeparator  := ':';
+    TxtExportSetting.QuoteChar      := '"';
+    TxtExportSetting.FixedFormat    := false;
+    TxtExportSetting.NewLine        := LineEnding;
+    TxtExportSetting.ExportFieldNames := false;
+  end;
+
   TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
-  for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
-    TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].Field[i]);
+  TxtExportSetting.Encoding       := eeUTF8;
 
   CSVExporter := TEpiExport.Create;
-  CSVExporter.ExportCSV(TxtExportSetting);
+  CSVExporter.Export(TxtExportSetting);
   FSettings.AdditionalExportSettings := TxtExportSetting;
 end;
 
@@ -265,9 +273,6 @@ begin
 
   // Title MUST be present, so assume it is...
   AppendElemInternationalStringType(Citation, NSreuseable, 'Title', EpiDoc.Study.Title.Text);
-
-{  if FSettings.CitSubTitle <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle); }
 
   if EpiDoc.Study.Author <> '' then
     AppendElemInternationalStringType(Citation, NSreuseable, 'Creator', EpiDoc.Study.Author);
@@ -282,9 +287,6 @@ begin
     Elem := AppendElemInternationalStringType(Citation, NSreuseable, 'InternationalIdentifier', EpiDoc.Study.Identifier);
     Elem.SetAttribute('type', 'Other');
   end;
-
-{  if FSettings.CitCopyRight <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'Copyright', EpiDoc.Study.ri);   }
 end;
 
 procedure TEpiDDIExport.BuildAbstract;
@@ -550,9 +552,9 @@ begin
     QuieMap.Add(@F, @QItem);
 
     Elem := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionItemName', F.Name);
-    QText := AppendElem(QItem, NSdatacollection, 'QuestionText');
+    QText := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText');
-    AppendElemInternationalStringType(QLiteralText, NSdatacollection, 'Text', Question.Text);
+    AppendElem(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
     if Assigned(ValueLabelSet) then
     begin
@@ -608,11 +610,14 @@ begin
     // Missing Value
     if Assigned(ValueLabelSet) and (ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to ValueLabelSet.Count -1 do
         if ValueLabelSet[j].IsMissingValue then
           S += ValueLabelSet[j].ValueAsString + ' ';
       Domain.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
     Domain.SetAttribute('blankIsMissingValue', 'true');
 
@@ -841,24 +846,51 @@ var
   ReprElem: TDOMElement;
   j: Integer;
   S: String;
+  L: TList;
 begin
   Result := AppendElemMaintainableType(nil, NSlogicalproduct, 'VariableScheme', 'vars');
 
   Df := EpiDoc.DataFiles[0];
+  EpiTool_UpdateFilterInformation(DF);
+
   for i := 0 to Df.Fields.Count -1 do
   begin
     F := Df.Field[i];
+    L := TList(F.FindCustomData(EPITOOL_FILTER_CUSTDATA));
+    S := '';
+
+    // Create Filter Element.
+    if (Assigned(L))
+    then
+      begin
+        S := 'Filter: ' + TEpiToolFilterInfo(L[0]).Field.Name;
+        for j := 1 to L.Count - 1 do
+          if TEpiToolFilterInfo(L[j]).Field = TEpiToolFilterInfo(L[J-1]).Field then
+            continue
+          else
+            S += ', ' + TEpiToolFilterInfo(L[j]).Field.Name;
+      end;
 
     VarElem := AppendElemVersionableType(Result, NSlogicalproduct, 'Variable', 'vari');
     VarsMap.Add(@F, @VarElem);
 
+    // DDA specific coding... remove when appropriate! :)
+    if (FSettings.FilterTagIsUserId) and (S <> '') then
+      begin
+        Elem := AppendElem(VarElem, NSreuseable, 'UserID', S);
+        Elem.SetAttribute('type', 'filter');
+      end;
+
     AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
+
+    if (not FSettings.FilterTagIsUserId) and (S <> '') then
+      AppendElemInternationalStringType(VarElem, NSreuseable, 'Description', S);
+
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'ConceptReference',  idFromMap(ConcMap, F.Section));
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
-
 
     if Assigned(F.ValueLabelSet) then
     begin
@@ -896,6 +928,7 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Date');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftTime,
         ftTimeAuto:
@@ -903,25 +936,39 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Time');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftString,
         ftUpperString:
           begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'TextRepresentation');
             ReprElem.SetAttribute('maxLength', IntToStr(F.Length));
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
       end;
+
     // Missing Value
     if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to F.ValueLabelSet.Count -1 do
         if F.ValueLabelSet[j].IsMissingValue then
           S += F.ValueLabelSet[j].ValueAsString + ' ';
       ReprElem.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
-    ReprElem.SetAttribute('blankIsMissingValue', 'true');
+
+    // Only add blankIsMissingValue if the field actually contains data.
+    for j := 0 to F.Size -1 do
+      if F.IsMissing[j] then
+      begin
+        ReprElem.SetAttribute('blankIsMissingValue', 'true');
+        Continue;
+      end;
   end;
+  EpiTool_RemoveFilterInformation(DF);
 end;
 
 procedure TEpiDDIExport.BuildCodeScheme(LogicalProduct: TDOMElement);
@@ -959,9 +1006,12 @@ begin
 
     AppendElemReferenceType(CodScheme, NSlogicalproduct, 'CategorySchemeReference', CatScheme);
 
+    BackupFormatSettings;
+    FormatSettings.DecimalSeparator := '.';
     for j := 0 to VSet.Count - 1 do
     begin
       V := VSet[j];
+      if V.IsMissingValue and FSettings.RemoveMissingVL then continue;
 
       Cat := AppendElemVersionableType(CatScheme, NSlogicalproduct, 'Category', 'cat');
       AppendElem(Cat, NSreuseable, 'Label', V.TheLabel.Text);
@@ -971,6 +1021,7 @@ begin
 
       AppendElem(Cod, NSlogicalproduct, 'Value', V.ValueAsString);
     end;
+    RestoreFormatSettings;
   end;
 
   for i := 0 to CodSchemeList.Count - 1 do
@@ -991,7 +1042,9 @@ var
   StartPos: Integer;
   i: Integer;
   S: String;
+  CSVSettings: TEpiCSVExportSetting;
 begin
+  CSVSettings := TEpiCSVExportSetting(FSettings.AdditionalExportSettings);
   PhysDataProd := AppendElemMaintainableType(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct', 'phdp');
 
   // *********************
@@ -1002,8 +1055,9 @@ begin
 
   AppendElemReferenceType(PhysStruct, NSphysicaldataproduct, 'LogicalProductReference', DDILogicalProd);
 
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'FIXED');
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', '.');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'Delimited file');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDelimiter', CSVSettings.FieldSeparator);
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', CSVSettings.DecimalSeparator);
 
   GrossRecStr := AppendElemIdentifiableType(PhysStruct, NSphysicaldataproduct, 'GrossRecordStructure', 'grst');
   AppendElemReferenceType(GrossRecStr, NSphysicaldataproduct, 'LogicalRecordReference', DDILogicalRec);
@@ -1027,7 +1081,6 @@ begin
   AppendElemReferenceType(DDIRely, NSphysicaldataproduct, 'DefaultVariableSchemeReference', DDIVarScheme);
 
   Df := EpiDoc.DataFiles[0];
-  StartPos := 1;
   for i := 0 to Df.Fields.Count - 1 do
   begin
     F := DF.Field[i];
@@ -1053,11 +1106,10 @@ begin
       ftUpperString: S := 'string';
     end;
     AppendElem(Elem, NSphysicaldataproduct, 'StorageFormat', S);
-    AppendElem(Elem, NSphysicaldataproduct, 'StartPosition', IntToStr(StartPos));
+    AppendElem(Elem, NSphysicaldataproduct, 'ArrayPosition', IntToStr(I + 1));
     AppendElem(Elem, NSphysicaldataproduct, 'Width', IntToStr(F.Length));
     if F.FieldType in FloatFieldTypes then
       AppendElem(Elem, NSphysicaldataproduct, 'DecimalPositions', IntToStr(F.Decimals));
-    Inc(StartPos, F.Length);
   end;
 end;
 
@@ -1135,7 +1187,6 @@ end;
 
 function TEpiDDIExport.ExportDDI(const Settings: TEpiDDIExportSetting): boolean;
 begin
-  Settings.SanetyCheck;
   FSettings := Settings;
   EpiDoc := Settings.Doc;
 
@@ -1172,7 +1223,7 @@ begin
   BuildPhysicalInstance;
 //  BuildArchive;
 
-  WriteXML(XMLDoc, Settings.ExportFileName)
+  WriteXML(XMLDoc, Settings.ExportStream)
 end;
 
 end.

@@ -5,7 +5,7 @@ unit epistudy;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, DOM;
+  Classes, SysUtils, epicustombase, Laz2_DOM;
 
 type
 

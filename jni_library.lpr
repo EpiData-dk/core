@@ -3,7 +3,8 @@ library jni_library;
 {$mode objfpc}{$H+}
 
 uses
-  cmem, jni,
+  jni,
+
 
   // EpiData units
   epicustomlist_jni, epidocument_jni, customitem_jni, epidatafiles_jni;
@@ -42,6 +43,7 @@ exports
   Document_CreateFromFile    name DocumentJNI + 'CreateFromFile',
   Document_SaveToFile        name DocumentJNI + 'SaveToFile',
   Document_Destroy           name DocumentJNI + 'Destroy',
+  Document_GetDataFiles      name DocumentJNI + 'GetDataFiles',
 
   // DataFiles:
   // - Datafiles

@@ -15,6 +15,7 @@ function Document_Create(Env: PJNIEnv; This: jobject): jint; cdecl;
 function Document_CreateFromFile(Env: PJNIEnv; This: jobject; FileName: jstring): jint; cdecl;
 procedure Document_Destroy(Env: PJNIEnv; This: jobject; Doc: jint); cdecl;
 procedure Document_SaveToFile(Env: PJNIEnv; This: jobject; Doc: jint; FileName: jstring); cdecl;
+function  Document_GetDataFiles(Env: PJNIEnv; This: jobject; Doc: jint): jint; cdecl;
 
 implementation
 
@@ -41,7 +42,11 @@ begin
   ALogInfo('CreateFromFile (1): Doc = ' + IntToStr(jint(doc)));
   result := jint(doc);
   ALogInfo('CreateFromFile (2)');
-  Doc.LoadFromFile(string(Env^^.GetStringUTFChars(Env, FileName, IsCopy)));
+  FN := GetJNIString(Env, FileName);
+  ALogInfo('FileName: ' + FN);
+
+  Doc.LoadFromFile(FN);
+//  Doc.LoadFromFile(string(Env^^.GetStringUTFChars(Env, FileName, IsCopy)));
 //  Doc.LoadFromFile(GetJNIString(Env, FileName));
   ALogInfo('CreateFromFile (3)');
 end;
@@ -62,6 +67,13 @@ begin
   ALogInfo('FN = ' + FN);
   TEpiDocument(Doc).SaveToFile(FN);
   ALogInfo('Saved = ' + FN);
+end;
+
+function Document_GetDataFiles(Env: PJNIEnv; This: jobject; Doc: jint): jint;
+  cdecl;
+begin
+  ALogInfo('GetDataFiles');
+  Result := jint(TEpiDocument(Doc).DataFiles);
 end;
 
 end.
