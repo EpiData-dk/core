@@ -39,16 +39,9 @@ var
   IsCopy: jboolean;
 begin
   Doc := TEpiDocument.Create('en');
-  ALogInfo('CreateFromFile (1): Doc = ' + IntToStr(jint(doc)));
   result := jint(doc);
-  ALogInfo('CreateFromFile (2)');
   FN := GetJNIString(Env, FileName);
-  ALogInfo('FileName: ' + FN);
-
   Doc.LoadFromFile(FN);
-//  Doc.LoadFromFile(string(Env^^.GetStringUTFChars(Env, FileName, IsCopy)));
-//  Doc.LoadFromFile(GetJNIString(Env, FileName));
-  ALogInfo('CreateFromFile (3)');
 end;
 
 procedure Document_Destroy(Env: PJNIEnv; This: jobject; Doc: jint); cdecl;

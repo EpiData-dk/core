@@ -232,18 +232,14 @@ begin
       [EPI_XML_DATAFILE_VERSION, TmpVersion]
       );
   FVersion := TmpVersion;
-  ALogInfo('TEpiDocument.LoadFromXml (2)');
 
   // Then language!
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
-  ALogInfo('TEpiDocument.LoadFromXml (3)');
 
   // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
-  ALogInfo('TEpiDocument.LoadFromXml (4)');
 
   XMLSettings.LoadFromXml(Node);
-  ALogInfo('TEpiDocument.LoadFromXml (5)');
 
   // XML Version 2:
   if Version >= 2 then
@@ -259,14 +255,13 @@ begin
     PassWord := UserPW;
     FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
   end;
-  ALogInfo('TEpiDocument.LoadFromXml (6)');
 
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node);
 
   // TODO : Include in later versions.
-//  LoadNode(Node, Root, rsAdmin, true);
-//  Admin.LoadFromXml(Node);
+  //  LoadNode(Node, Root, rsAdmin, true);
+  //  Admin.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsProjectSettings, false) then
     ProjectSettings.LoadFromXml(Node);

@@ -85,13 +85,9 @@ var
   IsCopy: jboolean;
   P: PChar;
 begin
-  ALogInfo('GetJNIString (1)');
   P := Env^^.GetStringUTFChars(Env, S, IsCopy);
-  ALogInfo('GetJNIString (2): P = ' + P);
   result := StrPas(P);
-  ALogInfo('GetJNIString (3): Result = ' + result);
-//  Env^^.ReleaseStringUTFChars(Env, S, P);
-  ALogInfo('GetJNIString: 4');
+  Env^^.ReleaseStringUTFChars(Env, S, P);
 end;
 
 function GetJNIStringNoRelease(Env: PJNIEnv; S: jstring; out Handle: pchar): string;
