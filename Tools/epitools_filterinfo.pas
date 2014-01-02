@@ -107,7 +107,7 @@ begin
   begin
     F := Fields[i];
 
-    // Is this Field the destination for a jump, hence should we remove
+    // This Field is the destination for a jump, hence should we remove
     // filter information from the current list of active filters.
     // Otherwise F will falsely display Fields in L as being a filter of F.
     L := TList(F.RemoveCustomData(EPITOOL_FILTER_INTERNAL_DATA));
@@ -151,10 +151,19 @@ begin
 
             Idx := Fields.IndexOf(F);
             Inc(Idx, 2);
+
+            // If Idx >= Field.Count then the skip-next is performed
+            // on the last or second last field in flow. Hence the last
+            // field has "this" field as a filter too. Adding it to a field
+            // as internal data has no meaning then.
+            if (Idx >= Fields.Count) then
+              Continue;
+
             while (Fields[Idx].EntryMode = emNoEnter) do
               Inc(Idx);
 
-            AddFilterInfoToInternalData(Fields[Idx], FI);
+            if (Idx < Fields.Count) then
+              AddFilterInfoToInternalData(Fields[Idx], FI);
           end;
         jtToField:
           begin

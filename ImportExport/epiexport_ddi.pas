@@ -86,7 +86,7 @@ type
     procedure BuildCoverage;
     procedure BuildUnitOfObs;
     procedure BuildKindOfData;
-    procedure BuildNotes;
+    procedure BuildDCElements(Const CitationElem: TDOMElement);
     procedure BuildConceptualComponent;
 
     procedure BuildDataCollection;
@@ -94,7 +94,7 @@ type
     procedure BuildQuestionScheme(DataCollection: TDOMElement);
     // helper: Returns MainSequence
     function  BuildControlConstructScheme(DataCollection: TDOMElement): TDomElement;
-    // Helper: build interviewer instructions (and references from QuestionConstruc to Instruction.
+    // Helper: build interviewer instructions and references from QuestionConstruc to Instruction.
     procedure BuildInterviewerInstructionScheme(DataCollection: TDOMElement);
 
     procedure BuildLogicalProduct;
@@ -125,7 +125,7 @@ const
   NSphysicaldataproduct = 'ddi:physicaldataproduct:3_1';
   NSphysicalinstance    = 'ddi:physicalinstance:3_1';
   NSarchive             = 'ddi:archive:3_1';
-  // .... todo!
+  NSdcelements          = 'ddi:dcelements:3_1';
 
 { TEpiDDIExport }
 
@@ -287,6 +287,8 @@ begin
     Elem := AppendElemInternationalStringType(Citation, NSreuseable, 'InternationalIdentifier', EpiDoc.Study.Identifier);
     Elem.SetAttribute('type', 'Other');
   end;
+
+  BuildDCElements(Citation);
 end;
 
 procedure TEpiDDIExport.BuildAbstract;
@@ -385,32 +387,28 @@ begin
     AppendElem(DDIStudyUnit, NSstudy, 'KindOfData', EpiDoc.Study.Design.Text);
 end;
 
-procedure TEpiDDIExport.BuildNotes;
+procedure TEpiDDIExport.BuildDCElements(const CitationElem: TDOMElement);
 var
-  Elem: TDOMElement;
-  NoteElem: TDOMElement;
+  DCElem: TDOMElement;
 
-  function BuildNote(Const Header, Content: string): TDOMElement;
+  function BuildDCTag(Const DCTag, Content: string): TDOMElement;
+  var
+    Elem: TDOMElement;
   begin
-    NoteElem := AppendElemIdentifiableType(DDIStudyUnit, NSreuseable, 'Note');
-    NoteElem.SetAttribute('type', 'Comment');
-
-    Elem := AppendElem(NoteElem, NSreuseable, 'Relationship');
-    AppendElemReferenceType(Elem, NSreuseable, 'RelatedToReference', DDIStudyUnit);
-
-    AppendElemInternationalStringType(NoteElem, NSreuseable, 'Header', Header);
-    AppendElemInternationalStringType(NoteElem, NSreuseable, 'Content', Content);
+    Elem := AppendElem(DCElem, 'http://purl.org/dc/elements/1.1/', DCTag, Content);
+    AddAttrLang(Elem, FSettings.ExportLang);
   end;
 
 begin
-  // Here we build all additional notes:
+  // Here we build all additional Dublin Core elements:
   // - Citation: Fungerer som ”udgivelser fra studiet”
   // - Rights:   right to use data
   // - Funding:  contributors
+  DCElem := AppendElem(CitationElem, NSdcelements, 'DCElements');
 
-  BuildNote('EpiData: User supplied version information.', EpiDoc.Study.Version);
-  BuildNote('EpiData: Citations', EpiDoc.Study.Citations.Text);
-  BuildNote('EpiData: Funding information', EpiDoc.Study.Funding.Text);
+  BuildDCTag('dc:identifier', EpiDoc.Study.Version);
+  BuildDCTag('dc:source',     EpiDoc.Study.Citations.Text);
+  BuildDCTag('dc:relation',   EpiDoc.Study.Funding.Text);
 end;
 
 procedure TEpiDDIExport.BuildConceptualComponent;
@@ -544,7 +542,7 @@ begin
 
   // Build QuestionItem
   for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
-  with EpiDoc.DataFiles[0].Field[i] do
+//  with EpiDoc.DataFiles[0].Field[i] do
   begin
     F := EpiDoc.DataFiles[0].Field[i];
 
@@ -554,15 +552,21 @@ begin
     Elem := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionItemName', F.Name);
     QText := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText');
-    AppendElem(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
-    if Assigned(ValueLabelSet) then
+    if FSettings.SectionCaptionIsQText and
+       (F.Section <> F.DataFile.MainSection)
+    then
+      AppendElem(QLiteralText, NSdatacollection, 'Text', F.Section.Caption.Text)
+    else
+      AppendElem(QLiteralText, NSdatacollection, 'Text', F.Question.Text);
+
+    if Assigned(F.ValueLabelSet) then
     begin
       Domain := AppendElem(QItem, NSdatacollection, 'CodeDomain');
-      j := ValueLabelSetsGUIDs.IndexOfObject(ValueLabelSet);
+      j := ValueLabelSetsGUIDs.IndexOfObject(F.ValueLabelSet);
       AppendElemReferenceType(Domain, NSreuseable, 'CodeSchemeReference', ValueLabelSetsGUIDs[j]);
     end else
-      case FieldType of
+      case F.FieldType of
         ftBoolean:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
@@ -584,42 +588,53 @@ begin
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
             Domain.SetAttribute('type', 'Float');
-            Domain.SetAttribute('decimalPositions', IntToStr(Decimals));
+            Domain.SetAttribute('decimalPositions', IntToStr(F.Decimals));
           end;
         ftDMYDate, ftMDYDate, ftYMDDate,
         ftDMYAuto, ftMDYAuto, ftYMDAuto:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
             Domain.SetAttribute('type', 'Date');
-            Domain.SetAttribute('format', FormatString());
+            Domain.SetAttribute('format', F.FormatString());
+            Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftTime,
         ftTimeAuto:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
             Domain.SetAttribute('type', 'Time');
-            Domain.SetAttribute('format', FormatString());
+            Domain.SetAttribute('format', F.FormatString());
+            Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftString,
         ftUpperString:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'TextDomain');
-            Domain.SetAttribute('maxLength', IntToStr(Length));
+            Domain.SetAttribute('maxLength', IntToStr(F.Length));
+            Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
       end;
+
     // Missing Value
-    if Assigned(ValueLabelSet) and (ValueLabelSet.MissingCount > 0) then
+    if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
       BackupFormatSettings;
       DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
-      for j := 0 to ValueLabelSet.Count -1 do
-        if ValueLabelSet[j].IsMissingValue then
-          S += ValueLabelSet[j].ValueAsString + ' ';
+      for j := 0 to F.ValueLabelSet.Count -1 do
+        if F.ValueLabelSet[j].IsMissingValue then
+          S += F.ValueLabelSet[j].ValueAsString + ' ';
       Domain.SetAttribute('missingValue', TrimRight(S));
       RestoreFormatSettings;
     end;
-    Domain.SetAttribute('blankIsMissingValue', 'true');
+
+    // Only add blankIsMissingValue if the field actually contains data.
+    for j := 0 to F.Size -1 do
+      if F.IsMissing[j] then
+      begin
+        Domain.SetAttribute('blankIsMissingValue', 'true');
+        Continue;
+      end;
 
     // Add reference to Concept (via Section mapping)
     AppendElemReferenceType(QItem, NSdatacollection, 'ConceptReference', idFromMap(ConcMap, F.Section));
@@ -881,7 +896,17 @@ begin
         Elem.SetAttribute('type', 'filter');
       end;
 
-    AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
+    if (FSettings.RenameVariablesPrefix <> '') and
+       ((FSettings.RenameVariablesPrefix + IntToStr(i+1)) <> F.Name)  // only add UserID if there is a real change!
+    then
+      begin
+        Elem := AppendElem(VarElem, NSreuseable, 'UserID', F.Name);
+        Elem.SetAttribute('type', 'dk.dda.variable.orgvariablename');
+        AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', FSettings.RenameVariablesPrefix + IntToStr(i+1));
+      end
+    else
+      AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
+
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
 
     if (not FSettings.FilterTagIsUserId) and (S <> '') then
@@ -1214,7 +1239,6 @@ begin
   BuildCoverage;
   BuildUnitOfObs;
   BuildKindOfData;
-  BuildNotes;
 
   BuildConceptualComponent;
   BuildDataCollection;

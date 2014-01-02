@@ -82,6 +82,8 @@ type
     FExportLang: string;
     FFilterTagIsUserId: boolean;
     FRemoveMissingVL: boolean;
+    FRenameVariablesPrefix: string;
+    FSectionCaptionIsQText: boolean;
     FSoftwareName: string;
     FSoftwareVersion: string;
     FVersion: string;
@@ -92,6 +94,8 @@ type
     property ExportLang: string read FExportLang write FExportLang;
     property RemoveMissingVL: boolean read FRemoveMissingVL write FRemoveMissingVL;
     property FilterTagIsUserId: boolean read FFilterTagIsUserId write FFilterTagIsUserId;
+    property SectionCaptionIsQText: boolean read FSectionCaptionIsQText write FSectionCaptionIsQText;
+    property RenameVariablesPrefix: string read FRenameVariablesPrefix write FRenameVariablesPrefix;
 
   { Common }
   public
