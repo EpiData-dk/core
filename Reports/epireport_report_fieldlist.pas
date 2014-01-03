@@ -37,7 +37,7 @@ type
 implementation
 
 uses
-  epimiscutils, epidatafilestypes;
+  epimiscutils, epidatafilestypes, LazUTF8;
 
 resourcestring
   SEpiReportFieldListNoFields = 'EpiReport: No fields assigned to field list.';
@@ -77,13 +77,16 @@ begin
   inherited RunReport;
 
   FieldList := TEpiFields.Create(nil);
-  FieldList.Sorted := true;
   for i := 0 to Fields.Count - 1 do FieldList.AddItem(Fields[i]);
   case SortType of
-    stFieldName: FieldList.OnSort := @FieldNameSort;
+    stFieldName:
+      begin
+        FieldList.Sorted := true;
+        FieldList.OnSort := @FieldNameSort;
+        FieldList.Sort;
+      end;
     stEntryFlow: ;// Do nothing - Fields is alread sorted by flow (in Core v1.3)
   end;
-  FieldList.Sort;
 
   if ExtendedList then
     DoTableHeader(TableHeaderEx, 13, FieldList.Count + 1)
