@@ -66,7 +66,7 @@ type
   TEpiCustomBase = class
   { Scrambling }
   private
-    FCrypter:   TDCP_rijndael; static;
+    FCrypter:   TDCP_rijndael; // static;
     function    Get4ByteSalt: Integer;
   protected
     procedure   InitCrypt(Key: string);
