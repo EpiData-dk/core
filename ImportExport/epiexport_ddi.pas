@@ -294,6 +294,7 @@ begin
 
   if (FSettings.RenameVariablesPrefix <> '') and
      (TxtExportSetting.ExportFieldNames)
+  then
   begin
     TxtExportSetting.Doc := EpiDoc;
     TxtExportSetting.Fields := OldList;
