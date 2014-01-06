@@ -238,6 +238,10 @@ var
   CSVExporter: TEpiExport;
   TxtExportSetting: TEpiCSVExportSetting;
   i: Integer;
+  NewDoc: TEpiDocument;
+  NewDF: TEpiDataFile;
+  NewList: TList;
+  OldList: TList;
 begin
   if Assigned(FSettings.AdditionalExportSettings) and
      (FSettings.AdditionalExportSettings is TEpiCSVExportSetting)
@@ -259,9 +263,43 @@ begin
   TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
   TxtExportSetting.Encoding       := eeUTF8;
 
+
+  if (FSettings.RenameVariablesPrefix <> '') and
+     (TxtExportSetting.ExportFieldNames)
+  then
+  begin
+    // Clone Document and rename variables;
+    NewDoc := TEpiDocument(EpiDoc.Clone);
+    NewDF  := NewDoc.DataFiles[TxtExportSetting.DataFileIndex];
+
+    NewList := TList.Create;
+    for i := 0 to TxtExportSetting.Fields.Count - 1 do
+       NewList.Add(NewDf.ControlItems.GetItemByName(TEpiCustomItem(TxtExportSetting.Fields[i]).Name));
+
+    // In case of existing field names with same as selected prefix.
+    for i := 0 to NewDF.Fields.Count - 1 do
+      NewDF.Field[i].Name := '@renamed' + IntToStr(i);
+
+    for i := 0 to NewDF.Fields.Count - 1 do
+      NewDF.Field[i].Name := FSettings.RenameVariablesPrefix + IntToStr(i+1);
+
+    TxtExportSetting.Doc := NewDoc;
+    OldList := TxtExportSetting.Fields;
+    TxtExportSetting.Fields := NewList;
+  end;
+
   CSVExporter := TEpiExport.Create;
   CSVExporter.Export(TxtExportSetting);
   FSettings.AdditionalExportSettings := TxtExportSetting;
+
+  if (FSettings.RenameVariablesPrefix <> '') and
+     (TxtExportSetting.ExportFieldNames)
+  begin
+    TxtExportSetting.Doc := EpiDoc;
+    TxtExportSetting.Fields := OldList;
+    NewList.Free;
+    NewDoc.Free;
+  end;
 end;
 
 procedure TEpiDDIExport.BuildCitations;
