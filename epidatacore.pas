@@ -20,7 +20,7 @@ uses
   epireport_report_fieldinfo, epireport_report_countbyid, 
   epireport_report_doubleentryvalidate, epiopenfile, epi_iso639, 
   epireport_report_projectvalidator, epitools_projectvalidate, 
-  epitools_filterinfo;
+  epitools_filterinfo, epireport_report_controllist;
 
 implementation
 

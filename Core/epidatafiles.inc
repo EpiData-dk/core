@@ -220,6 +220,7 @@ begin
         // Check that id is not in conflict with others.
         if not ValidateRename(H.Name) then
           H.Name := Headings.GetUniqueItemName(TEpiHeading);
+        H.FDataFile := Self;
         Headings.AddItem(TEpiHeading(Data));
       end
   end;
@@ -779,6 +780,7 @@ begin
         // Check that id is not in conflict with others.
         if not ValidateRename(Data.Name) then
           Data.Name := FAllHeadings.GetUniqueItemName(TEpiHeading);
+        TEpiHeading(Data).FDataFile := Self;
         FAllHeadings.AddItem(Data);
       end;
   end;
