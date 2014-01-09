@@ -35,7 +35,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="64">
+    <Files Count="66">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -292,6 +292,14 @@
         <Filename Value="Reports/epireport_report_controllist.pas"/>
         <UnitName Value="epireport_report_controllist"/>
       </Item64>
+      <Item65>
+        <Filename Value="Reports/epireport_report_exportsettings.pas"/>
+        <UnitName Value="epireport_report_exportsettings"/>
+      </Item65>
+      <Item66>
+        <Filename Value="Reports/epireport_report_exportsettings_visitors.pas"/>
+        <UnitName Value="epireport_report_exportsettings_visitors"/>
+      </Item66>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
