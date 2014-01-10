@@ -38,8 +38,8 @@ procedure TEpiReportExportSettings.DoSanityCheck;
 begin
   inherited DoSanityCheck;
 
-{  if not Assigned(ExportSetting) then
-    DoError(EEpiReportBaseException, rsEpiReportExportSettingsNoExportSettingsAssigned);  }
+  if not Assigned(ExportSetting) then
+    DoError(EEpiReportBaseException, rsEpiReportExportSettingsNoExportSettingsAssigned);
 end;
 
 procedure TEpiReportExportSettings.RunReport;

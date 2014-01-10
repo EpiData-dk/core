@@ -15,7 +15,11 @@ type
   private
     FReportGenerator: TEpiReportGeneratorBase;
     FRowIndex: integer;
+    FPreviousSetting: TEpiExportSetting;
     procedure DoTableCell(Const Col: Integer; Const Text: string);
+    function  BoolToStr(B: Boolean; Unused: Boolean): string;
+    function  CanVisit(Const ExportSetting: TEpiExportSetting;
+      ExportSettingClass: TEpiExportSettingClass): Boolean;
   public
     constructor Create; override;
     procedure Visit(const ExportSetting: TEpiExportSetting); override; overload;
@@ -47,7 +51,10 @@ type
   TSettingCountVisitor = class(TEpiExportSettingCustomVisitor)
   private
     FCount: integer;
+    FPreviousSettings: TEpiExportSetting;
     procedure DebugStr(Const Msg: string);
+    procedure AdditionalVisit(Const ExportSetting: TEpiExportSetting);
+    procedure CommonVisit(Const IncCount: Integer; CompareClass: TEpiExportSettingClass);
   public
     constructor Create; override;
     procedure Visit(const ExportSetting: TEpiExportSetting); override; overload;
@@ -89,6 +96,25 @@ begin
   FReportGenerator.TableCell(Text, Col, RowIndex, Adjust);
 end;
 
+function TSettingsTableOutputVisitor.BoolToStr(B: Boolean; Unused: Boolean
+  ): string;
+begin
+  if B then
+    Result := 'Yes'
+  else
+    Result := 'No';
+end;
+
+function TSettingsTableOutputVisitor.CanVisit(
+  const ExportSetting: TEpiExportSetting;
+  ExportSettingClass: TEpiExportSettingClass): Boolean;
+begin
+  result := not(
+    (Assigned(FPreviousSetting)) and
+    (FPreviousSetting.InheritsFrom(ExportSettingClass))
+  );
+end;
+
 constructor TSettingsTableOutputVisitor.Create;
 begin
   inherited Create;
@@ -97,19 +123,24 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiExportSetting);
 begin
-  DoTableCell(0, 'From');
-  DoTableCell(1, IntToStr(ExportSetting.FromRecord));
-  Inc(FRowIndex);
+  if Assigned(ExportSetting.AdditionalExportSettings) then
+  begin
+    FPreviousSetting := ExportSetting;
+    ExportSetting.AdditionalExportSettings.AcceptVisitor(Self);
+    FPreviousSetting := nil;
+  end;
 
-  DoTableCell(0, 'To');
-  DoTableCell(1, IntToStr(ExportSetting.ToRecord));
+  if not CanVisit(ExportSetting, TEpiExportSetting) then exit;
+
+  DoTableCell(0, 'Records Exported');
+  DoTableCell(1, Format('%d - %d', [ExportSetting.FromRecord+1, ExportSetting.ToRecord+1]));
   Inc(FRowIndex);
 
   DoTableCell(0, 'Encoding');
   DoTableCell(1, EpiEncodingToString[ExportSetting.Encoding]);
   Inc(FRowIndex);
 
-  DoTableCell(0, 'Export Deleted');
+  DoTableCell(0, 'Export records marked for deletion');
   DoTableCell(1, BoolToStr(ExportSetting.ExportDeleted, true));
   Inc(FRowIndex);
 end;
@@ -117,6 +148,8 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiCustomValueLabelExportSetting);
 begin
+  if not CanVisit(ExportSetting, TEpiCustomValueLabelExportSetting) then exit;
+
   DoTableCell(0, 'Export Valuelabels');
   DoTableCell(1, BoolToStr(ExportSetting.ExportValueLabels, true));
   Inc(FRowIndex);
@@ -125,6 +158,8 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiStataExportSetting);
 begin
+  if not CanVisit(ExportSetting, TEpiStataExportSetting) then exit;
+
   DoTableCell(0, 'Field name case');
   DoTableCell(1, EpiFieldNamingCaseToString[ExportSetting.FieldNameCase]);
   Inc(FRowIndex);
@@ -137,6 +172,8 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiCSVExportSetting);
 begin
+  if not CanVisit(ExportSetting, TEpiCSVExportSetting) then exit;
+
   DoTableCell(0, 'Field Separator');
   DoTableCell(1, ExportSetting.FieldSeparator);
   Inc(FRowIndex);
@@ -165,6 +202,8 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiCustomTextExportSettings);
 begin
+  if not CanVisit(ExportSetting, TEpiCustomTextExportSettings) then exit;
+
   DoTableCell(0, 'Byte Order Mark');
   DoTableCell(1, BoolToStr(ExportSetting.ByteOrderMark, true));
   Inc(FRowIndex);
@@ -181,6 +220,8 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiDDIExportSetting);
 begin
+  if not CanVisit(ExportSetting, TEpiDDIExportSetting) then exit;
+
   DoTableCell(0, 'Remove Value Labels indicating missing');
   DoTableCell(1, BoolToStr(ExportSetting.RemoveMissingVL, true));
   Inc(FRowIndex);
@@ -220,6 +261,8 @@ end;
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiSPSSExportSetting);
 begin
+  if not CanVisit(ExportSetting, TEpiSPSSExportSetting) then exit;
+
   DoTableCell(0, 'Delimiter');
   DoTableCell(1, ExportSetting.Delimiter);
   Inc(FRowIndex);
@@ -233,6 +276,32 @@ begin
     Writeln(Msg);}
 end;
 
+procedure TSettingCountVisitor.AdditionalVisit(
+  const ExportSetting: TEpiExportSetting);
+begin
+  if Assigned(ExportSetting.AdditionalExportSettings) then
+  begin
+    FPreviousSettings := ExportSetting;
+    ExportSetting.AdditionalExportSettings.AcceptVisitor(Self);
+    FPreviousSettings := nil;
+  end;
+end;
+
+procedure TSettingCountVisitor.CommonVisit(const IncCount: Integer;
+  CompareClass: TEpiExportSettingClass);
+var
+  AddCount: Boolean;
+begin
+  AddCount := true;
+  if (Assigned(FPreviousSettings)) and
+     (FPreviousSettings.InheritsFrom(CompareClass))
+  then
+    AddCount := false;
+
+  if AddCount then
+    inc(FCount, IncCount);
+end;
+
 constructor TSettingCountVisitor.Create;
 begin
   inherited Create;
@@ -241,61 +310,60 @@ end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiExportSetting);
 begin
-  DebugStr('TEpiExportSetting');
-  inc(FCount, 4);
+  CommonVisit(3, TEpiExportSetting);
+  AdditionalVisit(ExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(
   const ExportSetting: TEpiCustomValueLabelExportSetting);
 begin
-  DebugStr('TEpiCustomValueLabelExportSetting');
-  inc(FCount, 1);
+  CommonVisit(1, TEpiCustomValueLabelExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(
   const ExportSetting: TEpiStataExportSetting);
 begin
-  DebugStr('TEpiStataExportSetting');
-  inc(FCount, 2);
+  CommonVisit(2, TEpiStataExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiCSVExportSetting);
 begin
-  DebugStr('TEpiCSVExportSetting');
-  inc(FCount, 6);
+  CommonVisit(6, TEpiCSVExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(
   const ExportSetting: TEpiCustomTextExportSettings);
 begin
-  DebugStr('TEpiCustomTextExportSettings');
-  inc(FCount, 3);
+  CommonVisit(3, TEpiCustomTextExportSettings);
 end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiDDIExportSetting);
+var
+  IncCount: Integer;
 begin
-  DebugStr('TEpiDDIExportSetting');
-  inc(FCount, 4);
-
+  IncCount := 4;
   if ExportSetting.RenameVariablesPrefix <> '' then
-    inc(FCount);
+    inc(IncCount);
+
+  CommonVisit(IncCount, TEpiDDIExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiEPXExportSetting);
 begin
-  DebugStr('TEpiEPXExportSetting');
+  // Nothing to output
+  CommonVisit(0, TEpiEPXExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiSASExportSetting);
 begin
-  DebugStr('TEpiSASExportSetting');
+  // Nothing to output
+  CommonVisit(0, TEpiSASExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiSPSSExportSetting
   );
 begin
-  DebugStr('TEpiSPSSExportSetting');
-  inc(FCount, 1);
+  CommonVisit(1, TEpiSPSSExportSetting);
 end;
 
 end.
