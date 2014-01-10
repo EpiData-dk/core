@@ -16,7 +16,6 @@ type
   private
     FExportEncoding: TEpiEncoding;
     FExportLines: TStrings;
-    function    PrepareExportDocument(Settings: TEpiExportSetting): TEpiDocument;
     function    EncodeString(Const Str: string; Encoding: TEpiEncoding): string;
     procedure   RaiseError(Const Msg: string);
     procedure   WriteByte(St: TStream; Val: ShortInt);
@@ -34,6 +33,8 @@ type
     function    ExportDDI(Const Settings: TEpiDDIExportSetting): boolean;
     function    ExportEPX(Const Settings: TEpiEPXExportSetting): boolean;
   public
+    class       function PrepareExportDocument(Settings: TEpiExportSetting): TEpiDocument;
+  public
     constructor Create;
     destructor  Destroy; override;
     function    Export(Const Settings: TEpiExportSetting): boolean;
@@ -49,7 +50,7 @@ uses
 
 { TEpiExport }
 
-function TEpiExport.PrepareExportDocument(Settings: TEpiExportSetting
+class function TEpiExport.PrepareExportDocument(Settings: TEpiExportSetting
   ): TEpiDocument;
 var
   Doc: TEpiDocument;

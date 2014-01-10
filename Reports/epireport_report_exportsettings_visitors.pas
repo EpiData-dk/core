@@ -171,6 +171,8 @@ end;
 
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiCSVExportSetting);
+var
+  S: String;
 begin
   if not CanVisit(ExportSetting, TEpiCSVExportSetting) then exit;
 
@@ -191,7 +193,18 @@ begin
   Inc(FRowIndex);
 
   DoTableCell(0, 'New Line Style');
-  DoTableCell(1, '');
+  S := ExportSetting.NewLine;
+  if S[1] = #10
+  then
+    S := 'Linux'
+  else
+    if Length(S) = 1
+    then
+      S := 'Max'
+    else
+      S := 'Windows';
+
+  DoTableCell(1, S);
   Inc(FRowIndex);
 
   DoTableCell(0, 'Fixed Format');
