@@ -10,7 +10,7 @@ end;
 
 function TEpiSections.Prefix: string;
 begin
-  Result := 'S';
+  Result := 'Section';
 end;
 
 constructor TEpiSections.Create(AOwner: TEpiCustomBase);
@@ -41,6 +41,19 @@ end;
 function TEpiSections.GetSectionByName(const AName: string): TEpiSection;
 begin
   result := TEpiSection(GetItemByName(AName));
+end;
+
+function TEpiSections.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
+var
+  i: Integer;
+begin
+  // Always start at 1, since number of sections is normally low
+  // AND the MAIN sections interferes with "normal" naming of sections.
+  i := 1;
+  repeat
+    result := DoPrefix + IntToStr(i);
+    Inc(i);
+  until ValidateRename(result, false);
 end;
 
 { TEpiSection }

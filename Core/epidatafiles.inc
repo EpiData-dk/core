@@ -805,7 +805,11 @@ begin
     else
       begin
         // Check that id is not in conflict with others.
-        if not Self.ValidateRename(S.Name) then
+        // - but only check Fields/Headings since S is
+        //   already inserted into Sections.
+        if Assigned(Fields.FieldByName[S.Name]) or
+           Assigned(Headings.GetHeadingByName(S.Name))
+        then
           S.Name := Sections.GetUniqueItemName(TEpiSection);
 
         S.FDataFile := Self;

@@ -20,6 +20,7 @@ type
     function    ItemClass: TEpiCustomItemClass; override;
     function    NewSection: TEpiSection;
     function    GetSectionByName(Const AName: string): TEpiSection;
+    function    GetUniqueItemName(AClass: TEpiCustomItemClass): string; override;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
   end;
 

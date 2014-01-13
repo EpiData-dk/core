@@ -357,8 +357,8 @@ type
   private
     FOnGetPrefix: TEpiPrefixEvent;
     FOnValidateRename: TEpiValidateRenameEvent;
-    function  DoPrefix: string;
   protected
+    function  DoPrefix: string;
     function  Prefix: string; virtual;
   public
     function  GetUniqueItemName(AClass: TEpiCustomItemClass): string; virtual;
