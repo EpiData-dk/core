@@ -4,20 +4,8 @@ library jni_library;
 
 uses
   jni,
-
-
   // EpiData units
   epicustomlist_jni, epidocument_jni, customitem_jni, epidatafiles_jni;
-
-{$ifdef ver2_5}
-// This code is unnecessary in FPC 2.6+,
-// it is required with the 2.5.1 snapshot.
-procedure PASCALMAIN; external name 'PASCALMAIN';
-procedure FPC_SHARED_LIB_START; [public, alias: 'FPC_SHARED_LIB_START'];
-begin
-   PASCALMAIN;
-end;
-{$endif}
 
 function JNI_OnLoad(vm:PJavaVM; reserved: pointer): jint; cdecl;
 begin
