@@ -1242,10 +1242,12 @@ begin
   inherited BeginUpdate;
   Fields.BeginUpdate;
   Headings.BeginUpdate;
+  ControlItems.BeginUpdate;
 end;
 
 procedure TEpiDataFile.EndUpdate;
 begin
+  ControlItems.EndUpdate;
   Headings.EndUpdate;
   Fields.EndUpdate;
   inherited EndUpdate;
