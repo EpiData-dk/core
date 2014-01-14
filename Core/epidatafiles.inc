@@ -539,7 +539,7 @@ begin
     end;
 
     {$IFNDEF EPI_TEST_LOAD}
-    DataList.DelimitedText := Dummyfy(LocalDeCrypt(UTF8Encode(Node.TextContent)));
+    DataList.DelimitedText := Dummyfy(LocalDeCrypt(Node.TextContent));
     for i := 0 to DataList.Count - 1 do
     begin
       FN := DataList.Names[i];
@@ -551,7 +551,7 @@ begin
       TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
     {$ELSE}
-    FN := LocalDeCrypt(UTF8Encode(Node.TextContent))[1];
+    FN := LocalDeCrypt(Node.TextContent)[1];
     PStr := @FN[1];
     PCur := PStr;
     L := Length(FN);

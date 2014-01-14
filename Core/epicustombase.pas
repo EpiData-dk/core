@@ -756,7 +756,7 @@ var
   Node: TDOMNode;
 begin
   if LoadNode(Node, Root, NodeName, Fatal) then
-    result := UTF8Encode(Node.TextContent)
+    result := Node.TextContent
   else
     result := DefaultVal;
 end;
@@ -826,7 +826,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    Result := UTF8Encode(Attr.Value)
+    Result := Attr.Value
   else
     Result := DefaultVal;
 end;
@@ -1242,8 +1242,8 @@ begin
   begin
     // Ugly hack to prevent looking at nodes that is not directly below the root.
     if ElemList[i].ParentNode <> Root then continue;
-    LangCode := UTF8Encode(TDOMElement(ElemList[i]).AttribStrings['xml:lang']);
-    Val := UTF8Encode(ElemList[i].TextContent);
+    LangCode := TDOMElement(ElemList[i]).AttribStrings['xml:lang'];
+    Val := ElemList[i].TextContent;
     if (LangCode = FCurrentLang) or (LangCode = '') then
       SetCurrentText(Val)
     else
