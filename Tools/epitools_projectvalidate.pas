@@ -25,7 +25,8 @@ type
   TEpiToolsProjectValidateOptions = set of TEpiToolsProjectValidateOption;
 
 const
-  EpiProjectValidationOptionsAll = [pvIgnoreDeleted..pvCheckStudyInfo];
+  EpiProjectValidationOptionsAll =
+    [pvIgnoreDeleted..pvCheckStudyInfo];
 
   EpiProjectValidationOptionsSelectable =
     [pvIgnoreDeleted, pvCheckSystemMissing, pvCheckJumpReset, pvCheckStudyInfo];

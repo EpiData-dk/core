@@ -78,13 +78,26 @@ var
 begin
   DoSection('Selections for validation:');
   DoLineText('');
+  DoHeading('All records have the following checks performed:');
 
-  DoTableHeader('Options:', 2, Integer(High(TEpiToolsProjectValidateOption)) + 2);
+  for Opt in TEpiToolsProjectValidateOptions do
+  begin
+    if not (Opt in EpiProjectValidationOptionsSelectable) then
+      DoLineText(EpiToolProjectValidationOptionText[Opt]);
+  end;
+
+  DoLineText('');
+
+  I := 1;
+  for Opt in EpiProjectValidationOptionsSelectable do
+    Inc(I);
+
+  DoTableHeader('Selectable Options:', 2, I);
   DoTableCell(0, 0, 'Option');
   DoTableCell(1, 0, 'Selected');
 
   I := 1;
-  for Opt in TEpiToolsProjectValidateOption do
+  for Opt in EpiProjectValidationOptionsSelectable do
   begin
     DoTableCell(0, I, EpiToolProjectValidationOptionText[Opt]);
     DoTableCell(1, I, BoolToStr(Opt in Options, 'Yes', 'No'));
