@@ -45,7 +45,8 @@ type
 implementation
 
 uses
-  LazUTF8, typinfo, epireport_types, epireport_report_fieldlist;
+  LazUTF8, typinfo, epireport_types, epireport_report_fieldlist,
+  epidatafilestypes;
 
 { TEpiReportProjectValidator }
 resourcestring
@@ -258,16 +259,27 @@ begin
       case ResRecord.FailedCheck of
         pvCheckSystemMissing:
           S += 'System Missing';
-        pvCheckRange:
-          with ResRecord.Field do
-            S += Format('Value = %s, Range = (%s, %s)',
-                        [AsString[ResRecord.RecNo],
-                         Ranges[0].AsString[true],
-                         Ranges[0].AsString[false]
-                        ]);
-        pvCheckValueLabels:
-          S += Format('Value = %s, is not a valid valuelabel value!',
-                      [ResRecord.Field.AsString[ResRecord.RecNo]]);
+        pvCheckMustEnter:
+          S += 'Must Enter has system missing';
+        pvCheckKeyFields:
+          S += 'Key Field has system missing';
+        pvCheckDataRange:
+          with ResRecord do
+          begin
+            S += 'Value = ' + Field.AsString[RecNo] + ', ';
+            if Assigned(Field.Ranges) and
+               (not Field.Ranges.InRange(Field.AsValue[RecNo]))
+            then
+              S += Format('Not in range = (%s, %s) ',
+                [Field.Ranges[0].AsString[true],
+                 Field.Ranges[0].AsString[false]]
+              );
+
+            if Assigned(Field.ValueLabelSet) and
+               (not Field.ValueLabelSet.ValueLabelExists[Field.AsValue[RecNo]])
+            then
+              S += 'Not a valid value label!'
+          end;
         pvCheckComparison:
           with ResRecord.Field do
             S += Format('Comparison: %s=%s %s %s=%s',
@@ -279,13 +291,13 @@ begin
           with ResRecord.Field do
             S += Format('Field length = %d, Data length: %d',
                         [Length, UTF8Length(AsString[ResRecord.RecNo])]);
-        pvCheckJumpValues:
-          // Either an invalid value OR a jump back in flow.
+        pvCheckJumpReset:
+          // Either a reset value is NOT missing OR a jump back in flow.
           with ResRecord.Field do
           begin
             Jmp := Jumps.JumpFromValue[AsString[ResRecord.RecNo]];
-            if not Assigned(Jmp) then
-              S += Format('Value = %s, is not a valid jump value!', [AsString[ResRecord.RecNo]])
+            if not (Jmp.ResetType in [jrMaxMissing, jr2ndMissing]) then
+              S += Format('Value = %s, is not a valid jump reset value (MaxMissing or 2ndMaxMissing)!', [AsString[ResRecord.RecNo]])
             else
               S += Format('Value = %s, is a jump backward in flow!', [AsString[ResRecord.RecNo]]);
           end;
@@ -312,7 +324,7 @@ constructor TEpiReportProjectValidator.Create(
   ReportGenerator: TEpiReportGeneratorBase);
 begin
   inherited Create(ReportGenerator);
-  FProjectValidationOptions := EpiDefaultProjectValidationOptions;
+  FProjectValidationOptions := EpiProjectValidationOptionsAll;
 end;
 
 procedure TEpiReportProjectValidator.RunReport;

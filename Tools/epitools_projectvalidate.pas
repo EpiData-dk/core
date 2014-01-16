@@ -11,11 +11,13 @@ type
   TEpiToolsProjectValidateOption = (
     pvIgnoreDeleted,                  // Ignores if a record i marked for deletion
     pvCheckSystemMissing,             // Check data if it is system missing
-    pvCheckRange,                     // Check data for range correctness
-    pvCheckValueLabels,               // Check data for valid valuelabel
+    pvCheckMustEnter,                 // Check data for must enter
+    pvCheckDataRange,                 // Check data for range and valuelabel
     pvCheckComparison,                // Check data for compared value
     pvCheckDataLength,                // Check data for valid length
-    pvCheckJumpValues,                // Check data for valid jumps
+    pvCheckJumpReset,                 // Check data for jumps with reset value no being (2nd)max missing.
+    pvCheckKeyFields,                 // Check keyfield for missing data
+//    pvCheckKeyData,                   // Check keyfields for unique data.
 
     // StudyInfo should always be last - used in report.
     pvCheckStudyInfo                  // Check study information for completeness
@@ -23,27 +25,34 @@ type
   TEpiToolsProjectValidateOptions = set of TEpiToolsProjectValidateOption;
 
 const
-  EpiDefaultProjectValidationOptions = [pvIgnoreDeleted..pvCheckDataLength];
+  EpiProjectValidationOptionsAll = [pvIgnoreDeleted..pvCheckStudyInfo];
+
+  EpiProjectValidationOptionsSelectable =
+    [pvIgnoreDeleted, pvCheckSystemMissing, pvCheckJumpReset, pvCheckStudyInfo];
 
   EpiToolProjectValidationOptionText: Array[TEpiToolsProjectValidateOption] of string =
     ('Ignore records marked for deletion',
      'Check data if it has system missing',
-     'Check data for range correctness',
-     'Check data for valid valuelabel',
+     'Check data for must enter',
+     'Check data for range and/or valid valuelabel',
      'Check data for compared value',
      'Check data for valid length',
-     'Check data for valid jumps',
+     'Check data for jumps with no reset',
+     'Check keyfields for missing data',
+//     'Check keyfields for unique data',
      'Check study information for completeness'
     );
 
   EpiToolProjectValidationOptionTextShort: Array[TEpiToolsProjectValidateOption] of string =
     ('Del rec.',
      'Sys.mis.',
-     'Range',
-     'V.label',
+     'Must Enter',
+     'Range/VL',
      'Compare',
      'Length',
      'Jumps',
+     'KeyField',
+//     'Unique',
      'Study'
     );
 type
@@ -81,7 +90,7 @@ type
     destructor  Destroy; override;
     procedure   ValidateProject(out FieldResultArray: TEpiProjectResultArray;
       Out StudyResultArray: TEpiProjectStudyArray;
-      Options: TEpiToolsProjectValidateOptions = EpiDefaultProjectValidationOptions);
+      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll);
     property    Document: TEpiDocument read FDocument write FDocument;
     property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
     property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
@@ -145,6 +154,7 @@ var
   LValidationFields: TEpiFields;
   MainSortField: TEpiField;
   Jmp: TEpiJump;
+  TmpResult: Boolean;
 begin
   Df := Document.DataFiles[0];
 
@@ -208,33 +218,54 @@ begin
         end;
       end;
 
-      if (pvCheckRange in Options) and
-         (Assigned(F.Ranges))
-      then
+      if (pvCheckMustEnter in Options) then
       begin
-        // Check for data is within specified range
-        if not F.Ranges.InRange(F.AsValue[i]) then
-        with NewResultRecord^ do
-        begin
-          RecNo := MainSortField.AsInteger[i];
-          Field := F;
-          FailedCheck := pvCheckRange;
-        end;
+        if (F.EntryMode = emMustEnter) and
+           (F.IsMissing[i])
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckMustEnter;
+          end;
       end;
 
-      if (pvCheckValueLabels in Options) and
-         (Assigned(F.ValueLabelSet))
+      if (pvCheckKeyFields in Options) then
+      begin
+        if (Df.KeyFields.IndexOf(F) > -1) and
+           (F.IsMissing[i])
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckKeyFields;
+          end;
+      end;
+
+      if (pvCheckDataRange in Options) and
+         ((Assigned(F.Ranges)) or
+          (Assigned(F.ValueLabelSet))
+         )
       then
       begin
-        if F.IsMissing[i] or
-          (not F.ValueLabelSet.ValueLabelExists[F.AsValue[i]])
+        TmpResult := false;
+
+        if Assigned(F.Ranges) then
+          TmpResult := F.Ranges.InRange(F.AsValue[i]);
+
+        if Assigned(F.ValueLabelSet) then
+          TmpResult := TmpResult or F.ValueLabelSet.ValueLabelExists[F.AsValue[i]];
+
+        if not TmpResult
         then
-        with NewResultRecord^ do
-        begin
-          RecNo := MainSortField.AsInteger[i];
-          Field := F;
-          FailedCheck := pvCheckValueLabels;
-        end;
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckDataRange;
+          end;
       end;
 
       if (pvCheckComparison in Options) and
@@ -278,31 +309,21 @@ begin
         end;
       end;
 
-      if (pvCheckJumpValues in Options) and
+      if (pvCheckJumpReset in Options) and
          (Assigned(F.Jumps))
       then
       begin
         Jmp := F.Jumps.JumpFromValue[F.AsString[i]];
 
-        if not Assigned(Jmp) then
-        with NewResultRecord^ do
-        begin
-          RecNo := MainSortField.AsInteger[i];
-          Field := F;
-          FailedCheck := pvCheckJumpValues;
-        end;
-
         if Assigned(Jmp) and
-           (Jmp.JumpType = jtToField) and
-           // Jump backwards in flow.
-           (Df.Fields.IndexOf(Jmp.JumpToField) < Df.Fields.IndexOf(F))
+           (not (Jmp.ResetType in [jrMaxMissing, jr2ndMissing]))
         then
           with NewResultRecord^ do
           begin
             RecNo := MainSortField.AsInteger[i];
             Field := F;
-            FailedCheck := pvCheckJumpValues;
-          end;
+            FailedCheck := pvCheckJumpReset;
+          end
       end;
     end;
   end;
