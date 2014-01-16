@@ -219,7 +219,7 @@ begin
       tcaCenter,
       [tcoTopBorder]);
 
-  DoTableFooter('Counts indicate number of records.');
+  DoTableFooter('Counts indicate number of errors.');
 end;
 
 procedure TEpiReportProjectValidator.DoStudyReport(
