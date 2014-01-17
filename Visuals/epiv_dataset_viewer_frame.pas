@@ -5,8 +5,8 @@ unit epiv_dataset_viewer_frame;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Grids, ExtCtrls, StdCtrls,
-  ActnList, epidatafiles;
+  Classes, SysUtils, types, FileUtil, Forms, Controls, Grids, ExtCtrls,
+  StdCtrls, ActnList, VirtualTrees, epidatafiles, Graphics;
 
 type
 
@@ -20,16 +20,10 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
-    ListGrid: TStringGrid;
     Panel1: TPanel;
     ShowIndexOrAllFieldsAction: TAction;
     ShowValuesOrLabelsAction: TAction;
     SortByIndexAction: TAction;
-    procedure ListGridDblClick(Sender: TObject);
-    procedure ListGridHeaderClick(Sender: TObject; IsColumn: Boolean;
-      Index: Integer);
-    procedure ListGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
-      aState: TGridDrawState);
     procedure ShowIndexOrAllFieldsActionExecute(Sender: TObject);
     procedure ShowIndexOrAllFieldsActionUpdate(Sender: TObject);
     procedure ShowValuesOrLabelsActionExecute(Sender: TObject);
@@ -44,30 +38,51 @@ type
     FRecords: TBoundArray;
     FShowAllFields: boolean;
     FShowValueLabels: boolean;
-    FSortCol: integer;
+    FSortOnIndex: boolean;
+    procedure DoMouseClick(ADblClick: boolean);
     procedure DoSelectedRecord(RecordNo: Integer; Const Field: TEpiField);
     function GetKeyFields: TEpiFields;
     procedure SetDisplayFields(AValue: TEpiFields);
     procedure SetKeyFields(AValue: TEpiFields);
     procedure SetOnSelectRecord(AValue: TSelectRecordEvent);
+    procedure AssignFields(Const ToFields, FromFields: TEpiFields);
+    procedure UpdateFields;
     procedure UpdateGrid;
-    procedure GridColumnSort(Sender: TObject; ACol, ARow, BCol,
-      BRow: Integer; var Result: integer);
-    procedure  GridIndexSort(Sender: TObject; ACol, ARow, BCol,
-      BRow: Integer; var Result: integer);
+  private
+    { Virtual String Tree }
+    FVLG: TVirtualStringTree;
+    procedure VLGBeforeCellPaint(Sender: TBaseVirtualTree;
+      TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+      CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
+    procedure VLGColumnWidthTracking(Sender: TVTHeader; Column: TColumnIndex;
+      Shift: TShiftState; var TrackPoint: TPoint; P: TPoint;
+      var Allowed: Boolean);
+    procedure VLGClick(Sender: TObject);
+    procedure VLGDoubleClick(Sender: TObject);
+    procedure VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
+      Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure VLGGetNodeText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; TextType: TVSTTextType; var CellText: String);
+    procedure VLGAfterGetMaxColumnWidth(Sender: TVTHeader;
+      Column: TColumnIndex; var MaxWidth: Integer);
+    procedure VLGCompareNodes(Sender: TBaseVirtualTree; Node1,
+      Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
+    procedure VLGHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
   public
     constructor Create(TheOwner: TComponent; Const DataFile: TEpiDataFile);
-    destructor Destroy; override;
+    destructor  Destroy; override;
     procedure   ShowRecords(const Records: TBoundArray);
+    procedure   InitVisual;
     property    KeyFields: TEpiFields read GetKeyFields write SetKeyFields;
     property    DisplayFields: TEpiFields read FDisplayFields write SetDisplayFields;
     property    OnSelectRecord: TSelectRecordEvent read FOnSelectRecord write SetOnSelectRecord;
+    property    VLG: TVirtualStringTree read FVLG;
   end;
 
 implementation
 
 uses
-  epiglobals, math, Graphics;
+  epiglobals, math, LCLIntf,LCLType;
 
 {$R *.lfm}
 
@@ -82,6 +97,15 @@ end;
 procedure TDatasetViewerFrame.ShowIndexOrAllFieldsActionExecute(Sender: TObject);
 begin
   FShowAllFields := not FShowAllFields;
+
+  if FShowAllFields or
+    (not Assigned(FKeyFields))
+  then
+    AssignFields(FCurrentDisplayField, FDisplayFields)
+  else
+    AssignFields(FCurrentDisplayField, FKeyFields);
+
+  UpdateFields;
   UpdateGrid;
 end;
 
@@ -91,64 +115,167 @@ begin
     Assigned(FKeyFields) and (FKeyFields.Count > 0);
 end;
 
-procedure TDatasetViewerFrame.ListGridHeaderClick(Sender: TObject;
-  IsColumn: Boolean; Index: Integer);
-var
-  SelectedRecordNo: Integer;
-begin
-  if Index < 0 then exit;
-
-  if IsColumn then
-  begin
-    // If click on column -> then sort.
-
-    if FSortCol = Index then exit;
-
-    FSortCol := Index;
-    ListGrid.OnCompareCells := @GridColumnSort;
-    ListGrid.SortColRow(true, FSortCol);
-  end else begin
-    // If click on row -> then notify a "jump to record"
-
-    SelectedRecordNo := StrToInt(ListGrid.Cells[0, Index]) - 1;
-    DoSelectedRecord(SelectedRecordNo, nil);
-  end;
-end;
-
-procedure TDatasetViewerFrame.ListGridDblClick(Sender: TObject);
-var
-  P: TPoint;
-  SelectedRecordNo: Integer;
-  SelectedField: TEpiField;
-begin
-  P := ListGrid.MouseToCell(ListGrid.ScreenToClient(Mouse.CursorPos));
-  if P.Y <= 0 then exit;
-  if P.X <= 0 then exit;
-
-  SelectedRecordNo := StrToInt(ListGrid.Cells[0, P.Y]) - 1;
-  SelectedField := FCurrentDisplayField[P.X - 1];
-  DoSelectedRecord(SelectedRecordNo, SelectedField);
-end;
-
-procedure TDatasetViewerFrame.ListGridPrepareCanvas(sender: TObject; aCol,
-  aRow: Integer; aState: TGridDrawState);
-begin
-  if (aRow = 0) and (aCol = FSortCol) then
-    ListGrid.Canvas.Brush.Color := clSkyBlue;
-end;
-
 procedure TDatasetViewerFrame.SortByIndexActionExecute(Sender: TObject);
 begin
-  if FSortCol = -1 then exit;
-
-  FSortCol := -1;
-  ListGrid.OnCompareCells := @GridIndexSort;
-  ListGrid.SortColRow(true, 0);
+  FSortOnIndex := true;
+  VLG.Sort(VLG.RootNode, -1, sdAscending);
 end;
 
 procedure TDatasetViewerFrame.SortByIndexActionUpdate(Sender: TObject);
 begin
   TAction(Sender).Enabled := (Assigned(FKeyFields)) and (FKeyFields.Count > 0);
+end;
+
+procedure TDatasetViewerFrame.VLGBeforeCellPaint(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
+begin
+  if Column <> 0 then exit;
+  if CellPaintMode <> cpmPaint then exit;
+
+  DrawEdge(TargetCanvas.Handle, CellRect, BDR_RAISEDINNER, BF_RECT or BF_MIDDLE);
+end;
+
+procedure TDatasetViewerFrame.VLGColumnWidthTracking(Sender: TVTHeader;
+  Column: TColumnIndex; Shift: TShiftState; var TrackPoint: TPoint; P: TPoint;
+  var Allowed: Boolean);
+begin
+  if (P.X - TrackPoint.X) < 30 then Allowed := false;
+end;
+
+procedure TDatasetViewerFrame.VLGClick(Sender: TObject);
+begin
+  DoMouseClick(false);
+end;
+
+procedure TDatasetViewerFrame.DoMouseClick(ADblClick: boolean);
+var
+  HitInfo: THitInfo;
+  Node: PVirtualNode;
+  RecNo: LongWord;
+  P: TPoint;
+  Field: TEpiField;
+begin
+  P := Mouse.CursorPos;
+  P := VLG.ScreenToClient(P);
+
+  VLG.GetHitTestInfoAt(P.X, P.Y, True, HitInfo);
+
+  if (HitInfo.HitColumn <> 0) and
+     (not ADblClick)
+  then
+    exit;
+
+  if not (hiOnItem in HitInfo.HitPositions) then exit;
+
+  Node := HitInfo.HitNode;
+  RecNo := PCardinal(VLG.GetNodeData(Node))^;
+  if HitInfo.HitColumn > 0 then
+    Field := FDataFile.Field[HitInfo.HitColumn - 1]
+  else
+    Field := nil;
+
+  DoSelectedRecord(RecNo, Field);
+end;
+
+procedure TDatasetViewerFrame.VLGDoubleClick(Sender: TObject);
+var
+  P: types.TPoint;
+begin
+  DoMouseClick(true);
+end;
+
+procedure TDatasetViewerFrame.VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
+  Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+begin
+  if Assigned(FRecords) then
+    PCardinal(Sender.GetNodeData(Node))^ := FRecords[Node^.Index]
+  else
+    PCardinal(Sender.GetNodeData(Node))^ := Node^.Index;
+end;
+
+procedure TDatasetViewerFrame.VLGHeaderClick(Sender: TVTHeader;
+  HitInfo: TVTHeaderHitInfo);
+begin
+  with HitInfo do
+  begin
+    if Button <> mbLeft then Exit;
+    if Shift <> [] then exit;
+    FSortOnIndex := false;
+
+    Screen.Cursor := crHourGlass;
+    Application.ProcessMessages;
+
+    VLG.Sort(VLG.RootNode, Column, sdAscending);
+
+    Screen.Cursor := crDefault;
+    Application.ProcessMessages;
+  end;
+end;
+
+procedure TDatasetViewerFrame.VLGCompareNodes(Sender: TBaseVirtualTree; Node1,
+  Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
+var
+  Idx1, Idx2: Cardinal;
+  i: Integer;
+begin
+  Idx1 := PCardinal(Sender.GetNodeData(Node1))^;
+  Idx2 := PCardinal(Sender.GetNodeData(Node2))^;
+  if Column = 0 then
+  begin
+    Result := Idx1 - Idx2;
+    Exit;
+  end;
+
+  if FSortOnIndex then
+  begin
+    for i := 0 to FKeyFields.Count - 1 do
+    begin
+      Result := FKeyFields[i].Compare(Idx1, Idx2);
+      if Result <> 0 then exit;
+    end;
+  end
+  else if Column > 0 then
+    Result := FDataFile.Field[Column-1].Compare(Idx1, Idx2);
+end;
+
+procedure TDatasetViewerFrame.VLGAfterGetMaxColumnWidth(Sender: TVTHeader;
+  Column: TColumnIndex; var MaxWidth: Integer);
+var
+  S: String;
+  W: Integer;
+begin
+  S := VLG.Header.Columns[Column].Text;
+  W := VLG.Canvas.GetTextWidth(S) + 12;
+  MaxWidth := Max(MaxWidth, W);
+end;
+
+procedure TDatasetViewerFrame.VLGGetNodeText(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
+  var CellText: String);
+var
+  F: TEpiField;
+  Idx: Cardinal;
+begin
+  if Column < 0 then exit;
+
+
+  Idx := PCardinal(Sender.GetNodeData(Node))^;
+  if Column = 0 then
+  begin
+    CellText := IntToSTr(Idx + 1);
+    Exit;
+  end;
+
+  F := FDataFile.Field[Column-1];
+
+  if (FShowValueLabels) and
+     (Assigned(F.ValueLabelSet)) and
+     (not F.IsMissing[Idx])
+  then
+    CellText := F.ValueLabelSet.ValueLabelString[F.AsValue[Idx]]
+  else
+    CellText := F.AsString[Idx];
 end;
 
 procedure TDatasetViewerFrame.DoSelectedRecord(RecordNo: Integer;
@@ -167,6 +294,9 @@ procedure TDatasetViewerFrame.SetDisplayFields(AValue: TEpiFields);
 begin
   if Assigned(AValue) then
     FDisplayFields := AValue;
+
+  AssignFields(FCurrentDisplayField, FDisplayFields);
+  UpdateFields;
 end;
 
 procedure TDatasetViewerFrame.SetKeyFields(AValue: TEpiFields);
@@ -181,141 +311,119 @@ procedure TDatasetViewerFrame.SetOnSelectRecord(AValue: TSelectRecordEvent);
 begin
   if FOnSelectRecord = AValue then Exit;
   FOnSelectRecord := AValue;
+end;
 
-  with ListGrid do
-    if Assigned(FOnSelectRecord) then
-    begin
-      HeaderHotZones  := HeaderHotZones + [gzFixedRows];
-      HeaderPushZones := HeaderPushZones + [gzFixedRows];
-    end else begin
-      HeaderHotZones  := HeaderHotZones - [gzFixedRows];
-      HeaderPushZones := HeaderPushZones - [gzFixedRows];
-    end;
+procedure TDatasetViewerFrame.AssignFields(const ToFields,
+  FromFields: TEpiFields);
+var
+  i: integer;
+begin
+  ToFields.Clear;
+  for i := 0 to FromFields.Count - 1 do
+    ToFields.AddItem(FromFields[i]);
+end;
+
+procedure TDatasetViewerFrame.UpdateFields;
+var
+  i: Integer;
+begin
+  VLG.Header.Columns.BeginUpdate;
+  for i := 0 to FDataFile.Fields.Count - 1 do
+  begin
+    if not FCurrentDisplayField.ItemExistsByName(FDataFile.Fields[i].Name) then
+      VLG.Header.Columns[i+1].Options := VLG.Header.Columns[i+1].Options - [coVisible]
+    else
+      VLG.Header.Columns[i+1].Options := VLG.Header.Columns[i+1].Options + [coVisible];
+  end;
+  VLG.Header.Columns.EndUpdate;
+  UpdateGrid;
 end;
 
 procedure TDatasetViewerFrame.UpdateGrid;
-var
-  i: Integer;
-  j: Integer;
-  F: TEpiField;
-
-  procedure AssignFields(ToFields, FromFields: TEpiFields);
-  var
-    i: integer;
-  begin
-    for i := 0 to FromFields.Count - 1 do
-      ToFields.AddItem(FromFields[i]);
-  end;
-
 begin
-  FCurrentDisplayField.Clear;
-
-  if FShowAllFields then
-    AssignFields(FCurrentDisplayField, FDisplayFields)
-  else begin
-    AssignFields(FCurrentDisplayField, FKeyFields);
-    F := FDataFile.Fields.FieldByName[EpiIndexIntegrityFieldName];
-    if Assigned(F) then
-      FCurrentDisplayField.AddItem(F);
-  end;
-
-  ListGrid.BeginUpdate;
-
-  ListGrid.ColCount := FCurrentDisplayField.Count + 1;
-  if Length(FRecords) > 0 then
-    ListGrid.RowCount := Length(FRecords) + 1
-  else
-    ListGrid.RowCount := FDataFile.Size + 1;
-
-  for i := 0 to FCurrentDisplayField.Count - 1 do
-  with FCurrentDisplayField[i] do
-    ListGrid.Cells[i+1, 0] := Name;
-
-  if Length(FRecords) > 0 then
-  begin
-    for i := 0 to Length(FRecords) - 1 do
-    begin
-      ListGrid.Cells[0, i + 1] := IntToStr(FRecords[i] + 1);
-
-      for j := 0 to FCurrentDisplayField.Count - 1 do
-      with FCurrentDisplayField[j] do
-        if (FShowValueLabels) and (Assigned(ValueLabelSet)) and (not IsMissing[FRecords[i]]) then
-          ListGrid.Cells[j + 1, i + 1] := ValueLabelSet.ValueLabelString[AsValue[FRecords[i]]]
-        else
-          ListGrid.Cells[j + 1, i + 1] := AsString[FRecords[i]];
-    end;
-  end else begin
-    for i := 0 to FDataFile.Size - 1 do
-    begin
-      ListGrid.Cells[0, i + 1] := IntToStr(i + 1);
-
-      for j := 0 to FCurrentDisplayField.Count - 1 do
-      with FCurrentDisplayField[j] do
-        if (FShowValueLabels) and (Assigned(ValueLabelSet)) and (not IsMissing[i]) then
-          ListGrid.Cells[j + 1, i + 1] := ValueLabelSet.ValueLabelString[AsValue[i]]
-        else
-          ListGrid.Cells[j + 1, i + 1] := AsString[i];
-    end;
-  end;
-  if FSortCol > (ListGrid.ColCount - 1) then
-    FSortCol := 0;
-  ListGrid.SortColRow(true, Max(FSortCol,0));
-  ListGrid.AutoSizeColumns;
-  ListGrid.EndUpdate();
-end;
-
-procedure TDatasetViewerFrame.GridColumnSort(Sender: TObject; ACol, ARow, BCol,
-  BRow: Integer; var Result: integer);
-begin
-  if ACol <> BCol then exit;
-
-  ARow := StrToInt(ListGrid.Cells[0, ARow]) - 1;
-  BRow := StrToInt(ListGrid.Cells[0, BRow]) - 1;
-
-  if ACol = 0 then
-    result := ARow - BRow
-  else
-    result := FCurrentDisplayField[ACol - 1].Compare(ARow, BRow);
-end;
-
-procedure TDatasetViewerFrame.GridIndexSort(Sender: TObject; ACol, ARow, BCol,
-  BRow: Integer; var Result: integer);
-var
-  i: Integer;
-begin
-  result := 0;
-  if not FKeyFields.Count = 0 then exit;
-
-  ARow := StrToInt(ListGrid.Cells[0, ARow]) - 1;
-  BRow := StrToInt(ListGrid.Cells[0, BRow]) - 1;
-
-  for i := 0 to FKeyFields.Count - 1 do
-  begin
-    result := FKeyFields[i].Compare(ARow, BRow);
-    if result <> 0 then break;
-  end;
+  VLG.InvalidateToBottom(VLG.GetFirstVisible(nil, true));
+  VLG.Header.AutoFitColumns(true, smaUseColumnOption);
 end;
 
 constructor TDatasetViewerFrame.Create(TheOwner: TComponent;
   const DataFile: TEpiDataFile);
+var
+  i: Integer;
 begin
   inherited Create(TheOwner);
   FDataFile := DataFile;
   FKeyFields := FDataFile.KeyFields;
   FDisplayFields := FDataFile.Fields;
   FCurrentDisplayField := TEpiFields.Create(nil);
+  AssignFields(FCurrentDisplayField, FDisplayFields);
   FShowValueLabels := false;
   FShowAllFields := true;
-  FSortCol := 0;
+  FSortOnIndex := false;
 
-  with ListGrid do
+  FVLG := TVirtualStringTree.Create(Self);
+  with VLG do
   begin
     Align := alClient;
-    Cells[0,0] := 'Record No:';
-    OnCompareCells := @GridColumnSort;
-    UpdateGrid;
+
     Parent := Self;
+    Color := clNone;
+    WantTabs := true;
+    TabStop := true;
+    RootNodeCount := FDataFile.Size;
+
+    // Events:
+    NodeDataSize := SizeOf(Cardinal);
+    OnInitNode := @VLGInitNode;
+    OnGetText := @VLGGetNodeText;
+    OnAfterGetMaxColumnWidth := @VLGAfterGetMaxColumnWidth;
+    OnBeforeCellPaint := @VLGBeforeCellPaint;
+    OnCompareNodes := @VLGCompareNodes;
+    OnHeaderClick := @VLGHeaderClick;
+    OnClick := @VLGClick;
+    OnDblClick := @VLGDoubleClick;
+    OnColumnWidthTracking := @VLGColumnWidthTracking;
   end;
+
+  with VLG.TreeOptions do
+  begin
+    AnimationOptions := [];
+    AutoOptions := [toAutoScroll];
+    MiscOptions := [toGridExtensions, toWheelPanning];
+    PaintOptions := [toShowHorzGridLines, toShowVertGridLines, toThemeAware];
+    SelectionOptions := [toExtendedFocus, toRightClickSelect, toCenterScrollIntoView];
+  end;
+
+  VLG.BeginUpdate;
+  with VLG.Header do
+  begin
+    Options := [hoColumnResize, hoDblClickResize, hoVisible];
+
+    Columns.BeginUpdate;
+    with Columns.Add do
+    begin
+      CaptionAlignment := taLeftJustify;
+      Text := 'Record No:';
+      Options := [coFixed, coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
+      Width := 50;
+      Alignment := taRightJustify;
+    end;
+
+    for i := 0 to FDataFile.Fields.Count - 1 do
+    with Columns.Add do
+    begin
+      CaptionAlignment := taLeftJustify;
+      Text := FDataFile.Fields[i].Name;
+      Options := [coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coVisible, coUseCaptionAlignment];
+      Width := 100;
+      Alignment := taRightJustify;
+    end;
+    Columns.EndUpdate;
+
+    AutoSizeIndex := -1;
+    Height := 25;
+    MainColumn := 0;
+  end;
+  VLG.EndUpdate;
 end;
 
 destructor TDatasetViewerFrame.Destroy;
@@ -327,7 +435,27 @@ end;
 procedure TDatasetViewerFrame.ShowRecords(const Records: TBoundArray);
 begin
   FRecords := Records;
+  if Assigned(FRecords) then
+    VLG.RootNodeCount := Length(FRecords)
+  else
+    VLG.RootNodeCount := FDataFile.Size;
+
+  With VLG do
+    ReinitChildren(RootNode, true);
   UpdateGrid;
+end;
+
+procedure TDatasetViewerFrame.InitVisual;
+begin
+  Screen.Cursor := crHourGlass;
+  Application.ProcessMessages;
+
+  VLG.RootNodeCount := FDataFile.Size;
+  UpdateFields;
+  VLG.Sort(VLG.RootNode, 0, sdAscending);
+
+  Screen.Cursor := crDefault;
+  Application.ProcessMessages;
 end;
 
 end.

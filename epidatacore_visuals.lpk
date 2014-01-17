@@ -27,6 +27,7 @@
         <CompilerMessages>
           <MsgFileName Value=""/>
         </CompilerMessages>
+        <CustomOptions Value="-dEPI_GRID_TEST"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
@@ -42,18 +43,21 @@
       </Item2>
     </Files>
     <Type Value="RunAndDesignTime"/>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="4">
       <Item1>
+        <PackageName Value="virtualtreeview_package"/>
+      </Item1>
+      <Item2>
         <PackageName Value="epidatacore"/>
         <MaxVersion Major="1" Minor="4" Release="3" Valid="True"/>
         <MinVersion Major="1" Minor="4" Release="3" Valid="True"/>
-      </Item1>
-      <Item2>
-        <PackageName Value="lcl"/>
       </Item2>
       <Item3>
-        <PackageName Value="FCL"/>
+        <PackageName Value="lcl"/>
       </Item3>
+      <Item4>
+        <PackageName Value="FCL"/>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

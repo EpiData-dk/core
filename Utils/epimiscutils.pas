@@ -68,6 +68,10 @@ const
   function IsReservedEpiFieldName(Const Name: string): boolean;
 
 
+  function PostInc(var Value: Integer; Const N: Integer = 1): Integer;
+  function PreInc(var Value: Integer; Const N: Integer = 1): Integer;
+
+
 implementation
 
 uses
@@ -266,6 +270,18 @@ begin
   result :=
     (Name = EpiIndexIntegrityFieldName) or
     (Name = EpiDoubleEntryFieldName);
+end;
+
+function PostInc(var Value: Integer; const N: Integer): Integer;
+begin
+  result := Value;
+  Inc(Value, N);
+end;
+
+function PreInc(var Value: Integer; const N: Integer): Integer;
+begin
+  Inc(Value, N);
+  result := Value;
 end;
 
 end.

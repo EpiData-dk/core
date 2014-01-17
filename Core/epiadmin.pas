@@ -6,7 +6,7 @@ unit epiadmin;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, DOM, episettings;
+  Classes, SysUtils, epicustombase, Laz2_DOM, episettings;
 
 type
   TEpiAdmin = class;
@@ -189,7 +189,7 @@ type
 implementation
 
 uses
-  DCPbase64, epistringutils, XMLRead, epidocument, epimiscutils;
+  DCPbase64, epistringutils, epidocument, epimiscutils;
 
 { TEpiAdmin }
 

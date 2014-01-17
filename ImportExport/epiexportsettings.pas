@@ -9,11 +9,14 @@ uses
 
 type
 
+  TEpiExportSettingCustomVisitor = class;
+
   { TEpiExportSetting }
 
   TEpiExportSetting = class
   public
     // Basic properties
+    ExportStream: TStream;
     ExportFileName: string;
     Doc: TEpiDocument;
     DataFileIndex: integer;
@@ -31,9 +34,12 @@ type
 
     // Helpers
     constructor Create; virtual;
-    destructor Destroy; override;
+    destructor  Destroy; override;
     procedure   Assign(Const ASettings: TEpiExportSetting); virtual;
-    function SanetyCheck: boolean; virtual;
+    function    SanetyCheck: boolean; virtual;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); virtual;
   end;
   TEpiExportSettingClass = class of TEpiExportSetting;
 
@@ -43,6 +49,9 @@ type
   public
     ExportValueLabels: boolean;
     procedure Assign(Const ASettings: TEpiExportSetting); override;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
   { TEpiStataExportSetting }
@@ -57,6 +66,9 @@ type
     constructor Create; override;
     procedure Assign(Const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
 
@@ -65,21 +77,28 @@ type
   TEpiSPSSExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
     Delimiter: char;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
   { TEpiSASExportSetting }
 
   TEpiSASExportSetting = class(TEpiCustomValueLabelExportSetting)
   public
-
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
   { TEpiDDIExportSetting }
 
   TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
-  { Funding }
-  { Other }
   private
+    FExportLang: string;
+    FFilterTagIsUserId: boolean;
+    FRemoveMissingVL: boolean;
+    FRenameVariablesPrefix: string;
+    FSectionCaptionIsQText: boolean;
     FSoftwareName: string;
     FSoftwareVersion: string;
     FVersion: string;
@@ -87,6 +106,11 @@ type
     property SoftwareName: string read FSoftwareName write FSoftwareName;
     property SoftwareVersion: string read FSoftwareVersion write FSoftwareVersion;
     property Version: string read FVersion write FVersion;
+    property ExportLang: string read FExportLang write FExportLang;
+    property RemoveMissingVL: boolean read FRemoveMissingVL write FRemoveMissingVL;
+    property FilterTagIsUserId: boolean read FFilterTagIsUserId write FFilterTagIsUserId;
+    property SectionCaptionIsQText: boolean read FSectionCaptionIsQText write FSectionCaptionIsQText;
+    property RenameVariablesPrefix: string read FRenameVariablesPrefix write FRenameVariablesPrefix;
 
   { Common }
   public
@@ -94,17 +118,24 @@ type
     destructor Destroy; override;
     procedure Assign(const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
   { TEpiCustomTextExportSettings }
 
   TEpiCustomTextExportSettings = class(TEpiExportSetting)
   public
+    ByteOrderMark: boolean;
     ExportFieldNames: boolean;
     QuoteChar: string;
 
     constructor Create; override;
     procedure Assign(const ASettings: TEpiExportSetting); override;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
   { TEpiCSVExportSetting }
@@ -121,30 +152,112 @@ type
     constructor Create; override;
     procedure Assign(const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
-  TEpiEPXExportSetting = class(TEpiCustomValueLabelExportSetting);
+  { TEpiEPXExportSetting }
+
+  TEpiEPXExportSetting = class(TEpiCustomValueLabelExportSetting)
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
+  end;
 
 {  TEpiSpreadSheetExportSetting = class(TEpiCustomTextExportSettings)
   public
     SpreadSheetVersion: byte;  //TODO: Export to spreadsheet using TFPSpreadSheet.
   end;}
 
+  TEpiExportSettingVisitorTraversal = (
+    vtSingle,                       // Only visit this instance in the hierachy
+    vtDerivedFirst,                 // Visit most derived class first, then inherited classes afterwards
+    vtInheritedFirst                // Visit most inherited class first, then derived classes afterwards
+  );
+
+  { TEpiExportSettingCustomVisitor }
+
+  TEpiExportSettingCustomVisitor = class
+  private
+    FVisitorTraversal: TEpiExportSettingVisitorTraversal;
+  public
+    constructor Create; virtual;
+    procedure Visit(Const ExportSetting: TEpiExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiCustomValueLabelExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiStataExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiSPSSExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiSASExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiDDIExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiCustomTextExportSettings); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiCSVExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiEPXExportSetting); virtual; abstract; overload;
+ public
+    property  VisitorTraversal: TEpiExportSettingVisitorTraversal read FVisitorTraversal write FVisitorTraversal;
+  end;
+
 implementation
+
+{ TEpiEPXExportSetting }
+
+procedure TEpiEPXExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
+end;
+
+{ TEpiSASExportSetting }
+
+procedure TEpiSASExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
+end;
+
+{ TEpiSPSSExportSetting }
+
+procedure TEpiSPSSExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
+end;
+
+{ TEpiExportSettingCustomVisitor }
+
+constructor TEpiExportSettingCustomVisitor.Create;
+begin
+  FVisitorTraversal := vtInheritedFirst;
+end;
 
 { TEpiDDIExportSetting }
 
 constructor TEpiDDIExportSetting.Create;
 begin
   inherited Create;
-//  FCoverTopKeyWords := TStringList.Create;
-//  FCoverTopSubjects := TStringList.Create;
+  RemoveMissingVL := false;
+  FilterTagIsUserId := false;
 end;
 
 destructor TEpiDDIExportSetting.Destroy;
 begin
-//  FCoverTopKeyWords.Free;
-//  FCoverTopSubjects.Free;
   inherited Destroy;
 end;
 
@@ -157,7 +270,20 @@ end;
 function TEpiDDIExportSetting.SanetyCheck: boolean;
 begin
   Result :=
+    (ExportLang <> '') and
     (inherited SanetyCheck);
+end;
+
+procedure TEpiDDIExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
 end;
 
 { TEpiCustomValueLabelExportSetting }
@@ -169,6 +295,18 @@ begin
   if not (ASettings is TEpiCustomTextExportSettings) then exit;
 
   ExportValueLabels := TEpiCustomValueLabelExportSetting(ASettings).ExportValueLabels;
+end;
+
+procedure TEpiCustomValueLabelExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
 end;
 
 { TEpiExportSetting }
@@ -223,11 +361,21 @@ begin
   if FromRecord = -1 then FromRecord := 0;
   if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
 
+  if (ExportStream = nil) and (ExportFileName <> '') then
+    ExportStream := TFileStream.Create(ExportFileName, fmCreate + fmOpenReadWrite);
+
+
   result :=
-    (ExportFileName <> '') and
-    (Fields.Count > 0) and
+    (Assigned(ExportStream)) and
+//    (Fields.Count > 0) and
     (FromRecord >= 0) and
     (ToRecord < Doc.DataFiles[DataFileIndex].Size);
+end;
+
+procedure TEpiExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  Visitor.Visit(Self);
 end;
 
 { TEpiStataExportSetting }
@@ -257,12 +405,25 @@ begin
   Result := inherited SanetyCheck;
 end;
 
+procedure TEpiStataExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
+end;
+
 { TEpiCustomTextExportSettings }
 
 constructor TEpiCustomTextExportSettings.Create;
 begin
   inherited Create;
   QuoteChar := '"';
+  ByteOrderMark := false;
 end;
 
 procedure TEpiCustomTextExportSettings.Assign(const ASettings: TEpiExportSetting
@@ -273,6 +434,19 @@ begin
 
   ExportFieldNames := TEpiCustomTextExportSettings(ASettings).ExportFieldNames;
   QuoteChar        := TEpiCustomTextExportSettings(ASettings).QuoteChar;
+  ByteOrderMark    := TEpiCustomTextExportSettings(ASettings).ByteOrderMark;
+end;
+
+procedure TEpiCustomTextExportSettings.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
 end;
 
 { TEpiCSVExportSetting }
@@ -306,29 +480,29 @@ end;
 
 function TEpiCSVExportSetting.SanetyCheck: boolean;
 begin
-  Result :=
-    (inherited SanetyCheck) and
-    // FieldSep compare
-    (
-      (not FixedFormat) and
-        (
-          (FieldSeparator <> DateSeparator) and
-          (FieldSeparator <> TimeSeparator) and
-          (FieldSeparator <> DecimalSeparator) and
-          (FieldSeparator <> QuoteChar)
-        )
-      or
-      ( FixedFormat )
-    ) and
-    // Date compare
-    (DateSeparator  <> TimeSeparator) and
-    (DateSeparator  <> DecimalSeparator) and
-    (DateSeparator  <> QuoteChar) and
-    // Time compare
-    (TimeSeparator  <> DecimalSeparator) and
-    (TimeSeparator  <> QuoteChar) and
-    // Decimal compare
-    (DecimalSeparator <> QuoteChar);
+  Result := inherited SanetyCheck;
+
+  // With fixed format delimiters do not interfere.
+  if FixedFormat then Exit;
+
+  // Only make sure that FieldSeparator <> QuoteChar
+  // otherwise an CSV export will enclose data with a delimiter if it
+  // is the same as the FieldSeparator.
+
+  Result := Result and
+    (FieldSeparator <> QuoteChar);
+end;
+
+procedure TEpiCSVExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
 end;
 
 end.

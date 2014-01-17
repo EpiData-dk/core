@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes, epiexportsettings, DOM, epicustombase, fgl;
+  epieximtypes, epiexportsettings, Laz2_DOM, epicustombase, fgl;
 
 type
   { TEpiDDIExport }
@@ -86,7 +86,7 @@ type
     procedure BuildCoverage;
     procedure BuildUnitOfObs;
     procedure BuildKindOfData;
-    procedure BuildNotes;
+    procedure BuildDCElements(Const CitationElem: TDOMElement);
     procedure BuildConceptualComponent;
 
     procedure BuildDataCollection;
@@ -94,7 +94,7 @@ type
     procedure BuildQuestionScheme(DataCollection: TDOMElement);
     // helper: Returns MainSequence
     function  BuildControlConstructScheme(DataCollection: TDOMElement): TDomElement;
-    // Helper: build interviewer instructions (and references from QuestionConstruc to Instruction.
+    // Helper: build interviewer instructions and references from QuestionConstruc to Instruction.
     procedure BuildInterviewerInstructionScheme(DataCollection: TDOMElement);
 
     procedure BuildLogicalProduct;
@@ -114,7 +114,7 @@ type
 implementation
 
 uses
-  XMLWrite, epiexport, LazUTF8;
+  laz2_XMLWrite, epiexport, LazUTF8, epitools_filterinfo;
 
 const
   NSreuseable           = 'ddi:reusable:3_1';
@@ -125,7 +125,7 @@ const
   NSphysicaldataproduct = 'ddi:physicaldataproduct:3_1';
   NSphysicalinstance    = 'ddi:physicalinstance:3_1';
   NSarchive             = 'ddi:archive:3_1';
-  // .... todo!
+  NSdcelements          = 'ddi:dcelements:3_1';
 
 { TEpiDDIExport }
 
@@ -173,7 +173,8 @@ function TEpiDDIExport.AppendElem(Root: TDOMElement; const NameSpace,
   NodeName: string; const Text: String): TDOMElement;
 begin
   Result := XMLDoc.CreateElementNS(NameSpace, NodeName);
-  Result.TextContent := Text;
+  if Text <> '' then
+    Result.TextContent := Text;
   if Assigned(Root) then
     Root.AppendChild(Result);
 end;
@@ -182,7 +183,9 @@ function TEpiDDIExport.AppendElemInternationalStringType(Root: TDOMElement;
   const NameSpace, NodeName: string; const Text: String): TDOMElement;
 begin
   Result := AppendElem(Root, NameSpace, NodeName, Text);
-  AddAttrLang(Result, EpiDoc.DefaultLang);
+  AddAttrLang(Result, FSettings.ExportLang {EpiDoc.DefaultLang});
+  Result.SetAttribute('translatable', 'true');
+  Result.SetAttribute('translated',   'false');
 end;
 
 function TEpiDDIExport.AppendElemIdentifiableType(Root: TDOMElement;
@@ -235,25 +238,69 @@ var
   CSVExporter: TEpiExport;
   TxtExportSetting: TEpiCSVExportSetting;
   i: Integer;
+  NewDoc: TEpiDocument;
+  NewDF: TEpiDataFile;
+  NewList: TList;
+  OldList: TList;
 begin
-  TxtExportSetting := TEpiCSVExportSetting.Create;
-  TxtExportSetting.Assign(FSettings);
-  TxtExportSetting.FieldSeparator := '!';
-  TxtExportSetting.DecimalSeparator := '.';
-  TxtExportSetting.DateSeparator  := '-';
-  TxtExportSetting.TimeSeparator  := ':';
-  TxtExportSetting.QuoteChar      := '';
-  TxtExportSetting.FixedFormat    := true;
-  TxtExportSetting.NewLine        := LineEnding;
-  TxtExportSetting.Encoding       := eeUTF8;
-  TxtExportSetting.ExportFieldNames := false;
+  if Assigned(FSettings.AdditionalExportSettings) and
+     (FSettings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    TxtExportSetting := TEpiCSVExportSetting(FSettings.AdditionalExportSettings)
+  else begin
+    TxtExportSetting := TEpiCSVExportSetting.Create;
+    TxtExportSetting.Assign(FSettings);
+    TxtExportSetting.FieldSeparator := #9;
+    TxtExportSetting.DecimalSeparator := ',';
+    TxtExportSetting.DateSeparator  := '-';
+    TxtExportSetting.TimeSeparator  := ':';
+    TxtExportSetting.QuoteChar      := '"';
+    TxtExportSetting.FixedFormat    := false;
+    TxtExportSetting.NewLine        := LineEnding;
+    TxtExportSetting.ExportFieldNames := false;
+  end;
+
   TxtExportSetting.ExportFileName := ChangeFileExt(FSettings.ExportFileName, '.csv');
-  for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
-    TxtExportSetting.Fields.Add(EpiDoc.DataFiles[0].Field[i]);
+  TxtExportSetting.Encoding       := eeUTF8;
+
+
+  if (FSettings.RenameVariablesPrefix <> '') and
+     (TxtExportSetting.ExportFieldNames)
+  then
+  begin
+    // Clone Document and rename variables;
+    NewDoc := TEpiDocument(EpiDoc.Clone);
+    NewDF  := NewDoc.DataFiles[TxtExportSetting.DataFileIndex];
+
+    NewList := TList.Create;
+    for i := 0 to TxtExportSetting.Fields.Count - 1 do
+       NewList.Add(NewDf.ControlItems.GetItemByName(TEpiCustomItem(TxtExportSetting.Fields[i]).Name));
+
+    // In case of existing field names with same as selected prefix.
+    for i := 0 to NewDF.Fields.Count - 1 do
+      NewDF.Field[i].Name := '@renamed' + IntToStr(i);
+
+    for i := 0 to NewDF.Fields.Count - 1 do
+      NewDF.Field[i].Name := FSettings.RenameVariablesPrefix + IntToStr(i+1);
+
+    TxtExportSetting.Doc := NewDoc;
+    OldList := TxtExportSetting.Fields;
+    TxtExportSetting.Fields := NewList;
+  end;
 
   CSVExporter := TEpiExport.Create;
   CSVExporter.Export(TxtExportSetting);
   FSettings.AdditionalExportSettings := TxtExportSetting;
+
+  if (FSettings.RenameVariablesPrefix <> '') and
+     (TxtExportSetting.ExportFieldNames)
+  then
+  begin
+    TxtExportSetting.Doc := EpiDoc;
+    TxtExportSetting.Fields := OldList;
+    NewList.Free;
+    NewDoc.Free;
+  end;
 end;
 
 procedure TEpiDDIExport.BuildCitations;
@@ -265,9 +312,6 @@ begin
 
   // Title MUST be present, so assume it is...
   AppendElemInternationalStringType(Citation, NSreuseable, 'Title', EpiDoc.Study.Title.Text);
-
-{  if FSettings.CitSubTitle <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'SubTitle', FSettings.CitSubTitle); }
 
   if EpiDoc.Study.Author <> '' then
     AppendElemInternationalStringType(Citation, NSreuseable, 'Creator', EpiDoc.Study.Author);
@@ -283,8 +327,7 @@ begin
     Elem.SetAttribute('type', 'Other');
   end;
 
-{  if FSettings.CitCopyRight <> '' then
-    AppendElemInternationalStringType(Citation, NSreuseable, 'Copyright', EpiDoc.Study.ri);   }
+  BuildDCElements(Citation);
 end;
 
 procedure TEpiDDIExport.BuildAbstract;
@@ -383,32 +426,28 @@ begin
     AppendElem(DDIStudyUnit, NSstudy, 'KindOfData', EpiDoc.Study.Design.Text);
 end;
 
-procedure TEpiDDIExport.BuildNotes;
+procedure TEpiDDIExport.BuildDCElements(const CitationElem: TDOMElement);
 var
-  Elem: TDOMElement;
-  NoteElem: TDOMElement;
+  DCElem: TDOMElement;
 
-  function BuildNote(Const Header, Content: string): TDOMElement;
+  function BuildDCTag(Const DCTag, Content: string): TDOMElement;
+  var
+    Elem: TDOMElement;
   begin
-    NoteElem := AppendElemIdentifiableType(DDIStudyUnit, NSreuseable, 'Note');
-    NoteElem.SetAttribute('type', 'Comment');
-
-    Elem := AppendElem(NoteElem, NSreuseable, 'Relationship');
-    AppendElemReferenceType(Elem, NSreuseable, 'RelatedToReference', DDIStudyUnit);
-
-    AppendElemInternationalStringType(NoteElem, NSreuseable, 'Header', Header);
-    AppendElemInternationalStringType(NoteElem, NSreuseable, 'Content', Content);
+    Elem := AppendElem(DCElem, 'http://purl.org/dc/elements/1.1/', DCTag, Content);
+    AddAttrLang(Elem, FSettings.ExportLang);
   end;
 
 begin
-  // Here we build all additional notes:
+  // Here we build all additional Dublin Core elements:
   // - Citation: Fungerer som ”udgivelser fra studiet”
   // - Rights:   right to use data
   // - Funding:  contributors
+  DCElem := AppendElem(CitationElem, NSdcelements, 'DCElements');
 
-  BuildNote('EpiData: User supplied version information.', EpiDoc.Study.Version);
-  BuildNote('EpiData: Citations', EpiDoc.Study.Citations.Text);
-  BuildNote('EpiData: Funding information', EpiDoc.Study.Funding.Text);
+  BuildDCTag('dc:identifier', EpiDoc.Study.Version);
+  BuildDCTag('dc:source',     EpiDoc.Study.Citations.Text);
+  BuildDCTag('dc:relation',   EpiDoc.Study.Funding.Text);
 end;
 
 procedure TEpiDDIExport.BuildConceptualComponent;
@@ -542,7 +581,7 @@ begin
 
   // Build QuestionItem
   for i := 0 to EpiDoc.DataFiles[0].Fields.Count - 1 do
-  with EpiDoc.DataFiles[0].Field[i] do
+//  with EpiDoc.DataFiles[0].Field[i] do
   begin
     F := EpiDoc.DataFiles[0].Field[i];
 
@@ -550,17 +589,23 @@ begin
     QuieMap.Add(@F, @QItem);
 
     Elem := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionItemName', F.Name);
-    QText := AppendElem(QItem, NSdatacollection, 'QuestionText');
+    QText := AppendElemInternationalStringType(QItem, NSdatacollection, 'QuestionText', '');
     QLiteralText := AppendElem(QText, NSdatacollection, 'LiteralText');
-    AppendElemInternationalStringType(QLiteralText, NSdatacollection, 'Text', Question.Text);
 
-    if Assigned(ValueLabelSet) then
+    if FSettings.SectionCaptionIsQText and
+       (F.Section <> F.DataFile.MainSection)
+    then
+      AppendElem(QLiteralText, NSdatacollection, 'Text', F.Section.Caption.Text)
+    else
+      AppendElem(QLiteralText, NSdatacollection, 'Text', F.Question.Text);
+
+    if Assigned(F.ValueLabelSet) then
     begin
       Domain := AppendElem(QItem, NSdatacollection, 'CodeDomain');
-      j := ValueLabelSetsGUIDs.IndexOfObject(ValueLabelSet);
+      j := ValueLabelSetsGUIDs.IndexOfObject(F.ValueLabelSet);
       AppendElemReferenceType(Domain, NSreuseable, 'CodeSchemeReference', ValueLabelSetsGUIDs[j]);
     end else
-      case FieldType of
+      case F.FieldType of
         ftBoolean:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
@@ -582,39 +627,53 @@ begin
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'NumericDomain');
             Domain.SetAttribute('type', 'Float');
-            Domain.SetAttribute('decimalPositions', IntToStr(Decimals));
+            Domain.SetAttribute('decimalPositions', IntToStr(F.Decimals));
           end;
         ftDMYDate, ftMDYDate, ftYMDDate,
         ftDMYAuto, ftMDYAuto, ftYMDAuto:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
             Domain.SetAttribute('type', 'Date');
-            Domain.SetAttribute('format', FormatString());
+            Domain.SetAttribute('format', F.FormatString());
+            Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftTime,
         ftTimeAuto:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'DateTimeDomain');
             Domain.SetAttribute('type', 'Time');
-            Domain.SetAttribute('format', FormatString());
+            Domain.SetAttribute('format', F.FormatString());
+            Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftString,
         ftUpperString:
           begin
             Domain := AppendElem(QItem, NSdatacollection, 'TextDomain');
-            Domain.SetAttribute('maxLength', IntToStr(Length));
+            Domain.SetAttribute('maxLength', IntToStr(F.Length));
+            Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
       end;
+
     // Missing Value
-    if Assigned(ValueLabelSet) and (ValueLabelSet.MissingCount > 0) then
+    if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
-      for j := 0 to ValueLabelSet.Count -1 do
-        if ValueLabelSet[j].IsMissingValue then
-          S += ValueLabelSet[j].ValueAsString + ' ';
+      for j := 0 to F.ValueLabelSet.Count -1 do
+        if F.ValueLabelSet[j].IsMissingValue then
+          S += F.ValueLabelSet[j].ValueAsString + ' ';
       Domain.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
-    Domain.SetAttribute('blankIsMissingValue', 'true');
+
+    // Only add blankIsMissingValue if the field actually contains data.
+    for j := 0 to F.Size -1 do
+      if F.IsMissing[j] then
+      begin
+        Domain.SetAttribute('blankIsMissingValue', 'true');
+        Continue;
+      end;
 
     // Add reference to Concept (via Section mapping)
     AppendElemReferenceType(QItem, NSdatacollection, 'ConceptReference', idFromMap(ConcMap, F.Section));
@@ -841,24 +900,61 @@ var
   ReprElem: TDOMElement;
   j: Integer;
   S: String;
+  L: TList;
 begin
   Result := AppendElemMaintainableType(nil, NSlogicalproduct, 'VariableScheme', 'vars');
 
   Df := EpiDoc.DataFiles[0];
+  EpiTool_UpdateFilterInformation(DF);
+
   for i := 0 to Df.Fields.Count -1 do
   begin
     F := Df.Field[i];
+    L := TList(F.FindCustomData(EPITOOL_FILTER_CUSTDATA));
+    S := '';
+
+    // Create Filter Element.
+    if (Assigned(L))
+    then
+      begin
+        S := 'Filter: ' + TEpiToolFilterInfo(L[0]).Field.Name;
+        for j := 1 to L.Count - 1 do
+          if TEpiToolFilterInfo(L[j]).Field = TEpiToolFilterInfo(L[J-1]).Field then
+            continue
+          else
+            S += ', ' + TEpiToolFilterInfo(L[j]).Field.Name;
+      end;
 
     VarElem := AppendElemVersionableType(Result, NSlogicalproduct, 'Variable', 'vari');
     VarsMap.Add(@F, @VarElem);
 
-    AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
+    // DDA specific coding... remove when appropriate! :)
+    if (FSettings.FilterTagIsUserId) and (S <> '') then
+      begin
+        Elem := AppendElem(VarElem, NSreuseable, 'UserID', S);
+        Elem.SetAttribute('type', 'filter');
+      end;
+
+    if (FSettings.RenameVariablesPrefix <> '') and
+       ((FSettings.RenameVariablesPrefix + IntToStr(i+1)) <> F.Name)  // only add UserID if there is a real change!
+    then
+      begin
+        Elem := AppendElem(VarElem, NSreuseable, 'UserID', F.Name);
+        Elem.SetAttribute('type', 'dk.dda.variable.orgvariablename');
+        AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', FSettings.RenameVariablesPrefix + IntToStr(i+1));
+      end
+    else
+      AppendElemInternationalStringType(VarElem, NSlogicalproduct, 'VariableName', F.Name);
+
     AppendElemInternationalStringType(VarElem, NSreuseable, 'Label', F.Question.Text);
+
+    if (not FSettings.FilterTagIsUserId) and (S <> '') then
+      AppendElemInternationalStringType(VarElem, NSreuseable, 'Description', S);
+
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'ConceptReference',  idFromMap(ConcMap, F.Section));
     AppendElemReferenceType(VarElem, NSlogicalproduct, 'QuestionReference', idFromMap(QuieMap, F));
 
     Elem := AppendElem(VarElem, NSlogicalproduct, 'Representation');
-
 
     if Assigned(F.ValueLabelSet) then
     begin
@@ -896,6 +992,7 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Date');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftTime,
         ftTimeAuto:
@@ -903,25 +1000,39 @@ begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'DateTimeRepresentation');
             ReprElem.SetAttribute('type', 'Time');
             ReprElem.SetAttribute('format', F.FormatString());
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
         ftString,
         ftUpperString:
           begin
             ReprElem := AppendElem(Elem, NSlogicalproduct, 'TextRepresentation');
             ReprElem.SetAttribute('maxLength', IntToStr(F.Length));
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
       end;
+
     // Missing Value
     if Assigned(F.ValueLabelSet) and (F.ValueLabelSet.MissingCount > 0) then
     begin
+      BackupFormatSettings;
+      DefaultFormatSettings.DecimalSeparator := '.';
       S := '';
       for j := 0 to F.ValueLabelSet.Count -1 do
         if F.ValueLabelSet[j].IsMissingValue then
           S += F.ValueLabelSet[j].ValueAsString + ' ';
       ReprElem.SetAttribute('missingValue', TrimRight(S));
+      RestoreFormatSettings;
     end;
-    ReprElem.SetAttribute('blankIsMissingValue', 'true');
+
+    // Only add blankIsMissingValue if the field actually contains data.
+    for j := 0 to F.Size -1 do
+      if F.IsMissing[j] then
+      begin
+        ReprElem.SetAttribute('blankIsMissingValue', 'true');
+        Continue;
+      end;
   end;
+  EpiTool_RemoveFilterInformation(DF);
 end;
 
 procedure TEpiDDIExport.BuildCodeScheme(LogicalProduct: TDOMElement);
@@ -959,9 +1070,12 @@ begin
 
     AppendElemReferenceType(CodScheme, NSlogicalproduct, 'CategorySchemeReference', CatScheme);
 
+    BackupFormatSettings;
+    FormatSettings.DecimalSeparator := '.';
     for j := 0 to VSet.Count - 1 do
     begin
       V := VSet[j];
+      if V.IsMissingValue and FSettings.RemoveMissingVL then continue;
 
       Cat := AppendElemVersionableType(CatScheme, NSlogicalproduct, 'Category', 'cat');
       AppendElem(Cat, NSreuseable, 'Label', V.TheLabel.Text);
@@ -971,6 +1085,7 @@ begin
 
       AppendElem(Cod, NSlogicalproduct, 'Value', V.ValueAsString);
     end;
+    RestoreFormatSettings;
   end;
 
   for i := 0 to CodSchemeList.Count - 1 do
@@ -991,7 +1106,9 @@ var
   StartPos: Integer;
   i: Integer;
   S: String;
+  CSVSettings: TEpiCSVExportSetting;
 begin
+  CSVSettings := TEpiCSVExportSetting(FSettings.AdditionalExportSettings);
   PhysDataProd := AppendElemMaintainableType(DDIStudyUnit, NSphysicaldataproduct, 'PhysicalDataProduct', 'phdp');
 
   // *********************
@@ -1002,8 +1119,9 @@ begin
 
   AppendElemReferenceType(PhysStruct, NSphysicaldataproduct, 'LogicalProductReference', DDILogicalProd);
 
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'FIXED');
-  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', '.');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'Format', 'Delimited file');
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDelimiter', CSVSettings.FieldSeparator);
+  Elem := AppendElem(PhysStruct, NSphysicaldataproduct, 'DefaultDecimalSeparator', CSVSettings.DecimalSeparator);
 
   GrossRecStr := AppendElemIdentifiableType(PhysStruct, NSphysicaldataproduct, 'GrossRecordStructure', 'grst');
   AppendElemReferenceType(GrossRecStr, NSphysicaldataproduct, 'LogicalRecordReference', DDILogicalRec);
@@ -1027,7 +1145,6 @@ begin
   AppendElemReferenceType(DDIRely, NSphysicaldataproduct, 'DefaultVariableSchemeReference', DDIVarScheme);
 
   Df := EpiDoc.DataFiles[0];
-  StartPos := 1;
   for i := 0 to Df.Fields.Count - 1 do
   begin
     F := DF.Field[i];
@@ -1053,11 +1170,10 @@ begin
       ftUpperString: S := 'string';
     end;
     AppendElem(Elem, NSphysicaldataproduct, 'StorageFormat', S);
-    AppendElem(Elem, NSphysicaldataproduct, 'StartPosition', IntToStr(StartPos));
+    AppendElem(Elem, NSphysicaldataproduct, 'ArrayPosition', IntToStr(I + 1));
     AppendElem(Elem, NSphysicaldataproduct, 'Width', IntToStr(F.Length));
     if F.FieldType in FloatFieldTypes then
       AppendElem(Elem, NSphysicaldataproduct, 'DecimalPositions', IntToStr(F.Decimals));
-    Inc(StartPos, F.Length);
   end;
 end;
 
@@ -1162,7 +1278,6 @@ begin
   BuildCoverage;
   BuildUnitOfObs;
   BuildKindOfData;
-  BuildNotes;
 
   BuildConceptualComponent;
   BuildDataCollection;
@@ -1171,7 +1286,7 @@ begin
   BuildPhysicalInstance;
 //  BuildArchive;
 
-  WriteXML(XMLDoc, Settings.ExportFileName)
+  WriteXML(XMLDoc, Settings.ExportStream)
 end;
 
 end.

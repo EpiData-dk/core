@@ -20,6 +20,7 @@ type
     function    ItemClass: TEpiCustomItemClass; override;
     function    NewSection: TEpiSection;
     function    GetSectionByName(Const AName: string): TEpiSection;
+    function    GetUniqueItemName(AClass: TEpiCustomItemClass): string; override;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
   end;
 
@@ -40,7 +41,8 @@ type
     procedure   SetWidth(const AValue: integer);
   private
     FAllControls: TEpiCustomControlItemList;  // Stores a local list of all fields/headings in sorted order.
-    procedure ItemsHook(Sender: TObject; EventGroup: TEpiEventGroup;
+    procedure ItemsHook(Const Sender, Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;

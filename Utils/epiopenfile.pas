@@ -43,6 +43,7 @@ type
     FOnError: TOpenEpiErrorEvent;
     FOnPassword: TRequestPasswordEvent;
     FOnWarning: TOpenEpiWarningEvent;
+    FOnProgress: TEpiProgressEvent;
   private
     // Aux. functions
     function GetHostNameWrapper: string;
@@ -53,7 +54,9 @@ type
     FFileName: string;
     FTimeStamp: TTimeStamp;
     FEpiDoc: TEpiDocument;
-    procedure DocumentChange(Sender: TObject; EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure DocumentChange(Const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
     function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure WriteLockFile(Const Fn: string; LF: PLockFile);
@@ -84,6 +87,7 @@ type
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
+    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
   public
     // Other properties
     property FileName: string read GetFileName;
@@ -187,13 +191,15 @@ begin
     Result := 'Unknown';
 end;
 
-procedure TEpiDocumentFile.DocumentChange(Sender: TObject;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+procedure TEpiDocumentFile.DocumentChange(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
   // Housekeeping to know if document is being destroyed.
 
   if not (EventGroup = eegCustomBase) then exit;
   if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
+  if (Initiator <> FEpiDoc) then exit;
 
   DeleteLockFile;
 end;
@@ -326,9 +332,9 @@ var
   LF: PLockFile;
   LockFileName: String;
 begin
-  if FFileName = '' then exit;
+  if not IsSaved then exit;
 
-  LockFileName := FFileName + '.lock';
+  LockFileName := FileName + '.lock';
 
   LF := New(PLockFile);
   with LF^ do
@@ -346,7 +352,7 @@ procedure TEpiDocumentFile.DeleteLockFile;
 var
   LockFileName: String;
 begin
-  if FileName = '' then exit;
+  if not IsSaved then exit;
 
   LockFileName := FileName + '.lock';
 
@@ -358,7 +364,7 @@ procedure TEpiDocumentFile.DeleteBackupFile;
 var
   BackupFileName: String;
 begin
-  if FileName = '' then exit;
+  if not IsSaved then exit;
 
   BackupFileName := FileName + '.bak';
 
@@ -373,6 +379,7 @@ var
 begin
   Ms := TMemoryStream.Create;
 
+  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.SaveToStream(Ms);
   Ms.Position := 0;
 
@@ -399,7 +406,8 @@ begin
     St.LoadFromFile(UTF8ToSys(AFileName));
   St.Position := 0;
 
-  FEpiDoc.OnPassword := FOnPassword;
+  FEpiDoc.OnPassword := OnPassword;
+  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.LoadFromStream(St);
   St.Free;
 end;
@@ -414,15 +422,6 @@ var
   Fn: String;
   LoadBackupFile: Boolean;
 begin
-  {
-  ************************************************
-  Option:
-    When reading the file make an md5sum of the file before any edits,
-    then before save then do the md5 again. This may prevent others from
-    stealing the .lock file, editing and then deleting the .lock file.
-    Otherwise detecting a change in the original may be a problem.
-  ************************************************
-  }
   Result         := false;
   FFileName      := AFileName;
   FReadOnly      := AReadOnly;
@@ -602,7 +601,7 @@ function TEpiDocumentFile.SaveBackupFile: boolean;
 var
   BackupFileName: String;
 begin
-  if FileName = '' then exit;
+  if not IsSaved then exit;
 
   BackupFileName := FileName + '.bak';
   DoSaveFile(BackupFileName);

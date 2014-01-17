@@ -75,10 +75,36 @@ begin
   Result := TEpiDataFile(AParent);
 end;
 
+procedure TEpiJump.JumpToFieldChange(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (Initiator <> FJumpToField) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
+
+  // Our reference field has been (or is being) destroyed,
+  // change this jump to a SAVERECORD, with jrLeaveAsIs.
+
+  FJumpToField := nil;
+  FJumpType    := jtSaveRecord;
+  FResetType   := jrLeaveAsIs;
+
+  Initiator.UnRegisterOnChangeHook(@JumpToFieldChange);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
+end;
+
 procedure TEpiJump.SetJumpToField(const AValue: TEpiField);
 begin
   if FJumpToField = AValue then exit;
+
+  if Assigned(FJumpToField) then
+    FJumpToField.UnRegisterOnChangeHook(@JumpToFieldChange);
+
   FJumpToField := AValue;
+
+  if Assigned(FJumpToField) then
+    FJumpToField.RegisterOnChangeHook(@JumpToFieldChange, true);
 end;
 
 procedure TEpiJump.SetJumpType(const AValue: TEpiJumpType);
@@ -101,6 +127,12 @@ begin
   FJumpToField := nil;
 end;
 
+destructor TEpiJump.Destroy;
+begin
+  JumpToField := nil;
+  inherited Destroy;
+end;
+
 function TEpiJump.WriteNameToXml: boolean;
 begin
   Result := false;
@@ -121,9 +153,10 @@ begin
       if (not Assigned(TEpiField(Owner.Owner).DataFile)) or
          (TEpiField(Owner.Owner).DataFile = (TEpiField(SElf.Owner.Owner).DataFile))
       then
-        FJumpToField := Self.FJumpToField
+        JumpToField := Self.FJumpToField
       else
-        FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+        JumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+      // Do NOT use FJumpToField - else the event hooks are not attached appropriately.
     end;
   end;
 end;

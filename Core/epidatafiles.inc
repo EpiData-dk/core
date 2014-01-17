@@ -164,15 +164,111 @@ begin
     if Verified[i] then inc(Result);
 end;
 
-procedure TEpiDataFile.LocalEventHook(Sender: TObject;
-  EventGrp: TEpiEventGroup; EventType: Word; Data: pointer);
+procedure TEpiDataFile.LocalEventHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGrp: TEpiEventGroup; EventType: Word;
+  Data: pointer);
 var
   F: TEpiField;
   H: TEpiHeading;
   i: Integer;
   S: TEpiSection;
+  Item: TEpiCustomItem;
 begin
-  case EventGrp of
+  // Skip hook if we recieve messages we do not care about.
+  if EventGrp <> eegCustomBase
+  then
+    Exit;
+
+  if not (TEpiCustomChangeEventType(EventType) in [ecceAddItem, ecceDelItem])
+  then
+    Exit;
+
+  // Skip event if initiated from AllControls.
+  if (Initiator = FAllControlItems) or
+     (Initiator = FAllFields) or
+     (Initiator = FAllHeadings)
+  then
+    Exit;
+
+  if (Initiator is TEpiFields) then
+  begin
+    F := TEpiField(Data);
+
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      Fields.RemoveItem(F)
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(F.Name) then
+          F.Name := Fields.GetUniqueItemName(TEpiField);
+        Fields.AddItem(F);
+        F.Size := Size;
+        F.FDataFile := Self;
+      end
+  end;
+
+  if (Initiator is TEpiHeadings) then
+  begin
+    H := TEpiHeading(Data);
+
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      Headings.RemoveItem(H)
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(H.Name) then
+          H.Name := Headings.GetUniqueItemName(TEpiHeading);
+        H.FDataFile := Self;
+        Headings.AddItem(TEpiHeading(Data));
+      end
+  end;
+
+  if (Initiator is TEpiSections) then
+  begin
+    S := TEpiSection(Data);
+
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      begin
+        if (ebsDestroying in State) then exit;
+
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceDelItem), S.Fields[i]);
+        S.Fields.OnValidateRename := nil;
+
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceDelItem), Heading[i]);
+        S.Headings.OnValidateRename := nil;
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not Self.ValidateRename(S.Name) then
+          S.Name := Sections.GetUniqueItemName(TEpiSection);
+
+        S.FDataFile := Self;
+        S.Fields.OnValidateRename := @Self.ValidateRename;
+        S.Fields.Sorted := true;
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceAddItem), S.Fields[i]);
+
+        S.Headings.OnValidateRename := @Self.ValidateRename;
+        S.Headings.Sorted := true;
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceAddItem), S.Heading[i]);
+      end;
+  end;
+
+  if TObject(Data).InheritsFrom(TEpiCustomControlItem) then
+    if TEpiCustomChangeEventType(EventType) = ecceDelItem
+    then
+      ControlItems.RemoveItem(TEpiCustomItem(Data))
+    else
+      ControlItems.AddItem(TEpiCustomItem(Data));
+
+{  case EventGrp of
     eegCustomBase:
       begin
         case TEpiCustomChangeEventType(EventType) of
@@ -258,7 +354,7 @@ begin
             end;
         end;
       end;
-  end;
+  end;     }
 end;
 
 function TEpiDataFile.SaveRecords(Lvl: integer): string;
@@ -272,12 +368,21 @@ var
   R: String;
   EnCrypter: TDCP_rijndael;
   Edoc: TEpiDocument;
+  ProgressMethod: TEpiProgressEvent;
 
   function LocalEncrypt(S: String): string;
   begin
     if Assigned(EnCrypter) then
       S := EnCrypter.EncryptString(S);
     Result := S;
+  end;
+
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
   end;
 
 begin
@@ -288,6 +393,8 @@ begin
   Lst.Add(Indent(Lvl) + '<' + rsRecords + SaveAttr(rsModifiedAttr, RecModifiedDate) + '>');
 
   Edoc := TEpiDocument(RootOwner);
+  ProgressMethod := Edoc.OnProgress;
+
   BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
   Sz := Size;
   Fc := Fields.Count;
@@ -299,8 +406,10 @@ begin
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
   end;
 
+  DoProgress(eptInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
   begin
+    DoProgress(eptRecords, CurRec, Sz);
     R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
 
     S := '';
@@ -320,6 +429,8 @@ begin
   Lst.Add(Indent(Lvl) + '</' + rsRecords + '>');
   Result := Lst.Text;
   Lst.Free;
+
+  DoProgress(eptFinish, Sz, Sz);
 end;
 
 procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
@@ -340,6 +451,13 @@ const
 var
   DeCrypter: TDCP_rijndael;
   n: String;
+  ProgressMethod: TEpiProgressEvent;
+  NodeCount: LongWord;
+  NodeNum: LongWord;
+  PStr: PChar;
+  L: Integer;
+  PEnd: PChar;
+  PCur: PChar;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -359,12 +477,19 @@ var
     Result := S;
   end;
 
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
+  end;
+
 begin
   // Root = <Records>
   FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
 
   CurRec := 0;
-//  Size := Root.ChildNodes.Count;
   DeCrypter := nil;
 
   FieldList := TFPDataHashTable.CreateWith(Fields.Count, @RSHash);
@@ -385,10 +510,20 @@ begin
     DeCrypter.InitStr(TEpiDocument(RootOwner).PassWord, TDCP_sha256);
   end;
 
+  ProgressMethod := TEpiDocument(RootOwner).OnProgress;
+  // div 2: Because all nodes have a single whitespace node after each "normal" node.
+  NodeCount := (Root.ChildNodes.Count div 2);
+  DoProgress(eptInit, 0, NodeCount);
+
+
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   while Assigned(Node) do
   begin
+    if DoProgress(eptRecords, CurRec, NodeCount) then
+      HaltLoading;
+    Inc(NodeNum);
+
     while NodeIsWhiteSpace(Node) do
       Node := TDOMElement(Node.NextSibling);
     if not Assigned(Node) then break;
@@ -403,7 +538,8 @@ begin
       rsVerified: Verified[CurRec] := true;
     end;
 
-    DataList.DelimitedText := Dummyfy(LocalDeCrypt(UTF8Encode(Node.TextContent)));
+    {$IFNDEF EPI_TEST_LOAD}
+    DataList.DelimitedText := Dummyfy(LocalDeCrypt(Node.TextContent));
     for i := 0 to DataList.Count - 1 do
     begin
       FN := DataList.Names[i];
@@ -414,9 +550,39 @@ begin
         continue;
       TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
     end;
+    {$ELSE}
+    FN := LocalDeCrypt(Node.TextContent)[1];
+    PStr := @FN[1];
+    PCur := PStr;
+    L := Length(FN);
+
+    while (PCur - PStr) < L do
+    begin
+      PEnd := PCur;
+      while PEnd^ <> '=' do Inc(PEnd);
+      PEnd^ := #0;
+      FN := StrPas(PCur);
+
+      PCur := PEnd;
+      Inc(PCur);
+      repeat
+        if (PCur^ = #0) or
+           (
+            (PCur^ = ',') and
+            ((PCur - 1)^ <> '\')
+           )
+        then
+          break;
+
+        Inc(PCur);
+      until false;
+    end;
+    {$ENDIF EPI_TEST_LOAD}
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
+  DoProgress(eptFinish, NodeCount, NodeCount);
+
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
 end;
@@ -545,10 +711,160 @@ begin
   if I < R then InternalSortRecords(SortList, I, R);
 end;
 
+procedure TEpiDataFile.HaltLoading;
+begin
+  Raise EEpiDataFileHaltLoading.Create('Loading aborted by user!');
+end;
+
 procedure TEpiDataFile.SetVersion(const AValue: string);
 begin
   if FVersion = AValue then exit;
   FVersion := AValue;
+end;
+
+procedure TEpiDataFile.DoControlChange(const Initiator: TEpiCustomBase;
+  EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
+var
+  F: TEpiField;
+  H: TEpiHeading;
+  S: TEpiSection;
+  i: Integer;
+begin
+  // Skip event if initiated from AllControls.
+  if (Initiator = FAllControlItems) or
+     (Initiator = FAllFields) or
+     (Initiator = FAllHeadings) or
+     (Initiator = FKeyFields)
+  then
+    Exit;
+
+  if (Initiator is TEpiFields) then
+  begin
+    F := TEpiField(Data);
+
+    if EventType = ecceDelItem
+    then
+      begin
+        // APPLIES TO FIELDS AND HEADING!
+        // Make this test because:
+        // 1) If F is being destroyed, then F will at this point have been
+        //    removed from FAllFields due to the internal hook of TEpiCustomList.
+        //    Hence we will get an error trying to remove it!
+        // 2) If F is being removed/deleted, then F will at this point STILL be
+        //    in the list of FAllFields. Hence we MUST remove it, otherwise our
+        //    internal structures will be in an inconsistent state.
+        if FAllFields.IndexOf(F) > -1 then
+          FAllFields.RemoveItem(F)
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(F.Name) then
+          F.Name := FAllFields.GetUniqueItemName(TEpiField);
+        FAllFields.AddItem(F);
+        F.Size := Size;
+        F.FDataFile := Self;
+      end;
+  end;
+
+  if (Initiator is TEpiHeadings) then
+  begin
+    if EventType = ecceDelItem
+    then
+      begin
+        if FAllHeadings.IndexOf(Data) > -1 then
+          FAllHeadings.RemoveItem(Data)
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        if not ValidateRename(Data.Name) then
+          Data.Name := FAllHeadings.GetUniqueItemName(TEpiHeading);
+        TEpiHeading(Data).FDataFile := Self;
+        FAllHeadings.AddItem(Data);
+      end;
+  end;
+
+  if (Initiator is TEpiSections) then
+  begin
+    S := TEpiSection(Data);
+
+    if EventType = ecceDelItem
+    then
+      begin
+        if (ebsDestroying in S.State) then exit;
+
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceDelItem), S.Fields[i]);
+        S.Fields.OnValidateRename := nil;
+
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceDelItem), S.Heading[i]);
+        S.Headings.OnValidateRename := nil;
+      end
+    else
+      begin
+        // Check that id is not in conflict with others.
+        // - but only check Fields/Headings since S is
+        //   already inserted into Sections.
+        if Assigned(Fields.FieldByName[S.Name]) or
+           Assigned(Headings.GetHeadingByName(S.Name))
+        then
+          S.Name := Sections.GetUniqueItemName(TEpiSection);
+
+        S.FDataFile := Self;
+        S.Fields.OnValidateRename := @Self.ValidateRename;
+        S.Fields.Sorted := true;
+        for i := 0 to S.Fields.Count - 1 do
+          S.Fields.DoChange(eegCustomBase, Word(ecceAddItem), S.Fields[i]);
+
+        S.Headings.OnValidateRename := @Self.ValidateRename;
+        S.Headings.Sorted := true;
+        for i := 0 to S.Headings.Count - 1 do
+          S.Headings.DoChange(eegCustomBase, Word(ecceAddItem), S.Heading[i]);
+      end;
+  end;
+
+  if EventType = ecceDelItem
+  then
+    begin
+      if FAllControlItems.IndexOf(Data) > -1 then
+        FAllControlItems.RemoveItem(Data)
+    end
+  else
+    FAllControlItems.AddItem(Data);
+end;
+
+procedure TEpiDataFile.DoModifiedChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  if (EventGroup = eegFields) and
+     (TEpiFieldsChangeEventType(EventType) = efceData)
+  then
+    FRecModified := true
+  else
+    if not
+         ((EventGroup = eegCustomBase) and
+          (TEpiCustomChangeEventType(EventType) = ecceUpdate))
+    then
+      FStructureModified := true;
+end;
+
+procedure TEpiDataFile.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  // This check for housekeeping!
+  if (EventGroup = eegCustomBase) and
+     (TEpiCustomChangeEventType(EventType) in [ecceAddItem, ecceDelItem]) and
+     (TObject(Data).InheritsFrom(TEpiCustomControlItem))
+  then
+    DoControlChange(Initiator,
+                    TEpiCustomChangeEventType(EventType),
+                    TEpiCustomControlItem(Data));
+
+  DoModifiedChange(Initiator, EventGroup, EventType, Data);
 end;
 
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
@@ -638,6 +954,9 @@ constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
 
+  // MASTER HOOK!
+//  Self.RegisterOnChangeHook(@LocalEventHook, true);
+
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FNotes := TEpiTranslatedText.Create(Self, rsNotes);
@@ -649,7 +968,7 @@ begin
   // Sections
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
-  FSections.RegisterOnChangeHook(@LocalEventHook, true);
+//  FSections.RegisterOnChangeHook(@LocalEventHook, true);
   FSections.OnValidateRename := @ValidateRename;
   FSections.Sorted := true;
 
@@ -657,12 +976,15 @@ begin
   FAllFields := TEpiFields.Create(Self);
   FAllFields.OnSort := @ControlItemListSort;
   FAllFields.Sorted := true;
+  FAllFields.Name := '@ALLFIELDS';
   FAllHeadings := TEpiHeadings.Create(Self);
   FAllHeadings.OnSort := @ControlItemListSort;
   FAllHeadings.Sorted := true;
+  FAllHeadings.Name := '@ALLHEADINGS';
   FAllControlItems := TAllItemsList.Create(Self);
   FAllControlItems.OnSort := @ControlItemListSort;
   FAllControlItems.Sorted := true;
+  FAllControlItems.Name := '@ALLCONTROLS';
 
   // The special main section...
   FMainSection := NewSection;
@@ -674,6 +996,7 @@ begin
 
   // Container for Key Fields.
   FKeyFields := TEpiFields.Create(Self);
+  FKeyFields.Name := '@KEYFIELDS';
 
   RegisterClasses([Caption, Notes, Sections]);
 end;
@@ -726,6 +1049,8 @@ var
   Jump: TEpiJump;
   i: Integer;
   AField: TEpiField;
+  T1: TDateTime;
+  T2: TDateTime;
 begin
   // Since the main section is autocreated we remove it during load.
   Sections.RemoveItem(MainSection);
@@ -791,8 +1116,12 @@ begin
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := Sections.GetSectionByName('MAIN');
 
+  T1 := Now;
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
+  T2 := Now;
+  if IsConsole then
+    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;
@@ -913,10 +1242,12 @@ begin
   inherited BeginUpdate;
   Fields.BeginUpdate;
   Headings.BeginUpdate;
+  ControlItems.BeginUpdate;
 end;
 
 procedure TEpiDataFile.EndUpdate;
 begin
+  ControlItems.EndUpdate;
   Headings.EndUpdate;
   Fields.EndUpdate;
   inherited EndUpdate;

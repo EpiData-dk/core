@@ -24,6 +24,10 @@ type
 
   TEpiJump = class(TEpiCustomItem)
   private
+    procedure JumpToFieldChange(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+  private
     FJumpToField: TEpiField;
     FJumpType: TEpiJumpType;
     FResetType: TEpiJumpResetType;
@@ -32,6 +36,7 @@ type
     procedure   SetResetType(const AValue: TEpiJumpResetType);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
     function    GetJumpValueAsString: string; virtual; abstract;
     function    WriteNameToXml: boolean; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =

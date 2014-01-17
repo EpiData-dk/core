@@ -6,7 +6,7 @@ unit epidocument;
 interface
 
 uses
-  Classes, sysutils, XMLRead, DOM,
+  Classes, sysutils, laz2_XMLRead, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
   epistudy, epirelations, epivaluelabels,
   epicustombase, epidatafilestypes;
@@ -15,6 +15,19 @@ type
 
   TEpiDocumentChangeEvent = (edcePassword);
 
+  TEpiProgressType =
+    (
+      eptInit,
+      eptFinish,
+      eptRecords
+    );
+
+  TEpiProgressEvent = procedure (
+    Const Sender: TEpiCustomBase;
+    ProgressType: TEpiProgressType;
+    CurrentPos, MaxPos: Cardinal;
+    var Canceled: Boolean) of object;
+
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
@@ -22,6 +35,7 @@ type
     FAdmin: TEpiAdmin;
     FCycleNo: Int64;
     FLoading: boolean;
+    FOnProgress: TEpiProgressEvent;
     FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
@@ -54,7 +68,8 @@ type
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
     Property   Relations: TEpiRelations read FRelations;
-    property   OnPassword:  TRequestPasswordEvent read GetOnPassword write SetOnPassword;
+    property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
+    property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
     // EpiData XML Version 2 perperties:
@@ -180,12 +195,14 @@ var
   Xin: TXMLInputSource;
 begin
   //ReadXMLFile(RecXml, St);
-  P := TDOMParser.Create;
+  ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
+
+{  P := TDOMParser.Create;
   P.Options.PreserveWhitespace := true;
   Xin := TXMLInputSource.Create(St);
   P.Parse(Xin, RecXml);
   Xin.Free;
-  P.Free;
+  P.Free;    }
 
   // **********************
   // Global <EpiData> structure

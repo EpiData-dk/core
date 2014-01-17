@@ -217,27 +217,49 @@ begin
   DoChange(eegFields, word(efceRepeatValue), @Val);
 end;
 
-procedure TEpiField.LocalEventHook(Sender: TObject; EventGroup: TEpiEventGroup;
-  EventType: Word; Data: Pointer);
+procedure TEpiField.LocalEventHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  if (Sender is TEpiValueLabelSet) or (Sender is TEpiField) then
+  if not
+    ((EventGroup = eegCustomBase) and (EventType = word(ecceDestroy)))
+  then
+    Exit;
+
+  if (Initiator = FValueLabelSet)
+  then
+    ValueLabelSet := nil;
+
+
+  if (Initiator = FValueLabelWriteField)
+  then
+    ValueLabelWriteField := nil;
+end;
+
+procedure TEpiField.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+var
+  S: String;
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  if not (
+      (EventGroup = eegCustomBase) and
+      (TEpiCustomChangeEventType(EventType) = ecceReferenceDestroyed)
+     )
+  then
+    Exit;
+
+  if Initiator = FCalculation then
   begin
-    if (EventGroup = eegCustomBase) and (EventType = word(ecceDestroy)) then
-      if Sender is TEpiValueLabelSet then
-        FValueLabelSet := nil
-      else
-        FValueLabelWriteField := nil;
+    FCalculation.Free;
+    FCalculation := nil;
   end;
 
-  if (Sender is TEpiValueLabelSets) or (Sender is TEpiFields) then
+  if Initiator = FComparison then
   begin
-    if (EventGroup = eegCustomBase) and
-       (EventType = word(ecceDelItem)) then
-      if (Sender is TEpiValueLabelSets) and (FValueLabelSet = TEpiValueLabelSet(Data)) then
-        FValueLabelSet := nil
-      else
-      if (Sender is TEpiFields) and (FValueLabelWriteField = TEpiField(Data)) then
-        FValueLabelWriteField := nil;
+    FComparison.Free;
+    FComparison := nil;
   end;
 end;
 
@@ -268,22 +290,14 @@ begin
   if FValueLabelSet = AValue then exit;
 
   if Assigned(FValueLabelSet) then
-  begin
-    // UnRegister our hook on the previous valuelabel set.
     FValueLabelSet.UnRegisterOnChangeHook(@LocalEventHook);
-    // also do the same with the parent.
-    if Assigned(FValueLabelSet.Owner) then
-      FValueLabelSet.Owner.UnRegisterOnChangeHook(@LocalEventHook);
-  end;
+
   Val := FValueLabelSet;
   FValueLabelSet := AValue;
 
   if Assigned(FValueLabelSet) then
-  begin
     FValueLabelSet.RegisterOnChangeHook(@LocalEventHook, true);
-    if Assigned(FValueLabelSet.Owner) then
-      FValueLabelSet.Owner.RegisterOnChangeHook(@LocalEventHook, true);
-  end;
+
   DoChange(eegFields, Word(efceValueLabelSet), Val);
 end;
 
@@ -297,20 +311,14 @@ begin
   begin
     // UnRegister our hook on the previous field set.
     FValueLabelWriteField.UnRegisterOnChangeHook(@LocalEventHook);
-    // also do the same with the parent.
-    if Assigned(FValueLabelWriteField.Owner) then
-      FValueLabelWriteField.Owner.UnRegisterOnChangeHook(@LocalEventHook);
   end;
 
   Val := FValueLabelWriteField;
   FValueLabelWriteField := AValue;
 
   if Assigned(FValueLabelWriteField) then
-  begin
     FValueLabelWriteField.RegisterOnChangeHook(@LocalEventHook, true);
-    if Assigned(FValueLabelWriteField.Owner) then
-      FValueLabelWriteField.Owner.RegisterOnChangeHook(@LocalEventHook, true);
-  end;
+
   DoChange(eegFields, Word(efceValueLabelWriteTo), Val);
 end;
 
@@ -459,13 +467,22 @@ begin
     Dest.FValueLabelWriteField := Dest.DataFile.Fields.FieldByName[FValueLabelWriteField.Name];
 
   if Assigned(Jumps) then
+  begin
+    if Assigned(Dest.FJumps) then Dest.FJumps.Free;
     Dest.FJumps := TEpiJumps(Jumps.Clone(Dest));
+  end;
 
   if Assigned(Comparison) then
+  begin
+    if Assigned(Dest.Comparison) then Dest.Comparison.Free;
     Dest.FComparison := TEpiComparison(Comparison.Clone(Dest));
+  end;
 
   if Assigned(Calculation) then
+  begin
+    if Assigned(Dest.Calculation) then Dest.Calculation.Free;
     Dest.FCalculation := TEpiCalculation(Calculation.Clone(Dest));
+  end;
 end;
 
 constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
@@ -485,26 +502,6 @@ begin
   HasDefaultValue := false;
 
   RegisterClasses([Notes, Question]);
-end;
-
-procedure TEpiField.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-begin
-  inherited DoChange(EventGroup, EventType, Data);
-
-  // Sanity checks!
-  if not Assigned(DataFile) then exit;
-
-  if (EventGroup = eegFields) and
-     (TEpiFieldsChangeEventType(EventType) = efceData)
-  then
-    FDataFile.FRecModified := true
-  else
-    if not
-         ((EventGroup = eegCustomBase) and
-          (TEpiCustomChangeEventType(EventType) = ecceUpdate))
-    then
-      FDataFile.FStructureModified := true;
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
@@ -529,6 +526,10 @@ begin
     FJumps.Free;
   if Assigned(FRanges) then
     FRanges.Free;
+  if Assigned(FCalculation) then
+    FCalculation.Free;
+  if Assigned(FComparison) then
+    FComparison.Free;
   inherited Destroy;
 end;
 

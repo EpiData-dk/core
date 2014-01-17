@@ -10,7 +10,15 @@ uses
 type
   TEpiFieldNamingCase = (fncUpper, fncLower, fncAsIs);
 
+const
+  EpiFieldNamingCaseToString: array[TEpiFieldNamingCase] of string =
+  (
+    'Uppercase',
+    'Lowercase',
+    'Leave as is'
+  );
 
+type
   TEpiEncoding =
     (eeUTF8,             // Unicode (UTF-8)
      eeCP1250,           // Centel Europe (CP1250)
@@ -30,21 +38,6 @@ type
      eeCP932,            // japanes
      eeGuess,            // Used for guess encoding during text read.
      eeSystemDefault     // Used for export/import using current system setting.
-    );
-
-//  Stata Version 4    = $69;
-//  Stata Version 6    = $6C; // dta_108
-//  Stata Version 7    = $6E; // dta_110
-//  Stata Version 8+9  = $71; // dta_113
-//  Stata Version 10   = $72; // dta_114
-//  Stata Version 12   = $73; // dta_115
-  TEpiStataVersion =
-    (dta4 = $69,
-     dta6 = 108,
-     dta7 = 110,
-     dta8 = 113,
-     dta10 = 114,
-     dta12 = 115
     );
 
 const
@@ -69,6 +62,24 @@ const
      'System'            // Used for export/import using current system setting.
      );
 
+type
+
+//  Stata Version 4    = $69;
+//  Stata Version 6    = $6C; // dta_108
+//  Stata Version 7    = $6E; // dta_110
+//  Stata Version 8+9  = $71; // dta_113
+//  Stata Version 10   = $72; // dta_114
+//  Stata Version 12   = $73; // dta_115
+  TEpiStataVersion =
+    (dta4 = $69,
+     dta6 = 108,
+     dta7 = 110,
+     dta8 = 113,
+     dta10 = 114,
+     dta12 = 115
+    );
+
+const
   // 21916 days after 30 dec. 1899 = 1/1/1960 Stata base date.
   StataBaseDate = 21916;
   StataBaseDateTime = TDateTime(StataBaseDate);
@@ -79,7 +90,24 @@ const
   StataFloatConst  = #254;
   StataDoubleConst = #255;
 
+function EpiStataVersionToString(Const StataVersion: TEpiStataVersion): string;
+
+
 implementation
+
+function EpiStataVersionToString(const StataVersion: TEpiStataVersion): string;
+begin
+  case StataVersion of
+    dta4:  result := 'Stata 4';
+    dta6:  result := 'Stata 5, 6';
+    dta7:  result := 'Stata 7';
+    dta8:  result := 'Stata 8, 9';
+    dta10: result := 'Stata 10, 11';
+    dta12: result := 'Stata 12';
+  else
+    result := 'Stata version is missing string representation in: epieximtypes.pas';
+  end;
+end;
 
 end.
 
