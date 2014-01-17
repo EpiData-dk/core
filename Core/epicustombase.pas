@@ -571,7 +571,9 @@ end;
 
 function TEpiCustomBase.DeCrypt(Root: TDOMNode): TDOMNode;
 var
-  St: TStringStream;
+  // Changed in fixes 1.4.2 to satisfy Lazarus 1.0.8 (stable release)
+  // which has ReadXMLFragment(.., var TStream).
+  St: TStream;
   XMLDoc: TDOMDocumentFragment;
   s: String;
   Node: TDOMNode;
