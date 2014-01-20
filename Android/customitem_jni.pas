@@ -1,40 +1,63 @@
-unit customitem_jni;
+unit EpiCustomItem_jni;
 
 {$mode objfpc}{$H+}
 
 interface
 
-uses
-  epicustombase, jni, sysutils;
+uses jni, sysutils, androidutils;
 
 const
-  CustomItemJNI = 'Java_dk_epidata_androidclient_core_CustomItem_';
+  EpiCustomItemJNI = 'Java_dk_epidata_androidclient_core_EpiCustomItem_'
 
-function CustomItem_ValidateRename(Env: PJNIEnv; This: jobject; Item: jint; NewName: jstring): jboolean; cdecl;
-function CustomItem_GetName(Env: PJNIEnv; This: jobject; Item: jint): jstring; cdecl;
-procedure CustomItem_SetName(Env: PJNIEnv; This: jobject; Item: jint; Name: jstring); cdecl;
+procedure EpiCustomItem_Destroy(Env: PJNIEnv; This: jobject; Self: jint); cdecl;
+procedure EpiCustomItem_LoadFromXml(Env: PJNIEnv; This: jobject; Self: jint; Root: TDOMNode); cdecl;
+function EpiCustomItem_ValidateRename(Env: PJNIEnv; This: jobject; Self: jint; NewName: jstring; RenameOnSuccess: Boolean): Boolean; cdecl;
+function EpiCustomItem_GetName(Env: PJNIEnv; This: jobject; Self: jint): jstring; cdecl;
+procedure EpiCustomItem_SetName(Env: PJNIEnv; This: jobject; Self: jint; Name: jstring); cdecl;
+procedure EpiCustomItem_AddCustomData(Env: PJNIEnv; This: jobject; Self: jint; Key: jstring; Obj: TObject); cdecl;
+function EpiCustomItem_FindCustomData(Env: PJNIEnv; This: jobject; Self: jint; Key: jstring): TObject; cdecl;
+function EpiCustomItem_RemoveCustomData(Env: PJNIEnv; This: jobject; Self: jint; Key: jstring): TObject; cdecl;
 
 implementation
 
-uses
-  androidutils;
+uses ;
 
-function CustomItem_ValidateRename(Env: PJNIEnv; This: jobject; Item: jint;
-  NewName: jstring): jboolean; cdecl;
+procedure EpiCustomItem_Destroy(Env: PJNIEnv; This: jobject; Self: jint); cdecl;
 begin
-  result := jboolean(TEpiCustomItem(Item).ValidateRename(GetJNIString(Env, NewName), false));
+  TEpiCustomItem(Self).Destroy();
 end;
 
-function CustomItem_GetName(Env: PJNIEnv; This: jobject; Item: jint): jstring;
-  cdecl;
+procedure EpiCustomItem_LoadFromXml(Env: PJNIEnv; This: jobject; Self: jint; Root: TDOMNode); cdecl;
 begin
-  result := NewJNIString(Env, TEpiCustomItem(Item).Name);
+  TEpiCustomItem(Self).LoadFromXml(Root);
 end;
 
-procedure CustomItem_SetName(Env: PJNIEnv; This: jobject; Item: jint;
-  Name: jstring); cdecl;
+function EpiCustomItem_ValidateRename(Env: PJNIEnv; This: jobject; Self: jint; NewName: jstring; RenameOnSuccess: Boolean): Boolean; cdecl;
 begin
-  TEpiCustomItem(Item).Name := GetJNIString(Env, Name);
+  result := TEpiCustomItem(Self).ValidateRename(GetJNIString(NewName),RenameOnSuccess);
+end;
+
+function EpiCustomItem_GetName(Env: PJNIEnv; This: jobject; Self: jint): jstring; cdecl;
+begin
+  result := NewJNIString(Env, TEpiCustomItem(Self).Name);
+end;
+procedure EpiCustomItem_SetName(Env: PJNIEnv; This: jobject; Self: jint; Name: jstring); cdecl;
+begin
+  TEpiCustomItem(Self).Name := GetJNIString(Env, Name);
+end;
+procedure EpiCustomItem_AddCustomData(Env: PJNIEnv; This: jobject; Self: jint; Key: jstring; Obj: TObject); cdecl;
+begin
+  TEpiCustomItem(Self).AddCustomData(GetJNIString(Key),Obj);
+end;
+
+function EpiCustomItem_FindCustomData(Env: PJNIEnv; This: jobject; Self: jint; Key: jstring): TObject; cdecl;
+begin
+  result := TEpiCustomItem(Self).FindCustomData(GetJNIString(Key));
+end;
+
+function EpiCustomItem_RemoveCustomData(Env: PJNIEnv; This: jobject; Self: jint; Key: jstring): TObject; cdecl;
+begin
+  result := TEpiCustomItem(Self).RemoveCustomData(GetJNIString(Key));
 end;
 
 end.

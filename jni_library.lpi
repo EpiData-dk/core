@@ -43,7 +43,7 @@
         <MinVersion Major="1" Minor="1" Valid="True"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="5">
+    <Units Count="11">
       <Unit0>
         <Filename Value="jni_library.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -60,15 +60,45 @@
         <UnitName Value="epicustomlist_jni"/>
       </Unit2>
       <Unit3>
-        <Filename Value="Android/customitem_jni.pas"/>
+        <Filename Value="Android/epicustomitem_jni.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="customitem_jni"/>
+        <UnitName Value="EpiCustomItem_jni"/>
       </Unit3>
       <Unit4>
         <Filename Value="Android/epidatafiles_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="epidatafiles_jni"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="Android/epicustombase_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiCustomBase_jni"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="Android/epitranslatedtext_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiTranslatedText_jni"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="Android/epitranslatedtextwrapper_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiTranslatedTextWrapper_jni"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="Android/epicustomcontrolitem_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiCustomControlItem_jni"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="Android/epicustomlist_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiCustomList_jni"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="Android/epicustomcontrolitemlist_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiCustomControlItemList_jni"/>
+      </Unit10>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

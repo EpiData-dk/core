@@ -3,9 +3,15 @@ library jni_library;
 {$mode objfpc}{$H+}
 
 uses
-  jni,
-  // EpiData units
-  epicustomlist_jni, epidocument_jni, customitem_jni, epidatafiles_jni;
+ jni,
+ EpiCustomBase_jni,
+ EpiTranslatedText_jni,
+ EpiTranslatedTextWrapper_jni,
+ EpiCustomItem_jni,
+ EpiCustomControlItem_jni,
+ EpiCustomList_jni,
+ EpiCustomControlItemList_jni
+ ;
 
 function JNI_OnLoad(vm:PJavaVM; reserved: pointer): jint; cdecl;
 begin
@@ -13,29 +19,89 @@ begin
 end;
 
 exports
-  // Default!
-  JNI_OnLoad,
+ JNI_OnLoad,
 
-  // CustomBase:
-  // - CUstomList
-  CustomList_AddItem         name CustomListJNI + 'AddItem',
-  CustomList_InsertItem      name CustomListJNI + 'InsertItem',
-
-  // - CustomItem
-  CustomItem_SetName         name CustomItemJNI + 'SetName',
-  CustomItem_GetName         name CustomItemJNI + 'GetName',
-  CustomItem_ValidateRename  name CustomItemJNI + 'ValidateRename',
-
-  // Document:
-  Document_Create            name DocumentJNI + 'Create',
-  Document_CreateFromFile    name DocumentJNI + 'CreateFromFile',
-  Document_SaveToFile        name DocumentJNI + 'SaveToFile',
-  Document_Destroy           name DocumentJNI + 'Destroy',
-  Document_GetDataFiles      name DocumentJNI + 'GetDataFiles',
-
-  // DataFiles:
-  // - Datafiles
-  DataFiles_GetDataFile      name EpiDataFilesJNI + 'GetDataFile',
-  DataFiles_NewDataFile      name EpiDataFilesJNI + 'NewDataFile';
+  EpiCustomBase_XMLName name EpiCustomBaseJNI + 'XMLName',
+  EpiCustomBase_SaveToXml name EpiCustomBaseJNI + 'SaveToXml',
+  EpiCustomBase_LoadFromXml name EpiCustomBaseJNI + 'LoadFromXml',
+  EpiCustomBase_BeginUpdate name EpiCustomBaseJNI + 'BeginUpdate',
+  EpiCustomBase_EndUpdate name EpiCustomBaseJNI + 'EndUpdate',
+  EpiCustomBase_RegisterOnChangeHook name EpiCustomBaseJNI + 'RegisterOnChangeHook',
+  EpiCustomBase_UnRegisterOnChangeHook name EpiCustomBaseJNI + 'UnRegisterOnChangeHook',
+  EpiCustomBase_SetLanguage name EpiCustomBaseJNI + 'SetLanguage',
+  EpiCustomBase_GetCurrentLang name EpiCustomBaseJNI + 'GetCurrentLang',
+  EpiCustomBase_GetDefaultLang name EpiCustomBaseJNI + 'GetDefaultLang',
+  EpiCustomBase_BeforeDestruction name EpiCustomBaseJNI + 'BeforeDestruction',
+  EpiCustomBase_Destroy name EpiCustomBaseJNI + 'Destroy',
+  EpiCustomBase_Assign name EpiCustomBaseJNI + 'Assign',
+  EpiCustomBase_GetOwner name EpiCustomBaseJNI + 'GetOwner',
+  EpiCustomBase_GetRootOwner name EpiCustomBaseJNI + 'GetRootOwner',
+  EpiCustomBase_GetState name EpiCustomBaseJNI + 'GetState',
+  EpiCustomBase_GetModified name EpiCustomBaseJNI + 'GetModified',
+  EpiCustomBase_SetModified name EpiCustomBaseJNI + 'SetModified',
+  EpiCustomBase_GetOnModified name EpiCustomBaseJNI + 'GetOnModified',
+  EpiCustomBase_SetOnModified name EpiCustomBaseJNI + 'SetOnModified',
+  EpiCustomBase_Clone name EpiCustomBaseJNI + 'Clone',
+  EpiTranslatedText_Create name EpiTranslatedTextJNI + 'Create',
+  EpiTranslatedText_Destroy name EpiTranslatedTextJNI + 'Destroy',
+  EpiTranslatedText_SaveToXml name EpiTranslatedTextJNI + 'SaveToXml',
+  EpiTranslatedText_LoadFromXml name EpiTranslatedTextJNI + 'LoadFromXml',
+  EpiTranslatedText_Assign name EpiTranslatedTextJNI + 'Assign',
+  EpiTranslatedText_GetText name EpiTranslatedTextJNI + 'GetText',
+  EpiTranslatedText_SetText name EpiTranslatedTextJNI + 'SetText',
+  EpiTranslatedText_GetTextLang name EpiTranslatedTextJNI + 'GetTextLang',
+  EpiTranslatedText_SetTextLang name EpiTranslatedTextJNI + 'SetTextLang',
+  EpiTranslatedTextWrapper_Create name EpiTranslatedTextWrapperJNI + 'Create',
+  EpiTranslatedTextWrapper_SaveToXml name EpiTranslatedTextWrapperJNI + 'SaveToXml',
+  EpiTranslatedTextWrapper_LoadFromXml name EpiTranslatedTextWrapperJNI + 'LoadFromXml',
+  EpiCustomItem_Destroy name EpiCustomItemJNI + 'Destroy',
+  EpiCustomItem_LoadFromXml name EpiCustomItemJNI + 'LoadFromXml',
+  EpiCustomItem_ValidateRename name EpiCustomItemJNI + 'ValidateRename',
+  EpiCustomItem_GetName name EpiCustomItemJNI + 'GetName',
+  EpiCustomItem_SetName name EpiCustomItemJNI + 'SetName',
+  EpiCustomItem_AddCustomData name EpiCustomItemJNI + 'AddCustomData',
+  EpiCustomItem_FindCustomData name EpiCustomItemJNI + 'FindCustomData',
+  EpiCustomItem_RemoveCustomData name EpiCustomItemJNI + 'RemoveCustomData',
+  EpiCustomControlItem_GetLeft name EpiCustomControlItemJNI + 'GetLeft',
+  EpiCustomControlItem_SetLeft name EpiCustomControlItemJNI + 'SetLeft',
+  EpiCustomControlItem_GetTop name EpiCustomControlItemJNI + 'GetTop',
+  EpiCustomControlItem_SetTop name EpiCustomControlItemJNI + 'SetTop',
+  EpiCustomList_Destroy name EpiCustomListJNI + 'Destroy',
+  EpiCustomList_SaveToXml name EpiCustomListJNI + 'SaveToXml',
+  EpiCustomList_Clear name EpiCustomListJNI + 'Clear',
+  EpiCustomList_ClearAndFree name EpiCustomListJNI + 'ClearAndFree',
+  EpiCustomList_ItemClass name EpiCustomListJNI + 'ItemClass',
+  EpiCustomList_NewItem name EpiCustomListJNI + 'NewItem',
+  EpiCustomList_AddItem name EpiCustomListJNI + 'AddItem',
+  EpiCustomList_InsertItem name EpiCustomListJNI + 'InsertItem',
+  EpiCustomList_RemoveItem name EpiCustomListJNI + 'RemoveItem',
+  EpiCustomList_DeleteItem name EpiCustomListJNI + 'DeleteItem',
+  EpiCustomList_GetItemByName name EpiCustomListJNI + 'GetItemByName',
+  EpiCustomList_ItemExistsByName name EpiCustomListJNI + 'ItemExistsByName',
+  EpiCustomList_IndexOf name EpiCustomListJNI + 'IndexOf',
+  EpiCustomList_GetCount name EpiCustomListJNI + 'GetCount',
+  EpiCustomList_GetItems name EpiCustomListJNI + 'GetItems',
+  EpiCustomList_SetItems name EpiCustomListJNI + 'SetItems',
+  EpiCustomList_GetItemOwner name EpiCustomListJNI + 'GetItemOwner',
+  EpiCustomList_SetItemOwner name EpiCustomListJNI + 'SetItemOwner',
+  EpiCustomList_GetUniqueItemName name EpiCustomListJNI + 'GetUniqueItemName',
+  EpiCustomList_ValidateRename name EpiCustomListJNI + 'ValidateRename',
+  EpiCustomList_GetOnValidateRename name EpiCustomListJNI + 'GetOnValidateRename',
+  EpiCustomList_SetOnValidateRename name EpiCustomListJNI + 'SetOnValidateRename',
+  EpiCustomList_GetOnGetPrefix name EpiCustomListJNI + 'GetOnGetPrefix',
+  EpiCustomList_SetOnGetPrefix name EpiCustomListJNI + 'SetOnGetPrefix',
+  EpiCustomList_GetOnNewItemClass name EpiCustomListJNI + 'GetOnNewItemClass',
+  EpiCustomList_SetOnNewItemClass name EpiCustomListJNI + 'SetOnNewItemClass',
+  EpiCustomList_BeginUpdate name EpiCustomListJNI + 'BeginUpdate',
+  EpiCustomList_EndUpdate name EpiCustomListJNI + 'EndUpdate',
+  EpiCustomList_SetLanguage name EpiCustomListJNI + 'SetLanguage',
+  EpiCustomList_Sort name EpiCustomListJNI + 'Sort',
+  EpiCustomList_GetSorted name EpiCustomListJNI + 'GetSorted',
+  EpiCustomList_SetSorted name EpiCustomListJNI + 'SetSorted',
+  EpiCustomList_GetOnSort name EpiCustomListJNI + 'GetOnSort',
+  EpiCustomList_SetOnSort name EpiCustomListJNI + 'SetOnSort',
+  EpiCustomControlItemList_InsertItem name EpiCustomControlItemListJNI + 'InsertItem',
+  EpiCustomControlItemList_DeleteItem name EpiCustomControlItemListJNI + 'DeleteItem'
+  ;
 end.
 
