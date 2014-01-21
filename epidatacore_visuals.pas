@@ -7,7 +7,8 @@ unit epidatacore_visuals;
 interface
 
 uses
-  epiv_dataset_viewer_frame, epiv_documentfile, LazarusPackageIntf;
+  epiv_dataset_viewer_frame, epiv_documentfile, epiv_dataset_viewer_frame_mac, 
+  LazarusPackageIntf;
 
 implementation
 

@@ -32,7 +32,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5"/>
-    <Files Count="2">
+    <Files Count="3">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
         <UnitName Value="epiv_dataset_viewer_frame"/>
@@ -41,6 +41,10 @@
         <Filename Value="Visuals/epiv_documentfile.pas"/>
         <UnitName Value="epiv_documentfile"/>
       </Item2>
+      <Item3>
+        <Filename Value="Visuals/epiv_dataset_viewer_frame_mac.pas"/>
+        <UnitName Value="epiv_dataset_viewer_frame_mac"/>
+      </Item3>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="4">
