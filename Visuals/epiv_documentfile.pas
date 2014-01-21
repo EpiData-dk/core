@@ -46,6 +46,7 @@ var
   DefaultBtn: TMsgDlgBtn;
 begin
   case WarningType of
+    wtSysReadOnly,
     wtLockFile,
     wtTimeBackup2nd:
       begin

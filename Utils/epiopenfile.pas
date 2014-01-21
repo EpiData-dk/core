@@ -12,7 +12,8 @@ type
     (wtLockFile,       // Trying to open a file with a .lock file present.
      wtDatePattern,    // A date pattern has been detected in the file, could be an auto backup
      wtTimeBackup,     // A file with .bak found, which indicated that the program could have shutdown unexpectedly.
-     wtTimeBackup2nd
+     wtTimeBackup2nd,
+     wtSysReadOnly     // The file is readonly on OS level.
     );
   TOpenEpiWarningResult = (wrYes, wrNo, wrCancel);
   TOpenEpiWarningEvent = function (WarningType: TOpenEpiWarningType;
@@ -64,12 +65,14 @@ type
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
   protected
-  function GetFileName: string; virtual;
+    function GetFileName: string; virtual;
     function LockFileExists(Const FileName: string;
       out Msg: string): boolean;
     function DatePatternExists(Const FileName: string;
       out AltFileName: string; out Msg: string): boolean;
     function BackupFileExists(Const FileName: string;
+      out Msg: string): boolean;
+    function IsOSReadOnly(Const FileName: string;
       out Msg: string): boolean;
     procedure DoSaveFile(Const AFileName: string);
     procedure DoOpenFile(Const AFileName: string);
@@ -105,7 +108,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, FileUtil, LazUTF8, RegExpr;
+  epimiscutils, LazFileUtils, LazUTF8, RegExpr;
 
 var
   OpenEpiDocumentInstance: TEpiDocumentFile = nil;
@@ -327,6 +330,22 @@ begin
   end;
 end;
 
+function TEpiDocumentFile.IsOSReadOnly(const FileName: string; out Msg: string
+  ): boolean;
+begin
+  Result := false;
+  if FileIsReadOnlyUTF8(FileName) then
+  begin
+    Msg := 'The project is marked "read only" by the operating system.' + LineEnding +
+           'If you choose to open this file, you cannot save it again with the same file name.' + LineEnding +
+           LineEnding +
+           'File: ' + SysToUTF8(ExtractFileName(UTF8ToSys(FileName))) + LineEnding +
+           LineEnding +
+           'Do you wish to continue loading the file?';
+    Result := true;
+  end;
+end;
+
 procedure TEpiDocumentFile.CreateLockFile;
 var
   LF: PLockFile;
@@ -429,6 +448,15 @@ begin
 
   if not ReadOnly then
   begin
+    if IsOSReadOnly(FileName, Msg) then
+      case OnWarning(wtSysReadOnly, Msg) of
+        wrYes:
+          FReadOnly := true;
+        wrNo:
+          Exit;
+      end;
+
+
     if LockFileExists(FileName, Msg) then
       case OnWarning(wtLockFile, Msg) of
         wrYes:
@@ -524,7 +552,6 @@ var
   FirstSave: Boolean;
 begin
   result := false;
-  if ReadOnly then Exit;
   if not Assigned(Document) then exit;
 
   FirstSave := false;
@@ -535,6 +562,14 @@ begin
      (FileName <> AFileName)
   then
     FirstSave := true;
+
+  // if the file was loaded as readonly
+  // (by OS or explicit), proceed only if
+  // saving under a new name (FirstSave = true)
+  if ReadOnly and
+     (not FirstSave)
+  then
+    Exit;
 
   if (IsSaved) and
      (FileName <> AFileName)
@@ -591,6 +626,7 @@ begin
     then
       CreateLockFile;
 
+    FReadOnly := false;
     Result := true;
   finally
     Dispose(LF);
