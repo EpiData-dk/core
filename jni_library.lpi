@@ -43,7 +43,7 @@
         <MinVersion Major="1" Minor="1" Valid="True"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="11">
+    <Units Count="12">
       <Unit0>
         <Filename Value="jni_library.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -90,15 +90,20 @@
         <UnitName Value="EpiCustomControlItem_jni"/>
       </Unit8>
       <Unit9>
-        <Filename Value="Android/epicustomlist_jni.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="EpiCustomList_jni"/>
-      </Unit9>
-      <Unit10>
         <Filename Value="Android/epicustomcontrolitemlist_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="EpiCustomControlItemList_jni"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="Android/epidocument_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiDocument_jni"/>
       </Unit10>
+      <Unit11>
+        <Filename Value="Android/epistudy_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiStudy_jni"/>
+      </Unit11>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

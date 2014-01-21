@@ -4,13 +4,20 @@ library jni_library;
 
 uses
  jni,
+ // epicustombase.pas
  EpiCustomBase_jni,
  EpiTranslatedText_jni,
  EpiTranslatedTextWrapper_jni,
  EpiCustomItem_jni,
  EpiCustomControlItem_jni,
  EpiCustomList_jni,
- EpiCustomControlItemList_jni
+ EpiCustomControlItemList_jni,
+
+ // epidocument.pas
+ EpiDocument_jni,
+
+ // epistudy.pas
+ EpiStudy_jni
  ;
 
 function JNI_OnLoad(vm:PJavaVM; reserved: pointer): jint; cdecl;
@@ -101,7 +108,68 @@ exports
   EpiCustomList_GetOnSort name EpiCustomListJNI + 'GetOnSort',
   EpiCustomList_SetOnSort name EpiCustomListJNI + 'SetOnSort',
   EpiCustomControlItemList_InsertItem name EpiCustomControlItemListJNI + 'InsertItem',
-  EpiCustomControlItemList_DeleteItem name EpiCustomControlItemListJNI + 'DeleteItem'
+  EpiCustomControlItemList_DeleteItem name EpiCustomControlItemListJNI + 'DeleteItem',
+  EpiDocument_Create name EpiDocumentJNI + 'Create',
+  EpiDocument_Destroy name EpiDocumentJNI + 'Destroy',
+  EpiDocument_XMLName name EpiDocumentJNI + 'XMLName',
+  EpiDocument_LoadFromFile name EpiDocumentJNI + 'LoadFromFile',
+  EpiDocument_LoadFromStream name EpiDocumentJNI + 'LoadFromStream',
+  EpiDocument_LoadFromXml name EpiDocumentJNI + 'LoadFromXml',
+  EpiDocument_SaveToXml name EpiDocumentJNI + 'SaveToXml',
+  EpiDocument_SaveToStream name EpiDocumentJNI + 'SaveToStream',
+  EpiDocument_SaveToFile name EpiDocumentJNI + 'SaveToFile',
+  EpiDocument_GetXMLSettings name EpiDocumentJNI + 'GetXMLSettings',
+  EpiDocument_GetProjectSettings name EpiDocumentJNI + 'GetProjectSettings',
+  EpiDocument_GetAdmin name EpiDocumentJNI + 'GetAdmin',
+  EpiDocument_GetStudy name EpiDocumentJNI + 'GetStudy',
+  EpiDocument_GetValueLabelSets name EpiDocumentJNI + 'GetValueLabelSets',
+  EpiDocument_GetDataFiles name EpiDocumentJNI + 'GetDataFiles',
+  EpiDocument_GetRelations name EpiDocumentJNI + 'GetRelations',
+  EpiDocument_GetOnPassword name EpiDocumentJNI + 'GetOnPassword',
+  EpiDocument_SetOnPassword name EpiDocumentJNI + 'SetOnPassword',
+  EpiDocument_GetOnProgress name EpiDocumentJNI + 'GetOnProgress',
+  EpiDocument_SetOnProgress name EpiDocumentJNI + 'SetOnProgress',
+  EpiDocument_GetLoading name EpiDocumentJNI + 'GetLoading',
+  EpiDocument_GetVersion name EpiDocumentJNI + 'GetVersion',
+  EpiDocument_GetPassWord name EpiDocumentJNI + 'GetPassWord',
+  EpiDocument_SetPassWord name EpiDocumentJNI + 'SetPassWord',
+  EpiDocument_IncCycleNo name EpiDocumentJNI + 'IncCycleNo',
+  EpiDocument_GetCycleNo name EpiDocumentJNI + 'GetCycleNo',
+  EpiStudy_Create name EpiStudyJNI + 'Create',
+  EpiStudy_Destroy name EpiStudyJNI + 'Destroy',
+  EpiStudy_XMLName name EpiStudyJNI + 'XMLName',
+  EpiStudy_SaveToXml name EpiStudyJNI + 'SaveToXml',
+  EpiStudy_LoadFromXml name EpiStudyJNI + 'LoadFromXml',
+  EpiStudy_GetAbstractText name EpiStudyJNI + 'GetAbstractText',
+  EpiStudy_GetAuthor name EpiStudyJNI + 'GetAuthor',
+  EpiStudy_SetAuthor name EpiStudyJNI + 'SetAuthor',
+  EpiStudy_GetAgency name EpiStudyJNI + 'GetAgency',
+  EpiStudy_SetAgency name EpiStudyJNI + 'SetAgency',
+  EpiStudy_GetCitations name EpiStudyJNI + 'GetCitations',
+  EpiStudy_GetCreated name EpiStudyJNI + 'GetCreated',
+  EpiStudy_GetFunding name EpiStudyJNI + 'GetFunding',
+  EpiStudy_GetGeographicalCoverage name EpiStudyJNI + 'GetGeographicalCoverage',
+  EpiStudy_GetIdentifier name EpiStudyJNI + 'GetIdentifier',
+  EpiStudy_SetIdentifier name EpiStudyJNI + 'SetIdentifier',
+  EpiStudy_GetModifiedDate name EpiStudyJNI + 'GetModifiedDate',
+  EpiStudy_SetModifiedDate name EpiStudyJNI + 'SetModifiedDate',
+  EpiStudy_GetNotes name EpiStudyJNI + 'GetNotes',
+  EpiStudy_SetNotes name EpiStudyJNI + 'SetNotes',
+  EpiStudy_GetPublisher name EpiStudyJNI + 'GetPublisher',
+  EpiStudy_GetPurpose name EpiStudyJNI + 'GetPurpose',
+  EpiStudy_GetPopulation name EpiStudyJNI + 'GetPopulation',
+  EpiStudy_GetRights name EpiStudyJNI + 'GetRights',
+  EpiStudy_GetTitle name EpiStudyJNI + 'GetTitle',
+  EpiStudy_GetKeywords name EpiStudyJNI + 'GetKeywords',
+  EpiStudy_SetKeywords name EpiStudyJNI + 'SetKeywords',
+  EpiStudy_GetVersion name EpiStudyJNI + 'GetVersion',
+  EpiStudy_SetVersion name EpiStudyJNI + 'SetVersion',
+  EpiStudy_GetDataCollectionStart name EpiStudyJNI + 'GetDataCollectionStart',
+  EpiStudy_SetDataCollectionStart name EpiStudyJNI + 'SetDataCollectionStart',
+  EpiStudy_GetDataCollectionEnd name EpiStudyJNI + 'GetDataCollectionEnd',
+  EpiStudy_SetDataCollectionEnd name EpiStudyJNI + 'SetDataCollectionEnd',
+  EpiStudy_GetDesign name EpiStudyJNI + 'GetDesign',
+  EpiStudy_GetUnitOfObservation name EpiStudyJNI + 'GetUnitOfObservation'
   ;
 end.
 
