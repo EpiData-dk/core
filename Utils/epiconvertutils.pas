@@ -27,18 +27,29 @@ implementation
 uses
   epimiscutils, dateutils, epidatafiles;
 
-function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
+function EpiStrToDate(const Str: string; const Separator: Char;
+  const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean;
 var
   A, B, C: String;
   Al, Bl, Cl: Integer;
   DateStr: String;
   Mis: EpiString;
+  Db: Boolean;
+  Mb: Boolean;
+  Yb: Boolean;
 
   function ValidateError(Const Msg: string): boolean;
   begin
     ErrMsg := Msg;
     result := false;
+  end;
+
+  function TryStrToWord(Const S: string; Out W: Word): boolean; inline;
+  var
+    I: integer;
+  begin
+    result := TryStrToInt(S, I);
+    W := I;
   end;
 
 begin
@@ -56,6 +67,9 @@ begin
     Exit(ValidateError(Mis));
 
   DecodeDate(Date, Y, M, D);
+  Db := true;
+  Mb := true;
+  Yb := true;
 
   case Ft of
     ftDMYDate, ftDMYAuto,
@@ -69,15 +83,15 @@ begin
 
         if Ft in [ftDMYDate, ftDMYAuto] then
         begin
-          if (Al > 0) then D := StrToInt(A);
-          if (Bl > 0) then M := StrToInt(B);
+          if (Al > 0) then Db := TryStrToWord(A, D);
+          if (Bl > 0) then Mb := TryStrToWord(B, M);
         end else begin
           // Only 2 digits enteres -> any case, it's considered to be the day.
-          if (Al > 0) and (Bl = 0) then D := StrToInt(A);
-          if (Al > 0) and (Bl > 0) then M := StrToInt(A);
-          if (Bl > 0) then D := StrToInt(B);
+          if (Al > 0) and (Bl = 0) then Db := TryStrToWord(A, D);
+          if (Al > 0) and (Bl > 0) then Mb := TryStrToWord(A, M);
+          if (Bl > 0)              then Db := TryStrToWord(B, D);
         end;
-        if (Cl > 0) then Y := StrToInt(C);
+        if (Cl > 0) then Yb := TryStrToWord(C, Y);
       end;
     ftYMDDate, ftYMDAuto:
       begin
@@ -87,15 +101,21 @@ begin
           exit(false);
         end;
         if (Al > 0) and (Al <= 2) and (Bl+Cl = 0) then
-          D := StrToInt(A)
+          Db := TryStrToWord(A, D)
         else begin
-          if (Al > 0) then Y := StrToInt(A);
-          if (Bl > 0) then M := StrToInt(B);
-          if (Cl > 0) then D := StrToInt(C);
+          if (Al > 0) then Yb := TryStrToWord(A, Y);
+          if (Bl > 0) then Mb := TryStrToWord(B, M);
+          if (Cl > 0) then Db := TryStrToWord(C, D);
         end;
       end;
   else
     exit(ValidateError(Format('EpiStrToDate: Invalid field type (%s)', [EpiTypeNames[Ft]])));
+  end;
+
+  if (not (Db and Mb and Yb)) then
+  begin
+    ErrMsg := Str + ' is not a valid date.' + LineEnding + 'Forgot separators?';
+    exit(false);
   end;
 
   // 2 year digit conversion.
@@ -149,11 +169,22 @@ var
   TimeStr: String;
   A,B,C: String;
   Al,Bl,Cl: Integer;
+  Hb: Boolean;
+  Mb: Boolean;
+  Sb: Boolean;
 
   function ValidateError(Const Msg: string): boolean;
   begin
     ErrMsg := Msg;
     result := false;
+  end;
+
+  function TryStrToWord(Const S: String; Out W: Word): boolean;
+  var
+    I: integer;
+  begin
+    Result := TryStrToInt(S, I);
+    W := I;
   end;
 
 begin
@@ -165,14 +196,15 @@ begin
   C := Copy2SymbDel(TimeStr, Separator);
   Cl := Length(C);
 
-  H := 0; M := 0; S := 0;
-  if Al > 0 then H := StrToInt(A);
-  if Bl > 0 then M := StrToInt(B);
-  if Cl > 0 then S := StrToInt(C);
+  H  := 0;    M  := 0;    S  := 0;
+  Hb := true; Mb := true; Sb := true;
+  if Al > 0 then Hb := TryStrToWord(A, H);
+  if Bl > 0 then Mb := TryStrToWord(B, M);
+  if Cl > 0 then Sb := TryStrToWord(C, S);
 
-  if H > 23 then exit(ValidateError(Format('Incorrect hour: %d', [H])));
-  if M > 59 then exit(ValidateError(Format('Incorrect minut: %d', [M])));
-  if S > 59 then exit(ValidateError(Format('Incorrect second: %d', [S])));
+  if (H > 23) or (not Hb) then exit(ValidateError(Format('Incorrect hour: %s', [A])));
+  if (M > 59) or (not Mb) then exit(ValidateError(Format('Incorrect minut: %s', [B])));
+  if (S > 59) or (not Sb) then exit(ValidateError(Format('Incorrect second: %s', [C])));
   Result := true;
 end;
 
