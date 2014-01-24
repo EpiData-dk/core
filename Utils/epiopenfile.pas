@@ -188,7 +188,7 @@ begin
   Result := WideCharToString(Buffer);
   {$ENDIF}
   {$IFDEF UNIX}
-  Result := GetEnvironmentVariableUTF8('USER');
+  Result := SysToUTF8(GetEnvironmentVariable('USER'));
   {$ENDIF}
   if Result = '' then
     Result := 'Unknown';
