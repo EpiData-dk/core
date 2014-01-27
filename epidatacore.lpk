@@ -34,7 +34,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Major="1" Minor="4" Release="3"/>
+    <Version Major="1" Minor="4" Release="4"/>
     <Files Count="66">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
