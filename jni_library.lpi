@@ -95,14 +95,14 @@
         <UnitName Value="EpiCustomControlItemList_jni"/>
       </Unit9>
       <Unit10>
-        <Filename Value="Android/epidocument_jni.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="EpiDocument_jni"/>
-      </Unit10>
-      <Unit11>
         <Filename Value="Android/epistudy_jni.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="EpiStudy_jni"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="Android/epicustomvaluelabel_jni.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="EpiCustomValueLabel_jni"/>
       </Unit11>
     </Units>
   </ProjectOptions>

@@ -17,7 +17,7 @@ uses
  EpiDocument_jni,
 
  // epistudy.pas
- EpiStudy_jni
+ EpiStudy_jni, EpiCustomValueLabel_jni
  ;
 
 function JNI_OnLoad(vm:PJavaVM; reserved: pointer): jint; cdecl;
@@ -169,7 +169,62 @@ exports
   EpiStudy_GetDataCollectionEnd name EpiStudyJNI + 'GetDataCollectionEnd',
   EpiStudy_SetDataCollectionEnd name EpiStudyJNI + 'SetDataCollectionEnd',
   EpiStudy_GetDesign name EpiStudyJNI + 'GetDesign',
-  EpiStudy_GetUnitOfObservation name EpiStudyJNI + 'GetUnitOfObservation'
+  EpiStudy_GetUnitOfObservation name EpiStudyJNI + 'GetUnitOfObservation',
+  EpiCustomValueLabel_Create name EpiCustomValueLabelJNI + 'Create',
+  EpiCustomValueLabel_XMLName name EpiCustomValueLabelJNI + 'XMLName',
+  EpiCustomValueLabel_SaveToXml name EpiCustomValueLabelJNI + 'SaveToXml',
+  EpiCustomValueLabel_LoadFromXml name EpiCustomValueLabelJNI + 'LoadFromXml',
+  EpiCustomValueLabel_Assign name EpiCustomValueLabelJNI + 'Assign',
+  EpiCustomValueLabel_GetOrder name EpiCustomValueLabelJNI + 'GetOrder',
+  EpiCustomValueLabel_SetOrder name EpiCustomValueLabelJNI + 'SetOrder',
+  EpiCustomValueLabel_GetTheLabel name EpiCustomValueLabelJNI + 'GetTheLabel',
+  EpiCustomValueLabel_SetTheLabel name EpiCustomValueLabelJNI + 'SetTheLabel',
+  EpiCustomValueLabel_GetIsMissingValue name EpiCustomValueLabelJNI + 'GetIsMissingValue',
+  EpiCustomValueLabel_SetIsMissingValue name EpiCustomValueLabelJNI + 'SetIsMissingValue',
+  EpiCustomValueLabel_GetValueAsString name EpiCustomValueLabelJNI + 'GetValueAsString'
+{EpiIntValueLabel_LoadFromXml name EpiIntValueLabelJNI + 'LoadFromXml',
+EpiIntValueLabel_Assign name EpiIntValueLabelJNI + 'Assign',
+EpiIntValueLabel_GetValue name EpiIntValueLabelJNI + 'GetValue',
+EpiIntValueLabel_SetValue name EpiIntValueLabelJNI + 'SetValue',
+EpiFloatValueLabel_LoadFromXml name EpiFloatValueLabelJNI + 'LoadFromXml',
+EpiFloatValueLabel_Assign name EpiFloatValueLabelJNI + 'Assign',
+EpiFloatValueLabel_GetValue name EpiFloatValueLabelJNI + 'GetValue',
+EpiFloatValueLabel_SetValue name EpiFloatValueLabelJNI + 'SetValue',
+EpiStringValueLabel_LoadFromXml name EpiStringValueLabelJNI + 'LoadFromXml',
+EpiStringValueLabel_Assign name EpiStringValueLabelJNI + 'Assign',
+EpiStringValueLabel_GetValue name EpiStringValueLabelJNI + 'GetValue',
+EpiStringValueLabel_SetValue name EpiStringValueLabelJNI + 'SetValue',
+EpiValueLabelSet_Create name EpiValueLabelSetJNI + 'Create',
+EpiValueLabelSet_Destroy name EpiValueLabelSetJNI + 'Destroy',
+EpiValueLabelSet_XMLName name EpiValueLabelSetJNI + 'XMLName',
+EpiValueLabelSet_SaveToXml name EpiValueLabelSetJNI + 'SaveToXml',
+EpiValueLabelSet_SaveAttributesToXml name EpiValueLabelSetJNI + 'SaveAttributesToXml',
+EpiValueLabelSet_ItemClass name EpiValueLabelSetJNI + 'ItemClass',
+EpiValueLabelSet_LoadFromXml name EpiValueLabelSetJNI + 'LoadFromXml',
+EpiValueLabelSet_NewValueLabel name EpiValueLabelSetJNI + 'NewValueLabel',
+EpiValueLabelSet_InsertItem name EpiValueLabelSetJNI + 'InsertItem',
+EpiValueLabelSet_DeleteItem name EpiValueLabelSetJNI + 'DeleteItem',
+EpiValueLabelSet_GetLabelScope name EpiValueLabelSetJNI + 'GetLabelScope',
+EpiValueLabelSet_SetLabelScope name EpiValueLabelSetJNI + 'SetLabelScope',
+EpiValueLabelSet_GetLabelType name EpiValueLabelSetJNI + 'GetLabelType',
+EpiValueLabelSet_SetLabelType name EpiValueLabelSetJNI + 'SetLabelType',
+EpiValueLabelSet_GetValueLabels name EpiValueLabelSetJNI + 'GetValueLabels',
+EpiValueLabelSet_GetValueLabel name EpiValueLabelSetJNI + 'GetValueLabel',
+EpiValueLabelSet_GetValueLabelString name EpiValueLabelSetJNI + 'GetValueLabelString',
+EpiValueLabelSet_GetValueLabelExists name EpiValueLabelSetJNI + 'GetValueLabelExists',
+EpiValueLabelSet_GetIsMissingValue name EpiValueLabelSetJNI + 'GetIsMissingValue',
+EpiValueLabelSet_MissingCount name EpiValueLabelSetJNI + 'MissingCount',
+EpiValueLabelSet_MaxValueLength name EpiValueLabelSetJNI + 'MaxValueLength',
+EpiValueLabelSets_Create name EpiValueLabelSetsJNI + 'Create',
+EpiValueLabelSets_Destroy name EpiValueLabelSetsJNI + 'Destroy',
+EpiValueLabelSets_XMLName name EpiValueLabelSetsJNI + 'XMLName',
+EpiValueLabelSets_SaveToXml name EpiValueLabelSetsJNI + 'SaveToXml',
+EpiValueLabelSets_LoadFromXml name EpiValueLabelSetsJNI + 'LoadFromXml',
+EpiValueLabelSets_ValidateRename name EpiValueLabelSetsJNI + 'ValidateRename',
+EpiValueLabelSets_NewValueLabelSet name EpiValueLabelSetsJNI + 'NewValueLabelSet',
+EpiValueLabelSets_GetValueLabelSetByName name EpiValueLabelSetsJNI + 'GetValueLabelSetByName',
+EpiValueLabelSets_GetValueLabels name EpiValueLabelSetsJNI + 'GetValueLabels',
+}
   ;
 end.
 
