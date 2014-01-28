@@ -1854,6 +1854,7 @@ begin
 
   ImportLines := nil;
   FieldLines := nil;
+  FieldList := nil;
 
   // IMPORT.
   With DataFile do
@@ -1861,7 +1862,7 @@ begin
     ImportLines := TStringList.Create;
 
     // Importing from ClipBoard?
-    if DataStream.Size = 0 then
+    if not Assigned(DataStream) then
     begin
       if Assigned(OnClipBoardRead) then
         OnClipBoardRead(ImportLines);
@@ -1975,13 +1976,17 @@ function TEpiImport.ImportTxt(const aFileName: string;
 var
   FS: TStream;
 begin
-  if not FileExistsUTF8(aFilename) then exit(false);
+  if (aFileName <> '') and
+     (not FileExistsUTF8(aFilename))
+  then
+    exit(false);
 
   try
+    FS := nil;
+
     if aFileName <> '' then
-      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead)
-    else
-      FS := TStream.Create;
+      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
+
     Result := ImportTxt(FS, DataFile, ImportData);
   finally
     FS.Free;
