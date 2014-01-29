@@ -14,6 +14,8 @@ type
   { TEpiExportSetting }
 
   TEpiExportSetting = class
+  private
+    FCreatedStream: boolean;
   public
     // Basic properties
     ExportStream: TStream;
@@ -198,6 +200,9 @@ type
 
 implementation
 
+uses
+  LazUTF8Classes;
+
 { TEpiEPXExportSetting }
 
 procedure TEpiEPXExportSetting.AcceptVisitor(
@@ -264,7 +269,17 @@ end;
 procedure TEpiDDIExportSetting.Assign(const ASettings: TEpiExportSetting);
 begin
   inherited Assign(ASettings);
-  // TODO
+  with TEpiDDIExportSetting(ASettings) do
+  begin
+    Self.FExportLang            := FExportLang;
+    Self.FFilterTagIsUserId     := FFilterTagIsUserId;
+    Self.FRemoveMissingVL       := FRemoveMissingVL;
+    Self.FRenameVariablesPrefix := FRenameVariablesPrefix;
+    Self.FSectionCaptionIsQText := FSectionCaptionIsQText;
+    Self.FSoftwareName          := FSoftwareName;
+    Self.FSoftwareVersion       := FSoftwareVersion;
+    Self.FVersion               := FVersion;
+  end;
 end;
 
 function TEpiDDIExportSetting.SanetyCheck: boolean;
@@ -292,7 +307,7 @@ procedure TEpiCustomValueLabelExportSetting.Assign(
   const ASettings: TEpiExportSetting);
 begin
   inherited Assign(ASettings);
-  if not (ASettings is TEpiCustomTextExportSettings) then exit;
+  if not (ASettings is TEpiCustomValueLabelExportSetting) then exit;
 
   ExportValueLabels := TEpiCustomValueLabelExportSetting(ASettings).ExportValueLabels;
 end;
@@ -313,6 +328,7 @@ end;
 
 constructor TEpiExportSetting.Create;
 begin
+  FCreatedStream := false;
   Fields := TList.Create;
 
   // Basic
@@ -331,9 +347,10 @@ end;
 
 destructor TEpiExportSetting.Destroy;
 begin
-//  Fields.Free;
   if Assigned(AdditionalExportSettings) then
     AdditionalExportSettings.Free;
+  if FCreatedStream then
+    ExportStream.Free;
   inherited Destroy;
 end;
 
@@ -341,6 +358,8 @@ procedure TEpiExportSetting.Assign(const ASettings: TEpiExportSetting);
 begin
   if not Assigned(ASettings) then exit;
   ExportFileName := ASettings.ExportFileName;
+  ExportStream   := ASettings.ExportStream;
+//  FCreatedStream := ASettings.FCreatedStream;
   Doc            := ASettings.Doc;
   DataFileIndex  := ASettings.DataFileIndex;
 
@@ -350,7 +369,14 @@ begin
   Encoding       := ASettings.Encoding;
   Condition      := ASettings.Condition;
   ExportDeleted  := ASettings.ExportDeleted;
+
   Fields.Assign(ASettings.Fields);
+
+  if Assigned(ASettings.AdditionalExportSettings) then
+  begin
+    AdditionalExportSettings := TEpiExportSettingClass(ASettings.AdditionalExportSettings.ClassType).Create;
+    AdditionalExportSettings.Assign(ASettings.AdditionalExportSettings);
+  end;
 end;
 
 function TEpiExportSetting.SanetyCheck: boolean;
@@ -362,7 +388,10 @@ begin
   if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
 
   if (ExportStream = nil) and (ExportFileName <> '') then
-    ExportStream := TFileStream.Create(ExportFileName, fmCreate + fmOpenReadWrite);
+  begin
+    ExportStream := TFileStreamUTF8.Create(ExportFileName, fmCreate);
+    FCreatedStream := true;
+  end;
 
 
   result :=
