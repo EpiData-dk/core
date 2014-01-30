@@ -182,43 +182,53 @@ end;
 function TEpiExport.Export(const Settings: TEpiExportSetting): boolean;
 var
   OldDoc: TEpiDocument;
+  NewSettings: TEpiExportSetting;
 begin
   // Pre-process the current document.
   Result := Settings.SanetyCheck;
   if not Result then exit;
 
-  OldDoc := Settings.Doc;
-  Settings.Doc := PrepareExportDocument(Settings);
-  if (Settings is TEpiCustomValueLabelExportSetting) and
-     (not TEpiCustomValueLabelExportSetting(Settings).ExportValueLabels)
+  NewSettings := TEpiExportSettingClass(Settings.ClassType).Create;
+  NewSettings.Assign(Settings);
+
+  NewSettings.Doc := PrepareExportDocument(NewSettings);
+  if (NewSettings is TEpiCustomValueLabelExportSetting) and
+     (not TEpiCustomValueLabelExportSetting(NewSettings).ExportValueLabels)
   then
-    Settings.Doc.ValueLabelSets.Clear;
+    NewSettings.Doc.ValueLabelSets.Clear;
+
+  NewSettings.FromRecord := 0;
+  NewSettings.ToRecord := NewSettings.Doc.DataFiles[NewSettings.DataFileIndex].Size - 1;
 
   // CSV
-  if Settings is TEpiCSVExportSetting then
-    Result := (ExportCSV(TEpiCSVExportSetting(Settings)));
+  if NewSettings is TEpiCSVExportSetting then
+    Result := (ExportCSV(TEpiCSVExportSetting(NewSettings)));
 
   // Stata
-  if Settings is TEpiStataExportSetting then
-    Result := (ExportStata(TEpiStataExportSetting(Settings)));
+  if NewSettings is TEpiStataExportSetting then
+    Result := (ExportStata(TEpiStataExportSetting(NewSettings)));
 
   // SPSS
-  if Settings is TEpiSPSSExportSetting then
-    Result := (ExportSPSS(TEpiSPSSExportSetting(Settings)));
+  if NewSettings is TEpiSPSSExportSetting then
+    Result := (ExportSPSS(TEpiSPSSExportSetting(NewSettings)));
 
   // SAS
-  if Settings is TEpiSASExportSetting then
-    Result := (ExportSAS(TEpiSASExportSetting(Settings)));
+  if NewSettings is TEpiSASExportSetting then
+    Result := (ExportSAS(TEpiSASExportSetting(NewSettings)));
 
   // DDI
-  IF Settings is TEpiDDIExportSetting then
-    Result := (ExportDDI(TEpiDDIExportSetting(Settings)));
+  IF NewSettings is TEpiDDIExportSetting then
+  begin
+    Result := (ExportDDI(TEpiDDIExportSetting(NewSettings)));
+    Settings.AdditionalExportSettings.ExportFileName := NewSettings.AdditionalExportSettings.ExportFileName;
+  end;
 
-  if Settings is TEpiEPXExportSetting then
-    Result := (ExportEPX(TEpiEPXExportSetting(Settings)));
+  // EPX
+  if NewSettings is TEpiEPXExportSetting then
+    Result := (ExportEPX(TEpiEPXExportSetting(NewSettings)));
 
-  Settings.Doc.Free;
-  Settings.Doc := OldDoc;
+  NewSettings.Doc.Free;
+  NewSettings.Free;
 end;
 
 function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting

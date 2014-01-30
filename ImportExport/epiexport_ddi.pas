@@ -250,6 +250,7 @@ begin
   else begin
     TxtExportSetting := TEpiCSVExportSetting.Create;
     TxtExportSetting.Assign(FSettings);
+    TxtExportSetting.ExportStream   := nil;
     TxtExportSetting.FieldSeparator := #9;
     TxtExportSetting.DecimalSeparator := ',';
     TxtExportSetting.DateSeparator  := '-';
