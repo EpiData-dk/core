@@ -24,10 +24,12 @@ type
     function GetValueAsString: string; virtual; abstract;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+    function WriteNameToXml: boolean; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
+//    function    SaveToXml(Content: String; Lvl: integer): string; override;
+    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Order: integer read FOrder write FOrder;
@@ -49,6 +51,7 @@ type
        nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiInteger read FValue write SetValue;
   end;
@@ -65,6 +68,7 @@ type
        nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiFloat read FValue write SetValue;
   end;
@@ -81,6 +85,7 @@ type
        nil): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiString read FValue write SetValue;
   end;
@@ -88,7 +93,7 @@ type
 
   { TEpiValueLabelSet }
 
-  TValueLabelSetScope = (vlsInternal, vlsExternal);
+  TEpiValueLabelSetScope = (vlsInternal, vlsExternal);
 
   TEpiValueLabelSet = class(TEpiCustomList)
   { External Valuelabel Set Properties }
@@ -103,7 +108,7 @@ type
     property    ExtValField: string read FExtValField write FExtValField;
     property    ExtLabelField: string read FExtLabelField write FExtLabelField;
   private
-    FLabelScope: TValueLabelSetScope;
+    FLabelScope: TEpiValueLabelSetScope;
     FLabelType: TEpiFieldType;
     FWriteNameToXml: boolean;
     function    GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
@@ -119,10 +124,7 @@ type
     FCachedLength: LongInt;
     procedure   DirtyCacheAndSendChangeEvent;
   protected
-    procedure   LoadInternal(Root: TDOMNode); virtual;
-    function    SaveInternal(Lvl: integer): string; virtual;
-    procedure   LoadExternal(Root: TDOMNode); virtual;
-    function    SaveExternal(Lvl: integer): string; virtual;
+    procedure   LoadOldInternalTag(Root: TDOMNode); virtual;
     function    WriteNameToXml: boolean; override;
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
@@ -141,7 +143,7 @@ type
     function    NewValueLabel: TEpiCustomValueLabel;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function    DeleteItem(Index: integer): TEpiCustomItem; override;
-    property    LabelScope: TValueLabelSetScope read FLabelScope write FLabelScope;
+    property    LabelScope: TEpiValueLabelSetScope read FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
     property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
     property    ValueLabel[Const AValue: variant]: TEpiCustomValueLabel read GetValueLabel;
@@ -175,7 +177,7 @@ type
 implementation
 
 uses
-  strutils, math, LazUTF8, epidocument;
+  strutils, math, LazUTF8, LazFileUtils, epidocument, epiopenfile;
 
 { TEpiCustomValueLabel }
 
@@ -200,6 +202,11 @@ begin
   end;
 end;
 
+function TEpiCustomValueLabel.WriteNameToXml: boolean;
+begin
+  Result := false;
+end;
+
 constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -213,37 +220,12 @@ begin
   Result := rsValueLabel;
 end;
 
-function TEpiCustomValueLabel.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiCustomValueLabel.SaveAttributesToXml: string;
 begin
-  with TEpiValueLabelSet(Owner) do
-  begin
-    if LabelScope = vlsExternal then exit;
-    if Items[0] = Self then
-      result := Indent(Lvl) + '<' + rsInternal + '>' + LineEnding;
-  end;
-
-  // Print order and value:
-  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  Result +=
-    Indent(LvL + 1) +
-    '<ValueLabel' +
+  Result :=
     SaveAttr(rsOrder, Order) +
-    SaveAttr(rsValue, GetValueAsString);
-  RestoreFormatSettings;
-
-  // Add missing if set
-  if IsMissingValue then
-    Result += SaveAttr(rsMissing, IsMissingValue);
-
-  Result += '>';
-
-  // Inset labels (language dependant)
-  Result += LineEnding + FLabel.SaveToXml('', Lvl + 2) +
-    Indent(Lvl + 1) + '</' + rsValueLabel + '>' + LineEnding;
-
-  with TEpiValueLabelSet(Owner) do
-    if Items[Count - 1] = Self then
-      result += Indent(Lvl) + '</' + rsInternal + '>' + LineEnding;
+    SaveAttr(rsMissing, IsMissingValue) +
+    inherited SaveAttributesToXml;
 end;
 
 procedure TEpiCustomValueLabel.LoadFromXml(Root: TDOMNode);
@@ -302,6 +284,13 @@ begin
   Value := LoadAttrInt(Root, rsValue);
 end;
 
+function TEpiIntValueLabel.SaveAttributesToXml: string;
+begin
+  Result :=
+    SaveAttr(rsValue, Value) +
+    inherited SaveAttributesToXml;
+end;
+
 procedure TEpiIntValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);
@@ -340,6 +329,13 @@ begin
   Value := LoadAttrFloat(Root, rsValue);
 end;
 
+function TEpiFloatValueLabel.SaveAttributesToXml: string;
+begin
+  Result :=
+    SaveAttr(rsValue, Value) +
+    inherited SaveAttributesToXml;
+end;
+
 procedure TEpiFloatValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);
@@ -376,6 +372,13 @@ procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode);
 begin
   inherited LoadFromXml(Root);
   Value := LoadAttrString(Root, rsValue);
+end;
+
+function TEpiStringValueLabel.SaveAttributesToXml: string;
+begin
+  Result :=
+    SaveAttr(rsValue, Value) +
+    inherited SaveAttributesToXml;
 end;
 
 procedure TEpiStringValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -508,58 +511,17 @@ begin
             ValueLabels[i].IsMissingValue;
 end;
 
-procedure TEpiValueLabelSet.LoadInternal(Root: TDOMNode);
+procedure TEpiValueLabelSet.LoadOldInternalTag(Root: TDOMNode);
 var
   Node: TDOMNode;
   NValueLabel: TEpiCustomValueLabel;
 begin
   // Root = <Internal>
-  LabelScope := vlsInternal;
+  FLabelScope := vlsInternal;
 
   FWriteNameToXml := false;
   inherited LoadFromXml(Root);
   FWriteNameToXml := true;
-{
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    // Node = <ValueLabel ... />
-    CheckNode(Node, rsValueLabel);
-
-    NValueLabel := NewValueLabel;
-    NValueLabel.LoadFromXml(Node);
-
-    Node := TDOMElement(Node.NextSibling);
-  end;        }
-end;
-
-function TEpiValueLabelSet.SaveInternal(Lvl: integer): string;
-var
-  S: String;
-begin
-//  S := SaveNode(Lvl + 2, rsType, Integer(LabelType)) +
-//       SaveNode(Lvl + 2, rsName, Name);
-  Result := inherited SaveToXml(S, Lvl + 1);
-end;
-
-procedure TEpiValueLabelSet.LoadExternal(Root: TDOMNode);
-begin
-  // TODO : Load External Value Labels.
-end;
-
-function TEpiValueLabelSet.SaveExternal(Lvl: integer): string;
-var
-  S: String;
-begin
-  Inc(Lvl);
-  Result := SaveNode(Lvl, rsFile, ExtName);
-  if ExtId <> '' then
-    Result += SaveNode(Lvl, rsDataFileId, ExtId);
-  if ExtValField <> '' then
-    Result += SaveNode(Lvl, rsValueField, ExtValField);
-  if ExtLabelField <> '' then
-    Result += SaveNode(Lvl, rsLabelField, ExtLabelField);
-  result := TEpiCustomItem(Self).SaveToXml(Result, Lvl);
 end;
 
 function TEpiValueLabelSet.WriteNameToXml: boolean;
@@ -629,17 +591,19 @@ end;
 function TEpiValueLabelSet.SaveToXml(Content: String; Lvl: integer): string;
 begin
   case LabelScope of
-    vlsExternal:
-      Result := SaveExternal(Lvl - 1);
+    // TODO
+//    vlsExternal:
+//      Result := SaveExternal(Lvl - 1);
     vlsInternal:
-      Result := SaveInternal(Lvl - 1);
+      Result := inherited SaveToXml(Content, Lvl);
   end;
 end;
 
 function TEpiValueLabelSet.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
-    SaveAttrEnum(rsType, Integer(LabelType), TypeInfo(TEpiFieldType));
+    SaveAttrEnum(rsType, Integer(LabelType), TypeInfo(TEpiFieldType)) +
+    SaveAttrEnum(rsValueLabelScope, Integer(LabelScope), TypeInfo(TEpiValueLabelSetScope));
 end;
 
 function TEpiValueLabelSet.ItemClass: TEpiCustomItemClass;
@@ -655,16 +619,35 @@ procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
   Attr: TDOMAttr;
+  Version: Integer;
 begin
-  if LoadAttr(Attr, Root, rsId, True) then
-    FName := LoadAttrString(Root, rsId);
-
+  Version := TEpiDocument(RootOwner).Version;
   // Root = <ValueLabel>
-  if LoadNode(Node, Root, rsInternal, false) then
-    LoadInternal(Node);
 
-  if LoadNode(Node, Root, rsExternal, false) then
-    LoadExternal(Node);
+  // In version 1+2 the idea was that Internal and External valuelabels
+  // was represented using a Sub-tab <Internal> or <External> below the
+  // <ValueLabelSet> tag. This contruct makes reading individual ValueLabel's
+  // more complex, because we have to circumvent the inherited structure of
+  // loading items with CustomItemList
+  if Version <= 2 then
+  begin
+    if LoadAttr(Attr, Root, rsId, True) then
+      FName := LoadAttrString(Root, rsId);
+
+    if LoadNode(Node, Root, rsInternal, false) then
+      LoadOldInternalTag(Node);
+
+    // Was never officially supported and used...
+    {if LoadNode(Node, Root, rsExternal, false) then
+      LoadExternal(Node);}
+  end;
+
+  // In version 3 the <Internal> tag has been removed and we can use a "normal"
+  // inherited loading, because TEpiValueLabelSet is a CustomItemList.;
+  if (Version >= 3) and
+     (LabelScope = vlsInternal)
+  then
+    inherited LoadFromXml(Root);
 end;
 
 function TEpiValueLabelSet.NewValueLabel: TEpiCustomValueLabel;
@@ -769,6 +752,8 @@ begin
     if not Assigned(Node) then exit;
 
     CheckNode(Node, rsValueLabelSet);
+
+//    LoadAttrEnum(Node, rsValueLabelScope, TypeInfo(TEpiValueLabelSetScope));
 
     NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
     NValueLabelSet.LoadFromXml(Node);

@@ -415,20 +415,28 @@ end;
 procedure TEpiDocumentFile.DoOpenFile(const AFileName: string);
 var
   St: TMemoryStream;
+  CurrentDir: String;
 begin
   FEpiDoc := TEpiDocument.Create('en');
   St := TMemoryStream.Create;
 
-  if ExtractFileExt(UTF8ToSys(AFileName)) = '.epz' then
-    ZipFileToStream(St, AFileName)
-  else
-    St.LoadFromFile(UTF8ToSys(AFileName));
-  St.Position := 0;
+  CurrentDir := GetCurrentDirUTF8;
+  SetCurrentDirUTF8(ExtractFileDir(AFileName));
 
-  FEpiDoc.OnPassword := OnPassword;
-  FEpiDoc.OnProgress := OnProgress;
-  FEpiDoc.LoadFromStream(St);
-  St.Free;
+  try
+    if ExtractFileExt(UTF8ToSys(AFileName)) = '.epz' then
+      ZipFileToStream(St, AFileName)
+    else
+      St.LoadFromFile(UTF8ToSys(AFileName));
+    St.Position := 0;
+
+    FEpiDoc.OnPassword := OnPassword;
+    FEpiDoc.OnProgress := OnProgress;
+    FEpiDoc.LoadFromStream(St);
+  finally
+    St.Free;
+    SetCurrentDirUTF8(CurrentDir);
+  end;
 end;
 
 function TEpiDocumentFile.OpenFile(const AFileName: string;

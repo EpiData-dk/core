@@ -76,17 +76,24 @@ const
 
    rsValueLabelSets  = 'ValueLabelSets';
     rsValueLabelSet   = 'ValueLabelSet';
-     rsInternal        = 'Internal';
-      rsValueLabel      = 'ValueLabel';
+     rsValueLabel      = 'ValueLabel';
+      rsValueLabelScope = 'scope';                   // Version 3+ property
+      rsInternal        = 'Internal';                // version 1+2 property, deleted in version 3
        rsLabel           = 'Label';
        rsValue           = 'value';
        rsOrder           = 'order';
        rsMissing         = 'missing';
-     rsExternal        = 'External';
+
+     rsFile            = 'File';
+
+
+
+{     // version 1+2 property, but never used
+      rsExternal        = 'External';
       rsFile            = 'File';
       rsDataFileId      = 'DataFileId';
       rsValueField      = 'ValueField';
-      rsLabelField      = 'LabelField';
+      rsLabelField      = 'LabelField';}
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';

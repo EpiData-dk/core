@@ -927,7 +927,14 @@ end;
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
   ): string;
 begin
-  result := SaveAttrRaw(AttrName, FloatToStr(Val));
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    result := SaveAttrRaw(AttrName, FloatToStr(Val));
+    RestoreFormatSettings;
+  end else
+    result := SaveAttrRaw(AttrName, FloatToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
