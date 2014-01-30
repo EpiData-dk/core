@@ -869,7 +869,6 @@ begin
     end;
     result := true;
   finally
-    DataStream.Free;
     FormatSettings := BackUpSettings;
   end;
 end;
