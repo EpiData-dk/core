@@ -60,14 +60,12 @@ var
   NewCIList: TEpiCustomControlItemList;
   i: Integer;
   RecordCoundField: TEpiField;
+  F: TEpiField;
+  VLSetList: TList;
 begin
   Doc := Settings.Doc;
   Result := TEpiDocument(Settings.Doc.Clone);
   NewDF  := Result.DataFiles[Settings.DataFileIndex];
-
-{  // Valuelabels export:
-  if not Settings.ExportValueLabels then
-    Result.ValueLabelSets.Clear;         }
 
   // Structure export:
   CIList := Doc.DataFiles[Settings.DataFileIndex].ControlItems;
@@ -75,6 +73,23 @@ begin
   for i := 0 to CIList.Count - 1 do
     if (Settings.Fields.IndexOf(CIList[i]) < 0) then
       NewCIList.GetItemByName(CIList[i].Name).Free;
+
+  // Valuelabels export:
+  //  only include actuall used valuelabels
+  VLSetList := TList.Create;
+
+  for i := 0 to NewDF.Fields.Count - 1 do
+  begin
+    F := NewDF.Field[i];
+    if Assigned(F.ValueLabelSet) and
+       (VLSetList.IndexOf(F.ValueLabelSet) < 0)
+    then
+      VLSetList.Add(F.ValueLabelSet);
+  end;
+
+  for i := Result.ValueLabelSets.Count - 1 downto 0 do
+    if (VLSetList.IndexOf(Result.ValueLabelSets[i]) < 0) then
+      Result.ValueLabelSets[i].Free;
 
   // Selected records:
   // Negative record cound => Structure only.
