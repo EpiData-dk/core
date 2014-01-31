@@ -98,15 +98,9 @@ type
   TEpiValueLabelSet = class(TEpiCustomList)
   { External Valuelabel Set Properties }
   private
-    FExtId: string;
-    FExtLabelField: string;
-    FExtName: string;
-    FExtValField: string;
+    FExtFileName: string;
   protected
-    property    ExtName: string read FExtName write FExtName;
-    property    ExtId: string read FExtId write FExtId;
-    property    ExtValField: string read FExtValField write FExtValField;
-    property    ExtLabelField: string read FExtLabelField write FExtLabelField;
+    property    ExtFileName: string read FExtFileName write FExtFileName;
   private
     FLabelScope: TEpiValueLabelSetScope;
     FLabelType: TEpiFieldType;
@@ -119,12 +113,13 @@ type
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
     procedure   SetLabelType(const AValue: TEpiFieldType);
   private
-    { House-keeping for MaxValueLengt }
+    { House-keeping for MaxValueLength }
     FDirtyCache: boolean;
     FCachedLength: LongInt;
     procedure   DirtyCacheAndSendChangeEvent;
   protected
     procedure   LoadOldInternalTag(Root: TDOMNode); virtual;
+    function    SaveExternal(LvL: Integer): string;
     function    WriteNameToXml: boolean; override;
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
@@ -162,6 +157,9 @@ type
   private
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
     function    Prefix: string; override;
+  protected
+    procedure   LoadExternalValueLabelSet(DocFileCache: TObject;
+      Root: TDomNode);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -177,7 +175,8 @@ type
 implementation
 
 uses
-  strutils, math, LazUTF8, LazFileUtils, epidocument, epiopenfile;
+  strutils, math, LazUTF8, LazFileUtils, epidocument, epiopenfile,
+  epiopenfile_cache;
 
 { TEpiCustomValueLabel }
 
@@ -524,6 +523,12 @@ begin
   FWriteNameToXml := true;
 end;
 
+function TEpiValueLabelSet.SaveExternal(LvL: Integer): string;
+begin
+  result :=
+    SaveNode(Lvl, rsValueLabel, '');
+end;
+
 function TEpiValueLabelSet.WriteNameToXml: boolean;
 begin
   Result := FWriteNameToXml;
@@ -592,8 +597,8 @@ function TEpiValueLabelSet.SaveToXml(Content: String; Lvl: integer): string;
 begin
   case LabelScope of
     // TODO
-//    vlsExternal:
-//      Result := SaveExternal(Lvl - 1);
+    vlsExternal:
+      Result := SaveExternal(Lvl);
     vlsInternal:
       Result := inherited SaveToXml(Content, Lvl);
   end;
@@ -704,6 +709,41 @@ begin
   Result := 'valuelabel_id_';
 end;
 
+procedure TEpiValueLabelSets.LoadExternalValueLabelSet(DocFileCache: TObject;
+  Root: TDomNode);
+var
+  ExtType: TEpiFieldType;
+  FileName: EpiString;
+  RootDoc: TEpiDocument;
+  DocFile: TEpiDocumentFile;
+  VLSet: TEpiValueLabelSet;
+  ExtID: EpiString;
+  Res: TOpenEpiWarningResult;
+begin
+  // Root = <ValueLabelSet  scope="vlsExternal">
+
+  ExtID    := LoadAttrString(Root, rsId);
+  ExtType  := TEpiFieldType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiFieldType)));
+  FileName := LoadNodeString(Root, rsFile);
+
+  RootDoc := TEpiDocument(RootOwner);
+  DocFile := TEpiDocumentFileCache(DocFileCache).OpenFile(FileName);
+
+  VLSet := DocFile.Document.ValueLabelSets.GetValueLabelSetByName(ExtID);
+  if Not Assigned(VLSet) then
+  begin
+    VLSet := TEpiValueLabelSet.Create(Self);
+    VLSet.LabelType := ExtType;
+    Res := DocFile.OnWarning(wtLockFile, '');
+    exit;
+  end;
+
+  VLSet := TEpiValueLabelSet(VLSet.Clone(Self));
+  VLSet.FLabelScope := vlsExternal;
+  VLSet.ExtFileName := FileName;
+  AddItem(VLSet);
+end;
+
 function TEpiValueLabelSets.ValidateRename(ValueLabelSet: TEpiValueLabelSet;
   NewName: string): boolean;
 var
@@ -742,23 +782,38 @@ var
   Node: TDOMNode;
   NValueLabelSet: TEpiValueLabelSet;
   Attr: TDOMAttr;
+  Scope: TEpiValueLabelSetScope;
+  DocFileCache: TEpiDocumentFileCache;
 begin
   // Root = <ValueLabelSets>
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    while NodeIsWhiteSpace(Node) do
+
+  DocFileCache := TEpiDocumentFileCache.Create;
+  try
+    Node := Root.FirstChild;
+    while Assigned(Node) do
+    begin
+      while NodeIsWhiteSpace(Node) do
+        Node := Node.NextSibling;
+      if not Assigned(Node) then exit;
+
+      CheckNode(Node, rsValueLabelSet);
+
+      Scope := vlsInternal;
+      if TEpiDocument(RootOwner).Version >= 3 then
+        Scope := TEpiValueLabelSetScope(LoadAttrEnum(Node, rsValueLabelScope, TypeInfo(TEpiValueLabelSetScope)));
+
+      if Scope = vlsInternal then
+      begin;
+        NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
+        NValueLabelSet.LoadFromXml(Node);
+      end else begin
+        LoadExternalValueLabelSet(DocFileCache, Node);
+      end;
+
       Node := Node.NextSibling;
-    if not Assigned(Node) then exit;
-
-    CheckNode(Node, rsValueLabelSet);
-
-//    LoadAttrEnum(Node, rsValueLabelScope, TypeInfo(TEpiValueLabelSetScope));
-
-    NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
-    NValueLabelSet.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
+    end;
+  finally
+    DocFileCache.Free;
   end;
 end;
 

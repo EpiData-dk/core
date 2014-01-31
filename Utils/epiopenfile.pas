@@ -5,9 +5,11 @@ unit epiopenfile;
 interface
 
 uses
-  Classes, SysUtils, epiadmin, epidocument, epicustombase;
+  Classes, SysUtils, epiadmin, epidocument, epicustombase,
+  epieventtypes;
 
 type
+
   TOpenEpiWarningType =
     (wtLockFile,       // Trying to open a file with a .lock file present.
      wtDatePattern,    // A date pattern has been detected in the file, could be an auto backup

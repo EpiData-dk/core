@@ -9,7 +9,7 @@ uses
   Classes, sysutils, laz2_XMLRead, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
   epistudy, epirelations, epivaluelabels,
-  epicustombase, epidatafilestypes;
+  epicustombase, epidatafilestypes, epieventtypes;
 
 type
 
