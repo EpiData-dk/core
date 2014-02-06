@@ -48,6 +48,7 @@ begin
   case WarningType of
     wtSysReadOnly,
     wtLockFile,
+    wtDatePatternNoAlt,
     wtTimeBackup2nd:
       begin
         Buttons := mbYesNo;

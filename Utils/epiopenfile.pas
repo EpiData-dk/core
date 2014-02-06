@@ -9,11 +9,12 @@ uses
 
 type
   TOpenEpiWarningType =
-    (wtLockFile,       // Trying to open a file with a .lock file present.
-     wtDatePattern,    // A date pattern has been detected in the file, could be an auto backup
-     wtTimeBackup,     // A file with .bak found, which indicated that the program could have shutdown unexpectedly.
+    (wtLockFile,         // Trying to open a file with a .lock file present.
+     wtDatePattern,      // A date pattern has been detected in the file, could be an auto backup
+     wtDatePatternNoAlt, //   -- do -- , but no alternative file was found
+     wtTimeBackup,       // A file with .bak found, which indicated that the program could have shutdown unexpectedly.
      wtTimeBackup2nd,
-     wtSysReadOnly     // The file is readonly on OS level.
+     wtSysReadOnly       // The file is readonly on OS level.
     );
   TOpenEpiWarningResult = (wrYes, wrNo, wrCancel);
   TOpenEpiWarningEvent = function (WarningType: TOpenEpiWarningType;
@@ -50,6 +51,8 @@ type
     function GetHostNameWrapper: string;
     function GetUserNameWrapper: string;
   private
+    FBackupDirectory: string;
+    FDataDirectory: string;
     // Internal housekeeping of current open EpiDocument.
     FReadOnly: boolean;
     FFileName: string;
@@ -67,13 +70,13 @@ type
   protected
     function GetFileName: string; virtual;
     function LockFileExists(Const FileName: string;
-      out Msg: string): boolean;
+      out Msg: string): boolean; virtual;
     function DatePatternExists(Const FileName: string;
-      out AltFileName: string; out Msg: string): boolean;
+      out AltFileName: string; out Msg: string): boolean; virtual;
     function BackupFileExists(Const FileName: string;
-      out Msg: string): boolean;
+      out Msg: string): boolean; virtual;
     function IsOSReadOnly(Const FileName: string;
-      out Msg: string): boolean;
+      out Msg: string): boolean;  virtual;
     procedure DoSaveFile(Const AFileName: string);
     procedure DoOpenFile(Const AFileName: string);
   public
@@ -97,6 +100,8 @@ type
     property Document: TEpiDocument read FEpiDoc;
     property ReadOnly: Boolean read FReadOnly;
     property IsSaved: boolean read GetIsSaved;
+    property BackupDirectory: string read FBackupDirectory write FBackupDirectory;
+    property DataDirectory: string read FDataDirectory write FDataDirectory;
   end;
 
 implementation
@@ -108,7 +113,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, LazFileUtils, LazUTF8, RegExpr;
+  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes;
 
 var
   OpenEpiDocumentInstance: TEpiDocumentFile = nil;
@@ -119,6 +124,9 @@ constructor TEpiDocumentFile.Create;
 begin
   if IsEqualGUID(FGuid, GUID_NULL) then
     CreateGUID(FGuid);
+
+  FBackupDirectory := '';
+  FDataDirectory := '';
 end;
 
 destructor TEpiDocumentFile.Destroy;
@@ -282,35 +290,105 @@ var
   R: TRegExpr;
   S: RegExprString;
   S2: String;
-  B: Boolean;
+  FilenameDir: String;
+  OrgFilenameDir: String;
+  FN: String;
+  FileNameA: String;
+  FileNameB: String;
+
+
+  function CheckFiles(Const BaseDir: string; Out Msg: string): boolean;
+  begin
+    result := false;
+    if (FileExistsUTF8(BaseDir + FileNameA)) or
+       (FileExistsUTF8(BaseDir + FileNameB))
+    then
+    begin
+      if FileExistsUTF8(BaseDir + FileNameA) then
+        AltFileName := BaseDir + FileNameA
+      else
+        AltFileName := BaseDir + FileNameB;
+
+      Msg :=   'This file seem to be an automated backup file (on closing the program):' + LineEnding + LineEnding +
+               'File: ' + ExtractFileName(FileName)          +
+                 ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(FileName))) + ')' + LineEnding +
+               'Original: ' + ExtractFileName(AltFileName) +
+                 ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(AltFileName))) + ')' + LineEnding +
+               LineEnding +
+               'Load the original instead?';
+
+      result := true;
+    end;
+  end;
+
 begin
   Result := false;
 
+  // Setup
+  AltFileName := '';
+  OrgFilenameDir := ExpandFileNameUTF8(ExtractFilePath(FileName) + DirectorySeparator);
+  FileNameDir := OrgFilenameDir;
+  FN := ExtractFileName(FileName);
+
+
   // Check for date in the file being opened.
   R := TRegExpr.Create;
-  R.Expression := '([0-9]{4}.[0-9]{2}.[0-9]{2}\.)';
-  B := R.Exec(FileName);
+  // The expression should match the following cases (which have been used previously)
+  // a: <filename>.YYYY.MM.DD.<epx|epz>
+  // b: <filename>_YYYY-MM-DD_<cycleno>.<epx|epz>
+  //              ^    ^  ^  ^^^^^^^^^^
+  //   the above symbols @arrows, may have any construct (eg. .-/ could be used as date seperators, etc.)
 
-  AltFileName := R.Replace(FileName, '', false);
-  S := ChangeFileExt(AltFileName, BoolToStr(ExtractFileExt(AltFileName) = '.epz', '.epx', '.epz'));
-  if B and
-     (FileExistsUTF8(AltFileName) or FileExistsUTF8(S))
-  then
+
+  R.Expression := '.[0-9]{4}.[0-9]{2}.[0-9]{2}.*\.(epx|epz)';
+  Result := R.Exec(FN);
+
+  if not result then
   begin
-    if FileExistsUTF8(S) then
-      AltFileName := S;
-
-    Result := true;
-
-    Msg :=   'This file seem to be an automated backup file (on closing the program):' + LineEnding + LineEnding +
-             'File: ' + SysToUTF8(ExtractFileName(UTF8ToSys(FileName)))          +
-               ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(FileName))) + ')' + LineEnding +
-             'Original: ' + SysToUTF8(ExtractFileName(UTF8ToSys(S))) +
-               ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(AltFileName))) + ')' + LineEnding +
-             LineEnding +
-             'Load the original instead?';
+    // This file does not contain a date pattern, hence break off and
+    // exit.
+    R.Free;
+    Exit;
   end;
+
+  FN := R.Replace(FN, '.$1', true);
   R.Free;
+
+  FileNameA := FN;
+  FileNameB := ChangeFileExt(FN, BoolToStr(ExtractFileExt(FN) = '.epz', '.epx', '.epz'));
+
+  // First check if the original file is located same dir as the backup.
+  if CheckFiles(OrgFilenameDir, Msg) then exit;
+
+  // Then check the data directory (if set)
+  if (DataDirectory <> '') and
+     (CheckFiles(DataDirectory, Msg))
+  then
+    exit;
+
+  // Assumes that we are in a sub-directory to the original data (eg.):
+  //   Data dir  :  ./
+  //   Backup dir:  ./backup
+  FilenameDir := ExpandFileNameUTF8(OrgFilenameDir + '..');
+  if CheckFiles(FilenameDir, Msg) then
+    exit;
+
+  // Last assumes that we are in a sub-sub-directory to the original data (eg.):
+  //   Data dir  :  ./
+  //   Backup dir:  ./backup/<poject-file-name>
+  FilenameDir := ExpandFileNameUTF8(OrgFilenameDir + '..' + DirectorySeparator + '..');
+  if CheckFiles(FilenameDir, Msg) then
+    exit;
+
+  Msg :=   'This file seem to be an automated backup file (on closing the program):' + LineEnding + LineEnding +
+           'File: ' + ExtractFileName(FileName)          +
+             ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(FileName))) + ')' + LineEnding +
+           LineEnding +
+           'The original file would be named: ' + FileNameA + LineEnding +
+           'or: ' + FileNameB + LineEnding +
+           'But it cannot be found. Please locate i manually!' + LineEnding +
+           LineEnding +
+           'Continue loading this backup file?';
 end;
 
 function TEpiDocumentFile.BackupFileExists(const FileName: string; out
@@ -394,7 +472,7 @@ end;
 procedure TEpiDocumentFile.DoSaveFile(const AFileName: string);
 var
   Ms: TMemoryStream;
-  Fs: TFileStream;
+  Fs: TStream;
 begin
   Ms := TMemoryStream.Create;
 
@@ -406,10 +484,11 @@ begin
     StreamToZipFile(Ms, UTF8ToSys(AFileName))
   else
     begin
-      Fs := TFileStream.Create(UTF8ToSys(AFileName), fmCreate);
+      Fs := TFileStreamUTF8.Create(AFileName, fmCreate);
       Fs.CopyFrom(Ms, Ms.Size);
       Fs.Free;
     end;
+  Ms.Free;
 end;
 
 procedure TEpiDocumentFile.DoOpenFile(const AFileName: string);
@@ -434,7 +513,6 @@ end;
 function TEpiDocumentFile.OpenFile(const AFileName: string;
   const AReadOnly: boolean): boolean;
 var
-  St: TMemoryStream;
   Msg: String;
   Res: TOpenEpiWarningEvent;
   AltFn: string;
@@ -467,19 +545,31 @@ begin
       end;
 
     if DatePatternExists(FileName, AltFn, Msg) then
-      case OnWarning(wtDatePattern, Msg) of
-        wrYes:
-          begin
-            // User wanted to open the alternate file.
-            // Call OpenFile again to do the same checks on this file!
-            Result := OpenFile(AltFn);
+    begin
+      if (AltFn = '') then
+        case OnWarning(wtDatePatternNoAlt, Msg) of
+          wrYes:
+            // User wanted to open the backupfile file directly.
+            // Call OpenFile again to do the same checks on this file!;
+            ;
+          wrNo:
             Exit;
-          end;
-        wrNo:
-          ;
-        wrCancel:
-          Exit;
-      end;
+        end
+      else
+        case OnWarning(wtDatePattern, Msg) of
+          wrYes:
+            begin
+              // User wanted to open the alternate file.
+              // Call OpenFile again to do the same checks on this file!
+              Result := OpenFile(AltFn);
+              Exit;
+            end;
+          wrNo:
+            ;
+          wrCancel:
+            Exit;
+        end;
+    end;
 
     if BackupFileExists(FileName, Msg) then
       case OnWarning(wtTimeBackup, Msg) of
@@ -540,7 +630,7 @@ begin
     FEpiDoc.RegisterOnChangeHook(@DocumentChange, true);
     Result := true;
   finally
-//    St.Free;
+
   end;
 end;
 
