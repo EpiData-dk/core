@@ -31,7 +31,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Major="1" Minor="4" Release="4" Build="1"/>
+    <Version Major="1" Minor="4" Release="4" Build="2"/>
     <Files Count="3">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
@@ -53,8 +53,8 @@
       </Item1>
       <Item2>
         <PackageName Value="epidatacore"/>
-        <MaxVersion Major="1" Minor="4" Release="5" Valid="True"/>
-        <MinVersion Major="1" Minor="4" Release="4" Valid="True"/>
+        <MaxVersion Major="1" Minor="4" Release="4" Build="2" Valid="True"/>
+        <MinVersion Major="1" Minor="4" Release="4" Build="2" Valid="True"/>
       </Item2>
       <Item3>
         <PackageName Value="lcl"/>
