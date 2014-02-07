@@ -63,6 +63,7 @@ type
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
     function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
+    procedure SetDataDirectory(AValue: string);
     procedure WriteLockFile(Const Fn: string; LF: PLockFile);
     procedure CreateLockFile;
     procedure DeleteLockFile;
@@ -101,7 +102,7 @@ type
     property ReadOnly: Boolean read FReadOnly;
     property IsSaved: boolean read GetIsSaved;
     property BackupDirectory: string read FBackupDirectory write FBackupDirectory;
-    property DataDirectory: string read FDataDirectory write FDataDirectory;
+    property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
 
 implementation
@@ -239,6 +240,12 @@ begin
   St := TFileStream.Create(UTF8ToSys(Fn), fmOpenRead);
   St.Read(Result^, SizeOf(TLockFile));
   St.Free;
+end;
+
+procedure TEpiDocumentFile.SetDataDirectory(AValue: string);
+begin
+  if FDataDirectory = AValue then Exit;
+  FDataDirectory := ExpandFileNameUTF8(AValue + DirectorySeparator);
 end;
 
 procedure TEpiDocumentFile.WriteLockFile(const Fn: string; LF: PLockFile);
