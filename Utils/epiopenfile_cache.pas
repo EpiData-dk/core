@@ -5,7 +5,7 @@ unit epiopenfile_cache;
 interface
 
 uses
-  Classes, SysUtils, epiopenfile, epiadmin, epieventtypes,
+  Classes, SysUtils, epiopenfile, epiadmin,
   epidocument;
 
 type

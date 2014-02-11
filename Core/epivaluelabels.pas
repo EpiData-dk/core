@@ -28,7 +28,6 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    XMLName: string; override;
-//    function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -99,7 +98,7 @@ type
   { External Valuelabel Set Properties }
   private
     FExtFileName: string;
-  protected
+  public
     property    ExtFileName: string read FExtFileName write FExtFileName;
   private
     FLabelScope: TEpiValueLabelSetScope;
@@ -138,7 +137,7 @@ type
     function    NewValueLabel: TEpiCustomValueLabel;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function    DeleteItem(Index: integer): TEpiCustomItem; override;
-    property    LabelScope: TEpiValueLabelSetScope read FLabelScope;
+    property    LabelScope: TEpiValueLabelSetScope read FLabelScope write FLabelScope;
     property    LabelType: TEpiFieldType read FLabelType write SetLabelType;
     property    ValueLabels[Const index: integer]: TEpiCustomValueLabel read GetValueLabels; default;
     property    ValueLabel[Const AValue: variant]: TEpiCustomValueLabel read GetValueLabel;
@@ -155,6 +154,8 @@ type
 
   TEpiValueLabelSets = class(TEpiCustomList)
   private
+    function GetExternalCount: Integer;
+    function GetInternalCount: Integer;
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
     function    Prefix: string; override;
   protected
@@ -170,6 +171,10 @@ type
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
+  public
+    { Aux. functions }
+    property    InternalCount: Integer read GetInternalCount;
+    property    ExternalCount: Integer read GetExternalCount;
   end;
 
 implementation
@@ -221,9 +226,13 @@ end;
 
 function TEpiCustomValueLabel.SaveAttributesToXml: string;
 begin
-  Result :=
+  Result := '';
+
+  if IsMissingValue then
+    Result := SaveAttr(rsMissing, IsMissingValue);
+
+  Result +=
     SaveAttr(rsOrder, Order) +
-    SaveAttr(rsMissing, IsMissingValue) +
     inherited SaveAttributesToXml;
 end;
 
@@ -526,7 +535,10 @@ end;
 function TEpiValueLabelSet.SaveExternal(LvL: Integer): string;
 begin
   result :=
-    SaveNode(Lvl, rsValueLabel, '');
+
+    DupeString(' ', Lvl) + '<' +rsValueLabelSet + SaveAttributesToXml + '>' + LineEnding +
+    SaveNode(Lvl + 1, rsFile, ExtFileName) +
+    DupeString(' ', Lvl) + '</' +rsValueLabelSet + '>' + LineEnding;
 end;
 
 function TEpiValueLabelSet.WriteNameToXml: boolean;
@@ -698,6 +710,26 @@ begin
 end;
 
 { TEpiValueLabelSets }
+
+function TEpiValueLabelSets.GetExternalCount: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Count - 1 do
+    if ValueLabels[i].LabelScope = vlsExternal then
+      Inc(Result);
+end;
+
+function TEpiValueLabelSets.GetInternalCount: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Count - 1 do
+    if ValueLabels[i].LabelScope = vlsInternal then
+      Inc(Result);
+end;
 
 function TEpiValueLabelSets.GetValueLabels(index: integer): TEpiValueLabelSet;
 begin

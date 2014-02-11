@@ -5,7 +5,7 @@ unit epidatafileutils;
 interface
 
 uses
-  sysutils, epidatafiles, epidatafilestypes, math;
+  sysutils, epidatafiles, epidatafilestypes, epicustombase, math;
 
 function FieldClassFromFieldType(FieldType: TEpiFieldType): TEpiFieldClass;
 
@@ -14,6 +14,7 @@ function CompareFieldRecords(Out CmpResult: TValueSign;
   Const Casesensitive: boolean = false): boolean;
 
 procedure DumpDatafileRecords(Const DF: TEpiDataFile);
+procedure DumpDatafileControlItems(Const DF: TEpiDataFile);
 
 function Max(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType; overload;
 function Min(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType; overload;
@@ -90,6 +91,8 @@ var
   i: Integer;
   j: Integer;
 begin
+  if not IsConsole then exit;
+
   for i := 0 to DF.Fields.Count - 1 do
     Write(Format('[%s] %-' + IntToStr(Width) +'s',
           [EpiTypeNamesShort[Df.Field[i].FieldType],
@@ -104,6 +107,24 @@ begin
     for i := 0 to DF.Fields.Count -1 do
       Write(Format('%-' + IntToStr(Width+4) +'s', [UTF8ToSys(EpiCutString(DF.Fields[i].AsString[j], Width + 4 - 1, false))]));
     WriteLn('');
+  end;
+end;
+
+procedure DumpDatafileControlItems(const DF: TEpiDataFile);
+var
+  i: Integer;
+  CI: TEpiCustomControlItem;
+begin
+  if not IsConsole then exit;
+
+  for i := 0 to DF.ControlItems.Count - 1 do
+  begin
+    CI := DF.ControlItem[i];
+    Write(CI.Name);
+
+    if CI is TEpiField then
+      Write(' ', EpiTypeNamesShort[TEpiField(CI).FieldType]);
+    WriteLn();
   end;
 end;
 
