@@ -154,8 +154,11 @@ type
 
   TEpiValueLabelSets = class(TEpiCustomList)
   private
+    function GetVLSet(Const Index: Integer; Const Scope: TEpiValueLabelSetScope): TEpiValueLabelSet;
     function GetExternalCount: Integer;
+    function GetExternalSets(Index: integer): TEpiValueLabelSet;
     function GetInternalCount: Integer;
+    function GetInternalSets(Index: integer): TEpiValueLabelSet;
     function    GetValueLabels(index: integer): TEpiValueLabelSet;
     function    Prefix: string; override;
   protected
@@ -175,6 +178,8 @@ type
     { Aux. functions }
     property    InternalCount: Integer read GetInternalCount;
     property    ExternalCount: Integer read GetExternalCount;
+    property    InternalSets[Index: integer]: TEpiValueLabelSet read GetInternalSets;
+    property    ExternalSets[Index: integer]: TEpiValueLabelSet read GetExternalSets;
   end;
 
 implementation
@@ -711,6 +716,26 @@ end;
 
 { TEpiValueLabelSets }
 
+function TEpiValueLabelSets.GetVLSet(const Index: Integer;
+  const Scope: TEpiValueLabelSetScope): TEpiValueLabelSet;
+var
+  Runner: Integer;
+  i: Integer;
+begin
+  Runner := -1;
+  for i := 0 to Count - 1 do
+  begin
+    Result := ValueLabels[i];
+    if Result.LabelScope = Scope then
+      inc(Runner);
+    if Runner = Index then
+      break;
+  end;
+
+  if Runner < Index then
+    Result := nil;
+end;
+
 function TEpiValueLabelSets.GetExternalCount: Integer;
 var
   i: Integer;
@@ -721,6 +746,11 @@ begin
       Inc(Result);
 end;
 
+function TEpiValueLabelSets.GetExternalSets(Index: integer): TEpiValueLabelSet;
+begin
+  Result := GetVLSet(Index, vlsExternal);
+end;
+
 function TEpiValueLabelSets.GetInternalCount: Integer;
 var
   i: Integer;
@@ -729,6 +759,11 @@ begin
   for i := 0 to Count - 1 do
     if ValueLabels[i].LabelScope = vlsInternal then
       Inc(Result);
+end;
+
+function TEpiValueLabelSets.GetInternalSets(Index: integer): TEpiValueLabelSet;
+begin
+  Result := GetVLSet(Index, vlsInternal);
 end;
 
 function TEpiValueLabelSets.GetValueLabels(index: integer): TEpiValueLabelSet;
