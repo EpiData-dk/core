@@ -633,7 +633,9 @@ begin
   case LabelType of
     ftInteger: Result := TEpiIntValueLabel;
     ftFloat:   Result := TEpiFloatValueLabel;
-    ftString:  Result := TEpiStringValueLabel;
+    ftString,
+    ftUpperString:
+      Result := TEpiStringValueLabel;
   end;
 end;
 
