@@ -81,6 +81,10 @@ type
       out Msg: string): boolean;  virtual;
     procedure DoSaveFile(Const AFileName: string);
     procedure DoOpenFile(Const AFileName: string);
+  protected
+    function DefaultWarningResult(WarningType: TOpenEpiWarningType): TOpenEpiWarningResult; virtual;
+    function DoWarning(WarningType: TOpenEpiWarningType;
+      Const Msg: String): TOpenEpiWarningResult; virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -105,6 +109,7 @@ type
     property BackupDirectory: string read FBackupDirectory write FBackupDirectory;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
+  TEpiDocumentFileClass = class of TEpiDocumentFile;
 
 implementation
 
@@ -420,6 +425,8 @@ function TEpiDocumentFile.IsOSReadOnly(const FileName: string; out Msg: string
   ): boolean;
 begin
   Result := false;
+  if not FileExistsUTF8(FileName) then exit;
+
   if FileIsReadOnlyUTF8(FileName) then
   begin
     Msg := 'The project is marked "read only" by the operating system.' + LineEnding +
@@ -526,6 +533,33 @@ begin
   end;
 end;
 
+function TEpiDocumentFile.DefaultWarningResult(WarningType: TOpenEpiWarningType
+  ): TOpenEpiWarningResult;
+begin
+  case WarningType of
+    wtLockFile:
+      result := wrNo;
+    wtDatePattern:
+      result := wrCancel;
+    wtDatePatternNoAlt:
+      result := wrNo;
+    wtTimeBackup:
+      result := wrCancel;
+    wtTimeBackup2nd:
+      result := wrCancel;
+    wtSysReadOnly:
+      result := wrNo;
+  end;
+end;
+
+function TEpiDocumentFile.DoWarning(WarningType: TOpenEpiWarningType;
+  const Msg: String): TOpenEpiWarningResult;
+begin
+  result := DefaultWarningResult(WarningType);
+  if Assigned(OnWarning) then
+    Result := OnWarning(WarningType, Msg);
+end;
+
 function TEpiDocumentFile.OpenFile(const AFileName: string;
   const AReadOnly: boolean): boolean;
 var
@@ -543,7 +577,7 @@ begin
   if not ReadOnly then
   begin
     if IsOSReadOnly(FileName, Msg) then
-      case OnWarning(wtSysReadOnly, Msg) of
+      case DoWarning(wtSysReadOnly, Msg) of
         wrYes:
           FReadOnly := true;
         wrNo:
@@ -552,7 +586,7 @@ begin
 
 
     if LockFileExists(FileName, Msg) then
-      case OnWarning(wtLockFile, Msg) of
+      case DoWarning(wtLockFile, Msg) of
         wrYes:
           ;
         wrNo,
@@ -563,7 +597,7 @@ begin
     if DatePatternExists(FileName, AltFn, Msg) then
     begin
       if (AltFn = '') then
-        case OnWarning(wtDatePatternNoAlt, Msg) of
+        case DoWarning(wtDatePatternNoAlt, Msg) of
           wrYes:
             // User wanted to open the backupfile file directly.
             // Call OpenFile again to do the same checks on this file!;
@@ -572,7 +606,7 @@ begin
             Exit;
         end
       else
-        case OnWarning(wtDatePattern, Msg) of
+        case DoWarning(wtDatePattern, Msg) of
           wrYes:
             begin
               // User wanted to open the alternate file.

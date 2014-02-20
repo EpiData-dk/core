@@ -14,6 +14,7 @@ type
 
   TEpiDocumentFileCache = class
   private
+    FDocumentFileClass: TEpiDocumentFileClass;
     FFileList: TStringList;
     FOnError: TOpenEpiErrorEvent;
     FOnPassword: TRequestPasswordEvent;
@@ -28,6 +29,7 @@ type
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
     property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+    property DocumentFileClass: TEpiDocumentFileClass read FDocumentFileClass write FDocumentFileClass;
   end;
 
 implementation
@@ -40,7 +42,7 @@ var
   DocFile: TEpiDocumentFile;
 begin
   Result := -1;
-  DocFile := TEpiDocumentFile.Create;
+  DocFile := FDocumentFileClass.Create;
   DocFile.OnPassword := OnPassWord;
   Docfile.OnWarning  := OnWarning;
   Docfile.OnError    := OnError;
@@ -55,6 +57,7 @@ end;
 constructor TEpiDocumentFileCache.Create;
 begin
   FFileList := TStringList.Create;
+  FDocumentFileClass := TEpiDocumentFile;
 end;
 
 destructor TEpiDocumentFileCache.Destroy;
@@ -79,7 +82,10 @@ begin
   if Idx < 0 then
     Idx := DoLoadFile(FileName, ReadOnly);
 
-  Result := TEpiDocumentFile(FFileList.Objects[Idx]);
+  if Idx = -1 then
+    Result := nil
+  else
+    Result := TEpiDocumentFile(FFileList.Objects[Idx]);
 end;
 
 end.

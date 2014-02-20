@@ -796,7 +796,9 @@ begin
   FileName := LoadNodeString(Root, rsFile);
 
   RootDoc := TEpiDocument(RootOwner);
-  DocFile := TEpiDocumentFileCache(DocFileCache).OpenFile(FileName);
+  DocFile := TEpiDocumentFileCache(DocFileCache).OpenFile(FileName, true);
+  if Not Assigned(DocFile) then
+    Exit;
 
   VLSet := DocFile.Document.ValueLabelSets.GetValueLabelSetByName(ExtID);
   if Not Assigned(VLSet) then
@@ -846,6 +848,32 @@ begin
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
+type
+
+  { TVLDocFile }
+
+  TVLDocFile = class(TEpiDocumentFile)
+  protected
+    function DefaultWarningResult(WarningType: TOpenEpiWarningType
+      ): TOpenEpiWarningResult; override;
+  public
+    constructor Create; override;
+  end;
+
+function TVLDocFile.DefaultWarningResult(WarningType: TOpenEpiWarningType
+  ): TOpenEpiWarningResult;
+begin
+  if WarningType = wtSysReadOnly then
+    Result := wrYes
+  else
+    Result := inherited DefaultWarningResult(WarningType);
+end;
+
+constructor TVLDocFile.Create;
+begin
+  inherited Create;
+end;
+
 procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode);
 var
   Node: TDOMNode;
@@ -853,10 +881,12 @@ var
   Attr: TDOMAttr;
   Scope: TEpiValueLabelSetScope;
   DocFileCache: TEpiDocumentFileCache;
+
 begin
   // Root = <ValueLabelSets>
 
   DocFileCache := TEpiDocumentFileCache.Create;
+  DocFileCache.DocumentFileClass := TVLDocFile;
   try
     Node := Root.FirstChild;
     while Assigned(Node) do
