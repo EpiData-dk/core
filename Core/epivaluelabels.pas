@@ -788,6 +788,7 @@ var
   VLSet: TEpiValueLabelSet;
   ExtID: EpiString;
   Res: TOpenEpiWarningResult;
+  Acontinue: boolean;
 begin
   // Root = <ValueLabelSet  scope="vlsExternal">
 
@@ -797,8 +798,17 @@ begin
 
   RootDoc := TEpiDocument(RootOwner);
   DocFile := TEpiDocumentFileCache(DocFileCache).OpenFile(FileName, true);
+
   if Not Assigned(DocFile) then
+  begin
+    if Assigned(RootDoc.OnLoadError) then
+      RootDoc.OnLoadError(RootDoc, 0, @FileName ,AContinue);
+
+    if not AContinue then
+      raise EEpiExternalFileNoFound.Create('Value Labelse: External file "' + FileName + '" not found');
+
     Exit;
+  end;
 
   VLSet := DocFile.Document.ValueLabelSets.GetValueLabelSetByName(ExtID);
   if Not Assigned(VLSet) then

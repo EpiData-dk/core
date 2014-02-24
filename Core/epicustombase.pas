@@ -14,6 +14,7 @@ const
 
 type
   EEpiBadVersion  = class(Exception);
+  EEpiExternalFileNoFound = class(Exception);
 
   TEpiCustomBase = class;
   TEpiCustomItem = class;

@@ -28,6 +28,13 @@ type
     CurrentPos, MaxPos: Cardinal;
     var Canceled: Boolean) of object;
 
+  TEpiDocumentLoadErrorEvent = procedure (
+    Const Sender: TEpiCustomBase;
+    ErrorType: Word;       // 0 = External ValueLabel file not found (Data = filename)
+    Data: Pointer;
+    out Continue: boolean
+  ) of object;
+
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
@@ -35,6 +42,7 @@ type
     FAdmin: TEpiAdmin;
     FCycleNo: Int64;
     FLoading: boolean;
+    FOnLoadError: TEpiDocumentLoadErrorEvent;
     FOnProgress: TEpiProgressEvent;
     FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
@@ -70,6 +78,7 @@ type
     Property   Relations: TEpiRelations read FRelations;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+    property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
     // EpiData XML Version 2 perperties:

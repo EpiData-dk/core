@@ -54,6 +54,7 @@ type
   private
     FBackupDirectory: string;
     FDataDirectory: string;
+    FOnLoadError: TEpiDocumentLoadErrorEvent;
     // Internal housekeeping of current open EpiDocument.
     FReadOnly: boolean;
     FFileName: string;
@@ -99,6 +100,7 @@ type
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
+    property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
   public
     // Other properties
@@ -526,6 +528,7 @@ begin
 
     FEpiDoc.OnPassword := OnPassword;
     FEpiDoc.OnProgress := OnProgress;
+    FEpiDoc.OnLoadError := OnLoadError;
     FEpiDoc.LoadFromStream(St);
   finally
     St.Free;
@@ -568,6 +571,7 @@ var
   AltFn: string;
   Fn: String;
   LoadBackupFile: Boolean;
+  LoadSuccess: Boolean;
 begin
   Result         := false;
   FFileName      := AFileName;
@@ -643,34 +647,59 @@ begin
   try
     try
       Msg := '';
+      LoadSuccess := true;
       DoOpenFile(Fn);
     except
       on E: TEpiCoreException do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding + E.Message;
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding + E.Message;
+          LoadSuccess := false;
+        end;
 
       on E: EFOpenError do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding +
-               'File is corrupt or does not exist.' + LineEnding +
-               E.Message;
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding +
+                 'File is corrupt or does not exist.' + LineEnding +
+                 E.Message;
+          LoadSuccess := false;
+        end;
 
       on EEpiBadPassword do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding +
-               LineEnding +
-               'Invalid Password!';
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding +
+                 LineEnding +
+                 'Invalid Password!';
+          LoadSuccess := false;
+        end;
 
       on E: EEpiBadVersion do
-        Msg := E.Message;
+        begin
+          Msg := E.Message;
+          LoadSuccess := false;
+        end;
+
+      on E: EEpiExternalFileNoFound do
+        begin
+          Msg := '';
+          LoadSuccess := false;
+        end;
 
       on E: Exception do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding +
-               'An error occured:' + LineEnding +
-               E.Message;
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding +
+                 'An error occured:' + LineEnding +
+                 E.Message;
+          LoadSuccess := false;
+        end;
     end;
 
-    if (Msg <> '') then
+    if (not LoadSuccess) then
     begin
-      if Assigned(FOnError) then
+      if Assigned(FOnError) and
+         (Msg <> '')
+      then
         FOnError(Msg);
+
       FreeAndNil(FEpiDoc);
       Exit;
     end;
