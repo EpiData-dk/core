@@ -754,7 +754,7 @@ begin
 
     Result := true;
   finally
-    if Assigned(DataStream) then FreeAndNil(DataStream);
+//    if Assigned(DataStream) then FreeAndNil(DataStream);
     //if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
 //    if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
   end;
