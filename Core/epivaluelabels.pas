@@ -493,7 +493,8 @@ end;
 function TEpiValueLabelSet.GetValueLabelIndex(const AValue: variant): integer;
 begin
   case LabelType of
-    ftString:
+    ftString,
+    ftUpperString:
       begin
         for result := 0 to Count - 1 do
           if AnsiSameStr(AValue, TEpiStringValueLabel(Items[result]).FValue) then
