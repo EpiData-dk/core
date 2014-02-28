@@ -5,7 +5,7 @@ unit epiv_documentfile;
 interface
 
 uses
-  Classes, SysUtils, epiopenfile;
+  Classes, SysUtils, epiopenfile, epidocument;
 
 type
 

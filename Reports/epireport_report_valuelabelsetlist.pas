@@ -45,12 +45,15 @@ end;
 procedure TEpiReportValueLabelSetList.RunReport;
 var
   i: Integer;
+  S: String;
 begin
   inherited RunReport;
 
+  S := BoolToStr(ValueLabelSet.LabelScope = vlsExternal, 'E', 'I');
+
   DoTableHeader(
-//    'Value label: ' + ValueLabelSet.Name + ': (' + EpiTypeNames[ValueLabelSet.LabelType] + ')',
-    '',
+    'Value label: ' + ValueLabelSet.Name + ' [' + S + ']: (' + EpiTypeNames[ValueLabelSet.LabelType] + ')',
+//    '',
     3,
     ValueLabelSet.Count + 1
   );

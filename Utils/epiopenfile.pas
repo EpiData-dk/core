@@ -8,6 +8,7 @@ uses
   Classes, SysUtils, epiadmin, epidocument, epicustombase;
 
 type
+
   TOpenEpiWarningType =
     (wtLockFile,         // Trying to open a file with a .lock file present.
      wtDatePattern,      // A date pattern has been detected in the file, could be an auto backup
@@ -53,6 +54,7 @@ type
   private
     FBackupDirectory: string;
     FDataDirectory: string;
+    FOnLoadError: TEpiDocumentLoadErrorEvent;
     // Internal housekeeping of current open EpiDocument.
     FReadOnly: boolean;
     FFileName: string;
@@ -80,6 +82,10 @@ type
       out Msg: string): boolean;  virtual;
     procedure DoSaveFile(Const AFileName: string);
     procedure DoOpenFile(Const AFileName: string);
+  protected
+    function DefaultWarningResult(WarningType: TOpenEpiWarningType): TOpenEpiWarningResult; virtual;
+    function DoWarning(WarningType: TOpenEpiWarningType;
+      Const Msg: String): TOpenEpiWarningResult; virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -94,6 +100,7 @@ type
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
+    property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
   public
     // Other properties
@@ -104,6 +111,7 @@ type
     property BackupDirectory: string read FBackupDirectory write FBackupDirectory;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
+  TEpiDocumentFileClass = class of TEpiDocumentFile;
 
 implementation
 
@@ -419,6 +427,8 @@ function TEpiDocumentFile.IsOSReadOnly(const FileName: string; out Msg: string
   ): boolean;
 begin
   Result := false;
+  if not FileExistsUTF8(FileName) then exit;
+
   if FileIsReadOnlyUTF8(FileName) then
   begin
     Msg := 'The project is marked "read only" by the operating system.' + LineEnding +
@@ -501,20 +511,56 @@ end;
 procedure TEpiDocumentFile.DoOpenFile(const AFileName: string);
 var
   St: TMemoryStream;
+  CurrentDir: String;
 begin
   FEpiDoc := TEpiDocument.Create('en');
   St := TMemoryStream.Create;
 
-  if ExtractFileExt(UTF8ToSys(AFileName)) = '.epz' then
-    ZipFileToStream(St, AFileName)
-  else
-    St.LoadFromFile(UTF8ToSys(AFileName));
-  St.Position := 0;
+  CurrentDir := GetCurrentDirUTF8;
+  SetCurrentDirUTF8(ExtractFileDir(AFileName));
 
-  FEpiDoc.OnPassword := OnPassword;
-  FEpiDoc.OnProgress := OnProgress;
-  FEpiDoc.LoadFromStream(St);
-  St.Free;
+  try
+    if ExtractFileExt(UTF8ToSys(AFileName)) = '.epz' then
+      ZipFileToStream(St, AFileName)
+    else
+      St.LoadFromFile(UTF8ToSys(AFileName));
+    St.Position := 0;
+
+    FEpiDoc.OnPassword := OnPassword;
+    FEpiDoc.OnProgress := OnProgress;
+    FEpiDoc.OnLoadError := OnLoadError;
+    FEpiDoc.LoadFromStream(St);
+  finally
+    St.Free;
+    SetCurrentDirUTF8(CurrentDir);
+  end;
+end;
+
+function TEpiDocumentFile.DefaultWarningResult(WarningType: TOpenEpiWarningType
+  ): TOpenEpiWarningResult;
+begin
+  case WarningType of
+    wtLockFile:
+      result := wrNo;
+    wtDatePattern:
+      result := wrCancel;
+    wtDatePatternNoAlt:
+      result := wrNo;
+    wtTimeBackup:
+      result := wrCancel;
+    wtTimeBackup2nd:
+      result := wrCancel;
+    wtSysReadOnly:
+      result := wrNo;
+  end;
+end;
+
+function TEpiDocumentFile.DoWarning(WarningType: TOpenEpiWarningType;
+  const Msg: String): TOpenEpiWarningResult;
+begin
+  result := DefaultWarningResult(WarningType);
+  if Assigned(OnWarning) then
+    Result := OnWarning(WarningType, Msg);
 end;
 
 function TEpiDocumentFile.OpenFile(const AFileName: string;
@@ -525,6 +571,7 @@ var
   AltFn: string;
   Fn: String;
   LoadBackupFile: Boolean;
+  LoadSuccess: Boolean;
 begin
   Result         := false;
   FFileName      := AFileName;
@@ -534,7 +581,7 @@ begin
   if not ReadOnly then
   begin
     if IsOSReadOnly(FileName, Msg) then
-      case OnWarning(wtSysReadOnly, Msg) of
+      case DoWarning(wtSysReadOnly, Msg) of
         wrYes:
           FReadOnly := true;
         wrNo:
@@ -543,7 +590,7 @@ begin
 
 
     if LockFileExists(FileName, Msg) then
-      case OnWarning(wtLockFile, Msg) of
+      case DoWarning(wtLockFile, Msg) of
         wrYes:
           ;
         wrNo,
@@ -554,7 +601,7 @@ begin
     if DatePatternExists(FileName, AltFn, Msg) then
     begin
       if (AltFn = '') then
-        case OnWarning(wtDatePatternNoAlt, Msg) of
+        case DoWarning(wtDatePatternNoAlt, Msg) of
           wrYes:
             // User wanted to open the backupfile file directly.
             // Call OpenFile again to do the same checks on this file!;
@@ -563,7 +610,7 @@ begin
             Exit;
         end
       else
-        case OnWarning(wtDatePattern, Msg) of
+        case DoWarning(wtDatePattern, Msg) of
           wrYes:
             begin
               // User wanted to open the alternate file.
@@ -600,34 +647,59 @@ begin
   try
     try
       Msg := '';
+      LoadSuccess := true;
       DoOpenFile(Fn);
     except
       on E: TEpiCoreException do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding + E.Message;
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding + E.Message;
+          LoadSuccess := false;
+        end;
 
       on E: EFOpenError do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding +
-               'File is corrupt or does not exist.' + LineEnding +
-               E.Message;
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding +
+                 'File is corrupt or does not exist.' + LineEnding +
+                 E.Message;
+          LoadSuccess := false;
+        end;
 
       on EEpiBadPassword do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding +
-               LineEnding +
-               'Invalid Password!';
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding +
+                 LineEnding +
+                 'Invalid Password!';
+          LoadSuccess := false;
+        end;
 
       on E: EEpiBadVersion do
-        Msg := E.Message;
+        begin
+          Msg := E.Message;
+          LoadSuccess := false;
+        end;
+
+      on E: EEpiExternalFileNoFound do
+        begin
+          Msg := '';
+          LoadSuccess := false;
+        end;
 
       on E: Exception do
-        Msg := 'Unable to open the file: ' + Fn + LineEnding +
-               'An error occured:' + LineEnding +
-               E.Message;
+        begin
+          Msg := 'Unable to open the file: ' + Fn + LineEnding +
+                 'An error occured:' + LineEnding +
+                 E.Message;
+          LoadSuccess := false;
+        end;
     end;
 
-    if (Msg <> '') then
+    if (not LoadSuccess) then
     begin
-      if Assigned(FOnError) then
+      if Assigned(FOnError) and
+         (Msg <> '')
+      then
         FOnError(Msg);
+
       FreeAndNil(FEpiDoc);
       Exit;
     end;

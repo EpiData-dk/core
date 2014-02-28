@@ -14,6 +14,7 @@ type
     MajorRev:  Integer;
     MinorRev:  Integer;
     BuildNo:   Integer;
+    SpecialBuild: string;
   end;
 
   function GetCoreRevision: string;
@@ -50,7 +51,7 @@ begin
   result := GetEpiVersionInfo(CoreVersion);
 end;
 
-function BuildVersionInfoString(Version, Major, Minor, Build: integer): string;
+function BuildVersionInfoString(Version, Major, Minor, Build: integer): string; overload;
 begin
   result := IntToStr(Version) + '.' +
             IntToStr(Major)   + '.' +
@@ -61,13 +62,16 @@ end;
 function GetEpiVersionInfo(VersionInfo: TEpiVersionInfo): string;
 begin
   with VersionInfo do
+  begin
     Result := BuildVersionInfoString(VersionNo, MajorRev, MinorRev, BuildNo);
+    if SpecialBuild <> '' then
+      Result := Result + ' [' + SpecialBuild + ']';
+  end;
 end;
 
 function GetEpiVersionInfo(TheProgram: THandle): string;
 begin
-  with GetEpiVersion(TheProgram) do
-    result := BuildVersionInfoString(VersionNo, MajorRev, MinorRev, BuildNo);
+  result := GetEpiVersionInfo(GetEpiVersion(TheProgram));
 end;
 
 { TEpiVersionChecker }
@@ -165,6 +169,7 @@ end;
 function GetEpiVersion(TheProgram: THandle): TEpiVersionInfo;
 var
   Info: TVersionInfo;
+  S: String;
 begin
   Info := TVersionInfo.Create;
   Info.Load(TheProgram);
@@ -174,6 +179,12 @@ begin
     MajorRev  := FileVersion[1];
     MinorRev  := FileVersion[2];
     BuildNo   := FileVersion[3];
+  end;
+  if Info.StringFileInfo.Count > 0 then
+  try
+    Result.SpecialBuild := Info.StringFileInfo.Items[0].Values['SpecialBuild'];
+  except
+    // Do nothing
   end;
   Info.Free;
 end;

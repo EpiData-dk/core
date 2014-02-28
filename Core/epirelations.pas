@@ -274,13 +274,13 @@ end;
 
 function TEpiRelate.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  Content :=
+{  Content :=
     SaveNode(Lvl + 1, rsDataFileId, DataFile.Name) +
     SaveNode(Lvl + 1, rsFieldId, Field.Name) +
     SaveNode(Lvl + 1, rsValue, String(Value)) +
     SaveNode(Lvl + 1, rsDestDataFileId, Destination.Name) +
     SaveNode(Lvl + 1, rsType, RelateType);
-  Result := inherited SaveToXml(Content, Lvl);
+  Result := inherited SaveToXml(Content, Lvl);  }
 end;
 
 procedure TEpiRelate.LoadFromXml(Root: TDOMNode);
@@ -289,14 +289,14 @@ var
 begin
   inherited LoadFromXml(Root);
 
-  // Root = <Relate>
+{  // Root = <Relate>
   DFS      := TEpiDocument(RootOwner).DataFiles;
   DataFile := TEpiDataFile(DFS.GetItemByName(LoadNodeString(Root, rsDataFileId)));
   Field    := TEpiField(DataFile.Fields.GetItemByName(LoadNodeString(Root, rsFieldId)));
   Value    := LoadNodeString(Root, rsValue);
 
   Destination := TEpiDataFile(DFS.GetItemByName(LoadNodeString(Root, rsDestDataFileId)));
-  RelateType  := LoadNodeInt(Root, rsType);
+  RelateType  := LoadNodeInt(Root, rsType);}
 end;
 
 end.
