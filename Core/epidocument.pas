@@ -51,7 +51,7 @@ type
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
-    FRelations: TEpiRelations;
+    FRelations: TEpiRelationList;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
@@ -75,7 +75,7 @@ type
     Property   Study: TEpiStudy read FStudy;
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
-    Property   Relations: TEpiRelations read FRelations;
+    Property   Relations: TEpiRelationList read FRelations;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
@@ -156,7 +156,8 @@ begin
   FValueLabelSets.ItemOwner := true;
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
-  FRelations       := TEpiRelations.Create(Self);
+  FRelations       := TEpiRelationList.Create(Self);
+  FRelations.ItemOwner := true;
   FCycleNo         := 0;
 
   RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
@@ -168,12 +169,12 @@ end;
 
 destructor TEpiDocument.Destroy;
 begin
-  FRelations.Free;
-  FDataFiles.Free;
-  FStudy.Free;
-  FAdmin.Free;
   FXMLSettings.Free;
   FProjectSettings.Free;
+  FStudy.Free;
+  FRelations.Free;
+  FAdmin.Free;
+  FDataFiles.Free;
   FValueLabelSets.Free;
   inherited Destroy;
 end;

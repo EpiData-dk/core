@@ -152,9 +152,8 @@ const
        rsRecordStatus    = 'status';
 
    rsRelations       = 'Relations';
-    rsRelates         = 'Relates';
-     rsRelate          = 'Relate';
-      rsFieldId         = 'FieldId';
-      rsRelateValue     = 'RelateValue';
-      rsDestDataFileId  = 'DestDataFileId';
+    rsRelation        = 'Relation';
+     rsDataFileRef     = 'DataFileRef';
+     rsFieldRef        = 'FieldRef';
+     rsRelateValue     = 'RelateValue';
 

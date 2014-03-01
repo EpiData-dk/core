@@ -8,295 +8,331 @@ uses
   Classes, SysUtils, Laz2_DOM, epicustombase, epidatafiles, epidatafilestypes;
 
 type
- TEpiRelations = class;
- TEpiRelates = class;
- TEpiRelate = class;
+  TEpiCustomRelationList = class;
+  TEpiMasterRelation = class;
+  TEpiDetailRelation = class;
 
- { TEpiRelations }
+  { TEpiCustomRelationList }
 
- TEpiRelations = class(TEpiCustomBase)
- private
-   FRelates: TEpiRelates;
-   function    GetRelate(Index: integer): TEpiRelate;
- protected
-   function    ScrambleXml: boolean; override;
- public
-   constructor Create(AOwner: TEpiCustomBase); override;
-   destructor  Destroy; override;
-   function    XMLName: string; override;
-   function    SaveToXml(Content: String; Lvl: integer): string; override;
-   procedure   LoadFromXml(Root: TDOMNode); override;
-   function    NewRelate: TEpiRelate;
-   property    Relates: TEpiRelates read FRelates;
-   property    Relate[Index: integer]: TEpiRelate read GetRelate;
- end;
+  TEpiCustomRelationList = class(TEpiCustomList)
+  protected
+    procedure DoSort; override;
+  public
+    function XMLName: string; override;
+  end;
 
- { TEpiRelates }
- TEpiRelateChangeEventType = (
-   ercaSetDataFile, ercaSetDest, ercaSetField, ercaSetType, ercaSetValue
- );
+  { TEpiMasterRelation }
 
- TEpiRelates = class(TEpiCustomList)
- protected
-   function Prefix: string; override;
- public
-   constructor Create(AOwner: TEpiCustomBase); override;
-   destructor  Destroy; override;
-   function XMLName: string; override;
-   procedure   LoadFromXml(Root: TDOMNode); override;
-   function    NewRelate: TEpiRelate;
- end;
+  TEpiMasterRelation = class(TEpiCustomRelationList)
+  private
+    FDatafile: TEpiDataFile;
+    procedure DataFileHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+    procedure UpdateDataFileHook(Const OldDf, NewDf: TEpiDataFile);
+    procedure SetDatafile(AValue: TEpiDataFile);
+  protected
+    { Cloning }
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
+    procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
+    procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
+    function NewDetailRelation: TEpiDetailRelation;
+    property Datafile: TEpiDataFile read FDatafile write SetDatafile;
+  end;
 
- { TEpiRelate }
+  { TEpiDetailRelation }
 
- TEpiRelate = class(TEpiCustomItem)
- private
-   FDataFile: TEpiDataFile;
-   FDestination: TEpiDataFile;
-   FField: TEpiField;
-   FRelateType: integer;
-   FValue: EpiVariant;
-   procedure SetDataFile(const AValue: TEpiDataFile);
-   procedure SetDestination(const AValue: TEpiDataFile);
-   procedure SetField(const AValue: TEpiField);
-   procedure SetRelateType(const AValue: integer);
-   procedure SetValue(const AValue: EpiVariant);
- protected
-   function WriteNameToXml: boolean; override;
-   function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
- public
-   constructor Create(AOwner: TEpiCustomBase); override;
-   destructor  Destroy; override;
-   function    XMLName: string; override;
-   function    SaveToXml(Content: String; Lvl: integer): string; override;
-   procedure   LoadFromXml(Root: TDOMNode); override;
-   property    DataFile: TEpiDataFile read FDataFile write SetDataFile;
-   property    Field: TEpiField read FField write SetField;
-   // TODO : Relate - do something better than variants!
-   property    Value: EpiVariant read FValue write SetValue;
-   property    Destination: TEpiDataFile read FDestination write SetDestination;
-   property    RelateType: integer read FRelateType write SetRelateType;
- end;
+  TEpiDetailRelation = class(TEpiMasterRelation)
+  private
+    FRelateField: TEpiField;
+    FRelateValue: string;
+    procedure FieldHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+    procedure UpdateFieldHook(Const OldField, NewField: TEpiField);
+    function GetMasterRelation: TEpiMasterRelation;
+    procedure SetRelateField(AValue: TEpiField);
+    procedure SetRelateValue(AValue: string);
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
+       nil): TEpiCustomBase; override;
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
+    procedure LoadFromXml(Root: TDOMNode); override;
+    function SaveToXml(Content: String; Lvl: integer): string; override;
+    property RelateField: TEpiField read FRelateField write SetRelateField;
+    property RelateValue: string read FRelateValue write SetRelateValue;
+    property MasterRelation: TEpiMasterRelation read GetMasterRelation;
+  end;
+
+  { TEpiRelationList }
+
+  TEpiRelationList = class(TEpiCustomRelationList)
+  private
+    function GetMasterRelation(Index: integer): TEpiMasterRelation;
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    function XMLName: string; override;
+    function NewMasterRelation: TEpiMasterRelation;
+    function ItemClass: TEpiCustomItemClass; override;
+    property MasterRelation[Index: integer]: TEpiMasterRelation read GetMasterRelation;
+  end;
 
 implementation
 
 uses
-  epidocument, epistringutils;
+  epidocument;
 
-{ TEpiRelations }
+{ TEpiCustomRelationList }
 
-function TEpiRelations.GetRelate(Index: integer): TEpiRelate;
+procedure TEpiCustomRelationList.DoSort;
 begin
-  result := TEpiRelate(Relates.Items[Index]);
+  // Relations cannot be sorted!
 end;
 
-function TEpiRelations.ScrambleXml: boolean;
+function TEpiCustomRelationList.XMLName: string;
 begin
-  Result := TEpiDocument(Owner).XMLSettings.Scrambled;
+  Result := rsRelation;
 end;
 
-constructor TEpiRelations.Create(AOwner: TEpiCustomBase);
+{ TEpiMasterRelation }
+
+procedure TEpiMasterRelation.DataFileHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if Initiator <> FDatafile then exit;
+
+  if NOT
+      (
+       (EventGroup = eegCustomBase) and
+       (EventType  = Word(ecceDestroy))
+      )
+  then
+    Exit;
+
+  UpdateDataFileHook(FDatafile, nil);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), FDatafile);
+  FDatafile := nil;
+end;
+
+procedure TEpiMasterRelation.UpdateDataFileHook(const OldDf, NewDf: TEpiDataFile
+  );
+begin
+  if Assigned(OldDF) then
+    OldDf.UnRegisterOnChangeHook(@DataFileHook);
+
+  if Assigned(NewDf) then
+    NewDf.RegisterOnChangeHook(@DataFileHook, true);
+end;
+
+procedure TEpiMasterRelation.SetDatafile(AValue: TEpiDataFile);
+begin
+  if FDatafile = AValue then Exit;
+  UpdateDataFileHook(FDatafile, AValue);
+  FDatafile := AValue;
+end;
+
+function TEpiMasterRelation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+  ): TEpiCustomBase;
+var
+  Cloned: Boolean;
+begin
+  Cloned := false;
+
+  if Assigned(Dest) then
+    begin
+      // Always assume full clone!
+      with TEpiMasterRelation(Dest) do
+        DataFile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(Self.FDatafile.Name));
+      Cloned := true;
+    end;
+
+  Result := inherited DoClone(AOwner, Dest);
+
+  // Always assume full clone!
+  if not Cloned then
+    with TEpiMasterRelation(Result) do
+      DataFile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(Self.FDatafile.Name));
+end;
+
+constructor TEpiMasterRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  FRelates := TEpiRelates.Create(Self);
-  FRelates.ItemOwner := true;
-
-  RegisterClasses([FRelates]);
+  ItemOwner := true;
+  FDatafile := nil;
 end;
 
-destructor TEpiRelations.Destroy;
+destructor TEpiMasterRelation.Destroy;
 begin
-  FRelates.Free;
+  UpdateDataFileHook(FDatafile, nil);
+  FDatafile := nil;
   inherited Destroy;
 end;
 
-function TEpiRelations.XMLName: string;
+procedure TEpiMasterRelation.LoadFromXml(Root: TDOMNode);
+var
+  DfId: EpiString;
 begin
-  Result := rsRelations;
+  inherited LoadFromXml(Root);
+
+  DfId := LoadNodeString(Root, rsDataFileRef);
+
+  FDatafile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(DfId));
+  if not Assigned(FDatafile) then
+    Raise Exception.Create('MasterRelation - DatafileId not found: ' + DfId);
 end;
 
-function TEpiRelations.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiMasterRelation.SaveToXml(Content: String; Lvl: integer): string;
 begin
-  if (Relates.Count = 0) then exit;
+  Content +=
+    SaveNode(Lvl + 1, rsDataFileRef, Datafile.Name);
+
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
-procedure TEpiRelations.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
+procedure TEpiMasterRelation.InsertItem(const Index: integer;
+  Item: TEpiCustomItem);
 begin
-  inherited LoadFromXml(Root);
+  if not Item.InheritsFrom(TEpiDetailRelation) then
+    Raise Exception.Create('A TEpiMasterRelation can only hold TEpiDetailRelation as Items!');
 
-  // Root = <Relations>
-  if LoadNode(Node, Root, rsRelates, false) then
-    Relates.LoadFromXml(Node);
+  inherited InsertItem(Index, Item);
 end;
 
-function TEpiRelations.NewRelate: TEpiRelate;
+function TEpiMasterRelation.NewDetailRelation: TEpiDetailRelation;
 begin
-  result := Relates.NewRelate;
+  result := TEpiDetailRelation(NewItem(TEpiDetailRelation));
 end;
 
-{ TEpiRelates }
+{ TEpiDetailRelation }
 
-function TEpiRelates.Prefix: string;
+procedure TEpiDetailRelation.SetRelateField(AValue: TEpiField);
 begin
-  Result := 'relate_id_';
+  if FRelateField = AValue then Exit;
+  UpdateFieldHook(FRelateField, AValue);
+  FRelateField := AValue;
 end;
 
-constructor TEpiRelates.Create(AOwner: TEpiCustomBase);
+procedure TEpiDetailRelation.FieldHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  inherited Create(AOwner);
+  if Initiator <> FRelateField then exit;
+
+  if NOT
+      (
+       (EventGroup = eegCustomBase) and
+       (EventType  = Word(ecceDestroy))
+      )
+  then
+    Exit;
+
+  UpdateFieldHook(FRelateField, nil);
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), FRelateField);
+  FRelateField := nil;
 end;
 
-destructor TEpiRelates.Destroy;
+procedure TEpiDetailRelation.UpdateFieldHook(const OldField, NewField: TEpiField
+  );
 begin
-  inherited Destroy;
+  if Assigned(OldField) then
+    OldField.UnRegisterOnChangeHook(@FieldHook);
+
+  if Assigned(NewField) then
+    NewField.RegisterOnChangeHook(@FieldHook, True);
 end;
 
-function TEpiRelates.XMLName: string;
+function TEpiDetailRelation.GetMasterRelation: TEpiMasterRelation;
 begin
-  Result := rsRelates;
+  result := TEpiMasterRelation(Owner);
 end;
 
-procedure TEpiRelates.LoadFromXml(Root: TDOMNode);
-var
-  Node: TDOMNode;
-  NRelate: TEpiRelate;
+procedure TEpiDetailRelation.SetRelateValue(AValue: string);
 begin
-  inherited LoadFromXml(Root);
-  // Root = <Relates>
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    CheckNode(Node, rsRelate);
-
-    NRelate := NewRelate;
-    NRelate.LoadFromXml(Node);
-
-    Node := Node.NextSibling;
-  end;
+  if FRelateValue = AValue then Exit;
+  FRelateValue := AValue;
 end;
 
-function TEpiRelates.NewRelate: TEpiRelate;
-begin
-  result := TEpiRelate(NewItem(TEpiRelate));
-end;
-
-{ TEpiRelate }
-
-procedure TEpiRelate.SetDataFile(const AValue: TEpiDataFile);
-var
-  Val: TEpiDataFile;
-begin
-  if FDataFile = AValue then exit;
-  Val := FDataFile;
-  FDataFile := AValue;
-  DoChange(eegRelates, Word(ercaSetDataFile), Val);
-end;
-
-procedure TEpiRelate.SetDestination(const AValue: TEpiDataFile);
-var
-  Val: TEpiDataFile;
-begin
-  if FDestination = AValue then exit;
-  Val := FDestination;
-  FDestination := AValue;
-  DoChange(eegRelates, Word(ercaSetDest), Val);
-end;
-
-procedure TEpiRelate.SetField(const AValue: TEpiField);
-var
-  Val: TEpiField;
-begin
-  if FField = AValue then exit;
-  Val := FField;
-  FField := AValue;
-  DoChange(eegRelates, Word(ercaSetField), Val);
-end;
-
-procedure TEpiRelate.SetRelateType(const AValue: integer);
-var
-  Val: LongInt;
-begin
-  if FRelateType = AValue then exit;
-  Val := FRelateType;
-  FRelateType := AValue;
-  DoChange(eegRelates, Word(ercaSetType), @Val);
-end;
-
-procedure TEpiRelate.SetValue(const AValue: EpiVariant);
-var
-  Val: EpiVariant;
-begin
-  if FValue = AValue then exit;
-  Val := FValue;
-  FValue := AValue;
-  DoChange(eegRelates, Word(ercaSetValue), @Val);
-end;
-
-function TEpiRelate.WriteNameToXml: boolean;
-begin
-  Result := false;
-end;
-
-function TEpiRelate.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
+function TEpiDetailRelation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
   ): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest);
 
-  with TEpiRelate(Result) do
+  // Always assume full clone!
+  with TEpiDetailRelation(Result) do
   begin
-    FDataFile     := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(SElf.FDataFile.Name));
-    FDestination  := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(SElf.FDestination.Name));
-    FField        := FDataFile.Fields.FieldByName[Self.FField.Name];
-    FRelateType   := Self.FRelateType;
-    FValue        := Self.FValue;
+    RelateField := MasterRelation.Datafile.Fields.FieldByName[Self.FRelateField.Name];
+    RelateValue := Self.FRelateValue;
   end;
 end;
 
-constructor TEpiRelate.Create(AOwner: TEpiCustomBase);
+constructor TEpiDetailRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
 end;
 
-destructor TEpiRelate.Destroy;
+destructor TEpiDetailRelation.Destroy;
 begin
+  UpdateFieldHook(FRelateField, nil);
+  FRelateField := nil;
+  FRelateValue := '';
+
   inherited Destroy;
 end;
 
-function TEpiRelate.XMLName: string;
-begin
-  Result := rsRelate;
-end;
-
-function TEpiRelate.SaveToXml(Content: String; Lvl: integer): string;
-begin
-{  Content :=
-    SaveNode(Lvl + 1, rsDataFileId, DataFile.Name) +
-    SaveNode(Lvl + 1, rsFieldId, Field.Name) +
-    SaveNode(Lvl + 1, rsValue, String(Value)) +
-    SaveNode(Lvl + 1, rsDestDataFileId, Destination.Name) +
-    SaveNode(Lvl + 1, rsType, RelateType);
-  Result := inherited SaveToXml(Content, Lvl);  }
-end;
-
-procedure TEpiRelate.LoadFromXml(Root: TDOMNode);
+procedure TEpiDetailRelation.LoadFromXml(Root: TDOMNode);
 var
-  DFS: TEpiDataFiles;
+  FieldId: EpiString;
 begin
   inherited LoadFromXml(Root);
 
-{  // Root = <Relate>
-  DFS      := TEpiDocument(RootOwner).DataFiles;
-  DataFile := TEpiDataFile(DFS.GetItemByName(LoadNodeString(Root, rsDataFileId)));
-  Field    := TEpiField(DataFile.Fields.GetItemByName(LoadNodeString(Root, rsFieldId)));
-  Value    := LoadNodeString(Root, rsValue);
+  FieldId := LoadNodeString(Root, rsFieldRef);
+  FRelateField := MasterRelation.Datafile.Fields.FieldByName[FieldId];
+  if not Assigned(FRelateField) then
+    Raise Exception.Create('DetailRelation - Relate Field not found: ' + FieldId);
+end;
 
-  Destination := TEpiDataFile(DFS.GetItemByName(LoadNodeString(Root, rsDestDataFileId)));
-  RelateType  := LoadNodeInt(Root, rsType);}
+function TEpiDetailRelation.SaveToXml(Content: String; Lvl: integer): string;
+begin
+  Content +=
+    SaveNode(Lvl + 1, rsFieldRef, RelateField.Name) +
+    SaveNode(Lvl + 1, rsRelateValue, RelateValue);
+
+  Result := inherited SaveToXml(Content, Lvl);
+end;
+
+{ TEpiRelationList }
+
+function TEpiRelationList.GetMasterRelation(Index: integer): TEpiMasterRelation;
+begin
+  result := TEpiMasterRelation(Items[Index]);
+end;
+
+constructor TEpiRelationList.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+end;
+
+function TEpiRelationList.XMLName: string;
+begin
+  Result := rsRelations;
+end;
+
+function TEpiRelationList.NewMasterRelation: TEpiMasterRelation;
+begin
+  result := TEpiMasterRelation(NewItem());
+end;
+
+function TEpiRelationList.ItemClass: TEpiCustomItemClass;
+begin
+  Result := TEpiMasterRelation;
 end;
 
 end.
