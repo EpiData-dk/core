@@ -1280,7 +1280,7 @@ begin
 
     // Copy Record Status - start by deleting the one created by default.
     FRecordStatus.Free;
-    FRecordStatus := TEpiField(Self.FRecordStatus.Clone(Self));
+    FRecordStatus := TEpiField(Self.FRecordStatus.Clone(Result));
   end;
 
   // At this point all existing fields in this DataFile have been cloned:
