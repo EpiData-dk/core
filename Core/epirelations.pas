@@ -29,6 +29,7 @@ type
     procedure DataFileHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    function GetDetailRelation(Index: integer): TEpiDetailRelation;
     procedure UpdateDataFileHook(Const OldDf, NewDf: TEpiDataFile);
     procedure SetDatafile(AValue: TEpiDataFile);
   protected
@@ -43,6 +44,7 @@ type
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function NewDetailRelation: TEpiDetailRelation;
     property Datafile: TEpiDataFile read FDatafile write SetDatafile;
+    property DetailRelation[Index: integer]: TEpiDetailRelation read GetDetailRelation;
   end;
 
   { TEpiDetailRelation }
@@ -120,6 +122,12 @@ begin
   UpdateDataFileHook(FDatafile, nil);
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), FDatafile);
   FDatafile := nil;
+end;
+
+function TEpiMasterRelation.GetDetailRelation(Index: integer
+  ): TEpiDetailRelation;
+begin
+  result := TEpiDetailRelation(Items[Index]);
 end;
 
 procedure TEpiMasterRelation.UpdateDataFileHook(const OldDf, NewDf: TEpiDataFile
