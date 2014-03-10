@@ -120,9 +120,9 @@ begin
   then
     Exit;
 
-  UpdateDataFileHook(FDatafile, nil);
-  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), FDatafile);
-  FDatafile := nil;
+  Data := Datafile;
+  Datafile := nil;
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Data);
 end;
 
 function TEpiMasterRelation.GetDetailRelation(Index: integer
@@ -175,13 +175,12 @@ constructor TEpiMasterRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   ItemOwner := true;
-  FDatafile := nil;
+  Datafile := nil;
 end;
 
 destructor TEpiMasterRelation.Destroy;
 begin
-  UpdateDataFileHook(FDatafile, nil);
-  FDatafile := nil;
+  Datafile := nil;
   inherited Destroy;
 end;
 
@@ -190,7 +189,7 @@ var
   DfId: EpiString;
 begin
   DfId := LoadAttrString(Root, rsDataFileRef);
-  FDatafile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(DfId));
+  Datafile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(DfId));
   if not Assigned(FDatafile) then
     Raise Exception.Create('MasterRelation - DatafileId not found: ' + DfId);
 
@@ -247,9 +246,9 @@ begin
   then
     Exit;
 
-  UpdateFieldHook(FRelateField, nil);
-  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), FRelateField);
-  FRelateField := nil;
+  Data := FRelateField;
+  RelateField := nil;
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Data);
 end;
 
 procedure TEpiDetailRelation.UpdateFieldHook(const OldField, NewField: TEpiField
@@ -289,13 +288,14 @@ end;
 constructor TEpiDetailRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  RelateField := nil;
+  RelateValue := '';
 end;
 
 destructor TEpiDetailRelation.Destroy;
 begin
-  UpdateFieldHook(FRelateField, nil);
-  FRelateField := nil;
-  FRelateValue := '';
+  RelateField := nil;
+  RelateValue := '';
 
   inherited Destroy;
 end;
@@ -306,19 +306,19 @@ var
 begin
   inherited LoadFromXml(Root);
 
-  FRelateValue := LoadAttrString(Root, rsRelateValue);
+{  FRelateValue := LoadAttrString(Root, rsRelateValue);
   FieldId := LoadAttrString(Root, rsFieldRef);
-  FRelateField := MasterRelation.Datafile.Fields.FieldByName[FieldId];
+  RelateField := MasterRelation.Datafile.Fields.FieldByName[FieldId];
   if not Assigned(FRelateField) then
-    Raise Exception.Create('DetailRelation - Relate Field not found: ' + FieldId);
+    Raise Exception.Create('DetailRelation - Relate Field not found: ' + FieldId);   }
 end;
 
 function TEpiDetailRelation.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml;
-  Result +=
+{  Result +=
     SaveAttr(rsFieldRef, RelateField.Name) +
-    SaveAttr(rsRelateValue, RelateValue);
+    SaveAttr(rsRelateValue, RelateValue); }
 end;
 
 { TEpiRelationList }
