@@ -153,7 +153,7 @@ const
 
    rsRelations       = 'Relations';
     rsRelation        = 'Relation';
-     rsDataFileRef     = 'DataFileRef';
-     rsFieldRef        = 'FieldRef';
-     rsRelateValue     = 'RelateValue';
+     rsDataFileRef     = 'datafileref';
+     rsFieldRef        = 'fieldref';
+     rsRelateValue     = 'relatevalue';
 

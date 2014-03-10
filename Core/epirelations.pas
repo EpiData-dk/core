@@ -40,11 +40,12 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
+    function SaveAttributesToXml: string; override;
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function NewDetailRelation: TEpiDetailRelation;
+    function ItemClass: TEpiCustomItemClass; override;
     property Datafile: TEpiDataFile read FDatafile write SetDatafile;
-    property DetailRelation[Index: integer]: TEpiDetailRelation read GetDetailRelation;
+    property DetailRelation[Index: integer]: TEpiDetailRelation read GetDetailRelation; default;
   end;
 
   { TEpiDetailRelation }
@@ -67,7 +68,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
+    function SaveAttributesToXml: string; override;
     property RelateField: TEpiField read FRelateField write SetRelateField;
     property RelateValue: string read FRelateValue write SetRelateValue;
     property MasterRelation: TEpiMasterRelation read GetMasterRelation;
@@ -83,7 +84,7 @@ type
     function XMLName: string; override;
     function NewMasterRelation: TEpiMasterRelation;
     function ItemClass: TEpiCustomItemClass; override;
-    property MasterRelation[Index: integer]: TEpiMasterRelation read GetMasterRelation;
+    property MasterRelation[Index: integer]: TEpiMasterRelation read GetMasterRelation; default;
   end;
 
 implementation
@@ -188,21 +189,20 @@ procedure TEpiMasterRelation.LoadFromXml(Root: TDOMNode);
 var
   DfId: EpiString;
 begin
-  inherited LoadFromXml(Root);
-
-  DfId := LoadNodeString(Root, rsDataFileRef);
-
+  DfId := LoadAttrString(Root, rsDataFileRef);
   FDatafile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(DfId));
   if not Assigned(FDatafile) then
     Raise Exception.Create('MasterRelation - DatafileId not found: ' + DfId);
+
+  inherited LoadFromXml(Root);
 end;
 
-function TEpiMasterRelation.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiMasterRelation.SaveAttributesToXml: string;
 begin
-  Content +=
-    SaveNode(Lvl + 1, rsDataFileRef, Datafile.Name);
+  Result := inherited SaveAttributesToXml;
 
-  Result := inherited SaveToXml(Content, Lvl);
+  Result +=
+    SaveAttr(rsDataFileRef, Datafile.Name);
 end;
 
 procedure TEpiMasterRelation.InsertItem(const Index: integer;
@@ -217,6 +217,11 @@ end;
 function TEpiMasterRelation.NewDetailRelation: TEpiDetailRelation;
 begin
   result := TEpiDetailRelation(NewItem(TEpiDetailRelation));
+end;
+
+function TEpiMasterRelation.ItemClass: TEpiCustomItemClass;
+begin
+  Result := TEpiDetailRelation;
 end;
 
 { TEpiDetailRelation }
@@ -301,19 +306,19 @@ var
 begin
   inherited LoadFromXml(Root);
 
-  FieldId := LoadNodeString(Root, rsFieldRef);
+  FRelateValue := LoadAttrString(Root, rsRelateValue);
+  FieldId := LoadAttrString(Root, rsFieldRef);
   FRelateField := MasterRelation.Datafile.Fields.FieldByName[FieldId];
   if not Assigned(FRelateField) then
     Raise Exception.Create('DetailRelation - Relate Field not found: ' + FieldId);
 end;
 
-function TEpiDetailRelation.SaveToXml(Content: String; Lvl: integer): string;
+function TEpiDetailRelation.SaveAttributesToXml: string;
 begin
-  Content +=
-    SaveNode(Lvl + 1, rsFieldRef, RelateField.Name) +
-    SaveNode(Lvl + 1, rsRelateValue, RelateValue);
-
-  Result := inherited SaveToXml(Content, Lvl);
+  Result := inherited SaveAttributesToXml;
+  Result +=
+    SaveAttr(rsFieldRef, RelateField.Name) +
+    SaveAttr(rsRelateValue, RelateValue);
 end;
 
 { TEpiRelationList }
