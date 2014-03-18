@@ -266,6 +266,7 @@ type
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
   {Cloning}
@@ -1418,6 +1419,14 @@ begin
   else if WriteNameToXml then
     // This class was supposed to write an ID -> hence it also expects one! Error!
     RaiseErrorAttr(Root, rsId);
+end;
+
+procedure TEpiCustomItem.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  Name := TEpiCustomItem(AEpiCustomBase).Name;
+  EndUpdate;
 end;
 
 function TEpiCustomItem.ValidateRename(const NewName: string;
