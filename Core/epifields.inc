@@ -125,6 +125,18 @@ begin
   result := ItemExistsByName(AField.Name);
 end;
 
+function TEpiFields.GetEnumerator: TEpiFieldsEnumerator;
+begin
+  result := TEpiFieldsEnumerator.Create(Self);
+end;
+
+{ TEpiFieldsEnumerator }
+
+function TEpiFieldsEnumerator.GetCurrent: TEpiField;
+begin
+  result := TEpiField(inherited GetCurrent);
+end;
+
 { TEpiField }
 
 procedure TEpiField.SetDecimals(const AValue: Cardinal);

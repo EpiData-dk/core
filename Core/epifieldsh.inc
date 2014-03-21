@@ -9,6 +9,8 @@ type
     efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet
   );
 
+  TEpiFieldsEnumerator = class;
+
   { TEpiFields }
 
   TEpiFields = class(TEpiCustomControlItemList)
@@ -29,6 +31,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
+    function    GetEnumerator: TEpiFieldsEnumerator;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
     property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;
@@ -194,7 +197,16 @@ type
   end;
   TEpiFieldClass = class of TEpiField;
 
-  { TEpiIntField }
+  { TEpiFieldsEnumerator }
+
+  TEpiFieldsEnumerator = class(TEpiCustomControlItemListEnumerator)
+  protected
+    function GetCurrent: TEpiField; override;
+  public
+    property Current: TEpiField read GetCurrent;
+  end;
+
+    { TEpiIntField }
   // Handles following field types:
   // ftInteger, ftAutoInc
   TEpiIntField = class(TEpiField)

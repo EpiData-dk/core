@@ -310,11 +310,13 @@ type
   end;
   TEpiCustomControlItemClass = class of TEpiCustomControlItem;
 
-  { TEpiCustomList }
-
+  TEpiCustomListEnumerator = class;
   TEpiOnNewItemClass      = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
   TEpiValidateRenameEvent = function(Const NewName: string): boolean of object;
   TEpiPrefixEvent         = function: string of object;
+
+  { TEpiCustomList }
+
   TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
@@ -352,6 +354,7 @@ type
     function    GetItemByName(AName: string): TEpiCustomItem; virtual;
     function    ItemExistsByName(AName: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
+    function    GetEnumerator: TEpiCustomListEnumerator;
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
@@ -359,12 +362,15 @@ type
   private
     FOnGetPrefix: TEpiPrefixEvent;
     FOnValidateRename: TEpiValidateRenameEvent;
+    FUniqueNames: boolean;
+    procedure SetUniqueNames(AValue: boolean);
   protected
     function  DoPrefix: string;
     function  Prefix: string; virtual;
   public
     function  GetUniqueItemName(AClass: TEpiCustomItemClass): string; virtual;
     function  ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; override;
+    property  UniqueNames: boolean read FUniqueNames write SetUniqueNames;
     property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
     property  OnGetPrefix: TEpiPrefixEvent read FOnGetPrefix write FOnGetPrefix;
   { New Item Hook }
@@ -406,8 +412,23 @@ type
        nil): TEpiCustomBase; override;
   end;
 
-  { TEpiCustomControlItemList }
+  { TEpiCustomListEnumerator }
 
+  TEpiCustomListEnumerator = class
+  private
+    FCurrentIndex: Integer;
+    FCustomList: TEpiCustomList;
+  protected
+    function GetCurrent: TEpiCustomItem; virtual;
+  public
+    constructor Create(CustomList: TEpiCustomList); virtual;
+    function MoveNext: Boolean;
+    property Current: TEpiCustomItem read GetCurrent;
+  end;
+
+
+  { TEpiCustomControlItemList }
+  TEpiCustomControlItemListEnumerator = class;
   TEpiCustomControlItemList = class(TEpiCustomList)
   private
     procedure ChangeHook(Const Sender: TEpiCustomBase;
@@ -421,7 +442,18 @@ type
   public
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  DeleteItem(Index: integer): TEpiCustomItem; override;
+    function GetEnumerator: TEpiCustomControlItemListEnumerator;
   end;
+
+  { TEpiCustomControlItemListEnumerator }
+
+  TEpiCustomControlItemListEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiCustomControlItem; override;
+  public
+    property Current: TEpiCustomControlItem read GetCurrent;
+  end;
+
 
 {$I epixmlconstants.inc}
 
@@ -453,6 +485,7 @@ procedure RestoreFormatSettings;
 begin
   DefaultFormatSettings := BackupDefaultFormatSettings;
 end;
+
 
 { TEpiCustomBase }
 
@@ -1078,11 +1111,17 @@ begin
   if IgnoreUpdate then
   begin
     if not Assigned(FOnChangeListIgnoreUpdate) then
+    begin
       FOnChangeListIgnoreUpdate := TMethodList.Create;
+      FOnChangeListIgnoreUpdate.AllowDuplicates := false;
+    end;
     FOnChangeListIgnoreUpdate.Add(TMethod(Event), false);
   end else begin
     if not Assigned(FOnChangeList) then
+    begin
       FOnChangeList := TMethodList.Create;
+      FOnChangeList.AllowDuplicates := false;
+    end;
     FOnChangeList.Add(TMethod(Event), false);
   end;
 end;
@@ -1591,6 +1630,7 @@ begin
   FList := TFPList.Create;
   FItemOwner := false;
   FSorted := false;
+  FUniqueNames := true;
 end;
 
 function TEpiCustomList.GetCount: Integer;
@@ -1670,6 +1710,10 @@ end;
 function TEpiCustomList.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
+  // if unique names is not required, you can ALWAYS rename item.
+  if (not UniqueNames) then
+    Exit(true);
+
   result := not ItemExistsByName(NewName);
   if Assigned(OnValidateRename) then
     result := result and OnValidateRename(NewName);
@@ -1798,6 +1842,17 @@ end;
 function TEpiCustomList.IndexOf(Item: TEpiCustomItem): integer;
 begin
   result := FList.IndexOf(Item);
+end;
+
+function TEpiCustomList.GetEnumerator: TEpiCustomListEnumerator;
+begin
+  result := TEpiCustomListEnumerator.Create(Self);
+end;
+
+procedure TEpiCustomList.SetUniqueNames(AValue: boolean);
+begin
+  if FUniqueNames = AValue then Exit;
+  FUniqueNames := AValue;
 end;
 
 procedure TEpiCustomList.BeginUpdate;
@@ -1929,6 +1984,26 @@ begin
   end;
 end;
 
+{ TEpiCustomListEnumerator }
+
+function TEpiCustomListEnumerator.GetCurrent: TEpiCustomItem;
+begin
+  result := FCustomList[FCurrentIndex];
+end;
+
+constructor TEpiCustomListEnumerator.Create(CustomList: TEpiCustomList);
+begin
+  FCustomList := CustomList;
+  FCurrentIndex := -1;
+end;
+
+function TEpiCustomListEnumerator.MoveNext: Boolean;
+begin
+  Inc(FCurrentIndex);
+  Result := (FCurrentIndex < FCustomList.Count);
+end;
+
+
 { TEpiCustomControlItemList }
 
 function SortControlItems(Item1, Item2: Pointer): Integer;
@@ -1994,6 +2069,18 @@ function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := inherited DeleteItem(Index);
   Result.UnRegisterOnChangeHook(@ChangeHook);
+end;
+
+function TEpiCustomControlItemList.GetEnumerator: TEpiCustomControlItemListEnumerator;
+begin
+  result := TEpiCustomControlItemListEnumerator.Create(Self);
+end;
+
+{ TEpiCustomControlItemListEnumerator }
+
+function TEpiCustomControlItemListEnumerator.GetCurrent: TEpiCustomControlItem;
+begin
+  result := TEpiCustomControlItem(inherited GetCurrent);
 end;
 
 end.
