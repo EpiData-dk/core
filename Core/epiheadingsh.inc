@@ -31,7 +31,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    SaveAttributesToXml: string; override;
   public
     property    Caption: TEpiTranslatedTextWrapper read FCaption;

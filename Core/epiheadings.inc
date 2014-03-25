@@ -78,14 +78,15 @@ begin
   Result := rsHeading;
 end;
 
-procedure TEpiHeading.LoadFromXml(Root: TDOMNode);
+procedure TEpiHeading.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  );
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   if TEpiDocument(RootOwner).Version >= 2 then
     HeadingType := TEpiHeadingType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiHeadingType), GetEnumName(TypeInfo(TEpiHeadingType), Integer(htH4)), false));
 
-  FCaption.LoadFromXml(Root);
+  FCaption.LoadFromXml(Root, ReferenceMap);
 end;
 
 function TEpiHeading.SaveAttributesToXml: string;

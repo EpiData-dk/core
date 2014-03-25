@@ -38,6 +38,10 @@ type
   // Comparison
   TEpiComparison = class;
 
+  // Relations
+  TEpiRelates = class;
+  TEpiRelate = class;
+
 {$I epidatafilesh.inc}
 {$I episectionsh.inc}
 {$I epifieldsh.inc}
@@ -45,14 +49,15 @@ type
 {$I epijumpsh.inc}
 {$I epicalculationsh.inc}
 {$I epicomparisonh.inc}
+{$I epirelatesh.inc}
 
 implementation
 
 uses
   epidocument, math, epistringutils, epiconvertutils, epidatafileutils,
-  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8;
+  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epirelations;
 
-{$I epidatafiles_helper.inc}
+// {$I epidatafiles_helper.inc}
 {$I epidatafiles.inc}
 {$I episections.inc}
 {$I epifields.inc}
@@ -60,8 +65,9 @@ uses
 {$I epijumps.inc}
 {$I epicalculations.inc}
 {$I epicomparison.inc}
+{$I epirelates.inc}
 
-initialization
+{initialization
 begin
   LinkMap := TLinkMap.Create;
 end;
@@ -69,7 +75,7 @@ end;
 finalization
 begin
   LinkMap.Free;
-end;
+end;  }
 
 end.
 

@@ -57,12 +57,6 @@ begin
   Result := 'V';
 end;
 
-function TEpiFields.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
-begin
-  Result := inherited DoClone(AOwner, Dest);
-end;
-
 constructor TEpiFields.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -78,7 +72,8 @@ begin
   Result := rsFields;
 end;
 
-procedure TEpiFields.LoadFromXml(Root: TDOMNode);
+procedure TEpiFields.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  );
 var
   Node: TDOMNode;
   NField: TEpiField;
@@ -99,7 +94,7 @@ begin
     CheckNode(Node, rsField);
 
     NField := NewField(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
-    NField.LoadFromXml(Node);
+    NField.LoadFromXml(Node, ReferenceMap);
 
     Node := Node.NextSibling;
   end;
@@ -431,17 +426,35 @@ begin
   EndUpdate;
 end;
 
+procedure TEpiField.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
+begin
+  if (EpiClassType = TEpiField) then
+  begin
+
+    case ReferenceType of
+      0: // ValueLabels
+       ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(ReferenceId);
+
+      1: // ValueLabelWriteField;
+       ValueLabelWriteField := DataFile.Fields.FieldByName[ReferenceId] ;
+    end;
+
+  end else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
 function TEpiField.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
 begin
   Result := CreateField(AOwner, FieldType);
 end;
 
-function TEpiField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   F: TEpiField;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   F := TEpiField(Result);
 
   F.FConfirmEntry        := FConfirmEntry;
@@ -455,25 +468,33 @@ begin
   F.FForcePickList       := FForcePickList;
 
   if Assigned(FRanges) then
-    F.FRanges := TEpiRanges(FRanges.Clone(F));
+    F.FRanges := TEpiRanges(FRanges.Clone(F, ReferenceMap));
 
-  if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
-    F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
+//  if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
+//    F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
+  if Assigned(FValueLabelSet) then
+    ReferenceMap.AddFixupReference(F, TEpiField, 0, FValueLabelSet.Name);
+
+  if Assigned(ValueLabelWriteField) then
+    ReferenceMap.AddFixupReference(F, TEpiField, 1, ValueLabelWriteField.Name);
 
   if Assigned(Jumps) then
-    F.Jumps := TEpiJumps(Jumps.Clone(F));
+    F.Jumps := TEpiJumps(Jumps.Clone(F, ReferenceMap));
 
   if Assigned(Calculation) then
-    F.Calculation := TEpiCalculation(Calculation.Clone(F));
+    F.Calculation := TEpiCalculation(Calculation.Clone(F, ReferenceMap));
 
   if Assigned(Comparison) then
-    F.Comparison := TEpiComparison(Comparison.Clone(F));
+    F.Comparison := TEpiComparison(Comparison.Clone(F, ReferenceMap));
+
+  if Assigned(Relates) then
+    F.Relates := TEpiRelates(Relates.Clone(F, ReferenceMap));
 end;
 
+{
 procedure TEpiField.PostCloneUpdate(Dest: TEpiField);
 begin
   // PostCloneUpdate is called from TEpiDataFile, hence we know a datafile exists and all fields exist.
-
 
   if Assigned(ValueLabelWriteField) then
     Dest.FValueLabelWriteField := Dest.DataFile.Fields.FieldByName[FValueLabelWriteField.Name];
@@ -495,7 +516,7 @@ begin
     if Assigned(Dest.Calculation) then Dest.Calculation.Free;
     Dest.FCalculation := TEpiCalculation(Calculation.Clone(Dest));
   end;
-end;
+end;  }
 
 constructor TEpiField.Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType);
 begin
@@ -560,6 +581,8 @@ begin
     Content += Jumps.SaveToXml('', Lvl + 1);
   if Assigned(Ranges) then
     Content += Ranges.SaveToXml('', Lvl + 1);
+  if Assigned(Relates) then
+    Content += Relates.SaveToXml('', Lvl + 1);
 
   Result := inherited SaveToXml(Content, Lvl);
 end;
@@ -591,14 +614,15 @@ begin
     Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Name);
 end;
 
-procedure TEpiField.LoadFromXml(Root: TDOMNode);
+procedure TEpiField.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   Attr: TDOMAttr;
   VLFieldId: String;
 begin
   // Root = <Field>
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
+
   Length   := LoadAttrInt(Root, rsLength);
   Decimals := LoadAttrInt(Root, rsDecimals);
   EntryMode := TEpiEntryMode(LoadAttrEnum(Root, rsEntryMode, TypeInfo(TEpiEntryMode)));
@@ -610,35 +634,41 @@ begin
   // VERSION 2 Property
   ShowValueLabelNotes := LoadAttrBool(Root, rsShowValueLabelNotes, ShowValueLabelNotes, false);
   ForcePickList := LoadAttrBool(Root, rsForcePickList, ForcePickList, false);
+
   if LoadAttr(Attr, Root, rsValueLabelId, false) then
-    ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
+    ReferenceMap.AddFixupReference(Self, TEpiField, 0, LoadAttrString(Root, rsValueLabelId));
+//    ValueLabelSet := DataFile.ValueLabels.GetValueLabelSetByName(LoadAttrString(Root, rsValueLabelId));
 
   if LoadAttr(Attr, Root, rsValueLabelWriteRef, false) then
-  begin
+    ReferenceMap.AddFixupReference(Self, TEpiField, 1, LoadAttrString(Root, rsValueLabelWriteRef));
+
+{  begin
     VLFieldId := LoadAttrString(Root, rsValueLabelWriteRef);
     ValueLabelWriteField := DataFile.Fields.FieldByName[VLFieldId];
     // Since (possibly) all ValueLabelWriteRef to fields are "forward" declared then collect them into
     // a batch and process the list after all fields are loaded.
     if not Assigned(ValueLabelWriteField) then
       LinkMap.AddLink(ltValueLabelWrite, Self, VLFieldId);
-  end;
+  end;}
 
   // If not present this is handled within TEpiTranslatedText;
-  FQuestion.LoadFromXml(Root);
-  FNotes.LoadFromXml(Root);
+  FQuestion.LoadFromXml(Root, ReferenceMap);
+  FNotes.LoadFromXml(Root, ReferenceMap);
 
   if LoadNode(Node, Root, rsRanges, false) then
   begin
     Ranges := TEpiRanges.Create(Self);
     Ranges.ItemOwner := true;
-    Ranges.LoadFromXml(Node);
+    Ranges.LoadFromXml(Node, ReferenceMap);
   end;
+
   if LoadNode(Node, Root, rsJumps, false) then
   begin
     Jumps := TEpiJumps.Create(Self);
     Jumps.ItemOwner := true;
-    Jumps.LoadFromXml(Node);
+    Jumps.LoadFromXml(Node, ReferenceMap);
   end;
+
   if LoadNode(Node, Root, rsCalculation, false) then
   begin
     Case TEpiCalcType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiCalcType))) of
@@ -646,12 +676,19 @@ begin
       ctCombineDate:   Calculation := TEpiCombineDateCalc.Create(Self);
       ctCombineString: Calculation := TEpiCombineStringCalc.Create(Self);
     end;
-    Calculation.LoadFromXml(Node);
+    Calculation.LoadFromXml(Node, ReferenceMap);
   end;
+
   if LoadNode(Node, Root, rsCompare, false) then
   begin
     Comparison := TEpiComparison.Create(Self);
-    Comparison.LoadFromXml(Node);
+    Comparison.LoadFromXml(Node, ReferenceMap);
+  end;
+
+  if LoadNode(Node, Root, rsRelates, false) then
+  begin
+    Relates := TEpiRelates.Create(Self);
+    Relates.LoadFromXml(Node, ReferenceMap);
   end;
 end;
 
@@ -875,10 +912,10 @@ begin
   result := AsInteger[i] - AsInteger[j];
 end;
 
-function TEpiIntField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiIntField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiIntField(Result) do
   begin
@@ -1134,10 +1171,10 @@ begin
   Result := CompareValue(AsFloat[i], AsFloat[j], 0.0);  // Sign(AsFloat[i] - AsFloat[j]);
 end;
 
-function TEpiFloatField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiFloatField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiFloatField(Result) do
   begin
@@ -1420,10 +1457,10 @@ begin
   Result := Sign(AsBoolean[i]) - Sign(AsBoolean[j]);
 end;
 
-function TEpiBoolField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiBoolField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiBoolField(Result) do
   begin
@@ -1679,12 +1716,12 @@ begin
 //  Result := AnsiCompareText(AsString[i], AsString[j]);
 end;
 
-function TEpiStringField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiStringField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   i: Integer;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiStringField(Result) do
   begin
@@ -1740,17 +1777,19 @@ begin
 end;
 
 function TEpiCustomAutoField.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiCustomAutoField(Result).FAutoMode := FAutoMode;
 end;
 
-procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode);
+procedure TEpiCustomAutoField.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
   if FieldType in AutoUpdateFieldTypes then
     AutoMode := TEpiAutoUpdateMode(LoadAttrEnum(Root, rsAutoUpdateMode, TypeInfo(TEpiAutoUpdateMode)));
-  inherited LoadFromXml(Root);
 end;
 
 { TEpiDateField }
@@ -1878,10 +1917,10 @@ begin
   Result := AsDate[i] - AsDate[j];
 end;
 
-function TEpiDateField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDateField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiDateField(Result) do
   begin
@@ -2249,10 +2288,10 @@ begin
   Result := Sign(AsDateTime[i] - AsDateTime[j]);
 end;
 
-function TEpiDateTimeField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDateTimeField.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiDateTimeField(Result) do
   begin

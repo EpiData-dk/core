@@ -65,7 +65,8 @@ begin
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
-procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode);
+procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   NewRoot: TDOMNode;
   Node: TDOMNode;
@@ -82,7 +83,7 @@ begin
     NewRoot := Root;
 
   // Inherited takes care of loading TEpiDataFile(s)
-  inherited LoadFromXml(NewRoot);
+  inherited LoadFromXml(NewRoot, ReferenceMap);
 
   if Settings.Scrambled then
     NewRoot.Free;
@@ -620,9 +621,10 @@ begin
     if not Assigned(Node) then break;
 
     CheckNode(Node, 'Key');
+    KeyFields.AddItem(Fields.FieldByName[LoadAttrString(Node, 'fieldRef')]);
 
-    FieldId := LoadAttrString(Node, 'fieldRef');
-    LinkMap.AddLink(ltKeyField, KeyFields, FieldId);
+{    FieldId := LoadAttrString(Node, 'fieldRef');
+    LinkMap.AddLink(ltKeyField, KeyFields, FieldId);      }
 
     Node := Node.NextSibling;
   end;
@@ -1043,7 +1045,8 @@ begin
     SaveAttr(rsVersionAttr, Version);
 end;
 
-procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
+procedure TEpiDataFile.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   Jump: TEpiJump;
@@ -1057,22 +1060,23 @@ begin
   MainSection.Free;
 
   // Now start loading.
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Caption.LoadFromXml(Root);
+  Caption.LoadFromXml(Root, ReferenceMap);
   FVersion := LoadAttrString(Root, rsVersion, FVersion, false);
   FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
 
   // Version 2:
   FStructureModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FStructureModifiedDate, false);
 
+  if LoadNode(Node, Root, rsSections, false) then
+    Sections.LoadFromXml(Node, ReferenceMap);
+
   // VERSION 2 PROPERTY
   if LoadNode(Node, Root, 'KeyFields', false) then
     LoadKeyFields(Node);
-
-  if LoadNode(Node, Root, rsSections, false) then
-    Sections.LoadFromXml(Node);
+{
 
   // Post Processing!
   for i := 0 to LinkMap.Count - 1 do
@@ -1111,7 +1115,7 @@ begin
         TEpiFields(LinkMap.Objects[i]).AddItem(AField);
     end;
   end;
-  LinkMap.Clear;
+  LinkMap.Clear;    }
 
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := Sections.GetSectionByName('MAIN');
@@ -1263,12 +1267,12 @@ begin
   end;
 end;
 
-function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   i: Integer;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiDataFile(Result) do
   begin
     FVersion := Self.FVersion;
@@ -1290,7 +1294,7 @@ begin
   for i := 0 to Self.KeyFields.Count - 1 do
     TEpiDataFile(Result).KeyFields.AddItem(TEpiDataFile(Result).Fields.FieldByName[KeyFields[i].Name]);
 
-  // - Update other references in each field
+{  // - Update other references in each field
   for i := 0 to Fields.Count - 1 do
-    Fields[i].PostCloneUpdate(TEpiDataFile(Result).Fields.FieldByName[Fields[i].Name]);
+    Fields[i].PostCloneUpdate(TEpiDataFile(Result).Fields.FieldByName[Fields[i].Name]); }
 end;

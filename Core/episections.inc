@@ -175,17 +175,18 @@ begin
     SaveAttr(rsHeight, Height);
 end;
 
-procedure TEpiSection.LoadFromXml(Root: TDOMNode);
+procedure TEpiSection.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  );
 var
   Node: TDOMNode;
   GroupList: TStrings;
   i: Integer;
 begin
   // Root = <Section>
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Caption.LoadFromXml(Root);
+  Caption.LoadFromXml(Root, ReferenceMap);
 
   Width := LoadAttrInt(Root, rsWidth);
   Height := LoadAttrInt(Root, rsHeight);
@@ -199,10 +200,10 @@ begin
   end;    }
 
   if LoadNode(Node, Root, rsFields, false) then
-    Fields.LoadFromXml(Node);
+    Fields.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsHeadings, false) then
-    Headings.LoadFromXml(Node);
+    Headings.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiSection.NewField(FieldType: TEpiFieldType): TEpiField;
@@ -227,10 +228,10 @@ begin
   EndUpdate;
 end;
 
-function TEpiSection.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiSection.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiSection(Result) do
   begin
     FWidth := Self.FWidth;

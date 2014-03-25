@@ -21,14 +21,11 @@ type
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function    Prefix: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
-
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
     function    GetEnumerator: TEpiFieldsEnumerator;
@@ -103,6 +100,7 @@ type
     FFieldType: TEpiFieldType;
     FNotes: TEpiTranslatedTextWrapper;
     FRanges: TEpiRanges;
+    FRelates: TEpiRelates;
     FRepeatValue: boolean;
     FShowValueLabel: Boolean;
     FShowValueLabelNotes: boolean;
@@ -147,6 +145,7 @@ type
     property    Jumps:                TEpiJumps read FJumps write FJumps;
     property    Calculation:          TEpiCalculation read FCalculation write FCalculation;
     property    Comparison:           TEpiComparison read FComparison write FComparison;
+    property    Relates:              TEpiRelates read FRelates write FRelates;
 
   { Pack Data}
   protected
@@ -186,14 +185,16 @@ type
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   { Cloning }
   protected
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
-    procedure PostCloneUpdate(Dest: TEpiField);
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+//    procedure PostCloneUpdate(Dest: TEpiField);
   end;
   TEpiFieldClass = class of TEpiField;
 
@@ -243,8 +244,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
@@ -291,8 +292,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
@@ -340,8 +341,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
@@ -388,8 +389,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
@@ -410,10 +411,10 @@ type
     procedure SetAutoMode(const AValue: TEpiAutoUpdateMode);
   protected
     function  SaveAttributesToXml: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property AutoMode: TEpiAutoUpdateMode read FAutoMode write SetAutoMode;
   end;
 
@@ -456,8 +457,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
@@ -504,8 +505,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;

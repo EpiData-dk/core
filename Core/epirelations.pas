@@ -21,17 +21,20 @@ type
     procedure DataFileHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    function DetailItemClass(Sender: TEpiCustomList;
+      DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass;
     function GetDetailRelation(Index: integer): TEpiDetailRelation;
     procedure UpdateDataFileHook(Const OldDf, NewDf: TEpiDataFile);
     procedure SetDatafile(AValue: TEpiDataFile);
   protected
-    { Cloning }
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
     function XMLName: string; override;
     function NewDetailRelation: TEpiDetailRelation;
@@ -44,28 +47,21 @@ type
 
   TEpiDetailRelation = class(TEpiMasterRelation)
   private
-    FFieldList: TEpiFields;
-    FValueList: TStringList;
-    procedure FieldHook(const Sender: TEpiCustomBase;
-      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
+    FMaxRecordCount: Cardinal;
     function  GetMasterRelation: TEpiMasterRelation;
-    function  GetRelateField(Index: Integer): TEpiField;
-    function  GetRelateValue(Index: Integer): string;
-    procedure UpdateFieldHook(Const OldField, NewField: TEpiField);
+    procedure SetMaxRecordCount(AValue: Cardinal);
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
-    procedure AddFieldValuePair(Const Field: TEpiField; Const Value: EpiString);
-    procedure RemoveFieldValuePair(Const Field: TEpiField; Const Value: EpiString);
-    property RelateField[Index: Integer]: TEpiField read GetRelateField;
-    property RelateValue[Index: Integer]: string read GetRelateValue;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property MasterRelation: TEpiMasterRelation read GetMasterRelation;
+    // MaxRecordCount: Is the maximum number of records allowed in a detail datafile. Set to 0 for unbounded.
+    property MaxRecordCount: Cardinal read FMaxRecordCount write SetMaxRecordCount;
   end;
 
   { TEpiRelationList }
@@ -73,11 +69,18 @@ type
   TEpiRelationList = class(TEpiCustomList)
   private
     function GetMasterRelation(Index: integer): TEpiMasterRelation;
+    function RecursiveValidateRename(Const NewName: string): boolean;
+    function RecursiveGetItemByName(Const AName: string): TEpiCustomItem;
+  protected
+    function Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
     function NewMasterRelation: TEpiMasterRelation;
     function ItemClass: TEpiCustomItemClass; override;
+    function GetItemByName(AName: string): TEpiCustomItem; override;
+    function ValidateRename(const NewName: string; RenameOnSuccess: boolean
+       ): boolean; override;
     property MasterRelation[Index: integer]: TEpiMasterRelation read GetMasterRelation; default;
   end;
 
@@ -107,6 +110,12 @@ begin
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Data);
 end;
 
+function TEpiMasterRelation.DetailItemClass(Sender: TEpiCustomList;
+  DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass;
+begin
+  result := TEpiDetailRelation;
+end;
+
 function TEpiMasterRelation.GetDetailRelation(Index: integer
   ): TEpiDetailRelation;
 begin
@@ -130,16 +139,29 @@ begin
   FDatafile := AValue;
 end;
 
-function TEpiMasterRelation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
-var
-  Cloned: Boolean;
+procedure TEpiMasterRelation.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
 begin
-  // Always assume full clone!
-  with TEpiMasterRelation(Dest) do
-    DataFile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(Self.Datafile.Name));
+  if (EpiClassType = TEpiMasterRelation)
+  then
+    begin
 
-  Result := inherited DoClone(AOwner, Dest);
+      case ReferenceType of
+        0: // Datafile
+          DataFile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(ReferenceId));
+      end;
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiMasterRelation.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; RefenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
+
+  if Assigned(Datafile) then
+    RefenceMap.AddFixupReference(Result, TEpiMasterRelation, 0, Datafile.Name);
 end;
 
 constructor TEpiMasterRelation.Create(AOwner: TEpiCustomBase);
@@ -149,6 +171,7 @@ begin
 
   FDetailRelations := TEpiRelationList.Create(Self);
   FDetailRelations.ItemOwner := true;
+  FDetailRelations.OnNewItemClass := @DetailItemClass;
 
   RegisterClasses([FDetailRelations]);
 end;
@@ -160,21 +183,18 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiMasterRelation.LoadFromXml(Root: TDOMNode);
+procedure TEpiMasterRelation.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   DfId: EpiString;
   Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
-  DfId := LoadAttrString(Root, rsDataFileRef);
-  Datafile := TEpiDataFile(TEpiDocument(RootOwner).DataFiles.GetItemByName(DfId));
-
-  if not Assigned(FDatafile) then
-    Raise Exception.Create('MasterRelation - DatafileId not found: ' + DfId);
+  ReferenceMap.AddFixupReference(Self, TEpiMasterRelation, 0, LoadAttrString(Root, rsDataFileRef));
 
   if LoadNode(Node, Root, rsRelations, false) then
-    FDetailRelations.LoadFromXml(Node);
+    FDetailRelations.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiMasterRelation.SaveAttributesToXml: string;
@@ -197,35 +217,6 @@ end;
 
 { TEpiDetailRelation }
 
-procedure TEpiDetailRelation.FieldHook(const Sender: TEpiCustomBase;
-  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-begin
-{  if Initiator <> FRelateField then exit;
-
-  if NOT
-      (
-       (EventGroup = eegCustomBase) and
-       (EventType  = Word(ecceDestroy))
-      )
-  then
-    Exit;
-
-  Data := FRelateField;
-  RelateField := nil;
-  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Data);    }
-end;
-
-procedure TEpiDetailRelation.UpdateFieldHook(const OldField, NewField: TEpiField
-  );
-begin
-  if Assigned(OldField) then
-    OldField.UnRegisterOnChangeHook(@FieldHook);
-
-  if Assigned(NewField) then
-    NewField.RegisterOnChangeHook(@FieldHook, True);
-end;
-
 function TEpiDetailRelation.GetMasterRelation: TEpiMasterRelation;
 begin
   result := nil;
@@ -234,81 +225,52 @@ begin
     result := TEpiMasterRelation(Owner.Owner);
 end;
 
-function TEpiDetailRelation.GetRelateField(Index: Integer): TEpiField;
+procedure TEpiDetailRelation.SetMaxRecordCount(AValue: Cardinal);
 begin
-
+  if FMaxRecordCount = AValue then Exit;
+  FMaxRecordCount := AValue;
 end;
 
-function TEpiDetailRelation.GetRelateValue(Index: Integer): string;
+function TEpiDetailRelation.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; RefenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
 
-end;
-
-function TEpiDetailRelation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
-begin
-  Result := inherited DoClone(AOwner, Dest);
+  TEpiDetailRelation(Result).MaxRecordCount := MaxRecordCount;
 end;
 
 constructor TEpiDetailRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  FFieldList := TEpiFields.Create(self);
-  FFieldList.ItemOwner := false;
-  FFieldList.Sorted := false;
-  FFieldList.UniqueNames := false;
-
-  FValueList := TStringList.Create;
-  FValueList.Sorted := false;
-  FValueList.Duplicates := dupAccept;
+  MaxRecordCount := 0;
 end;
 
 destructor TEpiDetailRelation.Destroy;
 begin
-  FFieldList.Destroy;
-  FValueList.Destroy;
   inherited Destroy;
 end;
 
-procedure TEpiDetailRelation.LoadFromXml(Root: TDOMNode);
+procedure TEpiDetailRelation.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   FieldId: EpiString;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
-{  FRelateValue := LoadAttrString(Root, rsRelateValue);
-  FieldId := LoadAttrString(Root, rsFieldRef);
-  RelateField := MasterRelation.Datafile.Fields.FieldByName[FieldId];
-  if not Assigned(FRelateField) then
-    Raise Exception.Create('DetailRelation - Relate Field not found: ' + FieldId);   }
+  MaxRecordCount := LoadAttrInt(Root, rsMaxRecordCount, 0, false);
 end;
 
 function TEpiDetailRelation.SaveAttributesToXml: string;
 begin
-  Result := inherited SaveAttributesToXml;
-{  Result +=
-    SaveAttr(rsFieldRef, RelateField.Name) +
-    SaveAttr(rsRelateValue, RelateValue); }
+  Result := inherited SaveAttributesToXml +
+    SaveAttr(rsMaxRecordCount, MaxRecordCount);
 end;
 
-procedure TEpiDetailRelation.AddFieldValuePair(const Field: TEpiField;
-  const Value: EpiString);
+procedure TEpiDetailRelation.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
-  FFieldList.AddItem(Field);
-  FValueList.Add(Value);
-end;
+  inherited Assign(AEpiCustomBase);
 
-procedure TEpiDetailRelation.RemoveFieldValuePair(const Field: TEpiField;
-  const Value: EpiString);
-var
-  Idx: Integer;
-begin
-  Idx := FFieldList.IndexOf(Field);
-
-  for Idx := Idx to FValueList.Count - 1 do
-  begin
-
-  end;
+  TEpiDetailRelation(AEpiCustomBase).MaxRecordCount := MaxRecordCount;
 end;
 
 { TEpiRelationList }
@@ -316,6 +278,44 @@ end;
 function TEpiRelationList.GetMasterRelation(Index: integer): TEpiMasterRelation;
 begin
   result := TEpiMasterRelation(Items[Index]);
+end;
+
+function TEpiRelationList.RecursiveValidateRename(const NewName: string
+  ): boolean;
+var
+  i: Integer;
+begin
+  Result := true;
+
+  for i := 0 to Count - 1 do
+  begin
+    Result := Result and
+      (MasterRelation[i].Name <> NewName) and
+      (MasterRelation[i].DetailRelations.RecursiveValidateRename(NewName));
+  end;
+end;
+
+function TEpiRelationList.RecursiveGetItemByName(const AName: string
+  ): TEpiCustomItem;
+var
+  i: Integer;
+begin
+  result := nil;
+
+  for i := 0 to Count - 1 do
+  begin
+    if MasterRelation[i].Name = AName then
+      Result := Items[i]
+    else
+      Result := MasterRelation[i].DetailRelations.RecursiveGetItemByName(AName);
+
+    if Assigned(Result) then exit;
+  end;
+end;
+
+function TEpiRelationList.Prefix: string;
+begin
+  Result := 'relation_id_';
 end;
 
 constructor TEpiRelationList.Create(AOwner: TEpiCustomBase);
@@ -336,6 +336,17 @@ end;
 function TEpiRelationList.ItemClass: TEpiCustomItemClass;
 begin
   Result := TEpiMasterRelation;
+end;
+
+function TEpiRelationList.GetItemByName(AName: string): TEpiCustomItem;
+begin
+  result := TEpiDocument(RootOwner).Relations.RecursiveGetItemByName(AName);
+end;
+
+function TEpiRelationList.ValidateRename(const NewName: string;
+  RenameOnSuccess: boolean): boolean;
+begin
+  result := TEpiDocument(RootOwner).Relations.RecursiveValidateRename(NewName);
 end;
 
 end.

@@ -146,6 +146,10 @@ const
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
           rsCompareTo       = 'toFieldRef';
+         rsRelates         = 'Relates';
+          rsRelate          = 'Relate';
+           rsRelationRef  = 'relationRef';
+           rsRelateValue     = 'relateValue';
 
      rsRecords         = 'Records';
       rsRecord          = 'Record';
@@ -153,7 +157,5 @@ const
 
    rsRelations       = 'Relations';
     rsRelation        = 'Relation';
-     rsDataFileRef     = 'datafileref';
-     rsFieldRef        = 'fieldref';
-     rsRelateValue     = 'relatevalue';
-
+     rsDataFileRef     = 'dataFileRef';
+     rsMaxRecordCount  = 'maxRecordCount';

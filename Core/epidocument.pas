@@ -64,7 +64,7 @@ type
     function   XMLName: string; override;
     procedure  LoadFromFile(const AFileName: string);
     procedure  LoadFromStream(const St: TStream);
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function   SaveToXml(Lvl: integer = 0;
       IncludeHeader: boolean = true): string;
     procedure  SaveToStream(Const St: TStream);
@@ -92,8 +92,8 @@ type
   { Cloning }
   protected
     function   DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
+    function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
 implementation
@@ -203,26 +203,26 @@ var
   RootNode: TDOMElement;
   P: TDOMParser;
   Xin: TXMLInputSource;
+  ReferenceMap: TEpiReferenceMap;
 begin
   //ReadXMLFile(RecXml, St);
   ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
-
-{  P := TDOMParser.Create;
-  P.Options.PreserveWhitespace := true;
-  Xin := TXMLInputSource.Create(St);
-  P.Parse(Xin, RecXml);
-  Xin.Free;
-  P.Free;    }
 
   // **********************
   // Global <EpiData> structure
   // **********************
   RootNode := RecXml.DocumentElement;
-  LoadFromXml(RootNode);
+
+  ReferenceMap := TEpiReferenceMap.Create;
+  LoadFromXml(RootNode, ReferenceMap);
+  ReferenceMap.FixupReferences;
+  ReferenceMap.Free;
+
   RecXml.Free;
 end;
 
-procedure TEpiDocument.LoadFromXml(Root: TDOMNode);
+procedure TEpiDocument.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   PW, Login, UserPW: String;
@@ -246,7 +246,7 @@ begin
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
   // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
-  XMLSettings.LoadFromXml(Node);
+  XMLSettings.LoadFromXml(Node, ReferenceMap);
 
   // XML Version 2:
   if Version >= 2 then
@@ -264,23 +264,23 @@ begin
   end;
 
   LoadNode(Node, Root, rsStudy, true);
-  Study.LoadFromXml(Node);
+  Study.LoadFromXml(Node, ReferenceMap);
 
   // TODO : Include in later versions.
 //  LoadNode(Node, Root, rsAdmin, true);
 //  Admin.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsProjectSettings, false) then
-    ProjectSettings.LoadFromXml(Node);
+    ProjectSettings.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsValueLabelSets, false) then
-    ValueLabelSets.LoadFromXml(Node);
+    ValueLabelSets.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsDataFiles, false) then
-    DataFiles.LoadFromXml(Node);
+    DataFiles.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsRelations, false) then
-    Relations.LoadFromXml(Node);
+    Relations.LoadFromXml(Node, ReferenceMap);
 
   FLoading := false;
   Modified := false;
@@ -325,10 +325,10 @@ begin
   Result := TEpiDocument.Create(Self.DefaultLang);
 end;
 
-function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiDocument(Result) do
   begin
     FPassWord := Self.FPassWord;
