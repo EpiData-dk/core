@@ -12,7 +12,7 @@ type
     function XMLName: string; override;
     function ItemClass: TEpiCustomItemClass; override;
     function NewRelate: TEpiRelate;
-    property Relate[Index: Integer]: TEpiRelate read GetRelate;
+    property Relate[Index: Integer]: TEpiRelate read GetRelate; default;
   end;
 
   { TEpiRelate }
