@@ -7,6 +7,23 @@ begin
   result := TEpiRelate(Items[Index]);
 end;
 
+function TEpiRelates.GetRelateFromValue(Value: EpiString): TEpiRelate;
+var
+  R: TEpiRelate;
+  i: Integer;
+begin
+  result := nil;
+  for i := 0 to Count - 1 do
+  begin
+    R := Relate[i];
+
+    if (R.RelateValue = Value) or
+       (R.RelateValue = TEpiJump.DefaultOnAnyValue)
+    then
+      Exit(R);
+  end;
+end;
+
 constructor TEpiRelates.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);

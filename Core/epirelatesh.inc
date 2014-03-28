@@ -7,12 +7,14 @@ type
   TEpiRelates = class(TEpiCustomList)
   private
     function GetRelate(Index: Integer): TEpiRelate;
+    function GetRelateFromValue(Value: EpiString): TEpiRelate;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
     function ItemClass: TEpiCustomItemClass; override;
     function NewRelate: TEpiRelate;
     property Relate[Index: Integer]: TEpiRelate read GetRelate; default;
+    property RelateFromValue[Value: EpiString]: TEpiRelate read GetRelateFromValue;
   end;
 
   { TEpiRelate }
