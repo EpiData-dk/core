@@ -1199,7 +1199,7 @@ begin
   if FillSpace then
     result := format('%%%d.%df', [Length - Decimals - 1, Decimals])
   else
-    result := format('%%%d.%df', [Length - Decimals - 1, Decimals]);
+    result := format('%%.%df', [Decimals]);
 end;
 
 procedure TEpiFloatField.Assign(const AEpiCustomBase: TEpiCustomBase);
