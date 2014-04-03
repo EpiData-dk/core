@@ -831,12 +831,18 @@ end;
 procedure TEpiIntField.SetAsInteger(const index: Integer;
   const AValue: EpiInteger);
 var
-  Val: EpiInteger;
+  Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
-  Val := FData[index];
+
+  Val := New(PEpiFieldDataEventRecord);
+  Val^.Index     := index;
+  Val^.FieldType := FieldType;
+  Val^.IntValue  := FData[Index];
+
   FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  DoChange(eegFields, word(efceData), Val);
+  Dispose(Val);
 end;
 
 procedure TEpiIntField.SetAsString(const index: Integer; const AValue: EpiString
@@ -1081,12 +1087,19 @@ end;
 procedure TEpiFloatField.SetAsFloat(const index: Integer; const AValue: EpiFloat
   );
 var
-  Val: EpiFloat;
+  Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
-  Val := FData[Index];
+
+  Val := New(PEpiFieldDataEventRecord);
+  Val^.Index     := index;
+  Val^.FieldType := FieldType;
+  Val^.FloatValue  := FData[Index];
+
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  DoChange(eegFields, word(efceData), Val);
+
+  Dispose(Val);
 end;
 
 procedure TEpiFloatField.SetAsInteger(const index: Integer;
@@ -1325,12 +1338,19 @@ end;
 procedure TEpiBoolField.SetAsBoolean(const index: Integer; const AValue: EpiBool
   );
 var
-  Val: EpiBool;
+  Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
-  Val := FData[index];
+
+  Val := New(PEpiFieldDataEventRecord);
+  Val^.Index     := index;
+  Val^.FieldType := FieldType;
+  Val^.BoolValue  := FData[Index];
+
   FData[index] := AValue;
-  DoChange(eegFields, Word(efceData), @Val);
+  DoChange(eegFields, word(efceData), Val);
+
+  Dispose(Val);
 end;
 
 procedure TEpiBoolField.SetAsDate(const index: Integer; const AValue: EpiDate);
@@ -1642,12 +1662,21 @@ end;
 procedure TEpiStringField.SetAsString(const index: Integer;
   const AValue: EpiString);
 var
-  Val: EpiString;
+  Val: PEpiFieldDataEventRecord;
+  OldString: EpiString;
 begin
   CheckIndex(Index);
-  Val := FData[index];
+
+  OldString := FData[Index];
+  Val := New(PEpiFieldDataEventRecord);
+  Val^.Index     := index;
+  Val^.FieldType := FieldType;
+  Val^.StringValue  := @OldString;
+
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  DoChange(eegFields, word(efceData), Val);
+
+  Dispose(Val);
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -1966,12 +1995,19 @@ end;
 
 procedure TEpiDateField.SetAsDate(const index: Integer; const AValue: EpiDate);
 var
-  Val: EpiDate;
+  Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
-  Val := FData[index];
+
+  Val := New(PEpiFieldDataEventRecord);
+  Val^.Index     := index;
+  Val^.FieldType := FieldType;
+  Val^.DateValue  := FData[Index];
+
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  DoChange(eegFields, word(efceData), Val);
+
+  Dispose(Val);
 end;
 
 procedure TEpiDateField.SetAsDateTime(const index: Integer;
@@ -2192,12 +2228,19 @@ end;
 procedure TEpiDateTimeField.SetAsDateTime(const index: Integer;
   const AValue: EpiDateTime);
 var
-  Val: EpiDateTime;
+  Val: PEpiFieldDataEventRecord;
 begin
-  CheckIndex(index);
-  Val := FData[Index];
-  FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  CheckIndex(Index);
+
+  Val := New(PEpiFieldDataEventRecord);
+  Val^.Index     := index;
+  Val^.FieldType := FieldType;
+  Val^.TimeValue  := FData[Index];
+
+  FData[index] := AValue;
+  DoChange(eegFields, word(efceData), Val);
+
+  Dispose(Val);
 end;
 
 procedure TEpiDateTimeField.SetAsFloat(const index: Integer;

@@ -631,11 +631,24 @@ begin
 end;
 
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
+var
+  Val: PEpiDataFileStatusRecord;
 begin
+  if Ord(AValue) = FRecordStatus.AsInteger[Index] then exit;
+
+  Val := New(PEpiDataFileStatusRecord);
+  Val^.Index := Index;
+  Val^.OldValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
+
   if AValue then
     FRecordStatus.AsInteger[Index] := Ord(rsDeleted)
   else
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+
+  Val^.NewValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
+
+  DoChange(eegDataFiles, Word(edceRecordStatus), Val);
+  Dispose(Val);
 end;
 
 procedure TEpiDataFile.SetSize(const AValue: Integer);
@@ -655,11 +668,22 @@ begin
 end;
 
 procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);
+var
+  Val: PEpiDataFileStatusRecord;
 begin
+  if Ord(AValue) = FRecordStatus.AsInteger[Index] then exit;
+
+  Val := New(PEpiDataFileStatusRecord);
+  Val^.Index := Index;
+  Val^.OldValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
+
   if AValue then
     FRecordStatus.AsInteger[Index] := Ord(rsVerified)
   else
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+
+  DoChange(eegDataFiles, Word(edceRecordStatus), Val);
+  Dispose(Val);
 end;
 
 function TEpiDataFile.InternalCompareRecords(const SortList: TEpiFields;

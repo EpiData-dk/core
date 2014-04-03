@@ -3,7 +3,7 @@
 type
 
   TEpiDataFileChangeEventType = (
-    edceSize
+    edceSize, edceRecordStatus
   );
 
   { TEpiDataFiles }
@@ -28,6 +28,13 @@ type
   end;
 
   EEpiDataFileHaltLoading = class(Exception);
+
+  TEpiDataFileStatusRecord = record
+    Index:    Integer;            // The index at which the record change happened.
+    OldValue: TEpiRecordState;    // Record state prior to the change.
+    NewValue: TEpiRecordState;    // Record state after the change.
+  end;
+  PEpiDataFileStatusRecord = ^TEpiDataFileStatusRecord;
 
   { TEpiDataFile }
 
