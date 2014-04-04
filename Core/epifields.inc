@@ -5,7 +5,7 @@ const
   NA_INT       = High(EpiInteger); //  $7FFFFFFFFFFFFFFF;
   NA_FLOAT     = MaxFloat;
   NA_DATE      = High(EpiDate);    // NA_INT;
-  NA_TIME      = $FFFFFFFF; //MaxDouble;
+  NA_TIME      = $FFFFFFFF;        //MaxDouble;
   NA_STRING    = '.';
   NA_BOOL      = $7F;
 
