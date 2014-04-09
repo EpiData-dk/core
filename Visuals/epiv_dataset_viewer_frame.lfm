@@ -6,8 +6,8 @@ object DatasetViewerFrame: TDatasetViewerFrame
   ClientHeight = 544
   ClientWidth = 891
   TabOrder = 0
-  DesignLeft = 533
-  DesignTop = 284
+  DesignLeft = 2012
+  DesignTop = 120
   object Panel1: TPanel
     Left = 0
     Height = 42
@@ -54,7 +54,6 @@ object DatasetViewerFrame: TDatasetViewerFrame
       Caption = 'Show All/Filtered Records'
       OnClick = Button4Click
       TabOrder = 3
-      Visible = False
     end
   end
   object ActionList1: TActionList

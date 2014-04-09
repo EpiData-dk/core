@@ -54,11 +54,13 @@ type
     procedure UpdateDataFile;
   private
     { Virtual String Tree }
+    FForwardIndex: TEpiField;
     FReverseIndex: TEpiField;
     FVLG: TVirtualStringTree;
     function  GetRootNodeCount: integer;
     procedure SetDatafile(AValue: TEpiDataFile);
     procedure SetReverseIndex(AValue: TEpiField);
+    procedure SetForwardIndex(AValue: TEpiField);
     procedure VLGBeforeCellPaint(Sender: TBaseVirtualTree;
       TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
       CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
@@ -88,6 +90,7 @@ type
     procedure   EndUpdate;
     property    Datafile: TEpiDataFile read FDataFile write SetDatafile;
     property    KeyFields: TEpiFields read GetKeyFields write SetKeyFields;
+    property    ForwardIndex: TEpiField read FForwardIndex write SetForwardIndex;
     property    ReverseIndex: TEpiField read FReverseIndex write SetReverseIndex;
     property    DisplayFields: TEpiFields read FDisplayFields write SetDisplayFields;
     property    OnSelectRecord: TSelectRecordEvent read FOnSelectRecord write SetOnSelectRecord;
@@ -129,10 +132,14 @@ begin
   if not Assigned(FReverseIndex) then exit;
 
   FShowAllRecords := not FShowAllRecords;
+
   VLG.BeginUpdate;
   VLG.RootNodeCount := GetRootNodeCount;
+  VLG.ReinitChildren(nil, true);
+  VLG.Sort(VLG.RootNode, 0, sdAscending, false);
   VLG.EndUpdate;
-  VLG.Invalidate;
+
+  UpdateGrid;
 end;
 
 procedure TDatasetViewerFrame.ShowIndexOrAllFieldsActionUpdate(Sender: TObject);
@@ -218,8 +225,6 @@ begin
 end;
 
 procedure TDatasetViewerFrame.VLGDoubleClick(Sender: TObject);
-var
-  P: types.TPoint;
 begin
   DoMouseClick(true);
 end;
@@ -229,6 +234,8 @@ procedure TDatasetViewerFrame.VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
 begin
   if Assigned(FRecords) then
     PCardinal(Sender.GetNodeData(Node))^ := FRecords[Node^.Index]
+  else if (Assigned(FForwardIndex)) and (not FShowAllRecords) then
+    PCardinal(Sender.GetNodeData(Node))^ := FForwardIndex.AsInteger[Node^.Index]
   else
     PCardinal(Sender.GetNodeData(Node))^ := Node^.Index;
 end;
@@ -252,6 +259,12 @@ begin
   end;
 end;
 
+procedure TDatasetViewerFrame.SetForwardIndex(AValue: TEpiField);
+begin
+  if FForwardIndex = AValue then Exit;
+  FForwardIndex := AValue;
+end;
+
 procedure TDatasetViewerFrame.VLGCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var
@@ -263,7 +276,7 @@ begin
 
   if Column = 0 then
   begin
-    if Assigned(FReverseIndex) then
+    if Assigned(FReverseIndex) and (FShowAllRecords) then
       Result := FReverseIndex.Compare(Idx1, Idx2)
     else
       Result := Idx1 - Idx2;
@@ -306,13 +319,16 @@ begin
   Idx := PCardinal(Sender.GetNodeData(Node))^;
   if Column = 0 then
   begin
-    if Assigned(FReverseIndex) then
-      Idx := FReverseIndex.AsInteger[Idx];
+    if Assigned(ReverseIndex) and (FShowAllRecords) then
+      Idx := ReverseIndex.AsInteger[Idx];
 
     if (Idx = TEpiIntField.DefaultMissing) then
       CellText := '*'
-    else
+    else begin
+      if Assigned(ReverseIndex) and (not FShowAllRecords) then
+        Idx := ReverseIndex.AsInteger[Idx];
       CellText := IntToSTr(Idx + 1);
+    end;
     Exit;
   end;
 
