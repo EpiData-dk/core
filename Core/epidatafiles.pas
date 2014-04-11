@@ -57,7 +57,6 @@ uses
   epidocument, math, epistringutils, epiconvertutils, epidatafileutils,
   DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epirelations;
 
-// {$I epidatafiles_helper.inc}
 {$I epidatafiles.inc}
 {$I episections.inc}
 {$I epifields.inc}
@@ -66,16 +65,6 @@ uses
 {$I epicalculations.inc}
 {$I epicomparison.inc}
 {$I epirelates.inc}
-
-{initialization
-begin
-  LinkMap := TLinkMap.Create;
-end;
-
-finalization
-begin
-  LinkMap.Free;
-end;  }
 
 end.
 

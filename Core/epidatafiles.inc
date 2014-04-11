@@ -371,11 +371,12 @@ var
   Edoc: TEpiDocument;
   ProgressMethod: TEpiProgressEvent;
 
-  function LocalEncrypt(S: String): string;
+  function LocalEncrypt(Const S: String): string;
   begin
     if Assigned(EnCrypter) then
-      S := EnCrypter.EncryptString(S);
-    Result := S;
+      Result := EnCrypter.EncryptString(S)
+    else
+      Result := S;
   end;
 
   function DoProgress(ProgressType: TEpiProgressType;
@@ -386,12 +387,13 @@ var
       ProgressMethod(Self, ProgressType, Count, Max, Result);
   end;
 
+var
+  SaltInt: LongInt;
+  SaltByte: array[0..3] of char absolute SaltInt;
+  Salt: String;
 begin
   if FRecModified then
     FRecModifiedDate := Now;
-
-  Lst := TStringList.Create;
-  Lst.Add(Indent(Lvl) + '<' + rsRecords + SaveAttr(rsModifiedAttr, RecModifiedDate) + '>');
 
   Edoc := TEpiDocument(RootOwner);
   ProgressMethod := Edoc.OnProgress;
@@ -401,11 +403,22 @@ begin
   Fc := Fields.Count;
 
   EnCrypter := nil;
-  if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
+  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
+  Salt := String(SaltByte);
+
+  if (Edoc.PassWord <> '') then
   begin
     EnCrypter := TDCP_rijndael.Create(nil);
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
-  end;
+    Salt := EnCrypter.EncryptString(Salt);
+  end else
+    Salt := '';
+
+  Lst := TStringList.Create;
+  Lst.Add(Indent(Lvl) + '<' + rsRecords +
+    SaveAttr(rsModifiedAttr, RecModifiedDate) +
+    SaveAttr(rsEncryptedSalt, Salt) +
+    '>');
 
   DoProgress(eptInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
@@ -415,12 +428,21 @@ begin
 
     S := '';
     for CurField := 0 to Fc - 1 do
+    {$IFNDEF EPI_TEST_LOAD}
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes + FloatFieldTypes then
           S += Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
         else
           S += Name + '=' + AsString[CurRec] + ',';
+    {$ELSE}
+    with Fields[CurField] do
+      if not IsMissing[CurRec] then
+        if FieldType in StringFieldTypes then
+          S += Name + '="' + StringToXml(AsString[CurRec]) + '";'
+        else
+          S += Name + '=' + AsString[CurRec] + ';';
+    {$ENDIF}
     Delete(S, Length(S), 1);
 
     Lst.Add(R + LocalEncrypt(S) + '</' + rsRecord + '>');
@@ -459,6 +481,11 @@ var
   L: Integer;
   PEnd: PChar;
   PCur: PChar;
+  PStart: PChar;
+  S: String;
+  DocVersion: Integer;
+  PLen: Integer;
+  Salt: String;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -470,12 +497,12 @@ var
     result := StringReplace(S, DummyString, DecimalSeparator, [rfReplaceAll]);
   end;
 
-  function LocalDeCrypt(S: string): string;
+  function LocalDeCrypt(Const S: string): string;
   begin
     if Assigned(DeCrypter) then
-      S := DeCrypter.DecryptString(S);
-
-    Result := S;
+      Result := DeCrypter.DecryptString(S)
+    else
+      Result := S;
   end;
 
   function DoProgress(ProgressType: TEpiProgressType;
@@ -505,10 +532,21 @@ begin
   DataList.QuoteChar := '"';
   DataList.StrictDelimiter := true;
 
-  if (TEpiDocument(RootOwner).Version >= 2) and (TEpiDocument(RootOwner).PassWord <> '') then
+  DocVersion := TEpiDocument(RootOwner).Version;
+
+  if (DocVersion >= 2) and (TEpiDocument(RootOwner).PassWord <> '') then
   begin
     DeCrypter := TDCP_rijndael.Create(nil);
     DeCrypter.InitStr(TEpiDocument(RootOwner).PassWord, TDCP_sha256);
+
+    // With .epx v3 each <Records> section is uniquely salted, storing encrypted result
+    // in the attribute rsEncryptedSalt;
+    if (DocVersion >= 3) then
+    begin
+      Salt := LoadAttrString(Root, rsEncryptedSalt);
+      // just run it through decryption, this will progress state of internal decryption vectors.
+      DeCrypter.DecryptString(Salt);
+    end;
   end;
 
   ProgressMethod := TEpiDocument(RootOwner).OnProgress;
@@ -519,6 +557,10 @@ begin
 
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+
+  PStart := nil;
+  PLen   := 0;
+
   while Assigned(Node) do
   begin
     if DoProgress(eptRecords, CurRec, NodeCount) then
@@ -539,49 +581,80 @@ begin
       rsVerified: Verified[CurRec] := true;
     end;
 
-    {$IFNDEF EPI_TEST_LOAD}
-    DataList.DelimitedText := Dummyfy(LocalDeCrypt(Node.TextContent));
-    for i := 0 to DataList.Count - 1 do
-    begin
-      FN := DataList.Names[i];
-      TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
+    {$IFDEF EPI_TEST_LOAD}
+    if DocVersion <= 2 then
+      begin
+    {$ENDIF}
+        DataList.DelimitedText := Dummyfy(LocalDeCrypt(Node.TextContent));
+        for i := 0 to DataList.Count - 1 do
+        begin
+          FN := DataList.Names[i];
+          TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
 
-      // Do not crash if reading bad entry/line.
-      if not Assigned(TmpField) then
-        continue;
-      TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
-    end;
-    {$ELSE}
-    FN := LocalDeCrypt(Node.TextContent)[1];
-    PStr := @FN[1];
-    PCur := PStr;
-    L := Length(FN);
+          // Do not crash if reading bad entry/line.
+          if not Assigned(TmpField) then
+            continue;
+          TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
+        end;
+    {$IFDEF EPI_TEST_LOAD}
+      end
+    else
+      begin
+        S := LocalDeCrypt(Node.TextContent);
+        L := Length(S);
 
-    while (PCur - PStr) < L do
-    begin
-      PEnd := PCur;
-      while PEnd^ <> '=' do Inc(PEnd);
-      PEnd^ := #0;
-      FN := StrPas(PCur);
+        if L > PLen then
+        begin
+          ReAllocMem(PStart, L);
+          PLen := L;
+        end;
 
-      PCur := PEnd;
-      Inc(PCur);
-      repeat
-        if (PCur^ = #0) or
-           (
-            (PCur^ = ',') and
-            ((PCur - 1)^ <> '\')
-           )
-        then
-          break;
+        StrPLCopy(PStart, S, L);
+        PCur := PStart;
 
-        Inc(PCur);
-      until false;
-    end;
+        while (PCur - PStart) < L do
+        begin
+          PEnd := PCur;
+          while PEnd^ <> '=' do Inc(PEnd);
+          PEnd^ := #0;
+          FN := StrPas(PCur);
+
+          PCur := PEnd;
+          Inc(PCur);
+
+          if PCur^ = '"' then
+            begin
+              Inc(PCur);
+              PEnd := PCur;
+              while (PEnd^ <> '"') do
+                Inc(PEnd);
+              PEnd^ := #0;
+              Inc(PEnd);
+            end
+          else
+            begin
+              PEnd := PCur;
+              while (PEnd^ <> ';') and
+                    (PEnd^ <> #0)
+              do
+                Inc(PEnd);
+            end;
+          PEnd^ := #0;
+          Inc(PEnd);
+
+          TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
+          TmpField.AsString[CurRec] := StrPas(PCur);
+
+          PCur := PEnd;
+        end;
+      end;
     {$ENDIF EPI_TEST_LOAD}
+
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
   end;
+
+  Freemem(PStart);
   DoProgress(eptFinish, NodeCount, NodeCount);
 
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);

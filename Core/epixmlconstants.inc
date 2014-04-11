@@ -152,6 +152,7 @@ const
            rsRelateValue     = 'relateValue';
 
      rsRecords         = 'Records';
+      rsEncryptedSalt   = 'encryptedSalt';
       rsRecord          = 'Record';
        rsRecordStatus    = 'status';
 
