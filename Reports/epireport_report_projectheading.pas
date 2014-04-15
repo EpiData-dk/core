@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epireport_base,
-  epidocument;
+  epidocument, epirelations, epicustombase;
 
 type
 
@@ -31,7 +31,7 @@ type
 implementation
 
 uses
-  epireport_types, math;
+  epireport_types, math, epidatafiles;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';
@@ -55,6 +55,10 @@ var
   S: String;
   j: Integer;
   LastEdit: TDateTime;
+  OrderedDataFiles: TEpiDataFiles;
+  List: TEpiRelationList;
+  Relations: TEpiRelationList;
+
 begin
   inherited RunReport;
 
@@ -81,7 +85,10 @@ begin
 
   DoLineText('');
 
-  DoTableHeader('Dataforms:', 9, Document.DataFiles.Count + 1);
+
+  OrderedDataFiles := Document.Relations.GetOrderedDataFiles;
+
+  DoTableHeader('Dataforms:', 9, OrderedDataFiles.Count + 1);
   // Header row:
   DoTableCell(0, 0, 'Name');
   DoTableCell(1, 0, 'Created');
@@ -91,22 +98,22 @@ begin
   DoTableCell(5, 0, 'Fields');
   DoTableCell(6, 0, 'Records');
   DoTableCell(7, 0, 'Deleted');
-  for i := 0 to Document.DataFiles.Count -1 do
-  with Document.DataFiles[i] do
+  for i := 0 to OrderedDataFiles.Count -1 do
+  with OrderedDataFiles[i] do
   begin
-    DoTableCell(0, 1, Caption.Text);
-    DoTableCell(1, 1, DateTimeToStr(Created));
-    DoTableCell(2, 1, DateTimeToStr(StructureModifiedDate));
-    DoTableCell(3, 1, DateTimeToStr(RecModifiedDate));
-    DoTableCell(4, 1, IntToStr(Sections.Count));
-    DoTableCell(5, 1, IntToStr(Fields.Count));
-    DoTableCell(6, 1, IntToStr(Size));
-    DoTableCell(7, 1, IntToStr(DeletedCount));
+    DoTableCell(0, i + 1, Caption.Text);
+    DoTableCell(1, i + 1, DateTimeToStr(Created));
+    DoTableCell(2, i + 1, DateTimeToStr(StructureModifiedDate));
+    DoTableCell(3, i + 1, DateTimeToStr(RecModifiedDate));
+    DoTableCell(4, i + 1, IntToStr(Sections.Count));
+    DoTableCell(5, i + 1, IntToStr(Fields.Count));
+    DoTableCell(6, i + 1, IntToStr(Size));
+    DoTableCell(7, i + 1, IntToStr(DeletedCount));
   end;
   DoTableFooter('');
 
-  for i := 0 to Document.DataFiles.Count -1 do
-  with Document.DataFiles[i] do
+  for i := 0 to OrderedDataFiles.Count -1 do
+  with OrderedDataFiles[i] do
   begin
     if KeyFields.Count = 0 then continue;
 
@@ -115,6 +122,8 @@ begin
       DoLineText(KeyFields[j].Name + ' - ' + KeyFields[j].Question.Text);
     DoLineText('');
   end;
+
+  OrderedDataFiles.Free;
 end;
 
 end.

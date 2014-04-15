@@ -35,6 +35,8 @@ type
     out Continue: boolean
   ) of object;
 
+  TEpiRelationListEx = class;
+
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
@@ -51,7 +53,7 @@ type
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
-    FRelations: TEpiRelationList;
+    FRelations: TEpiRelationListEx;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
@@ -75,7 +77,7 @@ type
     Property   Study: TEpiStudy read FStudy;
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
-    Property   Relations: TEpiRelationList read FRelations;
+    Property   Relations: TEpiRelationListEx read FRelations;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
@@ -94,6 +96,13 @@ type
     function   DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
     function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  end;
+
+  { TEpiRelationListEx }
+
+  TEpiRelationListEx = class(TEpiRelationList)
+  public
+    function GetOrderedDataFiles: TEpiDataFiles;
   end;
 
 implementation
@@ -156,7 +165,7 @@ begin
   FValueLabelSets.ItemOwner := true;
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
-  FRelations       := TEpiRelationList.Create(Self);
+  FRelations       := TEpiRelationListEx.Create(Self);
   FRelations.ItemOwner := true;
   FCycleNo         := 0;
 
@@ -335,5 +344,30 @@ begin
     FCycleNo  := Self.FCycleNo;
   end;
 end;
+
+{ TEpiRelationListEx }
+
+function TEpiRelationListEx.GetOrderedDataFiles: TEpiDataFiles;
+
+  procedure BuildOrderedDataFiles(ARelation: TEpiMasterRelation);
+  var
+    i: integer;
+  begin
+    Result.AddItem(ARelation.Datafile);
+
+    for i := 0 to ARelation.DetailRelations.Count - 1 do
+      BuildOrderedDataFiles(ARelation.DetailRelation[i]);
+  end;
+
+var
+  i: Integer;
+begin
+  Result := TEpiDataFiles.Create(nil);
+  Result.ItemOwner := false;
+
+  for i := 0 to Count - 1 do
+    BuildOrderedDataFiles(MasterRelation[i]);
+end;
+
 
 end.

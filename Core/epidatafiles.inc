@@ -16,7 +16,6 @@ begin
   inherited Create(AOwner);
 end;
 
-
 { TEpiDataFiles }
 
 function TEpiDataFiles.GetDataFile(Index: integer): TEpiDataFile;
@@ -92,6 +91,11 @@ end;
 function TEpiDataFiles.NewDataFile: TEpiDataFile;
 begin
   Result := TEpiDataFile(NewItem(TEpiDataFile));
+end;
+
+function TEpiDataFiles.GetEnumerator: TEpiDataFilesEnumerator;
+begin
+  result := TEpiDataFilesEnumerator.Create(Self);
 end;
 
 { TEpiDataFile }
@@ -695,9 +699,6 @@ begin
 
     CheckNode(Node, 'Key');
     KeyFields.AddItem(Fields.FieldByName[LoadAttrString(Node, 'fieldRef')]);
-
-{    FieldId := LoadAttrString(Node, 'fieldRef');
-    LinkMap.AddLink(ltKeyField, KeyFields, FieldId);      }
 
     Node := Node.NextSibling;
   end;
@@ -1390,8 +1391,12 @@ begin
   // - Clone list of key-fields.
   for i := 0 to Self.KeyFields.Count - 1 do
     TEpiDataFile(Result).KeyFields.AddItem(TEpiDataFile(Result).Fields.FieldByName[KeyFields[i].Name]);
-
-{  // - Update other references in each field
-  for i := 0 to Fields.Count - 1 do
-    Fields[i].PostCloneUpdate(TEpiDataFile(Result).Fields.FieldByName[Fields[i].Name]); }
 end;
+
+{ TEpiDataFilesEnumeraton }
+
+function TEpiDataFilesEnumerator.GetCurrent: TEpiDataFile;
+begin
+  Result := TEpiDataFile(inherited GetCurrent);
+end;
+

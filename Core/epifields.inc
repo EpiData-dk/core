@@ -563,6 +563,8 @@ begin
     FCalculation.Free;
   if Assigned(FComparison) then
     FComparison.Free;
+  if Assigned(FRelates) then
+    FRelates.Free;
   inherited Destroy;
 end;
 
@@ -688,6 +690,7 @@ begin
   if LoadNode(Node, Root, rsRelates, false) then
   begin
     Relates := TEpiRelates.Create(Self);
+    Relates.ItemOwner := true;
     Relates.LoadFromXml(Node, ReferenceMap);
   end;
 end;

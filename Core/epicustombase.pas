@@ -45,13 +45,15 @@ type
     eegValueLabel,
     eegValueLabelSet,
     // epirelations.pas
-    eegRelates
+    eegRelations
     );
+
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
     ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
     ecceSetTop, ecceSetLeft, ecceText, ecceReferenceDestroyed
   );
+
   TEpiChangeEvent = procedure(
     Const Sender: TEpiCustomBase;     // Who is currently transmitting the event.
     Const Initiator: TEpiCustomBase;  // Who initiated the event
@@ -167,7 +169,7 @@ type
       and perform actions related to the event being chained. All other objects that want
       to be notified of changes should do so using ChangeHooks!
       Eg.:
-        1) If an TEpiCustomItem is destroyed, it will end an ecceDestroy event through the chain.
+        1) If an TEpiCustomItem is destroyed, it will send an ecceDestroy event through the chain.
         2) The owning TEpiCustomList should (if it wants/needs to) handle this during DoChange.
         3) Any other objects not being part of this chain, eg. sibling TEpiCustomItem's should
            add a ChangeHook using RegisterOnChangeHook.

@@ -73,6 +73,9 @@ type
     function RecursiveGetItemByName(Const AName: string): TEpiCustomItem;
   protected
     function Prefix: string; override;
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
@@ -318,6 +321,25 @@ begin
   Result := 'relation_id_';
 end;
 
+procedure TEpiRelationList.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+var
+  Item: TEpiCustomItem;
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  if not Initiator.InheritsFrom(TEpiCustomItem) then exit;
+  Item := TEpiCustomItem(Initiator);
+
+  // Not my child!
+  if (IndexOf(Item) < 0) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (EventType  <> Word(ecceReferenceDestroyed)) then exit;
+
+  RemoveItem(Item);
+  Item.Free;
+end;
+
 constructor TEpiRelationList.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -340,12 +362,14 @@ end;
 
 function TEpiRelationList.GetItemByName(AName: string): TEpiCustomItem;
 begin
+  // Override this to make an easy traversal of the relationship tree.
   result := TEpiDocument(RootOwner).Relations.RecursiveGetItemByName(AName);
 end;
 
 function TEpiRelationList.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
+  // Override this to make an easy traversal of the relationship tree.
   result := TEpiDocument(RootOwner).Relations.RecursiveValidateRename(NewName);
 end;
 

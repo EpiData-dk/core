@@ -24,6 +24,21 @@ begin
   end;
 end;
 
+procedure TEpiRelates.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  // Not my child!
+  if IndexOf(TEpiCustomItem(Initiator)) < 0  then exit;
+
+  if (EventGroup <> eegCustomBase) then exit;
+  if (EventType  <> Word(ecceReferenceDestroyed)) then exit;
+
+  RemoveItem(TEpiCustomItem(Initiator));
+  Initiator.Free;
+end;
+
 constructor TEpiRelates.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -46,17 +61,36 @@ end;
 
 { TEpiRelate }
 
+procedure TEpiRelate.RelationHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  i: Integer;
+begin
+  if (Initiator <> DetailRelation) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (EventType <> Word(ecceDestroy)) then exit;
+
+  Data := DetailRelation;
+  DetailRelation := nil;
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Data);
+end;
+
 procedure TEpiRelate.SetDetailRelation(AValue: TEpiCustomItem);
 var
   Val: TEpiCustomItem;
 begin
-  if not AValue.InheritsFrom(TEpiDetailRelation) then
+  if Assigned(AValue) and
+     (not AValue.InheritsFrom(TEpiDetailRelation))
+  then
     Raise Exception.Create('TEpiRelate.SetDetailRelation only acception object of type TEpiDetailRelation!');
 
   if FDetailRelation = AValue then Exit;
+  UpdateRelationHook(FDetailRelation, AValue);
+
   Val := FDetailRelation;
   FDetailRelation := AValue;
-//  DoChange(eeg, erceDetailRelation, @Val);
+//  DoChange(eegCustomBase, erceDetailRelation, @Val);
 end;
 
 procedure TEpiRelate.SetRelateValue(AValue: EpiString);
@@ -67,6 +101,15 @@ begin
   Val := FRelateValue;
   FRelateValue := AValue;
  // DoChange(eeg, erceRelateValue, @Val);
+end;
+
+procedure TEpiRelate.UpdateRelationHook(const Old, New: TEpiCustomItem);
+begin
+  if Assigned(Old) then
+    Old.UnRegisterOnChangeHook(@RelationHook);
+
+  if Assigned(New) then
+    New.RegisterOnChangeHook(@RelationHook, true);
 end;
 
 procedure TEpiRelate.FixupReferences(EpiClassType: TEpiCustomBaseClass;
@@ -112,6 +155,12 @@ end;
 constructor TEpiRelate.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+end;
+
+destructor TEpiRelate.Destroy;
+begin
+  UpdateRelationHook(DetailRelation, nil);
+  inherited Destroy;
 end;
 
 procedure TEpiRelate.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap

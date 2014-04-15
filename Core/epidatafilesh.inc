@@ -6,6 +6,8 @@ type
     edceSize, edceRecordStatus
   );
 
+  TEpiDataFilesEnumerator = class;
+
   { TEpiDataFiles }
 
   TEpiDataFiles = class(TEpiCustomList)
@@ -24,6 +26,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewDataFile: TEpiDataFile;
+    function    GetEnumerator: TEpiDataFilesEnumerator;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 
@@ -152,3 +155,13 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
+
+  { TEpiDataFilesEnumeraton }
+
+  TEpiDataFilesEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiDataFile; override;
+  public
+    property Current: TEpiDataFile read GetCurrent;
+  end;
+

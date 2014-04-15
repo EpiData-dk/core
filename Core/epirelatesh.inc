@@ -8,6 +8,10 @@ type
   private
     function GetRelate(Index: Integer): TEpiRelate;
     function GetRelateFromValue(Value: EpiString): TEpiRelate;
+  protected
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
@@ -23,8 +27,12 @@ type
   private
     FDetailRelation: TEpiCustomItem;
     FRelateValue: EpiString;
+    procedure RelationHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
     procedure SetDetailRelation(AValue: TEpiCustomItem);
     procedure SetRelateValue(AValue: EpiString);
+    procedure UpdateRelationHook(Const Old, New: TEpiCustomItem);
   protected
     procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
        ReferenceType: Byte; const ReferenceId: string); override;
@@ -33,6 +41,7 @@ type
     function WriteNameToXml: boolean; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
     function XMLName: string; override;

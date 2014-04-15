@@ -59,6 +59,14 @@ begin
   DoChange(eegHeading, Word(ehceType), @Val);
 end;
 
+function TEpiHeading.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  TEpiHeading(Result).HeadingType := HeadingType;
+end;
+
 constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -94,6 +102,13 @@ begin
   Result :=
     inherited SaveAttributesToXml +
     SaveAttrEnum(rsType, Integer(HeadingType), TypeInfo(TEpiHeadingType));
+end;
+
+procedure TEpiHeading.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  TEpiHeading(AEpiCustomBase).HeadingType := HeadingType;
 end;
 
 

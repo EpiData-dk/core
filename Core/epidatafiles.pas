@@ -54,7 +54,7 @@ type
 implementation
 
 uses
-  epidocument, math, epistringutils, epiconvertutils, epidatafileutils,
+  epidocument, math, epiconvertutils, epidatafileutils,
   DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epirelations;
 
 {$I epidatafiles.inc}
