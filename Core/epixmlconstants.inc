@@ -117,6 +117,7 @@ const
          rsRepeatValue     = 'repeat';
          rsDefaultValue    = 'defaultValue';
          rsAutoUpdateMode  = 'autoUpdateMode';
+         rsZeroFilled      = 'zerofilled';
          rsQuestion        = 'Question';
          rsNotes           = 'Notes';
          rsRanges           = 'Ranges';

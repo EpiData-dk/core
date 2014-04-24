@@ -707,6 +707,16 @@ begin
   DoChange(eegFields, Word(efceDefaultValue), @Val);
 end;
 
+procedure TEpiIntField.SetZeroFilled(AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FZeroFilled = AValue then Exit;
+  Val := FZeroFilled;
+  FZeroFilled := AValue;
+  DoChange(eegFields, Word(efceZeroFilled), @Val);
+end;
+
 function TEpiIntField.GetAsBoolean(const index: Integer): EpiBool;
 begin
   if IsMissing[Index] then
@@ -752,7 +762,7 @@ begin
   if IsMissing[Index] then
     result := TEpiStringField.DefaultMissing
   else
-    result := IntToStr(AsInteger[Index]);
+    result := Format(FormatString(false), [AsInteger[Index]]);
 end;
 
 function TEpiIntField.GetAsTime(const index: Integer): EpiTime;
@@ -916,6 +926,22 @@ begin
   result := NA_INT;
 end;
 
+function TEpiIntField.SaveAttributesToXml: string;
+begin
+  Result := inherited SaveAttributesToXml;
+
+  if ZeroFilled then
+    Result += SaveAttr(rsZeroFilled, ZeroFilled);
+end;
+
+procedure TEpiIntField.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  ZeroFilled := LoadAttrBool(Root, rsZeroFilled, ZeroFilled, false);
+end;
+
 function TEpiIntField.DoCompare(i, j: integer): integer;
 begin
   result := AsInteger[i] - AsInteger[j];
@@ -946,6 +972,9 @@ end;
 
 function TEpiIntField.FormatString(const FillSpace: boolean): string;
 begin
+  if ZeroFilled then
+    result := format('%%.%dd', [Length])
+  else
   if FillSpace then
     result := format('%%%dd', [Length])
   else

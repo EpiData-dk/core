@@ -6,7 +6,8 @@ type
     efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
     efceShowValueLabel, efceShowValueLabelNotes, efceRepeatValue, efceDefaultValue,
-    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet
+    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet,
+    efceZeroFilled
   );
 
   PEpiString = ^EpiString;
@@ -242,7 +243,9 @@ type
   private
     FData: array of EpiInteger;
     FDefaultValue: EpiInteger;
+    FZeroFilled: Boolean;
     procedure SetDefaultValue(const AValue: EpiInteger);
+    procedure SetZeroFilled(AValue: Boolean);
   protected
     function DoGetDefaultValueAsString: string; override;
     procedure DoSetDefaultValueAsString(const AValue: string); override;
@@ -277,10 +280,14 @@ type
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
+    function SaveAttributesToXml: string; override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
+       override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
+    property  ZeroFilled: Boolean read FZeroFilled write SetZeroFilled;
   end;
 
   { TEpiFloatField }
