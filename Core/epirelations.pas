@@ -64,6 +64,8 @@ type
     property MaxRecordCount: Cardinal read FMaxRecordCount write SetMaxRecordCount;
   end;
 
+  TEpiRelationListEnumerator = class;
+
   { TEpiRelationList }
 
   TEpiRelationList = class(TEpiCustomList)
@@ -84,13 +86,30 @@ type
     function GetItemByName(AName: string): TEpiCustomItem; override;
     function ValidateRename(const NewName: string; RenameOnSuccess: boolean
        ): boolean; override;
+    function GetEnumerator: TEpiRelationListEnumerator;
     property MasterRelation[Index: integer]: TEpiMasterRelation read GetMasterRelation; default;
+  end;
+
+  { TEpiRelationListEnumerator }
+
+  TEpiRelationListEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiMasterRelation; override;
+  public
+    property Current: TEpiMasterRelation read GetCurrent;
   end;
 
 implementation
 
 uses
   epidocument;
+
+{ TEpiRelationListEnumerator }
+
+function TEpiRelationListEnumerator.GetCurrent: TEpiMasterRelation;
+begin
+  Result := TEpiMasterRelation(inherited GetCurrent);
+end;
 
 { TEpiMasterRelation }
 
@@ -371,6 +390,11 @@ function TEpiRelationList.ValidateRename(const NewName: string;
 begin
   // Override this to make an easy traversal of the relationship tree.
   result := TEpiDocument(RootOwner).Relations.RecursiveValidateRename(NewName);
+end;
+
+function TEpiRelationList.GetEnumerator: TEpiRelationListEnumerator;
+begin
+  result := TEpiRelationListEnumerator.Create(Self);
 end;
 
 end.
