@@ -277,6 +277,7 @@ type
     function  DoCompare(i, j: integer): integer; override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;

@@ -958,6 +958,23 @@ begin
     Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiInteger));
     FSize := Self.FSize;
     FDefaultValue := Self.FDefaultValue;
+    FZeroFilled := Self.ZeroFilled;
+  end;
+end;
+
+procedure TEpiIntField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiIntField) then exit;
+
+  with TEpiIntField(AEpiCustomBase) do
+  begin
+    Capacity := Self.Capacity;
+    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiInteger));
+    FSize := Self.FSize;
+    FDefaultValue := Self.FDefaultValue;
+    FZeroFilled := Self.ZeroFilled;
   end;
 end;
 
