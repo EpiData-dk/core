@@ -11,7 +11,11 @@ uses
 
 type
 
-  TEpiToolAppendErrorEvent = function(): boolean of object;
+  TEpiToolWarningResult = (wrStop, wrContinue);
+
+  TEpiToolAppendErrorEvent = procedure(Sender: TObject; Const Msg: string) of object;
+  TEpiToolAppendWarningEvent = procedure(Sender: TObject; Const Msg: string;
+    out Result: TEpiToolWarningResult) of object;
 
   { TEpiToolAppend }
 
@@ -19,12 +23,17 @@ type
   private
     FDataFileNames: TStrings;
     FFieldNames: TStrings;
-    FOnError: TNotifyEvent;
-    procedure SetOnError(AValue: TNotifyEvent);
-    procedure DoError();
+    FOnError: TEpiToolAppendErrorEvent;
+    FOnWarning: TEpiToolAppendWarningEvent;
+    procedure   DoError(Const Msg: String);
+    procedure   DoWarning(Const Msg: String; Out WarningResult: TEpiToolWarningResult);
+    procedure   SetOnError(AValue: TEpiToolAppendErrorEvent);
+    procedure   SetOnWarning(AValue: TEpiToolAppendWarningEvent);
   protected
-    function    CompatabilityCheck(MainField, AppendField: TEpiField): boolean; virtual;
-    function    KeyFieldCheck(MainDataFile, AppendDataFile: TEpiDataFile): boolean;
+    function    CompatabilityCheck(MainField, AppendField: TEpiField;
+      out Msg: string): boolean; virtual;
+    function    KeyFieldCheck(MainDataFile, AppendDataFile: TEpiDataFile;
+      out Msg: string): boolean;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -32,7 +41,8 @@ type
     function    Append(MainDataFile, AppendDataFile: TEpiDataFile): boolean; overload;
   public
     // Events
-    property    OnError: TNotifyEvent read FOnError write SetOnError;
+    property    OnError: TEpiToolAppendErrorEvent read FOnError write SetOnError;
+    property    OnWarning: TEpiToolAppendWarningEvent read FOnWarning write SetOnWarning;
     property    DataFileNames: TStrings read FDataFileNames;
     property    FieldNames: TStrings read FFieldNames;
   end;
@@ -44,25 +54,47 @@ uses
 
 { TEpiToolAppend }
 
-procedure TEpiToolAppend.SetOnError(AValue: TNotifyEvent);
+procedure TEpiToolAppend.SetOnError(AValue: TEpiToolAppendErrorEvent);
 begin
   if FOnError = AValue then Exit;
   FOnError := AValue;
 end;
 
-procedure TEpiToolAppend.DoError;
+procedure TEpiToolAppend.DoError(const Msg: String);
 begin
-
+  if Assigned(OnError) then
+    OnError(Self, Msg);
 end;
 
-function TEpiToolAppend.CompatabilityCheck(MainField, AppendField: TEpiField
-  ): boolean;
+procedure TEpiToolAppend.DoWarning(const Msg: String; out
+  WarningResult: TEpiToolWarningResult);
+begin
+  WarningResult := wrStop;
+
+  if Assigned(OnWarning) then
+    OnWarning(Self, Msg, WarningResult);
+end;
+
+procedure TEpiToolAppend.SetOnWarning(AValue: TEpiToolAppendWarningEvent);
+begin
+  if FOnWarning = AValue then Exit;
+  FOnWarning := AValue;
+end;
+
+function TEpiToolAppend.CompatabilityCheck(MainField, AppendField: TEpiField;
+  out Msg: string): boolean;
 begin
   result := (MainField.FieldType = AppendField.FieldType);
+
+  if (not Result) then
+    Msg := Format(
+      'Field %s (%s) and %s (%s) does not have the same type!',
+      [MainField.Name, MainField.DataFile.Caption.Text,
+       AppendField.Name, AppendField.DataFile.Caption.Text]);
 end;
 
-function TEpiToolAppend.KeyFieldCheck(MainDataFile, AppendDataFile: TEpiDataFile
-  ): boolean;
+function TEpiToolAppend.KeyFieldCheck(MainDataFile,
+  AppendDataFile: TEpiDataFile; out Msg: string): boolean;
 var
   MDF: TEpiDataFile;
   ADF: TEpiDataFile;
@@ -94,47 +126,72 @@ var
   end;
 
 begin
+  Result := false;
+
   if (MainDataFile.KeyFields.Count <> AppendDataFile.KeyFields.Count)
   then
-    DoError();
+    begin
+      Msg :=
+       'DataForm ' + MainDataFile.Caption.Text + 'and DataForm ' + AppendDataFile.Caption.Text +
+         'does not have the same number of fields in Key!' + LineEnding +
+       'Continuing will append remaining dataform.' + LineEnding +
+       LineEnding +
+       'Continue';
 
+      Exit;
+    end;
+
+  if (MainDataFile.KeyFields.Count = 0) then
+    Exit(true);
 
   for i := 0 to MainDataFile.KeyFields.Count - 1 do
   begin
     MKF := MainDataFile.KeyFields[i];
     AKF := AppendDataFile.KeyFields.FieldByName[MKF.Name];
 
-    if not CompatabilityCheck(MKF, AKF) then
-      DoError();
+    if not CompatabilityCheck(MKF, AKF, Msg) then
+      Exit;
   end;
 
-  MDF := TEpiDataFile(MainDataFile.Clone(nil));
-  ADF := TEpiDataFile(AppendDataFile.Clone(nil));
+  try
 
-  MainSortField := TEpiField.CreateField(nil, ftInteger);
-  AppendSortField := TEpiField.CreateField(nil, ftInteger);
+    // TODO : Rewrite to NOT clone into owner, when merged with Related Datasets!
+    MDF := TEpiDataFile(MainDataFile.Clone(MainDataFile.Owner));
+    ADF := TEpiDataFile(AppendDataFile.Clone(AppendDataFile.Owner));
 
-  for i := 0 to MainDataFile.Size - 1 do
-    MainSortField.AsInteger[i] := i;
+    MainSortField := MDF.NewField(ftInteger);
+    AppendSortField := ADF.NewField(ftInteger);
 
-  for i := 0 to AppendDataFile.Size - 1 do
-    AppendSortField.AsInteger[i] := i;
+    for i := 0 to MainDataFile.Size - 1 do
+      MainSortField.AsInteger[i] := i;
+
+    for i := 0 to AppendDataFile.Size - 1 do
+      AppendSortField.AsInteger[i] := i;
 
 
-  MDF.SortRecords(MDF.KeyFields);
-  ADF.SortRecords(ADF.KeyFields);
+    MDF.SortRecords(MDF.KeyFields);
+    ADF.SortRecords(ADF.KeyFields);
 
-  MainRunner := 0;
-  AppendRunner := 0;
+    MainRunner := 0;
+    AppendRunner := 0;
 
-  while (MainRunner < MDF.Size) and (AppendRunner < ADF.Size) do
-  begin
-    case CompareKeyFields(MainRunner, AppendRunner) of
-      -1: Inc(MainRunner);
-      0:  DoError();
-      1:  Inc(AppendRunner);
+    while (MainRunner < MDF.Size) and (AppendRunner < ADF.Size) do
+    begin
+      case CompareKeyFields(MainRunner, AppendRunner) of
+        -1: Inc(MainRunner);
+        0:  begin
+              DoError('Identical keys found!');
+              Exit;
+            end;
+        1:  Inc(AppendRunner);
+      end;
     end;
+  finally
+    MDF.Free;
+    ADF.Free;
   end;
+
+  Result := true;
 end;
 
 constructor TEpiToolAppend.Create;
@@ -153,29 +210,47 @@ end;
 function TEpiToolAppend.Append(MainDocument, AppendDocument: TEpiDocument
   ): boolean;
 var
-  DF: TEpiDataFile;
+  MDF: TEpiDataFile;
+  ADF: TEpiDataFile;
   i: Integer;
+  WRes: TEpiToolWarningResult;
+  Msg: string;
 begin
-  if (MainDocument = AppendDocument) then
-    DoError();
+  Result := false;
 
   if (not Assigned(MainDocument)) then
-    DoError();
+  begin
+    DoError('Main project not assigned!');
+    Exit;
+  end;
 
   if (not Assigned(AppendDocument)) then
-    DoError();
+  begin
+    DoError('Append project not assigned!');
+    Exit;
+  end;
+
+  if (MainDocument = AppendDocument) then
+  begin
+    DoError('Cannot append project to itself!');
+    Exit;
+  end;
 
   for i := 0 to MainDocument.DataFiles.Count - 1 do
   begin
-    DF := MainDocument.DataFiles[i];
+    MDF := MainDocument.DataFiles[i];
+    ADF := AppendDocument.DataFiles[i];
 
     if (DataFileNames.Count > 0) and
-       (DataFileNames.IndexOf(DF.Name) < 0)
+       (DataFileNames.IndexOf(MDF.Name) < 0)
     then
       Continue;
 
-    Append(DF, AppendDocument.DataFiles[i]);
+    if not Append(MDF, ADF) then
+      Exit;
   end;
+
+  Result := true;
 end;
 
 function TEpiToolAppend.Append(MainDataFile, AppendDataFile: TEpiDataFile
@@ -186,7 +261,22 @@ var
   StartPos: Integer;
   i: Integer;
   j: Integer;
+  Msg: string;
+  WRes: TEpiToolWarningResult;
 begin
+  if not KeyFieldCheck(MainDataFile, AppendDataFile, Msg) then
+  begin
+    DoWarning(Msg, WRes);
+    case WRes of
+      wrStop:
+        Exit(False);
+      wrContinue:
+        Exit(true);
+    end;
+  end;
+
+  Result := false;
+
   StartPos := MainDataFile.Size;
   MainDataFile.Size := MainDataFile.Size + AppendDataFile.Size;
 
@@ -200,10 +290,20 @@ begin
       Continue;
 
     AppendField := AppendDataFile.Fields.FieldByName[MainField.Name];
+    if not Assigned(AppendField) then
+      Continue;
 
     // Compatability Check!
-    if not CompatabilityCheck(MainField, AppendField) then
-      DoError();
+    if not CompatabilityCheck(MainField, AppendField, Msg) then
+    begin
+      DoWarning(Msg, WRes);
+      case WRes of
+        wrStop:
+          Exit;
+        wrContinue:
+          Continue;
+      end;
+    end;
 
     // Seperate ftFloat, because converting to variant causes trouble.
     if MainField.FieldType = ftFloat then
