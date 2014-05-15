@@ -31,6 +31,8 @@ type
     procedure SetTimeSeparator(const AValue: string);
   protected
     function SaveAttributesToXml: string; override;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -141,6 +143,18 @@ begin
     SaveAttr(rsDateSep,    DateSeparator) +
     SaveAttr(rsTimeSep,    TimeSeparator) +
     SaveAttr(rsDecSep,     DecimalSeparator);
+end;
+
+function TEpiXMLSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  with Result do
+  begin
+    SetAttribute(rsDateSep,    DateSeparator);
+    SetAttribute(rsTimeSep,    TimeSeparator);
+    SetAttribute(rsDecSep,     DecimalSeparator);
+  end;
 end;
 
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);

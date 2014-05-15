@@ -97,6 +97,8 @@ type
 
   public
     function   SaveToXmlDocument: TXMLDocument;
+  protected
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
 implementation
@@ -342,6 +344,27 @@ function TEpiDocument.SaveToXmlDocument: TXMLDocument;
 begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
+end;
+
+function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+
+  with Result do
+  begin
+    SetAttribute('xmlns', 'http://www.epidata.dk/XML/1.3');
+    SetAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+    SetAttribute('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd');
+    SetAttribute(rsVersionAttr, IntToStr(Version));
+    SetAttribute('xml:lang', DefaultLang);
+
+    // Version 2 Properties:
+    if PassWord <> '' then
+      SetAttribute(rsPassword, StrToSHA1Base64(PassWord));
+
+    SetAttribute(rsCycle, IntToStr(CycleNo));
+  end;
 end;
 
 end.
