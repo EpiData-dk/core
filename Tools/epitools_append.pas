@@ -12,6 +12,7 @@ uses
 type
 
   TEpiToolWarningResult = (wrStop, wrContinue);
+  TEpiToolAppendResult = (eapFailed, eapPartialSuccess, eapSuccess);
 
   TEpiToolAppendErrorEvent = procedure(Sender: TObject; Const Msg: string) of object;
   TEpiToolAppendWarningEvent = procedure(Sender: TObject; Const Msg: string;
@@ -29,6 +30,7 @@ type
     procedure   DoWarning(Const Msg: String; Out WarningResult: TEpiToolWarningResult);
     procedure   SetOnError(AValue: TEpiToolAppendErrorEvent);
     procedure   SetOnWarning(AValue: TEpiToolAppendWarningEvent);
+    function    Min(Const Res1, Res2: TEpiToolAppendResult): TEpiToolAppendResult;
   protected
     function    CompatabilityCheck(MainField, AppendField: TEpiField;
       out Msg: string): boolean; virtual;
@@ -37,8 +39,8 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    Append(MainDocument, AppendDocument: TEpiDocument): boolean; overload;
-    function    Append(MainDataFile, AppendDataFile: TEpiDataFile): boolean; overload;
+    function    Append(MainDocument, AppendDocument: TEpiDocument): TEpiToolAppendResult; overload;
+    function    Append(MainDataFile, AppendDataFile: TEpiDataFile): TEpiToolAppendResult; overload;
   public
     // Events
     property    OnError: TEpiToolAppendErrorEvent read FOnError write SetOnError;
@@ -79,6 +81,18 @@ procedure TEpiToolAppend.SetOnWarning(AValue: TEpiToolAppendWarningEvent);
 begin
   if FOnWarning = AValue then Exit;
   FOnWarning := AValue;
+end;
+
+function TEpiToolAppend.Min(const Res1, Res2: TEpiToolAppendResult
+  ): TEpiToolAppendResult;
+var
+  R1: Integer;
+  R2: Integer;
+begin
+  R1 := Integer(Res1);
+  R2 := Integer(Res2);
+
+  result := TEpiToolAppendResult(Math.Min(R1, R2));;
 end;
 
 function TEpiToolAppend.CompatabilityCheck(MainField, AppendField: TEpiField;
@@ -134,9 +148,9 @@ begin
       Msg :=
        'DataForm ' + MainDataFile.Caption.Text + 'and DataForm ' + AppendDataFile.Caption.Text +
          'does not have the same number of fields in Key!' + LineEnding +
-       'Continuing will append remaining dataform.' + LineEnding +
+       'Continuing will append remaining dataforms.' + LineEnding +
        LineEnding +
-       'Continue';
+       'Continue?';
 
       Exit;
     end;
@@ -180,7 +194,9 @@ begin
       case CompareKeyFields(MainRunner, AppendRunner) of
         -1: Inc(MainRunner);
         0:  begin
-              DoError('Identical keys found!');
+              Msg := 'Identical keys found!: ' + LineEnding +
+                     'Main record no: ' + MainSortField.AsString[MainRunner] + LineEnding +
+                     'Append record no: ' + AppendSortField.AsString[AppendRunner];
               Exit;
             end;
         1:  Inc(AppendRunner);
@@ -188,6 +204,7 @@ begin
     end;
   finally
     MDF.Free;
+
     ADF.Free;
   end;
 
@@ -208,7 +225,7 @@ begin
 end;
 
 function TEpiToolAppend.Append(MainDocument, AppendDocument: TEpiDocument
-  ): boolean;
+  ): TEpiToolAppendResult;
 var
   MDF: TEpiDataFile;
   ADF: TEpiDataFile;
@@ -216,7 +233,7 @@ var
   WRes: TEpiToolWarningResult;
   Msg: string;
 begin
-  Result := false;
+  Result := eapFailed;
 
   if (not Assigned(MainDocument)) then
   begin
@@ -236,6 +253,7 @@ begin
     Exit;
   end;
 
+  result := eapSuccess;
   for i := 0 to MainDocument.DataFiles.Count - 1 do
   begin
     MDF := MainDocument.DataFiles[i];
@@ -246,15 +264,16 @@ begin
     then
       Continue;
 
-    if not Append(MDF, ADF) then
+    Result := Min(Result, Append(MDF, ADF));
+
+    if (Result = eapFailed)
+    then
       Exit;
   end;
-
-  Result := true;
 end;
 
 function TEpiToolAppend.Append(MainDataFile, AppendDataFile: TEpiDataFile
-  ): boolean;
+  ): TEpiToolAppendResult;
 var
   MainField: TEpiField;
   AppendField: TEpiField;
@@ -266,16 +285,20 @@ var
 begin
   if not KeyFieldCheck(MainDataFile, AppendDataFile, Msg) then
   begin
+    Msg := Msg + LineEnding +
+           'Continuing will append remaining dataforms.' +
+           LineEnding +
+           'Continue?';
     DoWarning(Msg, WRes);
     case WRes of
       wrStop:
-        Exit(False);
+        Exit(eapFailed);
       wrContinue:
-        Exit(true);
+        Exit(eapPartialSuccess);
     end;
   end;
 
-  Result := false;
+  Result := eapSuccess;
 
   StartPos := MainDataFile.Size;
   MainDataFile.Size := MainDataFile.Size + AppendDataFile.Size;
@@ -299,9 +322,12 @@ begin
       DoWarning(Msg, WRes);
       case WRes of
         wrStop:
-          Exit;
+          Exit(eapFailed);
         wrContinue:
-          Continue;
+          begin
+            result := eapPartialSuccess;
+            Continue;
+          end;
       end;
     end;
 
