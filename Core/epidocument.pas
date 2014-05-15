@@ -94,6 +94,9 @@ type
     function   DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
     function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
       nil): TEpiCustomBase; override;
+
+  public
+    function   SaveToXmlDocument: TXMLDocument;
   end;
 
 implementation
@@ -333,6 +336,12 @@ begin
     FPassWord := Self.FPassWord;
     FCycleNo  := Self.FCycleNo;
   end;
+end;
+
+function TEpiDocument.SaveToXmlDocument: TXMLDocument;
+begin
+  result := TXMLDocument.Create;
+  result.AppendChild(SaveToDom(Result));
 end;
 
 end.

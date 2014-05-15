@@ -137,6 +137,9 @@ type
     function   SaveToXml(Content: String; Lvl: integer): string; virtual;
     procedure  LoadFromXml(Root: TDOMNode); virtual;
 
+  protected
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; virtual;
+
     { Change-event hooks }
   private
     FOnChangeList: TMethodList;
@@ -237,6 +240,9 @@ type
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiTranslatedTextWrapper }
@@ -251,6 +257,8 @@ type
   { Cloning }
   protected
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiCustomItem }
@@ -263,6 +271,8 @@ type
     function    SaveAttributesToXml: string; override;
     function    DoValidateRename(Const NewName: string): boolean; virtual;
     function    WriteNameToXml: boolean; virtual;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -299,6 +309,8 @@ type
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
@@ -333,6 +345,8 @@ type
     function    WriteNameToXml: boolean; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     property    List: TFPList read FList;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -1000,6 +1014,20 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
+function TEpiCustomBase.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
+  i: Integer;
+begin
+  Result := RootDoc.CreateElement(XMLName);
+
+  for i := 0 to ClassList.Count - 1 do
+  begin
+    Elem := TEpiCustomBase(ClassList[i]).SaveToDom(RootDoc);
+    Result.AppendChild(Elem);
+  end;
+end;
+
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 begin
@@ -1296,6 +1324,23 @@ begin
   end;
 end;
 
+function TEpiTranslatedText.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  Elem: TDOMText;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  for i := 0 to FTextList.Count - 1 do
+  begin
+    if TString(FTextList.Objects[i]).Str <> '' then
+    begin
+      Elem := RootDoc.CreateTextNode(TString(FTextList.Objects[i]).Str);
+      Result.AppendChild(Elem);
+    end;
+  end;
+end;
+
 procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
@@ -1360,6 +1405,14 @@ begin
   Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
 end;
 
+function TEpiTranslatedTextWrapper.SaveToDom(RootDoc: TDOMDocument
+  ): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+//  Result.AppendChild(RootDoc.CreateElement(XMLName));
+end;
+
 { TEpiCustomItem }
 
 function TEpiCustomItem.GetName: string;
@@ -1399,6 +1452,14 @@ end;
 function TEpiCustomItem.WriteNameToXml: boolean;
 begin
   result := true;
+end;
+
+function TEpiCustomItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if WriteNameToXml then
+    Result.SetAttribute(rsId, Name);
 end;
 
 destructor TEpiCustomItem.Destroy;
@@ -1512,6 +1573,14 @@ begin
   if Left = 0 then
     Left := OrgControlItem.Left;
   EndUpdate;
+end;
+
+function TEpiCustomControlItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  Result.SetAttribute(rsTop, IntToStr(Top));
+  Result.SetAttribute(rsLeft, IntToStr(Left));
 end;
 
 function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
@@ -1631,6 +1700,20 @@ begin
     NItem.LoadFromXml(Node);
 
     Node := Node.NextSibling;
+  end;
+end;
+
+function TEpiCustomList.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  Elem: TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  for i := 0 to Count - 1 do
+  begin
+    Elem := Items[i].SaveToDom(RootDoc);
+    Result.AppendChild(Elem);
   end;
 end;
 
