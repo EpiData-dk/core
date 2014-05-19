@@ -679,7 +679,7 @@ end;
 
 function TEpiCustomBase.Indent(Level: integer): string;
 begin
-  result := DupeString(' ', Level);
+  result := DupeString('  ', Level);
 end;
 
 function TEpiCustomBase.ScrambleXml: boolean;

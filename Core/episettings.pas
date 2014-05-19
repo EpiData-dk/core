@@ -69,6 +69,8 @@ type
     procedure   SetShowFieldNames(const AValue: Boolean);
   protected
     function SaveAttributesToXml: string; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -268,6 +270,20 @@ begin
     SaveAttr(rsBackupOnShutdown,    BackupOnShutdown) +
     SaveAttr(rsShowFieldNames,      ShowFieldNames) +
     SaveAttr(rsShowFieldBorders,    ShowFieldBorders);
+end;
+
+function TEpiProjectSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  with result do
+  begin
+    SetAttribute(rsAutoIncStart,        IntToStr(AutoIncStartValue));
+    SetAttribute(rsTimedBackupInterval, IntToStr(BackupInterval));
+    SetAttribute(rsBackupOnShutdown,    BoolToStr(BackupOnShutdown, 'true', 'false'));
+    SetAttribute(rsShowFieldNames,      BoolToStr(ShowFieldNames, 'true', 'false'));
+    SetAttribute(rsShowFieldBorders,    BoolToStr(ShowFieldBorders, 'true', 'false'));
+  end;
 end;
 
 constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);
