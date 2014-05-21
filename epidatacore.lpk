@@ -300,6 +300,10 @@
         <Filename Value="Reports/epireport_report_exportsettings_visitors.pas"/>
         <UnitName Value="epireport_report_exportsettings_visitors"/>
       </Item66>
+      <Item68>
+        <Filename Value="Tools/epitools_append.pas"/>
+        <UnitName Value="epitools_append"/>
+      </Item68>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
