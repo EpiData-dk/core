@@ -102,7 +102,10 @@ begin
 
   if (not Result) then
     Msg := Format(
-      'Field %s (%s) and %s (%s) does not have the same type!',
+      'Fields: ' + LineEnding +
+      ' [Main]   %s (%s)' + LineEnding +
+      ' [Append] %s (%s)' + LineEnding +
+      'does not have the same type!',
       [MainField.Name, MainField.DataFile.Caption.Text,
        AppendField.Name, AppendField.DataFile.Caption.Text]);
 end;
@@ -147,11 +150,7 @@ begin
     begin
       Msg :=
        'DataForm ' + MainDataFile.Caption.Text + 'and DataForm ' + AppendDataFile.Caption.Text +
-         'does not have the same number of fields in Key!' + LineEnding +
-       'Continuing will append remaining dataforms.' + LineEnding +
-       LineEnding +
-       'Continue?';
-
+         'does not have the same number of fields in Key!' + LineEnding;
       Exit;
     end;
 
@@ -177,10 +176,10 @@ begin
     AppendSortField := ADF.NewField(ftInteger);
 
     for i := 0 to MainDataFile.Size - 1 do
-      MainSortField.AsInteger[i] := i;
+      MainSortField.AsInteger[i] := i + 1;
 
     for i := 0 to AppendDataFile.Size - 1 do
-      AppendSortField.AsInteger[i] := i;
+      AppendSortField.AsInteger[i] := i + 1;
 
 
     MDF.SortRecords(MDF.KeyFields);
@@ -194,7 +193,12 @@ begin
       case CompareKeyFields(MainRunner, AppendRunner) of
         -1: Inc(MainRunner);
         0:  begin
+              Msg := MDF.KeyFields[0].AsString[MainRunner];
+              for i := 1 to MDF.KeyFields.Count - 1 do
+                Msg += ', ' + MDF.KeyFields[i].AsString[MainRunner];
+
               Msg := 'Identical keys found!: ' + LineEnding +
+                     'Value: (' + Msg + ')' + LineEnding +
                      'Main record no: ' + MainSortField.AsString[MainRunner] + LineEnding +
                      'Append record no: ' + AppendSortField.AsString[AppendRunner];
               Exit;
@@ -286,7 +290,8 @@ begin
   if not KeyFieldCheck(MainDataFile, AppendDataFile, Msg) then
   begin
     Msg := Msg + LineEnding +
-           'Continuing will append remaining dataforms.' +
+           LineEnding +
+           'Dataform skipped - continuing with remaining dataforms (if any)' + LineEnding +
            LineEnding +
            'Continue?';
     DoWarning(Msg, WRes);
@@ -319,6 +324,12 @@ begin
     // Compatability Check!
     if not CompatabilityCheck(MainField, AppendField, Msg) then
     begin
+      Msg := Msg + LineEnding +
+             LineEnding +
+             'Continuing will append remaining fields.' + LineEnding +
+             LineEnding +
+             'Continue?';
+
       DoWarning(Msg, WRes);
       case WRes of
         wrStop:
