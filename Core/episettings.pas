@@ -151,12 +151,9 @@ function TEpiXMLSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  with Result do
-  begin
-    SetAttribute(rsDateSep,    DateSeparator);
-    SetAttribute(rsTimeSep,    TimeSeparator);
-    SetAttribute(rsDecSep,     DecimalSeparator);
-  end;
+  SaveDomAttr(Result, rsDateSep, DateSeparator);
+  SaveDomAttr(Result, rsTimeSep, TimeSeparator);
+  SaveDomAttr(Result, rsDecSep,  DecimalSeparator);
 end;
 
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
@@ -276,14 +273,11 @@ function TEpiProjectSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  with result do
-  begin
-    SetAttribute(rsAutoIncStart,        IntToStr(AutoIncStartValue));
-    SetAttribute(rsTimedBackupInterval, IntToStr(BackupInterval));
-    SetAttribute(rsBackupOnShutdown,    BoolToStr(BackupOnShutdown, 'true', 'false'));
-    SetAttribute(rsShowFieldNames,      BoolToStr(ShowFieldNames, 'true', 'false'));
-    SetAttribute(rsShowFieldBorders,    BoolToStr(ShowFieldBorders, 'true', 'false'));
-  end;
+  SaveDomAttr(Result, rsAutoIncStart,        AutoIncStartValue);
+  SaveDomAttr(Result, rsTimedBackupInterval, BackupInterval);
+  SaveDomAttr(Result, rsBackupOnShutdown,    BackupOnShutdown);
+  SaveDomAttr(Result, rsShowFieldNames,      ShowFieldNames);
+  SaveDomAttr(Result, rsShowFieldBorders,    ShowFieldBorders);
 end;
 
 constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);

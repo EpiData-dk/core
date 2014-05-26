@@ -41,6 +41,8 @@ type
     function    WriteNameToXml: boolean; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;

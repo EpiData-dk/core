@@ -273,27 +273,17 @@ begin
 end;
 
 function TEpiStudy.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-
-  procedure AddContent(Const Tag, Value: string);
-  var
-    Elem: TDOMElement;
-  begin
-    Elem := RootDoc.CreateElement(Tag);
-    Elem.TextContent := Value;
-    Result.AppendChild(Elem);
-  end;
-
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  AddContent(rsAuthor, Author);
-  AddContent(rsAgency, Agency);
-  AddContent(rsCreated, 'Created');
-  AddContent(rsIdentifier, Identifier);
-  AddContent(rsKeywords, Keywords);
-  AddContent(rsModified, 'ModifiedDate');
-  AddContent(rsNotes, Notes);
-  AddContent(rsVersion, Version);
+  SaveTextContent(Result, rsAuthor, Author);
+  SaveTextContent(Result, rsAgency, Agency);
+  SaveTextContent(Result, rsCreated, Created);
+  SaveTextContent(Result, rsIdentifier, Identifier);
+  SaveTextContent(Result, rsKeywords, Keywords);
+  SaveTextContent(Result, rsModified, ModifiedDate);
+  SaveTextContent(Result, rsNotes, Notes);
+  SaveTextContent(Result, rsVersion, Version);
 end;
 
 function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase

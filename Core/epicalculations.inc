@@ -54,6 +54,15 @@ begin
     ResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name];
 end;
 
+function TEpiCalculation.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttrEnum(Result, rsType, CalcType, TypeInfo(TEpiCalcType));
+
+  SaveTextContent(Result, rsResultField, ResultField.Name);
+end;
+
 constructor TEpiCalculation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -191,6 +200,22 @@ begin
     end;
     FTimeCalcType := Self.FTimeCalcType;
   end;
+end;
+
+function TEpiTimeCalc.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveTextContent(Result, rsTimeCalcType, Integer(TimeCalcType));
+
+  if Assigned(StartDate) then
+    SaveTextContent(Result, rsStartDate, StartDate.Name);
+  if Assigned(StartTime) then
+    SaveTextContent(Result, rsStartTime, StartTime.Name);
+  if Assigned(EndDate) then
+    SaveTextContent(Result, rsEndDate,   EndDate.Name);
+  if Assigned(EndTime) then
+    SaveTextContent(Result, rsEndTime,   EndTime.Name);
 end;
 
 destructor TEpiTimeCalc.Destroy;
@@ -332,6 +357,15 @@ begin
   end;
 end;
 
+function TEpiCombineDateCalc.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveTextContent(Result, rsDayField,   Day.Name);
+  SaveTextContent(Result, rsMonthField, Month.Name);
+  SaveTextContent(Result, rsYearField,  Year.Name);
+end;
+
 destructor TEpiCombineDateCalc.Destroy;
 begin
   RegisterFieldHook(nil, FYear);
@@ -463,6 +497,21 @@ begin
     FDelim1 := Self.FDelim1;
     FDelim2 := Self.FDelim2;
   end;
+end;
+
+function TEpiCombineStringCalc.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if Assigned(Field1) then
+    SaveTextContent(Result, rsField1, Field1.Name);
+  if Assigned(Field2) then
+    SaveTextContent(Result, rsField2, Field2.Name);
+  if Assigned(Field3) then
+    SaveTextContent(Result, rsField3, Field3.Name);
+
+  SaveTextContent(Result, rsDelim1, Delim1);
+  SaveTextContent(Result, rsDelim2, Delim2);
 end;
 
 destructor TEpiCombineStringCalc.Destroy;

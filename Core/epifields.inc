@@ -190,6 +190,14 @@ begin
     Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
+function TEpiField.Loading: boolean;
+begin
+  result := false;
+
+  if Assigned(DataFile) then
+    Result := DataFile.Loading;
+end;
+
 procedure TEpiField.SetDataModified;
 begin
   if Assigned(DataFile)
@@ -504,6 +512,50 @@ begin
   RegisterClasses([Notes, Question]);
 end;
 
+function TEpiField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  // Attributes
+  SaveDomAttrEnum(Result, rsType, FieldType, TypeInfo(TEpiFieldType));
+  SaveDomAttr(Result, rsLength, Length);
+  SaveDomAttr(Result, rsDecimals, Decimals);
+  SaveDomAttrEnum(Result, rsEntryMode, EntryMode, TypeInfo(TEpiEntryMode));
+
+  if ConfirmEntry then
+    SaveDomAttr(Result, rsConfirmEntry, ConfirmEntry);
+  if RepeatValue then
+    SaveDomAttr(Result, rsRepeatValue, RepeatValue);
+  if ShowValueLabel then
+    SaveDomAttr(Result, rsShowValueLabel, ShowValueLabel);
+
+  // VERSION 2 Property
+  if ShowValueLabelNotes then
+    SaveDomAttr(Result, rsShowValueLabelNotes, ShowValueLabelNotes);
+  if ForcePickList then
+    SaveDomAttr(Result, rsForcePickList, ForcePickList);
+  if HasDefaultValue then
+    SaveDomAttr(Result, rsDefaultValue, DefaultValueAsString);
+  if Assigned(ValueLabelSet) then
+    SaveDomAttr(Result, rsValueLabelId, ValueLabelSet.Name);
+  if Assigned(ValueLabelWriteField) then
+    SaveDomAttr(Result, rsValueLabelWriteRef, ValueLabelWriteField.Name);
+
+
+  // Tags
+  if Assigned(Calculation) then
+    Result.AppendChild(Calculation.SaveToDom(RootDoc));
+
+  if Assigned(Comparison) then
+    Result.AppendChild(Comparison.SaveToDom(RootDoc));
+
+  if Assigned(Jumps) then
+    Result.AppendChild(Jumps.SaveToDom(RootDoc));
+
+  if Assigned(Ranges) then
+    Result.AppendChild(Ranges.SaveToDom(RootDoc));
+end;
+
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
 var
   FC: TEpiFieldClass;
@@ -787,7 +839,9 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+
+  if not Loading then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiIntField.SetAsString(const index: Integer; const AValue: EpiString
@@ -1037,7 +1091,9 @@ begin
   CheckIndex(Index);
   Val := FData[Index];
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+
+  if not Loading then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiFloatField.SetAsInteger(const index: Integer;
@@ -1281,7 +1337,9 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  DoChange(eegFields, Word(efceData), @Val);
+
+  if not Loading then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiBoolField.SetAsDate(const index: Integer; const AValue: EpiDate);
@@ -1598,7 +1656,8 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not Loading then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -1716,6 +1775,17 @@ procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
 begin
   if FAutoMode = AValue then exit;
   FAutoMode := AValue;
+end;
+
+function TEpiCustomAutoField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  am: TEpiAutoUpdateMode;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  am := AutoMode;
+  if FieldType in AutoUpdateFieldTypes then
+    SaveDomAttrEnum(Result, rsAutoUpdateMode, am, TypeInfo(TEpiAutoUpdateMode));
 end;
 
 function TEpiCustomAutoField.SaveAttributesToXml: string;
@@ -1920,7 +1990,8 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not Loading then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiDateField.SetAsDateTime(const index: Integer;
@@ -2146,7 +2217,8 @@ begin
   CheckIndex(index);
   Val := FData[Index];
   FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not Loading then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiDateTimeField.SetAsFloat(const index: Integer;

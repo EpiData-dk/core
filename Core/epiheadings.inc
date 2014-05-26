@@ -59,6 +59,13 @@ begin
   DoChange(eegHeading, Word(ehceType), @Val);
 end;
 
+function TEpiHeading.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttrEnum(Result, rsType, HeadingType, TypeInfo(TEpiHeadingType));
+end;
+
 constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
