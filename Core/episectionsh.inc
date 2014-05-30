@@ -44,6 +44,8 @@ type
     procedure ItemsHook(Const Sender, Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;

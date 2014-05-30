@@ -72,6 +72,10 @@ type
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     procedure   SetModified(const AValue: Boolean); override;
+  protected
+    procedure   SaveKeyFieldsToDom(RootNode: TDOMElement);
+    procedure   SaveRecordToDom(RootNode: TDOMElement);
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;

@@ -19,6 +19,8 @@ type
     property OwnerField: TEpiField read GetOwnerField;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -51,6 +53,8 @@ type
       EventType: Word; Data: Pointer); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
       nil): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
@@ -79,6 +83,8 @@ type
       EventType: Word; Data: Pointer); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;
@@ -109,6 +115,8 @@ type
       EventType: Word; Data: Pointer); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode); override;

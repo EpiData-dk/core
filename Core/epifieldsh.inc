@@ -177,6 +177,8 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;
@@ -397,6 +399,8 @@ type
   private
     FAutoMode: TEpiAutoUpdateMode;
     procedure SetAutoMode(const AValue: TEpiAutoUpdateMode);
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   protected
     function  SaveAttributesToXml: string; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =

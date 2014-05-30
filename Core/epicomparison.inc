@@ -55,6 +55,14 @@ begin
   end;
 end;
 
+function TEpiComparison.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsCompareTo, CompareField.Name);
+  SaveDomAttrEnum(Result, rsType, CompareType, TypeInfo(TEpiComparisonType));
+end;
+
 constructor TEpiComparison.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);

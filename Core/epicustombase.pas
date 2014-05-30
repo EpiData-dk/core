@@ -63,11 +63,11 @@ type
 
   TEpiCoreException = class (Exception);
 
-  {$static on}
+//  {$static on}
   TEpiCustomBase = class
   { Scrambling }
   private
-    FCrypter:   TDCP_rijndael; static;
+    FCrypter:   TDCP_rijndael;
     function    Get4ByteSalt: Integer;
   protected
     procedure   InitCrypt(Key: string);
@@ -136,6 +136,34 @@ type
     function   XMLName: string; virtual;
     function   SaveToXml(Content: String; Lvl: integer): string; virtual;
     procedure  LoadFromXml(Root: TDOMNode); virtual;
+
+  protected
+    // Dom Attr
+    procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
+      Const Value: boolean); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
+      Const Value: integer); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
+      Const Value: extended); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
+      Const Value: TDateTime); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
+      Const Value: string); overload;
+    procedure  SaveDomAttrEnum(Const Node: TDomElement; Const Tag: String;
+      Const Value; TypeInfo: PTypeInfo);
+    // Dom Text Content
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: String); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: Integer); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: Extended); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: TDateTime); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: Boolean); overload;
+    // Save To Dom
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; virtual;
 
     { Change-event hooks }
   private
@@ -207,7 +235,7 @@ type
     function    Clone: TEpiCustomBase;
     function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
   end;
-  {$static off}
+//  {$static off}
   TEpiCustomBaseClass = class of TEpiCustomBase;
 
   { TEpiTranslatedText }
@@ -237,6 +265,9 @@ type
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
        nil): TEpiCustomBase; override;
+
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiTranslatedTextWrapper }
@@ -251,6 +282,8 @@ type
   { Cloning }
   protected
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiCustomItem }
@@ -263,6 +296,8 @@ type
     function    SaveAttributesToXml: string; override;
     function    DoValidateRename(Const NewName: string): boolean; virtual;
     function    WriteNameToXml: boolean; virtual;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -299,6 +334,8 @@ type
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
@@ -333,6 +370,8 @@ type
     function    WriteNameToXml: boolean; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
     property    List: TFPList read FList;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -665,7 +704,7 @@ end;
 
 function TEpiCustomBase.Indent(Level: integer): string;
 begin
-  result := DupeString(' ', Level);
+  result := DupeString('  ', Level);
 end;
 
 function TEpiCustomBase.ScrambleXml: boolean;
@@ -1000,6 +1039,121 @@ begin
   // Do nothing - should be overridden in descendants.
 end;
 
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const Tag: String; const Value: string);
+begin
+  Node.SetAttribute(Tag, Value);
+end;
+
+procedure TEpiCustomBase.SaveDomAttrEnum(const Node: TDomElement;
+  const Tag: String; const Value; TypeInfo: PTypeInfo);
+var
+  V: Byte;
+begin
+  V := Byte(Value);
+  SaveDomAttr(Node, Tag, GetEnumName(TypeInfo, V));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const Tag: String; const Value: integer);
+begin
+  SaveDomAttr(Node, Tag, IntToStr(Value));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const Tag: String; const Value: extended);
+begin
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    SaveDomAttr(Node, Tag, FloatToStr(Value));
+    RestoreFormatSettings;
+  end else
+    SaveDomAttr(Node, Tag, FloatToStr(Value));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const Tag: String; const Value: TDateTime);
+begin
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    SaveDomAttr(Node, Tag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
+    RestoreFormatSettings;
+  end else
+    SaveDomAttr(Node, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const Tag: String; const Value: boolean);
+begin
+  SaveDomAttr(Node, Tag, BoolToStr(Value, 'true', 'false'));
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: String);
+var
+  Elem: TDOMElement;
+begin
+  Elem := RootNode.OwnerDocument.CreateElement(Tag);
+  Elem.TextContent := Value;
+  RootNode.AppendChild(Elem);
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: Integer);
+begin
+  SaveTextContent(RootNode, Tag, IntToStr(Value));
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: Extended);
+begin
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+
+  SaveTextContent(RootNode, Tag, FloatToStr(Value));
+
+  if (RootOwner is TEpiDocument) then
+    RestoreFormatSettings;
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: TDateTime);
+begin
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    SaveTextContent(RootNode, Tag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
+    RestoreFormatSettings;
+  end else
+    SaveTextContent(RootNode, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: Boolean);
+begin
+//  SaveTextContent(RootNode, Value, BoolToStr(Value, 'true', 'false'));
+end;
+
+function TEpiCustomBase.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
+  i: Integer;
+begin
+  Result := RootDoc.CreateElement(XMLName);
+
+  for i := 0 to ClassList.Count - 1 do
+  begin
+    Elem := TEpiCustomBase(ClassList[i]).SaveToDom(RootDoc);
+    if Assigned(Elem) then
+      Result.AppendChild(Elem);
+  end;
+end;
+
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 begin
@@ -1296,6 +1450,23 @@ begin
   end;
 end;
 
+function TEpiTranslatedText.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  Elem: TDOMText;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  for i := 0 to FTextList.Count - 1 do
+  begin
+    if TString(FTextList.Objects[i]).Str <> '' then
+    begin
+      SaveDomAttr(Result, 'xml:lang', FTextList[i]);
+      Result.TextContent := TString(FTextList.Objects[i]).Str;
+    end;
+  end;
+end;
+
 procedure TEpiTranslatedText.SetText( const LangCode: string;
   const AText: string);
 var
@@ -1360,6 +1531,30 @@ begin
   Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
 end;
 
+function TEpiTranslatedTextWrapper.SaveToDom(RootDoc: TDOMDocument
+  ): TDOMElement;
+var
+  Elem: TDOMElement;
+  i: Integer;
+  ReturnNil: Boolean;
+begin
+  ReturnNil := true;
+  for i := 0 to FTextList.Count -1 do
+    if TString(FTextList.Objects[i]).Str <> '' then
+    begin
+      ReturnNil := false;
+      Break;
+    end;
+
+  if ReturnNil then
+    Exit(nil);
+
+  Elem := inherited SaveToDom(RootDoc);
+
+  Result := RootDoc.CreateElement(FNodeName);
+  Result.AppendChild(Elem);
+end;
+
 { TEpiCustomItem }
 
 function TEpiCustomItem.GetName: string;
@@ -1399,6 +1594,14 @@ end;
 function TEpiCustomItem.WriteNameToXml: boolean;
 begin
   result := true;
+end;
+
+function TEpiCustomItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if WriteNameToXml then
+    SaveDomAttr(Result, rsId, Name);
 end;
 
 destructor TEpiCustomItem.Destroy;
@@ -1512,6 +1715,14 @@ begin
   if Left = 0 then
     Left := OrgControlItem.Left;
   EndUpdate;
+end;
+
+function TEpiCustomControlItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  Result.SetAttribute(rsTop, IntToStr(Top));
+  Result.SetAttribute(rsLeft, IntToStr(Left));
 end;
 
 function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
@@ -1631,6 +1842,23 @@ begin
     NItem.LoadFromXml(Node);
 
     Node := Node.NextSibling;
+  end;
+end;
+
+function TEpiCustomList.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  Elem: TDOMElement;
+begin
+  if Count = 0 then
+    Exit(nil);
+
+  Result := inherited SaveToDom(RootDoc);
+
+  for i := 0 to Count - 1 do
+  begin
+    Elem := Items[i].SaveToDom(RootDoc);
+    Result.AppendChild(Elem);
   end;
 end;
 

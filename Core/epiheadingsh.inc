@@ -27,6 +27,8 @@ type
     FHeadingType: TEpiHeadingType;
     function   GetSection: TEpiSection;
     procedure SetHeadingType(AValue: TEpiHeadingType);
+  protected
+    function  SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;

@@ -84,6 +84,14 @@ begin
   end; }
 end;
 
+function TEpiSection.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsWidth, Width);
+  SaveDomAttr(Result, rsHeight, Height);
+end;
+
 function TEpiSection.GetField(Index: integer): TEpiField;
 begin
   result := TEpiField(Fields[Index]);
