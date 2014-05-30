@@ -31,7 +31,8 @@
           <UseMsgFile Value="True"/>
         </CompilerMessages>
         <CustomOptions Value="-dEPI_INTEGRITY_DEBUG1
--dEPI_TEST_LOAD"/>
+-dEPI_TEST_LOAD
+-dEPI_SAVE_STRING1"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>

@@ -6,7 +6,7 @@ unit epidocument;
 interface
 
 uses
-  Classes, sysutils, laz2_XMLRead, Laz2_DOM,
+  Classes, sysutils, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
   epistudy, epirelations, epivaluelabels,
   epicustombase, epidatafilestypes;
@@ -40,6 +40,7 @@ type
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
+    FBranchString: string;
     FCycleNo: Int64;
     FLoading: boolean;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
@@ -81,9 +82,8 @@ type
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
-    // EpiData XML Version 2 perperties:
+    // EpiData XML Version 2 properties:
     property   PassWord: string read FPassWord write SetPassWord;
-
   { Cycle numbering }
   public
     procedure  IncCycleNo;
@@ -104,7 +104,7 @@ type
 implementation
 
 uses
-  epimiscutils;
+  epimiscutils, laz2_XMLRead, laz2_XMLWrite;
 
 { TEpiDocument }
 
@@ -231,9 +231,27 @@ var
   Node: TDOMNode;
   PW, Login, UserPW: String;
   TmpVersion: EpiInteger;
+  TmpBranch: EpiString;
 begin
   // Root = <EpiData>
   FLoading := true;
+
+  {$IFNDEF RELEASE}
+  // Keep an eye in which branch we are loading from!
+  TmpBranch := LoadAttrString(Root, rsBranchAttr, '', false);
+  if (TmpBranch <> '') and
+     (TmpBranch <> EPI_XML_BRANCH_STRING)
+  then
+    begin
+      Raise EEpiBadVersion.CreateFmt(
+        'Project has been created in another development branch!' + LineEnding +
+        'Loading may not be possible - change branch name at own risk!' + LineEnding +
+        'This branch: %s' + LineEnding +
+        'Project branch: %s',
+        [EPI_XML_BRANCH_STRING, TmpBranch]
+      );
+    end;
+  {$ENDIF}
 
   // First read version no!
   TmpVersion := LoadAttrInt(Root, rsVersionAttr);
@@ -305,9 +323,15 @@ end;
 procedure TEpiDocument.SaveToStream(const St: TStream);
 var
   S: String;
+  FDoc: TXMLDocument;
 begin
+  {$IFDEF EPI_SAVE_STRING}
   S := SaveToXml(0);
   St.Write(S[1], Length(S));
+  {$ELSE}
+  FDoc := SaveToXmlDocument;
+  WriteXMLFile(FDoc, St);
+  {$ENDIF}
 end;
 
 procedure TEpiDocument.SaveToFile(const AFileName: string);
@@ -350,21 +374,21 @@ function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
+  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/1.3');
+  SaveDomAttr(Result, 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd');
+  SaveDomAttr(Result, rsVersionAttr, Version);
+  SaveDomAttr(Result, 'xml:lang', DefaultLang);
 
-  with Result do
-  begin
-    SetAttribute('xmlns', 'http://www.epidata.dk/XML/1.3');
-    SetAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-    SetAttribute('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd');
-    SetAttribute(rsVersionAttr, IntToStr(Version));
-    SetAttribute('xml:lang', DefaultLang);
+  {$IFNDEF RELEASE}
+  SaveDomAttr(Result, rsBranchAttr, EPI_XML_BRANCH_STRING);
+  {$ENDIF}
 
-    // Version 2 Properties:
-    if PassWord <> '' then
-      SetAttribute(rsPassword, StrToSHA1Base64(PassWord));
+  // Version 2 Properties:
+  if PassWord <> '' then
+    SaveDomAttr(Result, rsPassword, StrToSHA1Base64(PassWord));
 
-    SetAttribute(rsCycle, IntToStr(CycleNo));
-  end;
+  SaveDomAttr(Result, rsCycle, CycleNo);
 end;
 
 end.

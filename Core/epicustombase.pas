@@ -11,6 +11,9 @@ uses
 
 const
   EPI_XML_DATAFILE_VERSION = 3;
+  {$IFNDEF RELEASE}
+  EPI_XML_BRANCH_STRING = 'TRUNK';
+  {$ENDIF}
 
 type
   EEpiBadVersion  = class(Exception);

@@ -6,6 +6,7 @@ const
   rsCaption     = 'Caption';
   rsText        = 'Text';
   rsVersionAttr = 'version';
+  rsBranchAttr  = 'branch';   // only used in development versions
   rsCreatedAttr = 'created';
   rsModifiedAttr = 'modified';
 
