@@ -157,6 +157,7 @@ type
     function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
   protected
+    function    LoadingRecs: boolean;
     procedure   SetDataModified;
     function    GetSize: Integer; virtual;
     procedure   SetSize(const AValue: Integer); virtual;

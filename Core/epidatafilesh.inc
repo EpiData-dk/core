@@ -63,6 +63,7 @@ type
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
   { Load/Save methods }
   private
+    FLoadingRecs: Boolean;
     procedure   HaltLoading;
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);

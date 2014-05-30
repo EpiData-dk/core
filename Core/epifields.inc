@@ -190,6 +190,15 @@ begin
     Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
+function TEpiField.LoadingRecs: boolean;
+begin
+  Result := false;
+
+  if Assigned(DataFile)
+  then
+    Result := DataFile.FLoadingRecs;
+end;
+
 procedure TEpiField.SetDataModified;
 begin
   if Assigned(DataFile)
@@ -787,7 +796,8 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiIntField.SetAsString(const index: Integer; const AValue: EpiString
@@ -1037,7 +1047,8 @@ begin
   CheckIndex(Index);
   Val := FData[Index];
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiFloatField.SetAsInteger(const index: Integer;
@@ -1281,7 +1292,8 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  DoChange(eegFields, Word(efceData), @Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiBoolField.SetAsDate(const index: Integer; const AValue: EpiDate);
@@ -1598,7 +1610,8 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -1920,7 +1933,8 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiDateField.SetAsDateTime(const index: Integer;
@@ -2146,7 +2160,8 @@ begin
   CheckIndex(index);
   Val := FData[Index];
   FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), @Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), @Val);
 end;
 
 procedure TEpiDateTimeField.SetAsFloat(const index: Integer;
