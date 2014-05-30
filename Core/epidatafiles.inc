@@ -500,8 +500,6 @@ var
   end;
 
 begin
-  FLoading := true;
-
   // Root = <Records>
   FLoadingRecs := true;
   FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
@@ -641,7 +639,7 @@ begin
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
 
-  FLoading := false;
+  FLoadingRecs := false;
 end;
 
 function TEpiDataFile.SaveKeyFields(Lvl: integer): string;
