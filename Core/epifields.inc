@@ -190,12 +190,13 @@ begin
     Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
-function TEpiField.Loading: boolean;
+function TEpiField.LoadingRecs: boolean;
 begin
-  result := false;
+  Result := false;
 
-  if Assigned(DataFile) then
-    Result := DataFile.Loading;
+  if Assigned(DataFile)
+  then
+    Result := DataFile.FLoadingRecs;
 end;
 
 procedure TEpiField.SetDataModified;
@@ -839,8 +840,7 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[Index] := AValue;
-
-  if not Loading then
+  if not LoadingRecs then
     DoChange(eegFields, word(efceData), @Val);
 end;
 
@@ -1091,8 +1091,7 @@ begin
   CheckIndex(Index);
   Val := FData[Index];
   FData[index] := AValue;
-
-  if not Loading then
+  if not LoadingRecs then
     DoChange(eegFields, word(efceData), @Val);
 end;
 
@@ -1337,8 +1336,7 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-
-  if not Loading then
+  if not LoadingRecs then
     DoChange(eegFields, word(efceData), @Val);
 end;
 
@@ -1656,7 +1654,7 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  if not Loading then
+  if not LoadingRecs then
     DoChange(eegFields, word(efceData), @Val);
 end;
 
@@ -1990,7 +1988,7 @@ begin
   CheckIndex(Index);
   Val := FData[index];
   FData[index] := AValue;
-  if not Loading then
+  if not LoadingRecs then
     DoChange(eegFields, word(efceData), @Val);
 end;
 
@@ -2217,7 +2215,7 @@ begin
   CheckIndex(index);
   Val := FData[Index];
   FData[Index] := AValue;
-  if not Loading then
+  if not LoadingRecs then
     DoChange(eegFields, word(efceData), @Val);
 end;
 

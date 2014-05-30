@@ -528,8 +528,8 @@ end;
 destructor TEpiCustomBase.Destroy;
 begin
   FClassList.Free;
-  Freemem(FOnChangeList);
-  Freemem(FOnChangeListIgnoreUpdate);
+  FOnChangeList.Free;
+  FOnChangeListIgnoreUpdate.Free;
   inherited Destroy;
 end;
 

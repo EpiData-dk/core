@@ -503,6 +503,7 @@ begin
   FLoading := true;
 
   // Root = <Records>
+  FLoadingRecs := true;
   FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
 
   CurRec := 0;
@@ -633,7 +634,8 @@ begin
     Node := TDOMElement(Node.NextSibling);
   end;
 
-  Freemem(PStart);
+  if Assigned(PStart) then
+    Freemem(PStart);
   DoProgress(eptFinish, NodeCount, NodeCount);
 
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
@@ -658,6 +660,7 @@ begin
       '<Key' + SaveAttr('fieldRef', KeyFields[i].Name) + '/>' + LineEnding;
   end;
   Result += Indent(Lvl) + '</KeyFields>' + LineEnding;
+  FLoadingRecs := false;
 end;
 
 procedure TEpiDataFile.LoadKeyFields(Root: TDOMNode);

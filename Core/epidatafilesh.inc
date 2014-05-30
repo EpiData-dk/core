@@ -63,14 +63,12 @@ type
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
   { Load/Save methods }
   private
-    FLoading:   boolean;
+    FLoadingRecs: Boolean;
     procedure   HaltLoading;
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
     function    SaveKeyFields(Lvl: integer): string;
     procedure   LoadKeyFields(Root: TDOMNode);
-  public
-    property    Loading: boolean read FLoading;
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     procedure   SetModified(const AValue: Boolean); override;
