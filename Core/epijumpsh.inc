@@ -43,6 +43,8 @@ type
        ReferenceType: Byte; const ReferenceId: string); override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;

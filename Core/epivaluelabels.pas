@@ -25,6 +25,8 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     function WriteNameToXml: boolean; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    XMLName: string; override;
@@ -48,6 +50,8 @@ type
     function GetValueAsString: string; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
@@ -65,6 +69,8 @@ type
     function GetValueAsString: string; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
@@ -82,6 +88,8 @@ type
     function GetValueAsString: string; override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
@@ -126,6 +134,8 @@ type
     procedure DoChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
       overload;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -216,6 +226,16 @@ begin
   Result := false;
 end;
 
+function TEpiCustomValueLabel.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if IsMissingValue then
+    SaveDomAttr(Result, rsMissing, IsMissingValue);
+
+  SaveDomAttr(Result, rsOrder, Order);
+end;
+
 constructor TEpiCustomValueLabel.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -292,6 +312,12 @@ begin
   TEpiIntValueLabel(Result).FValue := FValue;
 end;
 
+function TEpiIntValueLabel.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+  SaveDomAttr(Result, rsValue, Value);
+end;
+
 procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 begin
@@ -338,6 +364,12 @@ begin
   TEpiFloatValueLabel(Result).FValue := FValue;
 end;
 
+function TEpiFloatValueLabel.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+  SaveDomAttr(Result, rsValue, Value);
+end;
+
 procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 begin
@@ -382,6 +414,12 @@ function TEpiStringValueLabel.DoClone(AOwner: TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiStringValueLabel(Result).FValue := FValue;
+end;
+
+function TEpiStringValueLabel.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+  SaveDomAttr(Result, rsValue, Value);
 end;
 
 procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode;
@@ -594,6 +632,17 @@ begin
 
   if TEpiValueLabelChangeEvent(EventType) = evceValue then
     DirtyCacheAndSendChangeEvent;
+end;
+
+function TEpiValueLabelSet.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  lt: TEpiFieldType;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  lt := LabelType;
+  SaveDomAttrEnum(Result, rsType, LabelType, TypeInfo(TEpiFieldType));
+  SaveDomAttrEnum(Result, rsValueLabelScope, LabelScope, TypeInfo(TEpiValueLabelSetScope));
 end;
 
 constructor TEpiValueLabelSet.Create(AOwner: TEpiCustomBase);

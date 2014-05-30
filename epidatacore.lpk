@@ -31,12 +31,13 @@
           <UseMsgFile Value="True"/>
         </CompilerMessages>
         <CustomOptions Value="-dEPI_INTEGRITY_DEBUG1
--dEPI_TEST_LOAD"/>
+-dEPI_TEST_LOAD
+-dEPI_SAVE_STRING"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
     <Version Major="1" Minor="5" Release="2"/>
-    <Files Count="67">
+    <Files Count="69">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -305,6 +306,14 @@
         <Filename Value="Utils/epiopenfile_cache.pas"/>
         <UnitName Value="epiopenfile_cache"/>
       </Item67>
+      <Item68>
+        <Filename Value="Tools/epitools_append.pas"/>
+        <UnitName Value="epitools_append"/>
+      </Item68>
+      <Item69>
+        <Filename Value="Tools/epitools_search.pas"/>
+        <UnitName Value="epitools_search"/>
+      </Item69>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

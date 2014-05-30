@@ -152,6 +152,14 @@ begin
   Result := false;
 end;
 
+function TEpiRelate.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsRelationRef, DetailRelation.Name);
+  SaveDomAttr(Result, rsRelateValue, RelateValue);
+end;
+
 constructor TEpiRelate.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);

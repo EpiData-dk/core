@@ -183,6 +183,21 @@ begin
   end;
 end;
 
+function TEpiJump.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  jt: TEpiJumpType;
+  rt: TEpiJumpResetType;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsJumpOn, GetJumpValueAsString);
+  SaveDomAttrEnum(Result, rsJumpType, JumpType, TypeInfo(TEpiJumpType));
+  SaveDomAttrEnum(Result, rsJumpReset, ResetType, TypeInfo(TEpiJumpResetType));
+
+  if JumpType = jtToField then
+    SaveDomAttr(Result, rsJumpTo, JumpToField.Name);
+end;
+
 function TEpiJump.XMLName: string;
 begin
   Result := rsJump;

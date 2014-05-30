@@ -10,7 +10,6 @@ uses
 type
   TEpiRange = class;
 
-
   { TEpiRanges }
 
   TEpiRanges = class(TEpiCustomList)
@@ -32,6 +31,8 @@ type
     function    RangesToText: string;
     property    Range[const index: integer]: TEpiRange read GetRange; default;
     property    FieldType: TEpiFieldType read GetFieldType;
+  public
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiRange }
@@ -51,6 +52,8 @@ type
     procedure   SetAsFloat(const Start: boolean; const AValue: EpiFloat); virtual; abstract;
     procedure   SetAsInteger(const Start: boolean; const AValue: EpiInteger); virtual; abstract;
     procedure   SetAsTime(const Start: boolean; const AValue: EpiTime); virtual; abstract;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -174,6 +177,11 @@ end;
 function TEpiRanges.Prefix: string;
 begin
   Result := 'range_id_'
+end;
+
+function TEpiRanges.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
 end;
 
 constructor TEpiRanges.Create(AOwner: TEpiCustomBase);
@@ -541,6 +549,18 @@ end;
 function TEpiRange.WriteNameToXml: boolean;
 begin
   Result := false;
+end;
+
+function TEpiRange.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+
+  SaveDomAttr(Result, 'start', AsString[True]);
+  SaveDomAttr(Result, 'end',   AsString[False]);
+
+  RestoreFormatSettings;
 end;
 
 function TEpiRange.SaveAttributesToXml: string;

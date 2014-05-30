@@ -53,6 +53,9 @@ type
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
 
+  protected
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  public
     Property   AbstractText: TEpiTranslatedTextWrapper read FAbstractText;
     Property   Author: string read FAuthor write SetAuthor;
     property   Agency: string read FAgency write SetAgency;
@@ -268,6 +271,20 @@ begin
   FDataCollectionEnd   := LoadNodeDateTime(Root, rsDataColectionEnd,   FDataCollectionEnd,   false);
   FDesign.LoadFromXml(Root, ReferenceMap);
   FUnitOfObservation.LoadFromXml(Root, ReferenceMap);
+end;
+
+function TEpiStudy.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveTextContent(Result, rsAuthor, Author);
+  SaveTextContent(Result, rsAgency, Agency);
+  SaveTextContent(Result, rsCreated, Created);
+  SaveTextContent(Result, rsIdentifier, Identifier);
+  SaveTextContent(Result, rsKeywords, Keywords);
+  SaveTextContent(Result, rsModified, ModifiedDate);
+  SaveTextContent(Result, rsNotes, Notes);
+  SaveTextContent(Result, rsVersion, Version);
 end;
 
 function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;

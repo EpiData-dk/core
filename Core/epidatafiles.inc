@@ -519,6 +519,7 @@ var
 
 begin
   // Root = <Records>
+  FLoadingRecs := true;
   FRecModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FRecModifiedDate, false);
 
   CurRec := 0;
@@ -658,11 +659,14 @@ begin
     Node := TDOMElement(Node.NextSibling);
   end;
 
-  Freemem(PStart);
+  if Assigned(PStart) then
+    Freemem(PStart);
   DoProgress(eptFinish, NodeCount, NodeCount);
 
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
+
+  FLoadingRecs := false;
 end;
 
 function TEpiDataFile.SaveKeyFields(Lvl: integer): string;
@@ -681,6 +685,7 @@ begin
       '<Key' + SaveAttr('fieldRef', KeyFields[i].Name) + '/>' + LineEnding;
   end;
   Result += Indent(Lvl) + '</KeyFields>' + LineEnding;
+  FLoadingRecs := false;
 end;
 
 procedure TEpiDataFile.LoadKeyFields(Root: TDOMNode);
@@ -981,6 +986,133 @@ begin
     FStructureModified := AValue;
     FRecModified       := AValue;
   end;
+end;
+
+procedure TEpiDataFile.SaveKeyFieldsToDom(RootNode: TDOMElement);
+var
+  OD: TDOMDocument;
+  KFsElem: TDOMElement;
+  Elem: TDOMElement;
+  i: Integer;
+begin
+  if KeyFields.Count = 0 then exit;
+
+  OD := RootNode.OwnerDocument;
+  KFsElem := OD.CreateElement('KeyFields');
+
+  for i := 0 to KeyFields.Count -1 do
+  begin
+    Elem := OD.CreateElement('Key');
+    SaveDomAttr(Elem, 'fieldRef', KeyFields[i].Name);
+    KFsElem.AppendChild(Elem);
+  end;
+
+  RootNode.AppendChild(KFsElem);
+end;
+
+procedure TEpiDataFile.SaveRecordToDom(RootNode: TDOMElement);
+var
+  RecordsElem: TDOMElement;
+  Edoc: TEpiDocument;
+  ProgressMethod: TEpiProgressEvent;
+  Sz: Integer;
+  Fc: Integer;
+  EnCrypter: TDCP_rijndael;
+  CurRec: Integer;
+  DocNode: TDOMDocument;
+  RElem: TDOMElement;
+  S: String;
+  CurField: Integer;
+  SaltInt: LongInt;
+  SaltByte: array[0..3] of char absolute SaltInt;
+  Salt: String;
+
+  function LocalEncrypt(Const S: String): string;
+  begin
+    if Assigned(EnCrypter) then
+      Result := EnCrypter.EncryptString(S)
+    else
+      Result := S;
+  end;
+
+  function DoProgress(ProgressType: TEpiProgressType;
+    Count, Max: Cardinal):boolean; inline;
+  begin
+    Result := false;
+    if Assigned(ProgressMethod) then
+      ProgressMethod(Self, ProgressType, Count, Max, Result);
+  end;
+
+begin
+  if FRecModified then
+    FRecModifiedDate := Now;
+
+
+  DocNode := RootNode.OwnerDocument;
+  RecordsElem := DocNode.CreateElement(rsRecords);
+  SaveDomAttr(RecordsElem, rsModifiedAttr, RecModifiedDate);
+
+  RootNode.AppendChild(RecordsElem);
+
+  Edoc := TEpiDocument(RootOwner);
+  ProgressMethod := Edoc.OnProgress;
+
+  BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
+  Sz := Size;
+  Fc := Fields.Count;
+
+  EnCrypter := nil;
+  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
+  Salt := String(SaltByte);
+
+  if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
+  begin
+    EnCrypter := TDCP_rijndael.Create(nil);
+    EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
+    Salt := EnCrypter.EncryptString(Salt);
+  end else
+    Salt := '';
+
+  SaveDomAttr(RecordsElem, rsEncryptedSalt, Salt);
+
+  DoProgress(eptInit, 0, Sz);
+  for CurRec := 0 to Sz - 1 do
+  begin
+    DoProgress(eptRecords, CurRec, Sz);
+    RElem := DocNode.CreateElement(rsRecord);
+    RecordsElem.AppendChild(RElem);
+    SaveDomAttrEnum(RElem, rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState));
+
+    S := '';
+    for CurField := 0 to Fc - 1 do
+    with Fields[CurField] do
+      if not IsMissing[CurRec] then
+        if FieldType in StringFieldTypes then
+          S += Name + '="' + AsString[CurRec] + '";'
+        else
+          S += Name + '=' + AsString[CurRec] + ';';
+    Delete(S, Length(S), 1);
+    RElem.TextContent := LocalEncrypt(S);
+  end;
+  RestoreFormatSettings;
+  DoProgress(eptFinish, Sz, Sz);
+end;
+
+function TEpiDataFile.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if FStructureModified then
+    FStructureModifiedDate := Now;
+
+  SaveDomAttr(Result, rsCreatedAttr, Created);
+  SaveDomAttr(Result, rsModifiedAttr, StructureModifiedDate);
+  SaveDomAttr(Result, rsVersionAttr, Version);
+
+  SaveKeyFieldsToDom(Result);
+  SaveRecordToDom(Result);
 end;
 
 function ControlItemListSort(Item1, Item2: Pointer): integer;

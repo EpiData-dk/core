@@ -21,6 +21,8 @@ type
        ReferenceType: Byte; const ReferenceId: string); override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;

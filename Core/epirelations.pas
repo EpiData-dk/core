@@ -31,6 +31,8 @@ type
        ReferenceType: Byte; const ReferenceId: string); override;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -53,6 +55,8 @@ type
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -186,6 +190,13 @@ begin
     RefenceMap.AddFixupReference(Result, TEpiMasterRelation, 0, Datafile.Name);
 end;
 
+function TEpiMasterRelation.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsDataFileRef, Datafile.Name);
+end;
+
 constructor TEpiMasterRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -259,6 +270,13 @@ begin
   Result := inherited DoClone(AOwner, Dest, RefenceMap);
 
   TEpiDetailRelation(Result).MaxRecordCount := MaxRecordCount;
+end;
+
+function TEpiDetailRelation.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsMaxRecordCount, MaxRecordCount);
 end;
 
 constructor TEpiDetailRelation.Create(AOwner: TEpiCustomBase);

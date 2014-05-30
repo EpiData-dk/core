@@ -197,6 +197,15 @@ begin
     Result := TEpiDocument(RootOwner).XMLSettings;
 end;
 
+function TEpiField.LoadingRecs: boolean;
+begin
+  Result := false;
+
+  if Assigned(DataFile)
+  then
+    Result := DataFile.FLoadingRecs;
+end;
+
 procedure TEpiField.SetDataModified;
 begin
   if Assigned(DataFile)
@@ -537,6 +546,50 @@ begin
   RegisterClasses([Notes, Question]);
 end;
 
+function TEpiField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  // Attributes
+  SaveDomAttrEnum(Result, rsType, FieldType, TypeInfo(TEpiFieldType));
+  SaveDomAttr(Result, rsLength, Length);
+  SaveDomAttr(Result, rsDecimals, Decimals);
+  SaveDomAttrEnum(Result, rsEntryMode, EntryMode, TypeInfo(TEpiEntryMode));
+
+  if ConfirmEntry then
+    SaveDomAttr(Result, rsConfirmEntry, ConfirmEntry);
+  if RepeatValue then
+    SaveDomAttr(Result, rsRepeatValue, RepeatValue);
+  if ShowValueLabel then
+    SaveDomAttr(Result, rsShowValueLabel, ShowValueLabel);
+
+  // VERSION 2 Property
+  if ShowValueLabelNotes then
+    SaveDomAttr(Result, rsShowValueLabelNotes, ShowValueLabelNotes);
+  if ForcePickList then
+    SaveDomAttr(Result, rsForcePickList, ForcePickList);
+  if HasDefaultValue then
+    SaveDomAttr(Result, rsDefaultValue, DefaultValueAsString);
+  if Assigned(ValueLabelSet) then
+    SaveDomAttr(Result, rsValueLabelId, ValueLabelSet.Name);
+  if Assigned(ValueLabelWriteField) then
+    SaveDomAttr(Result, rsValueLabelWriteRef, ValueLabelWriteField.Name);
+
+
+  // Tags
+  if Assigned(Calculation) then
+    Result.AppendChild(Calculation.SaveToDom(RootDoc));
+
+  if Assigned(Comparison) then
+    Result.AppendChild(Comparison.SaveToDom(RootDoc));
+
+  if Assigned(Jumps) then
+    Result.AppendChild(Jumps.SaveToDom(RootDoc));
+
+  if Assigned(Ranges) then
+    Result.AppendChild(Ranges.SaveToDom(RootDoc));
+end;
+
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
 var
   FC: TEpiFieldClass;
@@ -854,7 +907,8 @@ begin
   Val^.IntValue  := FData[Index];
 
   FData[Index] := AValue;
-  DoChange(eegFields, word(efceData), Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), Val);
   Dispose(Val);
 end;
 
@@ -925,7 +979,7 @@ class function TEpiIntField.DefaultMissing: EpiInteger;
 begin
   result := NA_INT;
 end;
-
+// TODO -oMerge: SaveNewAttributes in DOM
 function TEpiIntField.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml;
@@ -976,6 +1030,14 @@ begin
     FDefaultValue := Self.FDefaultValue;
     FZeroFilled := Self.ZeroFilled;
   end;
+end;
+
+function TEpiIntField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if ZeroFilled then
+    SaveDomAttr(Result, rsZeroFilled, ZeroFilled);
 end;
 
 procedure TEpiIntField.Exchange(i, j: integer);
@@ -1146,7 +1208,8 @@ begin
   Val^.FloatValue  := FData[Index];
 
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), Val);
 
   Dispose(Val);
 end;
@@ -1397,7 +1460,8 @@ begin
   Val^.BoolValue  := FData[Index];
 
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), Val);
 
   Dispose(Val);
 end;
@@ -1723,7 +1787,8 @@ begin
   Val^.StringValue  := @OldString;
 
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), Val);
 
   Dispose(Val);
 end;
@@ -1843,6 +1908,14 @@ procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
 begin
   if FAutoMode = AValue then exit;
   FAutoMode := AValue;
+end;
+
+function TEpiCustomAutoField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if FieldType in AutoUpdateFieldTypes then
+    SaveDomAttrEnum(Result, rsAutoUpdateMode, AutoMode, TypeInfo(TEpiAutoUpdateMode));
 end;
 
 function TEpiCustomAutoField.SaveAttributesToXml: string;
@@ -2054,7 +2127,8 @@ begin
   Val^.DateValue  := FData[Index];
 
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), Val);
 
   Dispose(Val);
 end;
@@ -2287,7 +2361,8 @@ begin
   Val^.TimeValue  := FData[Index];
 
   FData[index] := AValue;
-  DoChange(eegFields, word(efceData), Val);
+  if not LoadingRecs then
+    DoChange(eegFields, word(efceData), Val);
 
   Dispose(Val);
 end;

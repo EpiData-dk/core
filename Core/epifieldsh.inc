@@ -188,6 +188,7 @@ type
     function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
   protected
+    function    LoadingRecs: boolean;
     procedure   SetDataModified;
     function    GetSize: Integer; virtual;
     procedure   SetSize(const AValue: Integer); virtual;
@@ -207,6 +208,8 @@ type
   protected
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;
       AFieldType: TEpiFieldType): TEpiField;
@@ -278,6 +281,8 @@ type
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
@@ -445,6 +450,8 @@ type
   private
     FAutoMode: TEpiAutoUpdateMode;
     procedure SetAutoMode(const AValue: TEpiAutoUpdateMode);
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   protected
     function  SaveAttributesToXml: string; override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;

@@ -39,6 +39,8 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     function WriteNameToXml: boolean; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
