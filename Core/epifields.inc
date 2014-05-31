@@ -575,6 +575,8 @@ begin
   ValueLabelWriteField := nil;
 
   FQuestion.Free;
+  FNotes.Free;
+
   if Assigned(FJumps) then
     FJumps.Free;
   if Assigned(FRanges) then
@@ -583,6 +585,7 @@ begin
     FCalculation.Free;
   if Assigned(FComparison) then
     FComparison.Free;
+
   inherited Destroy;
 end;
 

@@ -29,6 +29,7 @@ type
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+    destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode); override;
@@ -242,6 +243,12 @@ begin
   IsMissingValue := false;
   FLabel := TEpiTranslatedText.Create(Self, rsLabel);
   RegisterClasses([FLabel]);
+end;
+
+destructor TEpiCustomValueLabel.Destroy;
+begin
+  FLabel.Free;
+  inherited Destroy;
 end;
 
 function TEpiCustomValueLabel.XMLName: string;

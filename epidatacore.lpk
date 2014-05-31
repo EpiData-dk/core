@@ -32,7 +32,8 @@
         </CompilerMessages>
         <CustomOptions Value="-dEPI_INTEGRITY_DEBUG1
 -dEPI_TEST_LOAD
--dEPI_SAVE_STRING1"/>
+-dEPI_SAVE_STRING1
+-dEPI_LOAD_METHOD"/>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>

@@ -200,16 +200,23 @@ end;
 
 destructor TEpiStudy.Destroy;
 begin
+  FAuthor               := '';
   FAbstractText.Free;
   FCitations.Free;
   FFunding.Free;
   FGeographicalCoverage.Free;
+  FIdentifier           := '';
+  FKeyWords             := '';
+  FNotes                := '';
   FPublisher.Free;
   FPurpose.Free;
   FPopulation.Free;
   FRights.Free;
-//  FTimeCoverage.Free;
   FTitle.Free;
+  FVersion              := '';
+
+  FDesign.Free;
+  FUnitOfObservation.Free;
   inherited Destroy;
 end;
 
