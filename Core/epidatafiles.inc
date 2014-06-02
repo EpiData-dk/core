@@ -410,7 +410,7 @@ begin
   SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
   Salt := String(SaltByte);
 
-  if (Edoc.PassWord <> '') then
+  if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
   begin
     EnCrypter := TDCP_rijndael.Create(nil);
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
@@ -489,6 +489,7 @@ var
   S: String;
   DocVersion: Integer;
   PLen: Integer;
+  Data: String;
   Salt: String;
 
   function Dummyfy(Const S: string): string;
@@ -593,13 +594,13 @@ begin
         DataList.DelimitedText := Dummyfy(LocalDeCrypt(Node.TextContent));
         for i := 0 to DataList.Count - 1 do
         begin
-          FN := DataList.Names[i];
+          DataList.GetNameValue(i, FN, S);
           TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
 
           // Do not crash if reading bad entry/line.
           if not Assigned(TmpField) then
             continue;
-          TmpField.AsString[CurRec] := UnDummyfy(DataList.ValueFromIndex[i]);
+          TmpField.AsString[CurRec] := UnDummyfy(S);
         end;
     {$IFDEF EPI_TEST_LOAD}
       end
@@ -608,21 +609,16 @@ begin
         S := LocalDeCrypt(Node.TextContent);
         L := Length(S);
 
-        if L > PLen then
-        begin
-          ReAllocMem(PStart, L);
-          PLen := L;
-        end;
 
-        StrPLCopy(PStart, S, L);
+        PStart := @S[1];
         PCur := PStart;
 
         while (PCur - PStart) < L do
         begin
+          // Find field name (FN)
           PEnd := PCur;
           while PEnd^ <> '=' do Inc(PEnd);
-          PEnd^ := #0;
-          FN := StrPas(PCur);
+          FN := Copy(S, (PCur - PStart) + 1, (PEnd - PCur));
 
           PCur := PEnd;
           Inc(PCur);
@@ -633,7 +629,8 @@ begin
               PEnd := PCur;
               while (PEnd^ <> '"') do
                 Inc(PEnd);
-              PEnd^ := #0;
+
+              Data := Copy(S, (PCur - PStart) + 1, (PEnd - PCur));
               Inc(PEnd);
             end
           else
@@ -643,12 +640,14 @@ begin
                     (PEnd^ <> #0)
               do
                 Inc(PEnd);
+
+              Data := Copy(S, (PCur - PStart) + 1, (PEnd - PCur));
             end;
-          PEnd^ := #0;
+
           Inc(PEnd);
 
           TmpField := TEpiField(THTDataNode(FieldList.Find(FN)).Data);
-          TmpField.AsString[CurRec] := StrPas(PCur);
+          TmpField.AsString[CurRec] := Data;
 
           PCur := PEnd;
         end;
@@ -659,13 +658,13 @@ begin
     Node := TDOMElement(Node.NextSibling);
   end;
 
-  if Assigned(PStart) then
-    Freemem(PStart);
   DoProgress(eptFinish, NodeCount, NodeCount);
 
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
 
+  FieldList.Free;
+  DataList.Free;
   FLoadingRecs := false;
 end;
 
@@ -1235,11 +1234,18 @@ end;
 
 destructor TEpiDataFile.Destroy;
 begin
-  FRecordStatus.Free;
+  FCaption.Free;
+  FNotes.Free;
+  FVersion := '';
+
   FSections.Free;
+
+  FRecordStatus.Free;
   FAllFields.Free;
   FAllHeadings.Free;
-  FCaption.Free;
+  FAllControlItems.Free;
+  FKeyFields.Free;
+
   inherited Destroy;
 end;
 

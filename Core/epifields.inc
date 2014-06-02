@@ -608,6 +608,8 @@ begin
   ValueLabelWriteField := nil;
 
   FQuestion.Free;
+  FNotes.Free;
+
   if Assigned(FJumps) then
     FJumps.Free;
   if Assigned(FRanges) then
