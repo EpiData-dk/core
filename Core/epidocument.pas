@@ -331,6 +331,7 @@ begin
   {$ELSE}
   FDoc := SaveToXmlDocument;
   WriteXMLFile(FDoc, St);
+  FDoc.Free;
   {$ENDIF}
 end;
 
