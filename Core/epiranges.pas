@@ -8,6 +8,11 @@ uses
   Classes, SysUtils, epicustombase, epidatafilestypes, Laz2_DOM;
 
 type
+  TEpiRangeChangeEventType = (
+    erceSetStart, erceSetEnd
+  );
+
+
   TEpiRange = class;
 
   { TEpiRanges }
@@ -335,11 +340,21 @@ begin
 end;
 
 procedure TEpiTimeRange.SetAsTime(const Start: boolean; const AValue: EpiTime);
+var
+  Val: EpiTime;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 function TEpiTimeRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -402,11 +417,21 @@ begin
 end;
 
 procedure TEpiDateRange.SetAsDate(const Start: boolean; const AValue: EpiDate);
+var
+  Val: EpiDate;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 procedure TEpiDateRange.SetAsFloat(const Start: boolean; const AValue: EpiFloat
@@ -486,11 +511,21 @@ end;
 
 procedure TEpiFloatRange.SetAsFloat(const Start: boolean; const AValue: EpiFloat
   );
+var
+  Val: EpiFloat;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 procedure TEpiFloatRange.SetAsInteger(const Start: boolean;
@@ -665,11 +700,21 @@ end;
 
 procedure TEpiIntRange.SetAsInteger(const Start: boolean;
   const AValue: EpiInteger);
+var
+  Val: EpiInteger;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 procedure TEpiIntRange.SetAsTime(const Start: boolean; const AValue: EpiTime);

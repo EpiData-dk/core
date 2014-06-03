@@ -44,6 +44,8 @@ type
     eegFields,
     eegGroups,
     eegHeading,
+    // epirange.pas
+    eegRange,
     // epivaluelabels.pas
     eegValueLabel,
     eegValueLabelSet,
