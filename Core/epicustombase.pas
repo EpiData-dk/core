@@ -80,6 +80,7 @@ type
     FReferenceType: TByteArray;
   public
     constructor Create;
+    destructor Destroy; override;
     procedure AddFixupReference(
       Obj: TEpiCustomBase;                 // The object which has a reference which cannot be fulfilled
       EpiClassType: TEpiCustomBaseClass;   // The class type of the object. (should be used by Obj to chech at what level of the class hierachy the reference should be fixed
@@ -568,6 +569,13 @@ begin
   FClassType := TList.Create;
   FObjectReferences := TStringList.Create;
   FObjectReferences.Sorted := false;
+end;
+
+destructor TEpiReferenceMap.Destroy;
+begin
+  FClassType.Free;
+  FObjectReferences.Free;
+  inherited Destroy;
 end;
 
 procedure TEpiReferenceMap.AddFixupReference(Obj: TEpiCustomBase;
