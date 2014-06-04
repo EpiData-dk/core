@@ -400,6 +400,7 @@ begin
   BeginUpdate;
 
   Length := OrgField.Length;
+  Decimals := OrgField.Decimals;
   EntryMode := OrgField.EntryMode;
   ConfirmEntry := OrgField.ConfirmEntry;
   ShowValueLabel := OrgField.ShowValueLabel;
@@ -1026,11 +1027,11 @@ begin
 
   with TEpiIntField(AEpiCustomBase) do
   begin
-    Capacity := Self.Capacity;
-    Move(Self.FData[0], FData[0], Self.Size * SizeOf(EpiInteger));
-    FSize := Self.FSize;
-    FDefaultValue := Self.FDefaultValue;
-    FZeroFilled := Self.ZeroFilled;
+    Self.Capacity      := Capacity;
+    Self.FSize         := FSize;
+    Self.FDefaultValue := FDefaultValue;
+    Self.ZeroFilled    := FZeroFilled;
+    Move(FData[0], Self.FData[0], Size * SizeOf(EpiInteger));
   end;
 end;
 
@@ -1332,10 +1333,16 @@ end;
 procedure TEpiFloatField.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);
-  if AEpiCustomBase is TEpiFloatField then
-    Decimals := TEpiFloatField(AEpiCustomBase).Decimals
-  else
-    Decimals := 1;
+
+  if not AEpiCustomBase.InheritsFrom(TEpiFloatField) then exit;
+
+  with TEpiFloatField(AEpiCustomBase) do
+  begin
+    Self.Capacity      := Capacity;
+    Self.FSize         := FSize;
+    Self.FDefaultValue := FDefaultValue;
+    Move(FData[0], Self.FData[0], Size * SizeOf(EpiFloat));
+  end;
 end;
 
 procedure TEpiFloatField.ResetData;
@@ -1615,6 +1622,21 @@ begin
   AsBoolean[j] := TmpBool;
 end;
 
+procedure TEpiBoolField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiBoolField) then exit;
+
+  with TEpiBoolField(AEpiCustomBase) do
+  begin
+    Self.Capacity      := Capacity;
+    Self.FSize         := FSize;
+    Self.FDefaultValue := FDefaultValue;
+    Move(FData[0], Self.FData[0], Size * SizeOf(EpiBool));
+  end;
+end;
+
 function TEpiBoolField.FormatString(const FillSpace: boolean): string;
 begin
   Result := '%d';
@@ -1887,6 +1909,24 @@ begin
   AsString[j] := TmpStr;
 end;
 
+procedure TEpiStringField.Assign(const AEpiCustomBase: TEpiCustomBase);
+var
+  i: Integer;
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiStringField) then exit;
+
+  with TEpiStringField(AEpiCustomBase) do
+  begin
+    Self.Capacity      := Capacity;
+    Self.FSize         := FSize;
+    Self.FDefaultValue := FDefaultValue;
+    for i := 0 to Self.Size - 1 do
+      Self.FData[i] := FData[i];
+  end;
+end;
+
 function TEpiStringField.FormatString(const FillSpace: boolean): string;
 begin
   if FillSpace then
@@ -1943,6 +1983,13 @@ begin
 
   if FieldType in AutoUpdateFieldTypes then
     AutoMode := TEpiAutoUpdateMode(LoadAttrEnum(Root, rsAutoUpdateMode, TypeInfo(TEpiAutoUpdateMode)));
+end;
+
+procedure TEpiCustomAutoField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  AutoMode := TEpiCustomAutoField(AEpiCustomBase).AutoMode;
 end;
 
 { TEpiDateField }
@@ -2091,6 +2138,21 @@ begin
   TmpDate := AsDate[i];
   AsDate[i] := AsDate[j];
   AsDate[j] := TmpDate;
+end;
+
+procedure TEpiDateField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiDateField) then exit;
+
+  with TEpiDateField(AEpiCustomBase) do
+  begin
+    Self.Capacity      := Capacity;
+    Self.FSize         := FSize;
+    Self.FDefaultValue := FDefaultValue;
+    Move(FData[0], Self.FData[0], Size * SizeOf(EpiDate));
+  end;
 end;
 
 function TEpiDateField.FormatString(const FillSpace: boolean): string;
@@ -2478,6 +2540,21 @@ begin
   TmpDateTime := AsDateTime[i];
   AsDateTime[i] := AsDateTime[j];
   AsDateTime[j] := TmpDateTime;
+end;
+
+procedure TEpiDateTimeField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiDateTimeField) then exit;
+
+  with TEpiDateTimeField(AEpiCustomBase) do
+  begin
+    Self.Capacity      := Capacity;
+    Self.FSize         := FSize;
+    Self.FDefaultValue := FDefaultValue;
+    Move(FData[0], Self.FData[0], Size * SizeOf(EpiDateTime));
+  end;
 end;
 
 function TEpiDateTimeField.FormatString(const FillSpace: boolean): string;

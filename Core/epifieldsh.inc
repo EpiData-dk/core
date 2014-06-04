@@ -388,6 +388,7 @@ type
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
@@ -436,6 +437,7 @@ type
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
@@ -458,6 +460,7 @@ type
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property AutoMode: TEpiAutoUpdateMode read FAutoMode write SetAutoMode;
   end;
 
@@ -506,6 +509,7 @@ type
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
@@ -554,6 +558,7 @@ type
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;

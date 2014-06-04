@@ -288,6 +288,7 @@ type
     procedure   SetLanguage(Const LangCode: string;
       Const DefaultLanguage: boolean); override;
     function    XMLName: string; override;
+    procedure   Clear;
   public
     constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string); virtual;
     destructor  Destroy; override;
@@ -1487,6 +1488,15 @@ begin
   Result := FXMLName;
 end;
 
+procedure TEpiTranslatedText.Clear;
+var
+  i: Integer;
+begin
+  for i := FTextList.Count - 1 downto 0 do
+    FTextList.Objects[i].Free;
+  FTextList.Clear;
+end;
+
 constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase;
   const aXMLName: string);
 begin
@@ -1497,14 +1507,12 @@ begin
 end;
 
 destructor TEpiTranslatedText.Destroy;
-var
-  i: Integer;
 begin
   FXMLName := '';
   FCurrentText := '';
-  for i := FTextList.Count - 1 downto 0 do
-    FTextList.Objects[i].Free;
-  FTextList.Clear;
+
+  Clear;
+
   FTextList.Free;
   inherited Destroy;
 end;
@@ -1562,6 +1570,10 @@ begin
   BeginUpdate;
   FXMLName := OrgText.FXMLName;
   FCurrentText := OrgText.FCurrentText;
+
+  // Clear content before assign
+  Clear;
+
   for i := 0 to OrgText.FTextList.Count - 1 do
     FTextList.AddObject(OrgText.FTextList[i], TString.Create(TString(OrgText.FTextList.Objects[i]).Str));
   EndUpdate;
@@ -1582,7 +1594,8 @@ begin
 
   with TEpiTranslatedText(Result) do
   begin
-    FTextList.Clear;
+    Clear;
+
     for i := 0 to Self.FTextList.Count - 1 do
       FTextList.AddObject(Self.FTextList[i], TString.Create(TString(Self.FTextList.Objects[i]).Str));
 
