@@ -646,6 +646,7 @@ var
   lt: TEpiFieldType;
 begin
   Result := inherited SaveToDom(RootDoc);
+  if not Assigned(Result) then exit;
 
   lt := LabelType;
   SaveDomAttrEnum(Result, rsType, LabelType, TypeInfo(TEpiFieldType));

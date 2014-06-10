@@ -2024,7 +2024,8 @@ begin
   for i := 0 to Count - 1 do
   begin
     Elem := Items[i].SaveToDom(RootDoc);
-    Result.AppendChild(Elem);
+    if Assigned(Elem) then
+      Result.AppendChild(Elem);
   end;
 end;
 

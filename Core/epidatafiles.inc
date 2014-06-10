@@ -1095,6 +1095,8 @@ begin
   end;
   RestoreFormatSettings;
   DoProgress(eptFinish, Sz, Sz);
+
+  EnCrypter.Free;
 end;
 
 function TEpiDataFile.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
