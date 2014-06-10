@@ -348,7 +348,10 @@ begin
         MainField.AsFloat[j + StartPos] := AppendField.AsFloat[j]
     else
       for j := 0 to AppendDataFile.Size - 1 do
-        MainField.AsValue[j + StartPos] := AppendField.AsValue[j];
+        if AppendField.IsMissing[j] then
+          MainField.IsMissing[j + StartPos] := true
+        else
+          MainField.AsValue[j + StartPos] := AppendField.AsValue[j];
   end;
 end;
 
