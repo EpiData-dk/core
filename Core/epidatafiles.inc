@@ -701,6 +701,9 @@ begin
   Val := FRecordStatus.Size;
   FRecordStatus.Size := AValue;
 
+  for i := Val to AValue - 1 do
+    FRecordStatus.AsInteger[i] := Integer(rsNormal);
+
   for i := 0 to Fields.Count - 1 do
     Fields[i].Size := AValue;
 
