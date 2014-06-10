@@ -219,20 +219,22 @@ var
   Xin: TXMLInputSource;
   ReferenceMap: TEpiReferenceMap;
 begin
-  //ReadXMLFile(RecXml, St);
-  ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
+  RecXml := nil;
+  try
+    ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
 
-  // **********************
-  // Global <EpiData> structure
-  // **********************
-  RootNode := RecXml.DocumentElement;
+    // **********************
+    // Global <EpiData> structure
+    // **********************
+    RootNode := RecXml.DocumentElement;
 
-  ReferenceMap := TEpiReferenceMap.Create;
-  LoadFromXml(RootNode, ReferenceMap);
-  ReferenceMap.FixupReferences;
-  ReferenceMap.Free;
-
-  RecXml.Free;
+    ReferenceMap := TEpiReferenceMap.Create;
+    LoadFromXml(RootNode, ReferenceMap);
+    ReferenceMap.FixupReferences;
+  finally
+    ReferenceMap.Free;
+    RecXml.Free;
+  end;
 end;
 
 procedure TEpiDocument.LoadFromXml(Root: TDOMNode;
