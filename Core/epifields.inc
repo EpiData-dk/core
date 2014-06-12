@@ -589,6 +589,10 @@ begin
 
   if Assigned(Ranges) then
     Result.AppendChild(Ranges.SaveToDom(RootDoc));
+
+  // Version 3
+  if Assigned(Relates) then
+    Result.AppendChild(Relates.SaveToDom(RootDoc));
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
