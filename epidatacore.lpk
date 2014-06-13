@@ -27,9 +27,6 @@
         </Debugging>
       </Linking>
       <Other>
-        <CompilerMessages>
-          <UseMsgFile Value="True"/>
-        </CompilerMessages>
         <CustomOptions Value="-dEPI_INTEGRITY_DEBUG1
 -dEPI_TEST_LOAD
 -dEPI_SAVE_STRING1
@@ -37,7 +34,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Major="1" Minor="5" Release="2"/>
+    <Version Major="2"/>
     <Files Count="69">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
