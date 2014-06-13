@@ -54,7 +54,7 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Settings: TEpiXMLSettings read GetSettings;
     Property   Users: TEpiUsers read FUsers;
     Property   Groups: TEpiGroups read FGroups;
@@ -70,8 +70,8 @@ type
     procedure  EndUpdate; override;
   {Cloning}
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
   { TEpiUsers }
@@ -87,7 +87,7 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure  PreLoadFromXml(Root: TDOMNode);
     function   NewUser: TEpiUser;
     Property   Users[Index: integer]: TEpiUser read GetUsers;
@@ -125,14 +125,14 @@ type
     procedure SetPassword(const AValue: string);
   protected
     property  Salt: string read FSalt;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
     // Unscrambled data:
@@ -160,7 +160,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    ScrambleXml: boolean; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewGroup: TEpiGroup;
     Property    Group[Index: integer]: TEpiGroup read GetGroup; default;
     Property    Admin: TEpiAdmin read GetAdmin;
@@ -174,14 +174,14 @@ type
     FRights: TEpiAdminRights;
     procedure SetRights(const AValue: TEpiAdminRights);
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveAttributesToXml: string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Caption: TEpiTranslatedTextWrapper read FCaption;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
   end;
@@ -267,7 +267,7 @@ begin
   result := inherited SaveToXml(Content, Lvl);
 end;
 
-procedure TEpiAdmin.LoadFromXml(Root: TDOMNode);
+procedure TEpiAdmin.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   I: Integer;
@@ -288,11 +288,11 @@ begin
 
   // Load groups
   LoadNode(Node, Root, rsGroups, true);
-  Groups.LoadFromXml(Node);
+  Groups.LoadFromXml(Node, ReferenceMap);
 
   // Then load users (perhaps to complete user info).
   LoadNode(Node, Root, rsUsers, true);
-  Users.LoadFromXml(Node);
+  Users.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiAdmin.NewUser: TEpiUser;
@@ -315,10 +315,10 @@ begin
   inherited EndUpdate;
 end;
 
-function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiAdmin(Result).FMasterPassword := FMasterPassword;
 end;
 
@@ -398,7 +398,7 @@ begin
   Result := TEpiUser(NewItem(TEpiUser));
 end;
 
-procedure TEpiUsers.LoadFromXml(Root: TDOMNode);
+procedure TEpiUsers.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   NUser: TEpiUser;
@@ -417,7 +417,7 @@ begin
       NUser.FPassword := LoadNodeString(Node, rsPassword);
       NUser.MasterPassword := LoadNodeString(Node, rsMasterPassword);
     end;
-    NUser.LoadFromXml(Node);
+    NUser.LoadFromXml(Node, ReferenceMap);
 
     Node := Node.NextSibling;
   end;
@@ -515,10 +515,10 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
 
-function TEpiUser.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiUser.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiUser(Result) do
   begin
@@ -577,14 +577,14 @@ begin
   Result := inherited SaveToXml(Content + S, Lvl);
 end;
 
-procedure TEpiUser.LoadFromXml(Root: TDOMNode);
+procedure TEpiUser.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   NewRoot: TDOMNode;
 begin
   // Root = <User>
   // Remember that login, password and masterpassword have already been
   // read by now... only scrambled things need to be obtained now.
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   if Admin.Settings.Scrambled then
     NewRoot := DeCrypt(Root)
@@ -638,7 +638,8 @@ begin
   Result := Admin.Settings.Scrambled;
 end;
 
-procedure TEpiGroups.LoadFromXml(Root: TDOMNode);
+procedure TEpiGroups.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  );
 var
   NewRoot: TDOMNode;
   NGroup: TEpiGroup;
@@ -659,7 +660,7 @@ begin
     CheckNode(Node, rsGroup);
 
     NGroup := NewGroup;
-    NGroup.LoadFromXml(Node);
+    NGroup.LoadFromXml(Node, ReferenceMap);
 
     Node := Node.NextSibling;
   end;
@@ -685,10 +686,10 @@ begin
   DoChange(eegAdmin, Word(eaceGroupSetRights), @Val);
 end;
 
-function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiGroup(Result).FRights := FRights;
 end;
 
@@ -718,13 +719,13 @@ begin
     SaveAttr(rsRights, Integer(Rights));
 end;
 
-procedure TEpiGroup.LoadFromXml(Root: TDOMNode);
+procedure TEpiGroup.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 begin
   // Root = <Group>
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Caption.LoadFromXml(Root);
+  Caption.LoadFromXml(Root, ReferenceMap);
 //  Rights := TEpiAdminRights(LoadAttrInt(Root, rsRights));
 end;
 

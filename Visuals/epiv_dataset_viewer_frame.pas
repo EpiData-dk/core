@@ -20,10 +20,12 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
+    Button4: TButton;
     Panel1: TPanel;
     ShowIndexOrAllFieldsAction: TAction;
     ShowValuesOrLabelsAction: TAction;
     SortByIndexAction: TAction;
+    procedure Button4Click(Sender: TObject);
     procedure ShowIndexOrAllFieldsActionExecute(Sender: TObject);
     procedure ShowIndexOrAllFieldsActionUpdate(Sender: TObject);
     procedure ShowValuesOrLabelsActionExecute(Sender: TObject);
@@ -39,18 +41,26 @@ type
     FShowAllFields: boolean;
     FShowValueLabels: boolean;
     FSortOnIndex: boolean;
+    FShowAllRecords: boolean;
     procedure DoMouseClick(ADblClick: boolean);
     procedure DoSelectedRecord(RecordNo: Integer; Const Field: TEpiField);
-    function GetKeyFields: TEpiFields;
+    function  GetKeyFields: TEpiFields;
     procedure SetDisplayFields(AValue: TEpiFields);
     procedure SetKeyFields(AValue: TEpiFields);
     procedure SetOnSelectRecord(AValue: TSelectRecordEvent);
     procedure AssignFields(Const ToFields, FromFields: TEpiFields);
     procedure UpdateFields;
     procedure UpdateGrid;
+    procedure UpdateDataFile;
   private
     { Virtual String Tree }
+    FForwardIndex: TEpiField;
+    FReverseIndex: TEpiField;
     FVLG: TVirtualStringTree;
+    function  GetRootNodeCount: integer;
+    procedure SetDatafile(AValue: TEpiDataFile);
+    procedure SetReverseIndex(AValue: TEpiField);
+    procedure SetForwardIndex(AValue: TEpiField);
     procedure VLGBeforeCellPaint(Sender: TBaseVirtualTree;
       TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
       CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
@@ -68,12 +78,20 @@ type
     procedure VLGCompareNodes(Sender: TBaseVirtualTree; Node1,
       Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
     procedure VLGHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+  private
+    { Update }
+    FUpdateCount: integer;
   public
     constructor Create(TheOwner: TComponent; Const DataFile: TEpiDataFile);
     destructor  Destroy; override;
     procedure   ShowRecords(const Records: TBoundArray);
     procedure   InitVisual;
+    procedure   BeginUpdate;
+    procedure   EndUpdate;
+    property    Datafile: TEpiDataFile read FDataFile write SetDatafile;
     property    KeyFields: TEpiFields read GetKeyFields write SetKeyFields;
+    property    ForwardIndex: TEpiField read FForwardIndex write SetForwardIndex;
+    property    ReverseIndex: TEpiField read FReverseIndex write SetReverseIndex;
     property    DisplayFields: TEpiFields read FDisplayFields write SetDisplayFields;
     property    OnSelectRecord: TSelectRecordEvent read FOnSelectRecord write SetOnSelectRecord;
     property    VLG: TVirtualStringTree read FVLG;
@@ -109,6 +127,21 @@ begin
   UpdateGrid;
 end;
 
+procedure TDatasetViewerFrame.Button4Click(Sender: TObject);
+begin
+  if not Assigned(FReverseIndex) then exit;
+
+  FShowAllRecords := not FShowAllRecords;
+
+  VLG.BeginUpdate;
+  VLG.RootNodeCount := GetRootNodeCount;
+  VLG.ReinitChildren(nil, true);
+  VLG.Sort(VLG.RootNode, 0, sdAscending, false);
+  VLG.EndUpdate;
+
+  UpdateGrid;
+end;
+
 procedure TDatasetViewerFrame.ShowIndexOrAllFieldsActionUpdate(Sender: TObject);
 begin
   ShowIndexOrAllFieldsAction.Enabled :=
@@ -134,6 +167,19 @@ begin
   if CellPaintMode <> cpmPaint then exit;
 
   DrawEdge(TargetCanvas.Handle, CellRect, BDR_RAISEDINNER, BF_RECT or BF_MIDDLE);
+end;
+
+procedure TDatasetViewerFrame.SetReverseIndex(AValue: TEpiField);
+begin
+  if FReverseIndex = AValue then Exit;
+  FReverseIndex := AValue;
+end;
+
+procedure TDatasetViewerFrame.SetDatafile(AValue: TEpiDataFile);
+begin
+  if FDataFile = AValue then Exit;
+  FDataFile := AValue;
+  UpdateDataFile;
 end;
 
 procedure TDatasetViewerFrame.VLGColumnWidthTracking(Sender: TVTHeader;
@@ -179,8 +225,6 @@ begin
 end;
 
 procedure TDatasetViewerFrame.VLGDoubleClick(Sender: TObject);
-var
-  P: types.TPoint;
 begin
   DoMouseClick(true);
 end;
@@ -190,6 +234,8 @@ procedure TDatasetViewerFrame.VLGInitNode(Sender: TBaseVirtualTree; ParentNode,
 begin
   if Assigned(FRecords) then
     PCardinal(Sender.GetNodeData(Node))^ := FRecords[Node^.Index]
+  else if (Assigned(FForwardIndex)) and (not FShowAllRecords) then
+    PCardinal(Sender.GetNodeData(Node))^ := FForwardIndex.AsInteger[Node^.Index]
   else
     PCardinal(Sender.GetNodeData(Node))^ := Node^.Index;
 end;
@@ -213,17 +259,27 @@ begin
   end;
 end;
 
+procedure TDatasetViewerFrame.SetForwardIndex(AValue: TEpiField);
+begin
+  if FForwardIndex = AValue then Exit;
+  FForwardIndex := AValue;
+end;
+
 procedure TDatasetViewerFrame.VLGCompareNodes(Sender: TBaseVirtualTree; Node1,
   Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var
-  Idx1, Idx2: Cardinal;
+  Idx1, Idx2: Int64;
   i: Integer;
 begin
   Idx1 := PCardinal(Sender.GetNodeData(Node1))^;
   Idx2 := PCardinal(Sender.GetNodeData(Node2))^;
+
   if Column = 0 then
   begin
-    Result := Idx1 - Idx2;
+    if Assigned(FReverseIndex) and (FShowAllRecords) then
+      Result := FReverseIndex.Compare(Idx1, Idx2)
+    else
+      Result := Idx1 - Idx2;
     Exit;
   end;
 
@@ -255,15 +311,24 @@ procedure TDatasetViewerFrame.VLGGetNodeText(Sender: TBaseVirtualTree;
   var CellText: String);
 var
   F: TEpiField;
-  Idx: Cardinal;
+  Idx: Int64;
 begin
   if Column < 0 then exit;
-
+  if TextType = ttStatic then exit;
 
   Idx := PCardinal(Sender.GetNodeData(Node))^;
   if Column = 0 then
   begin
-    CellText := IntToSTr(Idx + 1);
+    if Assigned(ReverseIndex) and (FShowAllRecords) then
+      Idx := ReverseIndex.AsInteger[Idx];
+
+    if (Idx = TEpiIntField.DefaultMissing) then
+      CellText := '*'
+    else begin
+      if Assigned(ReverseIndex) and (not FShowAllRecords) then
+        Idx := ReverseIndex.AsInteger[Idx];
+      CellText := IntToSTr(Idx + 1);
+    end;
     Exit;
   end;
 
@@ -281,7 +346,17 @@ end;
 procedure TDatasetViewerFrame.DoSelectedRecord(RecordNo: Integer;
   const Field: TEpiField);
 begin
-  if assigned(FOnSelectRecord) then
+  if Assigned(FReverseIndex) then
+  begin
+    if (FReverseIndex.IsMissing[RecordNo])
+    then
+      Exit
+    else
+      RecordNo := FReverseIndex.AsInteger[RecordNo];
+  end;
+
+  if assigned(FOnSelectRecord)
+  then
     FOnSelectRecord(Self, RecordNo, Field);
 end;
 
@@ -296,7 +371,9 @@ begin
     FDisplayFields := AValue;
 
   AssignFields(FCurrentDisplayField, FDisplayFields);
-  UpdateFields;
+
+  if (FUpdateCount = 0) then
+    UpdateFields;
 end;
 
 procedure TDatasetViewerFrame.SetKeyFields(AValue: TEpiFields);
@@ -345,12 +422,76 @@ begin
   VLG.Header.AutoFitColumns(true, smaUseColumnOption);
 end;
 
+procedure TDatasetViewerFrame.UpdateDataFile;
+var
+  i: Integer;
+begin
+  VLG.BeginUpdate;
+  with VLG.Header do
+  begin
+    Options := [hoColumnResize, hoDblClickResize, hoVisible];
+
+    Columns.BeginUpdate;
+    Columns.Clear;
+    with Columns.Add do
+    begin
+      CaptionAlignment := taLeftJustify;
+      Text := 'Record No:';
+      Options := [coFixed, coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
+      Width := 50;
+      Alignment := taRightJustify;
+    end;
+
+    for i := 0 to FDataFile.Fields.Count - 1 do
+    with Columns.Add do
+    begin
+      CaptionAlignment := taLeftJustify;
+      Text := FDataFile.Fields[i].Name;
+      Options := [coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coVisible, coUseCaptionAlignment];
+      Width := 100;
+      Alignment := taRightJustify;
+    end;
+    Columns.EndUpdate;
+
+    AutoSizeIndex := -1;
+    Height := 25;
+    MainColumn := 0;
+  end;
+  VLG.EndUpdate;
+end;
+
+function TDatasetViewerFrame.GetRootNodeCount: integer;
+var
+  i: Integer;
+begin
+  if Assigned(FRecords) then
+  begin
+    Result := Length(FRecords);
+    Exit;
+  end;
+
+  if (FShowAllRecords) or
+     (not Assigned(FReverseIndex))
+  then
+    Result := Datafile.Size
+  else
+    begin
+      Result := 0;
+      for i := 0 to FReverseIndex.Size - 1 do
+        if (not FReverseIndex.IsMissing[i]) then
+          Inc(Result);
+    end;
+end;
+
 constructor TDatasetViewerFrame.Create(TheOwner: TComponent;
   const DataFile: TEpiDataFile);
 var
   i: Integer;
 begin
   inherited Create(TheOwner);
+  FShowAllRecords := true;
+  FUpdateCount := 0;
+  FReverseIndex := nil;
   FDataFile := DataFile;
   FKeyFields := FDataFile.KeyFields;
   FDisplayFields := FDataFile.Fields;
@@ -393,37 +534,7 @@ begin
     SelectionOptions := [toExtendedFocus, toRightClickSelect, toCenterScrollIntoView];
   end;
 
-  VLG.BeginUpdate;
-  with VLG.Header do
-  begin
-    Options := [hoColumnResize, hoDblClickResize, hoVisible];
-
-    Columns.BeginUpdate;
-    with Columns.Add do
-    begin
-      CaptionAlignment := taLeftJustify;
-      Text := 'Record No:';
-      Options := [coFixed, coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
-      Width := 50;
-      Alignment := taRightJustify;
-    end;
-
-    for i := 0 to FDataFile.Fields.Count - 1 do
-    with Columns.Add do
-    begin
-      CaptionAlignment := taLeftJustify;
-      Text := FDataFile.Fields[i].Name;
-      Options := [coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coVisible, coUseCaptionAlignment];
-      Width := 100;
-      Alignment := taRightJustify;
-    end;
-    Columns.EndUpdate;
-
-    AutoSizeIndex := -1;
-    Height := 25;
-    MainColumn := 0;
-  end;
-  VLG.EndUpdate;
+  UpdateDataFile;
 end;
 
 destructor TDatasetViewerFrame.Destroy;
@@ -435,14 +546,13 @@ end;
 procedure TDatasetViewerFrame.ShowRecords(const Records: TBoundArray);
 begin
   FRecords := Records;
-  if Assigned(FRecords) then
-    VLG.RootNodeCount := Length(FRecords)
-  else
-    VLG.RootNodeCount := FDataFile.Size;
+  VLG.RootNodeCount := GetRootNodeCount;
 
   With VLG do
     ReinitChildren(RootNode, true);
-  UpdateGrid;
+
+  if (FUpdateCount = 0) then
+    UpdateGrid;
 end;
 
 procedure TDatasetViewerFrame.InitVisual;
@@ -450,12 +560,33 @@ begin
   Screen.Cursor := crHourGlass;
   Application.ProcessMessages;
 
-  VLG.RootNodeCount := FDataFile.Size;
+  VLG.RootNodeCount := GetRootNodeCount;
   UpdateFields;
   VLG.Sort(VLG.RootNode, 0, sdAscending);
 
   Screen.Cursor := crDefault;
   Application.ProcessMessages;
+end;
+
+procedure TDatasetViewerFrame.BeginUpdate;
+begin
+  VLG.BeginUpdate;
+  VLG.Header.Columns.BeginUpdate;
+  Inc(FUpdateCount);
+end;
+
+procedure TDatasetViewerFrame.EndUpdate;
+begin
+  Dec(FUpdateCount);
+  VLG.Header.Columns.EndUpdate;
+  VLG.EndUpdate;
+  VLG.Invalidate;
+  if FUpdateCount = 0 then
+  begin
+    VLG.RootNodeCount := GetRootNodeCount;
+    UpdateGrid;
+    VLG.SortTree(0, sdAscending);
+  end;
 end;
 
 end.

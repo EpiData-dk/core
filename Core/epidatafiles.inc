@@ -16,7 +16,6 @@ begin
   inherited Create(AOwner);
 end;
 
-
 { TEpiDataFiles }
 
 function TEpiDataFiles.GetDataFile(Index: integer): TEpiDataFile;
@@ -65,7 +64,8 @@ begin
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
-procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode);
+procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   NewRoot: TDOMNode;
   Node: TDOMNode;
@@ -82,7 +82,7 @@ begin
     NewRoot := Root;
 
   // Inherited takes care of loading TEpiDataFile(s)
-  inherited LoadFromXml(NewRoot);
+  inherited LoadFromXml(NewRoot, ReferenceMap);
 
   if Settings.Scrambled then
     NewRoot.Free;
@@ -91,6 +91,11 @@ end;
 function TEpiDataFiles.NewDataFile: TEpiDataFile;
 begin
   Result := TEpiDataFile(NewItem(TEpiDataFile));
+end;
+
+function TEpiDataFiles.GetEnumerator: TEpiDataFilesEnumerator;
+begin
+  result := TEpiDataFilesEnumerator.Create(Self);
 end;
 
 { TEpiDataFile }
@@ -386,12 +391,13 @@ var
       ProgressMethod(Self, ProgressType, Count, Max, Result);
   end;
 
+var
+  SaltInt: LongInt;
+  SaltByte: array[0..3] of char absolute SaltInt;
+  Salt: String;
 begin
   if FRecModified then
     FRecModifiedDate := Now;
-
-  Lst := TStringList.Create;
-  Lst.Add(Indent(Lvl) + '<' + rsRecords + SaveAttr(rsModifiedAttr, RecModifiedDate) + '>');
 
   Edoc := TEpiDocument(RootOwner);
   ProgressMethod := Edoc.OnProgress;
@@ -401,11 +407,22 @@ begin
   Fc := Fields.Count;
 
   EnCrypter := nil;
+  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
+  Salt := String(SaltByte);
+
   if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
   begin
     EnCrypter := TDCP_rijndael.Create(nil);
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
-  end;
+    Salt := EnCrypter.EncryptString(Salt);
+  end else
+    Salt := '';
+
+  Lst := TStringList.Create;
+  Lst.Add(Indent(Lvl) + '<' + rsRecords +
+    SaveAttr(rsModifiedAttr, RecModifiedDate) +
+    SaveAttr(rsEncryptedSalt, Salt) +
+    '>');
 
   DoProgress(eptInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
@@ -473,6 +490,7 @@ var
   DocVersion: Integer;
   PLen: Integer;
   Data: String;
+  Salt: String;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -526,6 +544,15 @@ begin
   begin
     DeCrypter := TDCP_rijndael.Create(nil);
     DeCrypter.InitStr(TEpiDocument(RootOwner).PassWord, TDCP_sha256);
+
+    // With .epx v3 each <Records> section is uniquely salted, storing encrypted result
+    // in the attribute rsEncryptedSalt;
+    if (DocVersion >= 3) then
+    begin
+      Salt := LoadAttrString(Root, rsEncryptedSalt);
+      // just run it through decryption, this will progress state of internal decryption vectors.
+      DeCrypter.DecryptString(Salt);
+    end;
   end;
 
   ProgressMethod := TEpiDocument(RootOwner).OnProgress;
@@ -675,20 +702,31 @@ begin
     if not Assigned(Node) then break;
 
     CheckNode(Node, 'Key');
-
-    FieldId := LoadAttrString(Node, 'fieldRef');
-    LinkMap.AddLink(ltKeyField, KeyFields, FieldId);
+    KeyFields.AddItem(Fields.FieldByName[LoadAttrString(Node, 'fieldRef')]);
 
     Node := Node.NextSibling;
   end;
 end;
 
 procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
+var
+  Val: PEpiDataFileStatusRecord;
 begin
+  if Ord(AValue) = FRecordStatus.AsInteger[Index] then exit;
+
+  Val := New(PEpiDataFileStatusRecord);
+  Val^.Index := Index;
+  Val^.OldValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
+
   if AValue then
     FRecordStatus.AsInteger[Index] := Ord(rsDeleted)
   else
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+
+  Val^.NewValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
+
+  DoChange(eegDataFiles, Word(edceRecordStatus), Val);
+  Dispose(Val);
 end;
 
 procedure TEpiDataFile.SetSize(const AValue: Integer);
@@ -711,11 +749,22 @@ begin
 end;
 
 procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);
+var
+  Val: PEpiDataFileStatusRecord;
 begin
+  if Ord(AValue) = FRecordStatus.AsInteger[Index] then exit;
+
+  Val := New(PEpiDataFileStatusRecord);
+  Val^.Index := Index;
+  Val^.OldValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
+
   if AValue then
     FRecordStatus.AsInteger[Index] := Ord(rsVerified)
   else
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+
+  DoChange(eegDataFiles, Word(edceRecordStatus), Val);
+  Dispose(Val);
 end;
 
 function TEpiDataFile.InternalCompareRecords(const SortList: TEpiFields;
@@ -976,6 +1025,9 @@ var
   RElem: TDOMElement;
   S: String;
   CurField: Integer;
+  SaltInt: LongInt;
+  SaltByte: array[0..3] of char absolute SaltInt;
+  Salt: String;
 
   function LocalEncrypt(Const S: String): string;
   begin
@@ -1012,11 +1064,18 @@ begin
   Fc := Fields.Count;
 
   EnCrypter := nil;
+  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
+  Salt := String(SaltByte);
+
   if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
   begin
     EnCrypter := TDCP_rijndael.Create(nil);
     EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
-  end;
+    Salt := EnCrypter.EncryptString(Salt);
+  end else
+    Salt := '';
+
+  SaveDomAttr(RecordsElem, rsEncryptedSalt, Salt);
 
   DoProgress(eptInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
@@ -1039,6 +1098,8 @@ begin
   end;
   RestoreFormatSettings;
   DoProgress(eptFinish, Sz, Sz);
+
+  EnCrypter.Free;
 end;
 
 function TEpiDataFile.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -1225,7 +1286,8 @@ begin
     SaveAttr(rsVersionAttr, Version);
 end;
 
-procedure TEpiDataFile.LoadFromXml(Root: TDOMNode);
+procedure TEpiDataFile.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   Jump: TEpiJump;
@@ -1239,22 +1301,23 @@ begin
   MainSection.Free;
 
   // Now start loading.
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   // If no name present, TEpiTranslatedText will take care of it.
-  Caption.LoadFromXml(Root);
+  Caption.LoadFromXml(Root, ReferenceMap);
   FVersion := LoadAttrString(Root, rsVersion, FVersion, false);
   FCreated := LoadAttrDateTime(Root, rsCreatedAttr);
 
   // Version 2:
   FStructureModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FStructureModifiedDate, false);
 
+  if LoadNode(Node, Root, rsSections, false) then
+    Sections.LoadFromXml(Node, ReferenceMap);
+
   // VERSION 2 PROPERTY
   if LoadNode(Node, Root, 'KeyFields', false) then
     LoadKeyFields(Node);
-
-  if LoadNode(Node, Root, rsSections, false) then
-    Sections.LoadFromXml(Node);
+{
 
   // Post Processing!
   for i := 0 to LinkMap.Count - 1 do
@@ -1293,7 +1356,7 @@ begin
         TEpiFields(LinkMap.Objects[i]).AddItem(AField);
     end;
   end;
-  LinkMap.Clear;
+  LinkMap.Clear;    }
 
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := Sections.GetSectionByName('MAIN');
@@ -1445,12 +1508,12 @@ begin
   end;
 end;
 
-function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDataFile.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   i: Integer;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiDataFile(Result) do
   begin
     FVersion := Self.FVersion;
@@ -1462,7 +1525,7 @@ begin
 
     // Copy Record Status - start by deleting the one created by default.
     FRecordStatus.Free;
-    FRecordStatus := TEpiField(Self.FRecordStatus.Clone(Self));
+    FRecordStatus := TEpiField(Self.FRecordStatus.Clone(Result));
   end;
 
   // At this point all existing fields in this DataFile have been cloned:
@@ -1471,8 +1534,12 @@ begin
   // - Clone list of key-fields.
   for i := 0 to Self.KeyFields.Count - 1 do
     TEpiDataFile(Result).KeyFields.AddItem(TEpiDataFile(Result).Fields.FieldByName[KeyFields[i].Name]);
-
-  // - Update other references in each field
-  for i := 0 to Fields.Count - 1 do
-    Fields[i].PostCloneUpdate(TEpiDataFile(Result).Fields.FieldByName[Fields[i].Name]);
 end;
+
+{ TEpiDataFilesEnumeraton }
+
+function TEpiDataFilesEnumerator.GetCurrent: TEpiDataFile;
+begin
+  Result := TEpiDataFile(inherited GetCurrent);
+end;
+

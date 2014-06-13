@@ -22,8 +22,8 @@ type
     procedure SetIsMissingValue(AValue: boolean);
   protected
     function GetValueAsString: string; virtual; abstract;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     function WriteNameToXml: boolean; override;
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
@@ -32,7 +32,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveAttributesToXml: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Order: integer read FOrder write FOrder;
     property    TheLabel: TEpiTranslatedText read FLabel write FLabel;
@@ -49,12 +49,12 @@ type
     procedure SetValue(AValue: EpiInteger);
   protected
     function GetValueAsString: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiInteger read FValue write SetValue;
@@ -68,12 +68,12 @@ type
     procedure SetValue(AValue: EpiFloat);
   protected
     function GetValueAsString: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiFloat read FValue write SetValue;
@@ -87,12 +87,12 @@ type
     procedure SetValue(AValue: EpiString);
   protected
     function GetValueAsString: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiString read FValue write SetValue;
@@ -126,12 +126,12 @@ type
     FCachedLength: LongInt;
     procedure   DirtyCacheAndSendChangeEvent;
   protected
-    procedure   LoadOldInternalTag(Root: TDOMNode); virtual;
+    procedure   LoadOldInternalTag(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); virtual;
     function    SaveExternal(LvL: Integer): string;
     function    WriteNameToXml: boolean; override;
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     procedure DoChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
       overload;
@@ -144,7 +144,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
     function    ItemClass: TEpiCustomItemClass; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewValueLabel: TEpiCustomValueLabel;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function    DeleteItem(Index: integer): TEpiCustomItem; override;
@@ -180,7 +180,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
@@ -212,9 +212,9 @@ begin
 end;
 
 function TEpiCustomValueLabel.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiCustomValueLabel(Result) do
   begin
     FIsMissingValue := Self.FIsMissingValue;
@@ -268,7 +268,8 @@ begin
     inherited SaveAttributesToXml;
 end;
 
-procedure TEpiCustomValueLabel.LoadFromXml(Root: TDOMNode);
+procedure TEpiCustomValueLabel.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMElement;
   Attr: TDOMAttr;
@@ -279,7 +280,7 @@ begin
   Order    := LoadAttrInt(Root, rsOrder);
   if LoadAttr(Attr, Root, rsMissing, false) then
     IsMissingValue := LoadAttrBool(Root, rsMissing);
-  TheLabel.LoadFromXml(Root);
+  TheLabel.LoadFromXml(Root, ReferenceMap);
 end;
 
 procedure TEpiCustomValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
@@ -311,10 +312,10 @@ begin
   Result := IntToStr(Value);
 end;
 
-function TEpiIntValueLabel.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiIntValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiIntValueLabel(Result).FValue := FValue;
 end;
 
@@ -324,9 +325,10 @@ begin
   SaveDomAttr(Result, rsValue, Value);
 end;
 
-procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode);
+procedure TEpiIntValueLabel.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
   Value := LoadAttrInt(Root, rsValue);
 end;
 
@@ -363,9 +365,9 @@ begin
 end;
 
 function TEpiFloatValueLabel.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiFloatValueLabel(Result).FValue := FValue;
 end;
 
@@ -375,9 +377,10 @@ begin
   SaveDomAttr(Result, rsValue, Value);
 end;
 
-procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode);
+procedure TEpiFloatValueLabel.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
   Value := LoadAttrFloat(Root, rsValue);
 end;
 
@@ -414,9 +417,9 @@ begin
 end;
 
 function TEpiStringValueLabel.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiStringValueLabel(Result).FValue := FValue;
 end;
 
@@ -426,9 +429,10 @@ begin
   SaveDomAttr(Result, rsValue, Value);
 end;
 
-procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode);
+procedure TEpiStringValueLabel.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
   Value := LoadAttrString(Root, rsValue);
 end;
 
@@ -570,7 +574,8 @@ begin
             ValueLabels[i].IsMissingValue;
 end;
 
-procedure TEpiValueLabelSet.LoadOldInternalTag(Root: TDOMNode);
+procedure TEpiValueLabelSet.LoadOldInternalTag(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   NValueLabel: TEpiCustomValueLabel;
@@ -579,7 +584,7 @@ begin
   FLabelScope := vlsInternal;
 
   FWriteNameToXml := false;
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
   FWriteNameToXml := true;
 end;
 
@@ -614,10 +619,10 @@ begin
   EndUpdate;
 end;
 
-function TEpiValueLabelSet.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiValueLabelSet.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiValueLabelSet(Result) do
   begin
     FLabelScope := Self.FLabelScope;
@@ -697,7 +702,8 @@ begin
   end;
 end;
 
-procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode);
+procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   Attr: TDOMAttr;
@@ -717,7 +723,7 @@ begin
       FName := LoadAttrString(Root, rsId);
 
     if LoadNode(Node, Root, rsInternal, false) then
-      LoadOldInternalTag(Node);
+      LoadOldInternalTag(Node, ReferenceMap);
 
     // Was never officially supported and used...
     {if LoadNode(Node, Root, rsExternal, false) then
@@ -729,7 +735,7 @@ begin
   if (Version >= 3) and
      (LabelScope = vlsInternal)
   then
-    inherited LoadFromXml(Root);
+    inherited LoadFromXml(Root, ReferenceMap);
 end;
 
 function TEpiValueLabelSet.NewValueLabel: TEpiCustomValueLabel;
@@ -942,7 +948,8 @@ begin
   inherited Create;
 end;
 
-procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode);
+procedure TEpiValueLabelSets.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   NValueLabelSet: TEpiValueLabelSet;
@@ -972,7 +979,7 @@ begin
       if Scope = vlsInternal then
       begin;
         NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
-        NValueLabelSet.LoadFromXml(Node);
+        NValueLabelSet.LoadFromXml(Node, ReferenceMap);
       end else begin
         LoadExternalValueLabelSet(DocFileCache, Node);
       end;

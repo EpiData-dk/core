@@ -6,8 +6,39 @@ type
     efceSetDecimal, efceSetLeft, efceSetLength,
     efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
     efceShowValueLabel, efceShowValueLabelNotes, efceRepeatValue, efceDefaultValue,
-    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet
+    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet,
+    efceZeroFilled
   );
+
+  PEpiString = ^EpiString;
+
+  TEpiFieldDataEventRecord = record
+    Index: Integer;                       // The index at which the datachange happend
+    case FieldType: TEpiFieldType of      // The senders Fieldtype (also accessible through the change event, but convient)
+      ftBoolean:                          // Old Value as per field type
+        (BoolValue: EpiBool);
+      ftInteger,
+      ftAutoInc:
+        (IntValue: EpiInteger);
+      ftFloat:
+        (FloatValue: EpiFloat);
+      ftDMYDate,
+      ftMDYDate,
+      ftYMDDate,
+      ftDMYAuto,
+      ftMDYAuto,
+      ftYMDAuto:
+        (DateValue: EpiDate);
+      ftTime,
+      ftTimeAuto:
+        (TimeValue: EpiTime);
+      ftString,
+      ftUpperString:
+        (StringValue: PEpiString);
+  end;
+  PEpiFieldDataEventRecord = ^TEpiFieldDataEventRecord;
+
+  TEpiFieldsEnumerator = class;
 
   { TEpiFields }
 
@@ -19,16 +50,14 @@ type
   protected
     procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function    Prefix: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
-
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
+    function    GetEnumerator: TEpiFieldsEnumerator;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
     property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;
@@ -100,6 +129,7 @@ type
     FFieldType: TEpiFieldType;
     FNotes: TEpiTranslatedTextWrapper;
     FRanges: TEpiRanges;
+    FRelates: TEpiRelates;
     FRepeatValue: boolean;
     FShowValueLabel: Boolean;
     FShowValueLabelNotes: boolean;
@@ -144,6 +174,7 @@ type
     property    Jumps:                TEpiJumps read FJumps write FJumps;
     property    Calculation:          TEpiCalculation read FCalculation write FCalculation;
     property    Comparison:           TEpiComparison read FComparison write FComparison;
+    property    Relates:              TEpiRelates read FRelates write FRelates;
 
   { Pack Data}
   protected
@@ -186,25 +217,38 @@ type
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   { Cloning }
   protected
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
-    procedure PostCloneUpdate(Dest: TEpiField);
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+//    procedure PostCloneUpdate(Dest: TEpiField);
   end;
   TEpiFieldClass = class of TEpiField;
 
-  { TEpiIntField }
+  { TEpiFieldsEnumerator }
+
+  TEpiFieldsEnumerator = class(TEpiCustomControlItemListEnumerator)
+  protected
+    function GetCurrent: TEpiField; override;
+  public
+    property Current: TEpiField read GetCurrent;
+  end;
+
+    { TEpiIntField }
   // Handles following field types:
   // ftInteger, ftAutoInc
   TEpiIntField = class(TEpiField)
   private
     FData: array of EpiInteger;
     FDefaultValue: EpiInteger;
+    FZeroFilled: Boolean;
     procedure SetDefaultValue(const AValue: EpiInteger);
+    procedure SetZeroFilled(AValue: Boolean);
   protected
     function DoGetDefaultValueAsString: string; override;
     procedure DoSetDefaultValueAsString(const AValue: string); override;
@@ -234,15 +278,22 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
+    function SaveAttributesToXml: string; override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
+       override;
     procedure Exchange(i, j: integer); override;
     function  FormatString(Const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiInteger read FDefaultValue write SetDefaultValue;
+    property  ZeroFilled: Boolean read FZeroFilled write SetZeroFilled;
   end;
 
   { TEpiFloatField }
@@ -282,8 +333,8 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiFloat): boolean;
     class function DefaultMissing: EpiFloat;
@@ -331,12 +382,13 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiBool): boolean;
     class function DefaultMissing: EpiBool;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiBool read FDefaultValue write SetDefaultValue;
@@ -379,12 +431,13 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiString): boolean;
     class function DefaultMissing: EpiString;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
@@ -403,10 +456,11 @@ type
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   protected
     function  SaveAttributesToXml: string; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property AutoMode: TEpiAutoUpdateMode read FAutoMode write SetAutoMode;
   end;
 
@@ -449,12 +503,13 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiDate): boolean;
     class function DefaultMissing: EpiDate;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiDate read FDefaultValue write SetDefaultValue;
@@ -497,12 +552,13 @@ type
        override;
     procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
     function  DoCompare(i, j: integer): integer; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     class function CheckMissing(AValue: EpiDateTime): boolean;
     class function DefaultMissing: EpiDateTime;
     procedure Exchange(i, j: integer); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function  FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiTime read FDefaultValue write SetDefaultValue;

@@ -296,6 +296,8 @@ begin
                'Continue opening this file?';
         result := true;
       end;
+
+    Dispose(LF);
   end;
 end;
 

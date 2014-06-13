@@ -813,7 +813,7 @@ begin
     StrBuf := '';
     if Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) > 0 then
       StrBuf :=  EpiUnknownStrToUTF8(Copy(TxtLine, Pos('FILELABEL: ', AnsiUpperCase(TxtLine)) + Length('FILELABEL: ') , Length(TxtLine)));
-    Caption.Text := StrBuf;
+    Caption.Text := Trim(StrBuf);
 
     // - Header lines:
     TempInt := Pos(' ', TxtLine)-1;

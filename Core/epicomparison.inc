@@ -39,20 +39,34 @@ begin
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
-function TEpiComparison.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+procedure TEpiComparison.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  if (EpiClassType = TEpiComparison)
+  then
+    begin
+      if not Assigned(GetOwnerField) then exit;
+
+      case ReferenceType of
+        0: // CompareField
+          CompareField := GetOwnerField.DataFile.Fields.FieldByName[ReferenceId];
+      end;
+
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiComparison.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
   with TEpiComparison(Result) do
-  begin
-    if (not Assigned(OwnerField.DataFile)) or
-       (OwnerField.DataFile = Self.OwnerField.DataFile)
-    then
-      CompareField := Self.FCompareField
-    else
-      CompareField := GetOwnerField.DataFile.Fields.FieldByName[Self.FCompareField.Name];
     FCompareType := Self.FCompareType;
-  end;
+
+  if Assigned(CompareField) then
+    ReferenceMap.AddFixupReference(Result, TEpiComparison, 0, CompareField.Name);
 end;
 
 function TEpiComparison.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -81,18 +95,22 @@ begin
   Result := rsCompare;
 end;
 
-procedure TEpiComparison.LoadFromXml(Root: TDOMNode);
+procedure TEpiComparison.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   CompareId: String;
 begin
-  inherited LoadFromXml(Root);
-  CompareId := LoadAttrString(Root, rsCompareTo);
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  CompareType := TEpiComparisonType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiComparisonType)));
+  ReferenceMap.AddFixupReference(Self, TEpiComparison, 0, LoadAttrString(Root, rsCompareTo));
+
+{  CompareId := LoadAttrString(Root, rsCompareTo);
   if Assigned(OwnerField) then
     CompareField := OwnerField.DataFile.Fields.FieldByName[CompareId];
   if not Assigned(CompareField) then
-    LinkMap.AddLink(ltCompare, Self, CompareId);
+    LinkMap.AddLink(ltCompare, Self, CompareId);          }
 
-  CompareType := TEpiComparisonType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiComparisonType)));
 end;
 
 function TEpiComparison.SaveToXml(Content: String; Lvl: integer): string;

@@ -118,6 +118,7 @@ const
          rsRepeatValue     = 'repeat';
          rsDefaultValue    = 'defaultValue';
          rsAutoUpdateMode  = 'autoUpdateMode';
+         rsZeroFilled      = 'zerofilled';
          rsQuestion        = 'Question';
          rsNotes           = 'Notes';
          rsRanges           = 'Ranges';
@@ -147,15 +148,17 @@ const
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
           rsCompareTo       = 'toFieldRef';
+         rsRelates         = 'Relates';
+          rsRelate          = 'Relate';
+           rsRelationRef  = 'relationRef';
+           rsRelateValue     = 'relateValue';
 
      rsRecords         = 'Records';
+      rsEncryptedSalt   = 'encryptedSalt';
       rsRecord          = 'Record';
        rsRecordStatus    = 'status';
 
    rsRelations       = 'Relations';
-    rsRelates         = 'Relates';
-     rsRelate          = 'Relate';
-      rsFieldId         = 'FieldId';
-      rsRelateValue     = 'RelateValue';
-      rsDestDataFileId  = 'DestDataFileId';
-
+    rsRelation        = 'Relation';
+     rsDataFileRef     = 'dataFileRef';
+     rsMaxRecordCount  = 'maxRecordCount';

@@ -66,6 +66,14 @@ begin
   SaveDomAttrEnum(Result, rsType, HeadingType, TypeInfo(TEpiHeadingType));
 end;
 
+function TEpiHeading.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  TEpiHeading(Result).HeadingType := HeadingType;
+end;
+
 constructor TEpiHeading.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -85,14 +93,15 @@ begin
   Result := rsHeading;
 end;
 
-procedure TEpiHeading.LoadFromXml(Root: TDOMNode);
+procedure TEpiHeading.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  );
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   if TEpiDocument(RootOwner).Version >= 2 then
     HeadingType := TEpiHeadingType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiHeadingType), GetEnumName(TypeInfo(TEpiHeadingType), Integer(htH4)), false));
 
-  FCaption.LoadFromXml(Root);
+  FCaption.LoadFromXml(Root, ReferenceMap);
 end;
 
 function TEpiHeading.SaveAttributesToXml: string;
@@ -100,6 +109,13 @@ begin
   Result :=
     inherited SaveAttributesToXml +
     SaveAttrEnum(rsType, Integer(HeadingType), TypeInfo(TEpiHeadingType));
+end;
+
+procedure TEpiHeading.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  TEpiHeading(AEpiCustomBase).HeadingType := HeadingType;
 end;
 
 

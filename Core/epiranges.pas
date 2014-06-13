@@ -8,6 +8,11 @@ uses
   Classes, SysUtils, epicustombase, epidatafilestypes, Laz2_DOM;
 
 type
+  TEpiRangeChangeEventType = (
+    erceSetStart, erceSetEnd
+  );
+
+
   TEpiRange = class;
 
   { TEpiRanges }
@@ -57,7 +62,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    SaveAttributesToXml: string; override;
     function    XMLName: string; override;
     property    AsInteger[const Start: boolean]: EpiInteger read GetAsInteger write SetAsInteger;
@@ -85,8 +90,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
@@ -107,8 +112,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
@@ -129,8 +134,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
@@ -151,8 +156,8 @@ type
     procedure SetAsFloat(const Start: boolean; const AValue: EpiFloat); override;
     procedure SetAsInteger(const Start: boolean; const AValue: EpiInteger); override;
     procedure SetAsTime(const Start: boolean; const AValue: EpiTime); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
@@ -335,17 +340,27 @@ begin
 end;
 
 procedure TEpiTimeRange.SetAsTime(const Start: boolean; const AValue: EpiTime);
+var
+  Val: EpiTime;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
-function TEpiTimeRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiTimeRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  RefenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
   with TEpiTimeRange(Result) do
   begin
     FStart := Self.FStart;
@@ -402,11 +417,21 @@ begin
 end;
 
 procedure TEpiDateRange.SetAsDate(const Start: boolean; const AValue: EpiDate);
+var
+  Val: EpiDate;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 procedure TEpiDateRange.SetAsFloat(const Start: boolean; const AValue: EpiFloat
@@ -426,10 +451,10 @@ begin
   AsDate[start] := Trunc(AValue);
 end;
 
-function TEpiDateRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDateRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  RefenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
   with TEpiDateRange(Result) do
   begin
     FStart := Self.FStart;
@@ -486,11 +511,21 @@ end;
 
 procedure TEpiFloatRange.SetAsFloat(const Start: boolean; const AValue: EpiFloat
   );
+var
+  Val: EpiFloat;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 procedure TEpiFloatRange.SetAsInteger(const Start: boolean;
@@ -505,10 +540,10 @@ begin
   AsFloat[Start] := AValue;
 end;
 
-function TEpiFloatRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiFloatRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  RefenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
   with TEpiFloatRange(Result) do
   begin
     FStart := Self.FStart;
@@ -581,12 +616,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiRange.LoadFromXml(Root: TDOMNode);
+procedure TEpiRange.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   S: String;
 begin
   // Root = <Range>
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   Case Ranges.FieldType of
     ftInteger: begin
@@ -665,11 +700,21 @@ end;
 
 procedure TEpiIntRange.SetAsInteger(const Start: boolean;
   const AValue: EpiInteger);
+var
+  Val: EpiInteger;
+  Event: Word;
 begin
   if Start then
+  begin
+    Val := FStart;
+    Event := Word(erceSetStart);
     FStart := AValue
-  else
+  end else begin
+    Val := FEnd;
+    Event := Word(erceSetEnd);
     FEnd := AValue;
+  end;
+  DoChange(eegRange, Event, @Val);
 end;
 
 procedure TEpiIntRange.SetAsTime(const Start: boolean; const AValue: EpiTime);
@@ -677,10 +722,10 @@ begin
   AsFloat[Start] := AValue;
 end;
 
-function TEpiIntRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiIntRange.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  RefenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
   with TEpiIntRange(Result) do
   begin
     FStart := Self.FStart;

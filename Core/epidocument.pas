@@ -35,12 +35,13 @@ type
     out Continue: boolean
   ) of object;
 
+  TEpiRelationListEx = class;
+
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
   private
     FAdmin: TEpiAdmin;
-    FBranchString: string;
     FCycleNo: Int64;
     FLoading: boolean;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
@@ -52,7 +53,7 @@ type
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
-    FRelations: TEpiRelations;
+    FRelations: TEpiRelationListEx;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
@@ -65,7 +66,7 @@ type
     function   XMLName: string; override;
     procedure  LoadFromFile(const AFileName: string);
     procedure  LoadFromStream(const St: TStream);
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function   SaveToXml(Lvl: integer = 0;
       IncludeHeader: boolean = true): string;
     procedure  SaveToStream(Const St: TStream);
@@ -76,14 +77,15 @@ type
     Property   Study: TEpiStudy read FStudy;
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
-    Property   Relations: TEpiRelations read FRelations;
+    Property   Relations: TEpiRelationListEx read FRelations;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
-    // EpiData XML Version 2 properties:
+    // EpiData XML Version 2 perperties:
     property   PassWord: string read FPassWord write SetPassWord;
+
   { Cycle numbering }
   public
     procedure  IncCycleNo;
@@ -92,13 +94,20 @@ type
   { Cloning }
   protected
     function   DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
+    function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
 
   public
     function   SaveToXmlDocument: TXMLDocument;
   protected
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  end;
+
+  { TEpiRelationListEx }
+
+  TEpiRelationListEx = class(TEpiRelationList)
+  public
+    function GetOrderedDataFiles: TEpiDataFiles;
   end;
 
 implementation
@@ -161,7 +170,8 @@ begin
   FValueLabelSets.ItemOwner := true;
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
-  FRelations       := TEpiRelations.Create(Self);
+  FRelations       := TEpiRelationListEx.Create(Self);
+  FRelations.ItemOwner := true;
   FCycleNo         := 0;
 
   RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
@@ -173,12 +183,12 @@ end;
 
 destructor TEpiDocument.Destroy;
 begin
-  FRelations.Free;
-  FDataFiles.Free;
-  FStudy.Free;
-  FAdmin.Free;
   FXMLSettings.Free;
   FProjectSettings.Free;
+  FStudy.Free;
+  FRelations.Free;
+  FAdmin.Free;
+  FDataFiles.Free;
   FValueLabelSets.Free;
   inherited Destroy;
 end;
@@ -207,26 +217,28 @@ var
   RootNode: TDOMElement;
   P: TDOMParser;
   Xin: TXMLInputSource;
+  ReferenceMap: TEpiReferenceMap;
 begin
-  //ReadXMLFile(RecXml, St);
-  ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
+  RecXml := nil;
+  try
+    ReadXMLFile(RecXml, St, [xrfPreserveWhiteSpace]);
 
-{  P := TDOMParser.Create;
-  P.Options.PreserveWhitespace := true;
-  Xin := TXMLInputSource.Create(St);
-  P.Parse(Xin, RecXml);
-  Xin.Free;
-  P.Free;    }
+    // **********************
+    // Global <EpiData> structure
+    // **********************
+    RootNode := RecXml.DocumentElement;
 
-  // **********************
-  // Global <EpiData> structure
-  // **********************
-  RootNode := RecXml.DocumentElement;
-  LoadFromXml(RootNode);
-  RecXml.Free;
+    ReferenceMap := TEpiReferenceMap.Create;
+    LoadFromXml(RootNode, ReferenceMap);
+    ReferenceMap.FixupReferences;
+  finally
+    ReferenceMap.Free;
+    RecXml.Free;
+  end;
 end;
 
-procedure TEpiDocument.LoadFromXml(Root: TDOMNode);
+procedure TEpiDocument.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   PW, Login, UserPW: String;
@@ -268,7 +280,7 @@ begin
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
   // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
-  XMLSettings.LoadFromXml(Node);
+  XMLSettings.LoadFromXml(Node, ReferenceMap);
 
   // XML Version 2:
   if Version >= 2 then
@@ -286,23 +298,23 @@ begin
   end;
 
   LoadNode(Node, Root, rsStudy, true);
-  Study.LoadFromXml(Node);
+  Study.LoadFromXml(Node, ReferenceMap);
 
   // TODO : Include in later versions.
 //  LoadNode(Node, Root, rsAdmin, true);
 //  Admin.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsProjectSettings, false) then
-    ProjectSettings.LoadFromXml(Node);
+    ProjectSettings.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsValueLabelSets, false) then
-    ValueLabelSets.LoadFromXml(Node);
+    ValueLabelSets.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsDataFiles, false) then
-    DataFiles.LoadFromXml(Node);
+    DataFiles.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsRelations, false) then
-    Relations.LoadFromXml(Node);
+    Relations.LoadFromXml(Node, ReferenceMap);
 
   FLoading := false;
   Modified := false;
@@ -354,10 +366,10 @@ begin
   Result := TEpiDocument.Create(Self.DefaultLang);
 end;
 
-function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiDocument.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiDocument(Result) do
   begin
     FPassWord := Self.FPassWord;
@@ -391,5 +403,30 @@ begin
 
   SaveDomAttr(Result, rsCycle, CycleNo);
 end;
+
+{ TEpiRelationListEx }
+
+function TEpiRelationListEx.GetOrderedDataFiles: TEpiDataFiles;
+
+  procedure BuildOrderedDataFiles(ARelation: TEpiMasterRelation);
+  var
+    i: integer;
+  begin
+    Result.AddItem(ARelation.Datafile);
+
+    for i := 0 to ARelation.DetailRelations.Count - 1 do
+      BuildOrderedDataFiles(ARelation.DetailRelation[i]);
+  end;
+
+var
+  i: Integer;
+begin
+  Result := TEpiDataFiles.Create(nil);
+  Result.ItemOwner := false;
+
+  for i := 0 to Count - 1 do
+    BuildOrderedDataFiles(MasterRelation[i]);
+end;
+
 
 end.

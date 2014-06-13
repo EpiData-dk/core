@@ -37,7 +37,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
@@ -45,8 +45,8 @@ type
     property    FormatSettings: TFormatSettings read FFormatSettings;
   { Cloning }
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
   { TEpiProjectSettings }
@@ -76,7 +76,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    ScrambleXml: boolean; override;
     property    ShowFieldNames: Boolean read FShowFieldNames write SetShowFieldNames;
     property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
@@ -85,8 +85,8 @@ type
     property    AutoIncStartValue: EpiInteger read FAutoIncStartValue write SetAutoIncStartValue;
   { Cloning }
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
 implementation
@@ -182,7 +182,8 @@ begin
   Result := rsSettings;
 end;
 
-procedure TEpiXMLSettings.LoadFromXml(Root: TDOMNode);
+procedure TEpiXMLSettings.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
 begin
@@ -192,10 +193,10 @@ begin
   DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
 end;
 
-function TEpiXMLSettings.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiXMLSettings.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiXMLSettings(Result) do
   begin
     FDateSeparator     := Self.FDateSeparator;
@@ -305,7 +306,8 @@ begin
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
-procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode);
+procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   I: Integer;
   B: Boolean;
@@ -323,9 +325,9 @@ begin
 end;
 
 function TEpiProjectSettings.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiProjectSettings(Result) do
   begin
     FAutoIncStartValue := Self.FAutoIncStartValue;
