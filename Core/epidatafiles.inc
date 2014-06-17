@@ -432,21 +432,12 @@ begin
 
     S := '';
     for CurField := 0 to Fc - 1 do
-    {$IFNDEF EPI_TEST_LOAD}
-    with Fields[CurField] do
-      if not IsMissing[CurRec] then
-        if FieldType in StringFieldTypes + FloatFieldTypes then
-          S += Name + '=' + StringToXml(StringReplace(AsString[CurRec], ',', '\,', [rfReplaceAll])) + ','
-        else
-          S += Name + '=' + AsString[CurRec] + ',';
-    {$ELSE}
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes then
           S += Name + '="' + StringToXml(AsString[CurRec]) + '";'
         else
           S += Name + '=' + AsString[CurRec] + ';';
-    {$ENDIF}
     Delete(S, Length(S), 1);
 
     Lst.Add(R + LocalEncrypt(S) + '</' + rsRecord + '>');
@@ -587,10 +578,8 @@ begin
       rsVerified: Verified[CurRec] := true;
     end;
 
-    {$IFDEF EPI_TEST_LOAD}
     if DocVersion <= 2 then
       begin
-    {$ENDIF}
         DataList.DelimitedText := Dummyfy(LocalDeCrypt(Node.TextContent));
         for i := 0 to DataList.Count - 1 do
         begin
@@ -602,7 +591,6 @@ begin
             continue;
           TmpField.AsString[CurRec] := UnDummyfy(S);
         end;
-    {$IFDEF EPI_TEST_LOAD}
       end
     else
       begin
@@ -652,7 +640,6 @@ begin
           PCur := PEnd;
         end;
       end;
-    {$ENDIF EPI_TEST_LOAD}
 
     inc(CurRec);
     Node := TDOMElement(Node.NextSibling);
