@@ -17,13 +17,18 @@ type
       Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); virtual;
     property OwnerField: TEpiField read GetOwnerField;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+  protected
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function XMLName: string; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     function SaveAttributesToXml: string; override;
     property CalcType: TEpiCalcType read GetCalcType;
@@ -49,11 +54,16 @@ type
     procedure FieldHook(Const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
+  protected
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor Destroy; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     property StartDate: TEpiDateField read FStartDate write SetStartDate;
     property StartTime: TEpiDateTimeField read FStartTime write SetStartTime;
@@ -77,11 +87,16 @@ type
     procedure FieldHook(Const Sender: TEpiCustomBase;
       Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+  protected
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor Destroy; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     property Day: TEpiIntField read FDay write SetDay;
     property Month: TEpiIntField read FMonth write SetMonth;
@@ -107,11 +122,16 @@ type
     procedure FieldHook(Const Sender: TEpiCustomBase;
       Const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer); override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+  protected
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor Destroy; override;
-    procedure LoadFromXml(Root: TDOMNode); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function SaveToXml(Content: String; Lvl: integer): string; override;
     property Field1: TEpiField read FField1 write SetField1;
     property Delim1: string read FDelim1 write SetDelim1;

@@ -20,6 +20,7 @@ type
     function    ItemClass: TEpiCustomItemClass; override;
     function    NewSection: TEpiSection;
     function    GetSectionByName(Const AName: string): TEpiSection;
+    function    GetUniqueItemName(AClass: TEpiCustomItemClass): string; override;
     property    Section[Index: integer]: TEpiSection read GetSection; default;
   end;
 
@@ -40,15 +41,18 @@ type
     procedure   SetWidth(const AValue: integer);
   private
     FAllControls: TEpiCustomControlItemList;  // Stores a local list of all fields/headings in sorted order.
-    procedure ItemsHook(Sender: TObject; EventGroup: TEpiEventGroup;
+    procedure ItemsHook(Const Sender, Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
@@ -64,7 +68,7 @@ type
     property    AllControls: TEpiCustomControlItemList read FAllControls;
   { Cloning }
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 

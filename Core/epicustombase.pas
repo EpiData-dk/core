@@ -6,14 +6,21 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, DOM, DCPrijndael, epidatafilestypes, typinfo,
+  Classes, SysUtils, Laz2_DOM, DCPrijndael, epidatafilestypes, typinfo,
   contnrs, LazMethodList;
 
 const
   EPI_XML_DATAFILE_VERSION = 3;
+  {$IFNDEF RELEASE}
+  EPI_XML_BRANCH_STRING = 'TRUNK';
+  {$ENDIF}
 
 type
+  EEpiBadVersion  = class(Exception);
+  EEpiExternalFileNoFound = class(Exception);
+
   TEpiCustomBase = class;
+  TEpiCustomBaseClass = class of TEpiCustomBase;
   TEpiCustomItem = class;
   TEpiCustomList = class;
 
@@ -37,17 +44,21 @@ type
     eegFields,
     eegGroups,
     eegHeading,
+    // epirange.pas
+    eegRange,
     // epivaluelabels.pas
     eegValueLabel,
     eegValueLabelSet,
     // epirelations.pas
-    eegRelates
+    eegRelations
     );
+
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
     ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
     ecceSetTop, ecceSetLeft, ecceText, ecceReferenceDestroyed
   );
+
   TEpiChangeEvent = procedure(
     Const Sender: TEpiCustomBase;     // Who is currently transmitting the event.
     Const Initiator: TEpiCustomBase;  // Who initiated the event
@@ -60,10 +71,29 @@ type
 
   TEpiCoreException = class (Exception);
 
+  { TEpiReferenceMap }
+
+  TEpiReferenceMap = class
+  private
+    FObjectReferences: TStringList;
+    FClassType: TList;
+    FReferenceType: TByteArray;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure AddFixupReference(
+      Obj: TEpiCustomBase;                 // The object which has a reference which cannot be fulfilled
+      EpiClassType: TEpiCustomBaseClass;   // The class type of the object. (should be used by Obj to chech at what level of the class hierachy the reference should be fixed
+      ReferenceType: Byte;                 // An identifier, indicating what reference (based on class-lvl) must be updated.
+      Const ReferenceId: string);          // The reference identifier.
+    procedure FixupReferences;
+  end;
+
+//  {$static on}
   TEpiCustomBase = class(TComponent)
   { Scrambling }
   private
-    FCrypter:   TDCP_rijndael; static;
+    FCrypter:   TDCP_rijndael;
     function    Get4ByteSalt: Integer;
   protected
     procedure   InitCrypt(Key: string);
@@ -131,7 +161,35 @@ type
   public
     function   XMLName: string; virtual;
     function   SaveToXml(Content: String; Lvl: integer): string; virtual;
-    procedure  LoadFromXml(Root: TDOMNode); virtual;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); virtual;
+
+  protected
+    // Dom Attr
+    procedure  SaveDomAttr(Const Node: TDomElement; Const aTag: String;
+      Const Value: boolean); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const aTag: String;
+      Const Value: integer); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const aTag: String;
+      Const Value: extended); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const aTag: String;
+      Const Value: TDateTime); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const aTag: String;
+      Const Value: string); overload;
+    procedure  SaveDomAttrEnum(Const Node: TDomElement; Const aTag: String;
+      Const Value; TypeInfo: PTypeInfo);
+    // Dom Text Content
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const aTag: String;
+      Const Value: String); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const aTag: String;
+      Const Value: Integer); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const aTag: String;
+      Const Value: Extended); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const aTag: String;
+      Const Value: TDateTime); overload;
+    procedure  SaveTextContent(Const RootNode: TDOMElement; Const aTag: String;
+      Const Value: Boolean); overload;
+    // Save To Dom
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; virtual;
 
     { Change-event hooks }
   private
@@ -145,7 +203,7 @@ type
       and perform actions related to the event being chained. All other objects that want
       to be notified of changes should do so using ChangeHooks!
       Eg.:
-        1) If an TEpiCustomItem is destroyed, it will end an ecceDestroy event through the chain.
+        1) If an TEpiCustomItem is destroyed, it will send an ecceDestroy event through the chain.
         2) The owning TEpiCustomList should (if it wants/needs to) handle this during DoChange.
         3) Any other objects not being part of this chain, eg. sibling TEpiCustomItem's should
            add a ChangeHook using RegisterOnChangeHook.
@@ -172,6 +230,7 @@ type
   private
     FClassList: TFPList;
     FModified:  Boolean;
+    FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
     FState:     TEpiCustomBaseState;
@@ -183,6 +242,7 @@ type
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
+    procedure   BeforeDestruction; override;
     destructor  Destroy; override;
     procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
     property    Owner: TEpiCustomBase read FOwner;
@@ -191,17 +251,28 @@ type
     property    Modified: Boolean read FModified write SetModified;
     property    OnModified: TNotifyEvent read FOnModified write SetOnModified;
 
+  { Fix References (relevant for Cloning and Loading) }
+  protected
+    // ReferenceType is a "private" identifier used by the object in order to
+    // known what reference it should "fix".
+    // ReferenceId is the identifier for the reference that needs to be fixed up.
+    procedure   FixupReferences(EpiClassType: TEpiCustomBaseClass;
+      ReferenceType: Byte;
+      Const ReferenceId: string); virtual;
+
   { Cloning }
   protected
     // DoCloneCreate should only be overridden if a special constructor is used.
     function    DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; virtual;
     // DoClone should normally be overridden, since this is where data should be copied.
-    function    DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase = nil): TEpiCustomBase; virtual;
+    function    DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; virtual;
   public
     function    Clone: TEpiCustomBase;
-    function    Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
+    function    Clone(AOwner: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap = nil): TEpiCustomBase;
   end;
-  TEpiCustomBaseClass = class of TEpiCustomBase;
+//  {$static off}
 
   { TEpiTranslatedText }
 
@@ -217,19 +288,23 @@ type
     procedure   SetLanguage(Const LangCode: string;
       Const DefaultLanguage: boolean); override;
     function    XMLName: string; override;
+    procedure   Clear;
   public
     constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string); virtual;
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
     property    TextLang[LangCode: string]: string read GetText write SetText;
   { Cloning }
   protected
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiTranslatedTextWrapper }
@@ -240,10 +315,12 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
   { Cloning }
   protected
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
   { TEpiCustomItem }
@@ -256,15 +333,19 @@ type
     function    SaveAttributesToXml: string; override;
     function    DoValidateRename(Const NewName: string): boolean; virtual;
     function    WriteNameToXml: boolean; virtual;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
   {Cloning}
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+
   { CustomData }
   // CustomData is a custom property that can be used freely to store some data
   // along with the object. User added content is NEVER used by the internals of
@@ -288,25 +369,29 @@ type
     FTop: integer;
   protected
     function   SaveAttributesToXml: string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
   {Cloning}
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
   TEpiCustomControlItemClass = class of TEpiCustomControlItem;
 
-  { TEpiCustomList }
-
+  TEpiCustomListEnumerator = class;
   TEpiOnNewItemClass      = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
   TEpiValidateRenameEvent = function(Const NewName: string): boolean of object;
   TEpiPrefixEvent         = function: string of object;
+
+  { TEpiCustomList }
+
   TEpiCustomList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
@@ -324,8 +409,10 @@ type
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
     function    WriteNameToXml: boolean; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property    List: TFPList read FList;
+  protected
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
@@ -344,6 +431,7 @@ type
     function    GetItemByName(AName: string): TEpiCustomItem; virtual;
     function    ItemExistsByName(AName: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
+    function    GetEnumerator: TEpiCustomListEnumerator;
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
     property    ItemOwner: boolean read FItemOwner write SetItemOwner;
@@ -351,12 +439,15 @@ type
   private
     FOnGetPrefix: TEpiPrefixEvent;
     FOnValidateRename: TEpiValidateRenameEvent;
-    function  DoPrefix: string;
+    FUniqueNames: boolean;
+    procedure SetUniqueNames(AValue: boolean);
   protected
+    function  DoPrefix: string;
     function  Prefix: string; virtual;
   public
     function  GetUniqueItemName(AClass: TEpiCustomItemClass): string; virtual;
     function  ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; override;
+    property  UniqueNames: boolean read FUniqueNames write SetUniqueNames;
     property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
     property  OnGetPrefix: TEpiPrefixEvent read FOnGetPrefix write FOnGetPrefix;
   { New Item Hook }
@@ -394,12 +485,27 @@ type
     property  OnSort: TListSortCompare read FOnSort write FOnSort;
   { Cloning }
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
-  { TEpiCustomControlItemList }
+  { TEpiCustomListEnumerator }
 
+  TEpiCustomListEnumerator = class
+  private
+    FCurrentIndex: Integer;
+    FCustomList: TEpiCustomList;
+  protected
+    function GetCurrent: TEpiCustomItem; virtual;
+  public
+    constructor Create(CustomList: TEpiCustomList); virtual;
+    function MoveNext: Boolean;
+    property Current: TEpiCustomItem read GetCurrent;
+  end;
+
+
+  { TEpiCustomControlItemList }
+  TEpiCustomControlItemListEnumerator = class;
   TEpiCustomControlItemList = class(TEpiCustomList)
   private
     procedure ChangeHook(Const Sender: TEpiCustomBase;
@@ -413,7 +519,18 @@ type
   public
     procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function  DeleteItem(Index: integer): TEpiCustomItem; override;
+    function GetEnumerator: TEpiCustomControlItemListEnumerator;
   end;
+
+  { TEpiCustomControlItemListEnumerator }
+
+  TEpiCustomControlItemListEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiCustomControlItem; override;
+  public
+    property Current: TEpiCustomControlItem read GetCurrent;
+  end;
+
 
 {$I epixmlconstants.inc}
 
@@ -424,7 +541,8 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, XMLRead, epistringutils, epidocument;
+  StrUtils, DCPsha256, laz2_XMLRead, epistringutils, episettings, epidocument,
+  epidatafiles;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
@@ -444,6 +562,53 @@ procedure RestoreFormatSettings;
 begin
   DefaultFormatSettings := BackupDefaultFormatSettings;
 end;
+
+{ TEpiReferenceMap }
+
+constructor TEpiReferenceMap.Create;
+begin
+  FClassType := TList.Create;
+  FObjectReferences := TStringList.Create;
+  FObjectReferences.Sorted := false;
+end;
+
+destructor TEpiReferenceMap.Destroy;
+begin
+  FClassType.Free;
+  FObjectReferences.Free;
+  inherited Destroy;
+end;
+
+procedure TEpiReferenceMap.AddFixupReference(Obj: TEpiCustomBase;
+  EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte;
+  const ReferenceId: string);
+var
+  Idx: Integer;
+begin
+  if (Self = nil) then exit;
+
+  Idx := FObjectReferences.AddObject(ReferenceId, Obj);
+  FClassType.Add(EpiClassType);
+  FReferenceType[Idx] := ReferenceType;
+end;
+
+procedure TEpiReferenceMap.FixupReferences;
+var
+  Obj: TEpiCustomBase;
+  i: Integer;
+begin
+  if (Self = nil) then exit;
+
+  for i := 0 to FObjectReferences.Count - 1 do
+  begin
+    Obj := TEpiCustomBase(FObjectReferences.Objects[i]);
+    Obj.FixupReferences(
+      TEpiCustomBaseClass(FClassType[i]),
+      FReferenceType[i],
+      FObjectReferences[i]);
+  end;
+end;
+
 
 { TEpiCustomBase }
 
@@ -468,16 +633,21 @@ begin
     ClassList.Add(AClasses[i]);
 end;
 
-destructor TEpiCustomBase.Destroy;
+procedure TEpiCustomBase.BeforeDestruction;
 begin
   // Do the last Free notification to the event hooks.
   // - this allows for objects pointing the "self" to remove reference if needed.
   Include(FState, ebsDestroying);
   DoChange(eegCustomBase, Word(ecceDestroy), nil);
 
+  inherited BeforeDestruction;
+end;
+
+destructor TEpiCustomBase.Destroy;
+begin
   FClassList.Free;
-  Freemem(FOnChangeList);
-  Freemem(FOnChangeListIgnoreUpdate);
+  FOnChangeList.Free;
+  FOnChangeListIgnoreUpdate.Free;
   inherited Destroy;
 end;
 
@@ -492,13 +662,19 @@ begin
   EndUpdate;
 end;
 
+procedure TEpiCustomBase.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
+begin
+  // Do nothing..
+end;
+
 function TEpiCustomBase.DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase;
 begin
   result := TEpiCustomBaseClass(Self.ClassType).Create(AOwner);
 end;
 
-function TEpiCustomBase.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiCustomBase.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   OrgClass: TEpiCustomBase;
   NewClass: TEpiCustomBase;
@@ -515,29 +691,35 @@ begin
     NewClass := TEpiCustomBase(Result.ClassList[i]);
     OrgClass := TEpiCustomBase(ClassList[i]);
 
-    OrgClass.DoClone(Result, NewClass);
+    OrgClass.DoClone(Result, NewClass, ReferenceMap);
   end;
 end;
 
 function TEpiCustomBase.Clone: TEpiCustomBase;
+var
+  RefMap: TEpiReferenceMap;
 begin
-  Result := DoClone(nil);
+  RefMap := TEpiReferenceMap.Create;
+  Result := DoClone(nil, nil, RefMap);
+  RefMap.FixupReferences;
+  RefMap.Free;
 end;
 
-function TEpiCustomBase.Clone(AOwner: TEpiCustomBase): TEpiCustomBase;
+function TEpiCustomBase.Clone(AOwner: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := DoClone(AOwner);
+  Result := DoClone(AOwner, nil, ReferenceMap);
 end;
 
 procedure TEpiCustomBase.InitCrypt(Key: string);
 begin
-  if not Assigned(FCrypter) then
+{  if not Assigned(FCrypter) then
   begin
     FCrypter := TDCP_rijndael.Create(nil);
     Randomize;
   end;
 
-  FCrypter.InitStr(Key, TDCP_sha256);
+  FCrypter.InitStr(Key, TDCP_sha256);   }
 end;
 
 function TEpiCustomBase.EnCrypt(const S: string): string;
@@ -551,10 +733,10 @@ begin
   // a new encryption starts, the encrypted section end up with the first few
   // bytes of ciphertext being the same - and this is NOT a secure encryption.
   // Hence pre-padding with 4 random bytes, will do the trick for most parts.
-  Salt := Get4ByteSalt;
+{  Salt := Get4ByteSalt;
   Result := FCrypter.EncryptString(String(SaltStr) + S);
 
-  FCrypter.Reset;
+  FCrypter.Reset;}
 end;
 
 function TEpiCustomBase.DeCrypt(Root: TDOMNode): TDOMNode;
@@ -564,7 +746,7 @@ var
   s: String;
   Node: TDOMNode;
 begin
-  Result := nil;
+{  Result := nil;
 
   // Extract the text content from this node (but not subnodes).
   Node := Root.FirstChild;
@@ -584,14 +766,14 @@ begin
   ReadXMLFragment(XMLDoc, St);
   ST.Free;
   FCrypter.Reset;
-  Result := XMLDoc;
+  Result := XMLDoc;   }
 end;
 
 function TEpiCustomBase.DeCrypt(S: string): string;
 begin
-  Result := FCrypter.DecryptString(S);
+{  Result := FCrypter.DecryptString(S);
   FCrypter.Reset;
-  Delete(Result, 1, 4);
+  Delete(Result, 1, 4); }
 end;
 
 function TEpiCustomBase.NodePath(const Root: TDOMNode): string;
@@ -652,7 +834,7 @@ end;
 
 function TEpiCustomBase.Indent(Level: integer): string;
 begin
-  result := DupeString(' ', Level);
+  result := DupeString('  ', Level);
 end;
 
 function TEpiCustomBase.ScrambleXml: boolean;
@@ -662,7 +844,7 @@ end;
 
 function TEpiCustomBase.NodeIsWhiteSpace(const Node: TDomNode): boolean;
 var
-  P: PWideChar;
+  P: PChar;
 begin
   result := false;
   if (Assigned(Node)) and
@@ -744,7 +926,7 @@ var
   Node: TDOMNode;
 begin
   if LoadNode(Node, Root, NodeName, Fatal) then
-    result := UTF8Encode(Node.TextContent)
+    result := Node.TextContent
   else
     result := DefaultVal;
 end;
@@ -814,7 +996,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    Result := UTF8Encode(Attr.Value)
+    Result := Attr.Value
   else
     Result := DefaultVal;
 end;
@@ -844,7 +1026,7 @@ var
   Attr: TDOMAttr;
 begin
   if LoadAttr(Attr, Root, AttrName, Fatal) then
-    result := WideLowerCase(Attr.Value) = 'true'
+    result := LowerCase(Attr.Value) = 'true'
   else
     Result := DefaultVal;
 end;
@@ -915,7 +1097,14 @@ end;
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
   ): string;
 begin
-  result := SaveAttrRaw(AttrName, FloatToStr(Val));
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    result := SaveAttrRaw(AttrName, FloatToStr(Val));
+    RestoreFormatSettings;
+  end else
+    result := SaveAttrRaw(AttrName, FloatToStr(Val));
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
@@ -975,9 +1164,125 @@ begin
       Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '/>' + LineEnding;
 end;
 
-procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode);
+procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 begin
   // Do nothing - should be overridden in descendants.
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const aTag: String; const Value: string);
+begin
+  Node.SetAttribute(aTag, Value);
+end;
+
+procedure TEpiCustomBase.SaveDomAttrEnum(const Node: TDomElement;
+  const aTag: String; const Value; TypeInfo: PTypeInfo);
+var
+  V: Byte;
+begin
+  V := Byte(Value);
+  SaveDomAttr(Node, aTag, GetEnumName(TypeInfo, V));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const aTag: String; const Value: integer);
+begin
+  SaveDomAttr(Node, aTag, IntToStr(Value));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const aTag: String; const Value: extended);
+begin
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    SaveDomAttr(Node, aTag, FloatToStr(Value));
+    RestoreFormatSettings;
+  end else
+    SaveDomAttr(Node, aTag, FloatToStr(Value));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const aTag: String; const Value: TDateTime);
+begin
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    SaveDomAttr(Node, aTag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
+    RestoreFormatSettings;
+  end else
+    SaveDomAttr(Node, aTag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const aTag: String; const Value: boolean);
+begin
+  SaveDomAttr(Node, aTag, BoolToStr(Value, 'true', 'false'));
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const aTag: String; const Value: String);
+var
+  Elem: TDOMElement;
+begin
+  Elem := RootNode.OwnerDocument.CreateElement(aTag);
+  Elem.TextContent := Value;
+  RootNode.AppendChild(Elem);
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const aTag: String; const Value: Integer);
+begin
+  SaveTextContent(RootNode, aTag, IntToStr(Value));
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const aTag: String; const Value: Extended);
+begin
+  if (RootOwner is TEpiDocument) then
+    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
+
+  SaveTextContent(RootNode, aTag, FloatToStr(Value));
+
+  if (RootOwner is TEpiDocument) then
+    RestoreFormatSettings;
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const aTag: String; const Value: TDateTime);
+begin
+  if (RootOwner is TEpiDocument) then
+  with TEpiDocument(RootOwner).XMLSettings do
+  begin
+    BackupFormatSettings(FormatSettings);
+    SaveTextContent(RootNode, aTag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
+    RestoreFormatSettings;
+  end else
+    SaveTextContent(RootNode, aTag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+end;
+
+procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const aTag: String; const Value: Boolean);
+begin
+//  SaveTextContent(RootNode, Value, BoolToStr(Value, 'true', 'false'));
+end;
+
+function TEpiCustomBase.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
+  i: Integer;
+begin
+  Result := RootDoc.CreateElement(XMLName);
+
+  for i := 0 to ClassList.Count - 1 do
+  begin
+    Elem := TEpiCustomBase(ClassList[i]).SaveToDom(RootDoc);
+    if Assigned(Elem) then
+      Result.AppendChild(Elem);
+  end;
 end;
 
 procedure TEpiCustomBase.DoChange(EventGroup: TEpiEventGroup; EventType: Word;
@@ -1057,11 +1362,17 @@ begin
   if IgnoreUpdate then
   begin
     if not Assigned(FOnChangeListIgnoreUpdate) then
+    begin
       FOnChangeListIgnoreUpdate := TMethodList.Create;
+      FOnChangeListIgnoreUpdate.AllowDuplicates := false;
+    end;
     FOnChangeListIgnoreUpdate.Add(TMethod(Event), false);
   end else begin
     if not Assigned(FOnChangeList) then
+    begin
       FOnChangeList := TMethodList.Create;
+      FOnChangeList.AllowDuplicates := false;
+    end;
     FOnChangeList.Add(TMethod(Event), false);
   end;
 end;
@@ -1177,6 +1488,15 @@ begin
   Result := FXMLName;
 end;
 
+procedure TEpiTranslatedText.Clear;
+var
+  i: Integer;
+begin
+  for i := FTextList.Count - 1 downto 0 do
+    FTextList.Objects[i].Free;
+  FTextList.Clear;
+end;
+
 constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase;
   const aXMLName: string);
 begin
@@ -1187,14 +1507,12 @@ begin
 end;
 
 destructor TEpiTranslatedText.Destroy;
-var
-  i: Integer;
 begin
   FXMLName := '';
   FCurrentText := '';
-  for i := FTextList.Count - 1 downto 0 do
-    FTextList.Objects[i].Free;
-  FTextList.Clear;
+
+  Clear;
+
   FTextList.Free;
   inherited Destroy;
 end;
@@ -1210,7 +1528,8 @@ begin
                 StringToXml(TString(FTextList.Objects[i]).Str) + '</' + XMLName + '>' + LineEnding;
 end;
 
-procedure TEpiTranslatedText.LoadFromXml(Root: TDOMNode);
+procedure TEpiTranslatedText.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   ElemList: TDOMNodeList;
   LangCode: String;
@@ -1225,13 +1544,15 @@ begin
       ...
     </Group>
   }
+
   ElemList := TDOMElement(Root).GetElementsByTagName(XMLName);
   for i := 0 to ElemList.Count -1 do
   begin
     // Ugly hack to prevent looking at nodes that is not directly below the root.
     if ElemList[i].ParentNode <> Root then continue;
-    LangCode := UTF8Encode(TDOMElement(ElemList[i]).AttribStrings['xml:lang']);
-    Val := UTF8Encode(ElemList[i].TextContent);
+
+    LangCode := TDOMElement(ElemList[i]).AttribStrings['xml:lang'];
+    Val := ElemList[i].TextContent;
     if (LangCode = FCurrentLang) or (LangCode = '') then
       SetCurrentText(Val)
     else
@@ -1249,6 +1570,10 @@ begin
   BeginUpdate;
   FXMLName := OrgText.FXMLName;
   FCurrentText := OrgText.FCurrentText;
+
+  // Clear content before assign
+  Clear;
+
   for i := 0 to OrgText.FTextList.Count - 1 do
     FTextList.AddObject(OrgText.FTextList[i], TString.Create(TString(OrgText.FTextList.Objects[i]).Str));
   EndUpdate;
@@ -1260,19 +1585,38 @@ begin
   Result := TEpiTranslatedText.Create(AOwner, XMLName);
 end;
 
-function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   i: Integer;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
   with TEpiTranslatedText(Result) do
   begin
-    FTextList.Clear;
+    Clear;
+
     for i := 0 to Self.FTextList.Count - 1 do
       FTextList.AddObject(Self.FTextList[i], TString.Create(TString(Self.FTextList.Objects[i]).Str));
 
     FCurrentText := Self.FCurrentText;
+  end;
+end;
+
+function TEpiTranslatedText.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  Elem: TDOMText;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  for i := 0 to FTextList.Count - 1 do
+  begin
+    if TString(FTextList.Objects[i]).Str <> '' then
+    begin
+      SaveDomAttr(Result, 'xml:lang', FTextList[i]);
+      Result.TextContent := TString(FTextList.Objects[i]).Str;
+    end;
   end;
 end;
 
@@ -1325,19 +1669,44 @@ begin
       Indent(Lvl) + '</' + FNodeName + '>' + LineEnding;
 end;
 
-procedure TEpiTranslatedTextWrapper.LoadFromXml(Root: TDOMNode);
+procedure TEpiTranslatedTextWrapper.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   NRoot: TDOMNode;
 begin
   // Root = Parent for FNodeName (since this is a wrapped object.
   if LoadNode(NRoot, Root, FNodeName, false) then
-    inherited LoadFromXml(NRoot);
+    inherited LoadFromXml(NRoot, ReferenceMap);
 end;
 
 function TEpiTranslatedTextWrapper.DoCloneCreate(AOwner: TEpiCustomBase
   ): TEpiCustomBase;
 begin
   Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
+end;
+
+function TEpiTranslatedTextWrapper.SaveToDom(RootDoc: TDOMDocument
+  ): TDOMElement;
+var
+  Elem: TDOMElement;
+  i: Integer;
+  ReturnNil: Boolean;
+begin
+  ReturnNil := true;
+  for i := 0 to FTextList.Count -1 do
+    if TString(FTextList.Objects[i]).Str <> '' then
+    begin
+      ReturnNil := false;
+      Break;
+    end;
+
+  if ReturnNil then
+    Exit(nil);
+
+  Elem := inherited SaveToDom(RootDoc);
+
+  Result := RootDoc.CreateElement(FNodeName);
+  Result.AppendChild(Elem);
 end;
 
 { TEpiCustomItem }
@@ -1381,6 +1750,14 @@ begin
   result := true;
 end;
 
+function TEpiCustomItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if WriteNameToXml then
+    SaveDomAttr(Result, rsId, Name);
+end;
+
 destructor TEpiCustomItem.Destroy;
 begin
   FName := '';
@@ -1389,7 +1766,8 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiCustomItem.LoadFromXml(Root: TDOMNode);
+procedure TEpiCustomItem.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Attr: TDOMAttr;
 begin
@@ -1400,6 +1778,14 @@ begin
     RaiseErrorAttr(Root, rsId);
 end;
 
+procedure TEpiCustomItem.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  Name := TEpiCustomItem(AEpiCustomBase).Name;
+  EndUpdate;
+end;
+
 function TEpiCustomItem.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
@@ -1407,10 +1793,10 @@ begin
   result := DoValidateRename(NewName);
 end;
 
-function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiCustomItem(Result).FName := FName;
 end;
 
@@ -1454,9 +1840,10 @@ begin
     SaveAttr(rsLeft, Left);
 end;
 
-procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode);
+procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
   Top := LoadAttrInt(Root, rsTop);
   Left := LoadAttrInt(Root, rsLeft);
 end;
@@ -1494,10 +1881,18 @@ begin
   EndUpdate;
 end;
 
-function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+function TEpiCustomControlItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited SaveToDom(RootDoc);
+
+  Result.SetAttribute(rsTop, IntToStr(Top));
+  Result.SetAttribute(rsLeft, IntToStr(Left));
+end;
+
+function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiCustomControlItem(Result) do
   begin
     FTop  := Self.FTop;
@@ -1562,6 +1957,7 @@ begin
   FList := TFPList.Create;
   FItemOwner := false;
   FSorted := false;
+  FUniqueNames := true;
 end;
 
 function TEpiCustomList.GetCount: Integer;
@@ -1591,12 +1987,13 @@ begin
   Result := false;
 end;
 
-procedure TEpiCustomList.LoadFromXml(Root: TDOMNode);
+procedure TEpiCustomList.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   NItem: TEpiCustomItem;
   Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   Node := Root.FirstChild;
   while Assigned(Node) do
@@ -1608,9 +2005,27 @@ begin
 
     NItem := NewItem();
     CheckNode(Node, NItem.XMLName);
-    NItem.LoadFromXml(Node);
+    NItem.LoadFromXml(Node, ReferenceMap);
 
     Node := Node.NextSibling;
+  end;
+end;
+
+function TEpiCustomList.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  Elem: TDOMElement;
+begin
+  if Count = 0 then
+    Exit(nil);
+
+  Result := inherited SaveToDom(RootDoc);
+
+  for i := 0 to Count - 1 do
+  begin
+    Elem := Items[i].SaveToDom(RootDoc);
+    if Assigned(Elem) then
+      Result.AppendChild(Elem);
   end;
 end;
 
@@ -1641,6 +2056,10 @@ end;
 function TEpiCustomList.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 begin
+  // if unique names is not required, you can ALWAYS rename item.
+  if (not UniqueNames) then
+    Exit(true);
+
   result := not ItemExistsByName(NewName);
   if Assigned(OnValidateRename) then
     result := result and OnValidateRename(NewName);
@@ -1771,6 +2190,17 @@ begin
   result := FList.IndexOf(Item);
 end;
 
+function TEpiCustomList.GetEnumerator: TEpiCustomListEnumerator;
+begin
+  result := TEpiCustomListEnumerator.Create(Self);
+end;
+
+procedure TEpiCustomList.SetUniqueNames(AValue: boolean);
+begin
+  if FUniqueNames = AValue then Exit;
+  FUniqueNames := AValue;
+end;
+
 procedure TEpiCustomList.BeginUpdate;
 var
   i: Integer;
@@ -1856,8 +2286,8 @@ begin
   DoSort;
 end;
 
-function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
   i: Integer;
   NItem: TEpiCustomItem;
@@ -1875,7 +2305,7 @@ var
   end;
 
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   // Set itemowner before copying the items - otherwise
   // owner is not set properly.
@@ -1888,7 +2318,7 @@ begin
     NItem.FName := GetRandomName;
     if TEpiCustomList(Result).IndexOf(NItem) = -1 then
       TEpiCustomList(Result).AddItem(NItem);
-    Items[i].DoClone(Result, NItem);
+    Items[i].DoClone(Result, NItem, ReferenceMap);
   end;
 
   // Set Sorting last, otherwise each AddItem triggers a sort.
@@ -1899,6 +2329,26 @@ begin
     Sort;
   end;
 end;
+
+{ TEpiCustomListEnumerator }
+
+function TEpiCustomListEnumerator.GetCurrent: TEpiCustomItem;
+begin
+  result := FCustomList[FCurrentIndex];
+end;
+
+constructor TEpiCustomListEnumerator.Create(CustomList: TEpiCustomList);
+begin
+  FCustomList := CustomList;
+  FCurrentIndex := -1;
+end;
+
+function TEpiCustomListEnumerator.MoveNext: Boolean;
+begin
+  Inc(FCurrentIndex);
+  Result := (FCurrentIndex < FCustomList.Count);
+end;
+
 
 { TEpiCustomControlItemList }
 
@@ -1965,6 +2415,18 @@ function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := inherited DeleteItem(Index);
   Result.UnRegisterOnChangeHook(@ChangeHook);
+end;
+
+function TEpiCustomControlItemList.GetEnumerator: TEpiCustomControlItemListEnumerator;
+begin
+  result := TEpiCustomControlItemListEnumerator.Create(Self);
+end;
+
+{ TEpiCustomControlItemListEnumerator }
+
+function TEpiCustomControlItemListEnumerator.GetCurrent: TEpiCustomControlItem;
+begin
+  result := TEpiCustomControlItem(inherited GetCurrent);
 end;
 
 end.

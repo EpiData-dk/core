@@ -1,22 +1,36 @@
 object DatasetViewerFrame: TDatasetViewerFrame
   Left = 0
-  Height = 546
+  Height = 473
   Top = 0
-  Width = 659
-  ClientHeight = 546
-  ClientWidth = 659
+  Width = 692
+  ClientHeight = 473
+  ClientWidth = 692
   TabOrder = 0
-  DesignLeft = 1482
-  DesignTop = 472
+  DesignLeft = 2208
+  DesignTop = 509
+  object ListGrid: TStringGrid
+    Left = 0
+    Height = 431
+    Top = 42
+    Width = 692
+    Align = alClient
+    HeaderHotZones = [gzFixedCols, gzFixedRows]
+    HeaderPushZones = [gzFixedCols, gzFixedRows]
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goSmoothScroll, goHeaderHotTracking, goHeaderPushedLook]
+    TabOrder = 0
+    OnDblClick = ListGridDblClick
+    OnHeaderClick = ListGridHeaderClick
+    OnPrepareCanvas = ListGridPrepareCanvas
+  end
   object Panel1: TPanel
     Left = 0
     Height = 42
     Top = 0
-    Width = 659
+    Width = 692
     Align = alTop
     ClientHeight = 42
-    ClientWidth = 659
-    TabOrder = 0
+    ClientWidth = 692
+    TabOrder = 1
     object Button1: TButton
       Left = 16
       Height = 27
@@ -29,23 +43,24 @@ object DatasetViewerFrame: TDatasetViewerFrame
     object Button2: TButton
       AnchorSideLeft.Control = Button1
       AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Button1
       Left = 171
       Height = 27
       Top = 8
-      Width = 84
+      Width = 96
       Action = SortByIndexAction
       AutoSize = True
       BorderSpacing.Left = 10
-      ParentBidiMode = False
       TabOrder = 1
     end
     object Button3: TButton
       AnchorSideLeft.Control = Button2
       AnchorSideLeft.Side = asrBottom
-      Left = 265
+      AnchorSideTop.Control = Button1
+      Left = 277
       Height = 27
       Top = 8
-      Width = 91
+      Width = 142
       Action = ShowIndexOrAllFieldsAction
       AutoSize = True
       BorderSpacing.Left = 10
@@ -54,7 +69,8 @@ object DatasetViewerFrame: TDatasetViewerFrame
     object Button4: TButton
       AnchorSideLeft.Control = Button3
       AnchorSideLeft.Side = asrBottom
-      Left = 366
+      AnchorSideTop.Control = Button1
+      Left = 429
       Height = 27
       Top = 8
       Width = 169
@@ -73,12 +89,12 @@ object DatasetViewerFrame: TDatasetViewerFrame
       OnExecute = ShowValuesOrLabelsActionExecute
     end
     object SortByIndexAction: TAction
-      Caption = 'Sort by Key'
+      Caption = 'Sort by Index'
       OnExecute = SortByIndexActionExecute
       OnUpdate = SortByIndexActionUpdate
     end
     object ShowIndexOrAllFieldsAction: TAction
-      Caption = 'Show All/Key'
+      Caption = 'Show All/Index Fields'
       OnExecute = ShowIndexOrAllFieldsActionExecute
       OnUpdate = ShowIndexOrAllFieldsActionUpdate
     end

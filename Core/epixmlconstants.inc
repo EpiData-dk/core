@@ -6,6 +6,7 @@ const
   rsCaption     = 'Caption';
   rsText        = 'Text';
   rsVersionAttr = 'version';
+  rsBranchAttr  = 'branch';   // only used in development versions
   rsCreatedAttr = 'created';
   rsModifiedAttr = 'modified';
 
@@ -76,17 +77,24 @@ const
 
    rsValueLabelSets  = 'ValueLabelSets';
     rsValueLabelSet   = 'ValueLabelSet';
-     rsInternal        = 'Internal';
-      rsValueLabel      = 'ValueLabel';
+     rsValueLabel      = 'ValueLabel';
+      rsValueLabelScope = 'scope';                   // Version 3+ property
+      rsInternal        = 'Internal';                // version 1+2 property, deleted in version 3
        rsLabel           = 'Label';
        rsValue           = 'value';
        rsOrder           = 'order';
        rsMissing         = 'missing';
-     rsExternal        = 'External';
+
+     rsFile            = 'File';
+
+
+
+{     // version 1+2 property, but never used
+      rsExternal        = 'External';
       rsFile            = 'File';
       rsDataFileId      = 'DataFileId';
       rsValueField      = 'ValueField';
-      rsLabelField      = 'LabelField';
+      rsLabelField      = 'LabelField';}
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
@@ -110,6 +118,7 @@ const
          rsRepeatValue     = 'repeat';
          rsDefaultValue    = 'defaultValue';
          rsAutoUpdateMode  = 'autoUpdateMode';
+         rsZeroFilled      = 'zerofilled';
          rsQuestion        = 'Question';
          rsNotes           = 'Notes';
          rsRanges           = 'Ranges';
@@ -139,15 +148,17 @@ const
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
           rsCompareTo       = 'toFieldRef';
+         rsRelates         = 'Relates';
+          rsRelate          = 'Relate';
+           rsRelationRef  = 'relationRef';
+           rsRelateValue     = 'relateValue';
 
      rsRecords         = 'Records';
+      rsEncryptedSalt   = 'encryptedSalt';
       rsRecord          = 'Record';
        rsRecordStatus    = 'status';
 
    rsRelations       = 'Relations';
-    rsRelates         = 'Relates';
-     rsRelate          = 'Relate';
-      rsFieldId         = 'FieldId';
-      rsRelateValue     = 'RelateValue';
-      rsDestDataFileId  = 'DestDataFileId';
-
+    rsRelation        = 'Relation';
+     rsDataFileRef     = 'dataFileRef';
+     rsMaxRecordCount  = 'maxRecordCount';

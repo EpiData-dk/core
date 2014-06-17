@@ -3,8 +3,10 @@
 type
 
   TEpiDataFileChangeEventType = (
-    edceSize
+    edceSize, edceRecordStatus
   );
+
+  TEpiDataFilesEnumerator = class;
 
   { TEpiDataFiles }
 
@@ -22,10 +24,20 @@ type
     function    ItemClass: TEpiCustomItemClass; override;
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewDataFile: TEpiDataFile;
+    function    GetEnumerator: TEpiDataFilesEnumerator;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
+
+  EEpiDataFileHaltLoading = class(Exception);
+
+  TEpiDataFileStatusRecord = record
+    Index:    Integer;            // The index at which the record change happened.
+    OldValue: TEpiRecordState;    // Record state prior to the change.
+    NewValue: TEpiRecordState;    // Record state after the change.
+  end;
+  PEpiDataFileStatusRecord = ^TEpiDataFileStatusRecord;
 
   { TEpiDataFile }
 
@@ -61,6 +73,8 @@ type
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
   { Load/Save methods }
   private
+    FLoadingRecs: Boolean;
+    procedure   HaltLoading;
     function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
     function    SaveKeyFields(Lvl: integer): string;
@@ -68,6 +82,10 @@ type
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     procedure   SetModified(const AValue: Boolean); override;
+  protected
+    procedure   SaveKeyFieldsToDom(RootNode: TDOMElement);
+    procedure   SaveRecordToDom(RootNode: TDOMElement);
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
     destructor  Destroy; override;
@@ -75,7 +93,7 @@ type
     function    XMLName: string; override;
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
-    procedure   LoadFromXml(Root: TDOMNode); override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
@@ -139,6 +157,16 @@ type
   { Cloning }
   protected
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-       nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
+
+  { TEpiDataFilesEnumeraton }
+
+  TEpiDataFilesEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiDataFile; override;
+  public
+    property Current: TEpiDataFile read GetCurrent;
+  end;
+

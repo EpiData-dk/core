@@ -21,6 +21,7 @@ type
   EpiBool      = Byte;
   EpiVariant   = Variant;
 
+  {$PACKENUM 1}
   TEpiFieldType = (
     // Bool  (0)
     ftBoolean,

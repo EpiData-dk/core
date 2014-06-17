@@ -16,7 +16,6 @@ type
   private
     FExportEncoding: TEpiEncoding;
     FExportLines: TStrings;
-    function    PrepareExportDocument(Settings: TEpiExportSetting): TEpiDocument;
     function    EncodeString(Const Str: string; Encoding: TEpiEncoding): string;
     procedure   RaiseError(Const Msg: string);
     procedure   WriteByte(St: TStream; Val: ShortInt);
@@ -34,6 +33,8 @@ type
     function    ExportDDI(Const Settings: TEpiDDIExportSetting): boolean;
     function    ExportEPX(Const Settings: TEpiEPXExportSetting): boolean;
   public
+    class       function PrepareExportDocument(Settings: TEpiExportSetting): TEpiDocument;
+  public
     constructor Create;
     destructor  Destroy; override;
     function    Export(Const Settings: TEpiExportSetting): boolean;
@@ -49,7 +50,7 @@ uses
 
 { TEpiExport }
 
-function TEpiExport.PrepareExportDocument(Settings: TEpiExportSetting
+class function TEpiExport.PrepareExportDocument(Settings: TEpiExportSetting
   ): TEpiDocument;
 var
   Doc: TEpiDocument;
@@ -59,14 +60,12 @@ var
   NewCIList: TEpiCustomControlItemList;
   i: Integer;
   RecordCoundField: TEpiField;
+  F: TEpiField;
+  VLSetList: TList;
 begin
   Doc := Settings.Doc;
   Result := TEpiDocument(Settings.Doc.Clone);
   NewDF  := Result.DataFiles[Settings.DataFileIndex];
-
-{  // Valuelabels export:
-  if not Settings.ExportValueLabels then
-    Result.ValueLabelSets.Clear;         }
 
   // Structure export:
   CIList := Doc.DataFiles[Settings.DataFileIndex].ControlItems;
@@ -74,6 +73,23 @@ begin
   for i := 0 to CIList.Count - 1 do
     if (Settings.Fields.IndexOf(CIList[i]) < 0) then
       NewCIList.GetItemByName(CIList[i].Name).Free;
+
+  // Valuelabels export:
+  //  only include actuall used valuelabels
+  VLSetList := TList.Create;
+
+  for i := 0 to NewDF.Fields.Count - 1 do
+  begin
+    F := NewDF.Field[i];
+    if Assigned(F.ValueLabelSet) and
+       (VLSetList.IndexOf(F.ValueLabelSet) < 0)
+    then
+      VLSetList.Add(F.ValueLabelSet);
+  end;
+
+  for i := Result.ValueLabelSets.Count - 1 downto 0 do
+    if (VLSetList.IndexOf(Result.ValueLabelSets[i]) < 0) then
+      Result.ValueLabelSets[i].Free;
 
   // Selected records:
   // Negative record cound => Structure only.
@@ -181,43 +197,53 @@ end;
 function TEpiExport.Export(const Settings: TEpiExportSetting): boolean;
 var
   OldDoc: TEpiDocument;
+  NewSettings: TEpiExportSetting;
 begin
   // Pre-process the current document.
   Result := Settings.SanetyCheck;
   if not Result then exit;
 
-  OldDoc := Settings.Doc;
-  Settings.Doc := PrepareExportDocument(Settings);
-  if (Settings is TEpiCustomValueLabelExportSetting) and
-     (not TEpiCustomValueLabelExportSetting(Settings).ExportValueLabels)
+  NewSettings := TEpiExportSettingClass(Settings.ClassType).Create;
+  NewSettings.Assign(Settings);
+
+  NewSettings.Doc := PrepareExportDocument(NewSettings);
+  if (NewSettings is TEpiCustomValueLabelExportSetting) and
+     (not TEpiCustomValueLabelExportSetting(NewSettings).ExportValueLabels)
   then
-    Settings.Doc.ValueLabelSets.Clear;
+    NewSettings.Doc.ValueLabelSets.Clear;
+
+  NewSettings.FromRecord := 0;
+  NewSettings.ToRecord := NewSettings.Doc.DataFiles[NewSettings.DataFileIndex].Size - 1;
 
   // CSV
-  if Settings is TEpiCSVExportSetting then
-    Result := (ExportCSV(TEpiCSVExportSetting(Settings)));
+  if NewSettings is TEpiCSVExportSetting then
+    Result := (ExportCSV(TEpiCSVExportSetting(NewSettings)));
 
   // Stata
-  if Settings is TEpiStataExportSetting then
-    Result := (ExportStata(TEpiStataExportSetting(Settings)));
+  if NewSettings is TEpiStataExportSetting then
+    Result := (ExportStata(TEpiStataExportSetting(NewSettings)));
 
   // SPSS
-  if Settings is TEpiSPSSExportSetting then
-    Result := (ExportSPSS(TEpiSPSSExportSetting(Settings)));
+  if NewSettings is TEpiSPSSExportSetting then
+    Result := (ExportSPSS(TEpiSPSSExportSetting(NewSettings)));
 
   // SAS
-  if Settings is TEpiSASExportSetting then
-    Result := (ExportSAS(TEpiSASExportSetting(Settings)));
+  if NewSettings is TEpiSASExportSetting then
+    Result := (ExportSAS(TEpiSASExportSetting(NewSettings)));
 
   // DDI
-  IF Settings is TEpiDDIExportSetting then
-    Result := (ExportDDI(TEpiDDIExportSetting(Settings)));
+  IF NewSettings is TEpiDDIExportSetting then
+  begin
+    Result := (ExportDDI(TEpiDDIExportSetting(NewSettings)));
+    Settings.AdditionalExportSettings.ExportFileName := NewSettings.AdditionalExportSettings.ExportFileName;
+  end;
 
-  if Settings is TEpiEPXExportSetting then
-    Result := (ExportEPX(TEpiEPXExportSetting(Settings)));
+  // EPX
+  if NewSettings is TEpiEPXExportSetting then
+    Result := (ExportEPX(TEpiEPXExportSetting(NewSettings)));
 
-  Settings.Doc.Free;
-  Settings.Doc := OldDoc;
+  NewSettings.Doc.Free;
+  NewSettings.Free;
 end;
 
 function TEpiExport.ExportStata(const ExportSettings: TEpiStataExportSetting
@@ -235,7 +261,7 @@ var
   CurField: Integer;
   DataFile: TEpiDataFile;
   FieldNames: TStrings;
-  DataStream: TFileStream;
+  DataStream: TStream;
   VLblSet: TEpiValueLabelSet;
   TimeFields: TStringList;
   Fn: String;
@@ -286,14 +312,14 @@ var
 begin
   Result := false;
 
-  Fn := ExportSettings.ExportFileName;
+//  Fn := ExportSettings.ExportFileName;
   Df := ExportSettings.Doc.DataFiles[ExportSettings.DataFileIndex];
   Flds := Df.Fields;
 
 
   with Df do
   try
-    DataStream := TFileStream.Create(UTF8ToSys(Fn), fmCreate);
+    DataStream := ExportSettings.ExportStream;
 
     // Version specific settings:
     // - "original" setting from Ver. 4
@@ -728,7 +754,7 @@ begin
 
     Result := true;
   finally
-    if Assigned(DataStream) then FreeAndNil(DataStream);
+//    if Assigned(DataStream) then FreeAndNil(DataStream);
     //if Assigned(WritenValueLabels) then FreeAndNil(WritenValueLabels);
 //    if Assigned(UniqueValueLabels) then FreeAndNil(UniqueValueLabels);
   end;
@@ -736,7 +762,7 @@ end;
 
 function TEpiExport.ExportCSV(const Settings: TEpiCSVExportSetting): boolean;
 var
-  DataStream: TFileStream;
+  DataStream: TStream;
   FieldSep: String;
   QuoteCh: String;
   i: Integer;
@@ -749,20 +775,34 @@ var
   Df: TEpiDataFile;
   Fixed: Boolean;
   Fields: TEpiFields;
+  FloatQuoted: Boolean;
+  DateQuoted: Boolean;
+  TimeQuoted: Boolean;
 begin
   Result := false;
+  if not Settings.SanetyCheck then exit;
 
   Df := Settings.Doc.DataFiles[Settings.DataFileIndex];
   Fields := Df.Fields;
 
   try
-    DataStream := TFileStream.Create(UTF8ToSys(Settings.ExportFileName), fmCreate);
+    DataStream := Settings.ExportStream; //TFileStream.Create(UTF8ToSys(Settings.ExportFileName), fmCreate);
 
     FieldSep := Settings.FieldSeparator;
     QuoteCh  := Settings.QuoteChar;
     NewLine  := Settings.NewLine;
 //    FieldCount := Settings.Fields.Count;
     Fixed      := Settings.FixedFormat;
+
+    {ByteOrder Mark}
+    if (Settings.ByteOrderMark) and
+       (Settings.Encoding = eeUTF8)
+    then
+    begin
+      DataStream.WriteByte($EF);
+      DataStream.WriteByte($BB);
+      DataStream.WriteByte($BF);
+    end;
 
     {Write Field Names}
     if Settings.ExportFieldNames then
@@ -790,8 +830,11 @@ begin
     FormatSettings.TimeSeparator := Settings.TimeSeparator[1];
     FormatSettings.DecimalSeparator := Settings.DecimalSeparator[1];
 
+    FloatQuoted := Settings.FieldSeparator = Settings.DecimalSeparator;
+    DateQuoted  := Settings.FieldSeparator = Settings.DateSeparator;
+    TimeQuoted  := Settings.FieldSeparator = Settings.TimeSeparator;
+
     { Write Data }
-//    for CurRec := Settings.FromRecord to Settings.ToRecord do
     for CurRec := 0 to Df.Size - 1 do
     begin
       TmpStr := '';
@@ -807,6 +850,12 @@ begin
           S := ''
         else
           S := AsString[CurRec];
+
+        if ((FieldType in FloatFieldTypes) and FloatQuoted) or
+           ((FieldType in DateFieldTypes) and DateQuoted) or
+           ((FieldType in TimeFieldTypes) and TimeQuoted)
+        then
+          S := AnsiQuotedStr(S, QuoteCh[1]);
 
         L := Length;
         if (FieldType in StringFieldTypes) then
@@ -835,7 +884,6 @@ begin
     end;
     result := true;
   finally
-    DataStream.Free;
     FormatSettings := BackUpSettings;
   end;
 end;
@@ -856,22 +904,28 @@ begin
   Result := false;
 
   // First export the data:
-  CSVSetting := TEpiCSVExportSetting.Create;
-  CSVSetting.Assign(Settings);
-  with CSVSetting do begin
-    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
-
-    // CSV Settings
-    Encoding         := eeUTF8;
-    QuoteChar        := '';
-    FixedFormat      := false;
-    ExportFieldNames := false;
-    DateSeparator    := '/';
-    TimeSeparator    := ':';
-    DecimalSeparator := '.';
-    FieldSeparator   := Settings.Delimiter;
-    NewLine          := LineEnding;
-  end;
+  if Assigned(Settings.AdditionalExportSettings) and
+     (Settings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    CSVSetting := TEpiCSVExportSetting(Settings.AdditionalExportSettings)
+  else
+    begin
+      CSVSetting := TEpiCSVExportSetting.Create;
+      CSVSetting.Assign(Settings);
+      with CSVSetting do begin
+        ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+        // CSV Settings
+        Encoding         := eeUTF8;
+        QuoteChar        := '';
+        FixedFormat      := false;
+        ExportFieldNames := false;
+        DateSeparator    := '/';
+        TimeSeparator    := ':';
+        DecimalSeparator := '.';
+        FieldSeparator   := Settings.Delimiter;
+        NewLine          := LineEnding;
+      end;
+    end;
 
   if not ExportCSV(CSVSetting) then exit;
   Settings.AdditionalExportSettings := CSVSetting;
@@ -1020,7 +1074,9 @@ begin
   ExpLines.Append('***************************************************************.');
   ExpLines.Append('*.');
 
-  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  S := ExpLines.Text;
+  Settings.ExportStream.Write(S[1], Length(S));
+//  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   result := true;
 end;
 
@@ -1041,19 +1097,25 @@ begin
   Result := false;
 
   // First export the data:
-  CSVSetting := TEpiCSVExportSetting.Create;
-  CSVSetting.Assign(Settings);
-  with CSVSetting do begin
-    ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
-
-    // CSV Settings
-    QuoteChar        := '';
-    FixedFormat      := true;
-    ExportFieldNames := false;
-    DateSeparator    := '/';
-    TimeSeparator    := ':';
-    DecimalSeparator := '.';
-  end;
+  if Assigned(Settings.AdditionalExportSettings) and
+     (Settings.AdditionalExportSettings is TEpiCSVExportSetting)
+  then
+    CSVSetting := TEpiCSVExportSetting(Settings.AdditionalExportSettings)
+  else
+    begin
+      CSVSetting := TEpiCSVExportSetting.Create;
+      CSVSetting.Assign(Settings);
+      with CSVSetting do begin
+        ExportFileName   := ChangeFileExt(Settings.ExportFileName, '.txt');
+        // CSV Settings
+        QuoteChar        := '';
+        FixedFormat      := true;
+        ExportFieldNames := false;
+        DateSeparator    := '/';
+        TimeSeparator    := ':';
+        DecimalSeparator := '.';
+      end;
+    end;
 
   if not ExportCSV(CSVSetting) then exit;
   Settings.AdditionalExportSettings := CSVSetting;
@@ -1207,7 +1269,9 @@ begin
     ExpLines.AddStrings(TmpLines);
   end;
 
-  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
+  S := ExpLines.Text;
+  Settings.ExportStream.Write(S[1], Length(S));
+//  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   Result := true;
 end;
 
@@ -1224,7 +1288,7 @@ function TEpiExport.ExportEPX(const Settings: TEpiEPXExportSetting): boolean;
 begin
   Result := false;
   try
-    Settings.Doc.SaveToFile(Settings.ExportFileName);
+    Settings.Doc.SaveToStream(Settings.ExportStream);
     Result := true;
   finally
 

@@ -1,5 +1,5 @@
 {%MainUnit epidatafiles.pas}
-
+{
 type
   TLinkType = (
     // TEpiJump
@@ -88,6 +88,6 @@ procedure TLinkMap.Clear;
 begin
   FLinkTypes.Clear;
   FLink.Clear;
-end;
+end;              }
 
 

@@ -5,7 +5,7 @@ unit epiv_documentfile;
 interface
 
 uses
-  Classes, SysUtils, epiopenfile;
+  Classes, SysUtils, epiopenfile, epidocument;
 
 type
 
@@ -46,7 +46,9 @@ var
   DefaultBtn: TMsgDlgBtn;
 begin
   case WarningType of
+    wtSysReadOnly,
     wtLockFile,
+    wtDatePatternNoAlt,
     wtTimeBackup2nd:
       begin
         Buttons := mbYesNo;

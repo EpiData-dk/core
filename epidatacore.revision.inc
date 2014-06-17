@@ -1,1 +1,1 @@
-const RevisionStr = '671';
+const RevisionStr = '1000';

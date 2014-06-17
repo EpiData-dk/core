@@ -19,6 +19,8 @@ type
     FExtendedList: boolean;
     FFields: TEpiFields;
     FSortType: TEpiReportFieldListSortType;
+    FTableHeader: string;
+    FTableHeaderEx: string;
   protected
     procedure DoSanityCheck; override;
   public
@@ -28,12 +30,14 @@ type
     property Fields: TEpiFields read FFields write FFields;
     property ExtendedList: boolean read FExtendedList write FExtendedList;
     property SortType: TEpiReportFieldListSortType read FSortType write FSortType;
+    property TableHeader: string read FTableHeader write FTableHeader;
+    property TableHeaderEx: string read FTableHeaderEx write FTableHeaderEx;
   end;
 
 implementation
 
 uses
-  epimiscutils, epidatafilestypes;
+  epimiscutils, epidatafilestypes, LazUTF8;
 
 resourcestring
   SEpiReportFieldListNoFields = 'EpiReport: No fields assigned to field list.';
@@ -51,6 +55,8 @@ begin
   inherited Create(ReportGenerator);
   ExtendedList := false;
   SortType := stEntryFlow;
+  FTableHeader := 'Question list overview:';
+  FTableHeaderEx := 'Field extended view:';
 end;
 
 function FieldNameSort(Item1, Item2: Pointer): integer;
@@ -71,18 +77,21 @@ begin
   inherited RunReport;
 
   FieldList := TEpiFields.Create(nil);
-  FieldList.Sorted := true;
   for i := 0 to Fields.Count - 1 do FieldList.AddItem(Fields[i]);
   case SortType of
-    stFieldName: FieldList.OnSort := @FieldNameSort;
+    stFieldName:
+      begin
+        FieldList.Sorted := true;
+        FieldList.OnSort := @FieldNameSort;
+        FieldList.Sort;
+      end;
     stEntryFlow: ;// Do nothing - Fields is alread sorted by flow (in Core v1.3)
   end;
-  FieldList.Sort;
 
   if ExtendedList then
-    DoTableHeader('Field extended view:', 13, FieldList.Count + 1)
+    DoTableHeader(TableHeaderEx, 13, FieldList.Count + 1)
   else
-    DoTableHeader('Question list overview:', 4, FieldList.Count + 1);
+    DoTableHeader(TableHeader, 4, FieldList.Count + 1);
   DoTableCell(0, 0, 'Name');
   DoTableCell(1, 0, 'Type');
   DoTableCell(2, 0, 'Length');

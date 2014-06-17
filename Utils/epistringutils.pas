@@ -24,6 +24,8 @@ type
 
   TCharSet = Set of Char;
 
+  function StrCountChars(const Source: string; const FindChars: TCharSet;
+    Const QuoteChar: Char): integer;
   function CountChar(Const UTF8String: string; Const WChar: WideChar): integer;
   function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
   procedure SplitString(const Source: string; var List: TStrings;
@@ -52,6 +54,26 @@ implementation
 
 uses
   LConvEncoding, FileUtil, math, LazUTF8, lazutf16;
+
+function StrCountChars(const Source: string; const FindChars: TCharSet;
+  const QuoteChar: Char): integer;
+var
+  i: integer;
+begin
+  result := 0;
+  i := 1;
+  while i <= Length(Source) do
+  begin
+    if Source[i] in FindChars then
+      inc(result);
+
+    if Source[i] = QuoteChar then
+    begin
+      repeat inc(i) until (i >= Length(Source)) or (Source[i] = QuoteChar);
+    end;
+    inc(i);
+  end;
+end;
 
 function CountChar(const UTF8String: string; Const WChar: WideChar): integer;
 var
@@ -101,7 +123,9 @@ begin
   try
     list.Clear;
     P := PChar(source);
-    while P^ in [#1..' '] do P := P + 1;
+
+    while P^ in [#1..' '] do Inc(P);
+
     while P^ <> #0 do
     begin
       if P^ in QuoteChars then
@@ -109,11 +133,20 @@ begin
       else
       begin
         P1 := P;
-        while (not (P^ in Splitters)) and (P^ <> #0) do P := P + 1;
+        while (not (P^ in Splitters)) and (P^ <> #0) do Inc(P);
         SetString(S, P1, P - P1);
       end;
       list.Add(S);
-      while P^ in Splitters do P := P + 1;
+
+      // P^ is either #0 or a splitter
+      if P^ = #0 then break else inc(P);
+
+      // Skip multiple consequtive Splitters and add empty strings to list.
+      while P^ in Splitters do
+      begin
+        List.Add('');
+        Inc(P);
+      end;
     end;
   finally
     list.EndUpdate;
@@ -184,7 +217,7 @@ end;
 
 function AutoFieldName(const S: string): string;
 begin
-  Result := UTF8Encode(StringReplace(Trim(UTF8Decode(S)), ' ', '_', [rfReplaceAll]));
+  Result := StringReplace(Trim(S), ' ', '_', [rfReplaceAll]);
 end;
 
 function ValidateIdentifierUTF8(const AValue: string): boolean;

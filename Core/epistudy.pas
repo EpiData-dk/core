@@ -5,7 +5,7 @@ unit epistudy;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, DOM;
+  Classes, SysUtils, epicustombase, Laz2_DOM;
 
 type
 
@@ -51,8 +51,11 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure  LoadFromXml(Root: TDOMNode); override;
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
 
+  protected
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  public
     Property   AbstractText: TEpiTranslatedTextWrapper read FAbstractText;
     Property   Author: string read FAuthor write SetAuthor;
     property   Agency: string read FAgency write SetAgency;
@@ -81,8 +84,8 @@ type
 
   { Cloning }
   protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase =
-      nil): TEpiCustomBase; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
 implementation
@@ -198,16 +201,23 @@ end;
 
 destructor TEpiStudy.Destroy;
 begin
+  FAuthor               := '';
   FAbstractText.Free;
   FCitations.Free;
   FFunding.Free;
   FGeographicalCoverage.Free;
+  FIdentifier           := '';
+  FKeyWords             := '';
+  FNotes                := '';
   FPublisher.Free;
   FPurpose.Free;
   FPopulation.Free;
   FRights.Free;
-//  FTimeCoverage.Free;
   FTitle.Free;
+  FVersion              := '';
+
+  FDesign.Free;
+  FUnitOfObservation.Free;
   inherited Destroy;
 end;
 
@@ -237,7 +247,7 @@ begin
   Result := inherited SaveToXml(Content, Lvl);
 end;
 
-procedure TEpiStudy.LoadFromXml(Root: TDOMNode);
+procedure TEpiStudy.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
 begin
@@ -251,29 +261,43 @@ begin
   FVersion         := LoadNodeString(Root, rsVersion, FVersion, false);
 
   // Root = <Study>
-  FAbstractText.LoadFromXml(Root);
-  FCitations.LoadFromXml(Root);
-  FFunding.LoadFromXml(Root);
-  FGeographicalCoverage.LoadFromXml(Root);
-  FPublisher.LoadFromXml(Root);
-  FPurpose.LoadFromXml(Root);
-  FPopulation.LoadFromXml(Root);
-  FRights.LoadFromXml(Root);
-//  FTimeCoverage.LoadFromXml(Root);
-  FTitle.LoadFromXml(Root);
+  FAbstractText.LoadFromXml(Root, ReferenceMap);
+  FCitations.LoadFromXml(Root, ReferenceMap);
+  FFunding.LoadFromXml(Root, ReferenceMap);
+  FGeographicalCoverage.LoadFromXml(Root, ReferenceMap);
+  FPublisher.LoadFromXml(Root, ReferenceMap);
+  FPurpose.LoadFromXml(Root, ReferenceMap);
+  FPopulation.LoadFromXml(Root, ReferenceMap);
+  FRights.LoadFromXml(Root, ReferenceMap);
+//  FTimeCoverage.LoadFromXml(Root, ReferenceMap);
+  FTitle.LoadFromXml(Root, ReferenceMap);
 
   // Version 2:
   // -- all loads defaults to fatal=false, since none of them are required.
   FDataCollectionStart := LoadNodeDateTime(Root, rsDataColectionStart, FDataCollectionStart, false);
   FDataCollectionEnd   := LoadNodeDateTime(Root, rsDataColectionEnd,   FDataCollectionEnd,   false);
-  FDesign.LoadFromXml(Root);
-  FUnitOfObservation.LoadFromXml(Root);
+  FDesign.LoadFromXml(Root, ReferenceMap);
+  FUnitOfObservation.LoadFromXml(Root, ReferenceMap);
 end;
 
-function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiStudy.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveTextContent(Result, rsAuthor, Author);
+  SaveTextContent(Result, rsAgency, Agency);
+  SaveTextContent(Result, rsCreated, Created);
+  SaveTextContent(Result, rsIdentifier, Identifier);
+  SaveTextContent(Result, rsKeywords, Keywords);
+  SaveTextContent(Result, rsModified, ModifiedDate);
+  SaveTextContent(Result, rsNotes, Notes);
+  SaveTextContent(Result, rsVersion, Version);
+end;
+
+function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiStudy(Result) do
   begin
     FAuthor          := Self.FAuthor;

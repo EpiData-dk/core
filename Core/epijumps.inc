@@ -138,10 +138,29 @@ begin
   Result := false;
 end;
 
-function TEpiJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+procedure TEpiJump.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  if (EpiClassType = TEpiJump) then
+    begin
+
+      case ReferenceType of
+        0: // JumpToField
+          if Assigned(Owner) and
+             Assigned(Owner.Owner)
+          then
+            JumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[ReferenceId];
+      end;
+
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiJump(Result) do
   begin
@@ -149,15 +168,34 @@ begin
     FResetType := Self.FResetType;
 
     if Assigned(Self.FJumpToField) then
+      ReferenceMap.AddFixupReference(Result, TEpiJump, 0, Self.FJumpToField.Name);
+
+{
     begin
       if (not Assigned(TEpiField(Owner.Owner).DataFile)) or
          (TEpiField(Owner.Owner).DataFile = (TEpiField(SElf.Owner.Owner).DataFile))
       then
-        FJumpToField := Self.FJumpToField
+        JumpToField := Self.FJumpToField
       else
-        FJumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
-    end;
+        JumpToField := TEpiField(Owner.Owner).DataFile.Fields.FieldByName[Self.FJumpToField.Name];
+      // Do NOT use FJumpToField - else the event hooks are not attached appropriately.
+    end;    }
   end;
+end;
+
+function TEpiJump.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  jt: TEpiJumpType;
+  rt: TEpiJumpResetType;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsJumpOn, GetJumpValueAsString);
+  SaveDomAttrEnum(Result, rsJumpType, JumpType, TypeInfo(TEpiJumpType));
+  SaveDomAttrEnum(Result, rsJumpReset, ResetType, TypeInfo(TEpiJumpResetType));
+
+  if JumpType = jtToField then
+    SaveDomAttr(Result, rsJumpTo, JumpToField.Name);
 end;
 
 function TEpiJump.XMLName: string;
@@ -165,15 +203,19 @@ begin
   Result := rsJump;
 end;
 
-procedure TEpiJump.LoadFromXml(Root: TDOMNode);
+procedure TEpiJump.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   FieldId: String;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
+
   JumpType := TEpiJumpType(LoadAttrEnum(Root, rsJumpType, TypeInfo(TEpiJumpType)));
   ResetType := TEpiJumpResetType(LoadAttrEnum(Root, rsJumpReset, TypeInfo(TEpiJumpResetType)));
+
   if JumpType = jtToField then
-  begin
+    ReferenceMap.AddFixupReference(Self, TEpiJump, 0, LoadAttrString(Root, rsJumpTo));
+
+{  begin
     FieldId := LoadAttrString(Root, rsJumpTo);
     JumpToField := GetDataFile(Self).Fields.GetFieldByName(FieldId);
 
@@ -181,7 +223,7 @@ begin
     // a batch and process the list after all fields are loaded.
     if not assigned(JumpToField) then
       LinkMap.AddLink(ltJump, Self, FieldId);
-  end;
+  end;     }
 end;
 
 function TEpiJump.SaveAttributesToXml: string;
@@ -231,19 +273,21 @@ begin
     Result := IntToStr(JumpValue);
 end;
 
-function TEpiBoolJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiBoolJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiBoolJump(Result).FJumpValue := FJumpValue;
 end;
 
-procedure TEpiBoolJump.LoadFromXml(Root: TDOMNode);
+procedure TEpiBoolJump.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Attr: TDOMAttr;
   S: String;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
+
   S := LoadAttrString(Root, rsJumpOn);
   if S = DefaultOnAnyValue then
     JumpValue := TEpiBoolField.DefaultMissing
@@ -273,18 +317,20 @@ begin
     Result := IntToStr(JumpValue);
 end;
 
-function TEpiIntJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiIntJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiIntJump(Result).FJumpValue := FJumpValue;
 end;
 
-procedure TEpiIntJump.LoadFromXml(Root: TDOMNode);
+procedure TEpiIntJump.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  );
 var
   S: String;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
+
   S := LoadAttrString(Root, rsJumpOn);
   if S = DefaultOnAnyValue then
     JumpValue := TEpiIntField.DefaultMissing
@@ -314,18 +360,20 @@ begin
     Result := FloatToStr(JumpValue);
 end;
 
-function TEpiFloatJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiFloatJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiFloatJump(Result).FJumpValue := FJumpValue;
 end;
 
-procedure TEpiFloatJump.LoadFromXml(Root: TDOMNode);
+procedure TEpiFloatJump.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   S: String;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
+
   S := LoadAttrString(Root, rsJumpOn);
   if S = DefaultOnAnyValue then
     JumpValue := TEpiFloatField.DefaultMissing
@@ -355,19 +403,21 @@ begin
     Result := JumpValue;
 end;
 
-function TEpiStringJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+function TEpiStringJump.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiStringJump(Result).FJumpValue := FJumpValue;
 end;
 
-procedure TEpiStringJump.LoadFromXml(Root: TDOMNode);
+procedure TEpiStringJump.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Attr: TDOMAttr;
   S: String;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
+
   S := LoadAttrString(Root, rsJumpOn);
   if S = DefaultOnAnyValue then
     JumpValue := TEpiStringField.DefaultMissing

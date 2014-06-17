@@ -41,17 +41,48 @@ begin
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
-function TEpiCalculation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+procedure TEpiCalculation.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
 begin
-  Result := inherited DoClone(AOwner, Dest);
-  with TEpiCalculation(Result) do
+  if (EpiClassType = TEpiCalculation)
+  then
+    begin
+
+      case ReferenceType of
+        0: // ResultField
+          if Assigned(GetOwnerField) then
+            ResultField := GetOwnerField.DataFile.Fields.FieldByName[ReferenceId];
+      end;
+
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiCalculation.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  if Assigned(ResultField) then
+    ReferenceMap.AddFixupReference(Result, TEpiCalculation, 0, ResultField.Name);
+
+{  with TEpiCalculation(Result) do
   if (not Assigned(OwnerField.DataFile)) or
      (OwnerField.DataFile = Self.OwnerField.DataFile)
   then
-    FResultField := Self.FResultField
+    ResultField := Self.FResultField
   else
-    FResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name];
+    ResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name]; }
+end;
+
+function TEpiCalculation.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttrEnum(Result, rsType, CalcType, TypeInfo(TEpiCalcType));
+
+  SaveTextContent(Result, rsResultField, ResultField.Name);
 end;
 
 constructor TEpiCalculation.Create(AOwner: TEpiCustomBase);
@@ -71,17 +102,21 @@ begin
   Result := rsCalculation;
 end;
 
-procedure TEpiCalculation.LoadFromXml(Root: TDOMNode);
+procedure TEpiCalculation.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   ResultFieldId: String;
 begin
-  inherited LoadFromXml(Root);
-  ResultFieldId := LoadNodeString(Root, rsResultField);
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  ReferenceMap.AddFixupReference(Self, TEpiCalculation, 0, LoadNodeString(Root, rsResultField));
+{  ResultFieldId := LoadNodeString(Root, rsResultField);
+
   if Assigned(OwnerField) then
     ResultField := OwnerField.DataFile.Fields.FieldByName[ResultFieldId];
 
   if not Assigned(ResultField) then
-    LinkMap.AddLink(ltCalcResField, Self, ResultFieldId);
+    LinkMap.AddLink(ltCalcResField, Self, ResultFieldId);      }
 end;
 
 function TEpiCalculation.SaveToXml(Content: String; Lvl: integer): string;
@@ -165,32 +200,93 @@ begin
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
-function TEpiTimeCalc.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase
-  ): TEpiCustomBase;
+procedure TEpiTimeCalc.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
+var
+  F: TEpiField;
 begin
-  Result := inherited DoClone(AOwner, Dest);
-  with TEpiTimeCalc(Result) do
+  if (EpiClassType = TEpiTimeCalc)
+  then
+    begin
+      if Not Assigned(GetOwnerField) then exit;
+      F := GetOwnerField.DataFile.Fields.FieldByName[ReferenceId];
+
+      case ReferenceType of
+        0: // EndDate
+          EndDate := TEpiDateField(F);
+
+        1: // EndTime
+          EndTime := TEpiDateTimeField(F);
+
+        2: // StartDate
+          StartDate := TEpiDateField(F);
+
+        3: // StartTime
+          StartTime := TEpiDateTimeField(F);
+
+      end;
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiTimeCalc.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  TEpiTimeCalc(Result).FTimeCalcType := Self.FTimeCalcType;
+
+  if Assigned(EndDate) then
+    ReferenceMap.AddFixupReference(Result, TEpiTimeCalc, 0, EndDate.Name);
+
+  if Assigned(EndTime) then
+    ReferenceMap.AddFixupReference(Result, TEpiTimeCalc, 1, EndTime.Name);
+
+  if Assigned(StartDate) then
+    ReferenceMap.AddFixupReference(Result, TEpiTimeCalc, 2, StartDate.Name);
+
+  if Assigned(StartTime) then
+    ReferenceMap.AddFixupReference(Result, TEpiTimeCalc, 3, StartTime.Name);
+
+
+{  with TEpiTimeCalc(Result) do
   begin
     if (not Assigned(OwnerField.DataFile)) or
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
     begin
-      FEndDate    := Self.FEndDate;
-      FEndTime    := Self.FEndTime;
-      FStartDate  := Self.FStartDate;
-      FStartTime  := Self.FStartTime;
+      EndDate    := Self.FEndDate;
+      EndTime    := Self.FEndTime;
+      StartDate  := Self.FStartDate;
+      StartTime  := Self.FStartTime;
     end else begin
       if Assigned(Self.FEndDate) then
-        FEndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
+        EndDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndDate.Name]);
       if Assigned(Self.FEndTime) then
-        FEndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
+        EndTime := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FEndTime.Name]);
       if Assigned(Self.FStartDate) then
-        FStartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
+        StartDate := TEpiDateField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartDate.Name]);
       if Assigned(Self.FStartTime) then
-        FStartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
+        StartTime  := TEpiDateTimeField(GetOwnerField.DataFile.Fields.FieldByName[Self.FStartTime.Name]);
     end;
-    FTimeCalcType := Self.FTimeCalcType;
-  end;
+  end;    }
+end;
+
+function TEpiTimeCalc.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveTextContent(Result, rsTimeCalcType, Integer(TimeCalcType));
+
+  if Assigned(StartDate) then
+    SaveTextContent(Result, rsStartDate, StartDate.Name);
+  if Assigned(StartTime) then
+    SaveTextContent(Result, rsStartTime, StartTime.Name);
+  if Assigned(EndDate) then
+    SaveTextContent(Result, rsEndDate,   EndDate.Name);
+  if Assigned(EndTime) then
+    SaveTextContent(Result, rsEndTime,   EndTime.Name);
 end;
 
 destructor TEpiTimeCalc.Destroy;
@@ -202,7 +298,8 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiTimeCalc.LoadFromXml(Root: TDOMNode);
+procedure TEpiTimeCalc.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   StartDateId: String;
   EndDateId: String;
@@ -210,11 +307,23 @@ var
   EndTimeId: String;
   Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   TimeCalcType := TEpiTimeCalcType(LoadNodeInt(Root, rsTimeCalcType));
 
+  if LoadNode(Node, Root, rsEndDate, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiTimeCalc, 0, LoadNodeString(Root, rsEndDate));
+
+  if LoadNode(Node, Root, rsEndTime, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiTimeCalc, 1, LoadNodeString(Root, rsEndTime));
+
   if LoadNode(Node, Root, rsStartDate, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiTimeCalc, 2, LoadNodeString(Root, rsStartDate));
+
+  if LoadNode(Node, Root, rsStartTime, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiTimeCalc, 3, LoadNodeString(Root, rsStartTime));
+
+{
   begin
     StartDateId := LoadNodeString(Root, rsStartDate);
     StartDate := TEpiDateField(OwnerField.DataFile.Fields.GetItemByName(StartDateId));
@@ -240,7 +349,7 @@ begin
     EndTimeId := LoadNodeString(Root, rsEndTime);
     EndTime := TEpiDateTimeField(OwnerField.DataFile.Fields.GetItemByName(EndTimeId));
     if not Assigned(EndTime) then LinkMap.AddLink(ltCalcEndTime, Self, EndTimeId);
-  end;
+  end;}
 end;
 
 function TEpiTimeCalc.SaveToXml(Content: String; Lvl: integer): string;
@@ -310,26 +419,73 @@ begin
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
-function TEpiCombineDateCalc.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+procedure TEpiCombineDateCalc.FixupReferences(
+  EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte;
+  const ReferenceId: string);
+var
+  F: TEpiIntField;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  if (EpiClassType = TEpiCombineDateCalc)
+  then
+    begin
+      if not Assigned(GetOwnerField) then Exit;
+      F := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[ReferenceId]);
 
-  with TEpiCombineDateCalc(Result) do
+      case ReferenceType of
+        0: // Day
+          Day := F;
+
+        1: // Month
+          Month := F;
+
+        2: // Year
+          Year := F;
+
+      end;
+
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiCombineDateCalc.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  if Assigned(Day) then
+    ReferenceMap.AddFixupReference(Result, TEpiCombineDateCalc, 0, Day.Name);
+
+  if Assigned(Month) then
+    ReferenceMap.AddFixupReference(Result, TEpiCombineDateCalc, 1, Month.Name);
+
+  if Assigned(Year) then
+    ReferenceMap.AddFixupReference(Result, TEpiCombineDateCalc, 2, Year.Name);
+
+{  with TEpiCombineDateCalc(Result) do
   begin
     if (not Assigned(OwnerField.DataFile)) or
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
     begin
-      FDay   := Self.FDay;
-      FMonth := Self.FMonth;
-      FYear  := Self.FYear;
+      Day   := Self.FDay;
+      Month := Self.FMonth;
+      Year  := Self.FYear;
     end else begin
-      FDay   := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FDay.Name]);
-      FMonth := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FMonth.Name]);
-      FYear  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
+      Day   := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FDay.Name]);
+      Month := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FMonth.Name]);
+      Year  := TEpiIntField(GetOwnerField.DataFile.Fields.FieldByName[Self.FYear.Name]);
     end;
-  end;
+  end;   }
+end;
+
+function TEpiCombineDateCalc.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveTextContent(Result, rsDayField,   Day.Name);
+  SaveTextContent(Result, rsMonthField, Month.Name);
+  SaveTextContent(Result, rsYearField,  Year.Name);
 end;
 
 destructor TEpiCombineDateCalc.Destroy;
@@ -340,14 +496,20 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiCombineDateCalc.LoadFromXml(Root: TDOMNode);
+procedure TEpiCombineDateCalc.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   DayId: String;
   MonthId: String;
   YearId: String;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
+  ReferenceMap.AddFixupReference(Self, TEpiCombineDateCalc, 0, LoadNodeString(Root, rsDayField));
+  ReferenceMap.AddFixupReference(Self, TEpiCombineDateCalc, 1, LoadNodeString(Root, rsMonthField));
+  ReferenceMap.AddFixupReference(Self, TEpiCombineDateCalc, 2, LoadNodeString(Root, rsYearField));
+
+{
   DayId := LoadNodeString(Root, rsDayField);
   Day := TEpiIntField(OwnerField.DataFile.Fields.GetItemByName(DayId));
   if not Assigned(Day) then LinkMap.AddLink(ltCalcDayField, Self, DayId);
@@ -358,7 +520,7 @@ begin
 
   YearId := LoadNodeString(Root, rsYearField);
   Year := TEpiIntField(OwnerField.DataFile.Fields.GetItemByName(YearId));
-  if not Assigned(Year) then LinkMap.AddLink(ltCalcYearField, Self, YearId);
+  if not Assigned(Year) then LinkMap.AddLink(ltCalcYearField, Self, YearId);   }
 end;
 
 function TEpiCombineDateCalc.SaveToXml(Content: String; Lvl: integer): string;
@@ -434,35 +596,91 @@ begin
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Initiator);
 end;
 
-function TEpiCombineStringCalc.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase): TEpiCustomBase;
+procedure TEpiCombineStringCalc.FixupReferences(
+  EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte;
+  const ReferenceId: string);
+var
+  F: TEpiField;
 begin
-  Result := inherited DoClone(AOwner, Dest);
+  if (EpiClassType = TEpiCombineStringCalc)
+  then
+    begin
+      if not Assigned(GetOwnerField) then exit;
+      F := GetOwnerField.DataFile.Fields.FieldByName[ReferenceId];
+
+      case ReferenceType of
+        0: // Field1
+          Field1 := F;
+
+        1: // Field2
+          Field2 := F;
+
+        2: // Field3
+          Field3 := F;
+      end;
+
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiCombineStringCalc.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiCombineStringCalc(Result) do
+  begin
+    FDelim1 := Self.FDelim1;
+    FDelim2 := Self.FDelim2;
+  end;
+
+  if Assigned(Field1) then
+    ReferenceMap.AddFixupReference(Result, TEpiCombineStringCalc, 0, Field1.Name);
+
+  if Assigned(Field2) then
+    ReferenceMap.AddFixupReference(Result, TEpiCombineStringCalc, 1, Field2.Name);
+
+  if Assigned(Field3) then
+    ReferenceMap.AddFixupReference(Result, TEpiCombineStringCalc, 2, Field3.Name);
+
+{  with TEpiCombineStringCalc(Result) do
   begin
     if (not Assigned(OwnerField.DataFile)) or
        (OwnerField.DataFile = Self.OwnerField.DataFile)
     then
     begin
       if Assigned(Self.FField1) then
-        FField1 := Self.FField1;
+        Field1 := Self.FField1;
       if Assigned(Self.FField2) then
-        FField2 := Self.FField2;
+        Field2 := Self.FField2;
       if Assigned(Self.FField3) then
-        FField3 := Self.FField3;
+        Field3 := Self.FField3;
     end else begin
       if Assigned(Self.FField1) then
-        FField1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
+        Field1 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField1.Name];
       if Assigned(Self.FField2) then
-        FField2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
+        Field2 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField2.Name];
       if Assigned(Self.FField3) then
-        FField3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
+        Field3 := GetOwnerField.DataFile.Fields.FieldByName[Self.FField3.Name];
     end;
 
-    FDelim1 := Self.FDelim1;
-    FDelim2 := Self.FDelim2;
-  end;
+  end;     }
+end;
+
+function TEpiCombineStringCalc.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  if Assigned(Field1) then
+    SaveTextContent(Result, rsField1, Field1.Name);
+  if Assigned(Field2) then
+    SaveTextContent(Result, rsField2, Field2.Name);
+  if Assigned(Field3) then
+    SaveTextContent(Result, rsField3, Field3.Name);
+
+  SaveTextContent(Result, rsDelim1, Delim1);
+  SaveTextContent(Result, rsDelim2, Delim2);
 end;
 
 destructor TEpiCombineStringCalc.Destroy;
@@ -473,16 +691,26 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiCombineStringCalc.LoadFromXml(Root: TDOMNode);
+procedure TEpiCombineStringCalc.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
 var
   Field1Id: String;
   Field2Id: String;
   Field3Id: String;
   Node: TDOMNode;
 begin
-  inherited LoadFromXml(Root);
+  inherited LoadFromXml(Root, ReferenceMap);
 
   if LoadNode(Node, Root, rsField1, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiCombineStringCalc, 0, LoadNodeString(Root, rsField1));
+
+  if LoadNode(Node, Root, rsField2, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiCombineStringCalc, 1, LoadNodeString(Root, rsField2));
+
+  if LoadNode(Node, Root, rsField3, false) then
+    ReferenceMap.AddFixupReference(Self, TEpiCombineStringCalc, 2, LoadNodeString(Root, rsField3));
+
+{  if LoadNode(Node, Root, rsField1, false) then
   begin
     Field1Id := LoadNodeString(Root, rsField1);
     Field1 := OwnerField.DataFile.Fields.FieldByName[Field1Id];
@@ -501,7 +729,7 @@ begin
     Field3Id := LoadNodeString(Root, rsField3);
     Field3 := OwnerField.DataFile.Fields.FieldByName[Field3Id];
     if not Assigned(Field3) then LinkMap.AddLink(ltCalcField3, Self, Field3Id);
-  end;
+  end;                  }
 
   Delim1 := LoadNodeString(Root, rsDelim1);
   Delim2 := LoadNodeString(Root, rsDelim2);
