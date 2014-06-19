@@ -103,11 +103,16 @@ type
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
+
   { TEpiRelationListEx }
+
+  TEpiRelationListExCallBack = procedure(Const Relation: TEpiMasterRelation;
+    Const Depth: Cardinal; Const Index: Cardinal; Var aContinue: boolean) of object;
 
   TEpiRelationListEx = class(TEpiRelationList)
   public
     function GetOrderedDataFiles: TEpiDataFiles;
+    procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack);
   end;
 
 implementation
@@ -428,5 +433,37 @@ begin
     BuildOrderedDataFiles(MasterRelation[i]);
 end;
 
+procedure TEpiRelationListEx.OrderedWalk(
+  const CallBackMethod: TEpiRelationListExCallBack);
+
+var
+  Depth: Cardinal;
+  aContinue: Boolean;
+  i: Integer;
+
+  procedure RecurseMasterRelations(ARelation: TEpiMasterRelation; Idx: Cardinal);
+  var
+    i: Integer;
+  begin
+    CallBackMethod(ARelation, Depth, Idx, aContinue);
+    if not aContinue then exit;
+
+    Inc(Depth);
+    for i := 0 to ARelation.DetailRelations.Count - 1 do
+    begin
+      RecurseMasterRelations(ARelation.DetailRelations[i], i);
+      if not aContinue then exit;
+    end;
+    Dec(Depth);
+
+  end;
+
+begin
+  Depth := 0;
+  aContinue := true;
+
+  for i := 0 to Count - 1 do
+    RecurseMasterRelations(MasterRelation[i], i);
+end;
 
 end.

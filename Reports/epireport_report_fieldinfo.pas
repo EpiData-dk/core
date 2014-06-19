@@ -30,7 +30,7 @@ implementation
 
 uses
   epireport_report_valuelabelsetlist, epidatafilestypes,
-  epistringutils, epimiscutils, epireport_types;
+  epistringutils, epimiscutils, epireport_types, epirelations;
 
 resourcestring
   SEpiReportFieldInfoNoField = 'EpiReport: No field assigned to field info.';
@@ -69,6 +69,7 @@ begin
     if ForcePickList                then inc(j);
     if Assigned(ValueLabelWriteField) then inc(j);
     if (Notes.Text <> '')             then inc(j);
+    if Assigned(Relates)              then inc(j);
 
     DoTableHeader('Field: ' + Name + ': ' + Question.Text, 2, j + 1, []);
 //    DoTableCell(0, 0, 'Extension:');
@@ -127,6 +128,20 @@ begin
       end;
       DoTableCell(1, j, S);
       Inc(j);
+    end;
+
+    if Assigned(Relates) then
+    begin
+      DoTableCell(0, j, 'Relate');
+      S := '';
+      for k := 0 to Relates.Count -1 do
+      with Relates[k] do
+      begin
+        S += RelateValue + ' > ' + TEpiDetailRelation(DetailRelation).Datafile.Caption.Text;
+        S += LineEnding;
+      end;
+      DoTableCell(1, j, S);
+      inc(j);
     end;
 
     if Assigned(Calculation) then

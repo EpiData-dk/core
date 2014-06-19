@@ -19,6 +19,11 @@ type
     FDocument: TEpiDocument;
     FFilename: string;
     FFileNo: integer;
+    FCurrentRowNo: Integer;
+    procedure KeysTable(const Relation: TEpiMasterRelation;
+      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
+    procedure DataFormsTable(const Relation: TEpiMasterRelation;
+      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
   protected
     procedure DoSanityCheck; override;
   public
@@ -31,13 +36,80 @@ type
 implementation
 
 uses
-  epireport_types, math, epidatafiles;
+  epireport_types, math, epidatafiles, strutils;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';
   SEpiReportProjectHeaderNoFilename = 'EpiReport: No filename for project header.';
 
 { TEpiReportProjectHeader }
+
+procedure TEpiReportProjectHeader.KeysTable(const Relation: TEpiMasterRelation;
+  const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
+var
+  DF: TEpiDataFile;
+  F: TEpiField;
+  S: String;
+begin
+  S := '';
+  if Depth > 0 then
+    begin
+      S := DupeString('-', Depth) + ' ';
+    end;
+
+  with Relation.Datafile do
+  begin
+    // Caption:
+    DoTableCell(0, FCurrentRowNo, S + Caption.Text);
+
+
+    // Relation:
+    if Relation.InheritsFrom(TEpiDetailRelation) then
+      if (TEpiDetailRelation(Relation).MaxRecordCount > 0) then
+        S := '1:' + IntToStr(TEpiDetailRelation(Relation).MaxRecordCount)
+      else
+        S := '1:' + char($E2) + char($88) + char($9E)             // unicode infinity symbol (UTF-8 encoded)
+    else
+      S := ' - ';
+    DoTableCell(1, FCurrentRowNo, S);
+
+    // Key:
+    S := '';
+    DF := Relation.Datafile;
+    for F in DF.KeyFields do
+      S := S + ' + (' + F.Name + ':' + F.Question.Text + ')';
+    Delete(S, 1, 3);
+
+    DoTableCell(2, FCurrentRowNo, S);
+  end;
+  Inc(FCurrentRowNo);
+end;
+
+procedure TEpiReportProjectHeader.DataFormsTable(
+  const Relation: TEpiMasterRelation; const Depth: Cardinal;
+  const Index: Cardinal; var aContinue: boolean);
+var
+  S: String;
+begin
+  S := '';
+  if Depth > 0 then
+    begin
+      S := DupeString('-', Depth) + ' ';
+    end;
+
+  with Relation.Datafile do
+  begin
+    DoTableCell(0, FCurrentRowNo, S + Caption.Text);
+    DoTableCell(1, FCurrentRowNo, DateTimeToStr(Created));
+    DoTableCell(2, FCurrentRowNo, DateTimeToStr(StructureModifiedDate));
+    DoTableCell(3, FCurrentRowNo, DateTimeToStr(RecModifiedDate));
+    DoTableCell(4, FCurrentRowNo, IntToStr(Sections.Count));
+    DoTableCell(5, FCurrentRowNo, IntToStr(Fields.Count));
+    DoTableCell(6, FCurrentRowNo, IntToStr(Size));
+    DoTableCell(7, FCurrentRowNo, IntToStr(DeletedCount));
+  end;
+  Inc(FCurrentRowNo);
+end;
 
 procedure TEpiReportProjectHeader.DoSanityCheck;
 begin
@@ -86,11 +158,9 @@ begin
   DoLineText('');
 
 
-  OrderedDataFiles := Document.Relations.GetOrderedDataFiles;
-
-  DoTableHeader('Dataforms:', 9, OrderedDataFiles.Count + 1);
+  DoTableHeader('Dataforms:', 9, Document.DataFiles.Count +1 { OrderedDataFiles.Count + 1});
   // Header row:
-  DoTableCell(0, 0, 'Name');
+  DoTableCell(0, 0, 'Caption');
   DoTableCell(1, 0, 'Created');
   DoTableCell(2, 0, 'Structure Edited');
   DoTableCell(3, 0, 'Data Edited');
@@ -98,32 +168,34 @@ begin
   DoTableCell(5, 0, 'Fields');
   DoTableCell(6, 0, 'Records');
   DoTableCell(7, 0, 'Deleted');
-  for i := 0 to OrderedDataFiles.Count -1 do
-  with OrderedDataFiles[i] do
-  begin
-    DoTableCell(0, i + 1, Caption.Text);
-    DoTableCell(1, i + 1, DateTimeToStr(Created));
-    DoTableCell(2, i + 1, DateTimeToStr(StructureModifiedDate));
-    DoTableCell(3, i + 1, DateTimeToStr(RecModifiedDate));
-    DoTableCell(4, i + 1, IntToStr(Sections.Count));
-    DoTableCell(5, i + 1, IntToStr(Fields.Count));
-    DoTableCell(6, i + 1, IntToStr(Size));
-    DoTableCell(7, i + 1, IntToStr(DeletedCount));
-  end;
+
+  FCurrentRowNo := 1;
+  Document.Relations.OrderedWalk(@DataFormsTable);
   DoTableFooter('');
 
-  for i := 0 to OrderedDataFiles.Count -1 do
+  DoLineText('');
+
+  DoTableHeader('', 3, Document.DataFiles.Count + 1);
+  DoTableCell(0, 0, 'Caption');
+  DoTableCell(1, 0, 'Relation');
+  DoTableCell(2, 0, 'Fields in key');
+
+  FCurrentRowNo := 1;
+  Document.Relations.OrderedWalk(@KeysTable);
+  DoTableFooter('');
+
+{  for i := 0 to OrderedDataFiles.Count -1 do
   with OrderedDataFiles[i] do
   begin
     if KeyFields.Count = 0 then continue;
 
-    DoHeading('Key Fields for ' + Caption.Text);
+    DoHeading('Key for "' + Caption.Text + '"');
     for j := 0 to KeyFields.Count -1 do
       DoLineText(KeyFields[j].Name + ' - ' + KeyFields[j].Question.Text);
     DoLineText('');
   end;
 
-  OrderedDataFiles.Free;
+  OrderedDataFiles.Free;  }
 end;
 
 end.
