@@ -8,7 +8,7 @@ interface
 
 uses
   epiv_dataset_viewer_frame, epiv_documentfile, epiv_dataset_viewer_frame_mac, 
-  LazarusPackageIntf;
+  epiv_dataform_treeview, LazarusPackageIntf;
 
 implementation
 
