@@ -34,6 +34,8 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     function SelectedList: TList;
+    procedure SelectAll;
+    procedure SelectNone;
     property DataFile: TEpiDataFile read FDataFile write SetDataFile;
     property ShowHeadings: Boolean read FShowHeadings write SetShowHeadings;
     property ShowFieldTypes: TEpiFieldTypes read FShowFieldTypes write SetShowFieldTypes;
@@ -210,7 +212,7 @@ begin
   inherited Create(TheOwner);
   FDataFile := nil;
   FShowHeadings := true;
-  FShowFieldTypes := IntFieldTypes;
+  FShowFieldTypes := AllFieldTypes;
 end;
 
 function TDataFormTreeViewFrame.SelectedList: TList;
@@ -231,6 +233,16 @@ begin
       Result.Add(GetCustomItemFromNode(Node));
     Node := DataFileTree.GetNext(Node, true);
   end;
+end;
+
+procedure TDataFormTreeViewFrame.SelectAll;
+begin
+  DataFileTree.CheckState[DataFileTree.GetFirst()] := csCheckedNormal;
+end;
+
+procedure TDataFormTreeViewFrame.SelectNone;
+begin
+  DataFileTree.CheckState[DataFileTree.GetFirst()] := csUncheckedNormal;
 end;
 
 end.
