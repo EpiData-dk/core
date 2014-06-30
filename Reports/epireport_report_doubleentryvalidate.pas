@@ -155,7 +155,7 @@ begin
   FValidator.ValidateDataFiles(FResultArray, FExtraRecs, DblEntryValidateOptions);
   FValidator.SortDblEntryResultArray(FResultArray);
 
-  DoSection('Selections for validation:');
+  DoHeading('Selections for validation:');
 
   DoLineText('');
   DoTableHeader('Options:', 2, 5);
@@ -183,7 +183,7 @@ begin
 
 
   DoLineText('');
-  DoSection('Result of Validation:');
+  DoHeading('Result of Validation:');
 
   DoLineText('');
   DoTableHeader('Overview', 2, 9);
