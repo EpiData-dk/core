@@ -226,6 +226,7 @@ type
 
   { Class properties / inheritance }
   private
+    FOwner:     TEpiCustomBase;
     FClassList: TFPList;
     FModified:  Boolean;
     FObjectData: PtrUInt;
@@ -234,12 +235,14 @@ type
     function    GetRootOwner: TEpiCustomBase;
     procedure   SetOnModified(const AValue: TNotifyEvent);
   protected
-    FOwner:     TEpiCustomBase;
-    constructor Create(AOwner: TEpiCustomBase); virtual;
+    // TODO: Rethink Owner as Parent or better way to change owner.
+    procedure   SetOwner(Const NewOwner: TEpiCustomBase); virtual;
+  protected
     procedure   SetModified(const AValue: Boolean); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
+    constructor Create(AOwner: TEpiCustomBase); virtual;
     procedure   BeforeDestruction; override;
     destructor  Destroy; override;
     procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
@@ -1178,6 +1181,11 @@ procedure TEpiCustomBase.SetOnModified(const AValue: TNotifyEvent);
 begin
   if FOnModified = AValue then exit;
   FOnModified := AValue;
+end;
+
+procedure TEpiCustomBase.SetOwner(const NewOwner: TEpiCustomBase);
+begin
+  FOwner := NewOwner;
 end;
 
 end.

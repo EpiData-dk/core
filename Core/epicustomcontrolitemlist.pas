@@ -5,13 +5,14 @@ unit epicustomcontrolitemlist;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epicustombase, epicustomitemlist, epicustomitem,
+  epicustomcontrolitem;
 
 type
 
   { TEpiCustomControlItemList }
   TEpiCustomControlItemListEnumerator = class;
-  TEpiCustomControlItemList = class(TEpiCustomList)
+  TEpiCustomControlItemList = class(TEpiCustomItemList)
   private
     procedure ChangeHook(Const Sender: TEpiCustomBase;
        Const Initiator: TEpiCustomBase;
@@ -29,7 +30,7 @@ type
 
   { TEpiCustomControlItemListEnumerator }
 
-  TEpiCustomControlItemListEnumerator = class(TEpiCustomListEnumerator)
+  TEpiCustomControlItemListEnumerator = class(TEpiCustomItemListEnumerator)
   protected
     function GetCurrent: TEpiCustomControlItem; override;
   public
@@ -76,13 +77,13 @@ end;
 
 procedure TEpiCustomControlItemList.DoSort;
 begin
-  if not Assigned(FOnSort) then
-    FOnSort := @SortControlItems;
+  if not Assigned(OnSort) then
+    OnSort := @SortControlItems;
 
   inherited DoSort;
 
-  if FOnSort = @SortControlItems then
-    FOnSort := nil;
+  if OnSort = @SortControlItems then
+    OnSort := nil;
 end;
 
 procedure TEpiCustomControlItemList.DoChange(const Initiator: TEpiCustomBase;

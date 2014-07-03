@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="2"/>
-    <Files Count="7">
+    <Files Count="8">
       <Item1>
         <Filename Value="Core/epicustombase.pas"/>
         <UnitName Value="epicustombase"/>
@@ -63,6 +63,10 @@
         <Filename Value="Core/epicustomitemlist.pas"/>
         <UnitName Value="epicustomitemlist"/>
       </Item7>
+      <Item8>
+        <Filename Value="Core/epicustomcontrolitemlist.pas"/>
+        <UnitName Value="epicustomcontrolitemlist"/>
+      </Item8>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

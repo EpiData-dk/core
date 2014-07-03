@@ -17,6 +17,8 @@ type
 
   { TEpiCustomList }
 
+  { TEpiCustomItemList }
+
   TEpiCustomItemList = class(TEpiCustomItem)
   private
     FItemOwner: boolean;
@@ -130,6 +132,12 @@ type
 
 implementation
 
+uses
+  strutils;
+
+type
+  TAccessEpiCustomBase = class(TEpiCustomBase);
+
 { TEpiCustomList }
 
 procedure TEpiCustomItemList.SetItemOwner(const AValue: boolean);
@@ -160,10 +168,11 @@ end;
 procedure TEpiCustomItemList.RegisterItem(Item: TEpiCustomItem);
 begin
   if ItemOwner then
+  with TAccessEpiCustomBase(Item) do
   begin
-    Item.FOwner := Self;
-    Item.SetLanguage(DefaultLang, true);
-    Item.SetLanguage(CurrentLang, false);
+    SetOwner(Self);
+    SetLanguage(DefaultLang, true);
+    SetLanguage(CurrentLang, false);
   end else
     Item.RegisterOnChangeHook(@OnChangeHook, true);
 
@@ -176,7 +185,10 @@ begin
 //  if not (ebsDestroying in Item.State) then
   Item.UnRegisterOnChangeHook(@OnChangeHook);
 
-  if ItemOwner then Item.FOwner := nil;
+  if ItemOwner then
+  with TAccessEpiCustomBase(Item) do
+    SetOwner(nil);
+
   DoChange(eegCustomBase, Word(ecceDelItem), Item);
   if Sorted then Sort;
 end;
@@ -253,7 +265,7 @@ begin
 
   for Item in Self do
   begin
-    Elem := Item.SaveToDom(RootDoc);
+    Elem := TAccessEpiCustomBase(Item).SaveToDom(RootDoc);
     if Assigned(Elem) then
       Result.AppendChild(Elem);
   end;
@@ -469,21 +481,22 @@ begin
       Items[i].Modified := AValue;
 end;
 
-procedure TEpiCustomItemList.DoAssignList(const EpiCustomList: TEpiCustomItemList);
+procedure TEpiCustomItemList.DoAssignList(
+  const EpiCustomItemList: TEpiCustomItemList);
 var
   i: Integer;
   NItemClass: TEpiCustomItemClass;
   Item: TEpiCustomItem;
 begin
   BeginUpdate;
-  OnNewItemClass := EpiCustomList.OnNewItemClass;
-  if EpiCustomList.Count > 0 then
+  OnNewItemClass := EpiCustomItemList.OnNewItemClass;
+  if EpiCustomItemList.Count > 0 then
   begin
-    NItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
-    for i := 0 to EpiCustomList.Count - 1 do
+    NItemClass := TEpiCustomItemClass(EpiCustomItemList[0].ClassType);
+    for i := 0 to EpiCustomItemList.Count - 1 do
     begin
       Item := NewItem(NItemClass);
-      Item.Assign(EpiCustomList[i]);
+      Item.Assign(EpiCustomItemList[i]);
     end;
   end;
   EndUpdate;
@@ -542,13 +555,14 @@ begin
   TEpiCustomItemList(Result).FItemOwner := FItemOwner;
   for i := 0 to Count - 1 do
   begin
-    NItem := TEpiCustomItem(Items[i].DoCloneCreate(Result));
+    NItem := TEpiCustomItem(TAccessEpiCustomBase(Items[i]).DoCloneCreate(Result));
+
     // Set a random name, otherwise calling Add will fail.
     // Name is correctly set in Items[i].DoClone...
-    NItem.FName := GetRandomName;
+    NItem.Name := GetRandomName;
     if TEpiCustomItemList(Result).IndexOf(NItem) = -1 then
       TEpiCustomItemList(Result).AddItem(NItem);
-    Items[i].DoClone(Result, NItem, ReferenceMap);
+    TAccessEpiCustomBase(Items[i]).DoClone(Result, NItem, ReferenceMap);
   end;
 
   // Set Sorting last, otherwise each AddItem triggers a sort.
@@ -569,7 +583,7 @@ end;
 
 constructor TEpiCustomItemListEnumerator.Create(CustomItemList: TEpiCustomItemList);
 begin
-  FCustomList := CustomList;
+  FCustomList := CustomItemList;
   FCurrentIndex := -1;
 end;
 

@@ -8,7 +8,8 @@ interface
 
 uses
   epicustombase, epitranslatedtext, epitranslatedtextwrapper, epistringutils, 
-  epicustomitem, epicustomcontrolitem, epicustomitemlist;
+  epicustomitem, epicustomcontrolitem, epicustomitemlist, 
+  epicustomcontrolitemlist;
 
 implementation
 
