@@ -91,9 +91,6 @@ type
 
 implementation
 
-uses
-  epidocument;
-
 { TEpiXMLSettings }
 
 procedure TEpiXMLSettings.SetDateSeparator(const AValue: string);
@@ -321,7 +318,7 @@ end;
 
 function TEpiProjectSettings.ScrambleXml: boolean;
 begin
-  Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
+//TODO  Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
 end;
 
 function TEpiProjectSettings.DoClone(AOwner: TEpiCustomBase;

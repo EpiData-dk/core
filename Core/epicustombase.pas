@@ -21,8 +21,6 @@ type
 
   TEpiCustomBase = class;
   TEpiCustomBaseClass = class of TEpiCustomBase;
-  TEpiCustomItem = class;
-  TEpiCustomList = class;
 
   { TEpiCustomBase }
   // eeg = Epi Event Group
@@ -103,7 +101,7 @@ type
 //    property    Crypter: TDCP_rijndael read FCrypter;   // DOES NOT WORK WITH FPC 2.4 - only from 2.5.1
 
   { Save/Load functionality }
-  private
+  protected
     function   NodePath(Const Root: TDOMNode): string;
     procedure  RaiseErrorNode(const Root: TDOMNode; const NodeName: string);
     procedure  RaiseErrorAttr(const Root: TDOMNode; const AttrName: string);
@@ -232,11 +230,11 @@ type
     FModified:  Boolean;
     FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
-    FOwner:     TEpiCustomBase;
     FState:     TEpiCustomBaseState;
     function    GetRootOwner: TEpiCustomBase;
     procedure   SetOnModified(const AValue: TNotifyEvent);
   protected
+    FOwner:     TEpiCustomBase;
     constructor Create(AOwner: TEpiCustomBase); virtual;
     procedure   SetModified(const AValue: Boolean); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
@@ -274,264 +272,6 @@ type
   end;
 //  {$static off}
 
-  { TEpiTranslatedText }
-
-  TEpiTranslatedText = class(TEpiCustomBase)
-  private
-    FTextList: TStringList;
-    FCurrentText: String;
-    FXMLName: string;
-    procedure   SetCurrentText(const AValue: string);
-    procedure   SetText(Const LangCode: string; Const AText: string);
-    function    GetText(Const LangCode: string): string;
-  protected
-    procedure   SetLanguage(Const LangCode: string;
-      Const DefaultLanguage: boolean); override;
-    function    XMLName: string; override;
-    procedure   Clear;
-  public
-    constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string); virtual;
-    destructor  Destroy; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    property    Text: string read FCurrentText write SetCurrentText;
-    property    TextLang[LangCode: string]: string read GetText write SetText;
-  { Cloning }
-  protected
-    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
-
-  protected
-    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
-  end;
-
-  { TEpiTranslatedTextWrapper }
-
-  TEpiTranslatedTextWrapper = class(TEpiTranslatedText)
-  private
-    FNodeName: string;
-  public
-    constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-  { Cloning }
-  protected
-    function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
-  protected
-    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
-  end;
-
-  { TEpiCustomItem }
-
-  TEpiCustomItem = class(TEpiCustomBase)
-  protected
-    FName: string;
-    function    GetName: string; virtual;
-    procedure   SetName(const AValue: string); virtual;
-    function    SaveAttributesToXml: string; override;
-    function    DoValidateRename(Const NewName: string): boolean; virtual;
-    function    WriteNameToXml: boolean; virtual;
-  protected
-    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
-  public
-    destructor  Destroy; override;
-    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
-    function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
-    property    Name: string read GetName write SetName;
-  {Cloning}
-  protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
-
-  { CustomData }
-  // CustomData is a custom property that can be used freely to store some data
-  // along with the object. User added content is NEVER used by the internals of
-  // Core.
-  // In addition data will not be copied/assigned/freed etc., hence it is
-  // entirely up to the user to keep track of it's use throught a program.
-  private
-    FCustomData: TFPObjectHashTable;
-  public
-    procedure AddCustomData(const Key: string; Const Obj: TObject);
-    function  FindCustomData(const Key: string): TObject;
-    function  RemoveCustomData(Const Key: string): TObject;
-  end;
-  TEpiCustomItemClass = class of TEpiCustomItem;
-
-  { TEpiCustomControlItem }
-
-  TEpiCustomControlItem = class(TEpiCustomItem)
-  private
-    FLeft: integer;
-    FTop: integer;
-  protected
-    function   SaveAttributesToXml: string; override;
-    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure  SetLeft(const AValue: Integer); virtual;
-    procedure  SetTop(const AValue: Integer); virtual;
-    procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
-  protected
-    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
-  public
-    property   Left: Integer read FLeft write SetLeft;
-    property   Top: Integer read FTop write SetTop;
-  {Cloning}
-  protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
-  end;
-  TEpiCustomControlItemClass = class of TEpiCustomControlItem;
-
-  TEpiCustomListEnumerator = class;
-  TEpiOnNewItemClass      = function(Sender: TEpiCustomList; DefaultItemClass: TEpiCustomItemClass): TEpiCustomItemClass of object;
-  TEpiValidateRenameEvent = function(Const NewName: string): boolean of object;
-  TEpiPrefixEvent         = function: string of object;
-
-  { TEpiCustomList }
-
-  TEpiCustomList = class(TEpiCustomItem)
-  private
-    FItemOwner: boolean;
-    FList: TFPList;
-    procedure   SetItemOwner(const AValue: boolean);
-    procedure   OnChangeHook(Const Sender: TEpiCustomBase;
-       Const Initiator: TEpiCustomBase;
-       EventGroup: TEpiEventGroup;
-       EventType: Word; Data: Pointer);
-    procedure   RegisterItem(Item: TEpiCustomItem);
-    procedure   UnRegisterItem(Item: TEpiCustomItem);
-  protected
-    constructor Create(AOwner: TEpiCustomBase); override;
-    function    GetCount: Integer; virtual;
-    function    GetItems(Index: integer): TEpiCustomItem; virtual;
-    procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
-    function    WriteNameToXml: boolean; override;
-    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    property    List: TFPList read FList;
-  protected
-    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
-  public
-    destructor  Destroy; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-  { Standard Item Methods }
-  public
-    procedure   Clear;
-    procedure   ClearAndFree;
-    function    ItemClass: TEpiCustomItemClass; virtual;
-    function    NewItem(AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; virtual;
-    // AddItem uses InsertItem internally, so only that method need overriding if needed.
-    procedure   AddItem(Item: TEpiCustomItem); virtual;
-    procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); virtual;
-    // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
-    procedure   RemoveItem(Item: TEpiCustomItem); virtual;
-    function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
-    function    GetItemByName(AName: string): TEpiCustomItem; virtual;
-    function    ItemExistsByName(AName: string): boolean; virtual;
-    function    IndexOf(Item: TEpiCustomItem): integer; virtual;
-    function    GetEnumerator: TEpiCustomListEnumerator;
-    property    Count: Integer read GetCount;
-    property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
-    property    ItemOwner: boolean read FItemOwner write SetItemOwner;
-  { Naming and Validation }
-  private
-    FOnGetPrefix: TEpiPrefixEvent;
-    FOnValidateRename: TEpiValidateRenameEvent;
-    FUniqueNames: boolean;
-    procedure SetUniqueNames(AValue: boolean);
-  protected
-    function  DoPrefix: string;
-    function  Prefix: string; virtual;
-  public
-    function  GetUniqueItemName(AClass: TEpiCustomItemClass): string; virtual;
-    function  ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; override;
-    property  UniqueNames: boolean read FUniqueNames write SetUniqueNames;
-    property  OnValidateRename: TEpiValidateRenameEvent read FOnValidateRename write FOnValidateRename;
-    property  OnGetPrefix: TEpiPrefixEvent read FOnGetPrefix write FOnGetPrefix;
-  { New Item Hook }
-  private
-    FOnNewItemClass: TEpiOnNewItemClass;
-  public
-    property   OnNewItemClass: TEpiOnNewItemClass read FOnNewItemClass write FOnNewItemClass;
-  { Change-event hooks overrides }
-  protected
-    procedure DoChange(const Initiator: TEpiCustomBase;
-       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
-       overload;
-  public
-    procedure  BeginUpdate; override;
-    procedure  EndUpdate; override;
-  { Tanslation overrides }
-  public
-    procedure SetLanguage(Const LangCode: string;
-      Const DefaultLanguage: boolean); override;
-  { Class properties overrides }
-  protected
-    procedure SetModified(const AValue: Boolean); override;
-    procedure DoAssignList(Const EpiCustomList: TEpiCustomList); virtual;
-    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
-  { Sorting }
-  private
-    FOnSort: TListSortCompare;
-    FSorted: boolean;
-    procedure SetSorted(AValue: boolean);
-  protected
-    procedure DoSort; virtual;
-  public
-    procedure Sort;
-    property  Sorted: boolean read FSorted write SetSorted;
-    property  OnSort: TListSortCompare read FOnSort write FOnSort;
-  { Cloning }
-  protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
-  end;
-
-  { TEpiCustomListEnumerator }
-
-  TEpiCustomListEnumerator = class
-  private
-    FCurrentIndex: Integer;
-    FCustomList: TEpiCustomList;
-  protected
-    function GetCurrent: TEpiCustomItem; virtual;
-  public
-    constructor Create(CustomList: TEpiCustomList); virtual;
-    function MoveNext: Boolean;
-    property Current: TEpiCustomItem read GetCurrent;
-  end;
-
-
-  { TEpiCustomControlItemList }
-  TEpiCustomControlItemListEnumerator = class;
-  TEpiCustomControlItemList = class(TEpiCustomList)
-  private
-    procedure ChangeHook(Const Sender: TEpiCustomBase;
-       Const Initiator: TEpiCustomBase;
-       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-  protected
-    procedure DoSort; override;
-    procedure DoChange(const Initiator: TEpiCustomBase;
-       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
-       overload;
-  public
-    procedure InsertItem(const Index: integer; Item: TEpiCustomItem); override;
-    function  DeleteItem(Index: integer): TEpiCustomItem; override;
-    function GetEnumerator: TEpiCustomControlItemListEnumerator;
-  end;
-
-  { TEpiCustomControlItemListEnumerator }
-
-  TEpiCustomControlItemListEnumerator = class(TEpiCustomListEnumerator)
-  protected
-    function GetCurrent: TEpiCustomControlItem; override;
-  public
-    property Current: TEpiCustomControlItem read GetCurrent;
-  end;
-
-
 {$I epixmlconstants.inc}
 
 procedure BackupFormatSettings(NewFormatSettings: TFormatSettings); overload;
@@ -541,8 +281,7 @@ procedure RestoreFormatSettings;
 implementation
 
 uses
-  StrUtils, DCPsha256, laz2_XMLRead, epistringutils, episettings, epidocument,
-  epidatafiles;
+  StrUtils, DCPsha256, laz2_XMLRead, epistringutils, episettings;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
@@ -910,14 +649,14 @@ function TEpiCustomBase.LoadNodeFloat(const Root: TDOMNode;
 var
   Node: TDOMNode;
 begin
-  if LoadNode(Node, Root, NodeName, Fatal) then
+ { if LoadNode(Node, Root, NodeName, Fatal) then
   begin
     if (RootOwner is TEpiDocument) then
       BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
     result := StrToFloat(Node.TextContent);
     RestoreFormatSettings;
   end else
-    result := DefaultVal;
+    result := DefaultVal;   }
 end;
 
 function TEpiCustomBase.LoadNodeString(const Root: TDOMNode;
@@ -936,14 +675,14 @@ function TEpiCustomBase.LoadNodeDateTime(const Root: TDOMNode;
 var
   Node: TDOMNode;
 begin
-  if LoadNode(Node, Root, NodeName, Fatal) then
+{  if LoadNode(Node, Root, NodeName, Fatal) then
   begin
     if (RootOwner is TEpiDocument) then
       BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
     result := StrToDateTime(Node.TextContent);
     RestoreFormatSettings;
   end else
-    result := DefaultVal;
+    result := DefaultVal;  }
 end;
 
 function TEpiCustomBase.LoadNodeBool(const Root: TDOMNode;
@@ -980,14 +719,14 @@ function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
 var
   Attr: TDOMAttr;
 begin
-  if LoadAttr(Attr, Root, AttrName, Fatal) then
+ { if LoadAttr(Attr, Root, AttrName, Fatal) then
   begin
     if (RootOwner is TEpiDocument) then
       BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
     result := StrToFloat(Attr.Value);
     RestoreFormatSettings;
   end else
-    Result := DefaultVal;
+    Result := DefaultVal;    }
 end;
 
 function TEpiCustomBase.LoadAttrString(const Root: TDOMNode;
@@ -1007,7 +746,7 @@ function TEpiCustomBase.LoadAttrDateTime(const Root: TDOMNode;
 var
   Attr: TDOMAttr;
 begin
-  if LoadAttr(Attr, Root, AttrName, Fatal) then
+{  if LoadAttr(Attr, Root, AttrName, Fatal) then
   begin
     if (RootOwner is TEpiDocument) then
       BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
@@ -1017,7 +756,7 @@ begin
     if (RootOwner is TEpiDocument) then
       RestoreFormatSettings;
   end else
-    Result := DefaultVal;
+    Result := DefaultVal;}
 end;
 
 function TEpiCustomBase.LoadAttrBool(const Root: TDOMNode;
@@ -1048,23 +787,23 @@ end;
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: extended): string;
 begin
-  if (RootOwner is TEpiDocument) then
+{  if (RootOwner is TEpiDocument) then
     BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
   result := SaveNode(Lvl, NodeName, FloatToStr(Val));
-  RestoreFormatSettings;
+  RestoreFormatSettings; }
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
   const Val: TDateTime): string;
 begin
-  if (RootOwner is TEpiDocument) then
+ { if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
     result := SaveNode(Lvl, NodeName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
     RestoreFormatSettings;
   end else
-    result := SaveNode(Lvl, NodeName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
+    result := SaveNode(Lvl, NodeName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val)); }
 end;
 
 function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
@@ -1097,27 +836,27 @@ end;
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
   ): string;
 begin
-  if (RootOwner is TEpiDocument) then
+{  if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
     result := SaveAttrRaw(AttrName, FloatToStr(Val));
     RestoreFormatSettings;
   end else
-    result := SaveAttrRaw(AttrName, FloatToStr(Val));
+    result := SaveAttrRaw(AttrName, FloatToStr(Val));}
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
   ): string;
 begin
-  if (RootOwner is TEpiDocument) then
+{  if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
     result := SaveAttr(AttrName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
     RestoreFormatSettings;
   end else
-    result := SaveAttrRaw(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
+    result := SaveAttrRaw(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));    }
 end;
 
 function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: boolean
@@ -1194,27 +933,27 @@ end;
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
   const Tag: String; const Value: extended);
 begin
-  if (RootOwner is TEpiDocument) then
+{  if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
     SaveDomAttr(Node, Tag, FloatToStr(Value));
     RestoreFormatSettings;
   end else
-    SaveDomAttr(Node, Tag, FloatToStr(Value));
+    SaveDomAttr(Node, Tag, FloatToStr(Value));       }
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
   const Tag: String; const Value: TDateTime);
 begin
-  if (RootOwner is TEpiDocument) then
+{  if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
     SaveDomAttr(Node, Tag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
     RestoreFormatSettings;
   end else
-    SaveDomAttr(Node, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+    SaveDomAttr(Node, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value)); }
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
@@ -1242,26 +981,26 @@ end;
 procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
   const Tag: String; const Value: Extended);
 begin
-  if (RootOwner is TEpiDocument) then
+ { if (RootOwner is TEpiDocument) then
     BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
 
   SaveTextContent(RootNode, Tag, FloatToStr(Value));
 
   if (RootOwner is TEpiDocument) then
-    RestoreFormatSettings;
+    RestoreFormatSettings;                }
 end;
 
 procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
   const Tag: String; const Value: TDateTime);
 begin
-  if (RootOwner is TEpiDocument) then
+{  if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
     SaveTextContent(RootNode, Tag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
     RestoreFormatSettings;
   end else
-    SaveTextContent(RootNode, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+    SaveTextContent(RootNode, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));}
 end;
 
 procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
@@ -1439,994 +1178,6 @@ procedure TEpiCustomBase.SetOnModified(const AValue: TNotifyEvent);
 begin
   if FOnModified = AValue then exit;
   FOnModified := AValue;
-end;
-
-{ TEpiTranslatedText }
-
-procedure TEpiTranslatedText.SetCurrentText(const AValue: string);
-var
-  Val: String;
-begin
-  if FCurrentText = AValue then exit;
-  Val := FCurrentText;
-  SetText(FCurrentLang, AValue);
-  FCurrentText := AValue;
-  DoChange(eegCustomBase, Word(ecceText), @Val);
-end;
-
-procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
-  const DefaultLanguage: boolean);
-var
-  Idx:  integer;
-  Val: String;
-begin
-  // First seek "new" language
-  if FTextList.Find(LangCode, Idx) then
-  begin
-    Val := FCurrentText;
-    FCurrentText := TString(FTextList.Objects[Idx]).Str;
-    DoChange(eegCustomBase, Word(ecceText), @Val);
-  end
-  // Fallback to default language
-  else if (FTextList.Find(FDefaultLang, Idx)) and (not DefaultLanguage) then
-  begin
-    Val := FCurrentText;
-    FCurrentText := TString(FTextList.Objects[Idx]).Str;
-    DoChange(eegCustomBase, Word(ecceText), @Val);
-  end
-  // If new default language does not exists create empty entry.
-  else if DefaultLanguage then
-  begin
-    SetText(LangCode, '');
-    FCurrentText := '';
-  end;
-  inherited SetLanguage(LangCode, DefaultLanguage);
-end;
-
-function TEpiTranslatedText.XMLName: string;
-begin
-  Result := FXMLName;
-end;
-
-procedure TEpiTranslatedText.Clear;
-var
-  i: Integer;
-begin
-  for i := FTextList.Count - 1 downto 0 do
-    FTextList.Objects[i].Free;
-  FTextList.Clear;
-end;
-
-constructor TEpiTranslatedText.Create(AOwner: TEpiCustomBase;
-  const aXMLName: string);
-begin
-  inherited Create(AOwner);
-  FTextList := TStringList.Create;
-  FTextList.Sorted := true;
-  FXMLName := aXMLName
-end;
-
-destructor TEpiTranslatedText.Destroy;
-begin
-  FXMLName := '';
-  FCurrentText := '';
-
-  Clear;
-
-  FTextList.Free;
-  inherited Destroy;
-end;
-
-function TEpiTranslatedText.SaveToXml(Content: String; Lvl: integer): string;
-var
-  i: Integer;
-begin
-  Result := '';
-  for i := 0 to FTextList.Count - 1 do
-    if TString(FTextList.Objects[i]).Str <> '' then
-      Result += Indent(Lvl) + '<' + XMLName + ' xml:lang="' + FTextList[i] + '">' +
-                StringToXml(TString(FTextList.Objects[i]).Str) + '</' + XMLName + '>' + LineEnding;
-end;
-
-procedure TEpiTranslatedText.LoadFromXml(Root: TDOMNode;
-  ReferenceMap: TEpiReferenceMap);
-var
-  ElemList: TDOMNodeList;
-  LangCode: String;
-  Val: String;
-  i: Integer;
-begin
-  // Root = <Containing Section>
-  { eg.
-    <Group> - this is root.
-      <Name xml:lang="en">Group A</Name>
-      <Name xml:lang="dk">Gruppe A</Name>
-      ...
-    </Group>
-  }
-
-  ElemList := TDOMElement(Root).GetElementsByTagName(XMLName);
-  for i := 0 to ElemList.Count -1 do
-  begin
-    // Ugly hack to prevent looking at nodes that is not directly below the root.
-    if ElemList[i].ParentNode <> Root then continue;
-
-    LangCode := TDOMElement(ElemList[i]).AttribStrings['xml:lang'];
-    Val := ElemList[i].TextContent;
-    if (LangCode = FCurrentLang) or (LangCode = '') then
-      SetCurrentText(Val)
-    else
-      SetText(LangCode, Val);
-  end;
-  ElemList.Free;
-end;
-
-procedure TEpiTranslatedText.Assign(const AEpiCustomBase: TEpiCustomBase);
-var
-  OrgText: TEpiTranslatedText absolute AEpiCustomBase;
-  i: Integer;
-begin
-  inherited Assign(AEpiCustomBase);
-  BeginUpdate;
-  FXMLName := OrgText.FXMLName;
-  FCurrentText := OrgText.FCurrentText;
-
-  // Clear content before assign
-  Clear;
-
-  for i := 0 to OrgText.FTextList.Count - 1 do
-    FTextList.AddObject(OrgText.FTextList[i], TString.Create(TString(OrgText.FTextList.Objects[i]).Str));
-  EndUpdate;
-end;
-
-function TEpiTranslatedText.DoCloneCreate(AOwner: TEpiCustomBase
-  ): TEpiCustomBase;
-begin
-  Result := TEpiTranslatedText.Create(AOwner, XMLName);
-end;
-
-function TEpiTranslatedText.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
-var
-  i: Integer;
-begin
-  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-
-  with TEpiTranslatedText(Result) do
-  begin
-    Clear;
-
-    for i := 0 to Self.FTextList.Count - 1 do
-      FTextList.AddObject(Self.FTextList[i], TString.Create(TString(Self.FTextList.Objects[i]).Str));
-
-    FCurrentText := Self.FCurrentText;
-  end;
-end;
-
-function TEpiTranslatedText.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-var
-  i: Integer;
-  Elem: TDOMText;
-begin
-  Result := inherited SaveToDom(RootDoc);
-
-  for i := 0 to FTextList.Count - 1 do
-  begin
-    if TString(FTextList.Objects[i]).Str <> '' then
-    begin
-      SaveDomAttr(Result, 'xml:lang', FTextList[i]);
-      Result.TextContent := TString(FTextList.Objects[i]).Str;
-    end;
-  end;
-end;
-
-procedure TEpiTranslatedText.SetText( const LangCode: string;
-  const AText: string);
-var
-  Idx: integer;
-  Val: String;
-begin
-  Val := '';
-  if FTextList.Find(LangCode, Idx) then
-  begin
-    Val := TString(FTextList.Objects[Idx]).Str;
-    TString(FTextList.Objects[Idx]).Str := AText;
-  end else
-    FTextList.AddObject(LangCode, TString.Create(AText));
-  DoChange(eegCustomBase, Word(ecceText), @Val);
-end;
-
-function TEpiTranslatedText.GetText(const LangCode: string): string;
-var
-  Idx: integer;
-begin
-  if FTextList.Find(LangCode, Idx) then
-    Result := TString(FTextList.Objects[Idx]).Str
-  else begin
-    FTextList.Find(FDefaultLang, Idx);
-    Result := TString(FTextList.Objects[Idx]).Str;
-  end;
-end;
-
-{ TEpiTranslatedTextWrapper }
-
-constructor TEpiTranslatedTextWrapper.Create(AOwner: TEpiCustomBase;
-  const NodeName, TextName: string);
-begin
-  inherited Create(AOwner, TextName);
-  FNodeName := NodeName;
-end;
-
-function TEpiTranslatedTextWrapper.SaveToXml(Content: String; Lvl: integer
-  ): string;
-begin
-  Result := inherited SaveToXml(Content, Lvl + 1);
-
-  if Result <> '' then
-    Result :=
-      Indent(Lvl) + '<' + FNodeName + '>' + LineEnding +
-      Result +
-      Indent(Lvl) + '</' + FNodeName + '>' + LineEnding;
-end;
-
-procedure TEpiTranslatedTextWrapper.LoadFromXml(Root: TDOMNode;
-  ReferenceMap: TEpiReferenceMap);
-var
-  NRoot: TDOMNode;
-begin
-  // Root = Parent for FNodeName (since this is a wrapped object.
-  if LoadNode(NRoot, Root, FNodeName, false) then
-    inherited LoadFromXml(NRoot, ReferenceMap);
-end;
-
-function TEpiTranslatedTextWrapper.DoCloneCreate(AOwner: TEpiCustomBase
-  ): TEpiCustomBase;
-begin
-  Result := TEpiTranslatedTextWrapper.Create(AOwner, FNodeName, XMLName);
-end;
-
-function TEpiTranslatedTextWrapper.SaveToDom(RootDoc: TDOMDocument
-  ): TDOMElement;
-var
-  Elem: TDOMElement;
-  i: Integer;
-  ReturnNil: Boolean;
-begin
-  ReturnNil := true;
-  for i := 0 to FTextList.Count -1 do
-    if TString(FTextList.Objects[i]).Str <> '' then
-    begin
-      ReturnNil := false;
-      Break;
-    end;
-
-  if ReturnNil then
-    Exit(nil);
-
-  Elem := inherited SaveToDom(RootDoc);
-
-  Result := RootDoc.CreateElement(FNodeName);
-  Result.AppendChild(Elem);
-end;
-
-{ TEpiCustomItem }
-
-function TEpiCustomItem.GetName: string;
-begin
-  result := FName;
-end;
-
-procedure TEpiCustomItem.SetName(const AValue: string);
-var
-  Val: String;
-begin
-  if FName = AValue then exit;
-
-  // Validate identifier
-  if not DoValidateRename(AValue) then Exit;
-
-  Val := FName;
-  FName := AValue;
-  DoChange(eegCustomBase, Word(ecceName), @Val);
-end;
-
-function TEpiCustomItem.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml;
-  if WriteNameToXml then
-    // We use name in program but present it as "id=...." in the XML.
-    Result += SaveAttr(rsId, Name);
-end;
-
-function TEpiCustomItem.DoValidateRename(const NewName: string): boolean;
-begin
-  result := ValidateIdentifierUTF8(NewName);
-  if (Owner is TEpiCustomList) then
-    result := result and (TEpiCustomList(Owner).ValidateRename(NewName, false));
-end;
-
-function TEpiCustomItem.WriteNameToXml: boolean;
-begin
-  result := true;
-end;
-
-function TEpiCustomItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-begin
-  Result := inherited SaveToDom(RootDoc);
-
-  if WriteNameToXml then
-    SaveDomAttr(Result, rsId, Name);
-end;
-
-destructor TEpiCustomItem.Destroy;
-begin
-  FName := '';
-  if Assigned(FCustomData) then
-    FreeAndNil(FCustomData);
-  inherited Destroy;
-end;
-
-procedure TEpiCustomItem.LoadFromXml(Root: TDOMNode;
-  ReferenceMap: TEpiReferenceMap);
-var
-  Attr: TDOMAttr;
-begin
-  if LoadAttr(Attr, Root, rsId, false) then
-    FName := LoadAttrString(Root, rsId)
-  else if WriteNameToXml then
-    // This class was supposed to write an ID -> hence it also expects one! Error!
-    RaiseErrorAttr(Root, rsId);
-end;
-
-procedure TEpiCustomItem.Assign(const AEpiCustomBase: TEpiCustomBase);
-begin
-  inherited Assign(AEpiCustomBase);
-  BeginUpdate;
-  Name := TEpiCustomItem(AEpiCustomBase).Name;
-  EndUpdate;
-end;
-
-function TEpiCustomItem.ValidateRename(const NewName: string;
-  RenameOnSuccess: boolean): boolean;
-begin
-  if NewName = Name then exit(true);
-  result := DoValidateRename(NewName);
-end;
-
-function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
-begin
-  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  TEpiCustomItem(Result).FName := FName;
-end;
-
-procedure TEpiCustomItem.AddCustomData(const Key: string; const Obj: TObject);
-begin
-  if not Assigned(FCustomData) then
-    FCustomData := TFPObjectHashTable.Create(false);
-
-  try
-    FCustomData.Items[Key] := Obj;
-  except
-    raise Exception.Create('TEpiCustomItem: Duplicate CustomData - key=' + Key);
-  end;
-end;
-
-function TEpiCustomItem.FindCustomData(const Key: string): TObject;
-begin
-  result := nil;
-  if Assigned(FCustomData) then
-    result := FCustomData.Items[Key];
-end;
-
-function TEpiCustomItem.RemoveCustomData(const Key: string): TObject;
-begin
-  Result := FindCustomData(Key);
-  if not Assigned(Result) then exit;
-
-  FCustomData.Delete(Key);
-
-  if FCustomData.Count = 0 then
-    FreeAndNil(FCustomData);
-end;
-
-{ TEpiCustomControlItem }
-
-function TEpiCustomControlItem.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttr(rsTop, Top) +
-    SaveAttr(rsLeft, Left);
-end;
-
-procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode;
-  ReferenceMap: TEpiReferenceMap);
-begin
-  inherited LoadFromXml(Root, ReferenceMap);
-  Top := LoadAttrInt(Root, rsTop);
-  Left := LoadAttrInt(Root, rsLeft);
-end;
-
-procedure TEpiCustomControlItem.SetLeft(const AValue: Integer);
-var
-  Val: LongInt;
-begin
-  if Left = AValue then exit;
-  Val := Left;
-  FLeft := AValue;
-  DoChange(eegCustomBase, Word(ecceSetLeft), @Val);
-end;
-
-procedure TEpiCustomControlItem.SetTop(const AValue: Integer);
-var
-  Val: LongInt;
-begin
-  if Top = AValue then exit;
-  Val := Top;
-  FTop := AValue;
-  DoChange(eegCustomBase, Word(ecceSetTop), @Val);
-end;
-
-procedure TEpiCustomControlItem.Assign(const AEpiCustomBase: TEpiCustomBase);
-var
-  OrgControlItem: TEpiCustomControlItem absolute AEpiCustomBase;
-begin
-  inherited Assign(AEpiCustomBase);
-  BeginUpdate;
-  if Top = 0 then
-    Top := OrgControlItem.Top;
-  if Left = 0 then
-    Left := OrgControlItem.Left;
-  EndUpdate;
-end;
-
-function TEpiCustomControlItem.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-begin
-  Result := inherited SaveToDom(RootDoc);
-
-  Result.SetAttribute(rsTop, IntToStr(Top));
-  Result.SetAttribute(rsLeft, IntToStr(Left));
-end;
-
-function TEpiCustomControlItem.DoClone(AOwner: TEpiCustomBase;
-  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
-begin
-  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  with TEpiCustomControlItem(Result) do
-  begin
-    FTop  := Self.FTop;
-    FLeft := Self.FLeft;
-  end;
-end;
-
-{ TEpiCustomList }
-
-procedure TEpiCustomList.SetItemOwner(const AValue: boolean);
-begin
-  if FItemOwner = AValue then exit;
-  FItemOwner := AValue;
-end;
-
-procedure TEpiCustomList.OnChangeHook(const Sender: TEpiCustomBase;
-  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-var
-  EpiInitiator: TEpiCustomItem absolute Initiator;
-begin
-  if Initiator = self then exit;
-  if EventGroup <> eegCustomBase then exit;
-  if not (Initiator is TEpiCustomItem) then exit;
-  if IndexOf(EpiInitiator) = -1 then exit;
-
-  case TEpiCustomChangeEventType(EventType) of
-    ecceDestroy: RemoveItem(EpiInitiator);
-    ecceAddItem: Sort;
-    ecceDelItem: Sort;
-    ecceUpdate:  Sort;
-  end;
-end;
-
-procedure TEpiCustomList.RegisterItem(Item: TEpiCustomItem);
-begin
-  if ItemOwner then
-  begin
-    Item.FOwner := Self;
-    Item.SetLanguage(FDefaultLang, true);
-    Item.SetLanguage(FCurrentLang, false);
-  end else
-    Item.RegisterOnChangeHook(@OnChangeHook, true);
-
-  DoChange(eegCustomBase, Word(ecceAddItem), Item);
-  if Sorted then Sort;
-end;
-
-procedure TEpiCustomList.UnRegisterItem(Item: TEpiCustomItem);
-begin
-//  if not (ebsDestroying in Item.State) then
-  Item.UnRegisterOnChangeHook(@OnChangeHook);
-
-  if ItemOwner then Item.FOwner := nil;
-  DoChange(eegCustomBase, Word(ecceDelItem), Item);
-  if Sorted then Sort;
-end;
-
-constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
-begin
-  inherited Create(AOwner);
-  FList := TFPList.Create;
-  FItemOwner := false;
-  FSorted := false;
-  FUniqueNames := true;
-end;
-
-function TEpiCustomList.GetCount: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TEpiCustomList.GetItems(Index: integer): TEpiCustomItem;
-begin
-  result := TEpiCustomItem(FList[Index]);
-end;
-
-procedure TEpiCustomList.SetItems(Index: integer; const AValue: TEpiCustomItem
-  );
-var
-  Val: Pointer;
-begin
-  // TODO : Set owner!
-  if FList[Index] = Pointer(AValue) then exit;
-  Val := FList[Index];
-  FList[Index] := AValue;
-  DoChange(eegCustomBase, Word(ecceSetItem), Val);
-end;
-
-function TEpiCustomList.WriteNameToXml: boolean;
-begin
-  Result := false;
-end;
-
-procedure TEpiCustomList.LoadFromXml(Root: TDOMNode;
-  ReferenceMap: TEpiReferenceMap);
-var
-  NItem: TEpiCustomItem;
-  Node: TDOMNode;
-begin
-  inherited LoadFromXml(Root, ReferenceMap);
-
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    // hack to skip whitespace nodes.
-    while NodeIsWhiteSpace(Node) do
-      Node := Node.NextSibling;
-    if not Assigned(Node) then break;
-
-    NItem := NewItem();
-    CheckNode(Node, NItem.XMLName);
-    NItem.LoadFromXml(Node, ReferenceMap);
-
-    Node := Node.NextSibling;
-  end;
-end;
-
-function TEpiCustomList.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-var
-  i: Integer;
-  Elem: TDOMElement;
-begin
-  if Count = 0 then
-    Exit(nil);
-
-  Result := inherited SaveToDom(RootDoc);
-
-  for i := 0 to Count - 1 do
-  begin
-    Elem := Items[i].SaveToDom(RootDoc);
-    if Assigned(Elem) then
-      Result.AppendChild(Elem);
-  end;
-end;
-
-function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
-var
-  i: Integer;
-begin
-  i := Count + 1;
-  repeat
-    result := DoPrefix + IntToStr(i);
-    Inc(i);
-  until ValidateRename(result, false);
-end;
-
-function TEpiCustomList.DoPrefix: string;
-begin
-  if Assigned(OnGetPrefix) then
-    result := OnGetPrefix()
-  else
-    result := Prefix;
-end;
-
-function TEpiCustomList.Prefix: string;
-begin
-  result := 'id_';
-end;
-
-function TEpiCustomList.ValidateRename(const NewName: string;
-  RenameOnSuccess: boolean): boolean;
-begin
-  // if unique names is not required, you can ALWAYS rename item.
-  if (not UniqueNames) then
-    Exit(true);
-
-  result := not ItemExistsByName(NewName);
-  if Assigned(OnValidateRename) then
-    result := result and OnValidateRename(NewName);
-end;
-
-procedure TEpiCustomList.DoChange(const Initiator: TEpiCustomBase;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-begin
-  inherited DoChange(Initiator, EventGroup, EventType, Data);
-  OnChangeHook(Self, Initiator, EventGroup, EventType, Data);
-end;
-
-destructor TEpiCustomList.Destroy;
-var
-  F: TEpiCustomItem;
-begin
-  ClearAndFree;
-  FreeAndNil(FList);
-  inherited Destroy;
-end;
-
-function TEpiCustomList.SaveToXml(Content: String; Lvl: integer): string;
-var
-  S: String;
-  i: Integer;
-begin
-  S := '';
-  for i := 0 to Count - 1 do
-    S += Items[i].SaveToXml('', Lvl + 1);
-  Content += S;
-  result := inherited SaveToXml(Content, Lvl);
-end;
-
-procedure TEpiCustomList.Clear;
-begin
-  while Count > 0 do
-    DeleteItem(Count - 1);
-end;
-
-procedure TEpiCustomList.ClearAndFree;
-var
-  F: TEpiCustomItem;
-begin
-  while FList.Count > 0 do
-  begin
-    // Using this unusual construct in destroying list items (when owned)
-    // ensures that destroy notifications from Items is defered until after
-    // the item is removed from the list.
-    F := TEpiCustomItem(FList.Last);
-    RemoveItem(F);
-    if ItemOwner then
-      F.Free;
-  end;
-end;
-
-function TEpiCustomList.ItemClass: TEpiCustomItemClass;
-begin
-  result := nil;
-end;
-
-function TEpiCustomList.NewItem(AItemClass: TEpiCustomItemClass
-  ): TEpiCustomItem;
-begin
-  if not Assigned(AItemClass) then
-    AItemClass := ItemClass;
-
-  if Assigned(OnNewItemClass) then
-    AItemClass := OnNewItemClass(Self, AItemClass);
-
-  if not Assigned(AItemClass) then
-    Exception.Create('TEpiCustomList: No ItemClass Defined!');
-
-  Result := AItemClass.Create(Self);
-  Result.Name := GetUniqueItemName(AItemClass);
-  AddItem(Result);
-end;
-
-procedure TEpiCustomList.AddItem(Item: TEpiCustomItem);
-begin
-  // AddItem uses InsertItem internally, so only that method need overriding if needed.
-  InsertItem(Count, Item);
-end;
-
-procedure TEpiCustomList.InsertItem(const Index: integer; Item: TEpiCustomItem
-  );
-begin
-  if (not ValidateRename(Item.Name, false)) then
-    raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
-  FList.Insert(Index, Item);
-  RegisterItem(Item);
-end;
-
-procedure TEpiCustomList.RemoveItem(Item: TEpiCustomItem);
-begin
-  // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
-  DeleteItem(FList.IndexOf(Item));
-end;
-
-function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
-begin
-  Result := TEpiCustomItem(FList[Index]);
-  FList.Delete(Index);
-  UnRegisterItem(Result);
-end;
-
-function TEpiCustomList.GetItemByName(AName: string): TEpiCustomItem;
-var
-  i: Integer;
-begin
-  Result := nil;
-  for i := 0 to Count - 1 do
-  begin
-    if TEpiCustomItem(FList[i]).Name = AName then
-    begin
-      Result := TEpiCustomItem(FList[i]);
-      Exit;
-    end;
-  end;
-end;
-
-function TEpiCustomList.ItemExistsByName(AName: string): boolean;
-begin
-  result := Assigned(GetItemByName(AName));
-end;
-
-function TEpiCustomList.IndexOf(Item: TEpiCustomItem): integer;
-begin
-  result := FList.IndexOf(Item);
-end;
-
-function TEpiCustomList.GetEnumerator: TEpiCustomListEnumerator;
-begin
-  result := TEpiCustomListEnumerator.Create(Self);
-end;
-
-procedure TEpiCustomList.SetUniqueNames(AValue: boolean);
-begin
-  if FUniqueNames = AValue then Exit;
-  FUniqueNames := AValue;
-end;
-
-procedure TEpiCustomList.BeginUpdate;
-var
-  i: Integer;
-begin
-  inherited BeginUpdate;
-  for i := 0 to Count - 1 do
-    Items[i].BeginUpdate;
-end;
-
-procedure TEpiCustomList.EndUpdate;
-var
-  i: Integer;
-begin
-  for i := 0 to Count - 1 do
-    Items[i].EndUpdate;
-  inherited EndUpdate;
-end;
-
-procedure TEpiCustomList.SetLanguage(const LangCode: string;
-  const DefaultLanguage: boolean);
-var
-  i: Integer;
-begin
-  inherited SetLanguage(LangCode, DefaultLanguage);
-  for i := 0 to Count - 1 do
-    Items[i].SetLanguage(LangCode, DefaultLanguage);
-end;
-
-procedure TEpiCustomList.SetModified(const AValue: Boolean);
-var
-  i: Integer;
-begin
-  inherited SetModified(AValue);
-  if not AValue then
-    for i := 0 to Count - 1 do
-      Items[i].Modified := AValue;
-end;
-
-procedure TEpiCustomList.DoAssignList(const EpiCustomList: TEpiCustomList);
-var
-  i: Integer;
-  NItemClass: TEpiCustomItemClass;
-  Item: TEpiCustomItem;
-begin
-  BeginUpdate;
-  OnNewItemClass := EpiCustomList.OnNewItemClass;
-  if EpiCustomList.Count > 0 then
-  begin
-    NItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
-    for i := 0 to EpiCustomList.Count - 1 do
-    begin
-      Item := NewItem(NItemClass);
-      Item.Assign(EpiCustomList[i]);
-    end;
-  end;
-  EndUpdate;
-end;
-
-procedure TEpiCustomList.Assign(const AEpiCustomBase: TEpiCustomBase);
-begin
-  inherited Assign(AEpiCustomBase);
-
-  if AEpiCustomBase is TEpiCustomList then
-    DoAssignList(TEpiCustomList(AEpiCustomBase));
-end;
-
-procedure TEpiCustomList.SetSorted(AValue: boolean);
-begin
-  if FSorted = AValue then Exit;
-  FSorted := AValue;
-end;
-
-procedure TEpiCustomList.DoSort;
-begin
-  if not Sorted then exit;
-
-  if Assigned(FOnSort) then
-    FList.Sort(FOnSort)
-end;
-
-procedure TEpiCustomList.Sort;
-begin
-  DoSort;
-end;
-
-function TEpiCustomList.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
-var
-  i: Integer;
-  NItem: TEpiCustomItem;
-
-  function GetRandomName: string;
-  var
-    GUID: TGUID;
-  begin
-    // Hack: Create a GUID to use as name.
-    //  - the comp. name is not used in other parts of the program anyway,
-    //  - so using GUID is a valid way to create random components names... :)
-    //  - And the chance of creating to equal component name are very-very-very unlikely.
-    CreateGUID(GUID);
-    Result := '_' + StringsReplace(GUIDToString(GUID), ['{','}','-'], ['','',''], [rfReplaceAll]);
-  end;
-
-begin
-  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-
-  // Set itemowner before copying the items - otherwise
-  // owner is not set properly.
-  TEpiCustomList(Result).FItemOwner := FItemOwner;
-  for i := 0 to Count - 1 do
-  begin
-    NItem := TEpiCustomItem(Items[i].DoCloneCreate(Result));
-    // Set a random name, otherwise calling Add will fail.
-    // Name is correctly set in Items[i].DoClone...
-    NItem.FName := GetRandomName;
-    if TEpiCustomList(Result).IndexOf(NItem) = -1 then
-      TEpiCustomList(Result).AddItem(NItem);
-    Items[i].DoClone(Result, NItem, ReferenceMap);
-  end;
-
-  // Set Sorting last, otherwise each AddItem triggers a sort.
-  with TEpiCustomList(Result) do
-  begin
-    FOnSort := Self.FOnSort;
-    FSorted := Self.FSorted;
-    Sort;
-  end;
-end;
-
-{ TEpiCustomListEnumerator }
-
-function TEpiCustomListEnumerator.GetCurrent: TEpiCustomItem;
-begin
-  result := FCustomList[FCurrentIndex];
-end;
-
-constructor TEpiCustomListEnumerator.Create(CustomList: TEpiCustomList);
-begin
-  FCustomList := CustomList;
-  FCurrentIndex := -1;
-end;
-
-function TEpiCustomListEnumerator.MoveNext: Boolean;
-begin
-  Inc(FCurrentIndex);
-  Result := (FCurrentIndex < FCustomList.Count);
-end;
-
-
-{ TEpiCustomControlItemList }
-
-function SortControlItems(Item1, Item2: Pointer): Integer;
-var
-  CI1: TEpiCustomControlItem absolute Item1;
-  CI2: TEpiCustomControlItem absolute Item2;
-begin
-  // The same pointers is also the same object!
-  if CI1.Equals(CI2) then exit(0);
-
-  result := CI1.Top - CI2.Top;
-  if result = 0 then
-    result := CI1.Left - CI2.Left;
-
-  // If two ControlItems are placed on eachother - the "highest" is the biggest pointer value.
-  if result = 0 then
-    result := Item1 - Item2;
-end;
-
-procedure TEpiCustomControlItemList.ChangeHook(const Sender: TEpiCustomBase;
-  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-var
-  EpiInitiator: TEpiCustomControlItem absolute Initiator;
-begin
-  if (EventGroup <> eegCustomBase) then exit;
-  if not (Initiator is TEpiCustomControlItem) then exit;
-  if IndexOf(EpiInitiator) = -1 then exit;
-
-  case TEpiCustomChangeEventType(EventType) of
-    ecceSetTop:  Sort;
-    ecceSetLeft: Sort;
-  end;
-end;
-
-procedure TEpiCustomControlItemList.DoSort;
-begin
-  if not Assigned(FOnSort) then
-    FOnSort := @SortControlItems;
-
-  inherited DoSort;
-
-  if FOnSort = @SortControlItems then
-    FOnSort := nil;
-end;
-
-procedure TEpiCustomControlItemList.DoChange(const Initiator: TEpiCustomBase;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-begin
-  inherited DoChange(Initiator, EventGroup, EventType, Data);
-  ChangeHook(Self, Initiator, EventGroup, EventType, Data);
-end;
-
-procedure TEpiCustomControlItemList.InsertItem(const Index: integer;
-  Item: TEpiCustomItem);
-begin
-  inherited InsertItem(Index, Item);
-  if not ItemOwner then
-    Item.RegisterOnChangeHook(@ChangeHook, true);
-end;
-
-function TEpiCustomControlItemList.DeleteItem(Index: integer): TEpiCustomItem;
-begin
-  Result := inherited DeleteItem(Index);
-  Result.UnRegisterOnChangeHook(@ChangeHook);
-end;
-
-function TEpiCustomControlItemList.GetEnumerator: TEpiCustomControlItemListEnumerator;
-begin
-  result := TEpiCustomControlItemListEnumerator.Create(Self);
-end;
-
-{ TEpiCustomControlItemListEnumerator }
-
-function TEpiCustomControlItemListEnumerator.GetCurrent: TEpiCustomControlItem;
-begin
-  result := TEpiCustomControlItem(inherited GetCurrent);
 end;
 
 end.
