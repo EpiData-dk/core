@@ -431,6 +431,7 @@ type
     function    GetItemByName(AName: string): TEpiCustomItem; virtual;
     function    ItemExistsByName(AName: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
+    procedure   Move(Const CurIndex, NewIndex: Integer);
     function    GetEnumerator: TEpiCustomListEnumerator;
     property    Count: Integer read GetCount;
     property    Items[Index: integer]: TEpiCustomItem read GetItems write SetItems; default;
@@ -2188,6 +2189,11 @@ end;
 function TEpiCustomList.IndexOf(Item: TEpiCustomItem): integer;
 begin
   result := FList.IndexOf(Item);
+end;
+
+procedure TEpiCustomList.Move(const CurIndex, NewIndex: Integer);
+begin
+  FList.Move(CurIndex, NewIndex);
 end;
 
 function TEpiCustomList.GetEnumerator: TEpiCustomListEnumerator;
