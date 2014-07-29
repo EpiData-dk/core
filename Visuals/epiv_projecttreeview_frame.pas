@@ -41,15 +41,8 @@ type
   { TEpiVProjectTreeViewFrame }
 
   TEpiVProjectTreeViewFrame = class(TFrame)
-    Button1: TButton;
-    Button2: TButton;
-    Button3: TButton;
-    Panel1: TPanel;
     VST: TVirtualStringTree;
-
-    procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
+  private
     procedure VSTChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var NewState: TCheckState; var Allowed: Boolean);
@@ -98,10 +91,13 @@ type
   private
     procedure DoNewRelation(Const NewRelation: TEpiMasterRelation);
     procedure DoDeleteRelation(Const Relation: TEpiMasterRelation);
+    function  GetDocuments(const Index: integer): TEpiDocument;
   public
     procedure AddDocument(Const Doc: TEpiDocument);
     procedure CreateRelatedDataFile(Const ParentDataFile: TEpiDataFile);
     procedure DeleteDataFile(DataFile: TEpiDataFile);
+  public
+    property  Documents[Const Index: integer]: TEpiDocument read GetDocuments;
 
   { Options }
   private
@@ -193,21 +189,6 @@ begin
   end;
 end;
 
-procedure TEpiVProjectTreeViewFrame.Button2Click(Sender: TObject);
-begin
-  CreateRelatedDataFile(SelectedDataFile);
-end;
-
-procedure TEpiVProjectTreeViewFrame.Button1Click(Sender: TObject);
-begin
-  //
-end;
-
-procedure TEpiVProjectTreeViewFrame.Button3Click(Sender: TObject);
-begin
-  DeleteDataFile(SelectedDataFile);
-end;
-
 procedure TEpiVProjectTreeViewFrame.VSTChecking(Sender: TBaseVirtualTree;
   Node: PVirtualNode; var NewState: TCheckState; var Allowed: Boolean);
 begin
@@ -243,18 +224,6 @@ var
   DF: TEpiDataFile;
 begin
   Node := Sender.DropTargetNode;
-  if not Assigned(Node) then
-    Panel1.Caption := 'No Drop Target'
-  else
-    begin
-      DF := DataFileFromNode(Node);
-
-      if Assigned(DF) then
-        Panel1.Caption := 'Drop Target: ' + DF.Caption.Text
-      else
-        Panel1.Caption := 'Drop Target: Not a DF, must be DOC';
-    end;
-
 
   Accept :=
     // Only allow to drag-drop within ourselves.
@@ -677,6 +646,17 @@ begin
     OnDelete(Relation);
 end;
 
+function TEpiVProjectTreeViewFrame.GetDocuments(const Index: integer
+  ): TEpiDocument;
+begin
+  Result := nil;
+
+  if (Index < 0) or (Index >= FDocumentList.Count) then
+    Exit;
+
+  Result := TEpiDocument(FDocumentList[Index]);
+end;
+
 procedure TEpiVProjectTreeViewFrame.AddDocument(const Doc: TEpiDocument);
 begin
   FDocumentList.Add(Doc);
@@ -725,8 +705,23 @@ begin
     NewDataFile.KeyFields.AddItem(NewKeyField);
   end;
 
-  // TODO : Husk checkbox state OG hvilket stadie checkboxen skal have!
   Node := VST.AddChild(ParentNode, NewRelation);
+  VST.Expanded[ParentNode] := true;
+  UpdateCustomData(NewRelation, Node);
+
+  if ShowCheckBoxes then
+  begin
+    VST.CheckType[node] := ctTriStateCheckBox;
+
+    case CheckType of
+      pctTriState: ; // Do nothing - this is handled perfectly by the VST it-self.
+      pctCascade:
+        begin
+          if VST.CheckState[ParentNode] in [csCheckedNormal, csMixedNormal] then
+            VST.CheckState[Node] := csMixedNormal;
+        end;
+    end;
+  end;
 
   DoNewRelation(NewRelation);
 end;
@@ -749,6 +744,8 @@ begin
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetCheckType(AValue: TEpiVProjectCheckType);
+var
+  Node: PVirtualNode;
 begin
   if FCheckType = AValue then Exit;
   FCheckType := AValue;
@@ -759,7 +756,12 @@ begin
       pctCascade:  AutoOptions := AutoOptions - [toAutoTristateTracking];
   end;
 
-  // UpdateTree ??
+  Node := VST.GetFirst();
+  while Assigned(Node) do
+  begin
+    VST.CheckState[Node] := csUncheckedNormal;
+    Node := VST.GetNext(Node, true);
+  end;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetDisplayMode(AValue: TEpiVProjectDisplayMode);
