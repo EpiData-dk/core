@@ -593,7 +593,7 @@ begin
   result :=
 
     DupeString(' ', Lvl) + '<' +rsValueLabelSet + SaveAttributesToXml + '>' + LineEnding +
-    SaveNode(Lvl + 1, rsFile, ExtFileName) +
+    SaveNode(Lvl + 1, rsFilename, ExtFileName) +
     DupeString(' ', Lvl) + '</' +rsValueLabelSet + '>' + LineEnding;
 end;
 
@@ -642,13 +642,18 @@ begin
 end;
 
 function TEpiValueLabelSet.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-var
-  lt: TEpiFieldType;
 begin
-  Result := inherited SaveToDom(RootDoc);
+  if LabelScope = vlsInternal then
+    Result := inherited SaveToDom(RootDoc)
+  else
+    begin
+      Result := RootDoc.CreateElement(XMLName);
+      SaveDomAttr(Result, rsId, Name);
+      SaveDomAttr(Result, rsFilename, ExtFileName);
+    end;
+
   if not Assigned(Result) then exit;
 
-  lt := LabelType;
   SaveDomAttrEnum(Result, rsType, LabelType, TypeInfo(TEpiFieldType));
   SaveDomAttrEnum(Result, rsValueLabelScope, LabelScope, TypeInfo(TEpiValueLabelSetScope));
 end;
@@ -696,9 +701,7 @@ begin
   case LabelType of
     ftInteger: Result := TEpiIntValueLabel;
     ftFloat:   Result := TEpiFloatValueLabel;
-    ftString,
-    ftUpperString:
-      Result := TEpiStringValueLabel;
+    ftString:  Result := TEpiStringValueLabel;
   end;
 end;
 
@@ -858,7 +861,7 @@ begin
 
   ExtID    := LoadAttrString(Root, rsId);
   ExtType  := TEpiFieldType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiFieldType)));
-  FileName := LoadNodeString(Root, rsFile);
+  FileName := LoadAttrString(Root, rsFilename);
 
   RootDoc := TEpiDocument(RootOwner);
   DocFile := TEpiDocumentFileCache(DocFileCache).OpenFile(FileName, true);
@@ -869,7 +872,7 @@ begin
       RootDoc.OnLoadError(RootDoc, 0, @FileName ,AContinue);
 
     if not AContinue then
-      raise EEpiExternalFileNoFound.Create('Value Labelse: External file "' + FileName + '" not found');
+      raise EEpiExternalFileNoFound.Create('Value Label: External file "' + FileName + '" not found');
 
     Exit;
   end;
