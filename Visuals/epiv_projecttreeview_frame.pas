@@ -12,7 +12,7 @@ uses
   {$ELSE}
   FakeActiveX,
   {$ENDIF}
-  epidocument, epirelations, epidatafiles, epidatafilestypes;
+  epicustombase, epidocument, epirelations, epidatafiles, epidatafilestypes;
 
 type
 
@@ -28,9 +28,18 @@ type
   );
 
 
-  TEpiVProjectTreeSelectDataFile = procedure(Const DataFile: TEpiDataFile) of object;
-  TEpiVProjectTreeAllowSelectDataFile = procedure(Const OldDataFile,
-    NewDataFile: TEpiDataFile; var Allowed: Boolean) of object;
+  TEpiVTreeNodeObjectType = (otDataFile, otProject);
+
+  TEpiVTreeNodeSelected = procedure(
+    Const AObject: TEpiCustomBase;
+          ObjectType: TEpiVTreeNodeObjectType
+  ) of object;
+
+  TEpiVTreeNodeSelecting = procedure(
+    Const OldObject,     NewObject: TEpiDataFile;
+          OldObjectType, NewObjectType: TEpiVTreeNodeObjectType;
+    var   Allowed: Boolean
+  ) of object;
 
   TEpiVProjectTreeError = procedure(Const Msg: String) of object;
   TEpiVProjectTreeGetHint = procedure(Const DataFile: TEpiDataFile;
@@ -132,15 +141,15 @@ type
 
   { Events }
   private
-    FOnDataFileAllowSelect: TEpiVProjectTreeAllowSelectDataFile;
-    FOnDataFileSelected: TEpiVProjectTreeSelectDataFile;
+    FOnTreeNodeSelected: TEpiVTreeNodeSelected;
+    FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
     FOnDelete: TEpiVProjectTreeRelationEvent;
     FOnError: TEpiVProjectTreeError;
     FOnGetHint: TEpiVProjectTreeGetHint;
     FOnNewRelation: TEpiVProjectTreeRelationEvent;
   public
-    property  OnDataFileSelected: TEpiVProjectTreeSelectDataFile read FOnDataFileSelected write FOnDataFileSelected;
-    property  OnDataFileAllowSelect: TEpiVProjectTreeAllowSelectDataFile read FOnDataFileAllowSelect write FOnDataFileAllowSelect;
+    property  OnTreeNodeSelected: TEpiVTreeNodeSelected read FOnTreeNodeSelected write FOnTreeNodeSelected;
+    property  OnTreeNodeSelecting: TEpiVTreeNodeSelecting read FOnTreeNodeSelecting write FOnTreeNodeSelecting;
     property  OnDelete: TEpiVProjectTreeRelationEvent read FOnDelete write FOnDelete;
     property  OnError: TEpiVProjectTreeError read FOnError write FOnError;
     property  OnNewRelation: TEpiVProjectTreeRelationEvent read FOnNewRelation write FOnNewRelation;
@@ -292,21 +301,24 @@ end;
 procedure TEpiVProjectTreeViewFrame.VSTFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
 var
-  DF: TEpiDataFile;
+  O: TEpiCustomBase;
+  OT: TEpiVTreeNodeObjectType;
 begin
   if not Assigned(Node) then exit;
 
   if Node^.Parent = Sender.RootNode then
     begin
-
+      O := nil;
+      ot := otProject;
     end
   else
     begin
-      DF := DataFileFromNode(Node);
-
-      if Assigned(OnDataFileSelected) then
-        OnDataFileSelected(DF);
+      O := DataFileFromNode(Node);
+      OT := otDataFile;
     end;
+
+  if Assigned(OnTreeNodeSelected) then
+    OnTreeNodeSelected(O, OT);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTFocusChanging(Sender: TBaseVirtualTree;
@@ -339,8 +351,11 @@ begin
       OldDF := DataFileFromNode(OldNode);
       NewDF := DataFileFromNode(NewNode);
 
-      if Assigned(OnDataFileAllowSelect) then
-        OnDataFileAllowSelect(OldDF, NewDF, Allowed);
+      if Assigned(OnTreeNodeSelecting) then
+        OnTreeNodeSelecting(
+          OldDF, NewDF,
+          otDataFile, otDataFile,
+          Allowed);
     end;
 end;
 
