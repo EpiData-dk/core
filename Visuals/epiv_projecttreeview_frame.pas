@@ -31,18 +31,23 @@ type
   TEpiVTreeNodeObjectType = (otDataFile, otProject);
 
   TEpiVTreeNodeSelected = procedure(
+          Sender:  TObject;
     Const AObject: TEpiCustomBase;
           ObjectType: TEpiVTreeNodeObjectType
   ) of object;
 
   TEpiVTreeNodeSelecting = procedure(
-    Const OldObject,     NewObject: TEpiDataFile;
+          Sender:  TObject;
+    Const OldObject,     NewObject: TEpiCustomBase;
           OldObjectType, NewObjectType: TEpiVTreeNodeObjectType;
     var   Allowed: Boolean
   ) of object;
 
   TEpiVProjectTreeError = procedure(Const Msg: String) of object;
-  TEpiVProjectTreeGetHint = procedure(Const DataFile: TEpiDataFile;
+  TEpiVProjectTreeGetHint = procedure(
+          Sender: TObject;
+    Const AObject: TEpiCustomBase;
+          ObjectType: TEpiVTreeNodeObjectType;
     var HintText: string) of object;
 
   TEpiVProjectTreeRelationEvent = procedure(Const Relation: TEpiMasterRelation) of object;
@@ -88,7 +93,6 @@ type
     function  MasterRelationFromDataFile(Const Datafile: TEpiDataFile): TEpiMasterRelation;
     function  MasterRelationFromNode(Const Node: PVirtualNode): TEpiMasterRelation;
     function  NodeFromMasterRelation(Const MasterRelation: TEpiMasterRelation): PVirtualNode;
-    procedure DoError(Const Msg: String);
     procedure UpdateCustomData(Const MasterRelation: TEpiMasterRelation;
       Const Node: PVirtualNode);
     procedure DoUpdateTree;
@@ -98,8 +102,6 @@ type
 
   { Structural }
   private
-    procedure DoNewRelation(Const NewRelation: TEpiMasterRelation);
-    procedure DoDeleteRelation(Const Relation: TEpiMasterRelation);
     function  GetDocuments(const Index: integer): TEpiDocument;
   public
     procedure AddDocument(Const Doc: TEpiDocument);
@@ -141,19 +143,30 @@ type
 
   { Events }
   private
-    FOnTreeNodeSelected: TEpiVTreeNodeSelected;
-    FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
     FOnDelete: TEpiVProjectTreeRelationEvent;
     FOnError: TEpiVProjectTreeError;
     FOnGetHint: TEpiVProjectTreeGetHint;
     FOnNewRelation: TEpiVProjectTreeRelationEvent;
+    FOnTreeNodeSelected: TEpiVTreeNodeSelected;
+    FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
+  protected
+    procedure DoDeleteRelation(Const Relation: TEpiMasterRelation); virtual;
+    procedure DoError(Const Msg: String);
+    procedure DoGetHint(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType; var HintText: string); virtual;
+    procedure DoNewRelation(Const NewRelation: TEpiMasterRelation); virtual;
+    procedure DoTreeNodeSelected(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType); virtual;
+    procedure DoTreeNodeSelecting(Const OldObject, NewObject: TEpiCustomBase;
+      OldObjectType, NewObjectType: TEpiVTreeNodeObjectType;
+      var Allowed: Boolean); virtual;
   public
-    property  OnTreeNodeSelected: TEpiVTreeNodeSelected read FOnTreeNodeSelected write FOnTreeNodeSelected;
-    property  OnTreeNodeSelecting: TEpiVTreeNodeSelecting read FOnTreeNodeSelecting write FOnTreeNodeSelecting;
     property  OnDelete: TEpiVProjectTreeRelationEvent read FOnDelete write FOnDelete;
     property  OnError: TEpiVProjectTreeError read FOnError write FOnError;
-    property  OnNewRelation: TEpiVProjectTreeRelationEvent read FOnNewRelation write FOnNewRelation;
     property  OnGetHint: TEpiVProjectTreeGetHint read FOnGetHint write FOnGetHint;
+    property  OnNewRelation: TEpiVProjectTreeRelationEvent read FOnNewRelation write FOnNewRelation;
+    property  OnTreeNodeSelected: TEpiVTreeNodeSelected read FOnTreeNodeSelected write FOnTreeNodeSelected;
+    property  OnTreeNodeSelecting: TEpiVTreeNodeSelecting read FOnTreeNodeSelecting write FOnTreeNodeSelecting;
   end;
 
 implementation
@@ -284,18 +297,21 @@ procedure TEpiVProjectTreeViewFrame.VSTGetHint(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex;
   var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: String);
 var
-  DF: TEpiDataFile;
+  O: TEpiCustomBase;
+  Ot: TEpiVTreeNodeObjectType;
 begin
-  DF := nil;
-
   if Node^.Parent <> VST.RootNode then
-    DF := DataFileFromNode(Node);
+  begin
+    O := DataFileFromNode(Node);
+    HintText := TEpiDataFile(O).Caption.Text;
+    Ot := otDataFile;
+  end else begin
+    O := TEpiDocument(VST.GetNodeData(Node)^);
+    HintText := TEpiDocument(O).Study.Title.Text;
+    Ot := otProject;
+  end;
 
-  if Assigned(DF) then
-    HintText := DF.Caption.Text;
-
-  if Assigned(OnGetHint) then
-    OnGetHint(DF, HintText);
+  DoGetHint(O, Ot, HintText);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTFocusChanged(Sender: TBaseVirtualTree;
@@ -308,7 +324,7 @@ begin
 
   if Node^.Parent = Sender.RootNode then
     begin
-      O := nil;
+      O := TEpiDocument(VST.GetNodeData(Node)^);
       ot := otProject;
     end
   else
@@ -317,16 +333,17 @@ begin
       OT := otDataFile;
     end;
 
-  if Assigned(OnTreeNodeSelected) then
-    OnTreeNodeSelected(O, OT);
+  DoTreeNodeSelected(O, OT);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTFocusChanging(Sender: TBaseVirtualTree;
   OldNode, NewNode: PVirtualNode; OldColumn, NewColumn: TColumnIndex;
   var Allowed: Boolean);
 var
-  OldDF: TEpiDataFile;
-  NewDF: TEpiDataFile;
+  OldObject: TEpiCustomBase;
+  NewObject: TEpiCustomBase;
+  OldType: TEpiVTreeNodeObjectType;
+  NewType: TEpiVTreeNodeObjectType;
 begin
   if not Assigned(NewNode) then
     begin
@@ -334,7 +351,19 @@ begin
       Exit;
     end;
 
-  if (NewNode^.Parent = Sender.RootNode) and
+  OldObject := TEpiCustomBase(VST.GetNodeData(OldNode)^);
+  if OldObject is TEpiDocument then
+    OldType := otProject
+  else
+    OldType := otDataFile;
+
+  NewObject := TEpiCustomBase(VST.GetNodeData(NewNode)^);
+  if NewObject is TEpiDocument then
+    NewType := otProject
+  else
+    NewType := otDataFile;
+
+  if (NewType = otProject) and
      (not AllowSelectProject)
   then
     begin
@@ -342,21 +371,10 @@ begin
       Exit;
     end;
 
-  if NewNode^.Parent = Sender.RootNode then
-    begin
-
-    end
-  else
-    begin
-      OldDF := DataFileFromNode(OldNode);
-      NewDF := DataFileFromNode(NewNode);
-
-      if Assigned(OnTreeNodeSelecting) then
-        OnTreeNodeSelecting(
-          OldDF, NewDF,
-          otDataFile, otDataFile,
-          Allowed);
-    end;
+  DoTreeNodeSelecting(
+    OldObject, NewObject,
+    OldType,   NewType,
+    Allowed);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTFreeNode(Sender: TBaseVirtualTree;
@@ -526,14 +544,6 @@ begin
     Result := PVirtualNode(MasterRelation.FindCustomData(PROJECTTREE_NODE_CUSTOMKEY));
 end;
 
-procedure TEpiVProjectTreeViewFrame.DoError(const Msg: String);
-begin
-  if Assigned(OnError) then
-    OnError(Msg)
-  else
-    ShowMessage(Msg);
-end;
-
 procedure TEpiVProjectTreeViewFrame.UpdateCustomData(
   const MasterRelation: TEpiMasterRelation; const Node: PVirtualNode);
 begin
@@ -647,20 +657,6 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiVProjectTreeViewFrame.DoNewRelation(
-  const NewRelation: TEpiMasterRelation);
-begin
-  if Assigned(OnNewRelation) then
-    OnNewRelation(NewRelation);
-end;
-
-procedure TEpiVProjectTreeViewFrame.DoDeleteRelation(
-  const Relation: TEpiMasterRelation);
-begin
-  if Assigned(OnDelete) then
-    OnDelete(Relation);
-end;
-
 function TEpiVProjectTreeViewFrame.GetDocuments(const Index: integer
   ): TEpiDocument;
 begin
@@ -684,7 +680,6 @@ var
   ParentNode: PVirtualNode;
   NewRelation: TEpiMasterRelation;
   NewDataFile: TEpiDataFile;
-  i: Integer;
   Ft: TEpiFieldType;
   ParentKeyField: TEpiField;
   NewKeyField: TEpiField;
@@ -842,6 +837,50 @@ end;
 function TEpiVProjectTreeViewFrame.GetSelectedDataFile: TEpiDataFile;
 begin
   result := DataFileFromNode(VST.FocusedNode);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoDeleteRelation(
+  const Relation: TEpiMasterRelation);
+begin
+  if Assigned(OnDelete) then
+    OnDelete(Relation);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoError(const Msg: String);
+begin
+  if Assigned(OnError) then
+    OnError(Msg)
+  else
+    ShowMessage(Msg);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoGetHint(const AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType; var HintText: string);
+begin
+  if Assigned(OnGetHint) then
+    OnGetHint(Self, AObject, ObjectType, HintText);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoNewRelation(
+  const NewRelation: TEpiMasterRelation);
+begin
+  if Assigned(OnNewRelation) then
+    OnNewRelation(NewRelation);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoTreeNodeSelected(
+  const AObject: TEpiCustomBase; ObjectType: TEpiVTreeNodeObjectType);
+begin
+  if Assigned(OnTreeNodeSelected) then
+    OnTreeNodeSelected(Self, AObject, ObjectType);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoTreeNodeSelecting(const OldObject,
+  NewObject: TEpiCustomBase; OldObjectType,
+  NewObjectType: TEpiVTreeNodeObjectType; var Allowed: Boolean);
+begin
+  if Assigned(OnTreeNodeSelecting) then
+    OnTreeNodeSelecting(Self, OldObject, NewObject, OldObjectType, NewObjectType, Allowed);
 end;
 
 end.
