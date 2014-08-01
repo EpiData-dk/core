@@ -271,6 +271,19 @@ type
     function    Clone: TEpiCustomBase;
     function    Clone(AOwner: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap = nil): TEpiCustomBase;
+
+  { CustomData }
+  // CustomData is a custom property that can be used freely to store some data
+  // along with the object. User added content is NEVER used by the internals of
+  // Core.
+  // In addition data will not be copied/assigned/freed etc., hence it is
+  // entirely up to the user to keep track of it's use throught a program.
+  private
+    FCustomData: TFPObjectHashTable;
+  public
+    procedure AddCustomData(const Key: string; Const Obj: TObject);
+    function  FindCustomData(const Key: string): TObject;
+    function  RemoveCustomData(Const Key: string): TObject;
   end;
 //  {$static off}
 
@@ -345,19 +358,6 @@ type
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
-
-  { CustomData }
-  // CustomData is a custom property that can be used freely to store some data
-  // along with the object. User added content is NEVER used by the internals of
-  // Core.
-  // In addition data will not be copied/assigned/freed etc., hence it is
-  // entirely up to the user to keep track of it's use throught a program.
-  private
-    FCustomData: TFPObjectHashTable;
-  public
-    procedure AddCustomData(const Key: string; Const Obj: TObject);
-    function  FindCustomData(const Key: string): TObject;
-    function  RemoveCustomData(Const Key: string): TObject;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -1442,6 +1442,36 @@ begin
   FOnModified := AValue;
 end;
 
+procedure TEpiCustomBase.AddCustomData(const Key: string; const Obj: TObject);
+begin
+  if not Assigned(FCustomData) then
+    FCustomData := TFPObjectHashTable.Create(false);
+
+  try
+    FCustomData.Items[Key] := Obj;
+  except
+    raise Exception.Create('TEpiCustomBase: Duplicate CustomData - key=' + Key);
+  end;
+end;
+
+function TEpiCustomBase.FindCustomData(const Key: string): TObject;
+begin
+  result := nil;
+  if Assigned(FCustomData) then
+    result := FCustomData.Items[Key];
+end;
+
+function TEpiCustomBase.RemoveCustomData(const Key: string): TObject;
+begin
+  Result := FindCustomData(Key);
+  if not Assigned(Result) then exit;
+
+  FCustomData.Delete(Key);
+
+  if FCustomData.Count = 0 then
+    FreeAndNil(FCustomData);
+end;
+
 { TEpiTranslatedText }
 
 procedure TEpiTranslatedText.SetCurrentText(const AValue: string);
@@ -1799,36 +1829,6 @@ function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   TEpiCustomItem(Result).FName := FName;
-end;
-
-procedure TEpiCustomItem.AddCustomData(const Key: string; const Obj: TObject);
-begin
-  if not Assigned(FCustomData) then
-    FCustomData := TFPObjectHashTable.Create(false);
-
-  try
-    FCustomData.Items[Key] := Obj;
-  except
-    raise Exception.Create('TEpiCustomItem: Duplicate CustomData - key=' + Key);
-  end;
-end;
-
-function TEpiCustomItem.FindCustomData(const Key: string): TObject;
-begin
-  result := nil;
-  if Assigned(FCustomData) then
-    result := FCustomData.Items[Key];
-end;
-
-function TEpiCustomItem.RemoveCustomData(const Key: string): TObject;
-begin
-  Result := FindCustomData(Key);
-  if not Assigned(Result) then exit;
-
-  FCustomData.Delete(Key);
-
-  if FCustomData.Count = 0 then
-    FreeAndNil(FCustomData);
 end;
 
 { TEpiCustomControlItem }

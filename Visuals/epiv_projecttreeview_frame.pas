@@ -28,7 +28,7 @@ type
   );
 
 
-  TEpiVTreeNodeObjectType = (otDataFile, otProject);
+  TEpiVTreeNodeObjectType = (otEmpty, otDataFile, otProject);
 
   TEpiVTreeNodeSelected = procedure(
           Sender:  TObject;
@@ -88,12 +88,14 @@ type
     FUpdatingTree: Boolean;
     FDocumentList: TList;
     function  AllRelationsAreEqual: boolean;
+    function  CustomBaseFromNode(Const Node: PVirtualNode): TEpiCustomBase;
     function  DataFileFromNode(Const Node: PVirtualNode): TEpiDataFile;
-    function  NodeFromDataFile(Const DataFile: TEpiDataFile): PVirtualNode;
     function  MasterRelationFromDataFile(Const Datafile: TEpiDataFile): TEpiMasterRelation;
     function  MasterRelationFromNode(Const Node: PVirtualNode): TEpiMasterRelation;
+    function  NodeFromCustomBase(Const AObject: TEpiCustomBase): PVirtualNode;
+    function  NodeFromDataFile(Const DataFile: TEpiDataFile): PVirtualNode;
     function  NodeFromMasterRelation(Const MasterRelation: TEpiMasterRelation): PVirtualNode;
-    procedure UpdateCustomData(Const MasterRelation: TEpiMasterRelation;
+    procedure UpdateCustomData(Const AObject: TEpiCustomBase;
       Const Node: PVirtualNode);
     procedure DoUpdateTree;
   public
@@ -119,6 +121,7 @@ type
     FEditStructure: Boolean;
     FShowCheckBoxes: Boolean;
     FShowHint: boolean;
+    FShowProject: boolean;
     procedure SetAllowSelectProject(AValue: Boolean);
     procedure SetCheckType(AValue: TEpiVProjectCheckType);
     procedure SetDisplayMode(AValue: TEpiVProjectDisplayMode);
@@ -126,6 +129,7 @@ type
     procedure SetEditStructure(AValue: Boolean);
     procedure SetShowCheckBoxes(AValue: Boolean);
     procedure SetShowHint(AValue: boolean);
+    procedure SetShowProject(AValue: boolean);
   public
     property  AllowSelectProject: Boolean read FAllowSelectProject write SetAllowSelectProject;
     property  CheckType: TEpiVProjectCheckType read FCheckType write SetCheckType;
@@ -134,6 +138,7 @@ type
     property  EditStructure: Boolean read FEditStructure write SetEditStructure;
     property  ShowCheckBoxes: Boolean read FShowCheckBoxes write SetShowCheckBoxes;
     property  ShowHint: boolean read FShowHint write SetShowHint;
+    property  ShowProject: boolean read FShowProject write SetShowProject;
 
   { Access properties }
   private
@@ -234,19 +239,20 @@ end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragAllowed(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
+var
+  O: TEpiCustomBase;
 begin
-  Allowed := FEditStructure;
+  O := CustomBaseFromNode(Node);
+
+  Allowed :=
+    (O is TEpiMasterRelation) and
+    (EditStructure);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragOver(Sender: TBaseVirtualTree;
   Source: TObject; Shift: TShiftState; State: TDragState; const Pt: TPoint;
   Mode: TDropMode; var Effect: LongWord; var Accept: Boolean);
-var
-  Node: PVirtualNode;
-  DF: TEpiDataFile;
 begin
-  Node := Sender.DropTargetNode;
-
   Accept :=
     // Only allow to drag-drop within ourselves.
     (TNodeDragObject(Source).Control = Sender) and
@@ -300,15 +306,16 @@ var
   O: TEpiCustomBase;
   Ot: TEpiVTreeNodeObjectType;
 begin
-  if Node^.Parent <> VST.RootNode then
+  O := CustomBaseFromNode(Node);
+
+  if O is TEpiDocument then
   begin
+    HintText := TEpiDocument(O).Study.Title.Text;
+    Ot := otProject;
+  end else begin
     O := DataFileFromNode(Node);
     HintText := TEpiDataFile(O).Caption.Text;
     Ot := otDataFile;
-  end else begin
-    O := TEpiDocument(VST.GetNodeData(Node)^);
-    HintText := TEpiDocument(O).Study.Title.Text;
-    Ot := otProject;
   end;
 
   DoGetHint(O, Ot, HintText);
@@ -322,16 +329,11 @@ var
 begin
   if not Assigned(Node) then exit;
 
-  if Node^.Parent = Sender.RootNode then
-    begin
-      O := TEpiDocument(VST.GetNodeData(Node)^);
-      ot := otProject;
-    end
+  O := CustomBaseFromNode(Node);
+  if O is TEpiDocument then
+    OT := otProject
   else
-    begin
-      O := DataFileFromNode(Node);
-      OT := otDataFile;
-    end;
+    OT := otDataFile;
 
   DoTreeNodeSelected(O, OT);
 end;
@@ -345,23 +347,28 @@ var
   OldType: TEpiVTreeNodeObjectType;
   NewType: TEpiVTreeNodeObjectType;
 begin
-  if not Assigned(NewNode) then
+  OldObject := nil;
+  OldType   := otEmpty;
+  NewObject := nil;
+  NewType   := otEmpty;
+
+  if Assigned(OldNode) then
     begin
-      Allowed := false;
-      Exit;
+      OldObject := TEpiCustomBase(VST.GetNodeData(OldNode)^);
+      if OldObject is TEpiDocument then
+        OldType := otProject
+      else
+        OldType := otDataFile;
     end;
 
-  OldObject := TEpiCustomBase(VST.GetNodeData(OldNode)^);
-  if OldObject is TEpiDocument then
-    OldType := otProject
-  else
-    OldType := otDataFile;
-
-  NewObject := TEpiCustomBase(VST.GetNodeData(NewNode)^);
-  if NewObject is TEpiDocument then
-    NewType := otProject
-  else
-    NewType := otDataFile;
+  if Assigned(OldNode) then
+    begin
+      NewObject := TEpiCustomBase(VST.GetNodeData(NewNode)^);
+      if NewObject is TEpiDocument then
+        NewType := otProject
+      else
+        NewType := otDataFile;
+    end;
 
   if (NewType = otProject) and
      (not AllowSelectProject)
@@ -383,7 +390,11 @@ var
   DataFile: TEpiDataFile;
   Relation: TEpiMasterRelation;
 begin
+  // If the tree is updating (rebuilding itself) then do NOT delete
+  // node data. This should only happen on an explicit deletion of
+  // the node.
   if FUpdatingTree then exit;
+
   if not Assigned(Node) then exit;
   if Node^.Parent = VST.RootNode then exit;
 
@@ -406,11 +417,8 @@ begin
 
   Obj := TObject(Sender.GetNodeData(Node)^);
 
-  if Node^.Parent = Sender.RootNode then
-    if Assigned(Obj) then
-      CellText := Doc.Study.Title.Text
-    else
-      CellText := 'Incompatible relational structures!'
+  if Obj is TEpiDocument then
+    CellText := Doc.Study.Title.Text
   else
     CellText := Mr.Datafile.Caption.Text;
 end;
@@ -494,6 +502,17 @@ begin
   end;
 end;
 
+function TEpiVProjectTreeViewFrame.CustomBaseFromNode(const Node: PVirtualNode
+  ): TEpiCustomBase;
+begin
+  Result := nil;
+
+  if (Node = nil) then exit;
+
+  if Assigned(Node) then
+    result := TEpiCustomBase(VST.GetNodeData(Node)^);
+end;
+
 function TEpiVProjectTreeViewFrame.DataFileFromNode(const Node: PVirtualNode
   ): TEpiDataFile;
 var
@@ -504,15 +523,6 @@ begin
   Mr := MasterRelationFromNode(Node);
   if Assigned(Mr) then
     Result := Mr.Datafile;
-end;
-
-function TEpiVProjectTreeViewFrame.NodeFromDataFile(const DataFile: TEpiDataFile
-  ): PVirtualNode;
-begin
-  result := nil;
-
-  if Assigned(DataFile) then
-    Result := PVirtualNode(DataFile.FindCustomData(PROJECTTREE_NODE_CUSTOMKEY));
 end;
 
 function TEpiVProjectTreeViewFrame.MasterRelationFromDataFile(
@@ -526,31 +536,49 @@ end;
 
 function TEpiVProjectTreeViewFrame.MasterRelationFromNode(const Node: PVirtualNode
   ): TEpiMasterRelation;
+var
+  O: TEpiCustomBase;
 begin
   Result := nil;
 
-  if (Node = nil) then exit;
-  if (Node^.Parent = VST.RootNode) then exit;
+  O := CustomBaseFromNode(Node);
+  if O is TEpiMasterRelation then
+    Result := TEpiMasterRelation(O);
+end;
 
-  Result := TEpiMasterRelation(VST.GetNodeData(Node)^);
+function TEpiVProjectTreeViewFrame.NodeFromCustomBase(
+  const AObject: TEpiCustomBase): PVirtualNode;
+begin
+  Result := nil;
+
+  if Assigned(AObject) then
+    Result := PVirtualNode(AObject.FindCustomData(PROJECTTREE_NODE_CUSTOMKEY));
+end;
+
+function TEpiVProjectTreeViewFrame.NodeFromDataFile(const DataFile: TEpiDataFile
+  ): PVirtualNode;
+begin
+  result := NodeFromCustomBase(DataFile);
 end;
 
 function TEpiVProjectTreeViewFrame.NodeFromMasterRelation(
   const MasterRelation: TEpiMasterRelation): PVirtualNode;
 begin
-  result := nil;
-
-  if Assigned(MasterRelation) then
-    Result := PVirtualNode(MasterRelation.FindCustomData(PROJECTTREE_NODE_CUSTOMKEY));
+  result := NodeFromCustomBase(MasterRelation);
 end;
 
 procedure TEpiVProjectTreeViewFrame.UpdateCustomData(
-  const MasterRelation: TEpiMasterRelation; const Node: PVirtualNode);
+  const AObject: TEpiCustomBase; const Node: PVirtualNode);
+var
+  MasterRelation: TEpiMasterRelation absolute AObject;
 begin
-  MasterRelation.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
-  MasterRelation.Datafile.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
+  AObject.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
 
-  MasterRelation.Datafile.AddCustomData(PROJECTTREE_RELATION_CUSTOMKEY, MasterRelation);
+  if AObject is TEpiMasterRelation then
+  begin
+    MasterRelation.Datafile.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
+    MasterRelation.Datafile.AddCustomData(PROJECTTREE_RELATION_CUSTOMKEY, MasterRelation);
+  end;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
@@ -576,10 +604,16 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
     i: Integer;
     Node: PVirtualNode;
   begin
-    Node := VST.AddChild(Parent, Doc);
+    if ShowProject then
+    begin
+      Node := VST.AddChild(Parent, Doc);
 
-    if ShowCheckBoxes then
-      VST.CheckType[Node] := ctTriStateCheckBox;
+      UpdateCustomData(Doc, Node);
+
+      if ShowCheckBoxes then
+        VST.CheckType[Node] := ctTriStateCheckBox;
+    end else
+      Node := Parent;
 
     for i := 0 to Doc.Relations.Count - 1 do
       BuildTreeRecursive(Node, Doc.Relations.MasterRelation[i]);
@@ -587,10 +621,15 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
 
 var
   i: Integer;
+  OldSelectedObject: TEpiCustomItem;
 begin
   if FDocumentList.Count = 0 then exit;
 
   FUpdatingTree := true;
+
+  OldSelectedObject := nil;
+  if Assigned(VST.FocusedNode) then
+    OldSelectedObject := TEpiCustomItem(VST.GetNodeData(VST.FocusedNode)^);
 
   VST.BeginUpdate;
   VST.Clear;
@@ -603,7 +642,22 @@ begin
   else
     VST.AddChild(VST.RootNode, nil);
 
+  VST.FullExpand();
+
+
+  if Assigned(OldSelectedObject) then
+  begin
+    VST.FocusedNode := NodeFromCustomBase(OldSelectedObject);
+  end else
+    if (ShowProject and AllowSelectProject) or
+       (not ShowProject)
+    then
+      VST.FocusedNode := VST.GetFirst()
+    else
+      VST.FocusedNode := VST.GetNext(VST.GetFirst());
+
   VST.EndUpdate;
+
   FUpdatingTree := false;
 end;
 
@@ -623,6 +677,7 @@ begin
   FEditStructure      := false;
   FShowCheckBoxes     := false;
   FShowHint           := false;
+  FShowProject        := true;
 
   with VST do
   begin
@@ -832,6 +887,14 @@ begin
   FShowHint := AValue;
 
   VST.ShowHint := FShowHint;
+end;
+
+procedure TEpiVProjectTreeViewFrame.SetShowProject(AValue: boolean);
+begin
+  if FShowProject = AValue then Exit;
+  FShowProject := AValue;
+
+  DoUpdateTree;
 end;
 
 function TEpiVProjectTreeViewFrame.GetSelectedDataFile: TEpiDataFile;
