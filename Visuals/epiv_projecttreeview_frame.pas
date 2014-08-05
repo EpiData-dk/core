@@ -28,7 +28,7 @@ type
   );
 
 
-  TEpiVTreeNodeObjectType = (otEmpty, otDataFile, otProject);
+  TEpiVTreeNodeObjectType = (otEmpty, otRelation, otProject);
 
   TEpiVTreeNodeSelected = procedure(
           Sender:  TObject;
@@ -57,6 +57,7 @@ type
   TEpiVProjectTreeViewFrame = class(TFrame)
     VST: TVirtualStringTree;
   private
+    { VST Events }
     procedure VSTChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var NewState: TCheckState; var Allowed: Boolean);
@@ -83,6 +84,15 @@ type
       Column: TColumnIndex; const NewText: String);
     procedure VSTStartDrag(Sender: TObject; var DragObject: TDragObject);
 
+  { Document Hooks }
+  private
+    procedure TitleChange(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+    procedure DataFileCaptionChange(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+
   { Misc. }
   private
     FUpdatingTree: Boolean;
@@ -98,6 +108,8 @@ type
     procedure UpdateCustomData(Const AObject: TEpiCustomBase;
       Const Node: PVirtualNode);
     procedure DoUpdateTree;
+    procedure AddHooks(Doc: TEpiDocument);
+    procedure RemoveHooks(Doc: TEpiDocument);
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
@@ -142,9 +154,11 @@ type
 
   { Access properties }
   private
-    function GetSelectedDataFile: TEpiDataFile;
+    function GetSelectedObject: TEpiCustomBase;
+    function GetSelectedObjectType: TEpiVTreeNodeObjectType;
   public
-    property  SelectedDataFile: TEpiDataFile read GetSelectedDataFile;
+    property SelectedObject: TEpiCustomBase read GetSelectedObject;
+    property SelectedObjectType: TEpiVTreeNodeObjectType read GetSelectedObjectType;
 
   { Events }
   private
@@ -313,9 +327,8 @@ begin
     HintText := TEpiDocument(O).Study.Title.Text;
     Ot := otProject;
   end else begin
-    O := DataFileFromNode(Node);
-    HintText := TEpiDataFile(O).Caption.Text;
-    Ot := otDataFile;
+    HintText := TEpiMasterRelation(O).Datafile.Caption.Text;
+    Ot := otRelation;
   end;
 
   DoGetHint(O, Ot, HintText);
@@ -333,7 +346,7 @@ begin
   if O is TEpiDocument then
     OT := otProject
   else
-    OT := otDataFile;
+    OT := otRelation;
 
   DoTreeNodeSelected(O, OT);
 end;
@@ -354,20 +367,20 @@ begin
 
   if Assigned(OldNode) then
     begin
-      OldObject := TEpiCustomBase(VST.GetNodeData(OldNode)^);
+      OldObject := CustomBaseFromNode(OldNode);
       if OldObject is TEpiDocument then
         OldType := otProject
       else
-        OldType := otDataFile;
+        OldType := otRelation;
     end;
 
   if Assigned(NewNode) then
     begin
-      NewObject := TEpiCustomBase(VST.GetNodeData(NewNode)^);
+      NewObject := CustomBaseFromNode(NewNode);
       if NewObject is TEpiDocument then
         NewType := otProject
       else
-        NewType := otDataFile;
+        NewType := otRelation;
     end;
 
   if (NewType = otProject) and
@@ -399,9 +412,11 @@ begin
   if Node^.Parent = VST.RootNode then exit;
 
   Relation := MasterRelationFromNode(Node);
+  DataFile := DataFileFromNode(Node);
+
   DoDeleteRelation(Relation);
 
-  DataFile := DataFileFromNode(Node);
+  DataFile.Caption.UnRegisterOnChangeHook(@DataFileCaptionChange);
   DataFile.Free;
 end;
 
@@ -409,13 +424,13 @@ procedure TEpiVProjectTreeViewFrame.VSTGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: String);
 var
-  Obj: TObject;
+  Obj: TEpiCustomBase;
   Doc: TEpiDocument absolute Obj;
   MR:  TEpiMasterRelation absolute Obj;
 begin
   if TextType <> ttNormal then exit;
 
-  Obj := TObject(Sender.GetNodeData(Node)^);
+  Obj := CustomBaseFromNode(Node);
 
   if Obj is TEpiDocument then
     CellText := Doc.Study.Title.Text
@@ -454,6 +469,37 @@ begin
   Node := VST.GetNodeAt(Pt.X, Pt.Y);
   DragObject := TNodeDragObject.Create(VST);
   TNodeDragObject(DragObject).DragNode := Node;
+end;
+
+procedure TEpiVProjectTreeViewFrame.TitleChange(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  Node: PVirtualNode;
+begin
+  if (EventGroup <> eegCustomBase) then exit;
+  if (TEpiCustomChangeEventType(EventType) <> ecceText) then exit;
+
+  Node := NodeFromCustomBase(Sender.RootOwner);
+
+  if Assigned(Node) then
+    VST.InvalidateNode(Node);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DataFileCaptionChange(
+  const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+var
+  Node: PVirtualNode;
+begin
+  if (EventGroup <> eegCustomBase) then exit;
+  if (TEpiCustomChangeEventType(EventType) <> ecceText) then exit;
+
+  if (Sender is TEpiTranslatedText) then
+    Node := NodeFromCustomBase(Sender.Owner);
+
+  if Assigned(Node) then
+    VST.InvalidateNode(Node);
 end;
 
 function TEpiVProjectTreeViewFrame.AllRelationsAreEqual: boolean;
@@ -661,6 +707,26 @@ begin
   FUpdatingTree := false;
 end;
 
+procedure TEpiVProjectTreeViewFrame.AddHooks(Doc: TEpiDocument);
+var
+  DF: TEpiDataFile;
+begin
+  Doc.Study.Title.RegisterOnChangeHook(@TitleChange, true);
+
+  for DF in Doc.DataFiles do
+    DF.Caption.RegisterOnChangeHook(@DataFileCaptionChange, true);
+end;
+
+procedure TEpiVProjectTreeViewFrame.RemoveHooks(Doc: TEpiDocument);
+var
+  DF: TEpiDataFile;
+begin
+  for DF in Doc.DataFiles do
+    DF.Caption.UnRegisterOnChangeHook(@DataFileCaptionChange);
+
+  Doc.Study.Title.UnRegisterOnChangeHook(@TitleChange);
+end;
+
 constructor TEpiVProjectTreeViewFrame.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
@@ -670,7 +736,7 @@ begin
   FUpdatingTree := false;
 
   // Options
-  FAllowSelectProject := false;
+  FAllowSelectProject := true;
   FCheckType          := pctTriState;
   FDisplayMode        := pdmCommon;
   FEditCaption        := false;
@@ -707,7 +773,12 @@ begin
 end;
 
 destructor TEpiVProjectTreeViewFrame.Destroy;
+var
+  i: Integer;
 begin
+  for i := 0 to FDocumentList.Count -1 do
+    RemoveHooks(TEpiDocument(FDocumentList[i]));
+
   FDocumentList.Free;
   inherited Destroy;
 end;
@@ -727,6 +798,7 @@ procedure TEpiVProjectTreeViewFrame.AddDocument(const Doc: TEpiDocument);
 begin
   FDocumentList.Add(Doc);
   DoUpdateTree;
+  AddHooks(Doc);
 end;
 
 procedure TEpiVProjectTreeViewFrame.CreateRelatedDataFile(
@@ -750,10 +822,11 @@ begin
     NewRelation := MasterRelationFromDataFile(ParentDataFile).NewDetailRelation;
   end else
     // TODO: How to handle creating new datafile which is a true "master". Hence
-    //       we need information on which tree we insert into!
+    //       we need information on which document we insert into!
     NewRelation := TEpiDocument(FDocumentList[0]).Relations.NewMasterRelation;
 
   NewDataFile := TEpiDataFiles(ParentDataFile.Owner).NewDataFile;
+  NewDataFile.Caption.RegisterOnChangeHook(@DataFileCaptionChange, true);
 
   NewRelation.Datafile := NewDataFile;
 
@@ -897,9 +970,23 @@ begin
   DoUpdateTree;
 end;
 
-function TEpiVProjectTreeViewFrame.GetSelectedDataFile: TEpiDataFile;
+function TEpiVProjectTreeViewFrame.GetSelectedObject: TEpiCustomBase;
 begin
-  result := DataFileFromNode(VST.FocusedNode);
+  result := CustomBaseFromNode(VST.FocusedNode);
+end;
+
+function TEpiVProjectTreeViewFrame.GetSelectedObjectType: TEpiVTreeNodeObjectType;
+var
+  O: TEpiCustomBase;
+begin
+  Result := otEmpty;
+  O := CustomBaseFromNode(VST.FocusedNode);
+
+  if O is TEpiDocument then
+    Result := otProject;
+
+  if O is TEpiMasterRelation then
+    Result := otRelation;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoDeleteRelation(
