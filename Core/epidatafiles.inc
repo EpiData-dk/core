@@ -1304,56 +1304,16 @@ begin
   // VERSION 2 PROPERTY
   if LoadNode(Node, Root, 'KeyFields', false) then
     LoadKeyFields(Node);
-{
-
-  // Post Processing!
-  for i := 0 to LinkMap.Count - 1 do
-  begin
-    AField := Fields.FieldByName[LinkMap.RefObjId[i]];
-    Case LinkMap.LinkTypes[i] of
-      ltJump:
-        TEpiJump(LinkMap.Objects[i]).JumpToField := AField;
-      ltValueLabelWrite:
-        TEpiField(LinkMap.Objects[i]).ValueLabelWriteField := AField;
-      ltCalcResField:
-        TEpiCalculation(LinkMap.Objects[i]).ResultField := AField;
-      ltCalcStartDate:
-        TEpiTimeCalc(LinkMap.Objects[i]).StartDate := TEpiDateField(AField);
-      ltCalcEndDate:
-        TEpiTimeCalc(LinkMap.Objects[i]).EndDate := TEpiDateField(AField);
-      ltCalcStartTime:
-        TEpiTimeCalc(LinkMap.Objects[i]).StartTime := TEpiDateTimeField(AField);
-      ltCalcEndTime:
-        TEpiTimeCalc(LinkMap.Objects[i]).EndTime := TEpiDateTimeField(AField);
-      ltCalcDayField:
-        TEpiCombineDateCalc(LinkMap.Objects[i]).Day := TEpiIntField(AField);
-      ltCalcMonthField:
-        TEpiCombineDateCalc(LinkMap.Objects[i]).Month := TEpiIntField(AField);
-      ltCalcYearField:
-        TEpiCombineDateCalc(LinkMap.Objects[i]).Year := TEpiIntField(AField);
-      ltCalcField1:
-        TEpiCombineStringCalc(LinkMap.Objects[i]).Field1 := AField;
-      ltCalcField2:
-        TEpiCombineStringCalc(LinkMap.Objects[i]).Field2 := AField;
-      ltCalcField3:
-        TEpiCombineStringCalc(LinkMap.Objects[i]).Field3 := AField;
-      ltCompare:
-        TEpiComparison(LinkMap.Objects[i]).CompareField := AField;
-      ltKeyField:
-        TEpiFields(LinkMap.Objects[i]).AddItem(AField);
-    end;
-  end;
-  LinkMap.Clear;    }
 
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := Sections.GetSectionByName('MAIN');
 
-  T1 := Now;
+//  T1 := Now;
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
-  T2 := Now;
+{  T2 := Now;
   if IsConsole then
-    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
+    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));}
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;
