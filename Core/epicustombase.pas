@@ -1482,7 +1482,7 @@ begin
   Val := FCurrentText;
   SetText(FCurrentLang, AValue);
   FCurrentText := AValue;
-  DoChange(eegCustomBase, Word(ecceText), @Val);
+//  DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
 procedure TEpiTranslatedText.SetLanguage(const LangCode: string;
