@@ -361,7 +361,7 @@ begin
         OldType := otDataFile;
     end;
 
-  if Assigned(OldNode) then
+  if Assigned(NewNode) then
     begin
       NewObject := TEpiCustomBase(VST.GetNodeData(NewNode)^);
       if NewObject is TEpiDocument then
