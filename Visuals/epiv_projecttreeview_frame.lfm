@@ -6,7 +6,7 @@ object EpiVProjectTreeViewFrame: TEpiVProjectTreeViewFrame
   ClientHeight = 572
   ClientWidth = 430
   TabOrder = 0
-  DesignLeft = 1923
+  DesignLeft = 1927
   DesignTop = 303
   object VST: TVirtualStringTree
     Left = 0

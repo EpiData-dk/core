@@ -156,8 +156,9 @@ type
   private
     function GetSelectedObject: TEpiCustomBase;
     function GetSelectedObjectType: TEpiVTreeNodeObjectType;
+    procedure SetSelectedObject(AValue: TEpiCustomBase);
   public
-    property SelectedObject: TEpiCustomBase read GetSelectedObject;
+    property SelectedObject: TEpiCustomBase read GetSelectedObject write SetSelectedObject;
     property SelectedObjectType: TEpiVTreeNodeObjectType read GetSelectedObjectType;
 
   { Events }
@@ -987,6 +988,17 @@ begin
 
   if O is TEpiMasterRelation then
     Result := otRelation;
+end;
+
+procedure TEpiVProjectTreeViewFrame.SetSelectedObject(AValue: TEpiCustomBase);
+var
+  Node: PVirtualNode;
+begin
+  Node := NodeFromCustomBase(AValue);
+
+  if not Assigned(Node) then exit;
+
+  VST.FocusedNode := Node;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoDeleteRelation(
