@@ -36,6 +36,13 @@ type
           ObjectType: TEpiVTreeNodeObjectType
   ) of object;
 
+  TEpiVTreeNodeEditing = procedure(
+          Sender:  TObject;
+    Const AObject: TEpiCustomBase;
+          ObjectType: TEpiVTreeNodeObjectType;
+    var   Allowed: Boolean
+  ) of object;
+
   TEpiVTreeNodeSelecting = procedure(
           Sender:  TObject;
     Const OldObject,     NewObject: TEpiCustomBase;
@@ -69,6 +76,10 @@ type
     procedure VSTDragOver(Sender: TBaseVirtualTree; Source: TObject;
       Shift: TShiftState; State: TDragState; const Pt: TPoint; Mode: TDropMode;
       var Effect: LongWord; var Accept: Boolean);
+    procedure VSTEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex);
+    procedure VSTEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; var Allowed: Boolean);
     procedure VSTFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure VSTFocusChanging(Sender: TBaseVirtualTree; OldNode,
@@ -86,6 +97,9 @@ type
 
   { Document Hooks }
   private
+    procedure DocumentHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
     procedure TitleChange(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -164,6 +178,8 @@ type
   { Events }
   private
     FOnDelete: TEpiVProjectTreeRelationEvent;
+    FOnEdited: TEpiVTreeNodeSelected;
+    FOnEditing: TEpiVTreeNodeEditing;
     FOnError: TEpiVProjectTreeError;
     FOnGetHint: TEpiVProjectTreeGetHint;
     FOnNewRelation: TEpiVProjectTreeRelationEvent;
@@ -171,6 +187,10 @@ type
     FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
   protected
     procedure DoDeleteRelation(Const Relation: TEpiMasterRelation); virtual;
+    procedure DoEdited(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType);
+    procedure DoEditing(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType; var Allowed: Boolean);
     procedure DoError(Const Msg: String);
     procedure DoGetHint(Const AObject: TEpiCustomBase;
       ObjectType: TEpiVTreeNodeObjectType; var HintText: string); virtual;
@@ -182,6 +202,8 @@ type
       var Allowed: Boolean); virtual;
   public
     property  OnDelete: TEpiVProjectTreeRelationEvent read FOnDelete write FOnDelete;
+    property  OnEdited: TEpiVTreeNodeSelected read FOnEdited write FOnEdited;
+    property  OnEditing: TEpiVTreeNodeEditing read FOnEditing write FOnEditing;
     property  OnError: TEpiVProjectTreeError read FOnError write FOnError;
     property  OnGetHint: TEpiVProjectTreeGetHint read FOnGetHint write FOnGetHint;
     property  OnNewRelation: TEpiVProjectTreeRelationEvent read FOnNewRelation write FOnNewRelation;
@@ -278,6 +300,34 @@ begin
     // -same goes for out-of-parent experiences... ;)
     (TNodeDragObject(Source).DragNode^.Parent = Sender.DropTargetNode^.Parent)
     ;
+end;
+
+procedure TEpiVProjectTreeViewFrame.VSTEdited(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex);
+var
+  AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType;
+begin
+  AObject := CustomBaseFromNode(Node);
+  ObjectType := otProject;
+  if AObject is TEpiMasterRelation then
+    ObjectType := otRelation;
+
+  DoEdited(AObject, ObjectType);
+end;
+
+procedure TEpiVProjectTreeViewFrame.VSTEditing(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
+var
+  AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType;
+begin
+  AObject := CustomBaseFromNode(Node);
+  ObjectType := otProject;
+  if AObject is TEpiMasterRelation then
+    ObjectType := otRelation;
+
+  DoEditing(AObject, ObjectType, Allowed);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragDrop(Sender: TBaseVirtualTree;
@@ -470,6 +520,20 @@ begin
   Node := VST.GetNodeAt(Pt.X, Pt.Y);
   DragObject := TNodeDragObject.Create(VST);
   TNodeDragObject(DragObject).DragNode := Node;
+end;
+
+procedure TEpiVProjectTreeViewFrame.DocumentHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if not (Initiator is TEpiDocument) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (TEpiCustomChangeEventType(EventType) <> ecceDestroy) then exit;
+
+  FDocumentList.Remove(Initiator);
+  Initiator.UnRegisterOnChangeHook(@DocumentHook);
+
+  DoUpdateTree;
 end;
 
 procedure TEpiVProjectTreeViewFrame.TitleChange(const Sender: TEpiCustomBase;
@@ -670,8 +734,6 @@ var
   i: Integer;
   OldSelectedObject: TEpiCustomItem;
 begin
-  if FDocumentList.Count = 0 then exit;
-
   FUpdatingTree := true;
 
   OldSelectedObject := nil;
@@ -681,27 +743,30 @@ begin
   VST.BeginUpdate;
   VST.Clear;
 
-  if DisplayMode = pdmSeperate then
-    for i := 0 to FDocumentList.Count -1 do
-      BuildDocumentTree(VST.RootNode, TEpiDocument(FDocumentList[i]))
-  else if AllRelationsAreEqual then
-    BuildDocumentTree(VST.RootNode, TEpiDocument(FDocumentList[0]))
-  else
-    VST.AddChild(VST.RootNode, nil);
-
-  VST.FullExpand();
-
-
-  if Assigned(OldSelectedObject) then
+  if FDocumentList.Count > 0 then
   begin
-    VST.FocusedNode := NodeFromCustomBase(OldSelectedObject);
-  end else
-    if (ShowProject and AllowSelectProject) or
-       (not ShowProject)
-    then
-      VST.FocusedNode := VST.GetFirst()
+    if DisplayMode = pdmSeperate then
+      for i := 0 to FDocumentList.Count -1 do
+        BuildDocumentTree(VST.RootNode, TEpiDocument(FDocumentList[i]))
+    else if AllRelationsAreEqual then
+      BuildDocumentTree(VST.RootNode, TEpiDocument(FDocumentList[0]))
     else
-      VST.FocusedNode := VST.GetNext(VST.GetFirst());
+      VST.AddChild(VST.RootNode, nil);
+
+    VST.FullExpand();
+
+
+    if Assigned(OldSelectedObject) then
+    begin
+      VST.FocusedNode := NodeFromCustomBase(OldSelectedObject);
+    end else
+      if (ShowProject and AllowSelectProject) or
+         (not ShowProject)
+      then
+        VST.FocusedNode := VST.GetFirst()
+      else
+        VST.FocusedNode := VST.GetNext(VST.GetFirst());
+  end;
 
   VST.EndUpdate;
 
@@ -712,6 +777,7 @@ procedure TEpiVProjectTreeViewFrame.AddHooks(Doc: TEpiDocument);
 var
   DF: TEpiDataFile;
 begin
+  Doc.RegisterOnChangeHook(@DocumentHook, true);
   Doc.Study.Title.RegisterOnChangeHook(@TitleChange, true);
 
   for DF in Doc.DataFiles do
@@ -754,6 +820,8 @@ begin
 
     OnGetText       := @VSTGetText;
     OnNewText       := @VSTNewText;
+    OnEdited        := @VSTEdited;
+    OnEditing       := @VSTEditing;
 
     OnChecking      := @VSTChecking;
     OnChecked       := @VSTChecked;
@@ -815,34 +883,35 @@ var
 begin
   if not EditStructure then exit;
 
-  ParentNode := VST.RootNode;
-
   if Assigned(ParentDataFile) then
   begin
     ParentNode := NodeFromDataFile(ParentDataFile);
     NewRelation := MasterRelationFromDataFile(ParentDataFile).NewDetailRelation;
-  end else
+    NewDataFile := TEpiDataFiles(ParentDataFile.Owner).NewDataFile;
+  end else begin
     // TODO: How to handle creating new datafile which is a true "master". Hence
     //       we need information on which document we insert into!
+    ParentNode  := NodeFromCustomBase(TEpiDocument(FDocumentList[0]));
     NewRelation := TEpiDocument(FDocumentList[0]).Relations.NewMasterRelation;
+    NewDataFile := TEpiDocument(FDocumentList[0]).DataFiles.NewDataFile;
+  end;
 
-  NewDataFile := TEpiDataFiles(ParentDataFile.Owner).NewDataFile;
   NewDataFile.Caption.RegisterOnChangeHook(@DataFileCaptionChange, true);
-
   NewRelation.Datafile := NewDataFile;
 
-  for ParentKeyField in ParentDataFile.KeyFields do
-  begin
-    // In a related datafile, the "primary" keys cannot be autoinc - it would
-    // screw up the numbering.
-    Ft := ParentKeyField.FieldType;
-    if Ft = ftAutoInc then Ft := ftInteger;
+  if Assigned(ParentDataFile) then
+    for ParentKeyField in ParentDataFile.KeyFields do
+    begin
+      // In a related datafile, the "primary" keys cannot be autoinc - it would
+      // screw up the numbering.
+      Ft := ParentKeyField.FieldType;
+      if Ft = ftAutoInc then Ft := ftInteger;
 
-    NewKeyField := NewDataFile.NewField(Ft);
-    NewKeyField.Assign(ParentKeyField);
-    NewKeyField.EntryMode := emNoEnter;
-    NewDataFile.KeyFields.AddItem(NewKeyField);
-  end;
+      NewKeyField := NewDataFile.NewField(Ft);
+      NewKeyField.Assign(ParentKeyField);
+      NewKeyField.EntryMode := emNoEnter;
+      NewDataFile.KeyFields.AddItem(NewKeyField);
+    end;
 
   Node := VST.AddChild(ParentNode, NewRelation);
   VST.Expanded[ParentNode] := true;
@@ -1006,6 +1075,20 @@ procedure TEpiVProjectTreeViewFrame.DoDeleteRelation(
 begin
   if Assigned(OnDelete) then
     OnDelete(Relation);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoEdited(const AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType);
+begin
+  if Assigned(OnEdited) then
+    OnEdited(Self, AObject, ObjectType);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoEditing(const AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType; var Allowed: Boolean);
+begin
+  if Assigned(OnEditing) then
+    OnEditing(Self, AObject, ObjectType, Allowed);
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoError(const Msg: String);
