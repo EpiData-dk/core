@@ -21,10 +21,12 @@ object EpiVProjectTreeViewFrame: TEpiVProjectTreeViewFrame
     Header.Columns = <>
     Header.DefaultHeight = 17
     Header.MainColumn = -1
+    HintMode = hmHint
+    ParentShowHint = False
     ScrollBarOptions.AlwaysVisible = True
     ScrollBarOptions.ScrollBars = ssAutoBoth
     TabOrder = 0
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoDeleteMovedNodes]
-    TreeOptions.MiscOptions = [toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning, toEditOnClick, toEditOnDblClick]
+    TreeOptions.MiscOptions = [toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning, toEditOnClick]
   end
 end
