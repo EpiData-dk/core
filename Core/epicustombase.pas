@@ -1480,8 +1480,8 @@ var
 begin
   if FCurrentText = AValue then exit;
   Val := FCurrentText;
-  SetText(FCurrentLang, AValue);
   FCurrentText := AValue;
+  SetText(FCurrentLang, AValue);
 //  DoChange(eegCustomBase, Word(ecceText), @Val);
 end;
 
