@@ -1149,7 +1149,6 @@ var
   TmpFlt: Double;
   TmpField: TEpiField;
   StrBuf: string;
-  WideBuf: WideString;
 
   // Version specific variables.
   FieldNameLength, StrBaseNum, FileLabelLength,
@@ -1779,12 +1778,14 @@ begin
           SetLength(ValBuf, 4 * J);
           NObs := ReadInts(DataStream, 4);                                            // Length of txt[]
           SetLength(CharBuf, NObs);
+
           DataStream.Read(ByteBuf[0], 4 * J);                              // Read Off[]
           DataStream.Read(ValBuf[0], 4 * J);                               // Read Val[]
           DataStream.Read(CharBuf[0], NObs);                               // Read Txt[]
 
           FOR I := 0 TO J - 1 DO
           BEGIN
+            // TODO: Casting til Integer fungerer ikke her!
             CurRec := Integer(ByteBuf[I * 4]);                            // CurRec holds offset value into Txt[]
             TmpInt := Integer(ValBuf[I * 4]);                             // TmpInt holds actual value for value label
 
