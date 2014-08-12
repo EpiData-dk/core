@@ -1170,6 +1170,10 @@ var
   Character: String;
   DFNotes: TStringList;
   FieldNotes: TStringList;
+  txtlen: Integer;
+  Off: Array of Integer;
+  Val: Array of Integer;
+  n: Integer;
 
   function ReadSingleMissing(var MisVal: Integer): Single;
   var
@@ -1761,6 +1765,7 @@ begin
         BEGIN
           DataStream.Seek(4, soCurrent);                                   // Skip: Length of value_label_table (vlt)
           SetLength(CharBuf, FieldNameLength);
+
           DataStream.Read(CharBuf[0], FieldNameLength);                    // Read label-name
           StrBuf := StringFromBuffer(PChar(@CharBuf[0]), FieldNameLength);
           StrBuf := StringReplace(StrBuf, ' ', '_', [rfReplaceAll]);
@@ -1773,28 +1778,26 @@ begin
 
           DataStream.Seek(3, soCurrent);                                   // byte padding
 
-          J := ReadInts(DataStream, 4);                                               // Number of entries in label
-          SetLength(ByteBuf, 4 * J);
-          SetLength(ValBuf, 4 * J);
-          NObs := ReadInts(DataStream, 4);                                            // Length of txt[]
-          SetLength(CharBuf, NObs);
 
-          DataStream.Read(ByteBuf[0], 4 * J);                              // Read Off[]
-          DataStream.Read(ValBuf[0], 4 * J);                               // Read Val[]
-          DataStream.Read(CharBuf[0], NObs);                               // Read Txt[]
+          n := ReadInts(DataStream, 4);                                    // Number of entries in label
+          txtlen := ReadInts(DataStream, 4);                               // Length of txt[]
 
-          FOR I := 0 TO J - 1 DO
+          SetLength(Off, n);
+          SetLength(Val, n);
+          SetLength(CharBuf, txtlen);
+
+          DataStream.Read(Off[0], 4 * n);                                  // Read Off[]
+          DataStream.Read(Val[0], 4 * n);                                  // Read Val[]
+          DataStream.Read(CharBuf[0], txtlen);                             // Read Txt[]
+
+          FOR I := 0 TO n - 1 DO
           BEGIN
-            // TODO: Casting til Integer fungerer ikke her!
-            CurRec := Integer(ByteBuf[I * 4]);                            // CurRec holds offset value into Txt[]
-            TmpInt := Integer(ValBuf[I * 4]);                             // TmpInt holds actual value for value label
-
-            if (TmpInt >= $7FFFFFE5) then                                 // ignore valuelabels
-              Continue;
-
+            if (Val[I] >= $7FFFFFE5) then                                 // ignore valuelabels with
+              Continue;                                                   // missing, the ones we wish to handle
+                                                                          // are dealt with during data-loading.
             VL := VLSet.NewValueLabel;
-            TEpiIntValueLabel(VL).Value := TmpInt;
-            VL.TheLabel.Text := StringFromBuffer(PChar(@CharBuf[CurRec]), 32000);
+            TEpiIntValueLabel(VL).Value := Val[I];
+            VL.TheLabel.Text := StringFromBuffer(PChar(@CharBuf[Off[I]]), 32000);
           END;  //for i
         END;  //while
       END;  //if stataversion 6+
