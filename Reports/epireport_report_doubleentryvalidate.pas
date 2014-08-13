@@ -169,6 +169,23 @@ var
   AText: String;
   BText: String;
   ARecNo: Integer;
+
+  procedure KeyFieldText(Const Fields: TEpiFields; Const RecNo: Integer;
+    var AText, BText: string);
+  var
+    i: integer;
+  begin
+    AText += 'Key Fields: ' + LineEnding;
+    BText += LineEnding;
+
+    for i := 0 to Fields.Count - 1 do
+    begin
+      AText += ' ' + Fields[i].Name + ' = ' + Fields[i].AsString[RecNo] + LineEnding;
+      BText += LineEnding;
+    end;
+  end;
+
+
 begin
   inherited RunReport;
 
@@ -245,28 +262,10 @@ begin
 
     if SortedCompare then
     begin
-      AText := 'Key Fields: ' + LineEnding;
-      BText := LineEnding;
-
       if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
-        ARecNo := DRecNo
+        KeyFieldText(FVAlidator.DuplKeyFields, DRecNo, DText, MText)
       else
-        ARecNo := MRecNo;
-
-      for j := 0 to FKeyFields.Count - 1 do
-      begin
-        AText += ' ' + FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[ARecNo] + LineEnding;
-        BText += LineEnding;
-      end;
-
-      if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
-      begin
-        MText += BText;
-        DText += AText;
-      end else begin
-        MText += AText;
-        DText += BText;
-      end;
+        KeyFieldText(FKeyFields,               MRecNo, MText, DText);
     end;
 
     case ValResult of
@@ -297,7 +296,7 @@ begin
         MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
 
       rrValDupKeyDupl:
-        DText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
+        DText += 'Duplicate key record found: ' + IntToStr(MRecNo + 1);
     end;
 
 {      rrValNoExistsDupl:

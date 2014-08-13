@@ -42,7 +42,9 @@ type
                      rrValTextFail:
                        Contains the record no. for main datafile.
 
-                     rrValDupKeyMain,
+                     rrValDupKeyMain:
+                       Contains the record no. for "original" key.
+
                      rrValDupKeyDupl:
                        Contains the record no. for the conflicting key.
 
@@ -56,12 +58,14 @@ type
                      rrValTextFail:
                        Contains the record no. for duplicate datafile.
 
-                     rrValNoExistsDupl:
-                      The value is always -1
+                     rrValDupKeyMain:
+                       Contains the record no. for the conflicting key.
 
-                     rrValDupKeyMain,
                      rrValDupKeyDupl:
-                      Contains the record no. for "original" key.
+                       Contains the record no. for "original" key.
+
+                     rrValNoExistsDupl:
+                       The value is always -1
 
      CmpFieldNames:  List of fields names where comparison failed.
                      Only relevant for rrValValueFail, rrValTextFail!
@@ -105,7 +109,7 @@ type
     function    NewResultRecord: PEpiDblEntryResultRecord;
     function    AddResult(Const MSortedRecNo, DSortedRecNo: integer;
       CompareResult: TEpiDblEntryRecordResult): PEpiDblEntryResultRecord;
-    function    DoCompareFields(Const MIndex, DIndex: Integer): integer;
+    procedure   DoCompareFields(Const MIndex, DIndex: Integer);
   public
     constructor Create;
     destructor Destroy; override;
@@ -150,9 +154,6 @@ const
 function TEpiToolsDblEntryValidator.AddResult(const MSortedRecNo,
   DSortedRecNo: integer; CompareResult: TEpiDblEntryRecordResult
   ): PEpiDblEntryResultRecord;
-var
-  L: Integer;
-  i: Integer;
 begin
   if CompareResult = rrValOk then exit;
 
@@ -184,8 +185,8 @@ begin
         end;
       rrValDupKeyDupl:
         begin
-          MRecNo := DuplSortField.AsInteger[MSortedRecNo];
-          DRecNo := DuplSortField.AsInteger[DSortedRecNo];
+          MRecNo := DuplSortField.AsInteger[DSortedRecNo];
+          DRecNo := DuplSortField.AsInteger[MSortedRecNo];
         end;
     end;
   end;
@@ -364,14 +365,13 @@ begin
   raise ErrorClass.Create(Msg);
 end;
 
-function TEpiToolsDblEntryValidator.DoCompareFields(const MIndex,
-  DIndex: Integer): integer;
+procedure TEpiToolsDblEntryValidator.DoCompareFields(const MIndex,
+  DIndex: Integer);
 var
   i: Integer;
   CmpResult: TValueSign;
   lValResult: TEpiDblEntryRecordResult;
   ResultRecord: PEpiDblEntryResultRecord;
-  j: Integer;
   L: Integer;
   CaseSensitive: Boolean;
 
@@ -426,7 +426,6 @@ procedure TEpiToolsDblEntryValidator.ValidateDataFiles(out
   ValidateOptions: TEpiToolsDblEntryValidateOptions);
 var
   i: Integer;
-  F: TEpiField;
   V: TEpiValueLabelSet;
   VL: TEpiIntValueLabel;
   RR: TEpiDblEntryRecordResult;
@@ -516,13 +515,23 @@ var
      ResultArray[I].CmpFieldNames := TCmpNames;
    end;
 
+   function CompareResults(Const A, B: TEpiDblEntryResultRecord): Integer;
+   begin
+     if (A.MRecNo = -1) or
+        (B.MRecNo = -1)
+     then
+       Result := A.DRecNo - B.DRecNo
+     else
+       Result := A.MRecNo - B.MRecNo;
+   end;
+
 begin
   I:=L;
   J:=R;
   P:=(L + R) shr 1;
   repeat
-    while ResultArray[I].MRecNo < ResultArray[P].MRecNo do Inc(I);
-    while ResultArray[J].MRecNo > ResultArray[P].MRecNo do Dec(J);
+    while CompareResults(ResultArray[I], ResultArray[P]) < 0 do Inc(I);
+    while CompareResults(ResultArray[J], ResultArray[P]) > 0 do Dec(J);
     if I <= J then
     begin
       Exchange(J,I);
