@@ -19,24 +19,62 @@ type
 const
   EpiDefaultDblEntryValidateOptions = [devIgnoreDeleted, {devIgnoreMissingRecords,} devAddResultToField];
 
-const
-  ValInDuplDF     = -1;
-  ValOk           = 0;
-  ValNoExists     = 1;
-  ValTextFail     = 2;
-  ValValueFail    = 3;
-  ValDupKeyFail   = 4;
-
 type
+  TEpiDblEntryRecordResult =
+    (
+      rrValOk,                    // Compared records are OK - not included in array, internal use!
+      rrValNoExistsMain,          // Record not found in main.
+      rrValNoExistsDupl,          // Record not found in duplicate file.
+      rrValValueFail,             // Comparen records failed in a non-text field
+      rrValTextFail,              // Compared records failed only in a text field.
+      rrValDupKeyMain,            // Duplicate key found in main
+      rrValDupKeyDupl             // Duplicate key found in duplicate file.
+    );
+
+  {
+    TEpiDblEntryResultRecord:
+      ValResult:   Result of comparison -> see above.
+
+      MRecNo:      Case ValResult:
+                     rrValOk,
+                     rrValNoExistsDupl,
+                     rrValValueFail,
+                     rrValTextFail:
+                       Contains the record no. for main datafile.
+
+                     rrValDupKeyMain,
+                     rrValDupKeyDupl:
+                       Contains the record no. for the conflicting key.
+
+                     rrValNoExistsMain:
+                       The value is always -1
+
+      DRecNo:      Case ValResult:
+                     rrValOk,
+                     rrValNoExistsMain,
+                     rrValValueFail,
+                     rrValTextFail:
+                       Contains the record no. for duplicate datafile.
+
+                     rrValNoExistsDupl:
+                      The value is always -1
+
+                     rrValDupKeyMain,
+                     rrValDupKeyDupl:
+                      Contains the record no. for "original" key.
+
+     CmpFieldNames:  List of fields names where comparison failed.
+                     Only relevant for rrValValueFail, rrValTextFail!
+
+  }
   TEpiDblEntryResultRecord = record
-    ValResult: Integer;                    // Result of comparison -> see const above.
-    MRecNo: Integer;                       // Record no. in main file
-    DRecNo: Integer;                       // Record no. matching in duplicate file.
-    CmpFieldNames: Array of string;        // List of fields names where comparison failed.
+    ValResult: TEpiDblEntryRecordResult;
+    MRecNo: Integer;
+    DRecNo: Integer;
+    CmpFieldNames: Array of string;
   end;
   PEpiDblEntryResultRecord = ^TEpiDblEntryResultRecord;
   TEpiDblEntryResultArray = array of TEpiDblEntryResultRecord;
-
 
   EEpiDFNotAssigned = class(Exception);
   EEpiFieldsNotAssigned = class(Exception);
@@ -54,7 +92,6 @@ type
     FDuplCmpFields: TEpiFields;
     FResultField:   TEpiField;
     FResultArray:   TEpiDblEntryResultArray;
-    FExtraDuplRecords:   TBoundArray;
     FValidateOptions: TEpiToolsDblEntryValidateOptions;
     procedure   RaiseError(ErrorClass: ExceptClass; Const msg: String);
 
@@ -66,14 +103,14 @@ type
     DuplSortField: TEpiField;
     procedure   InternalValidate;
     function    NewResultRecord: PEpiDblEntryResultRecord;
-    procedure   AddResult(Const SortedRecNo: integer; Const Value: Integer);
+    function    AddResult(Const MSortedRecNo, DSortedRecNo: integer;
+      CompareResult: TEpiDblEntryRecordResult): PEpiDblEntryResultRecord;
     function    DoCompareFields(Const MIndex, DIndex: Integer): integer;
   public
     constructor Create;
     destructor Destroy; override;
     procedure   ValidateDataFiles(
       out ResultArray: TEpiDblEntryResultArray;
-      out ExtraDuplRecords: TBoundArray;
       ValidateOptions: TEpiToolsDblEntryValidateOptions = EpiDefaultDblEntryValidateOptions);
     property    MainDF: TEpiDataFile read FMainDF write FMainDF;
     property    DuplDF: TEpiDataFile read FDuplDF write FDuplDF;
@@ -99,47 +136,57 @@ uses
   epidocument, epidatafilestypes, epidatafileutils, math, epiglobals;
 
 const
-  ValTexts: array[ValOK..ValDupKeyFail] of string = (
+  ValTexts: array[TEpiDblEntryRecordResult] of string = (
     'Validated',
+    'Record not found in main file',
     'Record not found in duplicate file',
-//    'Failed due to different case in text',
-    'Failed due to different text',
     'Failed due to different values',
+    'Failed due to different text',
+    'Duplicate key exists',
     'Duplicate key exists');
 
 { TEpiToolsDblEntryValidator }
 
-procedure TEpiToolsDblEntryValidator.AddResult(const SortedRecNo: integer;
-  const Value: Integer);
+function TEpiToolsDblEntryValidator.AddResult(const MSortedRecNo,
+  DSortedRecNo: integer; CompareResult: TEpiDblEntryRecordResult
+  ): PEpiDblEntryResultRecord;
 var
   L: Integer;
   i: Integer;
 begin
-  if Value = ValInDuplDF then
+  if CompareResult = rrValOk then exit;
+
+  Result := NewResultRecord;
+  with Result^ do
   begin
-    // Result indicate that a record was found in duplicate DF that did not exist in Main DF.
-    L := Length(FExtraDuplRecords);
-    Inc(L);
-    SetLength(FExtraDuplRecords, L);
-    FExtraDuplRecords[L-1] := SortedRecNo;
-    Exit;
-  end;
+    ValResult := CompareResult;
 
-  if Assigned(FResultField) then
-    FResultField.AsInteger[SortedRecNo] := Value;
+    case CompareResult of
+      rrValOk: ;  // Do nothing, should not reach! :D
 
-  if Value = ValOk then exit;
+      rrValNoExistsMain:
+        DRecNo := DuplSortField.AsInteger[DSortedRecNo];
 
-  with NewResultRecord^ do
-  begin
-    ValResult := Value;
+      rrValNoExistsDupl:
+        MRecNo := MainSortField.AsInteger[MSortedRecNo];
 
-    MRecNo := MainSortField.AsInteger[SortedRecNo];
-    case Value of
-      ValNoExists:
-        DRecNo := -1;
-      ValDupKeyFail:
-        DRecNo := DuplSortField.AsInteger[SortedRecNo - 1];
+      rrValValueFail,
+      rrValTextFail:
+        begin
+          MRecNo := MainSortField.AsInteger[MSortedRecNo];
+          DRecNo := DuplSortField.AsInteger[DSortedRecNo];
+        end;
+
+      rrValDupKeyMain:
+        begin
+          MRecNo := MainSortField.AsInteger[MSortedRecNo];
+          DRecNo := MainSortField.AsInteger[DSortedRecNo];
+        end;
+      rrValDupKeyDupl:
+        begin
+          MRecNo := DuplSortField.AsInteger[MSortedRecNo];
+          DRecNo := DuplSortField.AsInteger[DSortedRecNo];
+        end;
     end;
   end;
 end;
@@ -222,8 +269,17 @@ begin
          (MRunner > 0) and
          (CompareSortFieldRecords(SortFields, SortFields, MRunner, MRunner - 1) = ZeroValue) then
       begin
-        AddResult(MRunner, ValDupKeyFail);
+        AddResult(MRunner, DRunner, rrValDupKeyMain);
         Inc(MRunner);
+        Continue;
+      end;
+
+      if (SortedCompare) and
+         (DRunner > 0) and
+         (CompareSortFieldRecords(FDuplKeyFields, FDuplKeyFields, DRunner, DRunner - 1) = ZeroValue) then
+      begin
+        AddResult(MRunner, DRunner, rrValDupKeyDupl);
+        Inc(DRunner);
         Continue;
       end;
 
@@ -237,7 +293,7 @@ begin
           begin
             // Record does not exists in duplicate file
             if not (devIgnoreMissingRecords in FValidateOptions) then
-              AddResult(MRunner, ValNoExists);
+              AddResult(MRunner, DRunner, rrValNoExistsDupl);
             Inc(MRunner);
           end;
         ZeroValue:
@@ -250,29 +306,26 @@ begin
         PositiveValue:
           begin
             // Record does not exists in main file
-            AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF);
+            AddResult(MRunner, DRunner, rrValNoExistsMain);
             Inc(DRunner);
           end;
       end;
     end;
 
-    while MRunner < MSize do
-    begin
-      // If MRunner < MSize, then records exists in Main DF with no matching
-      // records in Dupl. DF. Hence mark them as NoExists.
-      if not (devIgnoreMissingRecords in FValidateOptions) then
-        AddResult(MRunner, ValNoExists);
-      Inc(MRunner);
-    end;
+    if not (devIgnoreMissingRecords in FValidateOptions) then
+      while MRunner < MSize do
+      begin
+        // If MRunner < MSize, then records exists in Main DF with no matching
+        // records in Dupl. DF. Hence mark them as NoExists.
+          AddResult(MRunner, DRunner, rrValNoExistsDupl);
+        Inc(MRunner);
+      end;
 
     while DRunner < DSize do
     begin
       // If DRunner < DSize, then records exists in Dupl. DF with no matching
       // records in Main DF. Hence mark them as InDulpDF
-//      if SortedCompare then
-        AddResult(DuplSortField.AsInteger[DRunner], ValInDuplDF);
-//      else
-//        AddResult(DRunner, ValInDuplDF);
+      AddResult(MRunner, DRunner, rrValNoExistsMain);
       Inc(DRunner);
     end;
 
@@ -301,6 +354,8 @@ begin
   SetLength(FResultArray, L);
   FResultArray[L-1].CmpFieldNames := nil;
   Result := @FResultArray[L-1];
+  Result^.MRecNo := -1;
+  Result^.DRecNo := -1;
 end;
 
 procedure TEpiToolsDblEntryValidator.RaiseError(ErrorClass: ExceptClass;
@@ -314,7 +369,7 @@ function TEpiToolsDblEntryValidator.DoCompareFields(const MIndex,
 var
   i: Integer;
   CmpResult: TValueSign;
-  lValResult: Integer;
+  lValResult: TEpiDblEntryRecordResult;
   ResultRecord: PEpiDblEntryResultRecord;
   j: Integer;
   L: Integer;
@@ -329,29 +384,22 @@ begin
       RaiseError(EEpiInvalidCompare, 'Comparison failed due to different field types!');
 
     if CmpResult = ZeroValue then
-    begin
-      AddResult(MIndex, ValOk);
-      continue;
-    end;
+      Continue;
 
     if FCmpFields[i].FieldType in StringFieldTypes then
-      lValResult := ValTextFail
+      lValResult := rrValTextFail
     else
-      lValResult := ValValueFail;
+      lValResult := rrValValueFail;
 
     if not Assigned(ResultRecord) then
-    begin
-      ResultRecord := NewResultRecord;
-      with ResultRecord^ do
-      begin
-        MRecNo := MainSortField.AsInteger[MIndex];
-        DRecNo := DuplSortField.AsInteger[DIndex];
-      end;
-    end;
+      ResultRecord := AddResult(MIndex, DIndex, lValResult);
 
     with ResultRecord^ do
     begin
-      ValResult := Max(ValResult, lValResult);
+      if (ValResult = rrValTextFail) and
+         (lValResult = rrValValueFail)
+      then
+        ValResult := rrValValueFail;
 
       L := Length(CmpFieldNames);
       Inc(L);
@@ -374,13 +422,14 @@ begin
 end;
 
 procedure TEpiToolsDblEntryValidator.ValidateDataFiles(out
-  ResultArray: TEpiDblEntryResultArray; out ExtraDuplRecords: TBoundArray;
+  ResultArray: TEpiDblEntryResultArray;
   ValidateOptions: TEpiToolsDblEntryValidateOptions);
 var
   i: Integer;
   F: TEpiField;
   V: TEpiValueLabelSet;
   VL: TEpiIntValueLabel;
+  RR: TEpiDblEntryRecordResult;
 begin
   if (not Assigned(MainDF)) or (not Assigned(DuplDF)) then
     RaiseError(EEpiDFNotAssigned, 'Main or Duplicate datafile not assigned');
@@ -413,34 +462,18 @@ begin
         V := FMainDF.ValueLabels.NewValueLabelSet(ftInteger);
         V.Name := EpiDoubleEntryValueLabelSetName;
 
-        VL := TEpiIntValueLabel(V.NewValueLabel);
-        VL.Value := ValOk;
-        VL.TheLabel.Text := ValTexts[ValOk];
-
-        VL := TEpiIntValueLabel(V.NewValueLabel);
-        VL.Value := ValNoExists;
-        VL.TheLabel.Text := ValTexts[ValNoExists];
-
-        VL := TEpiIntValueLabel(V.NewValueLabel);
-        VL.Value := ValTextFail;
-        VL.TheLabel.Text := ValTexts[ValTextFail];
-
-        VL := TEpiIntValueLabel(V.NewValueLabel);
-        VL.Value := ValValueFail;
-        VL.TheLabel.Text := ValTexts[ValValueFail];
-
-        VL := TEpiIntValueLabel(V.NewValueLabel);
-        VL.Value := ValDupKeyFail;
-        VL.TheLabel.Text := ValTexts[ValDupKeyFail];
+        for RR in TEpiDblEntryRecordResult do
+        begin
+          VL := TEpiIntValueLabel(V.NewValueLabel);
+          VL.Value := Integer(RR);
+          VL.TheLabel.Text := ValTexts[RR];
+        end;
       end;
       FResultField.ValueLabelSet := V;
     end;
   end;
 
-//  if Assigned(SortFields) and (SortFields.Count > 0) then
-    InternalValidate;
-//  else
-//    ValidateSequencial;
+  InternalValidate;
 
   // Set DF's to non-modified, since all sorting changes
   // were reverted.
@@ -452,9 +485,6 @@ begin
       TEpiDocument(DuplDF.RootOwner).Modified := false;
   end;
 
-
-  if Length(FExtraDuplRecords) > 0 then
-    ExtraDuplRecords := FExtraDuplRecords;
   ResultArray := FResultArray;
 end;
 
@@ -465,7 +495,7 @@ var
 
    procedure Exchange(J, I: Integer);
    var
-     TValRes: Integer;
+     TValRes: TEpiDblEntryRecordResult;
      TMRecNo: Integer;
      TDRecNo: Integer;
      TCmpNames: Array of string;

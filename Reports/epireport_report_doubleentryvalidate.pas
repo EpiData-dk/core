@@ -26,8 +26,11 @@ type
     FKeyFields: TEpiFields;
     FMainDF: TEpiDataFile;
     FResultArray: TEpiDblEntryResultArray;
-    FExtraRecs:   TBoundArray;
     FVAlidator:   TEpiToolsDblEntryValidator;
+  private
+    FMissingInMain: integer;
+    FMissingInDupl: integer;
+    FCommonRecord: integer;
     function    CalcMissingInMainDF: Integer;
     function    CalcMissingInDuplDF: Integer;
     function    CalcCommonRecords: integer;
@@ -37,6 +40,7 @@ type
     function    CalcErrorFieldPct: Extended;
   protected
     procedure DoSanityCheck; override;
+    procedure ResetCalculations;
   public
     constructor Create(ReportGenerator: TEpiReportGeneratorBase); override;
     procedure   RunReport; override;
@@ -55,24 +59,36 @@ uses
 { TEpiReportDoubleEntryValidation }
 
 function TEpiReportDoubleEntryValidation.CalcMissingInMainDF: Integer;
+var
+  i: Integer;
 begin
-  result := Length(FExtraRecs);
+  if FMissingInMain > -1 then
+    Exit(FMissingInMain);
+
+  Result := 0;
+  for i := 0 to Length(FResultArray) - 1 do
+    if FResultArray[i].ValResult = rrValNoExistsMain then
+      Inc(Result);
+  FMissingInMain := Result;
 end;
 
 function TEpiReportDoubleEntryValidation.CalcMissingInDuplDF: Integer;
 var
   i: Integer;
 begin
+  if FMissingInDupl > -1 then
+    Exit(FMissingInDupl);
+
   Result := 0;
   for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult = ValNoExists then inc(Result);
+    if FResultArray[i].ValResult = rrValNoExistsDupl then
+      Inc(Result);
+  FMissingInDupl := Result;
 end;
 
 function TEpiReportDoubleEntryValidation.CalcCommonRecords: integer;
 begin
-  Result := Math.Min(FValidator.MainDF.Size, FValidator.DuplDF.Size) - Length(FExtraRecs);
-  if Result < 0 then
-    Result := 0;
+  Result := FVAlidator.MainDF.Size - CalcMissingInDuplDF;
 end;
 
 function TEpiReportDoubleEntryValidation.CalcErrorRecords: integer;
@@ -81,7 +97,7 @@ var
 begin
   Result  := 0;
   for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult in [ValTextFail, ValValueFail] then inc(Result);
+    if FResultArray[i].ValResult in [rrValTextFail, rrValValueFail] then inc(Result);
 end;
 
 function TEpiReportDoubleEntryValidation.CalcErrorFields: integer;
@@ -90,7 +106,8 @@ var
 begin
   Result  := 0;
   for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult in [ValTextFail, ValValueFail] then inc(Result, Length(FResultArray[i].CmpFieldNames));
+    if FResultArray[i].ValResult in [rrValTextFail, rrValValueFail] then
+      inc(Result, Length(FResultArray[i].CmpFieldNames));
 end;
 
 function TEpiReportDoubleEntryValidation.CalcErrorPct: Extended;
@@ -125,6 +142,13 @@ begin
     DoError(EEpiReportDEVException, Format(SEpiReportDEVNoFields, ['CompareFields']));
 end;
 
+procedure TEpiReportDoubleEntryValidation.ResetCalculations;
+begin
+  FMissingInMain := -1;
+  FMissingInDupl := -1;
+  FCommonRecord := -1;
+end;
+
 constructor TEpiReportDoubleEntryValidation.Create(
   ReportGenerator: TEpiReportGeneratorBase);
 begin
@@ -142,6 +166,9 @@ var
   MCmpField: TEpiField;
   DCmpField: TEpiField;
   SortedCompare: Boolean;
+  AText: String;
+  BText: String;
+  ARecNo: Integer;
 begin
   inherited RunReport;
 
@@ -152,7 +179,7 @@ begin
   FValidator.DuplDF := DuplDF;
   FValidator.SortFields := KeyFields;
   FValidator.CompareFields := CompareFields;
-  FValidator.ValidateDataFiles(FResultArray, FExtraRecs, DblEntryValidateOptions);
+  FValidator.ValidateDataFiles(FResultArray, DblEntryValidateOptions);
   FValidator.SortDblEntryResultArray(FResultArray);
 
   DoHeading('Selections for validation:');
@@ -199,30 +226,81 @@ begin
   DoTableFooter('');
 
   DoLineText('');
-  DoTableHeader('Datasets comparison:', 2, Length(FResultArray) + Length(FExtraRecs) + 1);
-  DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, ' Duplicate dataset:');
+  DoTableHeader('Datasets comparison:', 2, Length(FResultArray) + 1);
+  DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, 'Duplicate dataset:');
+
   for i := 0 to Length(FResultArray) -1 do
   with FResultArray[i] do
   begin
-    MText := 'Record no: ' + IntToStr(MRecNo + 1) + LineEnding;
-    if not ((ValResult = ValNoExists) or (ValResult = ValDupKeyFail)) then
-      DText := 'Record no: ' + IntToStr(DRecNo + 1) + LineEnding
+    if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
+      MTExt := ''
     else
-      DText := '';
+      MText := 'Record no: ' + IntToStr(MRecNo + 1) + LineEnding;
+
+    if (ValResult in [rrValNoExistsDupl, rrValDupKeyMain]) then
+      DText := ''
+    else
+      DText := 'Record no: ' + IntToStr(DRecNo + 1) + LineEnding;
+
 
     if SortedCompare then
     begin
-      MText += 'Key Fields: ' + LineEnding;
-      DText += LineEnding;
+      AText := 'Key Fields: ' + LineEnding;
+      BText := LineEnding;
+
+      if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
+        ARecNo := DRecNo
+      else
+        ARecNo := MRecNo;
+
       for j := 0 to FKeyFields.Count - 1 do
       begin
-        MText += ' ' + FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[MRecNo] + LineEnding;
-        DText += LineEnding;
+        AText += ' ' + FKeyFields[j].Name + ' = ' + FKeyFields[j].AsString[ARecNo] + LineEnding;
+        BText += LineEnding;
+      end;
+
+      if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
+      begin
+        MText += BText;
+        DText += AText;
+      end else begin
+        MText += AText;
+        DText += BText;
       end;
     end;
 
     case ValResult of
-      ValNoExists:
+      rrValOk: ;  // Should not exists!
+
+      rrValNoExistsMain:
+        MText += 'Record not found';
+
+      rrValNoExistsDupl:
+        DText += 'Record not found';
+
+      rrValValueFail,
+      rrValTextFail:
+        begin
+          MText += 'Compared Fields:' + LineEnding;
+          DText += LineEnding;
+
+          for j := 0 to Length(CmpFieldNames) - 1 do
+          begin
+            MCmpField := FValidator.CompareFields.FieldByName[CmpFieldNames[j]];
+            DCmpField := FValidator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
+
+            MText += ' '  + MCmpField.Name + ' = ' + MCmpField.AsString[MRecNo] + LineEnding;
+            DText += '  ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
+          end;
+        end;
+      rrValDupKeyMain:
+        MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
+
+      rrValDupKeyDupl:
+        DText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
+    end;
+
+{      rrValNoExistsDupl:
         begin
 //          MText += '';
           DText += ' Record not found';
@@ -242,16 +320,16 @@ begin
             DText += '  ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
           end;
         end;
-      ValDupKeyFail:
+      ValDupKeyMain:
         begin
           MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
         end;
     end;
-
+                }
     DoTableCell(0, i + 1, MText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
     DoTableCell(1, i + 1, DText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
   end;
-
+{
   for i := 0 to Length(FExtraRecs) - 1 do
   begin
     MText := LineEnding;
@@ -274,7 +352,7 @@ begin
 
     DoTableCell(0, Length(FResultArray) + i + 1, MText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
     DoTableCell(1, Length(FResultArray) + i + 1, DText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
-  end;
+  end;       }
   DoTableFooter('');
 
   FValidator.Free;
