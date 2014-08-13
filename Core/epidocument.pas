@@ -249,6 +249,7 @@ var
   PW, Login, UserPW: String;
   TmpVersion: EpiInteger;
   TmpBranch: EpiString;
+
 begin
   // Root = <EpiData>
   FLoading := true;
@@ -318,8 +319,13 @@ begin
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node, ReferenceMap);
 
-  if LoadNode(Node, Root, rsRelations, false) then
-    Relations.LoadFromXml(Node, ReferenceMap);
+  if Version <= 2 then
+    // Version 2 only supported 1 DataFile and no relations,
+    // hence this must be created to have a correct data container.
+    Relations.NewMasterRelation.Datafile := DataFiles[0]
+  else
+    if LoadNode(Node, Root, rsRelations, false) then
+      Relations.LoadFromXml(Node, ReferenceMap);
 
   FLoading := false;
   Modified := false;
