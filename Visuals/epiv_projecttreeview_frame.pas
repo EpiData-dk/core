@@ -12,9 +12,11 @@ uses
   {$ELSE}
   FakeActiveX,
   {$ENDIF}
-  epicustombase, epidocument, epirelations, epidatafiles, epidatafilestypes;
+  epicustombase, epidocument, epirelations, epidatafiles, epidatafilestypes,
+  fgl;
 
 type
+  TEpiVCustomBaseList = specialize TFPGObjectList<TEpiCustomBase>;
 
   TEpiVProjectDisplayMode = (
     pdmSeperate,          // Display each document with distinct rootnodes
@@ -127,6 +129,7 @@ type
     FFakeRoot: TEpiCustomItem;
     function  AllRelationsAreEqual: boolean;
     function  CustomBaseFromNode(Const Node: PVirtualNode): TEpiCustomBase;
+    function  CustomBaseListFromNode(Const Node: PVirtualNode): TEpiVCustomBaseList;
     function  DataFileFromNode(Const Node: PVirtualNode): TEpiDataFile;
     function  DocumentCountInRange: boolean;
     function  MasterRelationFromDataFile(Const Datafile: TEpiDataFile): TEpiMasterRelation;
@@ -686,13 +689,26 @@ end;
 
 function TEpiVProjectTreeViewFrame.CustomBaseFromNode(const Node: PVirtualNode
   ): TEpiCustomBase;
+var
+  L: TEpiVCustomBaseList;
+begin
+  Result  := nil;
+
+  L := CustomBaseListFromNode(Node);
+
+  if Assigned(L) then
+    result := L[0];
+end;
+
+function TEpiVProjectTreeViewFrame.CustomBaseListFromNode(
+  const Node: PVirtualNode): TEpiVCustomBaseList;
 begin
   Result := nil;
 
   if (Node = nil) then exit;
 
   if Assigned(Node) then
-    result := TEpiCustomBase(VST.GetNodeData(Node)^);
+    result := TEpiVCustomBaseList(VST.GetNodeData(Node)^);
 end;
 
 function TEpiVProjectTreeViewFrame.DataFileFromNode(const Node: PVirtualNode
@@ -727,11 +743,12 @@ function TEpiVProjectTreeViewFrame.MasterRelationFromNode(const Node: PVirtualNo
   ): TEpiMasterRelation;
 var
   O: TEpiCustomBase;
+  Ot: TEpiVTreeNodeObjectType;
 begin
   Result := nil;
 
-  O := CustomBaseFromNode(Node);
-  if O is TEpiMasterRelation then
+  ObjectAndType(Node, O, Ot);
+  if Ot = otRelation then
     Result := TEpiMasterRelation(O);
 end;
 
@@ -1190,19 +1207,36 @@ begin
 end;
 
 function TEpiVProjectTreeViewFrame.GetCheckList: TList;
+var
+  Node: PVirtualNode;
 begin
   Node := VST.GetFirstChild(nil);
 
   Result := TList.Create;
   while Assigned(Node) do
   begin
+    if VST.CheckState[Node] in [csCheckedNormal, csMixedNormal] then
+      Result.Add(CustomBaseFromNode(Node));
 
+    Node := VST.GetNext(Node, True);
   end;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetCheckList(AValue: TList);
+var
+  Node: PVirtualNode;
+  CB: TEpiCustomBase;
 begin
+  Node := VST.GetFirstChild(nil);
 
+  while Assigned(Node) do
+  begin
+    CB := CustomBaseFromNode(Node);
+    if AValue.IndexOf(CB) >= 0 then
+      VST.CheckState[Node] := csCheckedNormal;
+
+    Node := VST.GetNext(Node, True);
+  end;
 end;
 
 procedure TEpiVProjectTreeViewFrame.CheckAll;
