@@ -6,8 +6,8 @@ object DataFormTreeViewFrame: TDataFormTreeViewFrame
   ClientHeight = 464
   ClientWidth = 532
   TabOrder = 0
-  DesignLeft = 771
-  DesignTop = 319
+  DesignLeft = 2073
+  DesignTop = 372
   object DataFileTree: TVirtualStringTree
     Left = 0
     Height = 464

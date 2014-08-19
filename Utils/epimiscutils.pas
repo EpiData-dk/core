@@ -50,8 +50,9 @@ type
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
-  dfImport = [dfEPX, dfEPZ, dfREC, dfDTA, dfText];
-  dfExport = [dfDTA];
+  dfEpiData = [dfEPX, dfEPZ, dfCollection];
+  dfImport  = [dfEPX, dfEPZ, dfREC, dfDTA, dfText];
+  dfExport  = [dfDTA];
 
 
   // File dialog filter functions.

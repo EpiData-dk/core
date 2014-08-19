@@ -27,16 +27,18 @@ type
     FShowFieldTypes: TEpiFieldTypes;
     FShowHeadings: Boolean;
     function GetCustomItemFromNode(Const Node: PVirtualNode): TEpiCustomControlItem;
+    function GetSelectedList: TList;
     procedure PopulateTree(Const Datafile: TEpiDataFile);
     procedure SetDataFile(AValue: TEpiDataFile);
+    procedure SetSelectedList(AValue: TList);
     procedure SetShowFieldTypes(AValue: TEpiFieldTypes);
     procedure SetShowHeadings(AValue: Boolean);
   public
     constructor Create(TheOwner: TComponent); override;
-    function SelectedList: TList;
     procedure SelectAll;
     procedure SelectNone;
     property DataFile: TEpiDataFile read FDataFile write SetDataFile;
+    property SelectedList: TList read GetSelectedList write SetSelectedList;
     property ShowHeadings: Boolean read FShowHeadings write SetShowHeadings;
     property ShowFieldTypes: TEpiFieldTypes read FShowFieldTypes write SetShowFieldTypes;
   end;
@@ -149,6 +151,23 @@ begin
   result := TEpiCustomControlItem(DataFileTree.GetNodeData(Node)^);
 end;
 
+function TDataFormTreeViewFrame.GetSelectedList: TList;
+var
+  Node: PVirtualNode;
+begin
+  Result := TList.Create;
+
+  Node := DataFileTree.GetFirst();
+  while Assigned(Node) do
+  begin
+    if (DataFileTree.CheckState[Node] in [csMixedNormal, csCheckedNormal]) and
+       (DataFileTree.IsVisible[Node])
+    then
+      Result.Add(GetCustomItemFromNode(Node));
+    Node := DataFileTree.GetNext(Node, true);
+  end;
+end;
+
 procedure TDataFormTreeViewFrame.PopulateTree(const Datafile: TEpiDataFile);
 var
   MainNode: PVirtualNode;
@@ -191,6 +210,27 @@ begin
   PopulateTree(FDataFile);
 end;
 
+procedure TDataFormTreeViewFrame.SetSelectedList(AValue: TList);
+var
+  Node: PVirtualNode;
+  CI: TEpiCustomControlItem;
+begin
+  if not Assigned(AValue) then Exit;
+
+  Node := DataFileTree.GetFirst();
+  while Assigned(Node) do
+  begin
+    CI := GetCustomItemFromNode(Node);
+
+    if (AValue.IndexOf(CI) >= 0) then
+      DataFileTree.CheckState[Node] := csCheckedNormal
+    else
+      DataFileTree.CheckState[Node] := csUncheckedNormal;
+
+    Node := DataFileTree.GetNext(Node, true);
+  end;
+end;
+
 procedure TDataFormTreeViewFrame.SetShowFieldTypes(AValue: TEpiFieldTypes);
 begin
   if FShowFieldTypes = AValue then Exit;
@@ -213,26 +253,6 @@ begin
   FDataFile := nil;
   FShowHeadings := true;
   FShowFieldTypes := AllFieldTypes;
-end;
-
-function TDataFormTreeViewFrame.SelectedList: TList;
-var
-  Node: PVirtualNode;
-  CI: TEpiCustomControlItem;
-begin
-  Result := TList.Create;
-
-  Node := DataFileTree.GetFirst();
-  while Assigned(Node) do
-  begin
-    CI := GetCustomItemFromNode(Node);
-
-    if (DataFileTree.CheckState[Node] in [csMixedNormal, csCheckedNormal]) and
-       (DataFileTree.IsVisible[Node])
-    then
-      Result.Add(GetCustomItemFromNode(Node));
-    Node := DataFileTree.GetNext(Node, true);
-  end;
 end;
 
 procedure TDataFormTreeViewFrame.SelectAll;

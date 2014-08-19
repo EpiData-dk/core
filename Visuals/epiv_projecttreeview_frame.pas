@@ -22,13 +22,18 @@ type
   );
 
   TEpiVProjectCheckType = (
-    pctTriState,          // Allow individual selection of datafiles, normal tri-state functionality
+    pctIndividual,        // Allow individual selection of datafiles
+    pctTriState,          // Normal tri-state functionality
     pctCascade            // Only allow cascading select -> selecting a Master automatically selects
                           //   details. Details cannot be de-selected.
   );
 
-
-  TEpiVTreeNodeObjectType = (otEmpty, otRelation, otProject);
+  TEpiVTreeNodeObjectType = (
+    otEmpty,              // No node has been selected
+    otFake,               // The node is a fake "root", only possible if DisplayMode = pdmCommon and two project are not equal.
+    otRelation,           // The node contains a TEpiMasterRelation
+    otProject             // The node is a root node containing a project/document.
+  );
 
   TEpiVTreeNodeSelected = procedure(
           Sender:  TObject;
@@ -51,11 +56,19 @@ type
   ) of object;
 
   TEpiVProjectTreeError = procedure(Const Msg: String) of object;
+
   TEpiVProjectTreeGetHint = procedure(
           Sender: TObject;
     Const AObject: TEpiCustomBase;
           ObjectType: TEpiVTreeNodeObjectType;
-    var HintText: string) of object;
+    var   HintText: string) of object;
+
+  TEpiVProjectTreeGetText = procedure(
+          Sender: TObject;
+    Const AObject: TEpiCustomBase;
+          ObjectType: TEpiVTreeNodeObjectType;
+    Const StaticText: boolean;
+    var   NodeText: string) of object;
 
   TEpiVProjectTreeRelationEvent = procedure(Const Relation: TEpiMasterRelation) of object;
 
@@ -111,14 +124,18 @@ type
   private
     FUpdatingTree: Boolean;
     FDocumentList: TList;
+    FFakeRoot: TEpiCustomItem;
     function  AllRelationsAreEqual: boolean;
     function  CustomBaseFromNode(Const Node: PVirtualNode): TEpiCustomBase;
     function  DataFileFromNode(Const Node: PVirtualNode): TEpiDataFile;
+    function  DocumentCountInRange: boolean;
     function  MasterRelationFromDataFile(Const Datafile: TEpiDataFile): TEpiMasterRelation;
     function  MasterRelationFromNode(Const Node: PVirtualNode): TEpiMasterRelation;
     function  NodeFromCustomBase(Const AObject: TEpiCustomBase): PVirtualNode;
     function  NodeFromDataFile(Const DataFile: TEpiDataFile): PVirtualNode;
     function  NodeFromMasterRelation(Const MasterRelation: TEpiMasterRelation): PVirtualNode;
+    procedure ObjectAndType(Const Node: PVirtualNode;
+      out Obj: TEpiCustomBase; out ObjType: TEpiVTreeNodeObjectType);
     procedure UpdateCustomData(Const AObject: TEpiCustomBase;
       Const Node: PVirtualNode);
     procedure DoUpdateTree;
@@ -130,13 +147,21 @@ type
 
   { Structural }
   private
+    FMaxDocumentCount: Integer;
+    FMinDocumentCount: Integer;
     function  GetDocuments(const Index: integer): TEpiDocument;
+    procedure SetMaxDocumentCount(AValue: Integer);
+    procedure SetMinDocumentCount(AValue: Integer);
   public
     procedure AddDocument(Const Doc: TEpiDocument);
+    procedure RemoveDocument(Const Doc: TEpiDocument);
     procedure CreateRelatedDataFile(Const ParentDataFile: TEpiDataFile);
     procedure DeleteDataFile(DataFile: TEpiDataFile);
   public
     property  Documents[Const Index: integer]: TEpiDocument read GetDocuments;
+    // Document Count is only applied when DisplayMode = pdmCommon
+    property  MaxDocumentCount: Integer read FMaxDocumentCount write SetMaxDocumentCount; // Set -1 for unlimited
+    property  MinDocumentCount: Integer read FMinDocumentCount write SetMinDocumentCount; // Set -1 for unlimited
 
   { Options }
   private
@@ -147,7 +172,11 @@ type
     FEditStructure: Boolean;
     FShowCheckBoxes: Boolean;
     FShowHint: boolean;
+    FShowRecordCount: boolean;
     FShowProject: boolean;
+  private
+    procedure  ResetCheckBoxes;
+  private
     procedure SetAllowSelectProject(AValue: Boolean);
     procedure SetCheckType(AValue: TEpiVProjectCheckType);
     procedure SetDisplayMode(AValue: TEpiVProjectDisplayMode);
@@ -155,6 +184,7 @@ type
     procedure SetEditStructure(AValue: Boolean);
     procedure SetShowCheckBoxes(AValue: Boolean);
     procedure SetShowHint(AValue: boolean);
+    procedure SetShowRecordCount(AValue: boolean);
     procedure SetShowProject(AValue: boolean);
   public
     property  AllowSelectProject: Boolean read FAllowSelectProject write SetAllowSelectProject;
@@ -164,7 +194,17 @@ type
     property  EditStructure: Boolean read FEditStructure write SetEditStructure;
     property  ShowCheckBoxes: Boolean read FShowCheckBoxes write SetShowCheckBoxes;
     property  ShowHint: boolean read FShowHint write SetShowHint;
+    property  ShowRecordCount: boolean read FShowRecordCount write SetShowRecordCount;
     property  ShowProject: boolean read FShowProject write SetShowProject;
+
+  { Option Methods }
+  private
+    function  GetCheckList: TList;
+    procedure SetCheckList(AValue: TList);
+  public
+    procedure CheckAll;
+    procedure CheckNone;
+    property  CheckList: TList read GetCheckList write SetCheckList;
 
   { Access properties }
   private
@@ -182,6 +222,7 @@ type
     FOnEditing: TEpiVTreeNodeEditing;
     FOnError: TEpiVProjectTreeError;
     FOnGetHint: TEpiVProjectTreeGetHint;
+    FOnGetText: TEpiVProjectTreeGetText;
     FOnNewRelation: TEpiVProjectTreeRelationEvent;
     FOnTreeNodeSelected: TEpiVTreeNodeSelected;
     FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
@@ -194,6 +235,9 @@ type
     procedure DoError(Const Msg: String);
     procedure DoGetHint(Const AObject: TEpiCustomBase;
       ObjectType: TEpiVTreeNodeObjectType; var HintText: string); virtual;
+    procedure DoGetText(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType; Const StaticText: boolean;
+      var NodeText: string); virtual;
     procedure DoNewRelation(Const NewRelation: TEpiMasterRelation); virtual;
     procedure DoTreeNodeSelected(Const AObject: TEpiCustomBase;
       ObjectType: TEpiVTreeNodeObjectType); virtual;
@@ -206,6 +250,7 @@ type
     property  OnEditing: TEpiVTreeNodeEditing read FOnEditing write FOnEditing;
     property  OnError: TEpiVProjectTreeError read FOnError write FOnError;
     property  OnGetHint: TEpiVProjectTreeGetHint read FOnGetHint write FOnGetHint;
+    property  OnGetText: TEpiVProjectTreeGetText read FOnGetText write FOnGetText;
     property  OnNewRelation: TEpiVProjectTreeRelationEvent read FOnNewRelation write FOnNewRelation;
     property  OnTreeNodeSelected: TEpiVTreeNodeSelected read FOnTreeNodeSelected write FOnTreeNodeSelected;
     property  OnTreeNodeSelecting: TEpiVTreeNodeSelecting read FOnTreeNodeSelecting write FOnTreeNodeSelecting;
@@ -233,6 +278,20 @@ type
     property DragNode: PVirtualNode read FDragNode write FDragNode;
   end;
 
+  { TFakeCustomItem }
+
+  TFakeCustomItem = class(TEpiCustomItem)
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+  end;
+
+{ TFakeCustomItem }
+
+constructor TFakeCustomItem.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+end;
+
 { TEpiVProjectTreeViewFrame }
 
 procedure TEpiVProjectTreeViewFrame.VSTChecked(Sender: TBaseVirtualTree;
@@ -240,7 +299,7 @@ procedure TEpiVProjectTreeViewFrame.VSTChecked(Sender: TBaseVirtualTree;
 var
   CNode: PVirtualNode;
 begin
-  if CheckType = pctTriState then exit;
+  if (CheckType <> pctCascade) then exit;
 
   CNode := Node^.FirstChild;
   while Assigned(CNode) do
@@ -256,7 +315,7 @@ end;
 procedure TEpiVProjectTreeViewFrame.VSTChecking(Sender: TBaseVirtualTree;
   Node: PVirtualNode; var NewState: TCheckState; var Allowed: Boolean);
 begin
-  if CheckType = pctTriState then
+  if (CheckType <> pctCascade) then
   begin
     Allowed := true;
     Exit;
@@ -371,16 +430,10 @@ var
   O: TEpiCustomBase;
   Ot: TEpiVTreeNodeObjectType;
 begin
-  O := CustomBaseFromNode(Node);
+  ObjectAndType(Node, O, Ot);
 
-  if O is TEpiDocument then
-  begin
-    HintText := TEpiDocument(O).Study.Title.Text;
-    Ot := otProject;
-  end else begin
-    HintText := TEpiMasterRelation(O).Datafile.Caption.Text;
-    Ot := otRelation;
-  end;
+  // Hinttext should default to the node text, hence call GetText.
+  HintText := VST.Text[Node, Column];
 
   DoGetHint(O, Ot, HintText);
 end;
@@ -393,12 +446,7 @@ var
 begin
   if not Assigned(Node) then exit;
 
-  O := CustomBaseFromNode(Node);
-  if O is TEpiDocument then
-    OT := otProject
-  else
-    OT := otRelation;
-
+  ObjectAndType(Node, O, OT);
   DoTreeNodeSelected(O, OT);
 end;
 
@@ -478,15 +526,38 @@ var
   Obj: TEpiCustomBase;
   Doc: TEpiDocument absolute Obj;
   MR:  TEpiMasterRelation absolute Obj;
+  ObjType: TEpiVTreeNodeObjectType;
 begin
-  if TextType <> ttNormal then exit;
+  ObjectAndType(Node, Obj, ObjType);
 
-  Obj := CustomBaseFromNode(Node);
+  case TextType of
+    ttNormal:
+      case ObjType of
+        otEmpty: ;
 
-  if Obj is TEpiDocument then
-    CellText := Doc.Study.Title.Text
-  else
-    CellText := Mr.Datafile.Caption.Text;
+        otFake:
+          if DocumentCountInRange then
+            CellText := 'No Common Projects!'
+          else
+            CellTExt := 'Incorrect number of documents';
+
+        otRelation:
+          CellText := Mr.Datafile.Caption.Text;
+
+        otProject:
+          CellText := Doc.Study.Title.Text
+      end;
+
+    ttStatic:
+      case ObjType of
+        otEmpty:    ;
+        otFake:     ;
+        otRelation: ;
+        otProject:  ;
+      end;
+  end;
+
+  DoGetText(Obj, ObjType, TextType = ttStatic, CellText);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTNewText(Sender: TBaseVirtualTree;
@@ -636,6 +707,13 @@ begin
     Result := Mr.Datafile;
 end;
 
+function TEpiVProjectTreeViewFrame.DocumentCountInRange: boolean;
+begin
+  result :=
+    (FDocumentList.Count >= MinDocumentCount) and
+    (FDocumentList.Count <= MaxDocumentCount);
+end;
+
 function TEpiVProjectTreeViewFrame.MasterRelationFromDataFile(
   const Datafile: TEpiDataFile): TEpiMasterRelation;
 begin
@@ -676,6 +754,22 @@ function TEpiVProjectTreeViewFrame.NodeFromMasterRelation(
   const MasterRelation: TEpiMasterRelation): PVirtualNode;
 begin
   result := NodeFromCustomBase(MasterRelation);
+end;
+
+procedure TEpiVProjectTreeViewFrame.ObjectAndType(const Node: PVirtualNode; out
+  Obj: TEpiCustomBase; out ObjType: TEpiVTreeNodeObjectType);
+begin
+  Obj := CustomBaseFromNode(Node);
+  ObjType :=  otEmpty;
+
+  if Obj = FFakeRoot then
+    ObjType := otFake;
+
+  if Obj is TEpiDocument then
+    ObjType := otProject;
+
+  if Obj is TEpiMasterRelation then
+    ObjType := otRelation;
 end;
 
 procedure TEpiVProjectTreeViewFrame.UpdateCustomData(
@@ -733,6 +827,7 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
 var
   i: Integer;
   OldSelectedObject: TEpiCustomItem;
+  Node: PVirtualNode;
 begin
   FUpdatingTree := true;
 
@@ -748,24 +843,30 @@ begin
     if DisplayMode = pdmSeperate then
       for i := 0 to FDocumentList.Count -1 do
         BuildDocumentTree(VST.RootNode, TEpiDocument(FDocumentList[i]))
-    else if AllRelationsAreEqual then
+    else
+    if AllRelationsAreEqual and
+       DocumentCountInRange
+    then
       BuildDocumentTree(VST.RootNode, TEpiDocument(FDocumentList[0]))
     else
-      VST.AddChild(VST.RootNode, nil);
+      VST.AddChild(VST.RootNode, FFakeRoot);
 
     VST.FullExpand();
 
 
-    if Assigned(OldSelectedObject) then
-    begin
-      VST.FocusedNode := NodeFromCustomBase(OldSelectedObject);
-    end else
-      if (ShowProject and AllowSelectProject) or
-         (not ShowProject)
-      then
-        VST.FocusedNode := VST.GetFirst()
-      else
-        VST.FocusedNode := VST.GetNext(VST.GetFirst());
+    if Assigned(OldSelectedObject) and
+       Assigned(NodeFromCustomBase(OldSelectedObject))
+    then
+      VST.FocusedNode := NodeFromCustomBase(OldSelectedObject)
+    else
+      begin
+        if (ShowProject and AllowSelectProject) or
+           (not ShowProject)
+        then
+          VST.FocusedNode := VST.GetFirst()
+        else
+          VST.FocusedNode := VST.GetNext(VST.GetFirst());
+      end;
   end;
 
   VST.EndUpdate;
@@ -798,9 +899,14 @@ constructor TEpiVProjectTreeViewFrame.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
 
+  // Document properties:
+  FMinDocumentCount := -1;
+  FMaxDocumentCount := -1;
+
   // Objects
   FDocumentList := TList.Create;
   FUpdatingTree := false;
+  FFakeRoot     := TFakeCustomItem.Create(nil);
 
   // Options
   FAllowSelectProject := true;
@@ -848,6 +954,7 @@ begin
   for i := 0 to FDocumentList.Count -1 do
     RemoveHooks(TEpiDocument(FDocumentList[i]));
 
+  FFakeRoot.Free;
   FDocumentList.Free;
   inherited Destroy;
 end;
@@ -863,11 +970,34 @@ begin
   Result := TEpiDocument(FDocumentList[Index]);
 end;
 
+procedure TEpiVProjectTreeViewFrame.SetMaxDocumentCount(AValue: Integer);
+begin
+  if FMaxDocumentCount = AValue then Exit;
+  FMaxDocumentCount := AValue;
+
+  DoUpdateTree;
+end;
+
+procedure TEpiVProjectTreeViewFrame.SetMinDocumentCount(AValue: Integer);
+begin
+  if FMinDocumentCount = AValue then Exit;
+  FMinDocumentCount := AValue;
+
+  DoUpdateTree;
+end;
+
 procedure TEpiVProjectTreeViewFrame.AddDocument(const Doc: TEpiDocument);
 begin
   FDocumentList.Add(Doc);
   DoUpdateTree;
   AddHooks(Doc);
+end;
+
+procedure TEpiVProjectTreeViewFrame.RemoveDocument(const Doc: TEpiDocument);
+begin
+  RemoveHooks(Doc);
+  FDocumentList.Remove(Doc);
+  DoUpdateTree;
 end;
 
 procedure TEpiVProjectTreeViewFrame.CreateRelatedDataFile(
@@ -945,6 +1075,28 @@ begin
   VST.DeleteNode(Node);
 end;
 
+procedure TEpiVProjectTreeViewFrame.ResetCheckBoxes;
+var
+  Node: PVirtualNode;
+  Val: TCheckType;
+begin
+  if ShowCheckBoxes then
+    if CheckType = pctIndividual then
+      Val := ctCheckBox
+    else
+      Val := ctTriStateCheckBox
+  else
+    Val := ctNone;
+
+  Node := VST.GetFirst();
+  while Assigned(Node) do
+  begin
+    VST.CheckType[Node] := Val;
+    VST.CheckState[Node] := csUncheckedNormal;
+    Node := VST.GetNext(Node, true);
+  end;
+end;
+
 procedure TEpiVProjectTreeViewFrame.SetAllowSelectProject(AValue: Boolean);
 begin
   if FAllowSelectProject = AValue then Exit;
@@ -952,24 +1104,20 @@ begin
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetCheckType(AValue: TEpiVProjectCheckType);
-var
-  Node: PVirtualNode;
 begin
   if FCheckType = AValue then Exit;
   FCheckType := AValue;
 
   with VST.TreeOptions do
     case CheckType of
-      pctTriState: AutoOptions := AutoOptions + [toAutoTristateTracking];
-      pctCascade:  AutoOptions := AutoOptions - [toAutoTristateTracking];
+      pctTriState:
+        AutoOptions := AutoOptions + [toAutoTristateTracking];
+      pctCascade,
+      pctIndividual:
+        AutoOptions := AutoOptions - [toAutoTristateTracking];
   end;
 
-  Node := VST.GetFirst();
-  while Assigned(Node) do
-  begin
-    VST.CheckState[Node] := csUncheckedNormal;
-    Node := VST.GetNext(Node, true);
-  end;
+  ResetCheckBoxes;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetDisplayMode(AValue: TEpiVProjectDisplayMode);
@@ -1004,24 +1152,11 @@ begin
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetShowCheckBoxes(AValue: Boolean);
-var
-  Node: PVirtualNode;
-  Val: TCheckType;
 begin
   if FShowCheckBoxes = AValue then Exit;
   FShowCheckBoxes := AValue;
 
-  if ShowCheckBoxes then
-    Val := ctTriStateCheckBox
-  else
-    Val := ctNone;
-
-  Node := VST.GetFirst();
-  while Assigned(Node) do
-  begin
-    VST.CheckType[Node] := Val;
-    Node := VST.GetNext(Node, true);
-  end;
+  ResetCheckBoxes;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetShowHint(AValue: boolean);
@@ -1032,12 +1167,82 @@ begin
   VST.ShowHint := FShowHint;
 end;
 
+procedure TEpiVProjectTreeViewFrame.SetShowRecordCount(AValue: boolean);
+begin
+  if FShowRecordCount = AValue then Exit;
+  FShowRecordCount := AValue;
+
+  with VST.TreeOptions do
+    if FShowRecordCount then
+      StringOptions := StringOptions + [toShowStaticText]
+    else
+      StringOptions := StringOptions - [toShowStaticText];
+
+  VST.Invalidate;
+end;
+
 procedure TEpiVProjectTreeViewFrame.SetShowProject(AValue: boolean);
 begin
   if FShowProject = AValue then Exit;
   FShowProject := AValue;
 
   DoUpdateTree;
+end;
+
+function TEpiVProjectTreeViewFrame.GetCheckList: TList;
+begin
+  Node := VST.GetFirstChild(nil);
+
+  Result := TList.Create;
+  while Assigned(Node) do
+  begin
+
+  end;
+end;
+
+procedure TEpiVProjectTreeViewFrame.SetCheckList(AValue: TList);
+begin
+
+end;
+
+procedure TEpiVProjectTreeViewFrame.CheckAll;
+var
+  Node: PVirtualNode;
+begin
+  if not ShowCheckBoxes then exit;
+
+  Node := VST.GetFirst(true);
+  case CheckType of
+    pctIndividual:
+      while Assigned(Node) do
+      begin
+        VST.CheckState[Node] := csCheckedNormal;
+        Node := VST.GetNext(Node, true);
+      end;
+
+    pctTriState,
+    pctCascade:
+      VST.CheckState[Node] := csCheckedNormal;
+  end;
+end;
+
+procedure TEpiVProjectTreeViewFrame.CheckNone;
+var
+  Node: PVirtualNode;
+begin
+  if not ShowCheckBoxes then exit;
+
+  Node := VST.GetFirst(true);
+  case CheckType of
+    pctIndividual,
+    pctTriState,
+    pctCascade:
+      while Assigned(Node) do
+      begin
+        VST.CheckState[Node] := csUncheckedNormal;
+        Node := VST.GetNext(Node, true);
+      end;
+  end;
 end;
 
 function TEpiVProjectTreeViewFrame.GetSelectedObject: TEpiCustomBase;
@@ -1104,6 +1309,14 @@ procedure TEpiVProjectTreeViewFrame.DoGetHint(const AObject: TEpiCustomBase;
 begin
   if Assigned(OnGetHint) then
     OnGetHint(Self, AObject, ObjectType, HintText);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoGetText(const AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType; const StaticText: boolean;
+  var NodeText: string);
+begin
+  if Assigned(OnGetText) then
+    OnGetText(Self, AObject, ObjectType, StaticText, NodeText);
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoNewRelation(
