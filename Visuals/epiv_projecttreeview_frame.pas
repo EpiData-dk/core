@@ -17,6 +17,7 @@ uses
 
 type
   TEpiVCustomBaseList = specialize TFPGObjectList<TEpiCustomBase>;
+  TEpiVCheckList = specialize TFPGObjectList<TEpiVCustomBaseList>;
 
   TEpiVProjectDisplayMode = (
     pdmSeperate,          // Display each document with distinct rootnodes
@@ -158,7 +159,7 @@ type
   public
     procedure AddDocument(Const Doc: TEpiDocument);
     procedure RemoveDocument(Const Doc: TEpiDocument);
-    procedure CreateRelatedDataFile(Const ParentDataFile: TEpiDataFile);
+    procedure CreateRelation(Const MasterRelation: TEpiMasterRelation);
     procedure DeleteDataFile(DataFile: TEpiDataFile);
   public
     property  Documents[Const Index: integer]: TEpiDocument read GetDocuments;
@@ -202,12 +203,12 @@ type
 
   { Option Methods }
   private
-    function  GetCheckList: TList;
-    procedure SetCheckList(AValue: TList);
+    function  GetCheckList: TEpiVCheckList;
+    procedure SetCheckList(AValue: TEpiVCheckList);
   public
     procedure CheckAll;
     procedure CheckNone;
-    property  CheckList: TList read GetCheckList write SetCheckList;
+    property  CheckList: TEpiVCheckList read GetCheckList write SetCheckList;
 
   { Access properties }
   private
@@ -462,28 +463,8 @@ var
   OldType: TEpiVTreeNodeObjectType;
   NewType: TEpiVTreeNodeObjectType;
 begin
-  OldObject := nil;
-  OldType   := otEmpty;
-  NewObject := nil;
-  NewType   := otEmpty;
-
-  if Assigned(OldNode) then
-    begin
-      OldObject := CustomBaseFromNode(OldNode);
-      if OldObject is TEpiDocument then
-        OldType := otProject
-      else
-        OldType := otRelation;
-    end;
-
-  if Assigned(NewNode) then
-    begin
-      NewObject := CustomBaseFromNode(NewNode);
-      if NewObject is TEpiDocument then
-        NewType := otProject
-      else
-        NewType := otRelation;
-    end;
+  ObjectAndType(OldNode, OldObject, OldType);
+  ObjectAndType(NewNode, NewObject, NewType);
 
   if (NewType = otProject) and
      (not AllowSelectProject)
@@ -508,7 +489,13 @@ begin
   // If the tree is updating (rebuilding itself) then do NOT delete
   // node data. This should only happen on an explicit deletion of
   // the node.
-  if FUpdatingTree then exit;
+  if FUpdatingTree then
+  begin
+    // During an update, we need to Free the associated TEpiVCustomBaseList object,
+    // otherwise we have a memoryleak.
+    TEpiVCustomBaseList(VST.GetNodeData(Node)^).Free;
+    Exit;
+  end;
 
   if not Assigned(Node) then exit;
   if Node^.Parent = VST.RootNode then exit;
@@ -777,7 +764,7 @@ procedure TEpiVProjectTreeViewFrame.ObjectAndType(const Node: PVirtualNode; out
   Obj: TEpiCustomBase; out ObjType: TEpiVTreeNodeObjectType);
 begin
   Obj := CustomBaseFromNode(Node);
-  ObjType :=  otEmpty;
+  ObjType := otEmpty;
 
   if Obj = FFakeRoot then
     ObjType := otFake;
@@ -793,14 +780,12 @@ procedure TEpiVProjectTreeViewFrame.UpdateCustomData(
   const AObject: TEpiCustomBase; const Node: PVirtualNode);
 var
   MasterRelation: TEpiMasterRelation absolute AObject;
+  L: TEpiVCustomBaseList;
 begin
-  AObject.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
+  L := TEpiVCustomBaseList(VST.GetNodeData(Node)^);
+  L.Add(AObject);
 
-  if AObject is TEpiMasterRelation then
-  begin
-    MasterRelation.Datafile.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
-    MasterRelation.Datafile.AddCustomData(PROJECTTREE_RELATION_CUSTOMKEY, MasterRelation);
-  end;
+  AObject.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
@@ -810,7 +795,7 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
     i: Integer;
     Node: PVirtualNode;
   begin
-    Node := VST.AddChild(Parent, MR);
+    Node := VST.AddChild(Parent, TEpiVCustomBaseList.Create(false));
 
     UpdateCustomData(MR, Node);
 
@@ -828,7 +813,7 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
   begin
     if ShowProject then
     begin
-      Node := VST.AddChild(Parent, Doc);
+      Node := VST.AddChild(Parent, TEpiVCustomBaseList.Create(false));
 
       UpdateCustomData(Doc, Node);
 
@@ -937,7 +922,7 @@ begin
 
   with VST do
   begin
-    NodeDataSize    := SizeOf(Pointer);
+    NodeDataSize    := SizeOf(TEpiVCustomBaseList);
 
     TreeOptions.AutoOptions := TreeOptions.AutoOptions + [toAutoTristateTracking];
 
@@ -1017,8 +1002,8 @@ begin
   DoUpdateTree;
 end;
 
-procedure TEpiVProjectTreeViewFrame.CreateRelatedDataFile(
-  const ParentDataFile: TEpiDataFile);
+procedure TEpiVProjectTreeViewFrame.CreateRelation(
+  const MasterRelation: TEpiMasterRelation);
 var
   ParentNode: PVirtualNode;
   NewRelation: TEpiMasterRelation;
@@ -1030,11 +1015,11 @@ var
 begin
   if not EditStructure then exit;
 
-  if Assigned(ParentDataFile) then
+  if Assigned(MasterRelation) then
   begin
-    ParentNode := NodeFromDataFile(ParentDataFile);
-    NewRelation := MasterRelationFromDataFile(ParentDataFile).NewDetailRelation;
-    NewDataFile := TEpiDataFiles(ParentDataFile.Owner).NewDataFile;
+    ParentNode := NodeFromMasterRelation(MasterRelation);
+    NewRelation := MasterRelation.NewDetailRelation;
+    NewDataFile := TEpiDataFiles(MasterRelation.Datafile.Owner).NewDataFile;
   end else begin
     // TODO: How to handle creating new datafile which is a true "master". Hence
     //       we need information on which document we insert into!
@@ -1046,10 +1031,10 @@ begin
   NewDataFile.Caption.RegisterOnChangeHook(@DataFileCaptionChange, true);
   NewRelation.Datafile := NewDataFile;
 
-  if Assigned(ParentDataFile) then
-    for ParentKeyField in ParentDataFile.KeyFields do
+  if Assigned(MasterRelation) then
+    for ParentKeyField in MasterRelation.Datafile.KeyFields do
     begin
-      // In a related datafile, the "primary" keys cannot be autoinc - it would
+      // In a related datafile, the "primary" key cannot contain autoinc - it would
       // screw up the numbering.
       Ft := ParentKeyField.FieldType;
       if Ft = ftAutoInc then Ft := ftInteger;
@@ -1060,8 +1045,7 @@ begin
       NewDataFile.KeyFields.AddItem(NewKeyField);
     end;
 
-  Node := VST.AddChild(ParentNode, NewRelation);
-  VST.Expanded[ParentNode] := true;
+  Node := VST.AddChild(ParentNode, TEpiVCustomBaseList.Create(false));
   UpdateCustomData(NewRelation, Node);
 
   if ShowCheckBoxes then
@@ -1079,6 +1063,10 @@ begin
   end;
 
   DoNewRelation(NewRelation);
+
+  // Expand node at the end, as this will cause an update/initialization of
+  // internal node data.
+  VST.Expanded[ParentNode] := true;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DeleteDataFile(DataFile: TEpiDataFile);
@@ -1206,33 +1194,33 @@ begin
   DoUpdateTree;
 end;
 
-function TEpiVProjectTreeViewFrame.GetCheckList: TList;
+function TEpiVProjectTreeViewFrame.GetCheckList: TEpiVCheckList;
 var
   Node: PVirtualNode;
 begin
   Node := VST.GetFirstChild(nil);
 
-  Result := TList.Create;
+  Result := TEpiVCheckList.Create;
   while Assigned(Node) do
   begin
     if VST.CheckState[Node] in [csCheckedNormal, csMixedNormal] then
-      Result.Add(CustomBaseFromNode(Node));
+      Result.Add(CustomBaseListFromNode(Node));
 
     Node := VST.GetNext(Node, True);
   end;
 end;
 
-procedure TEpiVProjectTreeViewFrame.SetCheckList(AValue: TList);
+procedure TEpiVProjectTreeViewFrame.SetCheckList(AValue: TEpiVCheckList);
 var
   Node: PVirtualNode;
-  CB: TEpiCustomBase;
+  CBL: TEpiVCustomBaseList;
 begin
   Node := VST.GetFirstChild(nil);
 
   while Assigned(Node) do
   begin
-    CB := CustomBaseFromNode(Node);
-    if AValue.IndexOf(CB) >= 0 then
+    CBL := CustomBaseListFromNode(Node);
+    if AValue.IndexOf(CBL) >= 0 then
       VST.CheckState[Node] := csCheckedNormal;
 
     Node := VST.GetNext(Node, True);
@@ -1288,14 +1276,7 @@ function TEpiVProjectTreeViewFrame.GetSelectedObjectType: TEpiVTreeNodeObjectTyp
 var
   O: TEpiCustomBase;
 begin
-  Result := otEmpty;
-  O := CustomBaseFromNode(VST.FocusedNode);
-
-  if O is TEpiDocument then
-    Result := otProject;
-
-  if O is TEpiMasterRelation then
-    Result := otRelation;
+  ObjectAndType(VST.FocusedNode, O, Result);
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetSelectedObject(AValue: TEpiCustomBase);
