@@ -16,9 +16,6 @@ uses
   fgl;
 
 type
-  TEpiVCustomBaseList = specialize TFPGObjectList<TEpiCustomBase>;
-  TEpiVCheckList = specialize TFPGObjectList<TEpiVCustomBaseList>;
-
   TEpiVProjectDisplayMode = (
     pdmSeperate,          // Display each document with distinct rootnodes
     pdmCommon             // Display only common dataform (structure AND name)
@@ -130,10 +127,8 @@ type
     FFakeRoot: TEpiCustomItem;
     function  AllRelationsAreEqual: boolean;
     function  CustomBaseFromNode(Const Node: PVirtualNode): TEpiCustomBase;
-    function  CustomBaseListFromNode(Const Node: PVirtualNode): TEpiVCustomBaseList;
     function  DataFileFromNode(Const Node: PVirtualNode): TEpiDataFile;
     function  DocumentCountInRange: boolean;
-    function  MasterRelationFromDataFile(Const Datafile: TEpiDataFile): TEpiMasterRelation;
     function  MasterRelationFromNode(Const Node: PVirtualNode): TEpiMasterRelation;
     function  NodeFromCustomBase(Const AObject: TEpiCustomBase): PVirtualNode;
     function  NodeFromDataFile(Const DataFile: TEpiDataFile): PVirtualNode;
@@ -160,7 +155,7 @@ type
     procedure AddDocument(Const Doc: TEpiDocument);
     procedure RemoveDocument(Const Doc: TEpiDocument);
     procedure CreateRelation(Const MasterRelation: TEpiMasterRelation);
-    procedure DeleteDataFile(DataFile: TEpiDataFile);
+    procedure DeleteRelation(Relation: TEpiMasterRelation);
   public
     property  Documents[Const Index: integer]: TEpiDocument read GetDocuments;
     // Document Count is only applied when DisplayMode = pdmCommon
@@ -203,12 +198,12 @@ type
 
   { Option Methods }
   private
-    function  GetCheckList: TEpiVCheckList;
-    procedure SetCheckList(AValue: TEpiVCheckList);
+    function  GetCheckList: TList;
+    procedure SetCheckList(AValue: TList);
   public
     procedure CheckAll;
     procedure CheckNone;
-    property  CheckList: TEpiVCheckList read GetCheckList write SetCheckList;
+    property  CheckList: TList read GetCheckList write SetCheckList;
 
   { Access properties }
   private
@@ -490,12 +485,7 @@ begin
   // node data. This should only happen on an explicit deletion of
   // the node.
   if FUpdatingTree then
-  begin
-    // During an update, we need to Free the associated TEpiVCustomBaseList object,
-    // otherwise we have a memoryleak.
-    TEpiVCustomBaseList(VST.GetNodeData(Node)^).Free;
     Exit;
-  end;
 
   if not Assigned(Node) then exit;
   if Node^.Parent = VST.RootNode then exit;
@@ -676,26 +666,12 @@ end;
 
 function TEpiVProjectTreeViewFrame.CustomBaseFromNode(const Node: PVirtualNode
   ): TEpiCustomBase;
-var
-  L: TEpiVCustomBaseList;
-begin
-  Result  := nil;
-
-  L := CustomBaseListFromNode(Node);
-
-  if Assigned(L) then
-    result := L[0];
-end;
-
-function TEpiVProjectTreeViewFrame.CustomBaseListFromNode(
-  const Node: PVirtualNode): TEpiVCustomBaseList;
 begin
   Result := nil;
-
   if (Node = nil) then exit;
 
   if Assigned(Node) then
-    result := TEpiVCustomBaseList(VST.GetNodeData(Node)^);
+    result := TEpiCustomBase(VST.GetNodeData(Node)^);
 end;
 
 function TEpiVProjectTreeViewFrame.DataFileFromNode(const Node: PVirtualNode
@@ -715,15 +691,6 @@ begin
   result :=
     (FDocumentList.Count >= MinDocumentCount) and
     (FDocumentList.Count <= MaxDocumentCount);
-end;
-
-function TEpiVProjectTreeViewFrame.MasterRelationFromDataFile(
-  const Datafile: TEpiDataFile): TEpiMasterRelation;
-begin
-  result := nil;
-
-  if Assigned(DataFile) then
-    result := TEpiMasterRelation(Datafile.FindCustomData(PROJECTTREE_RELATION_CUSTOMKEY));
 end;
 
 function TEpiVProjectTreeViewFrame.MasterRelationFromNode(const Node: PVirtualNode
@@ -778,13 +745,7 @@ end;
 
 procedure TEpiVProjectTreeViewFrame.UpdateCustomData(
   const AObject: TEpiCustomBase; const Node: PVirtualNode);
-var
-  MasterRelation: TEpiMasterRelation absolute AObject;
-  L: TEpiVCustomBaseList;
 begin
-  L := TEpiVCustomBaseList(VST.GetNodeData(Node)^);
-  L.Add(AObject);
-
   AObject.AddCustomData(PROJECTTREE_NODE_CUSTOMKEY, TObject(Node));
 end;
 
@@ -795,7 +756,7 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
     i: Integer;
     Node: PVirtualNode;
   begin
-    Node := VST.AddChild(Parent, TEpiVCustomBaseList.Create(false));
+    Node := VST.AddChild(Parent, MR);
 
     UpdateCustomData(MR, Node);
 
@@ -813,7 +774,7 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
   begin
     if ShowProject then
     begin
-      Node := VST.AddChild(Parent, TEpiVCustomBaseList.Create(false));
+      Node := VST.AddChild(Parent, DOC);
 
       UpdateCustomData(Doc, Node);
 
@@ -922,7 +883,7 @@ begin
 
   with VST do
   begin
-    NodeDataSize    := SizeOf(TEpiVCustomBaseList);
+    NodeDataSize    := SizeOf(Pointer);
 
     TreeOptions.AutoOptions := TreeOptions.AutoOptions + [toAutoTristateTracking];
 
@@ -1045,7 +1006,7 @@ begin
       NewDataFile.KeyFields.AddItem(NewKeyField);
     end;
 
-  Node := VST.AddChild(ParentNode, TEpiVCustomBaseList.Create(false));
+  Node := VST.AddChild(ParentNode, NewRelation);
   UpdateCustomData(NewRelation, Node);
 
   if ShowCheckBoxes then
@@ -1069,14 +1030,15 @@ begin
   VST.Expanded[ParentNode] := true;
 end;
 
-procedure TEpiVProjectTreeViewFrame.DeleteDataFile(DataFile: TEpiDataFile);
+procedure TEpiVProjectTreeViewFrame.DeleteRelation(Relation: TEpiMasterRelation
+  );
 var
   Node: PVirtualNode;
 begin
   if not EditStructure then exit;
-  if not Assigned(DataFile) then exit;
+  if not Assigned(Relation) then exit;
 
-  Node := NodeFromDataFile(DataFile);
+  Node := NodeFromMasterRelation(Relation);
   VST.DeleteNode(Node);
 end;
 
@@ -1194,33 +1156,33 @@ begin
   DoUpdateTree;
 end;
 
-function TEpiVProjectTreeViewFrame.GetCheckList: TEpiVCheckList;
+function TEpiVProjectTreeViewFrame.GetCheckList: TList;
 var
   Node: PVirtualNode;
 begin
   Node := VST.GetFirstChild(nil);
 
-  Result := TEpiVCheckList.Create;
+  Result := TList.Create;
   while Assigned(Node) do
   begin
     if VST.CheckState[Node] in [csCheckedNormal, csMixedNormal] then
-      Result.Add(CustomBaseListFromNode(Node));
+      Result.Add(CustomBaseFromNode(Node));
 
     Node := VST.GetNext(Node, True);
   end;
 end;
 
-procedure TEpiVProjectTreeViewFrame.SetCheckList(AValue: TEpiVCheckList);
+procedure TEpiVProjectTreeViewFrame.SetCheckList(AValue: TList);
 var
   Node: PVirtualNode;
-  CBL: TEpiVCustomBaseList;
+  CB: TEpiCustomBase;
 begin
   Node := VST.GetFirstChild(nil);
 
   while Assigned(Node) do
   begin
-    CBL := CustomBaseListFromNode(Node);
-    if AValue.IndexOf(CBL) >= 0 then
+    CB := CustomBaseFromNode(Node);
+    if AValue.IndexOf(CB) >= 0 then
       VST.CheckState[Node] := csCheckedNormal;
 
     Node := VST.GetNext(Node, True);
