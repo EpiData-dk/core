@@ -37,6 +37,9 @@ type
     constructor Create(TheOwner: TComponent); override;
     procedure SelectAll;
     procedure SelectNone;
+    procedure SelectKey;
+    procedure SelectFieldTypes(Const FieldTypes: TEpiFieldTypes;
+      DeSelect: Boolean);
     property DataFile: TEpiDataFile read FDataFile write SetDataFile;
     property SelectedList: TList read GetSelectedList write SetSelectedList;
     property ShowHeadings: Boolean read FShowHeadings write SetShowHeadings;
@@ -175,9 +178,10 @@ var
   CurrentNode: PVirtualNode;
   i: Integer;
 begin
+  DataFileTree.Clear;
+
   if not Assigned(Datafile) then exit;
 
-  DataFileTree.Clear;
   DataFileTree.BeginUpdate;
   DataFileTree.NodeDataSize := SizeOf(TEpiCustomControlItem);
 
@@ -257,12 +261,63 @@ end;
 
 procedure TDataFormTreeViewFrame.SelectAll;
 begin
+  if DataFileTree.RootNodeCount = 0 then exit;
   DataFileTree.CheckState[DataFileTree.GetFirst()] := csCheckedNormal;
 end;
 
 procedure TDataFormTreeViewFrame.SelectNone;
 begin
+  if DataFileTree.RootNodeCount = 0 then exit;
   DataFileTree.CheckState[DataFileTree.GetFirst()] := csUncheckedNormal;
+end;
+
+procedure TDataFormTreeViewFrame.SelectKey;
+var
+  Node: PVirtualNode;
+  CI: TEpiCustomControlItem;
+begin
+  if DataFileTree.RootNodeCount = 0 then exit;
+  SelectNone;
+
+  Node := DataFileTree.GetFirstChild(nil);
+  while Assigned(Node) do
+  begin
+    CI := GetCustomItemFromNode(Node);
+
+    if (CI.InheritsFrom(TEpiField)) and
+       (DataFile.KeyFields.FieldExists(TEpiField(CI)))
+    then
+      DataFileTree.CheckState[Node] := csCheckedNormal;
+
+    Node := DataFileTree.GetNext(Node, true);
+  end;
+end;
+
+procedure TDataFormTreeViewFrame.SelectFieldTypes(
+  const FieldTypes: TEpiFieldTypes; DeSelect: Boolean);
+var
+  Node: PVirtualNode;
+  CI: TEpiCustomControlItem;
+  Cs: TCheckState;
+begin
+  Node := DataFileTree.GetFirstChild(nil);
+
+  if DeSelect then
+    Cs := csUncheckedNormal
+  else
+    Cs := csCheckedNormal;
+
+  while Assigned(Node) do
+  begin
+    CI := GetCustomItemFromNode(Node);
+
+    if (CI.InheritsFrom(TEpiField)) and
+       (TEpiField(CI).FieldType in FieldTypes)
+    then
+      DataFileTree.CheckState[Node] := Cs;
+
+    Node := DataFileTree.GetNext(Node, true);
+  end;
 end;
 
 end.

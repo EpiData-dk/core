@@ -28,16 +28,17 @@ type
     FResultArray: TEpiDblEntryResultArray;
     FVAlidator:   TEpiToolsDblEntryValidator;
   private
+    FCommonRecords: integer;
     FMissingInMain: integer;
     FMissingInDupl: integer;
-    FCommonRecord: integer;
-    function    CalcMissingInMainDF: Integer;
-    function    CalcMissingInDuplDF: Integer;
+    FNonUniqueMain: integer;
+    FNonUniqueDupl: integer;
+    FErrorRec: integer;
+    FErrorFields: integer;
     function    CalcCommonRecords: integer;
-    function    CalcErrorRecords:  integer;
-    function    CalcErrorFields:  integer;
     function    CalcErrorPct: Extended;
     function    CalcErrorFieldPct: Extended;
+    procedure   CalcAll;
   protected
     procedure DoSanityCheck; override;
     procedure ResetCalculations;
@@ -54,60 +55,13 @@ type
 implementation
 
 uses
-  math, epireport_types;
+  math, epireport_types, epimiscutils;
 
 { TEpiReportDoubleEntryValidation }
 
-function TEpiReportDoubleEntryValidation.CalcMissingInMainDF: Integer;
-var
-  i: Integer;
-begin
-  if FMissingInMain > -1 then
-    Exit(FMissingInMain);
-
-  Result := 0;
-  for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult = rrValNoExistsMain then
-      Inc(Result);
-  FMissingInMain := Result;
-end;
-
-function TEpiReportDoubleEntryValidation.CalcMissingInDuplDF: Integer;
-var
-  i: Integer;
-begin
-  if FMissingInDupl > -1 then
-    Exit(FMissingInDupl);
-
-  Result := 0;
-  for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult = rrValNoExistsDupl then
-      Inc(Result);
-  FMissingInDupl := Result;
-end;
-
 function TEpiReportDoubleEntryValidation.CalcCommonRecords: integer;
 begin
-  Result := FVAlidator.MainDF.Size - CalcMissingInDuplDF;
-end;
-
-function TEpiReportDoubleEntryValidation.CalcErrorRecords: integer;
-var
-  i: Integer;
-begin
-  Result  := 0;
-  for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult in [rrValTextFail, rrValValueFail] then inc(Result);
-end;
-
-function TEpiReportDoubleEntryValidation.CalcErrorFields: integer;
-var
-  i: Integer;
-begin
-  Result  := 0;
-  for i := 0 to Length(FResultArray) - 1 do
-    if FResultArray[i].ValResult in [rrValTextFail, rrValValueFail] then
-      inc(Result, Length(FResultArray[i].CmpFieldNames));
+  Result := FCommonRecords;
 end;
 
 function TEpiReportDoubleEntryValidation.CalcErrorPct: Extended;
@@ -116,7 +70,7 @@ begin
   if Result = 0 then
     Exit(1);
 
-  Result := CalcErrorRecords / Result;
+  Result := FErrorRec / Result;
 end;
 
 function TEpiReportDoubleEntryValidation.CalcErrorFieldPct: Extended;
@@ -125,7 +79,41 @@ begin
   if Result = 0 then
     Exit(1);
 
-  result := CalcErrorFields / Result;
+  result := FErrorFields / Result;
+end;
+
+procedure TEpiReportDoubleEntryValidation.CalcAll;
+var
+  R: TEpiDblEntryResultRecord;
+begin
+  for R in FResultArray do
+    case R.ValResult of
+      rrValOk: ;
+
+      rrValNoExistsMain:
+        Inc(FMissingInMain);
+
+      rrValNoExistsDupl:
+        Inc(FMissingInDupl);
+
+      rrValValueFail,
+      rrValTextFail:
+        begin
+          Inc(FErrorRec);
+          Inc(FErrorFields, Length(R.CmpFieldNames));
+        end;
+
+      rrValDupKeyMain:
+        Inc(FNonUniqueMain);
+
+      rrValDupKeyDupl:
+        Inc(FNonUniqueDupl);
+    end;
+
+  FCommonRecords := FVAlidator.MainDF.Size - FNonUniqueMain - FMissingInDupl;
+
+  // The same is true for this:
+  // FCommonRecords := FVAlidator.DuplDF.Size - FNonUniqueDupl - FMissingInMain;
 end;
 
 procedure TEpiReportDoubleEntryValidation.DoSanityCheck;
@@ -140,13 +128,18 @@ begin
     DoError(EEpiReportDEVException, Format(SEpiReportDEVNoFields, ['KeyFields']));
   if not Assigned(CompareFields) then
     DoError(EEpiReportDEVException, Format(SEpiReportDEVNoFields, ['CompareFields']));
+
+  ResetCalculations;
 end;
 
 procedure TEpiReportDoubleEntryValidation.ResetCalculations;
 begin
-  FMissingInMain := -1;
-  FMissingInDupl := -1;
-  FCommonRecord := -1;
+  FMissingInMain := 0;
+  FMissingInDupl := 0;
+  FErrorRec      := 0;
+  FErrorFields   := 0;
+  FNonUniqueMain := 0;
+  FNonUniqueDupl := 0;
 end;
 
 constructor TEpiReportDoubleEntryValidation.Create(
@@ -198,6 +191,7 @@ begin
   FValidator.CompareFields := CompareFields;
   FValidator.ValidateDataFiles(FResultArray, DblEntryValidateOptions);
   FValidator.SortDblEntryResultArray(FResultArray);
+  CalcAll;
 
   DoHeading('Selections for validation:');
 
@@ -230,16 +224,26 @@ begin
   DoHeading('Result of Validation:');
 
   DoLineText('');
-  DoTableHeader('Overview', 2, 9);
-  DoTableCell(0, 0, 'Test');                              DoTableCell(1, 0, 'Result');
-  DoTableCell(0, 1, 'Records missing in main file');      DoTableCell(1, 1, IntToStr(CalcMissingInMainDF));
-  DoTableCell(0, 2, 'Records missing in duplicate file'); DoTableCell(1, 2, IntToStr(CalcMissingInDuplDF));
-  DoTableCell(0, 3, 'Number of fields checked');          DoTableCell(1, 3, IntToStr(FCompareFields.Count));
-  DoTableCell(0, 4, 'Common records');                    DoTableCell(1, 4, IntToStr(CalcCommonRecords));
-  DoTableCell(0, 5, 'Records with errors');               DoTableCell(1, 5, IntToStr(CalcErrorRecords));
-  DoTableCell(0, 6, 'Field entries with errors');         DoTableCell(1, 6, IntToStr(CalcErrorFields));
-  DoTableCell(0, 7, 'Error percentage (#records)');       DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorPct * 100));
-  DoTableCell(0, 8, 'Error percentage (#fields)');        DoTableCell(1, 8, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  if SortedCompare then
+    DoTableHeader('Overview', 2, 11)
+  else
+    DoTableHeader('Overview', 2, 9);
+
+  I := 0;
+  DoTableCell(0, I, 'Test');                              DoTableCell(1, PostInc(I), 'Result');
+  DoTableCell(0, I, 'Records missing in main file');      DoTableCell(1, PostInc(I), IntToStr(FMissingInMain));
+  DoTableCell(0, I, 'Records missing in duplicate file'); DoTableCell(1, PostInc(I), IntToStr(FMissingInDupl));
+  if SortedCompare then
+  begin
+    DoTableCell(0, I, 'Non-unique records in main file');      DoTableCell(1, PostInc(I), IntToStr(FNonUniqueMain));
+    DoTableCell(0, I, 'Non-unique records in duplicate file'); DoTableCell(1, PostInc(I), IntToStr(FNonUniqueDupl));
+  end;
+  DoTableCell(0, I, 'Number of fields checked');          DoTableCell(1, PostInc(I), IntToStr(FCompareFields.Count));
+  DoTableCell(0, I, 'Common records');                    DoTableCell(1, PostInc(I), IntToStr(CalcCommonRecords));
+  DoTableCell(0, I, 'Records with errors');               DoTableCell(1, PostInc(I), IntToStr(FErrorRec));
+  DoTableCell(0, I, 'Field entries with errors');         DoTableCell(1, PostInc(I), IntToStr(FErrorFields));
+  DoTableCell(0, I, 'Error percentage (#records)');       DoTableCell(1, PostInc(I), FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, I, 'Error percentage (#fields)');        DoTableCell(1, PostInc(I), FormatFloat('##0.00', CalcErrorFieldPct * 100));
   DoTableFooter('');
 
   DoLineText('');

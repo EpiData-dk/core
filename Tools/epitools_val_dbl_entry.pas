@@ -25,7 +25,7 @@ type
       rrValOk,                    // Compared records are OK - not included in array, internal use!
       rrValNoExistsMain,          // Record not found in main.
       rrValNoExistsDupl,          // Record not found in duplicate file.
-      rrValValueFail,             // Comparen records failed in a non-text field
+      rrValValueFail,             // Compared records failed in a non-text field
       rrValTextFail,              // Compared records failed only in a text field.
       rrValDupKeyMain,            // Duplicate key found in main
       rrValDupKeyDupl             // Duplicate key found in duplicate file.
