@@ -14,7 +14,6 @@ type
 
   TDataFormTreeViewFrame = class(TFrame)
     DataFileTree: TVirtualStringTree;
-    ImageList1: TImageList;
     procedure DataFileTreeGetImageIndex(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
       var Ghosted: Boolean; var ImageIndex: Integer);
@@ -50,6 +49,9 @@ implementation
 
 {$R *.lfm}
 
+uses
+  epiv_datamodule;
+
 { TDataFormTreeViewFrame }
 
 procedure TDataFormTreeViewFrame.DataFileTreeGetImageIndex(Sender: TBaseVirtualTree;
@@ -62,36 +64,38 @@ begin
 
   CI := GetCustomItemFromNode(Node);
 
-  if CI is TEpiHeading then
-    ImageIndex := 8;
-  if CI is TEpiSection then
-    ImageIndex := 9;
-
   if CI is TEpiField then
   case TEpiField(CI).FieldType of
     ftBoolean:
       ImageIndex := 0;
-    ftInteger,
-    ftAutoInc:
+    ftInteger:
       ImageIndex := 1;
     ftFloat:
       ImageIndex := 2;
     ftDMYDate,
-    ftDMYAuto:
-      ImageIndex := 3;
     ftMDYDate,
-    ftMDYAuto:
+    ftYMDDate:
+      ImageIndex := 3;
+    ftTime:
       ImageIndex := 4;
-    ftYMDDate,
-    ftYMDAuto:
-      ImageIndex := 5;
-    ftTime,
-    ftTimeAuto:
-      ImageIndex := 6;
     ftString,
     ftUpperString:
+      ImageIndex := 5;
+    ftAutoInc:
+      ImageIndex := 6;
+    ftDMYAuto,
+    ftMDYAuto,
+    ftYMDAuto:
       ImageIndex := 7;
+    ftTimeAuto:
+      ImageIndex := 8;
   end;
+
+  if CI is TEpiSection then
+    ImageIndex := 9;
+
+  if CI is TEpiHeading then
+    ImageIndex := 10;
 end;
 
 procedure TDataFormTreeViewFrame.DataFileTreeGetText(Sender: TBaseVirtualTree;
@@ -257,6 +261,8 @@ begin
   FDataFile := nil;
   FShowHeadings := true;
   FShowFieldTypes := AllFieldTypes;
+
+  DataFileTree.Images := DM.Icons16;
 end;
 
 procedure TDataFormTreeViewFrame.SelectAll;
