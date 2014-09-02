@@ -67,35 +67,35 @@ begin
   if CI is TEpiField then
   case TEpiField(CI).FieldType of
     ftBoolean:
-      ImageIndex := 0;
-    ftInteger:
       ImageIndex := 1;
-    ftFloat:
+    ftInteger:
       ImageIndex := 2;
+    ftFloat:
+      ImageIndex := 3;
     ftDMYDate,
     ftMDYDate,
     ftYMDDate:
-      ImageIndex := 3;
-    ftTime:
       ImageIndex := 4;
+    ftTime:
+      ImageIndex := 5;
     ftString,
     ftUpperString:
-      ImageIndex := 5;
-    ftAutoInc:
       ImageIndex := 6;
+    ftAutoInc:
+      ImageIndex := 7;
     ftDMYAuto,
     ftMDYAuto,
     ftYMDAuto:
-      ImageIndex := 7;
-    ftTimeAuto:
       ImageIndex := 8;
+    ftTimeAuto:
+      ImageIndex := 9;
   end;
 
   if CI is TEpiSection then
-    ImageIndex := 9;
+    ImageIndex := 10;
 
   if CI is TEpiHeading then
-    ImageIndex := 10;
+    ImageIndex := 11;
 end;
 
 procedure TDataFormTreeViewFrame.DataFileTreeGetText(Sender: TBaseVirtualTree;
