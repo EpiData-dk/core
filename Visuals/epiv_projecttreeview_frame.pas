@@ -35,6 +35,13 @@ type
     otProject             // The node is a root node containing a project/document.
   );
 
+  TEpiVTreeNodeChecked = procedure(
+          Sender:  TObject;
+    Const AObject: TEpiCustomBase;
+          ObjectType: TEpiVTreeNodeObjectType;
+          Checked: Boolean
+  ) of object;
+
   TEpiVTreeNodeSelected = procedure(
           Sender:  TObject;
     Const AObject: TEpiCustomBase;
@@ -174,7 +181,7 @@ type
     FShowRecordCount: boolean;
     FShowProject: boolean;
   private
-    procedure  ResetCheckBoxes;
+    procedure ResetCheckBoxes;
   private
     procedure SetAllowSelectProject(AValue: Boolean);
     procedure SetCheckType(AValue: TEpiVProjectCheckType);
@@ -216,6 +223,7 @@ type
 
   { Events }
   private
+    FOnChecked: TEpiVTreeNodeChecked;
     FOnDelete: TEpiVProjectTreeRelationEvent;
     FOnEdited: TEpiVTreeNodeSelected;
     FOnEditing: TEpiVTreeNodeEditing;
@@ -226,6 +234,8 @@ type
     FOnTreeNodeSelected: TEpiVTreeNodeSelected;
     FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
   protected
+    procedure DoChecked(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType; Checked: Boolean);
     procedure DoDeleteRelation(Const Relation: TEpiMasterRelation); virtual;
     procedure DoEdited(Const AObject: TEpiCustomBase;
       ObjectType: TEpiVTreeNodeObjectType);
@@ -244,6 +254,7 @@ type
       OldObjectType, NewObjectType: TEpiVTreeNodeObjectType;
       var Allowed: Boolean); virtual;
   public
+    property  OnChecked: TEpiVTreeNodeChecked read FOnChecked write FOnChecked;
     property  OnDelete: TEpiVProjectTreeRelationEvent read FOnDelete write FOnDelete;
     property  OnEdited: TEpiVTreeNodeSelected read FOnEdited write FOnEdited;
     property  OnEditing: TEpiVTreeNodeEditing read FOnEditing write FOnEditing;
@@ -297,7 +308,13 @@ procedure TEpiVProjectTreeViewFrame.VSTChecked(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
 var
   CNode: PVirtualNode;
+  Obj: TEpiCustomBase;
+  ObjT: TEpiVTreeNodeObjectType;
 begin
+  ObjectAndType(Node, Obj, ObjT);
+
+  DoChecked(Obj, ObjT, VST.CheckState[Node] in [csCheckedNormal, csMixedNormal]);
+
   if (CheckType <> pctCascade) then exit;
 
   CNode := Node^.FirstChild;
@@ -760,9 +777,6 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
 
     UpdateCustomData(MR, Node);
 
-    if ShowCheckBoxes then
-      VST.CheckType[Node] := ctTriStateCheckBox;
-
     for i := 0 to MR.DetailRelations.Count - 1 do
       BuildTreeRecursive(Node, MR.DetailRelation[i]);
   end;
@@ -777,9 +791,6 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
       Node := VST.AddChild(Parent, DOC);
 
       UpdateCustomData(Doc, Node);
-
-      if ShowCheckBoxes then
-        VST.CheckType[Node] := ctTriStateCheckBox;
     end else
       Node := Parent;
 
@@ -831,6 +842,7 @@ begin
           VST.FocusedNode := VST.GetNext(VST.GetFirst());
       end;
   end;
+  ResetCheckBoxes;
 
   VST.EndUpdate;
 
@@ -1046,6 +1058,8 @@ procedure TEpiVProjectTreeViewFrame.ResetCheckBoxes;
 var
   Node: PVirtualNode;
   Val: TCheckType;
+  Obj: TEpiCustomBase;
+  ObjT: TEpiVTreeNodeObjectType;
 begin
   if ShowCheckBoxes then
     if CheckType = pctIndividual then
@@ -1058,7 +1072,15 @@ begin
   Node := VST.GetFirst();
   while Assigned(Node) do
   begin
-    VST.CheckType[Node] := Val;
+    ObjectAndType(Node, Obj, ObjT);
+
+    if (ObjT = otProject) and
+       (not AllowSelectProject)
+    then
+      VST.CheckType[Node] := ctNone
+    else
+      VST.CheckType[Node] := Val;
+
     VST.CheckState[Node] := csUncheckedNormal;
     Node := VST.GetNext(Node, true);
   end;
@@ -1192,21 +1214,56 @@ end;
 procedure TEpiVProjectTreeViewFrame.CheckAll;
 var
   Node: PVirtualNode;
+  Obj: TEpiCustomBase;
+  ObjT: TEpiVTreeNodeObjectType;
+  ChildNode: PVirtualNode;
 begin
   if not ShowCheckBoxes then exit;
 
-  Node := VST.GetFirst(true);
+  Node := VST.GetFirstChild(Nil);
   case CheckType of
     pctIndividual:
       while Assigned(Node) do
       begin
-        VST.CheckState[Node] := csCheckedNormal;
+        ObjectAndType(Node, Obj, ObjT);
+
+        if (ObjT = otProject) AND
+           (not AllowSelectProject)
+        then
+          VST.CheckState[Node] := csUncheckedNormal
+        else
+          VST.CheckState[Node] := csCheckedNormal;
+
         Node := VST.GetNext(Node, true);
       end;
 
     pctTriState,
     pctCascade:
-      VST.CheckState[Node] := csCheckedNormal;
+      begin
+        if (not ShowProject) or
+           (AllowSelectProject and ShowProject)
+        then
+          begin
+            VST.CheckState[Node] := csCheckedNormal;
+            Exit;
+          end;
+
+        // NODE = Project Node
+        while Assigned(Node) do
+        begin
+          VST.CheckState[Node] := csUncheckedNormal;
+          ChildNode := VST.GetFirstChild(Node);
+
+          // ChildNode = DataFile / MasterRelation
+          while Assigned(ChildNode) do
+          begin
+            VST.CheckState[ChildNode] := csCheckedNormal;
+            ChildNode := VST.GetNextSibling(ChildNode);
+          end;
+
+          Node := VST.GetNextSibling(Node);
+        end;
+      end;
   end;
 end;
 
@@ -1250,6 +1307,13 @@ begin
   if not Assigned(Node) then exit;
 
   VST.FocusedNode := Node;
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoChecked(const AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType; Checked: Boolean);
+begin
+  if Assigned(OnChecked) then
+    OnChecked(Self, AObject, ObjectType, Checked);
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoDeleteRelation(
