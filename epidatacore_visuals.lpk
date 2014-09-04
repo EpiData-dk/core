@@ -28,7 +28,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="2"/>
-    <Files Count="6">
+    <Files Count="7">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
         <UnitName Value="epiv_dataset_viewer_frame"/>
@@ -55,6 +55,10 @@
         <UnitName Value="epiv_datamodule"/>
         <ResourceBaseClass Value="DataModule"/>
       </Item6>
+      <Item7>
+        <Filename Value="Visuals/epiv_field_list.pas"/>
+        <UnitName Value="epiv_field_list"/>
+      </Item7>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="4">
