@@ -13,7 +13,7 @@ uses
   FakeActiveX,
   {$ENDIF}
   epicustombase, epidocument, epirelations, epidatafiles, epidatafilestypes,
-  fgl;
+  Graphics;
 
 type
   TEpiVProjectDisplayMode = (
@@ -113,6 +113,9 @@ type
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: String);
     procedure VSTNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; const NewText: String);
+    procedure VSTPaintText(Sender: TBaseVirtualTree;
+      const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+      TextType: TVSTTextType);
     procedure VSTStartDrag(Sender: TObject; var DragObject: TDragObject);
 
   { Document Hooks }
@@ -531,7 +534,8 @@ begin
   case TextType of
     ttNormal:
       case ObjType of
-        otEmpty: ;
+        otEmpty:
+          CellText := '';
 
         otFake:
           if DocumentCountInRange then
@@ -548,10 +552,17 @@ begin
 
     ttStatic:
       case ObjType of
-        otEmpty:    ;
-        otFake:     ;
-        otRelation: ;
-        otProject:  ;
+        otEmpty:
+          CellText := '';
+
+        otFake:
+          CellText := '';
+
+        otRelation:
+          CellText := Format('[%d]', [TEpiMasterRelation(Obj).Datafile.Size]);
+
+        otProject:
+          CellText := '';
       end;
   end;
 
@@ -574,6 +585,18 @@ begin
     end;
 
     DF.Caption.Text := NewText;
+  end;
+end;
+
+procedure TEpiVProjectTreeViewFrame.VSTPaintText(Sender: TBaseVirtualTree;
+  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  TextType: TVSTTextType);
+begin
+  case TextType of
+    ttNormal:
+      TargetCanvas.Font.Color := clDefault;
+    ttStatic:
+      TargetCanvas.Font.Color := clBlue;
   end;
 end;
 
@@ -902,6 +925,7 @@ begin
 
     OnGetText       := @VSTGetText;
     OnNewText       := @VSTNewText;
+    OnPaintText     := @VSTPaintText;
     OnEdited        := @VSTEdited;
     OnEditing       := @VSTEditing;
 

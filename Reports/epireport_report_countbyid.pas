@@ -41,7 +41,8 @@ type
 implementation
 
 uses
-  epimiscutils, epidatafilestypes, epidocument, epidatafileutils;
+  epimiscutils, epidatafilestypes, epidocument, epidatafileutils,
+  lazutf8sysutils;
 
 resourcestring
   rsDocumentsNotAssigned = 'Documents not assigned to report';
@@ -58,7 +59,6 @@ var
   i: Integer;
   Index: integer;
   j: Integer;
-
 
   function FindIndexInResultDF(Const DFIndex: integer;
     out Index: integer): boolean;
@@ -206,6 +206,7 @@ var
   j: Integer;
   InitFt: Boolean;
   S: String;
+  W: QWord;
 begin
   inherited RunReport;
 
@@ -214,8 +215,8 @@ begin
   // best common field type.
   // We do this to avoid cases were sorting using string fields
   // unnessesary -> the sorting of numbers as strings are a mess!
-//  for i := 0 to FieldList.Count - 1 do
 
+//  for i := 0 to FieldList.Count - 1 do
   for i := 0 to FieldNames.Count - 1 do
   begin
     InitFt := false;
@@ -240,18 +241,26 @@ begin
   end;
 
 //  for i := 0 to Documents.Count - 1 do
+  i := 0;
   for DF in DataFiles do
   begin
     F := ResultDF.NewField(ftInteger);
     F.Name := 'File' + IntToStr(i + 1);
-    F.Question.Text := '(?) File ' + IntToStr(i + 1);
+    F.Question.Text := DF.Caption.Text;// 'File ' + IntToStr(i + 1);
     F.Length := 4;
     F.ResetData;
     CountsFieldList.AddItem(F);
+    inc(i);
   end;
 
+  i := 0;
+  W := GetTickCount64;
   for DF in DataFiles do
+  begin
     DoCounts(DF, i);
+    Inc(i);
+  end;
+  W:= GetTickCount64 - W;
 
   DoReport;
 end;
