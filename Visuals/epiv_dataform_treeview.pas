@@ -63,39 +63,7 @@ begin
   if Column = 1 then exit;
 
   CI := GetCustomItemFromNode(Node);
-
-  if CI is TEpiField then
-  case TEpiField(CI).FieldType of
-    ftBoolean:
-      ImageIndex := 1;
-    ftInteger:
-      ImageIndex := 2;
-    ftFloat:
-      ImageIndex := 3;
-    ftDMYDate,
-    ftMDYDate,
-    ftYMDDate:
-      ImageIndex := 4;
-    ftTime:
-      ImageIndex := 5;
-    ftString,
-    ftUpperString:
-      ImageIndex := 6;
-    ftAutoInc:
-      ImageIndex := 7;
-    ftDMYAuto,
-    ftMDYAuto,
-    ftYMDAuto:
-      ImageIndex := 8;
-    ftTimeAuto:
-      ImageIndex := 9;
-  end;
-
-  if CI is TEpiSection then
-    ImageIndex := 10;
-
-  if CI is TEpiHeading then
-    ImageIndex := 11;
+  ImageIndex := DM.GetImageIndex(CI);
 end;
 
 procedure TDataFormTreeViewFrame.DataFileTreeGetText(Sender: TBaseVirtualTree;

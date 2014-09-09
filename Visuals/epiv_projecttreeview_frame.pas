@@ -353,11 +353,12 @@ procedure TEpiVProjectTreeViewFrame.VSTDragAllowed(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
 var
   O: TEpiCustomBase;
+  OT: TEpiVTreeNodeObjectType;
 begin
-  O := CustomBaseFromNode(Node);
+  ObjectAndType(Node, O, OT);
 
   Allowed :=
-    (O is TEpiMasterRelation) and
+    (OT = otRelation) and
     (EditStructure);
 end;
 

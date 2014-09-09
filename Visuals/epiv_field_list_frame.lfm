@@ -1,0 +1,84 @@
+object EpiVFieldList: TEpiVFieldList
+  Left = 0
+  Height = 492
+  Top = 0
+  Width = 533
+  ClientHeight = 492
+  ClientWidth = 533
+  TabOrder = 0
+  DesignLeft = 2075
+  DesignTop = 381
+  object VST: TVirtualStringTree
+    Left = 0
+    Height = 492
+    Top = 0
+    Width = 498
+    Align = alClient
+    DefaultText = 'Node'
+    Header.AutoSizeIndex = 2
+    Header.Columns = <    
+      item
+        Position = 0
+        Width = 30
+      end    
+      item
+        CheckType = ctNone
+        Position = 1
+        Text = 'Name'
+        Width = 125
+      end    
+      item
+        CheckType = ctNone
+        Position = 2
+        Text = 'Caption'
+      end>
+    Header.DefaultHeight = 17
+    RootNodeCount = 5
+    TabOrder = 0
+    TreeOptions.PaintOptions = [toThemeAware, toUseBlendedImages]
+  end
+  object GrandBtnPanel: TPanel
+    Left = 498
+    Height = 492
+    Top = 0
+    Width = 35
+    Align = alRight
+    AutoSize = True
+    ChildSizing.LeftRightSpacing = 5
+    ChildSizing.HorizontalSpacing = 1
+    ChildSizing.EnlargeHorizontal = crsHomogenousSpaceResize
+    ChildSizing.EnlargeVertical = crsHomogenousSpaceResize
+    ChildSizing.ShrinkHorizontal = crsHomogenousChildResize
+    ChildSizing.ShrinkVertical = crsHomogenousSpaceResize
+    ChildSizing.Layout = cclLeftToRightThenTopToBottom
+    ChildSizing.ControlsPerLine = 1
+    ClientHeight = 492
+    ClientWidth = 35
+    TabOrder = 1
+    object BtnPanel: TPanel
+      Left = 6
+      Height = 56
+      Top = 218
+      Width = 24
+      AutoSize = True
+      BevelOuter = bvNone
+      ClientHeight = 56
+      ClientWidth = 24
+      TabOrder = 0
+      object MoveUpBtn: TSpeedButton
+        Left = 0
+        Height = 24
+        Top = 0
+        Width = 24
+        ShowCaption = False
+      end
+      object MoveDownBtn: TSpeedButton
+        Left = 0
+        Height = 24
+        Top = 32
+        Width = 24
+        ShowCaption = False
+      end
+    end
+  end
+end

@@ -56,8 +56,8 @@
         <ResourceBaseClass Value="DataModule"/>
       </Item6>
       <Item7>
-        <Filename Value="Visuals/epiv_field_list.pas"/>
-        <UnitName Value="epiv_field_list"/>
+        <Filename Value="Visuals/epiv_field_list_frame.pas"/>
+        <UnitName Value="epiv_field_list_frame"/>
       </Item7>
     </Files>
     <Type Value="RunAndDesignTime"/>

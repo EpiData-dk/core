@@ -24,11 +24,17 @@ type
   public
     constructor Create(ReportGenerator: TEpiReportGeneratorBase);
        override;
-    destructor Destroy; override;
-    procedure DoSanityCheck; override;
+    destructor  Destroy; override;
+    procedure   DoSanityCheck; override;
     procedure   RunReport; override;
     property    Documents: TStringList read FDocuments write FDocuments;
     property    FieldList: TEpiFields read FFieldList write FFieldList;
+  private
+    FDataFiles: TEpiDataFiles;
+    FFieldNames: TStrings;
+  public
+    property    DataFiles: TEpiDataFiles read FDataFiles write FDataFiles;
+    property    FieldNames: TStrings read FFieldNames write FFieldNames;
   end;
 
 
@@ -87,9 +93,10 @@ begin
   // Fetch list of field in current DF with same names as in user specified
   // field list.
   LocalValueFields := TEpiFields.Create(nil);
-  for i := 0 to FieldList.Count - 1 do
+//  for i := 0 to FieldList.Count - 1 do
+  for i := 0 to FieldNames.Count - 1 do
   begin
-    F := DF.Fields.FieldByName[FieldList[i].Name];
+    F := DF.Fields.FieldByName[FieldNames[i]];
     if Assigned(F) then
       LocalValueFields.AddItem(F);
   end;
@@ -127,15 +134,19 @@ var
 begin
   ResultDF.SortRecords(ValueFieldList);
 
-  S := FieldList[0].Name;
-  for i := 1 to FieldList.Count - 1 do
-    S += ', ' + FieldList[i].Name;
+//  S := FieldList[0].Name;
+//  for i := 1 to FieldList.Count - 1 do
+//    S += ', ' + FieldList[i].Name;
+
+  S := FieldNames[0];
+  for i := 1 to FieldNames.Count - 1 do
+    S += ', ' + FieldNames[i];
 
   DoLineText('');
   DoLineText(IntToStr(ResultDF.Size) + ' different values found.');
   DoLineText('');
 
-  DoTableHeader('Fields: ' + S, 1 + CountsFieldList.Count, 1 + ResultDF.Size);
+  DoTableHeader('Field(s): ' + S, 1 + CountsFieldList.Count, 1 + ResultDF.Size);
   DoTableCell(0, 0, 'Value(s)');
   for i := 0 to CountsFieldList.Count - 1 do
     DoTableCell(1 + i, 0, CountsFieldList[i].Question.Text);
@@ -178,11 +189,11 @@ procedure TEpiReportCountById.DoSanityCheck;
 begin
   inherited DoSanityCheck;
 
-  if not Assigned(FDocuments) then
+{  if not Assigned(FDocuments) then
     DoError(EEpiReportBaseException, rsDocumentsNotAssigned);
 
   if not Assigned(FFieldList) then
-    DoError(EEpiReportBaseException, rsFieldlistNotAssigned);
+    DoError(EEpiReportBaseException, rsFieldlistNotAssigned);  }
 end;
 
 procedure TEpiReportCountById.RunReport;
@@ -193,6 +204,8 @@ var
   Fn: TEpiField;
   Ft: TEpiFieldType;
   j: Integer;
+  InitFt: Boolean;
+  S: String;
 begin
   inherited RunReport;
 
@@ -201,36 +214,44 @@ begin
   // best common field type.
   // We do this to avoid cases were sorting using string fields
   // unnessesary -> the sorting of numbers as strings are a mess!
-  for i := 0 to FieldList.Count - 1 do
+//  for i := 0 to FieldList.Count - 1 do
+
+  for i := 0 to FieldNames.Count - 1 do
   begin
-    F := FieldList[i];
+    InitFt := false;
+    S := FieldNames[i];
 
-    Ft := F.FieldType;
-
-    for j := 0 to Documents.Count - 1 do
+//    for j := 0 to Documents.Count - 1 do
+    for DF in DataFiles do
     begin
-      Df := TEpiDocument(Documents.Objects[j]).DataFiles[0];
-      Fn := Df.Fields.FieldByName[F.Name];
-      Ft := Max(Ft, Fn.FieldType);
+      Fn := Df.Fields.FieldByName[S];
+
+      if not InitFt then
+        Ft := FN.FieldType
+      else
+        Ft := Max(Ft, Fn.FieldType);
+
+      InitFt := true;
     end;
 
     F := ResultDF.NewField(Ft);
-    F.Name := FieldList[i].Name;
+    F.Name := S;
     ValueFieldList.AddItem(F);
   end;
 
-  for i := 0 to Documents.Count - 1 do
+//  for i := 0 to Documents.Count - 1 do
+  for DF in DataFiles do
   begin
     F := ResultDF.NewField(ftInteger);
     F.Name := 'File' + IntToStr(i + 1);
-    F.Question.Text := 'File ' + IntToStr(i + 1);
+    F.Question.Text := '(?) File ' + IntToStr(i + 1);
     F.Length := 4;
     F.ResetData;
     CountsFieldList.AddItem(F);
   end;
 
-  for i := 0 to Documents.Count - 1 do
-    DoCounts(TEpiDocument(Documents.Objects[i]).DataFiles[0], i);
+  for DF in DataFiles do
+    DoCounts(DF, i);
 
   DoReport;
 end;
