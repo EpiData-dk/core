@@ -908,15 +908,21 @@ var
 begin
   CheckIndex(Index);
 
-  Val := New(PEpiFieldDataEventRecord);
-  Val^.Index     := index;
-  Val^.FieldType := FieldType;
-  Val^.IntValue  := FData[Index];
+  if not LoadingRecs then
+  begin;
+    Val := New(PEpiFieldDataEventRecord);
+    Val^.Index     := index;
+    Val^.FieldType := FieldType;
+    Val^.IntValue  := FData[Index];
+  end;
 
   FData[Index] := AValue;
+
   if not LoadingRecs then
+  begin
     DoChange(eegFields, word(efceData), Val);
-  Dispose(Val);
+    Dispose(Val);
+  end;
 end;
 
 procedure TEpiIntField.SetAsString(const index: Integer; const AValue: EpiString
@@ -1209,16 +1215,21 @@ var
 begin
   CheckIndex(Index);
 
-  Val := New(PEpiFieldDataEventRecord);
-  Val^.Index     := index;
-  Val^.FieldType := FieldType;
-  Val^.FloatValue  := FData[Index];
+  if not LoadingRecs then
+  begin;
+    Val := New(PEpiFieldDataEventRecord);
+    Val^.Index     := index;
+    Val^.FieldType := FieldType;
+    Val^.FloatValue  := FData[Index];
+  end;
 
   FData[index] := AValue;
-  if not LoadingRecs then
-    DoChange(eegFields, word(efceData), Val);
 
-  Dispose(Val);
+  if not LoadingRecs then
+  begin
+    DoChange(eegFields, word(efceData), Val);
+    Dispose(Val);
+  end;
 end;
 
 procedure TEpiFloatField.SetAsInteger(const index: Integer;
@@ -1467,16 +1478,21 @@ var
 begin
   CheckIndex(Index);
 
-  Val := New(PEpiFieldDataEventRecord);
-  Val^.Index     := index;
-  Val^.FieldType := FieldType;
-  Val^.BoolValue  := FData[Index];
+  if not LoadingRecs then
+  begin;
+    Val := New(PEpiFieldDataEventRecord);
+    Val^.Index     := index;
+    Val^.FieldType := FieldType;
+    Val^.BoolValue  := FData[Index];
+  end;
 
   FData[index] := AValue;
-  if not LoadingRecs then
-    DoChange(eegFields, word(efceData), Val);
 
-  Dispose(Val);
+  if not LoadingRecs then
+  begin
+    DoChange(eegFields, word(efceData), Val);
+    Dispose(Val);
+  end;
 end;
 
 procedure TEpiBoolField.SetAsDate(const index: Integer; const AValue: EpiDate);
@@ -1808,17 +1824,22 @@ var
 begin
   CheckIndex(Index);
 
-  OldString := FData[Index];
-  Val := New(PEpiFieldDataEventRecord);
-  Val^.Index     := index;
-  Val^.FieldType := FieldType;
-  Val^.StringValue  := @OldString;
+  if not LoadingRecs then
+  begin;
+    OldString := FData[Index];
+    Val := New(PEpiFieldDataEventRecord);
+    Val^.Index     := index;
+    Val^.FieldType := FieldType;
+    Val^.StringValue  := @OldString;
+  end;
 
   FData[index] := AValue;
-  if not LoadingRecs then
-    DoChange(eegFields, word(efceData), Val);
 
-  Dispose(Val);
+  if not LoadingRecs then
+  begin
+    DoChange(eegFields, word(efceData), Val);
+    Dispose(Val);
+  end;
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -2189,16 +2210,21 @@ var
 begin
   CheckIndex(Index);
 
-  Val := New(PEpiFieldDataEventRecord);
-  Val^.Index     := index;
-  Val^.FieldType := FieldType;
-  Val^.DateValue  := FData[Index];
+  if not LoadingRecs then
+  begin
+    Val := New(PEpiFieldDataEventRecord);
+    Val^.Index     := index;
+    Val^.FieldType := FieldType;
+    Val^.DateValue  := FData[Index];
+  end;
 
   FData[index] := AValue;
-  if not LoadingRecs then
-    DoChange(eegFields, word(efceData), Val);
 
-  Dispose(Val);
+  if not LoadingRecs then
+  begin
+    DoChange(eegFields, word(efceData), Val);
+    Dispose(Val);
+  end;
 end;
 
 procedure TEpiDateField.SetAsDateTime(const index: Integer;
@@ -2423,16 +2449,21 @@ var
 begin
   CheckIndex(Index);
 
-  Val := New(PEpiFieldDataEventRecord);
-  Val^.Index     := index;
-  Val^.FieldType := FieldType;
-  Val^.TimeValue  := FData[Index];
+  if not LoadingRecs then
+  begin
+    Val := New(PEpiFieldDataEventRecord);
+    Val^.Index     := index;
+    Val^.FieldType := FieldType;
+    Val^.TimeValue  := FData[Index];
+  end;
 
   FData[index] := AValue;
-  if not LoadingRecs then
-    DoChange(eegFields, word(efceData), Val);
 
-  Dispose(Val);
+  if not LoadingRecs then
+  begin
+    DoChange(eegFields, word(efceData), Val);
+    Dispose(Val);
+  end;
 end;
 
 procedure TEpiDateTimeField.SetAsFloat(const index: Integer;

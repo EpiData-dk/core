@@ -1416,7 +1416,10 @@ procedure TEpiDataFile.SortRecords(SortFields: TEpiFields);
 begin
   if Size < 1 then exit;
 
+  // Setting FLoadingRecs=true here, tell the fields NOT to send events during records exchange.;
+  FLoadingRecs := true;
   InternalSortRecords(SortFields, 0, Size - 1);
+  FLoadingRecs := false;
 end;
 
 procedure TEpiDataFile.SortRecords(SortField: TEpiField);
