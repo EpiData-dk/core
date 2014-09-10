@@ -139,6 +139,7 @@ type
     function  CustomBaseFromNode(Const Node: PVirtualNode): TEpiCustomBase;
     function  DataFileFromNode(Const Node: PVirtualNode): TEpiDataFile;
     function  DocumentCountInRange: boolean;
+    procedure FocusNode(Const Node: PVirtualNode);
     function  MasterRelationFromNode(Const Node: PVirtualNode): TEpiMasterRelation;
     function  NodeFromCustomBase(Const AObject: TEpiCustomBase): PVirtualNode;
     function  NodeFromDataFile(Const DataFile: TEpiDataFile): PVirtualNode;
@@ -544,7 +545,10 @@ begin
             CellTExt := 'Incorrect number of documents';
 
         otRelation:
-          CellText := Mr.Datafile.Caption.Text;
+          if Mr.Datafile.Caption.Text = '' then
+            CellText := '(untitled)'
+          else
+            CellText := Mr.Datafile.Caption.Text;
 
         otProject:
           CellText := Doc.Study.Title.Text
@@ -734,6 +738,12 @@ begin
     (FDocumentList.Count <= MaxDocumentCount);
 end;
 
+procedure TEpiVProjectTreeViewFrame.FocusNode(const Node: PVirtualNode);
+begin
+  VST.FocusedNode := Node;
+  VST.Selected[Node] := true;
+end;
+
 function TEpiVProjectTreeViewFrame.MasterRelationFromNode(const Node: PVirtualNode
   ): TEpiMasterRelation;
 var
@@ -855,15 +865,15 @@ begin
     if Assigned(OldSelectedObject) and
        Assigned(NodeFromCustomBase(OldSelectedObject))
     then
-      VST.FocusedNode := NodeFromCustomBase(OldSelectedObject)
+      FocusNode(NodeFromCustomBase(OldSelectedObject))
     else
       begin
         if (ShowProject and AllowSelectProject) or
            (not ShowProject)
         then
-          VST.FocusedNode := VST.GetFirst()
+          FocusNode(VST.GetFirst())
         else
-          VST.FocusedNode := VST.GetNext(VST.GetFirst());
+          FocusNode(VST.GetNext(VST.GetFirst()));
       end;
   end;
   ResetCheckBoxes;
@@ -1331,7 +1341,7 @@ begin
 
   if not Assigned(Node) then exit;
 
-  VST.FocusedNode := Node;
+  FocusNode(Node);
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoChecked(const AObject: TEpiCustomBase;
