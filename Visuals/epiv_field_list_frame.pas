@@ -283,8 +283,23 @@ begin
 end;
 
 procedure TEpiVFieldList.SetCheckedList(AValue: TEpiFields);
+var
+  Node: PVirtualNode;
+  F: TEpiField;
 begin
+  if not ShowCheckBoxes then exit;
+  Node := VST.GetFirstChild(nil);
 
+  while Assigned(Node) do
+  begin
+    F := FieldFromNodeData(Node);
+    if AValue.FieldExists(F) then
+      VST.CheckState[Node] := csCheckedNormal
+    else
+      VST.CheckState[Node] := csUnCheckedNormal;
+
+    Node := VST.GetNext(Node, True);
+  end;
 end;
 
 procedure TEpiVFieldList.SetDisplayFields(AValue: TEpiFields);
