@@ -5,7 +5,7 @@ unit epitools_projectvalidate;
 interface
 
 uses
-  Classes, SysUtils, math, epidocument, epidatafiles;
+  Classes, SysUtils, math, epidocument, epidatafiles, epirelations;
 
 type
   TEpiToolsProjectValidateOption = (
@@ -74,7 +74,13 @@ type
   end;
   TEpiProjectStudyArray = array of TEpiProjectValidateStudyRecord;
 
+
   { TEpiProjectValidationTool }
+
+  TEpiProjectValidationGetFieldsEvent = function(Const Relation: TEpiMasterRelation): TStrings;
+  TEpiProjectValidationResultEvent = procedure(
+    Const Relation: TEpiMasterRelation;
+    Const ResultArray: TEpiProjectStudyArray);
 
   TEpiProjectValidationTool = class
   private
@@ -86,15 +92,29 @@ type
     function    NewResultRecord: PEpiProjectResultArray;
     procedure   NewStudyRecord(Const AObject: Pointer;
       Const AName: string);
+    procedure ValidateDataFile(const Relation: TEpiMasterRelation;
+      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
   public
     constructor Create;
     destructor  Destroy; override;
     procedure   ValidateProject(out FieldResultArray: TEpiProjectResultArray;
       Out StudyResultArray: TEpiProjectStudyArray;
-      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll);
+      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
+    procedure   ValidateProject(Const Doc: TEpiDocument;
+      Out StudyResultArray: TEpiProjectStudyArray;
+      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
     property    Document: TEpiDocument read FDocument write FDocument;
     property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
     property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
+
+  private
+    FOnDataFileResult: TEpiProjectValidationResultEvent;
+    FOnGetKeyFields: TEpiProjectValidationGetFieldsEvent;
+    FOnGetValidationFields: TEpiProjectValidationGetFieldsEvent;
+  public
+    property    OnDataFileResult: TEpiProjectValidationResultEvent read FOnDataFileResult write FOnDataFileResult;
+    Property    OnGetKeyFields: TEpiProjectValidationGetFieldsEvent read FOnGetKeyFields write FOnGetKeyFields;
+    property    OnGetValidationFields: TEpiProjectValidationGetFieldsEvent read FOnGetValidationFields write FOnGetValidationFields;
   end;
 
 implementation
@@ -128,6 +148,173 @@ begin
     StudyObject := AObject;
     StudyObjectName := AName;
   end;
+end;
+
+procedure TEpiProjectValidationTool.ValidateDataFile(
+  const Relation: TEpiMasterRelation; const Depth: Cardinal;
+  const Index: Cardinal; var aContinue: boolean);
+var
+  DF: TEpiDataFile;
+begin
+  DF := Relation.Datafile;
+{
+  if Assigned(ValidationFields) and
+     (ValidationFields.Count > 0)
+  then
+    LValidationFields := ValidationFields
+  else
+    LValidationFields := DF.Fields;
+
+  MainSortField := Df.NewField(ftInteger);
+  for i := 0 to Df.Size -1 do
+    MainSortField.AsInteger[i] := i;
+
+  if Assigned(KeyFields) and
+     (KeyFields.Count > 0)
+  then
+    Df.SortRecords(KeyFields);
+
+  for i := 0 to Df.Size - 1 do
+  begin
+    if Df.Deleted[i] and (pvIgnoreDeleted in Options) then continue;
+
+    for j := 0 to ValidationFields.Count - 1 do
+    begin
+      F := ValidationFields[j];
+
+      if (pvCheckSystemMissing in Options) then
+      begin
+        // Check for system missing
+
+        if F.IsMissing[i] then
+        with NewResultRecord^ do
+        begin
+          RecNo := MainSortField.AsInteger[i];
+          Field := F;
+          FailedCheck := pvCheckSystemMissing;
+        end;
+      end;
+
+      if (pvCheckMustEnter in Options) then
+      begin
+        if (F.EntryMode = emMustEnter) and
+           (F.IsMissing[i])
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckMustEnter;
+          end;
+      end;
+
+      if (pvCheckKeyFields in Options) then
+      begin
+        if (Df.KeyFields.IndexOf(F) > -1) and
+           (F.IsMissing[i])
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckKeyFields;
+          end;
+      end;
+
+      if (pvCheckDataRange in Options) and
+         ((Assigned(F.Ranges)) or
+          (Assigned(F.ValueLabelSet))
+         )
+      then
+      begin
+        TmpResult := false;
+
+        if Assigned(F.Ranges) then
+          TmpResult := F.Ranges.InRange(F.AsValue[i]);
+
+        if Assigned(F.ValueLabelSet) then
+          TmpResult := TmpResult or F.ValueLabelSet.ValueLabelExists[F.AsValue[i]];
+
+        if not TmpResult
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckDataRange;
+          end;
+      end;
+
+      if (pvCheckComparison in Options) and
+         (Assigned(F.Comparison))
+      then
+      begin
+        CompareField := F.Comparison.CompareField;
+
+        if CompareFieldTypeOrder(F.FieldType, CompareField.FieldType) <> 0 then
+          ;  // Cannot compare fields
+
+        CompareFieldRecords(CmpResult, F, CompareField, i, i, true);
+
+        case F.Comparison.CompareType of
+          fcEq:  Res := CmpResult = 0;
+          fcNEq: Res := CmpResult <> 0;
+          fcLT:  Res := CmpResult < 0;
+          fcLEq: Res := CmpResult <= 0;
+          fcGEq: Res := CmpResult > 0;
+          fcGT:  Res := CmpResult >= 0;
+        end;
+        if not Res then
+        with NewResultRecord^ do
+        begin
+          RecNo := MainSortField.AsInteger[i];
+          Field := F;
+          FailedCheck := pvCheckComparison;
+        end;
+      end;
+
+      if (pvCheckDataLength in Options) then
+      begin
+        S := F.AsString[i];
+
+        if UTF8Length(S) > F.Length then
+        with NewResultRecord^ do
+        begin
+          RecNo := MainSortField.AsInteger[i];
+          Field := F;
+          FailedCheck := pvCheckDataLength;
+        end;
+      end;
+
+      if (pvCheckJumpReset in Options) and
+         (Assigned(F.Jumps))
+      then
+      begin
+        Jmp := F.Jumps.JumpFromValue[F.AsString[i]];
+
+        if Assigned(Jmp) and
+           (not (Jmp.ResetType in [jrMaxMissing, jr2ndMissing]))
+        then
+          with NewResultRecord^ do
+          begin
+            RecNo := MainSortField.AsInteger[i];
+            Field := F;
+            FailedCheck := pvCheckJumpReset;
+          end
+      end;
+    end;
+  end;
+
+  Df.SortRecords(MainSortField);
+  MainSortField.Free;
+
+  // No "real" changes were made...
+
+  if Assigned(Df.RootOwner) then
+    DF.RootOwner.Modified := false;
+
+  FieldResultArray := FResultArray;
+  StudyResultArray := FStudyArray;    }
 end;
 
 constructor TEpiProjectValidationTool.Create;
@@ -339,6 +526,40 @@ begin
 
   FieldResultArray := FResultArray;
   StudyResultArray := FStudyArray;
+end;
+
+procedure TEpiProjectValidationTool.ValidateProject(const Doc: TEpiDocument;
+  out StudyResultArray: TEpiProjectStudyArray;
+  Options: TEpiToolsProjectValidateOptions);
+var
+  DFs: TEpiDataFiles;
+  DF: TEpiDataFile;
+begin
+  if (pvCheckStudyInfo in Options) then
+  with Doc.Study do
+  begin
+    if AbstractText.Text = '' then NewStudyRecord(AbstractText, 'Abstract');
+    if Author = ''            then NewStudyRecord(@Author,      'Author');
+    if Agency = ''            then NewStudyRecord(@Agency,      'Agency');
+    if Citations.Text = ''    then NewStudyRecord(Citations,    'Citations');
+    if (DataCollectionStart = MaxDateTime) or
+       (DataCollectionEnd = MaxDateTime)
+    then
+      NewStudyRecord(nil, 'Data Time Coverage');
+    if Design.Text = ''       then NewStudyRecord(Design,       'Design');
+    if Funding.Text = ''      then NewStudyRecord(Funding,      'Funding');
+    if GeographicalCoverage.Text = '' then NewStudyRecord(GeographicalCoverage, 'Geographical Coverage');
+    if Publisher.Text = ''    then NewStudyRecord(Publisher,    'Publisher');
+    if Purpose.Text = ''      then NewStudyRecord(Purpose,      'Purpose');
+    if Population.Text = ''   then NewStudyRecord(Population,   'Population');
+    if Rights.Text = ''       then NewStudyRecord(Rights,       'Rights');
+    if Title.Text = ''        then NewStudyRecord(Title,        'Title');
+    if Keywords = ''          then NewStudyRecord(@Keywords,    'Keywords');
+    if UnitOfObservation.Text = '' then NewStudyRecord(UnitOfObservation, 'Unit of obs.');
+  end;
+
+  StudyResultArray := FStudyArray;
+  Doc.Relations.OrderedWalk(@ValidateDataFile);
 end;
 
 end.

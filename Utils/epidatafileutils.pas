@@ -15,6 +15,7 @@ function CompareFieldRecords(Out CmpResult: TValueSign;
 
 procedure DumpDatafileRecords(Const DF: TEpiDataFile);
 procedure DumpDatafileControlItems(Const DF: TEpiDataFile);
+procedure DumpField(Const F: TEpiField);
 
 function Max(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType; overload;
 function Min(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType; overload;
@@ -23,7 +24,8 @@ function CompareFieldTypeOrder(Const Ft1, Ft2: TEpiFieldType): integer;
 implementation
 
 uses
-  epistringutils, LazUTF8, epimiscutils;
+  epistringutils, LazUTF8, epimiscutils,
+  epireport_report_fieldinfo, epireport_generator_txt;
 
 function FieldClassFromFieldType(FieldType: TEpiFieldType): TEpiFieldClass;
 begin
@@ -126,6 +128,17 @@ begin
       Write(' ', EpiTypeNamesShort[TEpiField(CI).FieldType]);
     WriteLn();
   end;
+end;
+
+procedure DumpField(const F: TEpiField);
+var
+  R: TEpiReportFieldInfo;
+begin
+  R := TEpiReportFieldInfo.Create(TEpiReportTXTGenerator);
+  R.Field := F;
+  R.RunReport;
+  WriteLn(R.ReportText);
+  R.Free;
 end;
 
 function Max(const Ft1, Ft2: TEpiFieldType): TEpiFieldType;

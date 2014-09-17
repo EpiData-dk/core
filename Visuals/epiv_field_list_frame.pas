@@ -12,7 +12,7 @@ uses
   {$ELSE}
   FakeActiveX,
   {$ENDIF}
-  Graphics;
+  Graphics, ActnList;
 
 
 type
@@ -20,12 +20,16 @@ type
   { TEpiVFieldList }
 
   TEpiVFieldList = class(TFrame)
+    MoveDownAction: TAction;
+    MoveUpAction: TAction;
+    ActionList1: TActionList;
     MoveDownBtn: TSpeedButton;
     MoveUpBtn: TSpeedButton;
     GrandBtnPanel: TPanel;
     BtnPanel: TPanel;
     VST: TVirtualStringTree;
-    procedure MoveField(Sender: TObject);
+    procedure MoveDownActionExecute(Sender: TObject);
+    procedure MoveUpActionExecute(Sender: TObject);
     procedure VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
       DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState;
       const Pt: TPoint; var Effect: LongWord; Mode: TDropMode);
@@ -60,15 +64,21 @@ type
   { Options }
   private
     FCheckBoxHeader: string;
+    FDragAllowed: Boolean;
+    FLocked: Boolean;
     FShowCheckBoxes: Boolean;
     FShowMoveButtons: Boolean;
     procedure SetCheckBoxHeader(AValue: string);
+    procedure SetDragAllowed(AValue: Boolean);
+    procedure SetLocked(AValue: Boolean);
     procedure SetShowCheckBoxes(AValue: Boolean);
     procedure SetShowMoveButtons(AValue: Boolean);
   public
-    property  CheckBoxHeader: string read FCheckBoxHeader write SetCheckBoxHeader;
-    property  ShowCheckBoxes: Boolean read FShowCheckBoxes write SetShowCheckBoxes;
-    property  ShowMoveButtons: Boolean read FShowMoveButtons write SetShowMoveButtons;
+    property  CheckBoxHeader: string read FCheckBoxHeader write SetCheckBoxHeader;     // Heading string for checkbox column
+    property  DragAllowed: Boolean read FDragAllowed write SetDragAllowed;             // Allow drag-drop of fields in the list
+    property  Locked: Boolean read FLocked write SetLocked;                                  // Lock the list in its current state (applied checks are static, list items cannot be moved, etc.)
+    property  ShowCheckBoxes: Boolean read FShowCheckBoxes write SetShowCheckBoxes;    // Show/no-show the checkbox column
+    property  ShowMoveButtons: Boolean read FShowMoveButtons write SetShowMoveButtons; // Show/no-show the right panel with move-up/down buttons
   end;
 
 implementation
@@ -92,24 +102,27 @@ type
 
 { TEpiVFieldList }
 
-procedure TEpiVFieldList.MoveField(Sender: TObject);
+procedure TEpiVFieldList.MoveDownActionExecute(Sender: TObject);
 var
   TargetNode: PVirtualNode;
   TargetMode: TVTNodeAttachMode;
 begin
-  if Sender = MoveUpBtn then
-  begin
-    TargetNode := VST.FocusedNode^.PrevSibling;
-    TargetMode := amInsertBefore;
-  end
-  else
-  begin
-    TargetNode := VST.FocusedNode^.NextSibling;
-    TargetMode := amInsertAfter;
-  end;
+  TargetNode := VST.FocusedNode^.NextSibling;
+  TargetMode := amInsertAfter;
 
   if not Assigned(TargetNode) then Exit;
+  VST.MoveTo(VST.FocusedNode, TargetNode, TargetMode, false);
+end;
 
+procedure TEpiVFieldList.MoveUpActionExecute(Sender: TObject);
+var
+  TargetNode: PVirtualNode;
+  TargetMode: TVTNodeAttachMode;
+begin
+  TargetNode := VST.FocusedNode^.PrevSibling;
+  TargetMode := amInsertBefore;
+
+  if not Assigned(TargetNode) then Exit;
   VST.MoveTo(VST.FocusedNode, TargetNode, TargetMode, false);
 end;
 
@@ -195,8 +208,8 @@ end;
 
 procedure TEpiVFieldList.LoadGlyphs;
 begin
-  DM.Icons16.GetBitmap(35, MoveUpBtn.Glyph);
-  DM.Icons16.GetBitmap(36, MoveDownBtn.Glyph);
+//  DM.Icons16.GetBitmap(35, MoveUpBtn.Glyph);
+//  DM.Icons16.GetBitmap(36, MoveDownBtn.Glyph);
 end;
 
 procedure TEpiVFieldList.UpdateDisplayFields;
@@ -212,9 +225,10 @@ begin
 
   LoadGlyphs;
 
+  FCheckBoxHeader  := '?';
+  FDragAllowed     := true;
   FShowMoveButtons := true;
   FShowCheckBoxes  := true;
-  FCheckBoxHeader  := '?';
 
   with VST do
   begin
@@ -256,9 +270,6 @@ begin
     OnDragOver      := @VSTDragOver;
     OnDragDrop      := @VSTDragDrop;
   end;
-
-  MoveUpBtn.OnClick   := @MoveField;
-  MoveDownBtn.OnClick := @MoveField;
 end;
 
 function TEpiVFieldList.GetCheckedList: TEpiFields;
@@ -354,6 +365,34 @@ begin
   FCheckBoxHeader := AValue;
 
   VST.Header.Columns[0].Text := CheckBoxHeader;
+end;
+
+procedure TEpiVFieldList.SetDragAllowed(AValue: Boolean);
+begin
+  if FDragAllowed = AValue then Exit;
+  FDragAllowed := AValue;
+
+  if DragAllowed then
+    begin
+      VST.DragMode := dmAutomatic;
+      VST.DragType := dtVCL;
+    end
+  else
+    begin
+      VST.DragMode := dmManual;
+      VST.DragType := dtOLE;
+    end;
+end;
+
+procedure TEpiVFieldList.SetLocked(AValue: Boolean);
+begin
+  if FLocked = AValue then Exit;
+  FLocked := AValue;
+
+  MoveDownAction.Enabled := not Locked;
+  MoveUpAction.Enabled   := not Locked;
+
+  VST.Enabled := not Locked;
 end;
 
 end.

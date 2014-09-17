@@ -27,13 +27,13 @@ type
     function WriteNameToXml: boolean; override;
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
     function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Order: integer read FOrder write FOrder;
     property    TheLabel: TEpiTranslatedText read FLabel write FLabel;
     property    IsMissingValue: boolean read FIsMissingValue write SetIsMissingValue;
@@ -125,6 +125,7 @@ type
     FDirtyCache: boolean;
     FCachedLength: LongInt;
     procedure   DirtyCacheAndSendChangeEvent;
+    procedure   AssignValues(Const Src: TEpiValueLabelSet);
   protected
     procedure   LoadOldInternalTag(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); virtual;
     function    SaveExternal(LvL: Integer): string;
@@ -145,6 +146,7 @@ type
     function    SaveAttributesToXml: string; override;
     function    ItemClass: TEpiCustomItemClass; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    NewValueLabel: TEpiCustomValueLabel;
     procedure   InsertItem(const Index: integer; Item: TEpiCustomItem); override;
     function    DeleteItem(Index: integer): TEpiCustomItem; override;
@@ -291,7 +293,6 @@ begin
   BeginUpdate;
   FIsMissingValue := OrgVL.FIsMissingValue;
   FOrder          := OrgVL.FOrder;
-  FLabel.Assign(OrgVL.FLabel);
   EndUpdate;
 end;
 
@@ -506,6 +507,13 @@ begin
   DoChange(eegValueLabelSet, Word(evlsMaxValueLength), @FCachedLength);
 end;
 
+procedure TEpiValueLabelSet.AssignValues(const Src: TEpiValueLabelSet);
+begin
+  FLabelScope := Src.FLabelScope;
+  FLabelType  := Src.FLabelType;
+  FName       := Src.FName;
+end;
+
 function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
 var
   i: Integer;
@@ -623,12 +631,7 @@ function TEpiValueLabelSet.DoClone(AOwner: TEpiCustomBase;
   Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  with TEpiValueLabelSet(Result) do
-  begin
-    FLabelScope := Self.FLabelScope;
-    FLabelType := Self.FLabelType;
-    FName := Self.FName;
-  end;
+  TEpiValueLabelSet(Result).AssignValues(Self);
 end;
 
 procedure TEpiValueLabelSet.DoChange(const Initiator: TEpiCustomBase;
@@ -739,6 +742,12 @@ begin
      (LabelScope = vlsInternal)
   then
     inherited LoadFromXml(Root, ReferenceMap);
+end;
+
+procedure TEpiValueLabelSet.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  AssignValues(TEpiValueLabelSet(AEpiCustomBase));
 end;
 
 function TEpiValueLabelSet.NewValueLabel: TEpiCustomValueLabel;

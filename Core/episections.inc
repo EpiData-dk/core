@@ -224,18 +224,6 @@ begin
   Result := Headings.NewHeading;
 end;
 
-procedure TEpiSection.Assign(const AEpiCustomBase: TEpiCustomBase);
-var
-  OrgSection: TEpiSection absolute AEpiCustomBase;
-begin
-  BeginUpdate;
-  inherited Assign(AEpiCustomBase);
-//  FGroups.Assign(OrgSection.FGroups);
-  Height := OrgSection.Height;
-  Width  := OrgSection.Width;
-  EndUpdate;
-end;
-
 function TEpiSection.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin

@@ -34,24 +34,6 @@ begin
   result := TEpiField(GetItemByName(AName));
 end;
 
-procedure TEpiFields.DoAssignList(const EpiCustomList: TEpiCustomList);
-var
-  OrgFields: TEpiFields absolute EpiCustomList;
-  i: Integer;
-  AField: TEpiField;
-begin
-  BeginUpdate;
-  if OrgFields.Count > 0 then
-  begin
-    for i := 0 to OrgFields.Count - 1 do
-    begin
-      AField := NewField(OrgFields[i].FieldType);
-      AField.Assign(OrgFields[i]);
-    end;
-  end;
-  EndUpdate;
-end;
-
 function TEpiFields.Prefix: string;
 begin
   Result := 'V';
@@ -123,6 +105,11 @@ end;
 function TEpiFields.GetEnumerator: TEpiFieldsEnumerator;
 begin
   result := TEpiFieldsEnumerator.Create(Self);
+end;
+
+procedure TEpiFields.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
 end;
 
 { TEpiFieldsEnumerator }
@@ -394,6 +381,7 @@ procedure TEpiField.Assign(const AEpiCustomBase: TEpiCustomBase);
 var
   OrgField: TEpiField absolute AEpiCustomBase;
   VLSet: TEpiValueLabelSet;
+  RefMap: TEpiReferenceMap;
 begin
   inherited Assign(AEpiCustomBase);
 
@@ -409,30 +397,39 @@ begin
     DefaultValueAsString := OrgField.DefaultValueAsString;
   ShowValueLabel := OrgField.ShowValueLabel;
   ForcePickList := OrgField.ForcePickList;
+  ValueLabelSet := OrgField.ValueLabelSet;
 
-  // Valuelabels are NEVER copied - it's up to users manually to
-  // copy/assign them correctly when assigning field to each other.
-  ValueLabelSet := nil;
+  // Clone sub-objects, as they themselves are ItemOwners.
+  // therefor if any prior items exists, they must
+  // be cleared.
+  // In order to Complete the Assignment, references must
+  // be fixed, hence a Map is needed.
+  RefMap := TEpiReferenceMap.Create;
 
+  FreeAndNil(FRanges);
   if Assigned(OrgField.Ranges) then
-  begin
-    Ranges := TEpiRanges.Create(Self);
-    Ranges.ItemOwner := true;
-    Ranges.Assign(OrgField.Ranges);
-  end;
+    Ranges := TEpiRanges(OrgField.Ranges.Clone(Self, RefMap));
 
+  FreeAndNil(FJumps);
   if Assigned(OrgField.Jumps) then
-  begin
-    Jumps := TEpiJumps.Create(Self);
-    Jumps.ItemOwner := true;
-    Jumps.Assign(OrgField.Jumps);
-  end;
+    Jumps := TEpiJumps(OrgField.Jumps.Clone(Self, RefMap));
 
+  FreeAndNil(FComparison);
   if Assigned(OrgField.Comparison) then
-  begin
-    Comparison := TEpiComparison.Create(Self);
-    Comparison.Assign(OrgField.Comparison);
-  end;
+    Comparison := TEpiComparison(OrgField.Comparison.Clone(Self, RefMap));
+
+  FreeAndNil(FRelates);
+  if Assigned(FRelates) then
+    Relates := TEpiRelates(OrgField.Relates.Clone(Self, RefMap));
+
+  if Assigned(DataFile) and
+     Assigned(OrgField.DataFile) and
+     (DataFile = OrgField.DataFile)
+  then
+    RefMap.FixupReferences;
+
+  RefMap.Free;
+
   EndUpdate;
 end;
 
@@ -480,8 +477,6 @@ begin
   if Assigned(FRanges) then
     F.FRanges := TEpiRanges(FRanges.Clone(F, ReferenceMap));
 
-//  if Assigned(FValueLabelSet) and Assigned(F.DataFile) then
-//    F.ValueLabelSet := F.DataFile.ValueLabels.GetValueLabelSetByName(FValueLabelSet.Name);
   if Assigned(FValueLabelSet) then
     ReferenceMap.AddFixupReference(F, TEpiField, 0, FValueLabelSet.Name);
 

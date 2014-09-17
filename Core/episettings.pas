@@ -29,6 +29,7 @@ type
     procedure SetDecimalSeparator(const AValue: string);
     procedure SetScrambled(const AValue: boolean);
     procedure SetTimeSeparator(const AValue: string);
+    procedure AssignValues(Src: TEpiXMLSettings);
   protected
     function SaveAttributesToXml: string; override;
   protected
@@ -38,6 +39,7 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
@@ -67,6 +69,7 @@ type
     procedure   SetBackupOnShutdown(const AValue: Boolean);
     procedure   SetShowFieldBorders(const AValue: Boolean);
     procedure   SetShowFieldNames(const AValue: Boolean);
+    procedure   AssignValues(Src: TEpiProjectSettings);
   protected
     function SaveAttributesToXml: string; override;
   protected
@@ -78,6 +81,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    ScrambleXml: boolean; override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    ShowFieldNames: Boolean read FShowFieldNames write SetShowFieldNames;
     property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
     property    BackupInterval: Integer read FBackupInterval write SetBackupInterval;
@@ -139,6 +143,16 @@ begin
   DoChange(eegXMLSetting, Word(esceTimeSep), @Val);
 end;
 
+procedure TEpiXMLSettings.AssignValues(Src: TEpiXMLSettings);
+begin
+  FDateSeparator     := Src.FDateSeparator;
+  FDecimalSeparator  := Src.FDecimalSeparator;
+  FFormatSettings    := Src.FFormatSettings;
+  FMissingString     := Src.FMissingString;
+  FScrambled         := Src.FScrambled;
+  FTimeSeparator     := Src.FTimeSeparator;
+end;
+
 function TEpiXMLSettings.SaveAttributesToXml: string;
 begin
   Result := inherited SaveAttributesToXml +
@@ -193,19 +207,19 @@ begin
   DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
 end;
 
+procedure TEpiXMLSettings.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  AssignValues(TEpiXMLSettings(AEpiCustomBase));
+end;
+
 function TEpiXMLSettings.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  with TEpiXMLSettings(Result) do
-  begin
-    FDateSeparator     := Self.FDateSeparator;
-    FDecimalSeparator  := Self.FDecimalSeparator;
-    FFormatSettings    := Self.FFormatSettings;
-    FMissingString     := Self.FMissingString;
-    FScrambled         := Self.FScrambled;
-    FTimeSeparator     := Self.FTimeSeparator;
-  end;
+
+  TEpiXMLSettings(Result).AssignValues(Self);
 end;
 
 { TEpiProjectSettings }
@@ -258,6 +272,15 @@ begin
   Val := FShowFieldNames;
   FShowFieldNames := AValue;
   DoChange(eegProjectSettings, Word(epceFieldName), @Val);
+end;
+
+procedure TEpiProjectSettings.AssignValues(Src: TEpiProjectSettings);
+begin
+  FAutoIncStartValue := Src.FAutoIncStartValue;
+  FBackupInterval    := Src.FBackupInterval;
+  FBackupOnShutdown  := Src.FBackupOnShutdown;
+  FShowFieldBorders  := Src.FShowFieldBorders;
+  FShowFieldNames    := Src.FShowFieldNames;
 end;
 
 function TEpiProjectSettings.SaveAttributesToXml: string;
@@ -324,18 +347,19 @@ begin
   Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
 end;
 
+procedure TEpiProjectSettings.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  AssignValues(TEpiProjectSettings(AEpiCustomBase));
+end;
+
 function TEpiProjectSettings.DoClone(AOwner: TEpiCustomBase;
   Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  with TEpiProjectSettings(Result) do
-  begin
-    FAutoIncStartValue := Self.FAutoIncStartValue;
-    FBackupInterval    := Self.FBackupInterval;
-    FBackupOnShutdown  := Self.FBackupOnShutdown;
-    FShowFieldBorders  := Self.FShowFieldBorders;
-    FShowFieldNames    := Self.FShowFieldNames;
-  end;
+
+  TEpiProjectSettings(Result).AssignValues(Self);
 end;
 
 end.

@@ -240,11 +240,11 @@ type
     constructor Create(AOwner: TEpiCustomBase); virtual;
     procedure   SetModified(const AValue: Boolean); virtual;
     procedure   RegisterClasses(AClasses: Array of TEpiCustomBase); virtual;
+    procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
     property    ClassList: TFPList read FClassList;
   public
     procedure   BeforeDestruction; override;
     destructor  Destroy; override;
-    procedure   Assign(Const AEpiCustomBase: TEpiCustomBase); virtual;
     property    Owner: TEpiCustomBase read FOwner;
     property    RootOwner: TEpiCustomBase read GetRootOwner;
     property    State: TEpiCustomBaseState read FState;
@@ -329,6 +329,7 @@ type
     constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   { Cloning }
   protected
     function DoCloneCreate(AOwner: TEpiCustomBase): TEpiCustomBase; override;
@@ -348,10 +349,10 @@ type
     function    WriteNameToXml: boolean; virtual;
   protected
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
   {Cloning}
@@ -1710,6 +1711,13 @@ begin
     inherited LoadFromXml(NRoot, ReferenceMap);
 end;
 
+procedure TEpiTranslatedTextWrapper.Assign(const AEpiCustomBase: TEpiCustomBase
+  );
+begin
+  inherited Assign(AEpiCustomBase);
+  FNodeName := TEpiTranslatedTextWrapper(AEpiCustomBase).FNodeName;
+end;
+
 function TEpiTranslatedTextWrapper.DoCloneCreate(AOwner: TEpiCustomBase
   ): TEpiCustomBase;
 begin
@@ -1812,6 +1820,7 @@ end;
 procedure TEpiCustomItem.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);
+
   BeginUpdate;
   Name := TEpiCustomItem(AEpiCustomBase).Name;
   EndUpdate;
@@ -1875,10 +1884,8 @@ var
 begin
   inherited Assign(AEpiCustomBase);
   BeginUpdate;
-  if Top = 0 then
-    Top := OrgControlItem.Top;
-  if Left = 0 then
-    Left := OrgControlItem.Left;
+  Top := OrgControlItem.Top;
+  Left := OrgControlItem.Left;
   EndUpdate;
 end;
 
@@ -2252,15 +2259,24 @@ var
   Item: TEpiCustomItem;
 begin
   BeginUpdate;
-  OnNewItemClass := EpiCustomList.OnNewItemClass;
+
+  // TESTING TRUE ASSIGN
+  //  OnNewItemClass := EpiCustomList.OnNewItemClass;
+
   if EpiCustomList.Count > 0 then
   begin
-    NItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
+    // TESTING
+{    NItemClass := TEpiCustomItemClass(EpiCustomList[0].ClassType);
     for i := 0 to EpiCustomList.Count - 1 do
     begin
       Item := NewItem(NItemClass);
       Item.Assign(EpiCustomList[i]);
-    end;
+    end;}
+
+    Clear;
+
+    for Item in EpiCustomList do
+      AddItem(Item);
   end;
   EndUpdate;
 end;

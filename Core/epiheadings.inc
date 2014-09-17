@@ -37,6 +37,11 @@ begin
   result := TEpiHeading(GetItemByName(AName));
 end;
 
+procedure TEpiHeadings.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+end;
+
 { TEpiHeading }
 
 function TEpiHeading.GetSection: TEpiSection;

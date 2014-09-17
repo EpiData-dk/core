@@ -16,6 +16,7 @@ type
     function   ItemClass: TEpiCustomItemClass; override;
     function   NewHeading: TEpiHeading;
     function   GetHeadingByName(Const AName: string): TEpiHeading;
+    procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
   { TEpiHeading }

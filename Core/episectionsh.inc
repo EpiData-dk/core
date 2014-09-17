@@ -55,7 +55,6 @@ type
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;
-    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Fields: TEpiFields read FFields;
     property    Field[Index: integer]: TEpiField read GetField;

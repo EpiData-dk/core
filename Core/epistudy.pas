@@ -46,12 +46,14 @@ type
     procedure SetModifiedDate(const AValue: TDateTime);
     procedure SetNotes(AValue: string);
     procedure SetVersion(const AValue: string);
+    procedure AssignValues(Const Src: TEpiStudy);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
 
   protected
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
@@ -163,6 +165,18 @@ begin
   if FVersion = AValue then exit;
   FVersion := AValue;
   DoChange(eegStudy, Word(esceVersion), @Val);
+end;
+
+procedure TEpiStudy.AssignValues(const Src: TEpiStudy);
+begin
+  FAuthor          := Src.FAuthor;
+  FAgency          := Src.FAgency;
+  FCreated         := Src.Created;
+  FIdentifier      := Src.FIdentifier;
+  FKeywords        := Src.FKeywords;
+  FModifiedDate    := Src.FModifiedDate;
+  FNotes           := Src.FNotes;
+  FVersion         := Src.FVersion;
 end;
 
 constructor TEpiStudy.Create(AOwner: TEpiCustomBase);
@@ -280,6 +294,13 @@ begin
   FUnitOfObservation.LoadFromXml(Root, ReferenceMap);
 end;
 
+procedure TEpiStudy.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  AssignValues(TEpiStudy(AEpiCustomBase));
+end;
+
 function TEpiStudy.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
@@ -298,17 +319,8 @@ function TEpiStudy.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  with TEpiStudy(Result) do
-  begin
-    FAuthor          := Self.FAuthor;
-    FAgency          := Self.FAgency;
-    FCreated         := Self.Created;
-    FIdentifier      := Self.FIdentifier;
-    FKeywords        := Self.FKeywords;
-    FModifiedDate    := Self.FModifiedDate;
-    FNotes           := Self.FNotes;
-    FVersion         := Self.FVersion;
-  end;
+
+  TEpiStudy(Result).AssignValues(Self)
 end;
 
 end.

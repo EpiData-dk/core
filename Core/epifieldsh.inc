@@ -48,7 +48,6 @@ type
     function GetField(index: integer): TEpiField;
     function GetFieldByName(const AName: string): TEpiField;
   protected
-    procedure   DoAssignList(const EpiCustomList: TEpiCustomList); override;
     function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -58,6 +57,7 @@ type
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    FieldExists(AField: TEpiField): boolean;
     function    GetEnumerator: TEpiFieldsEnumerator;
+    procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    DataFile: TEpiDataFile read GetDataFile;
     property    Field[index: integer]: TEpiField read GetField; default;
     property    FieldByName[Const AName: string]: TEpiField read GetFieldByName;
