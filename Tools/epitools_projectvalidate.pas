@@ -18,6 +18,7 @@ type
     pvCheckJumpReset,                 // Check data for jumps with reset value no being (2nd)max missing.
     pvCheckKeyFields,                 // Check keyfield for missing data
 //    pvCheckKeyData,                   // Check keyfields for unique data.
+    pvCheckRelateData,                // Check data in childDF has a valid record in parentDF
 
     // StudyInfo should always be last - used in report.
     pvCheckStudyInfo                  // Check study information for completeness
@@ -41,6 +42,7 @@ const
      'Check data for jumps with no reset',
      'Check keyfields for missing data',
 //     'Check keyfields for unique data',
+     'Check Child/Parent data',
      'Check study information for completeness'
     );
 
@@ -54,6 +56,7 @@ const
      'Jumps',
      'KeyField',
 //     'Unique',
+     'Relate',
      'Study'
     );
 type
@@ -77,10 +80,16 @@ type
 
   { TEpiProjectValidationTool }
 
-  TEpiProjectValidationGetFieldsEvent = function(Const Relation: TEpiMasterRelation): TStrings;
-  TEpiProjectValidationResultEvent = procedure(
+  TEpiProjectValidationGetFieldsEvent = function(
+    Const Sender: TObject;
+    Const Relation: TEpiMasterRelation): TStrings of object;
+  TEpiProjectValidationDataFileResultEvent = procedure(
+    Const Sender: TObject;
     Const Relation: TEpiMasterRelation;
-    Const ResultArray: TEpiProjectStudyArray);
+    Const ResultArray: TEpiProjectResultArray) of object;
+  TEpiProjectValidationStudyResultEvent = procedure(
+    Const Sender: TObject;
+    Const ResultArray: TEpiProjectStudyArray) of object;
 
   TEpiProjectValidationTool = class
   private
@@ -89,11 +98,13 @@ type
     FResultArray: TEpiProjectResultArray;
     FStudyArray: TEpiProjectStudyArray;
     FValidationFields: TEpiFields;
+    FOptions: TEpiToolsProjectValidateOptions;
     function    NewResultRecord: PEpiProjectResultArray;
     procedure   NewStudyRecord(Const AObject: Pointer;
       Const AName: string);
     procedure ValidateDataFile(const Relation: TEpiMasterRelation;
-      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
+      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean;
+      Data: Pointer = nil);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -101,20 +112,26 @@ type
       Out StudyResultArray: TEpiProjectStudyArray;
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
     procedure   ValidateProject(Const Doc: TEpiDocument;
-      Out StudyResultArray: TEpiProjectStudyArray;
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
-    property    Document: TEpiDocument read FDocument write FDocument;
-    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
-    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
+//    property    Document: TEpiDocument read FDocument write FDocument;
+//    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
+//    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
 
   private
-    FOnDataFileResult: TEpiProjectValidationResultEvent;
-    FOnGetKeyFields: TEpiProjectValidationGetFieldsEvent;
+    FOnDataFileResult: TEpiProjectValidationDataFileResultEvent;
+    FOnGetSortFields: TEpiProjectValidationGetFieldsEvent;
     FOnGetValidationFields: TEpiProjectValidationGetFieldsEvent;
+    FOnStudyResult: TEpiProjectValidationStudyResultEvent;
+    function    DoGetSortFields(Const Relation: TEpiMasterRelation): TStrings;
+    function    DoGetValidationFields(Const Relation: TEpiMasterRelation): TStrings;
+    procedure   DoDataFileResult(Const Relation: TEpiMasterRelation;
+      Const ResultArray: TEpiProjectResultArray);
+    procedure   DoStudyResult(Const ResultArray: TEpiProjectStudyArray);
   public
-    property    OnDataFileResult: TEpiProjectValidationResultEvent read FOnDataFileResult write FOnDataFileResult;
-    Property    OnGetKeyFields: TEpiProjectValidationGetFieldsEvent read FOnGetKeyFields write FOnGetKeyFields;
+    property    OnDataFileResult: TEpiProjectValidationDataFileResultEvent read FOnDataFileResult write FOnDataFileResult;
+    Property    OnGetSortFields: TEpiProjectValidationGetFieldsEvent read FOnGetSortFields write FOnGetSortFields;
     property    OnGetValidationFields: TEpiProjectValidationGetFieldsEvent read FOnGetValidationFields write FOnGetValidationFields;
+    property    OnStudyResult: TEpiProjectValidationStudyResultEvent read FOnStudyResult write FOnStudyResult;
   end;
 
 implementation
@@ -152,37 +169,67 @@ end;
 
 procedure TEpiProjectValidationTool.ValidateDataFile(
   const Relation: TEpiMasterRelation; const Depth: Cardinal;
-  const Index: Cardinal; var aContinue: boolean);
+  const Index: Cardinal; var aContinue: boolean; Data: Pointer);
 var
   DF: TEpiDataFile;
+  LValidationFields: TStrings;
+  F: TEpiField;
+  MainSortField: TEpiField;
+  SortFields: TStrings;
+  Fields: TEpiFields;
+  i: Integer;
+  j: Integer;
+  TmpResult: Boolean;
+  CmpResult: TValueSign;
+  Res: Boolean;
+  CompareField: TEpiField;
+  S: String;
+  Jmp: TEpiJump;
 begin
   DF := Relation.Datafile;
-{
-  if Assigned(ValidationFields) and
-     (ValidationFields.Count > 0)
-  then
-    LValidationFields := ValidationFields
-  else
-    LValidationFields := DF.Fields;
+
+  LValidationFields := DoGetValidationFields(Relation);
+
+  if not Assigned(LValidationFields) then
+  begin
+    LValidationFields := TStringList.Create;
+    for F in DF.Fields do
+      LValidationFields.Add(F.Name);
+  end;
+
+  MainSortField := nil;
+  SortFields := DoGetSortFields(Relation);
 
   MainSortField := Df.NewField(ftInteger);
   for i := 0 to Df.Size -1 do
     MainSortField.AsInteger[i] := i;
 
-  if Assigned(KeyFields) and
-     (KeyFields.Count > 0)
-  then
-    Df.SortRecords(KeyFields);
+  if Assigned(SortFields) then
+  begin
+    Fields := TEpiFields.Create(nil);
+
+    for i := 0 to SortFields.Count -1 do
+    begin
+      F := DF.Fields.FieldByName[SortFields[i]];
+      Fields.AddItem(F);
+    end;
+
+    if (Fields.Count > 0)
+    then
+      Df.SortRecords(Fields);
+
+    Fields.Free;
+  end;
 
   for i := 0 to Df.Size - 1 do
   begin
-    if Df.Deleted[i] and (pvIgnoreDeleted in Options) then continue;
+    if Df.Deleted[i] and (pvIgnoreDeleted in FOptions) then continue;
 
-    for j := 0 to ValidationFields.Count - 1 do
+    for j := 0 to LValidationFields.Count - 1 do
     begin
-      F := ValidationFields[j];
+      F := DF.Fields.FieldByName[LValidationFields[j]];
 
-      if (pvCheckSystemMissing in Options) then
+      if (pvCheckSystemMissing in FOptions) then
       begin
         // Check for system missing
 
@@ -195,7 +242,7 @@ begin
         end;
       end;
 
-      if (pvCheckMustEnter in Options) then
+      if (pvCheckMustEnter in FOptions) then
       begin
         if (F.EntryMode = emMustEnter) and
            (F.IsMissing[i])
@@ -208,7 +255,7 @@ begin
           end;
       end;
 
-      if (pvCheckKeyFields in Options) then
+      if (pvCheckKeyFields in FOptions) then
       begin
         if (Df.KeyFields.IndexOf(F) > -1) and
            (F.IsMissing[i])
@@ -221,7 +268,7 @@ begin
           end;
       end;
 
-      if (pvCheckDataRange in Options) and
+      if (pvCheckDataRange in FOptions) and
          ((Assigned(F.Ranges)) or
           (Assigned(F.ValueLabelSet))
          )
@@ -245,7 +292,7 @@ begin
           end;
       end;
 
-      if (pvCheckComparison in Options) and
+      if (pvCheckComparison in FOptions) and
          (Assigned(F.Comparison))
       then
       begin
@@ -273,7 +320,7 @@ begin
         end;
       end;
 
-      if (pvCheckDataLength in Options) then
+      if (pvCheckDataLength in FOptions) then
       begin
         S := F.AsString[i];
 
@@ -286,7 +333,7 @@ begin
         end;
       end;
 
-      if (pvCheckJumpReset in Options) and
+      if (pvCheckJumpReset in FOptions) and
          (Assigned(F.Jumps))
       then
       begin
@@ -302,19 +349,26 @@ begin
             FailedCheck := pvCheckJumpReset;
           end
       end;
+
+      // Check related data!
     end;
   end;
 
-  Df.SortRecords(MainSortField);
-  MainSortField.Free;
+  if Assigned(SortFields) then
+  begin
+    Df.SortRecords(MainSortField);
+    MainSortField.Free;
+  end;
 
   // No "real" changes were made...
 
   if Assigned(Df.RootOwner) then
     DF.RootOwner.Modified := false;
 
-  FieldResultArray := FResultArray;
-  StudyResultArray := FStudyArray;    }
+  DoDataFileResult(Relation, FResultArray);
+
+//  FieldResultArray := FResultArray;
+//  StudyResultArray := FStudyArray;
 end;
 
 constructor TEpiProjectValidationTool.Create;
@@ -344,7 +398,7 @@ var
   Jmp: TEpiJump;
   TmpResult: Boolean;
 begin
-  Df := Document.DataFiles[0];
+{  Df := Document.DataFiles[0];
 
   if (pvCheckStudyInfo in Options) then
   with Document.Study do
@@ -525,17 +579,15 @@ begin
     DF.RootOwner.Modified := false;
 
   FieldResultArray := FResultArray;
-  StudyResultArray := FStudyArray;
+  StudyResultArray := FStudyArray;  }
 end;
 
 procedure TEpiProjectValidationTool.ValidateProject(const Doc: TEpiDocument;
-  out StudyResultArray: TEpiProjectStudyArray;
   Options: TEpiToolsProjectValidateOptions);
-var
-  DFs: TEpiDataFiles;
-  DF: TEpiDataFile;
 begin
-  if (pvCheckStudyInfo in Options) then
+  FOptions := Options;
+
+  if (pvCheckStudyInfo in FOptions) then
   with Doc.Study do
   begin
     if AbstractText.Text = '' then NewStudyRecord(AbstractText, 'Abstract');
@@ -556,10 +608,40 @@ begin
     if Title.Text = ''        then NewStudyRecord(Title,        'Title');
     if Keywords = ''          then NewStudyRecord(@Keywords,    'Keywords');
     if UnitOfObservation.Text = '' then NewStudyRecord(UnitOfObservation, 'Unit of obs.');
+
+    DoStudyResult(FStudyArray);
   end;
 
-  StudyResultArray := FStudyArray;
   Doc.Relations.OrderedWalk(@ValidateDataFile);
+end;
+
+function TEpiProjectValidationTool.DoGetSortFields(
+  const Relation: TEpiMasterRelation): TStrings;
+begin
+  if Assigned(OnGetSortFields) then
+    Result := OnGetSortFields(Self, Relation);
+end;
+
+function TEpiProjectValidationTool.DoGetValidationFields(
+  const Relation: TEpiMasterRelation): TStrings;
+begin
+  if Assigned(OnGetValidationFields) then
+    Result := OnGetValidationFields(Self, Relation);
+end;
+
+procedure TEpiProjectValidationTool.DoDataFileResult(
+  const Relation: TEpiMasterRelation; const ResultArray: TEpiProjectResultArray
+  );
+begin
+  if Assigned(OnDataFileResult) then
+    OnDataFileResult(Self, Relation, ResultArray);
+end;
+
+procedure TEpiProjectValidationTool.DoStudyResult(
+  const ResultArray: TEpiProjectStudyArray);
+begin
+  if Assigned(OnStudyResult) then
+    OnStudyResult(Self, ResultArray);
 end;
 
 end.

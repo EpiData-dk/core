@@ -159,6 +159,7 @@ type
   private
     FMaxDocumentCount: Integer;
     FMinDocumentCount: Integer;
+    function GetDocumentCount: Integer;
     function  GetDocuments(const Index: integer): TEpiDocument;
     procedure SetMaxDocumentCount(AValue: Integer);
     procedure SetMinDocumentCount(AValue: Integer);
@@ -168,8 +169,9 @@ type
     procedure CreateRelation(Const MasterRelation: TEpiMasterRelation);
     procedure DeleteRelation(Relation: TEpiMasterRelation);
   public
+    property  DocumentCount: Integer read GetDocumentCount;
     property  Documents[Const Index: integer]: TEpiDocument read GetDocuments;
-    // Document Count is only applied when DisplayMode = pdmCommon
+    // Document Min/Max-Count is only applied when DisplayMode = pdmCommon
     property  MaxDocumentCount: Integer read FMaxDocumentCount write SetMaxDocumentCount; // Set -1 for unlimited
     property  MinDocumentCount: Integer read FMinDocumentCount write SetMinDocumentCount; // Set -1 for unlimited
 
@@ -978,6 +980,11 @@ begin
     Exit;
 
   Result := TEpiDocument(FDocumentList[Index]);
+end;
+
+function TEpiVProjectTreeViewFrame.GetDocumentCount: Integer;
+begin
+  result := FDocumentList.Count;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetMaxDocumentCount(AValue: Integer);

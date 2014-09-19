@@ -107,12 +107,14 @@ type
   { TEpiRelationListEx }
 
   TEpiRelationListExCallBack = procedure(Const Relation: TEpiMasterRelation;
-    Const Depth: Cardinal; Const Index: Cardinal; Var aContinue: boolean) of object;
+    Const Depth: Cardinal; Const Index: Cardinal; Var aContinue: boolean;
+    Data: Pointer = nil) of object;
 
   TEpiRelationListEx = class(TEpiRelationList)
   public
     function GetOrderedDataFiles: TEpiDataFiles;
-    procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack);
+    procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack;
+      Data: Pointer = nil);
   end;
 
 implementation
@@ -440,7 +442,7 @@ begin
 end;
 
 procedure TEpiRelationListEx.OrderedWalk(
-  const CallBackMethod: TEpiRelationListExCallBack);
+  const CallBackMethod: TEpiRelationListExCallBack; Data: Pointer);
 
 var
   Depth: Cardinal;
@@ -451,7 +453,7 @@ var
   var
     i: Integer;
   begin
-    CallBackMethod(ARelation, Depth, Idx, aContinue);
+    CallBackMethod(ARelation, Depth, Idx, aContinue, Data);
     if not aContinue then exit;
 
     Inc(Depth);

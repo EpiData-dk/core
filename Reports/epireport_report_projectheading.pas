@@ -21,9 +21,11 @@ type
     FFileNo: integer;
     FCurrentRowNo: Integer;
     procedure KeysTable(const Relation: TEpiMasterRelation;
-      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
+      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean;
+      Data: Pointer = nil);
     procedure DataFormsTable(const Relation: TEpiMasterRelation;
-      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
+      const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean;
+      Data: Pointer = nil);
   protected
     procedure DoSanityCheck; override;
   public
@@ -45,7 +47,8 @@ resourcestring
 { TEpiReportProjectHeader }
 
 procedure TEpiReportProjectHeader.KeysTable(const Relation: TEpiMasterRelation;
-  const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean);
+  const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean;
+  Data: Pointer);
 var
   DF: TEpiDataFile;
   F: TEpiField;
@@ -87,7 +90,7 @@ end;
 
 procedure TEpiReportProjectHeader.DataFormsTable(
   const Relation: TEpiMasterRelation; const Depth: Cardinal;
-  const Index: Cardinal; var aContinue: boolean);
+  const Index: Cardinal; var aContinue: boolean; Data: Pointer);
 var
   S: String;
 begin

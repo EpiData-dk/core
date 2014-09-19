@@ -6,10 +6,23 @@ interface
 
 uses
   Classes, SysUtils, epireport_base, epidocument, epidatafiles,
-  epireport_generator_base,
+  epireport_generator_base, epirelations,
   epitools_projectvalidate;
 
 type
+
+  { TEpiReportProjectValidateOption }
+
+  TEpiReportProjectValidateOption = record
+    Document: TEpiDocument;
+    Options:  TEpiToolsProjectValidateOptions;
+    FieldLists: array of
+      record
+        Relation: TEpiMasterRelation;
+        SortFields: TStrings;
+        CompareFields: TStrings;
+      end;
+  end;
 
   { TEpiReportProjectValidator }
 
@@ -17,29 +30,36 @@ type
   private
     FDocument: TEpiDocument;
     FKeyFields: TEpiFields;
-    FOptions: TEpiToolsProjectValidateOptions;
+    FOption: TEpiReportProjectValidateOption;
     FProjectValidationOptions: TEpiToolsProjectValidateOptions;
     FValidationFields: TEpiFields;
-    function   RunTool(out RecordResult: TEpiProjectResultArray;
-      out StudyResult: TEpiProjectStudyArray): Boolean;
+    procedure ToolDataFileResult(const Sender: TObject;
+      const Relation: TEpiMasterRelation;
+      const ResultArray: TEpiProjectResultArray);
+    function ToolSortFields(const Sender: TObject;
+      const Relation: TEpiMasterRelation): TStrings;
+    procedure ToolStudyResult(const Sender: TObject;
+      const ResultArray: TEpiProjectStudyArray);
+    function ToolValidateFields(const Sender: TObject;
+      const Relation: TEpiMasterRelation): TStrings;
+
+    procedure RunTool();
 
   private
-    { Report parts }
+    procedure AssignCustomData();
+    function SortFieldsFromRelation(Const Relation: TEpiMasterRelation): TStrings;
+    function CompareFieldsFromRelation(Const Relation: TEpiMasterRelation): TStrings;
+
     procedure DoReportStart;
     procedure DoReportResultTable(Const RecordArray: TEpiProjectResultArray;
       Const StudyArray: TEpiProjectStudyArray);
-    procedure DoStudyReport(Const StudyResult: TEpiProjectStudyArray);
     procedure DoRecordsReport(Const RecordResult: TEpiProjectResultArray);
   protected
     procedure DoSanityCheck; override;
   public
     constructor Create(ReportGenerator: TEpiReportGeneratorBase); override;
     procedure   RunReport; override;
-    property    Document: TEpiDocument read FDocument write FDocument;
-    property    ProjectValidationOptions: TEpiToolsProjectValidateOptions read FProjectValidationOptions write FProjectValidationOptions;
-    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
-    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
-    property    Options: TEpiToolsProjectValidateOptions read FOptions write FOptions;
+    property    Option: TEpiReportProjectValidateOption read FOption write FOption;
   end;
 
 implementation
@@ -48,24 +68,123 @@ uses
   LazUTF8, typinfo, epireport_types, epireport_report_fieldlist,
   epidatafilestypes;
 
-{ TEpiReportProjectValidator }
 resourcestring
-  SEpiReportProjectValidationNoDocument = 'EpiReport: No Document assigned to Project Validation';
+  SEpiReportProjectValidationNoOption = 'EpiReport: No Option assigned to Project Validation';
 
-function TEpiReportProjectValidator.RunTool(out
-  RecordResult: TEpiProjectResultArray; out StudyResult: TEpiProjectStudyArray
-  ): Boolean;
+const
+  SORT_FIELDS_KEY = 'SORT_FIELDS_KEY';
+  COMPARE_FIELDS_KEY = 'COMPARE_FIELDS_KEY';
+
+{ TEpiReportProjectValidator }
+
+procedure TEpiReportProjectValidator.ToolDataFileResult(const Sender: TObject;
+  const Relation: TEpiMasterRelation; const ResultArray: TEpiProjectResultArray
+  );
+var
+  SortFields: TStrings;
+  FName: String;
+  ValidationFields: TStrings;
+  Fields: TEpiFields;
+  S: String;
+  R: TEpiReportFieldList;
+begin
+  DoSection('DataForm: ' + Relation.Datafile.Caption.Text);
+
+  SortFields := SortFieldsFromRelation(Relation);
+
+  if Assigned(SortFields) and
+     (SortFields.Count > 0)
+  then
+    begin
+      DoLineText('');
+      DoHeading('Sort Fields:');
+      S := '';
+      for FName in SortFields do
+        S := S + FName + ' ';
+      DoLineText(S);
+    end;
+
+  DoLineText('');
+
+  ValidationFields := CompareFieldsFromRelation(Relation);
+  Fields := TEpiFields.Create(nil);
+
+  for FName in ValidationFields do
+    Fields.AddItem(Relation.Datafile.Fields.FieldByName[FName]);
+
+  R := TEpiReportFieldList.Create(FReportGenerator);
+  R.Fields := Fields;
+  R.TableHeader := 'Validation Fields:';
+  R.RunReport;
+  R.Free;
+
+  Fields.Free;
+end;
+
+function TEpiReportProjectValidator.ToolSortFields(const Sender: TObject;
+  const Relation: TEpiMasterRelation): TStrings;
+begin
+  Result := SortFieldsFromRelation(Relation);
+end;
+
+procedure TEpiReportProjectValidator.ToolStudyResult(const Sender: TObject;
+  const ResultArray: TEpiProjectStudyArray);
+var
+  Res: TEpiProjectValidateStudyRecord;
+begin
+  if Length(ResultArray) = 0 then exit;
+
+  DoHeading('Study Information:');
+  DoLineText('');
+
+  DoLineText('No study information for:');
+  for Res in ResultArray do
+    DoLineText('  ' + Res.StudyObjectName);
+
+  DoLineText('');
+end;
+
+function TEpiReportProjectValidator.ToolValidateFields(const Sender: TObject;
+  const Relation: TEpiMasterRelation): TStrings;
+begin
+  Result := CompareFieldsFromRelation(Relation);
+end;
+
+procedure TEpiReportProjectValidator.RunTool;
 var
   T: TEpiProjectValidationTool;
-  Dummy: TEpiProjectStudyArray;
 begin
   T := TEpiProjectValidationTool.Create;
-  T.Document := Document;
-  T.ValidationFields := ValidationFields;
-  T.KeyFields        := KeyFields;
-  T.ValidateProject(RecordResult, StudyResult, Options);
+  T.OnDataFileResult      := @ToolDataFileResult;
+  T.OnGetSortFields       := @ToolSortFields;
+  T.OnGetValidationFields := @ToolValidateFields;
+  T.OnStudyResult         := @ToolStudyResult;
+  T.ValidateProject(Option.Document, Option.Options);
   T.Free;
-  Result := true;
+end;
+
+procedure TEpiReportProjectValidator.AssignCustomData;
+var
+  i: Integer;
+begin
+  for i := 0 to Length(Option.FieldLists) -1 do
+  with Option.FieldLists[i] do
+  begin
+    Relation.AddCustomData(SORT_FIELDS_KEY, SortFields);
+    Relation.AddCustomData(COMPARE_FIELDS_KEY, CompareFields);
+  end;
+end;
+
+function TEpiReportProjectValidator.SortFieldsFromRelation(
+  const Relation: TEpiMasterRelation): TStrings;
+begin
+  result := TStrings(Relation.FindCustomData(SORT_FIELDS_KEY));
+end;
+
+function TEpiReportProjectValidator.CompareFieldsFromRelation(
+  const Relation: TEpiMasterRelation): TStrings;
+begin
+  result := TStrings(Relation.FindCustomData(COMPARE_FIELDS_KEY));
 end;
 
 procedure TEpiReportProjectValidator.DoReportStart;
@@ -100,29 +219,10 @@ begin
   for Opt in EpiProjectValidationOptionsSelectable do
   begin
     DoTableCell(0, I, EpiToolProjectValidationOptionText[Opt]);
-    DoTableCell(1, I, BoolToStr(Opt in Options, 'Yes', 'No'));
+    DoTableCell(1, I, BoolToStr(Opt in Option.Options, 'Yes', 'No'));
     Inc(I);
   end;
   DoTableFooter('');
-
-  if Assigned(KeyFields) and
-     (KeyFields.Count > 0)
-  then
-    begin
-      DoLineText('');
-      DoHeading('Key Fields:');
-      S := '';
-      for i := 0 to KeyFields.Count - 1 do
-        S := S + KeyFields[i].Name + ' ';
-      DoLineText(S);
-    end;
-
-  DoLineText('');
-  R := TEpiReportFieldList.Create(FReportGenerator);
-  R.Fields := ValidationFields;
-  R.TableHeader := 'Validation Fields:';
-  R.RunReport;
-  R.Free;
 end;
 
 procedure TEpiReportProjectValidator.DoReportResultTable(
@@ -142,7 +242,7 @@ var
   S: String;
   j: Integer;
 
-  function CalcErrorPct: Extended;
+{  function CalcErrorPct: Extended;
   begin
     Result := RecordErrorCount / RecordCount;
   end;
@@ -150,10 +250,10 @@ var
   function CalcErrorFieldPct: Extended;
   begin
     Result := FieldErrorCount / (RecordCount * ValidationFields.Count);
-  end;
+  end;                  }
 
 begin
-  RecordErrorCount := 0;
+  {RecordErrorCount := 0;
   FieldErrorCount  := Length(RecordArray);
 
   RecordCount := 0;
@@ -219,24 +319,7 @@ begin
       tcaCenter,
       [tcoTopBorder]);
 
-  DoTableFooter('Counts indicate number of errors.');
-end;
-
-procedure TEpiReportProjectValidator.DoStudyReport(
-  const StudyResult: TEpiProjectStudyArray);
-var
-  Res: TEpiProjectValidateStudyRecord;
-begin
-  if Length(StudyResult) = 0 then exit;
-
-  DoHeading('Study Information:');
-  DoLineText('');
-
-  DoLineText('No study information for:');
-  for Res in StudyResult do
-    DoLineText('  ' + Res.StudyObjectName);
-
-  DoLineText('');
+  DoTableFooter('Counts indicate number of errors.');  }
 end;
 
 procedure TEpiReportProjectValidator.DoRecordsReport(
@@ -248,89 +331,14 @@ var
   ResRecord: TEpiProjectValidateResultRecord;
   Jmp: TEpiJump;
 begin
-  i := Low(RecordResult);
-  while i <= High(RecordResult) do
-  begin
-    DoHeading('Record no: ' + IntToStr(RecordResult[i].RecNo + 1));
-
-    if Assigned(KeyFields) and
-       (KeyFields.Count > 0)
-    then
-      begin
-        S := 'Key Fields:';
-
-        for j := 0 to KeyFields.Count -1 do
-          S += '  ' + KeyFields[j].Name + ' = ' + KeyFields[j].AsString[RecordResult[i].RecNo];
-
-        DoLineText(S);
-      end;
-
-    repeat
-      ResRecord := RecordResult[i];
-
-      S := ResRecord.Field.Name + ': ';
-      case ResRecord.FailedCheck of
-        pvCheckSystemMissing:
-          S += 'System Missing';
-        pvCheckMustEnter:
-          S += 'Must Enter has system missing';
-        pvCheckKeyFields:
-          S += 'Key Field has system missing';
-        pvCheckDataRange:
-          with ResRecord do
-          begin
-            S += 'Value = ' + Field.AsString[RecNo] + ', ';
-            if Assigned(Field.Ranges) and
-               (not Field.Ranges.InRange(Field.AsValue[RecNo]))
-            then
-              S += Format('Not in range = (%s, %s) ',
-                [Field.Ranges[0].AsString[true],
-                 Field.Ranges[0].AsString[false]]
-              );
-
-            if Assigned(Field.ValueLabelSet) and
-               (not Field.ValueLabelSet.ValueLabelExists[Field.AsValue[RecNo]])
-            then
-              S += 'Not a valid value label!'
-          end;
-        pvCheckComparison:
-          with ResRecord.Field do
-            S += Format('Comparison: %s=%s %s %s=%s',
-                        [Name, AsString[ResRecord.RecNo],
-                         ComparisonTypeToString(Comparison.CompareType),
-                         Comparison.CompareField.Name, Comparison.CompareField.AsString[ResRecord.RecNo]
-                        ]);
-        pvCheckDataLength:
-          with ResRecord.Field do
-            S += Format('Field length = %d, Data length: %d',
-                        [Length, UTF8Length(AsString[ResRecord.RecNo])]);
-        pvCheckJumpReset:
-          // Either a reset value is NOT missing OR a jump back in flow.
-          with ResRecord.Field do
-          begin
-            Jmp := Jumps.JumpFromValue[AsString[ResRecord.RecNo]];
-            if not (Jmp.ResetType in [jrMaxMissing, jr2ndMissing]) then
-              S += Format('Value = %s, is not a valid jump reset value (MaxMissing or 2ndMaxMissing)!', [AsString[ResRecord.RecNo]])
-            else
-              S += Format('Value = %s, is a jump backward in flow!', [AsString[ResRecord.RecNo]]);
-          end;
-      else
-          S += Format('Report not implemented for ToolCheck: %s',
-                      [GetEnumName(TypeInfo(TEpiToolsProjectValidateOption), Integer(ResRecord.FailedCheck))]);
-      end;
-      DoLineText(S);
-      Inc(i);
-    until (i > High(RecordResult)) or (RecordResult[i].RecNo <> ResRecord.RecNo);
-    DoLineText('');
-  end;
 end;
 
 procedure TEpiReportProjectValidator.DoSanityCheck;
 begin
   inherited DoSanityCheck;
 
-  if not Assigned(Document) then
-    DoError(EEpiReportBaseException, SEpiReportProjectValidationNoDocument);
+//  if not Assigned(Option) then
+//    DoError(EEpiReportBaseException, SEpiReportProjectValidationNoOption);
 end;
 
 constructor TEpiReportProjectValidator.Create(
@@ -341,25 +349,15 @@ begin
 end;
 
 procedure TEpiReportProjectValidator.RunReport;
-var
-  RecordResult: TEpiProjectResultArray;
-  StudyResult: TEpiProjectStudyArray;
 begin
   inherited RunReport;
 
-  RunTool(RecordResult, StudyResult);
+  AssignCustomData();
 
   DoReportStart;
   DoLineText('');
 
-  DoSection('Result of Validation:');
-  DoReportResultTable(RecordResult, StudyResult);
-  DoLineText('');
-
-  DoStudyReport(StudyResult);
-  DoLineText('');
-
-  DoRecordsReport(RecordResult);
+  RunTool();
 end;
 
 end.
