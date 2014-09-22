@@ -6,8 +6,8 @@ object EpiVFieldList: TEpiVFieldList
   ClientHeight = 492
   ClientWidth = 533
   TabOrder = 0
-  DesignLeft = 2075
-  DesignTop = 381
+  DesignLeft = 619
+  DesignTop = 305
   object VST: TVirtualStringTree
     Left = 0
     Height = 492
@@ -163,11 +163,13 @@ object EpiVFieldList: TEpiVFieldList
       Caption = 'Move Up'
       ImageIndex = 35
       OnExecute = MoveUpActionExecute
+      OnUpdate = MoveActionUpdate
     end
     object MoveDownAction: TAction
       Caption = 'Move Down'
       ImageIndex = 36
       OnExecute = MoveDownActionExecute
+      OnUpdate = MoveActionUpdate
     end
   end
 end

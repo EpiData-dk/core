@@ -28,6 +28,7 @@ type
     GrandBtnPanel: TPanel;
     BtnPanel: TPanel;
     VST: TVirtualStringTree;
+    procedure MoveActionUpdate(Sender: TObject);
     procedure MoveDownActionExecute(Sender: TObject);
     procedure MoveUpActionExecute(Sender: TObject);
     procedure VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
@@ -112,6 +113,11 @@ begin
 
   if not Assigned(TargetNode) then Exit;
   VST.MoveTo(VST.FocusedNode, TargetNode, TargetMode, false);
+end;
+
+procedure TEpiVFieldList.MoveActionUpdate(Sender: TObject);
+begin
+  TAction(Sender).Enabled := Assigned(VST.FocusedNode);
 end;
 
 procedure TEpiVFieldList.MoveUpActionExecute(Sender: TObject);
