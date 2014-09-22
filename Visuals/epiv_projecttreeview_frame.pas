@@ -579,18 +579,50 @@ procedure TEpiVProjectTreeViewFrame.VSTNewText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; const NewText: String);
 var
   DF: TEpiDataFile;
+  O: TEpiCustomBase;
+  Ot: TEpiVTreeNodeObjectType;
+  Doc: TEpiDocument;
 begin
-  DF := DataFileFromNode(Node);
+  ObjectAndType(Node, O, Ot);
 
-  if Assigned(DF) then
-  begin
-    if NewText = '' then
-    begin
-      DoError('A dataform caption cannot be empty!');
+  case ot of
+    otEmpty:
       Exit;
-    end;
 
-    DF.Caption.Text := NewText;
+    otFake:
+      Exit;
+
+    otRelation:
+      begin
+        DF := TEpiMasterRelation(O).Datafile;
+
+        if Assigned(DF) then
+        begin
+          if NewText = '' then
+          begin
+            DoError('A dataform caption cannot be empty!');
+            Exit;
+          end;
+
+          DF.Caption.Text := NewText;
+        end;
+      end;
+
+    otProject:
+      begin
+        Doc := TEpiDocument(O);
+
+        if Assigned(Doc) then
+        begin
+          if NewText = '' then
+          begin
+            DoError('Project Title cannot be empty!');
+            Exit;
+          end;
+
+          Doc.Study.Title.Text := NewText;
+        end;
+      end;
   end;
 end;
 
