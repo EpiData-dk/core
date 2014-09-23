@@ -3,45 +3,7 @@ object DataFormTreeViewFrame: TDataFormTreeViewFrame
   Height = 464
   Top = 0
   Width = 532
-  ClientHeight = 464
-  ClientWidth = 532
   TabOrder = 0
-  DesignLeft = 2192
-  DesignTop = 308
-  object DataFileTree: TVirtualStringTree
-    Left = 0
-    Height = 464
-    Top = 0
-    Width = 532
-    Align = alClient
-    Color = clNone
-    DefaultText = 'Node'
-    Header.AutoSizeIndex = 1
-    Header.Columns = <    
-      item
-        CheckType = ctTriStateCheckBox
-        CheckState = csCheckedNormal
-        CheckBox = True
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus]
-        Position = 0
-        Text = 'Name'
-        Width = 150
-      end    
-      item
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus]
-        Position = 1
-        Text = 'Caption'
-        Width = 380
-      end>
-    Header.DefaultHeight = 20
-    Header.Height = 20
-    Header.Options = [hoAutoResize, hoColumnResize, hoDblClickResize, hoShowSortGlyphs, hoVisible]
-    ScrollBarOptions.AlwaysVisible = True
-    ScrollBarOptions.ScrollBars = ssAutoBoth
-    TabOrder = 0
-    TreeOptions.MiscOptions = [toCheckSupport, toFullRepaintOnResize, toGridExtensions, toInitOnSave, toToggleOnDblClick, toWheelPanning]
-    OnGetText = DataFileTreeGetText
-    OnGetImageIndex = DataFileTreeGetImageIndex
-    OnInitNode = DataFileTreeInitNode
-  end
+  DesignLeft = 1091
+  DesignTop = 326
 end

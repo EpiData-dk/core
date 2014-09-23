@@ -27,10 +27,11 @@ type
     MoveUpBtn: TSpeedButton;
     GrandBtnPanel: TPanel;
     BtnPanel: TPanel;
-    VST: TVirtualStringTree;
     procedure MoveActionUpdate(Sender: TObject);
     procedure MoveDownActionExecute(Sender: TObject);
     procedure MoveUpActionExecute(Sender: TObject);
+  private
+    VST: TVirtualStringTree;
     procedure VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
       DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState;
       const Pt: TPoint; var Effect: LongWord; Mode: TDropMode);
@@ -226,6 +227,8 @@ begin
 end;
 
 constructor TEpiVFieldList.Create(TheOwner: TComponent);
+var
+  Col: TVirtualTreeColumn;
 begin
   inherited Create(TheOwner);
 
@@ -236,8 +239,10 @@ begin
   FShowMoveButtons := true;
   FShowCheckBoxes  := true;
 
+  VST := TVirtualStringTree.Create(Self);
   with VST do
   begin
+    BeginUpdate;
     RootNodeCount := 0;
 
     TreeOptions.AnimationOptions := [];
@@ -248,17 +253,37 @@ begin
     TreeOptions.SelectionOptions := [toExtendedFocus, toFullRowSelect];
     TreeOptions.StringOptions    := [];
 
-    Header.Options  := [hoAutoResize, hoColumnResize, hoDblClickResize, hoShowSortGlyphs, hoVisible];
-
-    with Header.Columns[0] do
+    with Header do
     begin
-      Options := Options + [coVisible];
-      Text    := FCheckBoxHeader;
+      Options  := [hoAutoResize, hoColumnResize, hoDblClickResize, hoShowSortGlyphs, hoVisible];
+      Height   := 22;
+
+      with Columns.Add do
+      begin
+        CheckType := ctCheckBox;
+        Options   := [coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus];
+        Text      := FCheckBoxHeader;
+        Spacing   := 50;
+      end;
+
+      with Columns.Add do
+      begin
+        CheckType := ctNone;
+        Options   := [coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus];
+        Text      := 'Name';
+        Width     := 125;
+      end;
+
+      with Columns.Add do
+      begin
+        CheckType := ctNone;
+        Options   := [coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus];
+        Text      := 'Caption';
+      end;
+
+      MainColumn    := 0;
+      AutoSizeIndex := 2;
     end;
-
-    Header.Height   := 22;
-
-    Header.Columns[0].Spacing := 50;
 
     Images          := DM.Icons16;
 
@@ -275,6 +300,10 @@ begin
     OnStartDrag     := @VSTStartDrag;
     OnDragOver      := @VSTDragOver;
     OnDragDrop      := @VSTDragDrop;
+
+    Align           := alClient;
+    Parent          := Self;
+    EndUpdate;
   end;
 end;
 

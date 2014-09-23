@@ -82,9 +82,9 @@ type
   { TEpiVProjectTreeViewFrame }
 
   TEpiVProjectTreeViewFrame = class(TFrame)
-    VST: TVirtualStringTree;
   private
-    { VST Events }
+    { VST & Events }
+    VST: TVirtualStringTree;
     procedure VSTChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var NewState: TCheckState; var Allowed: Boolean);
@@ -96,6 +96,7 @@ type
     procedure VSTDragOver(Sender: TBaseVirtualTree; Source: TObject;
       Shift: TShiftState; State: TDragState; const Pt: TPoint; Mode: TDropMode;
       var Effect: LongWord; var Accept: Boolean);
+    procedure VSTEditCancelled(Sender: TBaseVirtualTree; Column: TColumnIndex);
     procedure VSTEdited(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex);
     procedure VSTEditing(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -384,17 +385,23 @@ begin
     ;
 end;
 
+procedure TEpiVProjectTreeViewFrame.VSTEditCancelled(Sender: TBaseVirtualTree;
+  Column: TColumnIndex);
+var
+  AObject: TEpiCustomBase;
+  ObjectType: TEpiVTreeNodeObjectType;
+begin
+  ObjectAndType(VST.FocusedNode, AObject, ObjectType);
+  DoEdited(AObject, ObjectType);
+end;
+
 procedure TEpiVProjectTreeViewFrame.VSTEdited(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);
 var
   AObject: TEpiCustomBase;
   ObjectType: TEpiVTreeNodeObjectType;
 begin
-  AObject := CustomBaseFromNode(Node);
-  ObjectType := otProject;
-  if AObject is TEpiMasterRelation then
-    ObjectType := otRelation;
-
+  ObjectAndType(Node, AObject, ObjectType);
   DoEdited(AObject, ObjectType);
 end;
 
@@ -404,11 +411,7 @@ var
   AObject: TEpiCustomBase;
   ObjectType: TEpiVTreeNodeObjectType;
 begin
-  AObject := CustomBaseFromNode(Node);
-  ObjectType := otProject;
-  if AObject is TEpiMasterRelation then
-    ObjectType := otRelation;
-
+  ObjectAndType(Node, AObject, ObjectType);
   DoEditing(AObject, ObjectType, Allowed);
 end;
 
@@ -961,17 +964,27 @@ begin
   FShowHint           := false;
   FShowProject        := true;
 
+  VST := TVirtualStringTree.Create(Self);
   with VST do
   begin
     NodeDataSize    := SizeOf(Pointer);
 
-    TreeOptions.AutoOptions := TreeOptions.AutoOptions + [toAutoTristateTracking];
+    with TreeOptions do
+    begin
+      AnimationOptions := [];
+      AutoOptions      := [toAutoDropExpand, toAutoScrollOnExpand, toAutoDeleteMovedNodes, toAutoTristateTracking];
+      MiscOptions      := [toCheckSupport, toFullRepaintOnResize, toInitOnSave, toWheelPanning, toEditOnDblClick];
+      PaintOptions     := [toShowButtons, toShowDropmark, toShowRoot, toShowTreeLines, toThemeAware, toUseBlendedImages];
+      SelectionOptions := [toFullRowSelect];
+      StringOptions    := [toAutoAcceptEditChange];
+    end;
 
     OnGetText       := @VSTGetText;
     OnNewText       := @VSTNewText;
     OnPaintText     := @VSTPaintText;
     OnEdited        := @VSTEdited;
     OnEditing       := @VSTEditing;
+    OnEditCancelled := @VSTEditCancelled;
 
     OnChecking      := @VSTChecking;
     OnChecked       := @VSTChecked;
@@ -988,6 +1001,10 @@ begin
     OnGetHint       := @VSTGetHint;
 
     OnFreeNode      := @VSTFreeNode;
+
+    Align           := alClient;
+    Parent          := Self;
+    EditDelay       := 0;
   end;
 end;
 

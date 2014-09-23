@@ -13,13 +13,14 @@ type
   { TDataFormTreeViewFrame }
 
   TDataFormTreeViewFrame = class(TFrame)
-    DataFileTree: TVirtualStringTree;
-    procedure DataFileTreeGetImageIndex(Sender: TBaseVirtualTree;
+  private
+    VST: TVirtualStringTree;
+    procedure VSTGetImageIndex(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
       var Ghosted: Boolean; var ImageIndex: Integer);
-    procedure DataFileTreeGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+    procedure VSTGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: String);
-    procedure DataFileTreeInitNode(Sender: TBaseVirtualTree; ParentNode,
+    procedure VSTInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
   private
     FDataFile: TEpiDataFile;
@@ -54,7 +55,7 @@ uses
 
 { TDataFormTreeViewFrame }
 
-procedure TDataFormTreeViewFrame.DataFileTreeGetImageIndex(Sender: TBaseVirtualTree;
+procedure TDataFormTreeViewFrame.VSTGetImageIndex(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
   var Ghosted: Boolean; var ImageIndex: Integer);
 var
@@ -66,7 +67,7 @@ begin
   ImageIndex := DM.GetImageIndex(CI);
 end;
 
-procedure TDataFormTreeViewFrame.DataFileTreeGetText(Sender: TBaseVirtualTree;
+procedure TDataFormTreeViewFrame.VSTGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: String);
 var
@@ -86,7 +87,7 @@ begin
   end;
 end;
 
-procedure TDataFormTreeViewFrame.DataFileTreeInitNode(Sender: TBaseVirtualTree; ParentNode,
+procedure TDataFormTreeViewFrame.VSTInitNode(Sender: TBaseVirtualTree; ParentNode,
   Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 var
   CI: TEpiCustomControlItem;
@@ -123,7 +124,7 @@ end;
 function TDataFormTreeViewFrame.GetCustomItemFromNode(const Node: PVirtualNode
   ): TEpiCustomControlItem;
 begin
-  result := TEpiCustomControlItem(DataFileTree.GetNodeData(Node)^);
+  result := TEpiCustomControlItem(VST.GetNodeData(Node)^);
 end;
 
 function TDataFormTreeViewFrame.GetSelectedList: TList;
@@ -132,14 +133,14 @@ var
 begin
   Result := TList.Create;
 
-  Node := DataFileTree.GetFirst();
+  Node := VST.GetFirst();
   while Assigned(Node) do
   begin
-    if (DataFileTree.CheckState[Node] in [csMixedNormal, csCheckedNormal]) and
-       (DataFileTree.IsVisible[Node])
+    if (VST.CheckState[Node] in [csMixedNormal, csCheckedNormal]) and
+       (VST.IsVisible[Node])
     then
       Result.Add(GetCustomItemFromNode(Node));
-    Node := DataFileTree.GetNext(Node, true);
+    Node := VST.GetNext(Node, true);
   end;
 end;
 
@@ -150,14 +151,14 @@ var
   CurrentNode: PVirtualNode;
   i: Integer;
 begin
-  DataFileTree.Clear;
+  VST.Clear;
 
   if not Assigned(Datafile) then exit;
 
-  DataFileTree.BeginUpdate;
-  DataFileTree.NodeDataSize := SizeOf(TEpiCustomControlItem);
+  VST.BeginUpdate;
+  VST.NodeDataSize := SizeOf(TEpiCustomControlItem);
 
-  MainNode := DataFileTree.AddChild(nil, Datafile.MainSection);
+  MainNode := VST.AddChild(nil, Datafile.MainSection);
 
   for i := 1 to Datafile.ControlItems.Count - 1 do
   begin
@@ -169,13 +170,13 @@ begin
       CurrentNode := MainNode;
 
     if CI is TEpiSection then
-      CurrentNode := DataFileTree.AddChild(CurrentNode, CI)
+      CurrentNode := VST.AddChild(CurrentNode, CI)
     else
-      DataFileTree.AddChild(CurrentNode, CI);
+      VST.AddChild(CurrentNode, CI);
   end;
-  DataFileTree.EndUpdate;
-  DataFileTree.ReinitChildren(MainNode, true);
-  DataFileTree.ToggleNode(MainNode);
+  VST.EndUpdate;
+  VST.ReinitChildren(MainNode, true);
+  VST.ToggleNode(MainNode);
 end;
 
 procedure TDataFormTreeViewFrame.SetDataFile(AValue: TEpiDataFile);
@@ -193,17 +194,17 @@ var
 begin
   if not Assigned(AValue) then Exit;
 
-  Node := DataFileTree.GetFirst();
+  Node := VST.GetFirst();
   while Assigned(Node) do
   begin
     CI := GetCustomItemFromNode(Node);
 
     if (AValue.IndexOf(CI) >= 0) then
-      DataFileTree.CheckState[Node] := csCheckedNormal
+      VST.CheckState[Node] := csCheckedNormal
     else
-      DataFileTree.CheckState[Node] := csUncheckedNormal;
+      VST.CheckState[Node] := csUncheckedNormal;
 
-    Node := DataFileTree.GetNext(Node, true);
+    Node := VST.GetNext(Node, true);
   end;
 end;
 
@@ -230,19 +231,78 @@ begin
   FShowHeadings := true;
   FShowFieldTypes := AllFieldTypes;
 
-  DataFileTree.Images := DM.Icons16;
+
+  VST := TVirtualStringTree.Create(self);
+  with VST do
+  begin
+    BeginUpdate;
+
+    with TreeOptions do
+    begin
+      AnimationOptions := [];
+      AutoOptions      := [toAutoTristateTracking];
+      MiscOptions      := [toCheckSupport, toFullRepaintOnResize,
+                           toGridExtensions, toToggleOnDblClick, toWheelPanning];
+      PaintOptions     := [toShowButtons, toShowDropmark, toShowRoot,
+                           toShowTreeLines, toThemeAware, toUseBlendedImages];
+      SelectionOptions := [];
+      StringOptions    := [];
+    end;
+
+    with Header do
+    begin
+      Options := [hoAutoResize, hoColumnResize, hoDblClickResize, hoVisible,
+                  hoFullRepaintOnResize];
+
+      with Columns.Add do
+      begin
+        Text := 'Name';
+        CheckBox   := true;
+        CheckState := csCheckedNormal;
+        CheckType  := ctTriStateCheckBox;
+        Options    := [coAllowClick, coEnabled, coParentBidiMode,
+                       coParentColor, coResizable, coShowDropMark, coVisible,
+                       coSmartResize, coAllowFocus];
+        Width      := 150;
+      end;
+
+      with Columns.Add do
+      begin
+        Text := 'Caption';
+        CheckBox   := false;
+        CheckState := csUncheckedNormal;
+        CheckType  := ctCheckBox;
+        Options    := [coAllowClick, coEnabled, coParentBidiMode,
+                       coParentColor, coResizable, coShowDropMark, coVisible,
+                       coSmartResize, coAllowFocus];
+      end;
+
+      MainColumn := 0;
+      AutoSizeIndex := 1;
+    end;
+
+    OnInitNode      := @VSTInitNode;
+    OnGetImageIndex := @VSTGetImageIndex;
+    OnGetText       := @VSTGetText;
+
+    Align := alClient;
+    Parent := Self;
+    EndUpdate;
+  end;
+
+  VST.Images := DM.Icons16;
 end;
 
 procedure TDataFormTreeViewFrame.SelectAll;
 begin
-  if DataFileTree.RootNodeCount = 0 then exit;
-  DataFileTree.CheckState[DataFileTree.GetFirst()] := csCheckedNormal;
+  if VST.RootNodeCount = 0 then exit;
+  VST.CheckState[VST.GetFirst()] := csCheckedNormal;
 end;
 
 procedure TDataFormTreeViewFrame.SelectNone;
 begin
-  if DataFileTree.RootNodeCount = 0 then exit;
-  DataFileTree.CheckState[DataFileTree.GetFirst()] := csUncheckedNormal;
+  if VST.RootNodeCount = 0 then exit;
+  VST.CheckState[VST.GetFirst()] := csUncheckedNormal;
 end;
 
 procedure TDataFormTreeViewFrame.SelectKey;
@@ -250,10 +310,10 @@ var
   Node: PVirtualNode;
   CI: TEpiCustomControlItem;
 begin
-  if DataFileTree.RootNodeCount = 0 then exit;
+  if VST.RootNodeCount = 0 then exit;
   SelectNone;
 
-  Node := DataFileTree.GetFirstChild(nil);
+  Node := VST.GetFirstChild(nil);
   while Assigned(Node) do
   begin
     CI := GetCustomItemFromNode(Node);
@@ -261,9 +321,9 @@ begin
     if (CI.InheritsFrom(TEpiField)) and
        (DataFile.KeyFields.FieldExists(TEpiField(CI)))
     then
-      DataFileTree.CheckState[Node] := csCheckedNormal;
+      VST.CheckState[Node] := csCheckedNormal;
 
-    Node := DataFileTree.GetNext(Node, true);
+    Node := VST.GetNext(Node, true);
   end;
 end;
 
@@ -274,7 +334,7 @@ var
   CI: TEpiCustomControlItem;
   Cs: TCheckState;
 begin
-  Node := DataFileTree.GetFirstChild(nil);
+  Node := VST.GetFirstChild(nil);
 
   if DeSelect then
     Cs := csUncheckedNormal
@@ -288,9 +348,9 @@ begin
     if (CI.InheritsFrom(TEpiField)) and
        (TEpiField(CI).FieldType in FieldTypes)
     then
-      DataFileTree.CheckState[Node] := Cs;
+      VST.CheckState[Node] := Cs;
 
-    Node := DataFileTree.GetNext(Node, true);
+    Node := VST.GetNext(Node, true);
   end;
 end;
 
