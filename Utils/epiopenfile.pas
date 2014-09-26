@@ -32,12 +32,15 @@ type
     // lock or not.
     FGuid: TGuid; static;
 
+    const
+      LockFileStringLength = 64;
+
     type
       TLockFile = record
         GUID: TGuid;
         TimeStamp: TTimeStamp;
-        UserName: string[64];
-        ComputerName: string[64];
+        UserName: string[LockFileStringLength];
+        ComputerName: string[LockFileStringLength];
       end;
       PLockFile = ^TLockFile;
 
@@ -195,10 +198,14 @@ begin
 end;
 
 function TEpiDocumentFile.GetUserNameWrapper: string;
+{$IFDEF WINDOWS}
 var
-  Buffer: array[0..127] of WideChar;
+  Buffer: Array[0..127] of WideChar;
   Sz: DWORD;
+{$ENDIF}
 begin
+  Result := '';
+
   {$IFDEF MSWINDOWS}
   Sz := SizeOf(Buffer);
   GetUserNameW(Buffer, Sz);
@@ -453,6 +460,7 @@ begin
   LockFileName := FileName + '.lock';
 
   LF := New(PLockFile);
+  FillChar(LF^, SizeOf(TLockFile), 0);
   with LF^ do
   begin
     GUID         := FGuid;
