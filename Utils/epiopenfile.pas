@@ -5,7 +5,7 @@ unit epiopenfile;
 interface
 
 uses
-  Classes, SysUtils, epiadmin, epidocument, epicustombase;
+  Classes, SysUtils, epiadmin, epidocument, epicustombase, fgl;
 
 type
 
@@ -115,6 +115,8 @@ type
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
   TEpiDocumentFileClass = class of TEpiDocumentFile;
+
+  TEpiDocumentFileList = specialize TFPGList<TEpiDocumentFile>;
 
 implementation
 

@@ -5,7 +5,7 @@ unit epireport_report_mainheader;
 interface
 
 uses
-  Classes, SysUtils, epireport_base;
+  Classes, SysUtils, epireport_base, epiopenfile;
 
 type
 
@@ -15,13 +15,13 @@ type
 
   TEpiReportMainHeader = class(TEpiReportBase)
   private
-    FProjectList: TStringList;
+    FProjectList: TEpiDocumentFileList;
     FTitle: string;
   protected
     procedure DoSanityCheck; override;
   public
     procedure RunReport; override;
-    property ProjectList: TStringList read FProjectList write FProjectList;
+    property ProjectList: TEpiDocumentFileList read FProjectList write FProjectList;
     property Title: string read FTitle write FTitle;
   end;
 
@@ -59,7 +59,7 @@ begin
   for i := 0 to ProjectList.Count - 1 do
   begin
     DoTableCell(0, i, 'File ' + IntToStr(i+1) + ':');
-    DoTableCell(1, i, ProjectList[i]);
+    DoTableCell(1, i, ProjectList[i].FileName);
   end;
   DoTableFooter('');
 end;

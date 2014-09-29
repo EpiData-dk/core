@@ -1483,4 +1483,8 @@ object DM: TDM
       00FFCE8E00F4CD8E004DFFFFFF00
     }
   end
+  object MainOpenDialog: TOpenDialog
+    left = 191
+    top = 142
+  end
 end

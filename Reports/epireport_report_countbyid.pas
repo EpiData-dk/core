@@ -14,8 +14,6 @@ type
 
   TEpiReportCountById = class(TEpiReportBase)
   private
-    FDocuments: TStringList;
-    FFieldList: TEpiFields;
     ResultDF: TEpiDataFile;
     ValueFieldList: TEpiFields;
     CountsFieldList: TEpiFields;
@@ -27,8 +25,6 @@ type
     destructor  Destroy; override;
     procedure   DoSanityCheck; override;
     procedure   RunReport; override;
-    property    Documents: TStringList read FDocuments write FDocuments;
-    property    FieldList: TEpiFields read FFieldList write FFieldList;
   private
     FDataFiles: TEpiDataFiles;
     FFieldNames: TStrings;

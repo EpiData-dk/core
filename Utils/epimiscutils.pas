@@ -51,7 +51,7 @@ type
 
 const
   dfEpiData = [dfEPX, dfEPZ, dfCollection];
-  dfImport  = [dfEPX, dfEPZ, dfREC, dfDTA, dfText];
+  dfImport  = [dfEPX, dfEPZ, dfREC, dfDTA, dfText, dfCollection];
   dfExport  = [dfDTA];
 
 
