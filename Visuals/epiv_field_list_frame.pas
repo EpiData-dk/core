@@ -63,6 +63,12 @@ type
     property  CheckedList: TEpiFields read GetCheckedList write SetCheckedList;
     property  DisplayFields: TEpiFields read FDisplayFields write SetDisplayFields;
 
+  { Helping properties }
+  private
+    function GetCheckedCount: Integer;
+  public
+    property  CheckedCount: Integer read GetCheckedCount;
+
   { Options }
   private
     FCheckBoxHeader: string;
@@ -78,7 +84,7 @@ type
   public
     property  CheckBoxHeader: string read FCheckBoxHeader write SetCheckBoxHeader;     // Heading string for checkbox column
     property  DragAllowed: Boolean read FDragAllowed write SetDragAllowed;             // Allow drag-drop of fields in the list
-    property  Locked: Boolean read FLocked write SetLocked;                                  // Lock the list in its current state (applied checks are static, list items cannot be moved, etc.)
+    property  Locked: Boolean read FLocked write SetLocked;                            // Lock the list in its current state (applied checks are static, list items cannot be moved, etc.)
     property  ShowCheckBoxes: Boolean read FShowCheckBoxes write SetShowCheckBoxes;    // Show/no-show the checkbox column
     property  ShowMoveButtons: Boolean read FShowMoveButtons write SetShowMoveButtons; // Show/no-show the right panel with move-up/down buttons
   end;
@@ -352,6 +358,11 @@ procedure TEpiVFieldList.SetDisplayFields(AValue: TEpiFields);
 begin
   FDisplayFields := AValue;
   UpdateDisplayFields;
+end;
+
+function TEpiVFieldList.GetCheckedCount: Integer;
+begin
+  Result := VST.CheckedCount;
 end;
 
 procedure TEpiVFieldList.SetShowMoveButtons(AValue: Boolean);

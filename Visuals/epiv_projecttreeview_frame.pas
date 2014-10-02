@@ -160,7 +160,7 @@ type
   private
     FMaxDocumentCount: Integer;
     FMinDocumentCount: Integer;
-    function GetDocumentCount: Integer;
+    function  GetDocumentCount: Integer;
     function  GetDocuments(const Index: integer): TEpiDocument;
     procedure SetMaxDocumentCount(AValue: Integer);
     procedure SetMinDocumentCount(AValue: Integer);
@@ -508,10 +508,12 @@ var
   DataFile: TEpiDataFile;
   Relation: TEpiMasterRelation;
 begin
-  // If the tree is updating (rebuilding itself) then do NOT delete
-  // node data. This should only happen on an explicit deletion of
-  // the node.
-  if FUpdatingTree then
+  // If the tree is updating (rebuilding itself) OR the tree is being
+  // destoyed, then do NOT delete node data.
+  // This should only happen on an explicit deletion of the node.
+  if (FUpdatingTree) or
+     (csDestroying in ComponentState)
+  then
     Exit;
 
   if not Assigned(Node) then exit;
@@ -874,6 +876,9 @@ var
   OldSelectedObject: TEpiCustomItem;
   Node: PVirtualNode;
 begin
+  // Do nothing if component is being destroyed.
+  if (csDestroying in ComponentState) then exit;
+
   FUpdatingTree := true;
 
   OldSelectedObject := nil;
@@ -939,6 +944,7 @@ begin
     DF.Caption.UnRegisterOnChangeHook(@DataFileCaptionChange);
 
   Doc.Study.Title.UnRegisterOnChangeHook(@TitleChange);
+  Doc.UnRegisterOnChangeHook(@DocumentHook);
 end;
 
 constructor TEpiVProjectTreeViewFrame.Create(TheOwner: TComponent);

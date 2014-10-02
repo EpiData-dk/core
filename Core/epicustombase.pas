@@ -1380,8 +1380,6 @@ begin
 end;
 
 procedure TEpiCustomBase.UnRegisterOnChangeHook(Event: TEpiChangeEvent);
-var
-  Idx: LongInt;
 begin
   FOnChangeListIgnoreUpdate.Remove(TMethod(Event));
   if FOnChangeListIgnoreUpdate.Count = 0 then
