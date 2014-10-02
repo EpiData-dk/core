@@ -13,7 +13,7 @@ uses
   FakeActiveX,
   {$ENDIF}
   epicustombase, epidocument, epirelations, epidatafiles, epidatafilestypes,
-  Graphics;
+  Graphics, Menus;
 
 type
   TEpiVProjectDisplayMode = (
@@ -78,6 +78,8 @@ type
     var   NodeText: string) of object;
 
   TEpiVProjectTreeRelationEvent = procedure(Const Relation: TEpiMasterRelation) of object;
+  TEpiVProjectTreeShowPopupMenuEvent = TEpiVTreeNodeSelected;
+
 
   { TEpiVProjectTreeViewFrame }
 
@@ -240,6 +242,7 @@ type
     FOnGetHint: TEpiVProjectTreeGetHint;
     FOnGetText: TEpiVProjectTreeGetText;
     FOnNewRelation: TEpiVProjectTreeRelationEvent;
+    FOnShowPopupMenu: TEpiVProjectTreeShowPopupMenuEvent;
     FOnTreeNodeSelected: TEpiVTreeNodeSelected;
     FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
   protected
@@ -257,6 +260,8 @@ type
       ObjectType: TEpiVTreeNodeObjectType; Const StaticText: boolean;
       var NodeText: string); virtual;
     procedure DoNewRelation(Const NewRelation: TEpiMasterRelation); virtual;
+    procedure DoShowPopupMenu(Const AObject: TEpiCustomBase;
+              ObjectType: TEpiVTreeNodeObjectType);
     procedure DoTreeNodeSelected(Const AObject: TEpiCustomBase;
       ObjectType: TEpiVTreeNodeObjectType); virtual;
     procedure DoTreeNodeSelecting(Const OldObject, NewObject: TEpiCustomBase;
@@ -271,6 +276,7 @@ type
     property  OnGetHint: TEpiVProjectTreeGetHint read FOnGetHint write FOnGetHint;
     property  OnGetText: TEpiVProjectTreeGetText read FOnGetText write FOnGetText;
     property  OnNewRelation: TEpiVProjectTreeRelationEvent read FOnNewRelation write FOnNewRelation;
+    property  OnShowPopupMenu: TEpiVProjectTreeShowPopupMenuEvent read FOnShowPopupMenu write FOnShowPopupMenu;
     property  OnTreeNodeSelected: TEpiVTreeNodeSelected read FOnTreeNodeSelected write FOnTreeNodeSelected;
     property  OnTreeNodeSelecting: TEpiVTreeNodeSelecting read FOnTreeNodeSelecting write FOnTreeNodeSelecting;
   end;
@@ -368,16 +374,8 @@ begin
   Node := VST.GetNodeAt(MousePos.X, MousePos.Y);
   ObjectAndType(Node, Obj, Ot);
 
-  // TODO: Make context popup, be sensitive to Project or Relation.
-  case Ot of
-    otEmpty,
-    otFake:
-      Handled := true;
-    otRelation:
-      Handled := false;
-    otProject:
-      Handled := true;
-  end;
+  DoShowPopupMenu(Obj, Ot);
+  Handled := true;
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragAllowed(Sender: TBaseVirtualTree;
@@ -1489,6 +1487,13 @@ procedure TEpiVProjectTreeViewFrame.DoNewRelation(
 begin
   if Assigned(OnNewRelation) then
     OnNewRelation(NewRelation);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoShowPopupMenu(
+  const AObject: TEpiCustomBase; ObjectType: TEpiVTreeNodeObjectType);
+begin
+  if Assigned(OnShowPopupMenu) then
+    OnShowPopupMenu(Self, AObject, ObjectType);
 end;
 
 procedure TEpiVProjectTreeViewFrame.DoTreeNodeSelected(
