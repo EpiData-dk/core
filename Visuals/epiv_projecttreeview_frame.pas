@@ -88,6 +88,8 @@ type
     procedure VSTChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var NewState: TCheckState; var Allowed: Boolean);
+    procedure VSTContextPopup(Sender: TObject; MousePos: TPoint;
+      var Handled: Boolean);
     procedure VSTDragAllowed(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; var Allowed: Boolean);
     procedure VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
@@ -356,6 +358,28 @@ begin
     Allowed := Sender.CheckState[Node^.Parent] = csUncheckedNormal;
 end;
 
+procedure TEpiVProjectTreeViewFrame.VSTContextPopup(Sender: TObject;
+  MousePos: TPoint; var Handled: Boolean);
+var
+  Node: PVirtualNode;
+  Obj: TEpiCustomBase;
+  Ot: TEpiVTreeNodeObjectType;
+begin
+  Node := VST.GetNodeAt(MousePos.X, MousePos.Y);
+  ObjectAndType(Node, Obj, Ot);
+
+  // TODO: Make context popup, be sensitive to Project or Relation.
+  case Ot of
+    otEmpty,
+    otFake:
+      Handled := true;
+    otRelation:
+      Handled := false;
+    otProject:
+      Handled := true;
+  end;
+end;
+
 procedure TEpiVProjectTreeViewFrame.VSTDragAllowed(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; var Allowed: Boolean);
 var
@@ -377,6 +401,7 @@ begin
     // Only allow to drag-drop within ourselves.
     (TNodeDragObject(Source).Control = Sender) and
 
+    // TODO : Let drop onto existing DF's act as dropping above!
     // We can not drop onto existing DF's, that would bust the key-field hierachy.
     (Mode in [dmAbove, dmBelow]) and
 
@@ -981,7 +1006,7 @@ begin
       AutoOptions      := [toAutoDropExpand, toAutoScrollOnExpand, toAutoDeleteMovedNodes, toAutoTristateTracking];
       MiscOptions      := [toCheckSupport, toFullRepaintOnResize, toInitOnSave, toWheelPanning, toEditOnDblClick];
       PaintOptions     := [toShowButtons, toShowDropmark, toShowRoot, toShowTreeLines, toThemeAware, toUseBlendedImages];
-      SelectionOptions := [toFullRowSelect];
+      SelectionOptions := [toFullRowSelect, toRightClickSelect];
       StringOptions    := [toAutoAcceptEditChange];
     end;
 
@@ -1007,6 +1032,8 @@ begin
     OnGetHint       := @VSTGetHint;
 
     OnFreeNode      := @VSTFreeNode;
+
+    OnContextPopup  := @VSTContextPopup;
 
     Align           := alClient;
     Parent          := Self;
