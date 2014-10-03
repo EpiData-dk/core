@@ -86,6 +86,7 @@ type
   TEpiVProjectTreeViewFrame = class(TFrame)
   private
     { VST & Events }
+    FRightMouseIsDown: boolean;
     VST: TVirtualStringTree;
     procedure VSTChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
@@ -116,6 +117,10 @@ type
       var HintText: String);
     procedure VSTGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: String);
+    procedure VSTMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure VSTMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
     procedure VSTNewText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; const NewText: String);
     procedure VSTPaintText(Sender: TBaseVirtualTree;
@@ -375,7 +380,7 @@ begin
   ObjectAndType(Node, Obj, Ot);
 
   DoShowPopupMenu(Obj, Ot);
-  Handled := true;
+  Handled := false;
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragAllowed(Sender: TBaseVirtualTree;
@@ -387,8 +392,9 @@ begin
   ObjectAndType(Node, O, OT);
 
   Allowed :=
+    (EditStructure) and
     (OT = otRelation) and
-    (EditStructure);
+    (not FRightMouseIsDown);
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragOver(Sender: TBaseVirtualTree;
@@ -399,11 +405,10 @@ begin
     // Only allow to drag-drop within ourselves.
     (TNodeDragObject(Source).Control = Sender) and
 
-    // TODO : Let drop onto existing DF's act as dropping above!
-    // We can not drop onto existing DF's, that would bust the key-field hierachy.
-    (Mode in [dmAbove, dmBelow]) and
+    // We allow dropping above/below - onNode is treated as dmAbove.
+    (Mode in [dmAbove, dmBelow, dmOnNode]) and
 
-    // -same goes for out-of-parent experiences... ;)
+    // We do not allow for out-of-parent experiences... ;)
     (TNodeDragObject(Source).DragNode^.Parent = Sender.DropTargetNode^.Parent)
     ;
 end;
@@ -458,7 +463,8 @@ begin
   NewIndex := MRList.IndexOf(MR);
 
   case Mode of
-    dmAbove:
+    dmAbove,
+    dmOnNode:
       begin
         if (NewIndex > OldIndex) then Dec(NewIndex);
         Sender.MoveTo(OldNode, Sender.DropTargetNode, amInsertBefore, false);
@@ -601,6 +607,18 @@ begin
   end;
 
   DoGetText(Obj, ObjType, TextType = ttStatic, CellText);
+end;
+
+procedure TEpiVProjectTreeViewFrame.VSTMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  FRightMouseIsDown := (Button = mbRight);
+end;
+
+procedure TEpiVProjectTreeViewFrame.VSTMouseUp(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  FRightMouseIsDown := false;
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTNewText(Sender: TBaseVirtualTree;
@@ -973,6 +991,7 @@ end;
 constructor TEpiVProjectTreeViewFrame.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
+  FRightMouseIsDown := false;
 
   // Document properties:
   FMinDocumentCount := -1;
@@ -1007,6 +1026,9 @@ begin
       SelectionOptions := [toFullRowSelect, toRightClickSelect];
       StringOptions    := [toAutoAcceptEditChange];
     end;
+
+    OnMouseDown := @VSTMouseDown;
+    OnMouseUp := @VSTMouseUp;
 
     OnGetText       := @VSTGetText;
     OnNewText       := @VSTNewText;
@@ -1254,12 +1276,6 @@ procedure TEpiVProjectTreeViewFrame.SetEditStructure(AValue: Boolean);
 begin
   if FEditStructure = AValue then Exit;
   FEditStructure := AValue;
-
-  with VST do
-    if FEditStructure then
-      DragMode := dmAutomatic
-    else
-      DragMode := dmManual;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetShowCheckBoxes(AValue: Boolean);
