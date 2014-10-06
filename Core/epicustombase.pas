@@ -56,7 +56,7 @@ type
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
     ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
-    ecceSetTop, ecceSetLeft, ecceText, ecceReferenceDestroyed
+    ecceSetTop, ecceSetLeft, ecceText, ecceReferenceDestroyed, ecceListMove
   );
 
   TEpiChangeEvent = procedure(
@@ -2199,6 +2199,7 @@ end;
 procedure TEpiCustomList.Move(const CurIndex, NewIndex: Integer);
 begin
   FList.Move(CurIndex, NewIndex);
+  DoChange(eegCustomBase, Word(ecceListMove), nil);
 end;
 
 function TEpiCustomList.GetEnumerator: TEpiCustomListEnumerator;

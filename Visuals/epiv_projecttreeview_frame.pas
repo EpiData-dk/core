@@ -380,7 +380,7 @@ begin
   ObjectAndType(Node, Obj, Ot);
 
   DoShowPopupMenu(Obj, Ot);
-  Handled := false;
+  Handled := true;
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTDragAllowed(Sender: TBaseVirtualTree;
