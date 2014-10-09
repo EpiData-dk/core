@@ -75,6 +75,9 @@ var
 begin
   CI := GetCustomItemFromNode(Node);
 
+  if Node^.Parent = VST.RootNode then
+    CellText := DataFile.Caption.Text
+  else
   if Column = 0 then
     CellText := CI.Name
   else begin
