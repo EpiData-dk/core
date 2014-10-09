@@ -340,6 +340,7 @@ var
   F: TEpiField;
 begin
   if not ShowCheckBoxes then exit;
+
   Node := VST.GetFirstChild(nil);
 
   while Assigned(Node) do
