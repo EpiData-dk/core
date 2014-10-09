@@ -6,8 +6,8 @@ object EpiVFieldList: TEpiVFieldList
   ClientHeight = 492
   ClientWidth = 533
   TabOrder = 0
-  DesignLeft = 619
-  DesignTop = 305
+  DesignLeft = 1998
+  DesignTop = 322
   object GrandBtnPanel: TPanel
     Left = 498
     Height = 492

@@ -5,14 +5,14 @@ unit epiv_field_list_frame;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, ExtCtrls, Buttons, VirtualTrees,
-  epidatafiles,
+  Classes, SysUtils, types, FileUtil, Forms, Controls, ExtCtrls, Buttons,
+  VirtualTrees, epidatafiles,
   {$IFDEF MSWINDOWS}
   ActiveX,
   {$ELSE}
   FakeActiveX,
   {$ENDIF}
-  Graphics, ActnList;
+  Graphics, ActnList, Themes;
 
 
 type
@@ -32,6 +32,8 @@ type
     procedure MoveUpActionExecute(Sender: TObject);
   private
     VST: TVirtualStringTree;
+    procedure VSTAdvHdrDraw(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo;
+      const Elements: THeaderPaintElements);
     procedure VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
       DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState;
       const Pt: TPoint; var Effect: LongWord; Mode: TDropMode);
@@ -43,6 +45,8 @@ type
       var ImageIndex: Integer);
     procedure VSTGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: String);
+    procedure VSTHdrQuery(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo;
+      var Elements: THeaderPaintElements);
     procedure VSTInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure VSTStartDrag(Sender: TObject; var DragObject: TDragObject);
@@ -139,6 +143,31 @@ begin
   VST.MoveTo(VST.FocusedNode, TargetNode, TargetMode, false);
 end;
 
+procedure TEpiVFieldList.VSTAdvHdrDraw(Sender: TVTHeader;
+  var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
+var
+  Details: TThemedElementDetails;
+  Sz: TSize;
+  R: TRect;
+  OffX: Integer;
+  OffY: Integer;
+begin
+  if Elements = [hpeText] then
+    begin
+      Details := ThemeServices.GetElementDetails(tbCheckBoxCheckedNormal);
+      Sz := ThemeServices.GetDetailSize(Details);
+      R  := Rect(0, 0, Sz.cx, Sz.cy);
+      with PaintInfo.PaintRectangle do
+        begin
+          OffX := ((Right-Left) div 2) - (Sz.cx div 2) + Left;
+          OffY := ((Bottom-Top) div 2) - (Sz.cy div 2) + Top;
+        end;
+        OffsetRect(R, OffX, OffY);
+
+      ThemeServices.DrawElement(PaintInfo.TargetCanvas.Handle, Details, R, nil);
+    end;
+end;
+
 procedure TEpiVFieldList.VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
   DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState;
   const Pt: TPoint; var Effect: LongWord; Mode: TDropMode);
@@ -191,6 +220,15 @@ begin
   end;
 end;
 
+procedure TEpiVFieldList.VSTHdrQuery(Sender: TVTHeader;
+  var PaintInfo: THeaderPaintInfo; var Elements: THeaderPaintElements);
+begin
+  if Assigned(PaintInfo.Column) and
+     (PaintInfo.Column.Index = 0)
+  then
+    Elements := [hpeText];
+end;
+
 procedure TEpiVFieldList.VSTInitNode(Sender: TBaseVirtualTree; ParentNode,
   Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 begin
@@ -221,8 +259,7 @@ end;
 
 procedure TEpiVFieldList.LoadGlyphs;
 begin
-//  DM.Icons16.GetBitmap(35, MoveUpBtn.Glyph);
-//  DM.Icons16.GetBitmap(36, MoveDownBtn.Glyph);
+  //
 end;
 
 procedure TEpiVFieldList.UpdateDisplayFields;
@@ -261,14 +298,14 @@ begin
 
     with Header do
     begin
-      Options  := [hoAutoResize, hoColumnResize, hoDblClickResize, hoShowSortGlyphs, hoVisible];
+      Options  := [hoAutoResize, hoColumnResize, hoDblClickResize, hoOwnerDraw, hoVisible];
       Height   := 22;
 
       with Columns.Add do
       begin
         CheckType := ctCheckBox;
         Options   := [coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus];
-        Text      := FCheckBoxHeader;
+//        Text      := FCheckBoxHeader;
         Spacing   := 50;
       end;
 
@@ -295,10 +332,12 @@ begin
 
     NodeDataSize    := SizeOf(Pointer);
 
+    OnAdvancedHeaderDraw := @VSTAdvHdrDraw;
+    OnHeaderDrawQueryElements := @VSTHdrQuery;
+
     OnGetText       := @VSTGetText;
     OnGetImageIndex := @VSTGetImageIndex;
     OnInitNode      := @VSTInitNode;
-
 
     DragType        := dtVCL;
     DragKind        := dkDrag;
