@@ -40,7 +40,7 @@ end;
 
 function TEpiDataFiles.Prefix: string;
 begin
-  Result := 'datafile_id_';
+  Result := 'dataform_';
 end;
 
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);

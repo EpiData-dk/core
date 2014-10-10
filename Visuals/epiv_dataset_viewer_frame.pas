@@ -510,7 +510,7 @@ begin
     Color := clNone;
     WantTabs := true;
     TabStop := true;
-    RootNodeCount := FDataFile.Size;
+//    RootNodeCount := FDataFile.Size;
 
     // Events:
     NodeDataSize := SizeOf(Cardinal);
