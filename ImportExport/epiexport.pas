@@ -5,8 +5,8 @@ unit epiexport;
 interface
 
 uses
-  Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epivaluelabels,
-  epieximtypes, epiexportsettings;
+  Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes,
+  epivaluelabels, epirelations, epieximtypes, epiexportsettings;
 
 type
 
@@ -1271,7 +1271,6 @@ begin
 
   S := ExpLines.Text;
   Settings.ExportStream.Write(S[1], Length(S));
-//  ExpLines.SaveToFile(UTF8ToSys(Settings.ExportFileName));
   Result := true;
 end;
 
@@ -1285,9 +1284,23 @@ begin
 end;
 
 function TEpiExport.ExportEPX(const Settings: TEpiEPXExportSetting): boolean;
+var
+  NewDoc: TEpiDocument;
+  i: Integer;
+  NewMR: TEpiMasterRelation;
 begin
   Result := false;
   try
+    for i := Settings.Doc.DataFiles.Count - 1 downto 0 do
+      if i = Settings.DataFileIndex then
+        continue
+      else
+        Settings.Doc.DataFiles[i].Free;
+
+
+    NewMR := Settings.Doc.Relations.NewMasterRelation;
+    NewMR.Datafile := Settings.Doc.DataFiles[0];
+
     Settings.Doc.SaveToStream(Settings.ExportStream);
     Result := true;
   finally
