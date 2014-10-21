@@ -1297,6 +1297,7 @@ begin
       else
         Settings.Doc.DataFiles[i].Free;
 
+    Settings.Doc.Relations.Clear;
 
     NewMR := Settings.Doc.Relations.NewMasterRelation;
     NewMR.Datafile := Settings.Doc.DataFiles[0];

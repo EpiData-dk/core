@@ -586,7 +586,9 @@ begin
     Result.AppendChild(Ranges.SaveToDom(RootDoc));
 
   // Version 3
-  if Assigned(Relates) then
+  if Assigned(Relates) and
+     (Relates.Count > 0)
+  then
     Result.AppendChild(Relates.SaveToDom(RootDoc));
 end;
 
