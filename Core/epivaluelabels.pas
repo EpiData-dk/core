@@ -99,6 +99,15 @@ type
   end;
 
 
+  { TEpiValueLabelSetEnumerator }
+
+  TEpiValueLabelSetEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiCustomValueLabel; override;
+  public
+    property Current: TEpiCustomValueLabel read GetCurrent;
+  end;
+
   { TEpiValueLabelSet }
 
   TEpiValueLabelSetScope = (vlsInternal, vlsExternal);
@@ -145,6 +154,7 @@ type
     function    SaveToXml(Content: String; Lvl: integer): string; override;
     function    SaveAttributesToXml: string; override;
     function    ItemClass: TEpiCustomItemClass; override;
+    function    GetEnumerator: TEpiValueLabelSetEnumerator;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     function    NewValueLabel: TEpiCustomValueLabel;
@@ -200,6 +210,13 @@ implementation
 uses
   strutils, math, LazUTF8, LazFileUtils, epidocument, epiopenfile,
   epiopenfile_cache;
+
+{ TEpiValueLabelSetEnumerator }
+
+function TEpiValueLabelSetEnumerator.GetCurrent: TEpiCustomValueLabel;
+begin
+  Result := TEpiCustomValueLabel(inherited GetCurrent);
+end;
 
 { TEpiCustomValueLabel }
 
@@ -706,6 +723,11 @@ begin
     ftFloat:   Result := TEpiFloatValueLabel;
     ftString:  Result := TEpiStringValueLabel;
   end;
+end;
+
+function TEpiValueLabelSet.GetEnumerator: TEpiValueLabelSetEnumerator;
+begin
+  result := TEpiValueLabelSetEnumerator.Create(Self);
 end;
 
 procedure TEpiValueLabelSet.LoadFromXml(Root: TDOMNode;
