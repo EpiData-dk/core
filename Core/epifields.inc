@@ -1757,8 +1757,11 @@ begin
 end;
 
 function TEpiStringField.GetIsMissing(const index: Integer): boolean;
+var
+  S: String;
 begin
-  result := AsString[index] = DefaultMissing;
+  S := AsString[index];
+  result := (S = DefaultMissing) or (S = '');
 end;
 
 function TEpiStringField.GetHasDefaultValue: boolean;

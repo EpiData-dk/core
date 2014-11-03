@@ -458,8 +458,6 @@ var
   i: Integer;
   TmpField: TEpiField;
   FieldList: TFPDataHashTable;
-  NN: WideString;
-  Collision: Boolean;
   DataList: TStringList;
   FN: String;
 
@@ -472,7 +470,6 @@ var
   ProgressMethod: TEpiProgressEvent;
   NodeCount: LongWord;
   NodeNum: LongWord;
-  PStr: PChar;
   L: Integer;
   PEnd: PChar;
   PCur: PChar;
@@ -482,6 +479,7 @@ var
   PLen: Integer;
   Data: String;
   Salt: String;
+  EscapedQuotes: Boolean;
 
   function Dummyfy(Const S: string): string;
   begin
@@ -490,7 +488,7 @@ var
 
   function UnDummyfy(Const S: string): string;
   begin
-    result := StringReplace(S, DummyString, DecimalSeparator, [rfReplaceAll]);
+    result := StringReplace(S, DummyString, DefaultFormatSettings.DecimalSeparator, [rfReplaceAll]);
   end;
 
   function LocalDeCrypt(Const S: string): string;
@@ -551,7 +549,6 @@ begin
   NodeCount := (Root.ChildNodes.Count div 2);
   DoProgress(eptInit, 0, NodeCount);
 
-
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
 
@@ -597,7 +594,6 @@ begin
         S := LocalDeCrypt(Node.TextContent);
         L := Length(S);
 
-
         PStart := @S[1];
         PCur := PStart;
 
@@ -615,10 +611,35 @@ begin
             begin
               Inc(PCur);
               PEnd := PCur;
-              while (PEnd^ <> '"') do
-                Inc(PEnd);
+
+              // Detect 2xdouble quotes, which translates to a single double qoute: "" -> "
+              EscapedQuotes := false;
+              while true
+              do
+                begin
+                  if (PEnd^ = '"') then
+                    if ((Pend + 1)^ <> '"')
+                     then
+                       // A regular "Stop"
+                       Break
+                     else
+                       begin
+                         // 2x double quotes found! Step over next "
+                         Inc(PEnd);
+                         EscapedQuotes := true;
+                       end;
+                  Inc(PEnd);
+                end;
+
+{              while (PEnd^ <> '"')
+              do
+                Inc(PEnd);}
 
               Data := Copy(S, (PCur - PStart) + 1, (PEnd - PCur));
+
+              if EscapedQuotes then
+                Data := StringReplace(Data, '""', '"', [rfReplaceAll]);
+
               Inc(PEnd);
             end
           else
@@ -1077,7 +1098,7 @@ begin
     with Fields[CurField] do
       if not IsMissing[CurRec] then
         if FieldType in StringFieldTypes then
-          S += Name + '="' + AsString[CurRec] + '";'
+          S += Name + '="' + StringReplace(AsString[CurRec], '"', '""', [rfReplaceAll]) + '";'
         else
           S += Name + '=' + AsString[CurRec] + ';';
     Delete(S, Length(S), 1);
