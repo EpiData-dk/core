@@ -115,6 +115,9 @@ type
     function GetOrderedDataFiles: TEpiDataFiles;
     procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack;
       Data: Pointer = nil);
+  public
+    { Aux. methods }
+    function IsMultiLeveled: boolean;     // Returns true if any top-level Master relation have a Detail relation.
   end;
 
 implementation
@@ -472,6 +475,17 @@ begin
 
   for i := 0 to Count - 1 do
     RecurseMasterRelations(MasterRelation[i], i);
+end;
+
+function TEpiRelationListEx.IsMultiLeveled: boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if MasterRelation[i].DetailRelations.Count > 0 then
+      Exit(true);
+
+  Result := false;
 end;
 
 end.

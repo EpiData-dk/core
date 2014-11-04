@@ -38,7 +38,7 @@ type
 implementation
 
 uses
-  epireport_types, math, epidatafiles, strutils;
+  epireport_types, math, epidatafiles, strutils, epimiscutils;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';
@@ -53,6 +53,7 @@ var
   DF: TEpiDataFile;
   F: TEpiField;
   S: String;
+  ColNo: Integer;
 begin
   S := '';
   if Depth > 0 then
@@ -62,19 +63,25 @@ begin
 
   with Relation.Datafile do
   begin
+    ColNo := 0;
+
     // Caption:
-    DoTableCell(0, FCurrentRowNo, S + Caption.Text);
+    DoTableCell(PostInc(ColNo), FCurrentRowNo, S + Caption.Text);
 
 
     // Relation:
-    if Relation.InheritsFrom(TEpiDetailRelation) then
-      if (TEpiDetailRelation(Relation).MaxRecordCount > 0) then
-        S := '1:' + IntToStr(TEpiDetailRelation(Relation).MaxRecordCount)
-      else
-        S := '1:' + char($E2) + char($88) + char($9E)             // unicode infinity symbol (UTF-8 encoded)
-    else
-      S := ' - ';
-    DoTableCell(1, FCurrentRowNo, S);
+    if Document.Relations.IsMultiLeveled then
+    begin
+       if Relation.InheritsFrom(TEpiDetailRelation)
+       then
+         if (TEpiDetailRelation(Relation).MaxRecordCount > 0) then
+           S := '1:' + IntToStr(TEpiDetailRelation(Relation).MaxRecordCount)
+         else
+           S := '1:' + char($E2) + char($88) + char($9E)             // unicode infinity symbol (UTF-8 encoded)
+       else
+         S := ' - ';
+       DoTableCell(PostInc(ColNo), FCurrentRowNo, S);
+    end;
 
     // Key:
     S := '';
@@ -83,7 +90,7 @@ begin
       S := S + ' + (' + F.Name + ':' + F.Question.Text + ')';
     Delete(S, 1, 3);
 
-    DoTableCell(2, FCurrentRowNo, S);
+    DoTableCell(PostInc(ColNo), FCurrentRowNo, S);
   end;
   Inc(FCurrentRowNo);
 end;
@@ -133,6 +140,9 @@ var
   OrderedDataFiles: TEpiDataFiles;
   List: TEpiRelationList;
   Relations: TEpiRelationList;
+  ColCount: Integer;
+  MultiLevel: Boolean;
+  ColNo: Integer;
 
 begin
   inherited RunReport;
@@ -142,7 +152,7 @@ begin
   with Document.DataFiles[i] do
     LastEdit := Max(LastEdit, Max(RecModifiedDate, StructureModifiedDate));
 
-  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + ExtractFileName(Filename), 2, 5, []);
+  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + {ExtractFileName(}Filename{)}, 2, 5, []);
   DoTableCell(0, 0, 'Title');
   DoTableCell(0, 1, 'Created');
   DoTableCell(0, 2, 'Last Edited');
@@ -178,10 +188,19 @@ begin
 
   DoLineText('');
 
-  DoTableHeader('', 3, Document.DataFiles.Count + 1);
-  DoTableCell(0, 0, 'Caption');
-  DoTableCell(1, 0, 'Relation');
-  DoTableCell(2, 0, 'Fields in key');
+
+  MultiLevel := Document.Relations.IsMultiLeveled;
+  ColCount := 2;
+  if MultiLevel then
+    Inc(ColCount);
+
+  DoTableHeader('', ColCount, Document.DataFiles.Count + 1);
+
+  ColNo := 0;
+  DoTableCell(PostInc(ColNo), 0, 'Caption');
+  if MultiLevel then
+    DoTableCell(PostInc(ColNo), 0, 'Relation');
+  DoTableCell(PostInc(ColNo), 0, 'Fields in key');
 
   FCurrentRowNo := 1;
   Document.Relations.OrderedWalk(@KeysTable);
