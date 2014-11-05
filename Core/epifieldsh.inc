@@ -129,7 +129,7 @@ type
     FFieldType: TEpiFieldType;
     FNotes: TEpiTranslatedTextWrapper;
     FRanges: TEpiRanges;
-    FRelates: TEpiRelates;
+    FRelates: TEpiValueRelates;
     FRepeatValue: boolean;
     FShowValueLabel: Boolean;
     FShowValueLabelNotes: boolean;
@@ -174,7 +174,7 @@ type
     property    Jumps:                TEpiJumps read FJumps write FJumps;
     property    Calculation:          TEpiCalculation read FCalculation write FCalculation;
     property    Comparison:           TEpiComparison read FComparison write FComparison;
-    property    Relates:              TEpiRelates read FRelates write FRelates;
+    property    Relates:              TEpiValueRelates read FRelates write FRelates;
 
   { Pack Data}
   protected

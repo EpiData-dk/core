@@ -420,7 +420,7 @@ begin
 
   FreeAndNil(FRelates);
   if Assigned(FRelates) then
-    Relates := TEpiRelates(OrgField.Relates.Clone(Self, RefMap));
+    Relates := TEpiValueRelates(OrgField.Relates.Clone(Self, RefMap));
 
   if Assigned(DataFile) and
      Assigned(OrgField.DataFile) and
@@ -493,7 +493,7 @@ begin
     F.Comparison := TEpiComparison(Comparison.Clone(F, ReferenceMap));
 
   if Assigned(Relates) then
-    F.Relates := TEpiRelates(Relates.Clone(F, ReferenceMap));
+    F.Relates := TEpiValueRelates(Relates.Clone(F, ReferenceMap));
 end;
 
 {
@@ -746,7 +746,7 @@ begin
 
   if LoadNode(Node, Root, rsRelates, false) then
   begin
-    Relates := TEpiRelates.Create(Self);
+    Relates := TEpiValueRelates.Create(Self);
     Relates.ItemOwner := true;
     Relates.LoadFromXml(Node, ReferenceMap);
   end;

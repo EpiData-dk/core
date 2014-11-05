@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Laz2_DOM, epicustombase, episettings, epidatafilestypes,
-  epivaluelabels, epiadmin, epiranges;
+  epivaluelabels, epiadmin, epiranges, epirelates;
 
 type
   // Forward prototype declaration...
@@ -39,8 +39,8 @@ type
   TEpiComparison = class;
 
   // Relations
-  TEpiRelates = class;
-  TEpiRelate = class;
+  TEpiValueRelates = class;
+  TEpiValueRelate = class;
 
 {$I epidatafilesh.inc}
 {$I episectionsh.inc}
@@ -49,7 +49,7 @@ type
 {$I epijumpsh.inc}
 {$I epicalculationsh.inc}
 {$I epicomparisonh.inc}
-{$I epirelatesh.inc}
+{$I epivaluerelatesh.inc}
 
 implementation
 
@@ -64,7 +64,7 @@ uses
 {$I epijumps.inc}
 {$I epicalculations.inc}
 {$I epicomparison.inc}
-{$I epirelates.inc}
+{$I epivaluerelates.inc}
 
 end.
 

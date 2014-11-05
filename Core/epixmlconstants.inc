@@ -148,10 +148,12 @@ const
           rsDelim2          = 'Delimiter2';
          rsCompare         = 'Compare';
           rsCompareTo       = 'toFieldRef';
-         rsRelates         = 'Relates';
-          rsRelate          = 'Relate';
-           rsRelationRef  = 'relationRef';
-           rsRelateValue     = 'relateValue';
+
+      rsRelates         = 'Relates';
+       rsRelate          = 'Relate';
+        rsRelationRef     = 'relationRef';
+
+        rsRelateValue     = 'relateValue';
 
      rsRecords         = 'Records';
       rsEncryptedSalt   = 'encryptedSalt';

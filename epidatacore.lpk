@@ -31,11 +31,10 @@
 -dEPI_TEST_LOAD
 -dEPI_SAVE_STRING1
 -dEPI_LOAD_METHOD"/>
-        <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
     <Version Major="2"/>
-    <Files Count="69">
+    <Files Count="70">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -312,6 +311,10 @@
         <Filename Value="Tools/epitools_search.pas"/>
         <UnitName Value="epitools_search"/>
       </Item69>
+      <Item70>
+        <Filename Value="Core/epirelates.pas"/>
+        <UnitName Value="epirelates"/>
+      </Item70>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
