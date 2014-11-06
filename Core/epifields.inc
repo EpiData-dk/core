@@ -744,7 +744,7 @@ begin
     Comparison.LoadFromXml(Node, ReferenceMap);
   end;
 
-  if LoadNode(Node, Root, rsRelates, false) then
+  if LoadNode(Node, Root, rsValueRelates, false) then
   begin
     Relates := TEpiValueRelates.Create(Self);
     Relates.ItemOwner := true;

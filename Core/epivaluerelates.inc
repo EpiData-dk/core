@@ -30,6 +30,16 @@ begin
   Result := TEpiValueRelate;
 end;
 
+function TEpiValueRelates.NewRelate: TEpiValueRelate;
+begin
+  result := TEpiValueRelate(inherited NewRelate);
+end;
+
+function TEpiValueRelates.XMLName: string;
+begin
+  Result := rsValueRelates;
+end;
+
 { TEpiValueRelate }
 
 procedure TEpiValueRelate.SetRelateValue(AValue: EpiString);
@@ -67,5 +77,10 @@ procedure TEpiValueRelate.LoadFromXml(Root: TDOMNode;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
   RelateValue := LoadAttrString(Root, rsRelateValue);
+end;
+
+function TEpiValueRelate.XMLName: string;
+begin
+  Result := rsValueRelate;
 end;
 

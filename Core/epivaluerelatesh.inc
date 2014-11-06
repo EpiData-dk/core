@@ -10,6 +10,8 @@ type
     function GetRelateFromValue(Value: EpiString): TEpiValueRelate;
   public
     function ItemClass: TEpiCustomItemClass; override;
+    function NewRelate: TEpiValueRelate; reintroduce;
+    function XMLName: string; override;
     property Relate[Index: Integer]: TEpiValueRelate read GetRelate; default;
     property RelateFromValue[Value: EpiString]: TEpiValueRelate read GetRelateFromValue;
   end;
@@ -26,6 +28,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
       override;
+    function XMLName: string; override;
     property RelateValue: EpiString read FRelateValue write SetRelateValue;
   end;
 

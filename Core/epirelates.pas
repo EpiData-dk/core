@@ -10,6 +10,7 @@ uses
 type
 
   TEpiCustomRelate = class;
+  TEpiRelate = class;
 
   { TEpiCustomRelates }
 
@@ -24,8 +25,7 @@ type
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    function XMLName: string; override;
-    function NewRelate: TEpiCustomRelate;
+    function NewRelate: TEpiCustomRelate; virtual;
   protected
     property Relate[Index: Integer]: TEpiCustomRelate read GetRelate; default;
   end;
@@ -33,9 +33,13 @@ type
   { TEpiRelates }
 
   TEpiRelates = class(TEpiCustomRelates)
+  private
+    function GetRelate(Index: Integer): TEpiRelate;
   public
     function ItemClass: TEpiCustomItemClass; override;
-    property Relate;
+    function XMLName: string; override;
+    function NewRelate: TEpiRelate; reintroduce;
+    property Relate[Index: Integer]: TEpiRelate read GetRelate; default;
   end;
 
   { TEpiCustomRelate }
@@ -60,7 +64,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function XMLName: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
   protected
     property DetailRelation: TEpiCustomItem read FDetailRelation write SetDetailRelation;
@@ -68,6 +71,7 @@ type
 
   TEpiRelate = class(TEpiCustomRelate)
   public
+    function XMLName: string; override;
     property DetailRelation;
   end;
 
@@ -78,9 +82,24 @@ uses
 
 { TEpiRelates }
 
+function TEpiRelates.GetRelate(Index: Integer): TEpiRelate;
+begin
+  result := TEpiRelate(inherited GetRelate(Index));
+end;
+
 function TEpiRelates.ItemClass: TEpiCustomItemClass;
 begin
   Result := TEpiRelate;
+end;
+
+function TEpiRelates.XMLName: string;
+begin
+  Result := rsRelates;
+end;
+
+function TEpiRelates.NewRelate: TEpiRelate;
+begin
+  Result := TEpiRelate(inherited NewRelate);
 end;
 
 { TEpiCustomRelates }
@@ -113,11 +132,6 @@ end;
 constructor TEpiCustomRelates.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-end;
-
-function TEpiCustomRelates.XMLName: string;
-begin
-  Result := rsRelates;
 end;
 
 function TEpiCustomRelates.NewRelate: TEpiCustomRelate;
@@ -231,14 +245,16 @@ begin
   ReferenceMap.AddFixupReference(Self, TEpiCustomRelate, 0, LoadAttrString(Root, rsRelationRef));
 end;
 
-function TEpiCustomRelate.XMLName: string;
-begin
-  Result := rsRelate;
-end;
-
 procedure TEpiCustomRelate.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);
+end;
+
+{ TEpiRelate }
+
+function TEpiRelate.XMLName: string;
+begin
+  Result := rsRelate;
 end;
 
 end.

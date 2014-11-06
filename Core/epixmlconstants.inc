@@ -153,6 +153,8 @@ const
        rsRelate          = 'Relate';
         rsRelationRef     = 'relationRef';
 
+      rsValueRelates    = 'ValueRelates';
+       rsValueRelate     = 'ValueRelate';
         rsRelateValue     = 'relateValue';
 
      rsRecords         = 'Records';

@@ -1198,9 +1198,6 @@ constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
 begin
   inherited Create(AOwner);
 
-  // MASTER HOOK!
-//  Self.RegisterOnChangeHook(@LocalEventHook, true);
-
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FNotes := TEpiTranslatedText.Create(Self, rsNotes);
@@ -1212,7 +1209,6 @@ begin
   // Sections
   FSections := TEpiSections.Create(Self);
   FSections.ItemOwner := true;
-//  FSections.RegisterOnChangeHook(@LocalEventHook, true);
   FSections.OnValidateRename := @ValidateRename;
   FSections.Sorted := true;
 
@@ -1242,7 +1238,10 @@ begin
   FKeyFields := TEpiFields.Create(Self);
   FKeyFields.Name := '@KEYFIELDS';
 
-  RegisterClasses([Caption, Notes, Sections]);
+  // Relates
+  FRelates   := TEpiRelates.Create(Self);
+
+  RegisterClasses([Caption, Notes, Sections, Relates]);
 end;
 
 destructor TEpiDataFile.Destroy;

@@ -2198,6 +2198,10 @@ end;
 
 procedure TEpiCustomList.Move(const CurIndex, NewIndex: Integer);
 begin
+  // Cannot move in a sorted list.
+  // TODO: Create Exception!
+  if Sorted then exit;
+
   FList.Move(CurIndex, NewIndex);
   DoChange(eegCustomBase, Word(ecceListMove), nil);
 end;
