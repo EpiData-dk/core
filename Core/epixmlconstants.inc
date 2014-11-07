@@ -98,6 +98,7 @@ const
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
+     rsAfterRecordState = 'afterRecordState';
      rsSections        = 'Sections';
       rsSection         = 'Section';
        rsWidth           = 'width';

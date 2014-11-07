@@ -39,6 +39,8 @@ type
   end;
   PEpiDataFileStatusRecord = ^TEpiDataFileStatusRecord;
 
+  TEpiDataFileAfterRecordState = (arsNewRecord, arsReturnToParent);
+
   { TEpiDataFile }
 
   TEpiDataFile = class(TEpiCustomItem)
@@ -121,6 +123,7 @@ type
 
   { DataFile properties }
   private
+    FAfterRecordState: TEpiDataFileAfterRecordState;
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
     FKeyFields: TEpiFields;
@@ -133,6 +136,7 @@ type
     FVersion:   string;
     procedure   SetVersion(const AValue: string);
   public
+    property    AfterRecordState: TEpiDataFileAfterRecordState read FAfterRecordState write FAfterRecordState;
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Created: TDateTime read FCreated;
     property    KeyFields: TEpiFields read FKeyFields;

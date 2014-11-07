@@ -30,6 +30,15 @@ type
     property Relate[Index: Integer]: TEpiCustomRelate read GetRelate; default;
   end;
 
+  { TEpiRelatesEnumerator }
+
+  TEpiRelatesEnumerator = class(TEpiCustomListEnumerator)
+  private
+    function GetCurrent: TEpiRelate;
+  public
+    property Current: TEpiRelate read GetCurrent;
+  end;
+
   { TEpiRelates }
 
   TEpiRelates = class(TEpiCustomRelates)
@@ -39,6 +48,7 @@ type
     function ItemClass: TEpiCustomItemClass; override;
     function XMLName: string; override;
     function NewRelate: TEpiRelate; reintroduce;
+    function GetEnumerator: TEpiRelatesEnumerator;
     property Relate[Index: Integer]: TEpiRelate read GetRelate; default;
   end;
 
@@ -80,6 +90,13 @@ implementation
 uses
   epirelations, sysutils, epidocument;
 
+{ TEpiRelatesEnumerator }
+
+function TEpiRelatesEnumerator.GetCurrent: TEpiRelate;
+begin
+  result := TEpiRelate(Inherited Getcurrent);
+end;
+
 { TEpiRelates }
 
 function TEpiRelates.GetRelate(Index: Integer): TEpiRelate;
@@ -100,6 +117,11 @@ end;
 function TEpiRelates.NewRelate: TEpiRelate;
 begin
   Result := TEpiRelate(inherited NewRelate);
+end;
+
+function TEpiRelates.GetEnumerator: TEpiRelatesEnumerator;
+begin
+  result := TEpiRelatesEnumerator.Create(Self);
 end;
 
 { TEpiCustomRelates }

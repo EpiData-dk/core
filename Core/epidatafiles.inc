@@ -1111,8 +1111,6 @@ begin
 end;
 
 function TEpiDataFile.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
-var
-  Elem: TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
@@ -1122,6 +1120,7 @@ begin
   SaveDomAttr(Result, rsCreatedAttr, Created);
   SaveDomAttr(Result, rsModifiedAttr, StructureModifiedDate);
   SaveDomAttr(Result, rsVersionAttr, Version);
+  SaveDomAttrEnum(Result, rsAfterRecordState, AfterRecordState, TypeInfo(TEpiDataFileAfterRecordState));
 
   SaveKeyFieldsToDom(Result);
   SaveRecordToDom(Result);
@@ -1328,7 +1327,16 @@ begin
   if Sections.ItemExistsByName('MAIN') then
     FMainSection := Sections.GetSectionByName('MAIN');
 
-//  T1 := Now;
+  // Version 3:
+  if (TEpiDocument(RootOwner).Version >= 3) then
+  begin
+    FAfterRecordState := TEpiDataFileAfterRecordState(LoadAttrEnum(Root, rsAfterRecordState, TypeInfo(TEpiDataFileAfterRecordState)));
+
+    if LoadNode(Node, Root, rsRelates, false) then
+      FRelates.LoadFromXml(Node, ReferenceMap);
+  end;
+
+  //  T1 := Now;
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
 {  T2 := Now;
