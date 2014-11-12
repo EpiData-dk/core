@@ -1336,12 +1336,16 @@ begin
       FRelates.LoadFromXml(Node, ReferenceMap);
   end;
 
-  //  T1 := Now;
+  {$IFNDEF RELEASE}
+  T1 := Now;
+  {$ENDIF}
   if LoadNode(Node, Root, rsRecords, false) then
     LoadRecords(Node);
-{  T2 := Now;
+  {$IFNDEF RELEASE}
+  T2 := Now;
   if IsConsole then
-    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));}
+    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
+  {$ENDIF}
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;

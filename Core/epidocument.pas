@@ -269,8 +269,8 @@ begin
       Raise EEpiBadVersion.CreateFmt(
         'Project has been created in another development branch!' + LineEnding +
         'Loading may not be possible - change branch name at own risk!' + LineEnding +
-        'This branch: %s' + LineEnding +
-        'Project branch: %s',
+        'Program branch: %s' + LineEnding +
+        'Project file branch: %s',
         [EPI_XML_BRANCH_STRING, TmpBranch]
       );
     end;
