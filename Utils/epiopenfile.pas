@@ -55,7 +55,6 @@ type
     function GetHostNameWrapper: string;
     function GetUserNameWrapper: string;
   private
-    FBackupDirectory: string;
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
     // Internal housekeeping of current open EpiDocument.
@@ -111,7 +110,6 @@ type
     property Document: TEpiDocument read FEpiDoc;
     property ReadOnly: Boolean read FReadOnly;
     property IsSaved: boolean read GetIsSaved;
-    property BackupDirectory: string read FBackupDirectory write FBackupDirectory;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
   TEpiDocumentFileClass = class of TEpiDocumentFile;
@@ -139,7 +137,6 @@ begin
   if IsEqualGUID(FGuid, GUID_NULL) then
     CreateGUID(FGuid);
 
-  FBackupDirectory := '';
   FDataDirectory := '';
 end;
 
