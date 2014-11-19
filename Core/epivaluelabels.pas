@@ -529,6 +529,7 @@ begin
   FLabelScope := Src.FLabelScope;
   FLabelType  := Src.FLabelType;
   FName       := Src.FName;
+  FExtFileName := Src.FExtFileName;
 end;
 
 function TEpiValueLabelSet.GetValueLabelString(const AValue: variant): string;
@@ -990,11 +991,17 @@ var
   Attr: TDOMAttr;
   Scope: TEpiValueLabelSetScope;
   DocFileCache: TEpiDocumentFileCache;
+  Doc: TEpiDocument;
 
 begin
   // Root = <ValueLabelSets>
+  Doc := TEpiDocument(RootOwner);
 
   DocFileCache := TEpiDocumentFileCache.Create;
+  DocFileCache.OnPassword := Doc.OnPassword;
+//  DocFileCache.OnError    := Doc.OnLoadError;
+//  DocFileCache.OnProgress := Doc.OnProgress;
+//  DocFileCache.OnWarning  := Doc.on;
   DocFileCache.DocumentFileClass := TVLDocFile;
   try
     Node := Root.FirstChild;
