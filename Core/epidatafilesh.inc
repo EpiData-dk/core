@@ -39,7 +39,12 @@ type
   end;
   PEpiDataFileStatusRecord = ^TEpiDataFileStatusRecord;
 
-  TEpiDataFileAfterRecordState = (arsNewRecord, arsReturnToParent);
+  TEpiDataFileAfterRecordState = (
+    arsNewRecord,             // If possible create a new record, else return to parent.
+    arsReturnToParent,        // Return directly to parent aften record
+    arsReturnToParentOnMax,   // Return to parent when max no. records reached, else start new record
+    arsStayOnRecord           // Stay on record.
+    );
 
   { TEpiDataFile }
 
