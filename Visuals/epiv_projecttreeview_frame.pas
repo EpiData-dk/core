@@ -176,7 +176,7 @@ type
   public
     procedure AddDocument(Const Doc: TEpiDocument);
     procedure RemoveDocument(Const Doc: TEpiDocument);
-    procedure CreateRelation(Const MasterRelation: TEpiMasterRelation);
+    function CreateRelation(Const MasterRelation: TEpiMasterRelation): TEpiMasterRelation;
     procedure DeleteRelation(Relation: TEpiMasterRelation);
   public
     property  DocumentCount: Integer read GetDocumentCount;
@@ -1119,8 +1119,8 @@ begin
   DoUpdateTree;
 end;
 
-procedure TEpiVProjectTreeViewFrame.CreateRelation(
-  const MasterRelation: TEpiMasterRelation);
+function TEpiVProjectTreeViewFrame.CreateRelation(
+  const MasterRelation: TEpiMasterRelation): TEpiMasterRelation;
 var
   ParentNode: PVirtualNode;
   NewRelation: TEpiMasterRelation;
@@ -1184,18 +1184,23 @@ begin
   // Expand node at the end, as this will cause an update/initialization of
   // internal node data.
   VST.Expanded[ParentNode] := true;
+  Result := NewRelation;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DeleteRelation(Relation: TEpiMasterRelation
   );
 var
   Node: PVirtualNode;
+  NewNode: PVirtualNode;
 begin
   if not EditStructure then exit;
   if not Assigned(Relation) then exit;
 
   Node := NodeFromMasterRelation(Relation);
+  NewNode := VST.GetPrevious(Node);
+
   VST.DeleteNode(Node);
+  FocusNode(NewNode);
 end;
 
 procedure TEpiVProjectTreeViewFrame.ResetCheckBoxes;
