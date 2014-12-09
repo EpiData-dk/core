@@ -206,13 +206,18 @@ var
 begin
   inherited RunReport;
 
+  // TC: (2014-12-09)
+  // After discussion with JL the possiblity to compare field from different
+  // DF's with different types have been removed. Therefor the code below,
+  // finding the best possible field type, has been commented out.
+  // OLD COMMENT:
   // Since we allow fields with various type to be compared,
   // loop through all DF's for a given fieldname and find the
   // best common field type.
   // We do this to avoid cases were sorting using string fields
   // unnessesary -> the sorting of numbers as strings are a mess!
 
-//  for i := 0 to FieldList.Count - 1 do
+  {
   for i := 0 to FieldNames.Count - 1 do
   begin
     InitFt := false;
@@ -232,6 +237,13 @@ begin
     end;
 
     F := ResultDF.NewField(Ft);
+    F.Name := S;
+    ValueFieldList.AddItem(F);
+  end;     }
+
+  for S in FieldNames do
+  begin
+    F := ResultDF.NewField(DataFiles[0].Fields.FieldByName[S].FieldType);
     F.Name := S;
     ValueFieldList.AddItem(F);
   end;

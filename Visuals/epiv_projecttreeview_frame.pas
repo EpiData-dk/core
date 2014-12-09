@@ -1027,8 +1027,8 @@ begin
       StringOptions    := [toAutoAcceptEditChange];
     end;
 
-    OnMouseDown := @VSTMouseDown;
-    OnMouseUp := @VSTMouseUp;
+    OnMouseDown     := @VSTMouseDown;
+    OnMouseUp       := @VSTMouseUp;
 
     OnGetText       := @VSTGetText;
     OnNewText       := @VSTNewText;
