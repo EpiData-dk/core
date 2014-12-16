@@ -1120,10 +1120,12 @@ begin
   SaveDomAttr(Result, rsCreatedAttr, Created);
   SaveDomAttr(Result, rsModifiedAttr, StructureModifiedDate);
   SaveDomAttr(Result, rsVersionAttr, Version);
+  SaveDomAttr(Result, 'recordCount', Size);
   SaveDomAttrEnum(Result, rsAfterRecordState, AfterRecordState, TypeInfo(TEpiDataFileAfterRecordState));
 
   SaveKeyFieldsToDom(Result);
-  SaveRecordToDom(Result);
+  if (EpiSaveMode = esmDatafile) then
+    SaveRecordToDom(Result);
 end;
 
 function ControlItemListSort(Item1, Item2: Pointer): integer;
@@ -1317,8 +1319,13 @@ begin
   // Version 2:
   FStructureModifiedDate := LoadAttrDateTime(Root, rsModifiedAttr, '', FStructureModifiedDate, false);
 
+  if (EpiSaveMode = esmField) then
+    Size := (LoadAttrInt(Root, 'recordCount'));
+
+  FLoadingRecs := true;
   if LoadNode(Node, Root, rsSections, false) then
     Sections.LoadFromXml(Node, ReferenceMap);
+  FLoadingRecs := false;
 
   // VERSION 2 PROPERTY
   if LoadNode(Node, Root, 'KeyFields', false) then
@@ -1339,7 +1346,9 @@ begin
   {$IFNDEF RELEASE}
   T1 := Now;
   {$ENDIF}
-  if LoadNode(Node, Root, rsRecords, false) then
+  if (EpiSaveMode = esmDatafile) and
+     LoadNode(Node, Root, rsRecords, false)
+  then
     LoadRecords(Node);
   {$IFNDEF RELEASE}
   T2 := Now;

@@ -10,6 +10,12 @@ uses
   epivaluelabels, epiadmin, epiranges, epirelates;
 
 type
+  TEpiSaveModeEnum = (esmDatafile, esmField);
+
+var
+  EpiSaveMode: TEpiSaveModeEnum = esmDatafile;
+
+type
   // Forward prototype declaration...
 
   // DataFile
@@ -55,7 +61,8 @@ implementation
 
 uses
   epidocument, math, epiconvertutils, epidatafileutils,
-  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epirelations;
+  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epirelations,
+  strutils, epistringutils;
 
 {$I epidatafiles.inc}
 {$I episections.inc}

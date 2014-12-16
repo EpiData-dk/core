@@ -209,6 +209,8 @@ type
     // Never ever create a field directly!
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); virtual;
   protected
+    procedure   LoadData(RootNode: TDOMNode);
+    function    SaveData(RootDoc: TDOMDocument): TDOMElement;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     class function CreateField(AOwner: TEpiCustomBase;

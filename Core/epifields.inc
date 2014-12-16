@@ -542,6 +542,45 @@ begin
   RegisterClasses([Notes, Question]);
 end;
 
+procedure TEpiField.LoadData(RootNode: TDOMNode);
+var
+  Node: TDOMNode;
+  S: DOMString;
+  Idx: Integer;
+  Symbol: Char;
+  Data: String;
+begin
+  // RootNode = <Data>
+  Symbol := LineEnding{$IFNDEF LINUX}[0]{$ENDIF};
+  Node := RootNode.FirstChild;
+
+  S := Node.TextContent;
+
+  while (S <> '') do
+  begin
+    Idx := StrToInt(Copy2SymbDel(S, ':'));
+    Data := Copy2SymbDel(S, Symbol);
+
+    AsString[Idx] := Data;
+  end;
+end;
+
+function TEpiField.SaveData(RootDoc: TDOMDocument): TDOMElement;
+var
+  S: String;
+  i: Integer;
+begin
+  Result := RootDoc.CreateElement('Data');
+
+  S := '';
+  for i := 0 to Size - 1 do
+    if IsMissing[i] then
+      Continue
+    else
+      S += IntToStr(i) + ':' + AsString[i] + #13#10;
+  Result.TextContent := S;
+end;
+
 function TEpiField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
@@ -590,6 +629,9 @@ begin
      (Relates.Count > 0)
   then
     Result.AppendChild(Relates.SaveToDom(RootDoc));
+
+  if (EpiSaveMode = esmField) then
+    Result.AppendChild(SaveData(RootDoc));
 end;
 
 class function TEpiField.CreateField(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType): TEpiField;
@@ -750,6 +792,11 @@ begin
     Relates.ItemOwner := true;
     Relates.LoadFromXml(Node, ReferenceMap);
   end;
+
+  if (EpiSaveMode = esmField) and
+     (LoadNode(Node, Root, 'Data', false))
+  then
+    LoadData(Node);
 end;
 
 { TEpiIntField }
