@@ -551,7 +551,7 @@ var
   Data: String;
 begin
   // RootNode = <Data>
-  Symbol := LineEnding{$IFNDEF LINUX}[0]{$ENDIF};
+  Symbol := LineEnding{$IFDEF WINDOWS}[1]{$ENDIF};
   Node := RootNode.FirstChild;
 
   S := Node.TextContent;
