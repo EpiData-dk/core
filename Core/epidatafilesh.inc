@@ -135,7 +135,7 @@ type
     FRecModified: boolean;
     FRecModifiedDate: TDateTime;
     FRelates: TEpiRelates;
-    FNotes:     TEpiTranslatedText;
+    FNotes:     TEpiTranslatedTextWrapper;
     FStructureModified: boolean;
     FStructureModifiedDate: TDateTime;
     FVersion:   string;
@@ -145,7 +145,7 @@ type
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
     property    Created: TDateTime read FCreated;
     property    KeyFields: TEpiFields read FKeyFields;
-    property    Notes: TEpiTranslatedText read FNotes;
+    property    Notes: TEpiTranslatedTextWrapper read FNotes;
     property    RecModifiedDate: TDateTime read FRecModifiedDate write FRecModifiedDate;  // version 2
     property    Relates: TEpiRelates read FRelates;                                       // version 3
     property    StructureModifiedDate: TDateTime read FStructureModifiedDate write FStructureModifiedDate;

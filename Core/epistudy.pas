@@ -195,7 +195,6 @@ begin
   FPurpose              := TEpiTranslatedTextWrapper.Create(Self, rsPurpose, rsText);
   FPopulation           := TEpiTranslatedTextWrapper.Create(Self, rsPopulation, rsText);
   FRights               := TEpiTranslatedTextWrapper.Create(Self, rsRights, rsText);
-//  FTimeCoverage         := TEpiTranslatedTextWrapper.Create(Self, rsTimeCoverage, rsText);
   FTitle                := TEpiTranslatedTextWrapper.Create(Self, rsTitle, rsText);
   FVersion              := '';
   FCreated              := Now;
@@ -209,7 +208,7 @@ begin
 
 
   RegisterClasses([FAbstractText, FCitations, FDesign, FFunding,
-    FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights, //FTimeCoverage,
+    FGeographicalCoverage, FPublisher, FPurpose, FPopulation, FRights,
     FTitle, FUnitOfObservation]);
 end;
 
@@ -283,7 +282,6 @@ begin
   FPurpose.LoadFromXml(Root, ReferenceMap);
   FPopulation.LoadFromXml(Root, ReferenceMap);
   FRights.LoadFromXml(Root, ReferenceMap);
-//  FTimeCoverage.LoadFromXml(Root, ReferenceMap);
   FTitle.LoadFromXml(Root, ReferenceMap);
 
   // Version 2:
@@ -308,6 +306,8 @@ begin
   SaveTextContent(Result, rsAuthor, Author);
   SaveTextContent(Result, rsAgency, Agency);
   SaveTextContent(Result, rsCreated, Created);
+  SaveTextContent(Result, rsDataColectionStart, DataCollectionStart);
+  SaveTextContent(Result, rsDataColectionEnd, DataCollectionEnd);
   SaveTextContent(Result, rsIdentifier, Identifier);
   SaveTextContent(Result, rsKeywords, Keywords);
   SaveTextContent(Result, rsModified, ModifiedDate);

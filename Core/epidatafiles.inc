@@ -1120,7 +1120,8 @@ begin
   SaveDomAttr(Result, rsCreatedAttr, Created);
   SaveDomAttr(Result, rsModifiedAttr, StructureModifiedDate);
   SaveDomAttr(Result, rsVersionAttr, Version);
-  SaveDomAttr(Result, 'recordCount', Size);
+  if EpiSaveMode = esmField then
+    SaveDomAttr(Result, 'recordCount', Size);
   SaveDomAttrEnum(Result, rsAfterRecordState, AfterRecordState, TypeInfo(TEpiDataFileAfterRecordState));
 
   SaveKeyFieldsToDom(Result);
@@ -1201,7 +1202,7 @@ begin
 
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
-  FNotes := TEpiTranslatedText.Create(Self, rsNotes);
+  FNotes := TEpiTranslatedTextWrapper.Create(Self, rsNotes, rsText);
   FVersion := '';
   FCreated := Now;
   FRecModifiedDate := Now;

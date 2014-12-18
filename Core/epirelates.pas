@@ -33,7 +33,7 @@ type
   { TEpiRelatesEnumerator }
 
   TEpiRelatesEnumerator = class(TEpiCustomListEnumerator)
-  private
+  protected
     function GetCurrent: TEpiRelate;
   public
     property Current: TEpiRelate read GetCurrent;
