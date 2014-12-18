@@ -306,8 +306,10 @@ begin
   SaveTextContent(Result, rsAuthor, Author);
   SaveTextContent(Result, rsAgency, Agency);
   SaveTextContent(Result, rsCreated, Created);
-  SaveTextContent(Result, rsDataColectionStart, DataCollectionStart);
-  SaveTextContent(Result, rsDataColectionEnd, DataCollectionEnd);
+  if (FDataCollectionStart <> MaxDateTime) then
+    SaveTextContent(Result, rsDataColectionStart, DataCollectionStart);
+  if (FDataCollectionEnd <> MaxDateTime) then
+    SaveTextContent(Result, rsDataColectionEnd, DataCollectionEnd);
   SaveTextContent(Result, rsIdentifier, Identifier);
   SaveTextContent(Result, rsKeywords, Keywords);
   SaveTextContent(Result, rsModified, ModifiedDate);
