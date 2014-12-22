@@ -403,9 +403,9 @@ function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/1.3');
+  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/2.0');
   SaveDomAttr(Result, 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd');
+  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/2.0 http://www.epidata.dk/XML/2.0/epx.xsd');
   SaveDomAttr(Result, rsVersionAttr, Version);
   SaveDomAttr(Result, 'xml:lang', DefaultLang);
 
