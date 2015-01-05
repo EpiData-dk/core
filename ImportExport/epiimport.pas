@@ -1024,8 +1024,8 @@ begin
 
     // A little hack to extract filename and load the .chk file.
     TmpStr := '';
-    if DataStream is TFileStream then
-      TmpStr := TFileStream(DataStream).FileName;
+    if DataStream is TFileStreamUTF8 then
+      TmpStr := TFileStreamUTF8(DataStream).FileName;
 
     TmpStr := ChangeFileExt(TmpStr, '.chk');
     if Not FileExistsUTF8(TmpStr) then
