@@ -423,7 +423,7 @@ begin
     Msg :=   'A timed backup file exists. (loading of this overwrites previous project file)' + LineEnding + LineEnding +
              'File: ' + SysToUTF8(ExtractFileName(UTF8ToSys(FileName)))          +
                ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(FileName))) + ')' + LineEnding +
-             'Recovery: ' + #9 + SysToUTF8(ExtractFileName(UTF8ToSys(FileName + '.bak'))) +
+             'Recovery: ' + SysToUTF8(ExtractFileName(UTF8ToSys(FileName + '.bak'))) +
                ' (' + FormatDateTime('YYYY/MM/DD HH:NN:SS', FileDateToDateTime(FileAgeUTF8(FileName + '.bak'))) + ')' + LineEnding +
              LineEnding +
              'Load the backup instead?';
@@ -635,7 +635,7 @@ begin
     end;
 
     if BackupFileExists(FileName, Msg) then
-      case OnWarning(wtTimeBackup, Msg) of
+      case DoWarning(wtTimeBackup, Msg) of
         wrYes:    LoadBackupFile := true;
         wrNo:     begin
                     Msg := 'Loading ' + SysToUTF8(ExtractFileName(UTF8ToSys(FileName))) + ' will delete recovery file.' + LineEnding +
