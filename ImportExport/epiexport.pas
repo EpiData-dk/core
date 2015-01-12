@@ -514,7 +514,8 @@ begin
     with Flds[i] do
     begin
       TmpStr := '';
-      if Assigned(ValueLabelSet) and
+      if (ExportSettings.ExportValueLabels) and
+         (Assigned(ValueLabelSet)) and
          (ValueLabelSet.LabelType = ftInteger)
       then
         TmpStr := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey')).Name;
@@ -579,7 +580,7 @@ begin
         WriteString(DataStream, 'note0', 33);
         WriteString(DataStream, '1', 2);
 
-        TmpStr := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)"Ha for details. Date coded as Jan. 1st 1960.';
+        TmpStr := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)" for details. Date coded as Jan. 1st 1960.';
         WriteByte(DataStream, 1);
         TmpInt := 2*33 + Length(TmpStr) + 1;
         WriteInt(DataStream, TmpInt);
