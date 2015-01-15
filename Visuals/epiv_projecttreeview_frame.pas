@@ -1,11 +1,12 @@
 unit epiv_projecttreeview_frame;
 
 {$mode objfpc}{$H+}
+{$optimization off}
 
 interface
 
 uses
-  Classes, SysUtils, types, FileUtil, Forms, Controls, StdCtrls, ExtCtrls,
+  Classes, SysUtils, types, FileUtil, Forms, Controls, ExtCtrls,
   VirtualTrees,
   {$IFDEF MSWINDOWS}
   ActiveX,
@@ -295,7 +296,6 @@ uses
 
 const
   PROJECTTREE_NODE_CUSTOMKEY     = 'PROJECTTREE_NODE_CUSTOMKEY';
-  PROJECTTREE_RELATION_CUSTOMKEY = 'PROJECTTREE_RELATION_CUSTOMKEY';
 
 type
 
@@ -915,7 +915,6 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
 var
   i: Integer;
   OldSelectedObject: TEpiCustomItem;
-  Node: PVirtualNode;
 begin
   // Do nothing if component is being destroyed.
   if (csDestroying in ComponentState) then exit;
