@@ -53,7 +53,12 @@ type
 implementation
 
 uses
-  LConvEncoding, FileUtil, math, LazUTF8, lazutf16;
+  LConvEncoding, FileUtil, math, LazUTF8, lazutf16, RegExpr;
+
+
+var
+  IdentRegExp: TRegExpr;
+
 
 function StrCountChars(const Source: string; const FindChars: TCharSet;
   const QuoteChar: Char): integer;
@@ -222,11 +227,18 @@ end;
 
 function ValidateIdentifierUTF8(const AValue: string): boolean;
 begin
+  // Currently does not support UTF-8 at all.... :(
+  result :=
+    (UTF8Length(AValue) > 0) and
+    (IdentRegExp.Exec(AValue)) and
+    (IdentRegExp.MatchLen[0] = Length(AValue));
+
+  {
   result := UTF8Length(AValue) > 0;
   if FindInvalidUTF8Character(PChar(@AValue[1]), Length(AValue)) <> -1 then
     exit(false);
   if UTF8Pos(' ', AValue) > 0 then
-    exit(false);
+    exit(false);}
 end;
 
 function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
@@ -277,5 +289,31 @@ begin
   fStr := '';
   inherited Destroy;
 end;
+
+
+procedure InitUnit;
+const
+  Letter = '[A-Za-z]';
+  Digits = '[0-9]';
+begin
+  IdentRegExp := TRegExpr.Create;
+  IdentRegExp.Expression :=
+    '(' + Letter + '|_|@)' +
+    '(' + Letter + '|' + Digits + '|_)*';
+end;
+
+procedure FinalUnit;
+begin
+  IdentRegExp.Free;
+  IdentRegExp := nil;
+end;
+
+initialization
+  InitUnit;
+
+
+finalization
+  FinalUnit;
+
 
 end.
