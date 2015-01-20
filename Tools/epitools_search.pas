@@ -83,7 +83,7 @@ var
       ftBoolean: Result := ((SC.Field.AsBoolean[Idx] = 0) and (SC.Text[1] in BooleanNoChars)) or
                            ((SC.Field.AsBoolean[Idx] = 1) and (SC.Text[1] in BooleanYesChars));
       ftInteger,
-      ftAutoInc: Result := SC.Field.AsInteger[Idx] = StrToInt(SC.Text);
+      ftAutoInc: Result := SC.Field.AsInteger[Idx] = StrToInt64(SC.Text);
       ftFloat:   Result := SameValue(SC.Field.AsFloat[Idx], StrToFloat(SC.Text), 0.0);
       ftDMYDate,
       ftMDYDate,
@@ -108,7 +108,7 @@ var
     case SC.Field.FieldType of
       ftBoolean,
       ftInteger,
-      ftAutoInc: Result := SC.Field.AsInteger[Idx] < StrToInt(SC.Text);
+      ftAutoInc: Result := SC.Field.AsInteger[Idx] < StrToInt64(SC.Text);
       ftFloat:   Result := (SC.Field.AsFloat[Idx] < StrToFloat(SC.Text)) and
                            (Not SameValue(SC.Field.AsFloat[Idx], StrToFloat(SC.Text), 0.0));
       ftDMYDate,
