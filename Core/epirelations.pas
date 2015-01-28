@@ -37,7 +37,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function SaveAttributesToXml: string; override;
     function XMLName: string; override;
     function NewDetailRelation: TEpiDetailRelation;
     property Datafile: TEpiDataFile read FDatafile write SetDatafile;
@@ -61,7 +60,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function SaveAttributesToXml: string; override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property MasterRelation: TEpiMasterRelation read GetMasterRelation;
     // MaxRecordCount: Is the maximum number of records allowed in a detail datafile. Set to 0 for unbounded.
@@ -230,14 +228,6 @@ begin
     FDetailRelations.LoadFromXml(Node, ReferenceMap);
 end;
 
-function TEpiMasterRelation.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml;
-
-  Result +=
-    SaveAttr(rsDataFileRef, Datafile.Name);
-end;
-
 function TEpiMasterRelation.XMLName: string;
 begin
   Result := rsRelation;
@@ -298,12 +288,6 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 
   MaxRecordCount := LoadAttrInt(Root, rsMaxRecordCount, 0, false);
-end;
-
-function TEpiDetailRelation.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsMaxRecordCount, MaxRecordCount);
 end;
 
 procedure TEpiDetailRelation.Assign(const AEpiCustomBase: TEpiCustomBase);

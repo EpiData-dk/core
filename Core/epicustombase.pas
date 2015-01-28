@@ -12,7 +12,7 @@ uses
 const
   EPI_XML_DATAFILE_VERSION = 3;
   {$IFNDEF RELEASE}
-  EPI_XML_BRANCH_STRING = 'TRUNK';
+  EPI_XML_BRANCH_STRING = 'ADMIN';
   {$ENDIF}
 
 type
@@ -89,33 +89,22 @@ type
     procedure FixupReferences;
   end;
 
-//  {$static on}
   TEpiCustomBase = class
-  { Scrambling }
-  private
-    FCrypter:   TDCP_rijndael;
-    function    Get4ByteSalt: Integer;
-  protected
-    procedure   InitCrypt(Key: string);
-    function    EnCrypt(Const S: string): string; overload;
-    function    DeCrypt(Root: TDOMNode): TDOMNode; overload;
-    function    DeCrypt(S: string): string; overload;
-//    property    Crypter: TDCP_rijndael read FCrypter;   // DOES NOT WORK WITH FPC 2.4 - only from 2.5.1
-
-  { Save/Load functionality }
+  { Save/Load/XML functionality }
   private
     function   NodePath(Const Root: TDOMNode): string;
     procedure  RaiseErrorNode(const Root: TDOMNode; const NodeName: string);
     procedure  RaiseErrorAttr(const Root: TDOMNode; const AttrName: string);
     procedure  RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
   protected
-    function   StringToXml(const S: string): string;
-    Function   Indent(Level: integer): string;
-    function   ScrambleXml: boolean; virtual;
-
     { Check methods }
     function   NodeIsWhiteSpace(Const Node: TDomNode): boolean;
     procedure  CheckNode(const Node: TDOMNode; const NodeName: string); virtual;
+
+  public
+    function   XMLName: string; virtual;
+
+  protected
     { Load methods }
     function   LoadNode(out Node: TDOMNode; const Root: TDOMNode;
       const NodeName: string; Fatal: boolean): boolean;
@@ -134,33 +123,7 @@ type
     function   LoadAttrString(const Root: TDOMNode; Const AttrName: string; DefaultVal: EpiString = ''; Fatal: Boolean = true): EpiString;
     function   LoadAttrDateTime(const Root: TDOMNode; Const AttrName: string; Const Format: string = ''; DefaultVal: EpiDateTime = 0; Fatal: Boolean = true): EpiDateTime; overload;
     function   LoadAttrBool(const Root: TDOMNode; Const AttrName: string; DefaultVal: Boolean = false; Fatal: Boolean = true): boolean;
-    // Singleton saves
-    function   SaveNode(const Lvl: integer; const NodeName: string;
-      const Val: string): string; overload;
-    function   SaveNode(const Lvl: integer; const NodeName: string;
-      const Val: integer): string; overload;
-    function   SaveNode(const Lvl: integer; const NodeName: string;
-      const Val: extended): string; overload;
-    function   SaveNode(const Lvl: integer; const NodeName: string;
-      const Val: TDateTime): string; overload;
-    function   SaveNode(const Lvl: integer; const NodeName: string;
-      const Val: boolean): string; overload;
-
-    // Attributes save
-  private
-    // - used internally by SaveAttr
-    function   SaveAttrRaw(const AttrName: string; const Val: string): string;
-  protected
-    function   SaveAttr(const AttrName: string; const Val: string): string; overload;
-    function   SaveAttr(const AttrName: string; const Val: integer): string; overload;
-    function   SaveAttr(const AttrName: string; const Val: extended): string; overload;
-    function   SaveAttr(const AttrName: string; const Val: TDateTime): string; overload;
-    function   SaveAttr(const AttrName: string; const Val: boolean): string; overload;
-    function   SaveAttrEnum(const AttrName: string; const Val: integer; TypeInfo: PTypeInfo): string;
-    function   SaveAttributesToXml: string; virtual;
   public
-    function   XMLName: string; virtual;
-    function   SaveToXml(Content: String; Lvl: integer): string; virtual;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); virtual;
 
   protected
@@ -285,7 +248,6 @@ type
     function  FindCustomData(const Key: string): TObject;
     function  RemoveCustomData(Const Key: string): TObject;
   end;
-//  {$static off}
 
   { TEpiTranslatedText }
 
@@ -305,7 +267,6 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; Const aXMLName: string); virtual;
     destructor  Destroy; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    Text: string read FCurrentText write SetCurrentText;
@@ -327,7 +288,6 @@ type
     FNodeName: string;
   public
     constructor Create(AOwner: TEpiCustomBase; Const NodeName, TextName: string);
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   { Cloning }
@@ -344,7 +304,6 @@ type
     FName: string;
     function    GetName: string; virtual;
     procedure   SetName(const AValue: string); virtual;
-    function    SaveAttributesToXml: string; override;
     function    DoValidateRename(Const NewName: string): boolean; virtual;
     function    WriteNameToXml: boolean; virtual;
   protected
@@ -369,13 +328,12 @@ type
     FLeft: integer;
     FTop: integer;
   protected
-    function   SaveAttributesToXml: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure  SetLeft(const AValue: Integer); virtual;
     procedure  SetTop(const AValue: Integer); virtual;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
   protected
-    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     property   Left: Integer read FLeft write SetLeft;
     property   Top: Integer read FTop write SetTop;
@@ -416,7 +374,6 @@ type
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     destructor  Destroy; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
   { Standard Item Methods }
   public
     procedure   Clear;
@@ -614,11 +571,6 @@ end;
 
 { TEpiCustomBase }
 
-function TEpiCustomBase.Get4ByteSalt: Integer;
-begin
-  result := Random(maxLongint - 1) + 1;
-end;
-
 constructor TEpiCustomBase.Create(AOwner: TEpiCustomBase);
 begin
   FOwner := AOwner;
@@ -713,71 +665,6 @@ begin
   Result := DoClone(AOwner, nil, ReferenceMap);
 end;
 
-procedure TEpiCustomBase.InitCrypt(Key: string);
-begin
-{  if not Assigned(FCrypter) then
-  begin
-    FCrypter := TDCP_rijndael.Create(nil);
-    Randomize;
-  end;
-
-  FCrypter.InitStr(Key, TDCP_sha256);   }
-end;
-
-function TEpiCustomBase.EnCrypt(const S: string): string;
-var
-  Salt: Integer;
-  SaltStr: Array[0..3] of Char absolute Salt;
-begin
-  // We salt all encryptions with a 4-byte (random) salt. This is because
-  // the plaintext usually consist of XML code which for most parts contain
-  // the same initial text. Since we reset the chaining information each time
-  // a new encryption starts, the encrypted section end up with the first few
-  // bytes of ciphertext being the same - and this is NOT a secure encryption.
-  // Hence pre-padding with 4 random bytes, will do the trick for most parts.
-{  Salt := Get4ByteSalt;
-  Result := FCrypter.EncryptString(String(SaltStr) + S);
-
-  FCrypter.Reset;}
-end;
-
-function TEpiCustomBase.DeCrypt(Root: TDOMNode): TDOMNode;
-var
-  St: TStringStream;
-  XMLDoc: TDOMDocumentFragment;
-  s: String;
-  Node: TDOMNode;
-begin
-{  Result := nil;
-
-  // Extract the text content from this node (but not subnodes).
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    if Node.NodeType = TEXT_NODE then
-      break;
-    node := Node.NextSibling;
-  end;
-
-  s := FCrypter.DecryptString(Trim(TDOMText(Node).Data));
-  St := TStringStream.Create(s);
-  // Shift 4 bytes to get rid of scrambling salt...
-  St.Position := 4;
-
-  XMLDoc := Root.OwnerDocument.CreateDocumentFragment;
-  ReadXMLFragment(XMLDoc, St);
-  ST.Free;
-  FCrypter.Reset;
-  Result := XMLDoc;   }
-end;
-
-function TEpiCustomBase.DeCrypt(S: string): string;
-begin
-{  Result := FCrypter.DecryptString(S);
-  FCrypter.Reset;
-  Delete(Result, 1, 4); }
-end;
-
 function TEpiCustomBase.NodePath(const Root: TDOMNode): string;
 var
   R: TDOMNode;
@@ -816,32 +703,6 @@ procedure TEpiCustomBase.RaiseErrorMsg(const Root: TDOMNode; const Msg: string);
 begin
   raise TEpiCoreException.CreateFmt('ERROR: An error occured reading tag "%s".' + LineEnding +
           '%s', [Root.NodeName, Msg]);
-end;
-
-function TEpiCustomBase.StringToXml(const S: string): string;
-var
-  i: Integer;
-  T: string;
-begin
-  T := S;
-  for i := 1 to Length(T) do
-    if (Ord(T[i]) < 32) and
-       (not (Ord(T[i]) in [10,13])) then
-      T[i] := '?';
-  result := StringsReplace(T,
-   ['&',     '"',      '<',    '>',    ''''],
-   ['&amp;', '&quot;', '&lt;', '&gt;', '&apos;'],
-   [rfReplaceAll]);
-end;
-
-function TEpiCustomBase.Indent(Level: integer): string;
-begin
-  result := DupeString('  ', Level);
-end;
-
-function TEpiCustomBase.ScrambleXml: boolean;
-begin
-  result := false;
 end;
 
 function TEpiCustomBase.NodeIsWhiteSpace(const Node: TDomNode): boolean;
@@ -1033,137 +894,9 @@ begin
     Result := DefaultVal;
 end;
 
-function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
-  const Val: string): string;
-begin
-  Result :=
-    Indent(Lvl) + '<' + NodeName + '>' + StringToXml(Val) + '</' + NodeName + '>' +
-    LineEnding;
-end;
-
-function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
-  const Val: integer): string;
-begin
-  result := SaveNode(Lvl, NodeName, IntToStr(Val));
-end;
-
-function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
-  const Val: extended): string;
-begin
-  if (RootOwner is TEpiDocument) then
-    BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  result := SaveNode(Lvl, NodeName, FloatToStr(Val));
-  RestoreFormatSettings;
-end;
-
-function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
-  const Val: TDateTime): string;
-begin
-  if (RootOwner is TEpiDocument) then
-  with TEpiDocument(RootOwner).XMLSettings do
-  begin
-    BackupFormatSettings(FormatSettings);
-    result := SaveNode(Lvl, NodeName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
-    RestoreFormatSettings;
-  end else
-    result := SaveNode(Lvl, NodeName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
-end;
-
-function TEpiCustomBase.SaveNode(const Lvl: integer; const NodeName: string;
-  const Val: boolean): string;
-begin
-  result := SaveNode(Lvl, NodeName, BoolToStr(Val, 'true', 'false'));
-end;
-
-// This function writes the raw content of Val and AttrName without further
-// checking. If val need to be XML'ified it should go through SaveAttr(... val: string)
-function TEpiCustomBase.SaveAttrRaw(const AttrName: string; const Val: string
-  ): string;
-begin
-  result := Format(' %s="%s"', [AttrName, Val]);
-end;
-
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: string
-  ): string;
-begin
-  // Check that Val is not malformed (according to XML standard).
-  result := SaveAttrRaw(AttrName, StringToXml(Val));
-end;
-
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: integer
-  ): string;
-begin
-  result := SaveAttrRaw(AttrName, IntToStr(Val));
-end;
-
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: extended
-  ): string;
-begin
-  if (RootOwner is TEpiDocument) then
-  with TEpiDocument(RootOwner).XMLSettings do
-  begin
-    BackupFormatSettings(FormatSettings);
-    result := SaveAttrRaw(AttrName, FloatToStr(Val));
-    RestoreFormatSettings;
-  end else
-    result := SaveAttrRaw(AttrName, FloatToStr(Val));
-end;
-
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: TDateTime
-  ): string;
-begin
-  if (RootOwner is TEpiDocument) then
-  with TEpiDocument(RootOwner).XMLSettings do
-  begin
-    BackupFormatSettings(FormatSettings);
-    result := SaveAttr(AttrName, FormatDateTime(FormatSettings.ShortDateFormat, Val));
-    RestoreFormatSettings;
-  end else
-    result := SaveAttrRaw(AttrName, FormatDateTime('YYYY/MM/DD HH:NN:SS', Val));
-end;
-
-function TEpiCustomBase.SaveAttr(const AttrName: string; const Val: boolean
-  ): string;
-begin
-  result := SaveAttrRaw(AttrName, BoolToStr(Val, 'true', 'false'));
-end;
-
-function TEpiCustomBase.SaveAttrEnum(const AttrName: string;
-  const Val: integer; TypeInfo: PTypeInfo): string;
-begin
-  result := SaveAttr(AttrName, GetEnumName(TypeInfo, Val));
-end;
-
-function TEpiCustomBase.SaveAttributesToXml: string;
-begin
-  result := '';
-end;
-
 function TEpiCustomBase.XMLName: string;
 begin
   result := ClassName;
-end;
-
-function TEpiCustomBase.SaveToXml(Content: String; Lvl: integer): string;
-var
-  i: Integer;
-  S: String;
-begin
-  S := Content;
-  for i := 0 to ClassList.Count - 1 do
-    S += TEpiCustomBase(ClassList[i]).SaveToXml('', Lvl + 1);
-
-//  if ScrambleXml then
-    //S := EnCrypt(S) + LineEnding;
-
-  if S <> '' then
-    Result :=
-      Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '>' + LineEnding +
-      S +
-      Indent(Lvl) + '</' + XMLName + '>' + LineEnding
-  else
-    Result :=
-      Indent(Lvl) + '<' + XMLName + SaveAttributesToXml + '/>' + LineEnding;
 end;
 
 procedure TEpiCustomBase.LoadFromXml(Root: TDOMNode;
@@ -1547,17 +1280,6 @@ begin
   inherited Destroy;
 end;
 
-function TEpiTranslatedText.SaveToXml(Content: String; Lvl: integer): string;
-var
-  i: Integer;
-begin
-  Result := '';
-  for i := 0 to FTextList.Count - 1 do
-    if TString(FTextList.Objects[i]).Str <> '' then
-      Result += Indent(Lvl) + '<' + XMLName + ' xml:lang="' + FTextList[i] + '">' +
-                StringToXml(TString(FTextList.Objects[i]).Str) + '</' + XMLName + '>' + LineEnding;
-end;
-
 procedure TEpiTranslatedText.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
@@ -1687,18 +1409,6 @@ begin
   FNodeName := NodeName;
 end;
 
-function TEpiTranslatedTextWrapper.SaveToXml(Content: String; Lvl: integer
-  ): string;
-begin
-  Result := inherited SaveToXml(Content, Lvl + 1);
-
-  if Result <> '' then
-    Result :=
-      Indent(Lvl) + '<' + FNodeName + '>' + LineEnding +
-      Result +
-      Indent(Lvl) + '</' + FNodeName + '>' + LineEnding;
-end;
-
 procedure TEpiTranslatedTextWrapper.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
@@ -1767,14 +1477,6 @@ begin
   DoChange(eegCustomBase, Word(ecceName), @Val);
 end;
 
-function TEpiCustomItem.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml;
-  if WriteNameToXml then
-    // We use name in program but present it as "id=...." in the XML.
-    Result += SaveAttr(rsId, Name);
-end;
-
 function TEpiCustomItem.DoValidateRename(const NewName: string): boolean;
 begin
   result := ValidateIdentifierUTF8(NewName);
@@ -1840,13 +1542,6 @@ end;
 
 { TEpiCustomControlItem }
 
-function TEpiCustomControlItem.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttr(rsTop, Top) +
-    SaveAttr(rsLeft, Left);
-end;
 
 procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
@@ -2085,18 +1780,6 @@ begin
   ClearAndFree;
   FreeAndNil(FList);
   inherited Destroy;
-end;
-
-function TEpiCustomList.SaveToXml(Content: String; Lvl: integer): string;
-var
-  S: String;
-  i: Integer;
-begin
-  S := '';
-  for i := 0 to Count - 1 do
-    S += Items[i].SaveToXml('', Lvl + 1);
-  Content += S;
-  result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiCustomList.Clear;

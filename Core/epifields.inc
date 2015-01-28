@@ -672,49 +672,6 @@ begin
   Result := rsField;
 end;
 
-function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  if Assigned(Calculation) then
-    Content += Calculation.SaveToXml('', Lvl + 1);
-  if Assigned(Comparison) then
-    Content += Comparison.SaveToXml('', Lvl + 1);
-  if Assigned(Jumps) then
-    Content += Jumps.SaveToXml('', Lvl + 1);
-  if Assigned(Ranges) then
-    Content += Ranges.SaveToXml('', Lvl + 1);
-  if Assigned(Relates) then
-    Content += Relates.SaveToXml('', Lvl + 1);
-
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
-function TEpiField.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttrEnum(rsType, Integer(FieldType), TypeInfo(TEpiFieldType)) +
-    SaveAttr(rsLength, Length) +
-    SaveAttr(rsDecimals, Decimals) +
-    SaveAttrEnum(rsEntryMode, Integer(EntryMode), TypeInfo(TEpiEntryMode));
-  if ConfirmEntry then
-    Result += SaveAttr(rsConfirmEntry, ConfirmEntry);
-  if RepeatValue then
-    Result += SaveAttr(rsRepeatValue, RepeatValue);
-  if ShowValueLabel then
-    Result += SaveAttr(rsShowValueLabel, ShowValueLabel);
-  // VERSION 2 Property
-  if ShowValueLabelNotes then
-    Result += SaveAttr(rsShowValueLabelNotes, ShowValueLabelNotes);
-  if ForcePickList then
-    Result += SaveAttr(rsForcePickList, ForcePickList);
-  if HasDefaultValue then
-    Result += SaveAttr(rsDefaultValue, DefaultValueAsString);
-  if Assigned(ValueLabelSet) then
-    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Name);
-  if Assigned(ValueLabelWriteField) then
-    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Name);
-end;
-
 procedure TEpiField.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
@@ -1035,14 +992,6 @@ end;
 class function TEpiIntField.DefaultMissing: EpiInteger;
 begin
   result := NA_INT;
-end;
-// TODO -oMerge: SaveNewAttributes in DOM
-function TEpiIntField.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml;
-
-  if ZeroFilled then
-    Result += SaveAttr(rsZeroFilled, ZeroFilled);
 end;
 
 procedure TEpiIntField.LoadFromXml(Root: TDOMNode;
@@ -2030,15 +1979,6 @@ begin
 
   if FieldType in AutoUpdateFieldTypes then
     SaveDomAttrEnum(Result, rsAutoUpdateMode, AutoMode, TypeInfo(TEpiAutoUpdateMode));
-end;
-
-function TEpiCustomAutoField.SaveAttributesToXml: string;
-begin
-  if FieldType in AutoUpdateFieldTypes then
-    Result := SaveAttrEnum(rsAutoUpdateMode, Integer(AutoMode), TypeInfo(TEpiAutoUpdateMode));
-  Result :=
-    inherited SaveAttributesToXml +
-    Result;
 end;
 
 function TEpiCustomAutoField.DoClone(AOwner: TEpiCustomBase;

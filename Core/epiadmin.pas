@@ -53,9 +53,8 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    property   Settings: TEpiXMLSettings read GetSettings;
+//    property   Settings: TEpiXMLSettings read GetSettings;
     Property   Users: TEpiUsers read FUsers;
     Property   Groups: TEpiGroups read FGroups;
     property   OnPassword:  TRequestPasswordEvent read FOnPassword write FOnPassword;
@@ -114,14 +113,12 @@ type
     // - this gives approx. 2^32 different ways to store the same password.
     FSalt: string;
     function GetAdmin: TEpiAdmin;
-    function GetName: string;
     procedure SetExpireDate(const AValue: TDateTime);
     procedure SetFirstName(const AValue: string);
     procedure SetGroup(const AValue: TEpiGroup);
     procedure SetLastLogin(const AValue: TDateTime);
     procedure SetLastName(const AValue: string);
     procedure SetMasterPassword(const AValue: string);
-    procedure SetName(AValue: string);
     procedure SetPassword(const AValue: string);
   protected
     property  Salt: string read FSalt;
@@ -131,7 +128,7 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
+//    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
@@ -159,7 +156,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    ScrambleXml: boolean; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewGroup: TEpiGroup;
     Property    Group[Index: integer]: TEpiGroup read GetGroup; default;
@@ -180,7 +176,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
-    function   SaveAttributesToXml: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Caption: TEpiTranslatedTextWrapper read FCaption;
     Property   Rights: TEpiAdminRights read FRights write SetRights;
@@ -198,7 +193,7 @@ var
   Login, Password: string;
   TheUser: TEpiUser;
 begin
-  result := false;
+  {result := false;
 
   if not Assigned(OnPassword) then exit;
 
@@ -213,7 +208,7 @@ begin
   InitCrypt(TheUser.Salt + Password + Login);
   MasterPassword := DeCrypt(TheUser.MasterPassword);
 
-  InitCrypt(MasterPassword);
+  InitCrypt(MasterPassword);     }
 end;
 
 function TEpiAdmin.GetSettings: TEpiXMLSettings;
@@ -261,12 +256,6 @@ begin
   Result := rsAdmin;
 end;
 
-function TEpiAdmin.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  InitCrypt(MasterPassword);
-  result := inherited SaveToXml(Content, Lvl);
-end;
-
 procedure TEpiAdmin.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
@@ -275,7 +264,7 @@ begin
   // Root = <Admin>
 
   // First load user if scrambled (we need to obtain passwords)
-  if Settings.Scrambled then
+//  if Settings.Scrambled then
   begin
     LoadNode(Node, Root, rsUsers, true);
     Users.PreLoadFromXml(Node);
@@ -460,11 +449,6 @@ begin
   result := TEpiAdmin(TEpiUsers(Owner).Owner);
 end;
 
-function TEpiUser.GetName: string;
-begin
-
-end;
-
 procedure TEpiUser.SetLastLogin(const AValue: TDateTime);
 var
   Val: TDateTime;
@@ -491,11 +475,6 @@ begin
   FMasterPassword := AValue;
 end;
 
-procedure TEpiUser.SetName(AValue: string);
-begin
-
-end;
-
 procedure TEpiUser.SetPassword(const AValue: string);
 var
   SaltInt: LongInt;
@@ -508,9 +487,9 @@ begin
   FPassword := '$' + Base64EncodeStr(Salt) + '$' + StrToSHA1Base64(Salt + AValue + Login);
 
   // Scramble master password with own key.
-  InitCrypt(Salt + AValue + Login);
-  MasterPassword := EnCrypt(Admin.MasterPassword);
-  InitCrypt(Admin.MasterPassword);
+//  InitCrypt(Salt + AValue + Login);
+//  MasterPassword := EnCrypt(Admin.MasterPassword);
+//  InitCrypt(Admin.MasterPassword);
 
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
@@ -554,7 +533,7 @@ begin
   result := rsUser;
 end;
 
-function TEpiUser.SaveToXml(Content: String; Lvl: integer): string;
+{function TEpiUser.SaveToXml(Content: String; Lvl: integer): string;
 var
   S: String;
 begin
@@ -575,7 +554,7 @@ begin
 
   Dec(Lvl);
   Result := inherited SaveToXml(Content + S, Lvl);
-end;
+end;}
 
 procedure TEpiUser.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
@@ -586,10 +565,10 @@ begin
   // read by now... only scrambled things need to be obtained now.
   inherited LoadFromXml(Root, ReferenceMap);
 
-  if Admin.Settings.Scrambled then
-    NewRoot := DeCrypt(Root)
-  else
-    NewRoot := Root;
+//  if Admin.Settings.Scrambled then
+//    NewRoot := DeCrypt(Root)
+//  else
+//    NewRoot := Root;
 
   FirstName  := LoadNodeString(NewRoot, rsFirstName);
   LastName   := LoadNodeString(NewRoot, rsLastName);
@@ -597,8 +576,8 @@ begin
   ExpireDate := LoadNodeDateTime(NewRoot, rsExpireDate);
   Group      := TEpiGroup(Admin.Groups.GetItemByName(LoadNodeString(NewRoot, rsGroupId)));
 
-  if Admin.Settings.Scrambled then
-    NewRoot.Free;
+ // if Admin.Settings.Scrambled then
+ //   NewRoot.Free;
 end;
 
 { TEpiGroups }
@@ -633,11 +612,6 @@ begin
   Result := rsGroups;
 end;
 
-function TEpiGroups.ScrambleXml: boolean;
-begin
-  Result := Admin.Settings.Scrambled;
-end;
-
 procedure TEpiGroups.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
   );
 var
@@ -649,10 +623,10 @@ begin
 
   // If file is scrambles, then we first need to descramble (using master password)
   // and then read xml structure.
-  if Admin.Settings.Scrambled then
-    NewRoot := DeCrypt(Root)
-  else
-    NewRoot := Root;
+//  if Admin.Settings.Scrambled then
+ //   NewRoot := DeCrypt(Root)
+//  else
+//    NewRoot := Root;
 
   Node := NewRoot.FirstChild;
   while Assigned(Node) do
@@ -665,8 +639,8 @@ begin
     Node := Node.NextSibling;
   end;
 
-  if Admin.Settings.Scrambled then
-    NewRoot.Free;
+//  if Admin.Settings.Scrambled then
+//    NewRoot.Free;
 end;
 
 function TEpiGroups.NewGroup: TEpiGroup;
@@ -710,13 +684,6 @@ end;
 function TEpiGroup.XMLName: string;
 begin
   Result := rsGroup;
-end;
-
-function TEpiGroup.SaveAttributesToXml: string;
-begin
-  Result:=
-    inherited SaveAttributesToXml +
-    SaveAttr(rsRights, Integer(Rights));
 end;
 
 procedure TEpiGroup.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);

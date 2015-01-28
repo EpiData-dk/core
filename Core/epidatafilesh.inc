@@ -15,16 +15,12 @@ type
     function    GetDataFile(Index: integer): TEpiDataFile;
     function    GetSettings: TEpiXMLSettings;
   protected
-    Property    Settings: TEpiXMLSettings read GetSettings;
-    function    ScrambleXml: boolean; override;
     function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    ItemClass: TEpiCustomItemClass; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewDataFile: TEpiDataFile;
     function    GetEnumerator: TEpiDataFilesEnumerator;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
@@ -82,9 +78,7 @@ type
   private
     FLoadingRecs: Boolean;
     procedure   HaltLoading;
-    function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
-    function    SaveKeyFields(Lvl: integer): string;
     procedure   LoadKeyFields(Root: TDOMNode);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -98,8 +92,6 @@ type
     destructor  Destroy; override;
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;

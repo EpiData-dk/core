@@ -59,7 +59,6 @@ type
     procedure  SetPassWord(AValue: string);
   protected
     procedure  SetModified(const AValue: Boolean); override;
-    function   SaveAttributesToXml: string; override;
   public
     constructor Create(Const LangCode: string);
     destructor Destroy; override;
@@ -67,8 +66,6 @@ type
     procedure  LoadFromFile(const AFileName: string);
     procedure  LoadFromStream(const St: TStream);
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function   SaveToXml(Lvl: integer = 0;
-      IncludeHeader: boolean = true): string;
     procedure  SaveToStream(Const St: TStream);
     procedure  SaveToFile(Const AFileName: string);
     Property   XMLSettings: TEpiXMLSettings read FXMLSettings;
@@ -123,7 +120,8 @@ type
 implementation
 
 uses
-  epimiscutils, laz2_XMLRead, laz2_XMLWrite;
+  epimiscutils, laz2_XMLRead, laz2_XMLWrite,
+  DCPrijndael, DCPsha256, DCPbase64;
 
 { TEpiDocument }
 
@@ -150,22 +148,6 @@ end;
 procedure TEpiDocument.SetModified(const AValue: Boolean);
 begin
   inherited SetModified(AValue);
-end;
-
-function TEpiDocument.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.3') +
-    SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd') +
-    SaveAttr(rsVersionAttr, Version) +
-    SaveAttr('xml:lang', DefaultLang);
-
-  // Version 2 Properties:
-  if PassWord <> '' then
-    Result += SaveAttr(rsPassword, StrToSHA1Base64(PassWord));
-  Result += SaveAttr(rsCycle, CycleNo)
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
@@ -337,30 +319,13 @@ begin
   FVersion := EPI_XML_DATAFILE_VERSION;
 end;
 
-function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;
-var
-  Content: string;
-begin
-  if IncludeHeader then
-    Result := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding;
-
-  // Inherited saves everything, since the the classes have been registered in Create.
-  Result += inherited SaveToXml(Content, Lvl);
-end;
-
 procedure TEpiDocument.SaveToStream(const St: TStream);
 var
-  S: String;
   FDoc: TXMLDocument;
 begin
-  {$IFDEF EPI_SAVE_STRING}
-  S := SaveToXml(0);
-  St.Write(S[1], Length(S));
-  {$ELSE}
   FDoc := SaveToXmlDocument;
   WriteXMLFile(FDoc, St);
   FDoc.Free;
-  {$ENDIF}
 end;
 
 procedure TEpiDocument.SaveToFile(const AFileName: string);
@@ -394,9 +359,56 @@ begin
 end;
 
 function TEpiDocument.SaveToXmlDocument: TXMLDocument;
+var
+  Elem: TDOMNode;
+  RootDoc: TDOMNode;
+  EnCrypter: TDCP_rijndael;
+  MSIn: TMemoryStream;
+  MSOut: TMemoryStream;
+  Node: TDOMNode;
+  TmpNode: TDOMNode;
+  S: String;
+  CryptElem: TDOMElement;
 begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
+
+  if XMLSettings.Scrambled then
+  begin
+    RootDoc := Result.FirstChild;
+
+    MSIn  := TMemoryStream.Create;
+    MSOut := TMemoryStream.Create;
+
+    for Elem in RootDoc do
+    begin
+      if Elem.NodeName = Admin.XMLName then continue;
+      WriteXML(Elem, MSIn);
+    end;
+    MSIn.Position := 0;
+
+    Node := RootDoc.FirstChild;
+    while Assigned(Node) do
+    begin
+      TmpNode := Node;
+      Node := Node.NextSibling;
+
+      if TmpNode.NodeName = Admin.XMLName then continue;
+      RootDoc.RemoveChild(TmpNode).Free;
+    end;
+
+    EnCrypter := TDCP_rijndael.Create(nil);
+    EnCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+    EnCrypter.EncryptStream(MSIn, MSOut, MSIn.Size);
+    MSIn.Free;
+
+    SetLength(S, (4 * MSOut.Size) div 3);
+    Base64Encode(MSOut.Memory, @S[1], MSOut.Size);
+
+    CryptElem := Result.CreateElement('Crypt');
+    CryptElem.AppendChild(Result.CreateTextNode(S));
+    RootDoc.AppendChild(CryptElem);
+  end;
 end;
 
 function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;

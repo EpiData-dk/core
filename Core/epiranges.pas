@@ -63,7 +63,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    SaveAttributesToXml: string; override;
     function    XMLName: string; override;
     property    AsInteger[const Start: boolean]: EpiInteger read GetAsInteger write SetAsInteger;
     property    AsFloat[const Start: boolean]: EpiFloat read GetAsFloat write SetAsFloat;
@@ -595,14 +594,6 @@ begin
   SaveDomAttr(Result, 'start', AsString[True]);
   SaveDomAttr(Result, 'end',   AsString[False]);
 
-  RestoreFormatSettings;
-end;
-
-function TEpiRange.SaveAttributesToXml: string;
-begin
-  BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
-  Result := inherited SaveAttributesToXml +
-    ' start="' + AsString[true] + '" end="' + AsString[false] + '"';
   RestoreFormatSettings;
 end;
 

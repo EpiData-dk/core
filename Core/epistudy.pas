@@ -35,7 +35,6 @@ type
     FPublisher: TEpiTranslatedTextWrapper;
     FPurpose: TEpiTranslatedTextWrapper;
     FRights: TEpiTranslatedTextWrapper;
-//    FTimeCoverage: TEpiTranslatedTextWrapper;
     FTitle: TEpiTranslatedTextWrapper;
     FUnitOfObservation: TEpiTranslatedTextWrapper;
     FVersion: string;
@@ -51,7 +50,6 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
-    function   SaveToXml(Content: String; Lvl: integer): string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
 
@@ -72,7 +70,6 @@ type
     property   Purpose: TEpiTranslatedTextWrapper read FPurpose;
     property   Population: TEpiTranslatedTextWrapper read FPopulation;
     property   Rights: TEpiTranslatedTextWrapper read FRights;
-//    property   TimeCoverage: TEpiTranslatedTextWrapper read FTimeCoverage;
     Property   Title: TEpiTranslatedTextWrapper read FTitle;
     Property   Keywords: string read FKeywords write SetKeywords;
     property   Version: string read FVersion write SetVersion;
@@ -237,27 +234,6 @@ end;
 function TEpiStudy.XMLName: string;
 begin
   Result := rsStudy;
-end;
-
-function TEpiStudy.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  if Modified then
-    ModifiedDate := Now;
-
-  Content :=
-    SaveNode(Lvl + 1, rsAuthor, Author) +
-    SaveNode(Lvl + 1, rsAgency, Agency) +
-    SaveNode(Lvl + 1, rsCreated, Created) +
-    SaveNode(Lvl + 1, rsIdentifier, Identifier) +
-    SaveNode(Lvl + 1, rsKeywords, Keywords) +
-    SaveNode(Lvl + 1, rsModified, ModifiedDate) +
-    SaveNode(Lvl + 1, rsNotes, Notes) +
-    SaveNode(Lvl + 1, rsVersion, Version);
-  if (DataCollectionStart <> MaxDateTime) then
-    Content += SaveNode(Lvl + 1, rsDataColectionStart, DataCollectionStart);
-  if (DataCollectionEnd <> MaxDateTime) then
-    Content += SaveNode(Lvl + 1, rsDataColectionEnd,   DataCollectionEnd);
-  Result := inherited SaveToXml(Content, Lvl);
 end;
 
 procedure TEpiStudy.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);

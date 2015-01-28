@@ -31,8 +31,6 @@ type
     procedure SetTimeSeparator(const AValue: string);
     procedure AssignValues(Src: TEpiXMLSettings);
   protected
-    function SaveAttributesToXml: string; override;
-  protected
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -71,16 +69,12 @@ type
     procedure   SetShowFieldNames(const AValue: Boolean);
     procedure   AssignValues(Src: TEpiProjectSettings);
   protected
-    function SaveAttributesToXml: string; override;
-  protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    ScrambleXml: boolean; override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    ShowFieldNames: Boolean read FShowFieldNames write SetShowFieldNames;
     property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
@@ -151,14 +145,6 @@ begin
   FMissingString     := Src.FMissingString;
   FScrambled         := Src.FScrambled;
   FTimeSeparator     := Src.FTimeSeparator;
-end;
-
-function TEpiXMLSettings.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsDateSep,    DateSeparator) +
-    SaveAttr(rsTimeSep,    TimeSeparator) +
-    SaveAttr(rsDecSep,     DecimalSeparator);
 end;
 
 function TEpiXMLSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -283,16 +269,6 @@ begin
   FShowFieldNames    := Src.FShowFieldNames;
 end;
 
-function TEpiProjectSettings.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsAutoIncStart,        AutoIncStartValue) +
-    SaveAttr(rsTimedBackupInterval, BackupInterval) +
-    SaveAttr(rsBackupOnShutdown,    BackupOnShutdown) +
-    SaveAttr(rsShowFieldNames,      ShowFieldNames) +
-    SaveAttr(rsShowFieldBorders,    ShowFieldBorders);
-end;
-
 function TEpiProjectSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
@@ -324,11 +300,6 @@ begin
   Result := rsProjectSettings;
 end;
 
-function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
 procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
@@ -340,11 +311,6 @@ begin
   BackupOnShutdown  := LoadAttrBool(Root,rsBackupOnShutdown, BackupOnShutdown, false);
   ShowFieldNames    := LoadAttrBool(Root, rsShowFieldNames, ShowFieldNames, false);
   ShowFieldBorders  := LoadAttrBool(Root, rsShowFieldBorders, ShowFieldBorders, false);
-end;
-
-function TEpiProjectSettings.ScrambleXml: boolean;
-begin
-  Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
 end;
 
 procedure TEpiProjectSettings.Assign(const AEpiCustomBase: TEpiCustomBase);

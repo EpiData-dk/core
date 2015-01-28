@@ -775,7 +775,7 @@ begin
                'The project file may have been edited by another EntryClient/Manager program!' + LineEnding +
                LineEnding +
                'Continuing may overwrite data! Are you sure?';
-        if OnWarning(wtLockFile, Msg) <> wrYes then exit;
+        if DoWarning(wtLockFile, Msg) <> wrYes then exit;
       end;
 
   LF := ReadLockFile(LockFileName);
@@ -793,7 +793,7 @@ begin
              LineEnding +
              'Continuing may overwrite data! Are you sure?';
 
-      if OnWarning(wtLockFile, Msg) <> wrYes then exit;
+      if DoWarning(wtLockFile, Msg) <> wrYes then exit;
     end;
 
   try

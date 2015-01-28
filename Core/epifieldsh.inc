@@ -217,8 +217,6 @@ type
       AFieldType: TEpiFieldType): TEpiField;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   { Cloning }
@@ -288,7 +286,6 @@ type
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
-    function SaveAttributesToXml: string; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
        override;
     procedure Exchange(i, j: integer); override;
@@ -457,7 +454,6 @@ type
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   protected
-    function  SaveAttributesToXml: string; override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public

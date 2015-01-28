@@ -160,29 +160,6 @@ begin
   Result := rsSection;
 end;
 
-function TEpiSection.SaveToXml(Content: String; Lvl: integer): string;
-var
-  i: Integer;
-begin
-{  Content := '';
-  For i := 0 to Groups.Count - 1 do
-    Content += ',' + Groups[i].Name;
-  if Length(Content) > 0 then
-  begin
-    Delete(Content, 1, 1);
-    Content := SaveNode(Lvl + 1, rsGroupIdList, Content);
-  end;    }
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
-function TEpiSection.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttr(rsWidth, Width) +
-    SaveAttr(rsHeight, Height);
-end;
-
 procedure TEpiSection.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
   );
 var
