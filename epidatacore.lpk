@@ -33,7 +33,7 @@
 -dEPI_LOAD_METHOD"/>
       </Other>
     </CompilerOptions>
-    <Version Major="2"/>
+    <Version Major="2" Minor="1"/>
     <Files Count="70">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>

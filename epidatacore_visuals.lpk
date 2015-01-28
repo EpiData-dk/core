@@ -2,6 +2,7 @@
 <CONFIG>
   <Package Version="4">
     <Name Value="epidatacore_visuals"/>
+    <Type Value="RunAndDesignTime"/>
     <CompilerOptions>
       <Version Value="11"/>
       <SearchPaths>
@@ -27,7 +28,7 @@
         <CustomOptions Value="-dEPI_GRID_TEST"/>
       </Other>
     </CompilerOptions>
-    <Version Major="2"/>
+    <Version Major="2" Minor="1"/>
     <Files Count="8">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
@@ -64,7 +65,6 @@
         <UnitName Value="epiv_checkversionform"/>
       </Item8>
     </Files>
-    <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="5">
       <Item1>
         <PackageName Value="LazControls"/>
@@ -74,7 +74,8 @@
       </Item2>
       <Item3>
         <PackageName Value="epidatacore"/>
-        <MinVersion Major="2" Valid="True"/>
+        <MaxVersion Major="2" Minor="1" Valid="True"/>
+        <MinVersion Major="2" Minor="1" Valid="True"/>
       </Item3>
       <Item4>
         <PackageName Value="lcl"/>
