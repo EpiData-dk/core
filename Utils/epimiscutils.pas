@@ -58,6 +58,7 @@ const
   // File dialog filter functions.
   function GetEpiDialogFilter(DialogFilters: TEpiDialogFilters): string;
   function GetEpiDialogFilterExt(DialogFilters: TEpiDialogFilters): string;
+  function GetEpiDialogFilterName(DialogFilters: TEpiDialogFilters): string;
 
   procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
   procedure ZipFileToStream(St: TStream;   Const ZipFileName: string);
@@ -72,11 +73,18 @@ const
   function PostInc(var Value: Integer; Const N: Integer = 1): Integer;
   function PreInc(var Value: Integer; Const N: Integer = 1): Integer;
 
+  {$IFDEF MSWINDOWS}
+  function AssociateFiles(Const ApplicationName, ApplicationDescription,
+    ExePath: String): Boolean;
+  function UnAssociateFiles(Const ApplicationName, ApplicationDescription,
+    ExePath: String): Boolean;
+  {$ENDIF}
+
 
 implementation
 
 uses
-  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals;
+  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation;
 
 type
   TEpiDialogFilterPair = record
@@ -197,10 +205,23 @@ function GetEpiDialogFilterExt(DialogFilters: TEpiDialogFilters): string;
 var
   Filter: TEpiDialogFilter;
 begin
+  Result := '';
   for Filter in DialogFilters do
   begin
     if Filter in [dfCollection, dfAll] then continue;
     result += EpiDialogFilters[Filter]^.FilterExt;
+  end;
+end;
+
+function GetEpiDialogFilterName(DialogFilters: TEpiDialogFilters): string;
+var
+  Filter: TEpiDialogFilter;
+begin
+  Result := '';
+  for Filter in DialogFilters do
+  begin
+    if Filter in [dfCollection, dfAll] then continue;
+    result += EpiDialogFilters[Filter]^.FilterName;
   end;
 end;
 
@@ -284,6 +305,57 @@ begin
   Inc(Value, N);
   result := Value;
 end;
+
+{$IFDEF MSWINDOWS}
+function DoAssociation(const ApplicationName, ApplicationDescription,
+  ExePath: String; Unregister: Boolean): Boolean;
+var
+  Assoc: TFileAssociation;
+  Filter: TEpiDialogFilter;
+  S: String;
+begin
+  Assoc := TFileAssociation.Create(nil);
+  Assoc.UnReg := Unregister;
+  Assoc.RegisterFileAssociation := true;
+  Assoc.RegisterForAllUsers := False;
+
+  Assoc.ApplicationName := ApplicationName;
+  Assoc.ApplicationDescription := ApplicationDescription;
+
+  Assoc.Action := '"' + ExePath + '" "%1"';
+  Assoc.ActionName := 'Open';
+
+  Result := true;
+  for Filter := Low(dfEpiData) to High(dfEpiData) do
+  begin
+    if (Filter in [dfAll, dfCollection]) then continue;
+
+    S := GetEpiDialogFilterExt([Filter]);
+    Delete(S, 1, 1);
+    Assoc.Extension     := S;
+
+    S := GetEpiDialogFilterName([Filter]);
+    Delete(S, Length(S) - 7, 8);
+    Assoc.ExtensionName := S;
+
+    Result := Assoc.Execute and Result;
+  end;
+  Assoc.ClearIconCache; //<<-- rebuild icons
+  Assoc.Free;
+end;
+
+function AssociateFiles(const ApplicationName, ApplicationDescription,
+  ExePath: String): Boolean;
+begin
+  Result := DoAssociation(ApplicationName, ApplicationDescription, ExePath,false);
+end;
+
+function UnAssociateFiles(const ApplicationName, ApplicationDescription,
+  ExePath: String): Boolean;
+begin
+  Result := DoAssociation(ApplicationName, ApplicationDescription, ExePath, true);
+end;
+{$ENDIF}
 
 end.
 
