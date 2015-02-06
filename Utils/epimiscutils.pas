@@ -50,9 +50,9 @@ type
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
-  dfEpiData = [dfEPX, dfEPZ, dfCollection];
-  dfImport  = [dfEPX, dfEPZ, dfREC, dfDTA, dfText, dfCollection];
-  dfExport  = [dfDTA];
+  dfEpiData: TEpiDialogFilters = [dfEPX, dfEPZ, dfCollection];
+  dfImport: TEpiDialogFilters  = [dfEPX, dfEPZ, dfREC, dfDTA, dfText, dfCollection];
+  dfExport: TEpiDialogFilters  = [dfDTA];
 
 
   // File dialog filter functions.
@@ -326,7 +326,7 @@ begin
   Assoc.ActionName := 'Open';
 
   Result := true;
-  for Filter := Low(dfEpiData) to High(dfEpiData) do
+  for Filter in dfEpiData do
   begin
     if (Filter in [dfAll, dfCollection]) then continue;
 
