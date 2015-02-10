@@ -6,11 +6,11 @@ unit epicustombase;
 interface
 
 uses
-  Classes, SysUtils, Laz2_DOM, DCPrijndael, epidatafilestypes, typinfo,
+  Classes, SysUtils, Laz2_DOM, epidatafilestypes, typinfo,
   contnrs, LazMethodList;
 
 const
-  EPI_XML_DATAFILE_VERSION = 3;
+  EPI_XML_DATAFILE_VERSION = 4;
   {$IFNDEF RELEASE}
   EPI_XML_BRANCH_STRING = 'ADMIN';
   {$ENDIF}
@@ -193,7 +193,6 @@ type
   private
     FClassList: TFPList;
     FModified:  Boolean;
-    FObjectData: PtrUInt;
     FOnModified: TNotifyEvent;
     FOwner:     TEpiCustomBase;
     FState:     TEpiCustomBaseState;
@@ -298,7 +297,6 @@ type
   end;
 
   { TEpiCustomItem }
-
   TEpiCustomItem = class(TEpiCustomBase)
   protected
     FName: string;
@@ -309,15 +307,27 @@ type
   protected
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
+
+  { Observe Reference }
+  private
+    FReferenceList: TStringList;
+    procedure ItemDestroyHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+    procedure RemoveReferece(Index: Integer);
+  protected
+    procedure ObserveReference(Item: TEpiCustomItem; PropertyName: shortstring);
+    procedure ReferenceDestroyed(Item: TEpiCustomItem; PropertyName: shortstring); virtual;
+
+  {Cloning}
+  protected
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
-  {Cloning}
-  protected
-    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
-      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -399,7 +409,8 @@ type
     FOnGetPrefix: TEpiPrefixEvent;
     FOnValidateRename: TEpiValidateRenameEvent;
     FUniqueNames: boolean;
-    procedure SetUniqueNames(AValue: boolean);
+  protected
+    procedure SetUniqueNames(AValue: boolean); virtual;
   protected
     function  DoPrefix: string;
     function  Prefix: string; virtual;
@@ -835,7 +846,10 @@ function TEpiCustomBase.LoadAttrEnum(const Root: TDOMNode;
   const AttrName: string; TypeInfo: PTypeInfo; DefaultVal: String;
   Fatal: Boolean): integer;
 begin
-  result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, DefaultVal, Fatal));
+  if TypeInfo^.Kind = tkSet then
+    result := StringToSet(TypeInfo, LoadAttrString(Root, AttrName, DefaultVal, Fatal))
+  else
+    result := GetEnumValue(TypeInfo, LoadAttrString(Root, AttrName, DefaultVal, Fatal));
 end;
 
 function TEpiCustomBase.LoadAttrFloat(const Root: TDOMNode;
@@ -915,9 +929,16 @@ procedure TEpiCustomBase.SaveDomAttrEnum(const Node: TDomElement;
   const Tag: String; const Value; TypeInfo: PTypeInfo);
 var
   V: Byte;
+  I: Integer;
 begin
-  V := Byte(Value);
-  SaveDomAttr(Node, Tag, GetEnumName(TypeInfo, V));
+  if (TypeInfo^.Kind = tkSet) then
+  begin
+    I := Integer(Value);
+    SaveDomAttr(Node, Tag, SetToString(TypeInfo, I, false));
+  end else begin
+    V := Byte(Value);
+    SaveDomAttr(Node, Tag, GetEnumName(TypeInfo, V));
+  end;
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
@@ -1498,10 +1519,16 @@ begin
 end;
 
 destructor TEpiCustomItem.Destroy;
+var
+  i: Integer;
 begin
+  if Assigned(FReferenceList) then
+  begin
+    for i := FReferenceList.Count - 1 downto 0 do
+      RemoveReferece(I);
+  end;
+
   FName := '';
-  if Assigned(FCustomData) then
-    FreeAndNil(FCustomData);
   inherited Destroy;
 end;
 
@@ -1526,11 +1553,53 @@ begin
   EndUpdate;
 end;
 
-function TEpiCustomItem.ValidateRename(const NewName: string;
-  RenameOnSuccess: boolean): boolean;
+procedure TEpiCustomItem.ItemDestroyHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  Idx: Integer;
+  S: shortstring;
+  ItemProperty: Pointer;
+  PItemProperty: Pointer;
 begin
-  if NewName = Name then exit(true);
-  result := DoValidateRename(NewName);
+  Idx := FReferenceList.IndexOfObject(Initiator);
+
+  if (Idx = -1) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (TEpiCustomChangeEventType(EventType) <> ecceDestroy) then exit;
+
+  S := FReferenceList[Idx];
+  RemoveReferece(Idx);
+  ReferenceDestroyed(TEpiCustomItem(Initiator), S);
+end;
+
+procedure TEpiCustomItem.RemoveReferece(Index: Integer);
+var
+  Item: TEpiCustomItem;
+begin
+  Item := TEpiCustomItem(FReferenceList.Objects[Index]);
+  Item.UnRegisterOnChangeHook(@ItemDestroyHook);
+
+  FReferenceList.Delete(Index);
+
+  if FReferenceList.Count = 0 then
+    FreeAndNil(FReferenceList);
+end;
+
+procedure TEpiCustomItem.ObserveReference(Item: TEpiCustomItem;
+  PropertyName: shortstring);
+begin
+  if not Assigned(FReferenceList) then
+    FReferenceList := TStringList.Create;
+
+  FReferenceList.AddObject(PropertyName, Item);
+  Item.RegisterOnChangeHook(@ItemDestroyHook, true);
+end;
+
+procedure TEpiCustomItem.ReferenceDestroyed(Item: TEpiCustomItem;
+  PropertyName: shortstring);
+begin
+  DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Item);
 end;
 
 function TEpiCustomItem.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -1540,8 +1609,14 @@ begin
   TEpiCustomItem(Result).FName := FName;
 end;
 
-{ TEpiCustomControlItem }
+function TEpiCustomItem.ValidateRename(const NewName: string;
+  RenameOnSuccess: boolean): boolean;
+begin
+  if NewName = Name then exit(true);
+  result := DoValidateRename(NewName);
+end;
 
+{ TEpiCustomControlItem }
 
 procedure TEpiCustomControlItem.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);

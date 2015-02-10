@@ -23,11 +23,9 @@ type
     FDecimalSeparator: string;
     FFormatSettings: TFormatSettings;
     FMissingString: string;
-    FScrambled: boolean;
     FTimeSeparator: string;
     procedure SetDateSeparator(const AValue: string);
     procedure SetDecimalSeparator(const AValue: string);
-    procedure SetScrambled(const AValue: boolean);
     procedure SetTimeSeparator(const AValue: string);
     procedure AssignValues(Src: TEpiXMLSettings);
   protected
@@ -41,7 +39,6 @@ type
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
-    property    Scrambled: boolean read FScrambled write SetScrambled;
     property    FormatSettings: TFormatSettings read FFormatSettings;
   { Cloning }
   protected
@@ -116,16 +113,6 @@ begin
   DoChange(eegXMLSetting, Word(esceDecSep), @Val);
 end;
 
-procedure TEpiXMLSettings.SetScrambled(const AValue: boolean);
-var
-  Val: Boolean;
-begin
-  if FScrambled = AValue then exit;
-  Val := FScrambled;
-  FScrambled := AValue;
-  DoChange(eegXMLSetting, Word(esceScramble), @Val);
-end;
-
 procedure TEpiXMLSettings.SetTimeSeparator(const AValue: string);
 var
   Val: String;
@@ -143,7 +130,6 @@ begin
   FDecimalSeparator  := Src.FDecimalSeparator;
   FFormatSettings    := Src.FFormatSettings;
   FMissingString     := Src.FMissingString;
-  FScrambled         := Src.FScrambled;
   FTimeSeparator     := Src.FTimeSeparator;
 end;
 
@@ -159,7 +145,6 @@ end;
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  Scrambled := false;
 
   FFormatSettings := DefaultFormatSettings;
   FFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN:SS';

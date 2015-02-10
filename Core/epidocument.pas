@@ -154,9 +154,9 @@ constructor TEpiDocument.Create(const LangCode: string);
 begin
   inherited Create(nil);
   FVersion         := EPI_XML_DATAFILE_VERSION;
+  FAdmin           := TEpiAdmin.Create(Self);
   FXMLSettings     := TEpiXMLSettings.Create(Self);
   FProjectSettings := TEpiProjectSettings.Create(Self);
-  FAdmin           := TEpiAdmin.Create(Self);
   FStudy           := TEpiStudy.Create(Self);
   FValueLabelSets  := TEpiValueLabelSets.Create(Self);
   FValueLabelSets.ItemOwner := true;
@@ -166,7 +166,7 @@ begin
   FRelations.ItemOwner := true;
   FCycleNo         := 0;
 
-  RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
+  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.
@@ -236,6 +236,9 @@ var
   PW, Login, UserPW: String;
   TmpVersion: EpiInteger;
   TmpBranch: EpiString;
+  DeCrypter: TDCP_rijndael;
+  SS: TStringStream;
+  MS: TMemoryStream;
 
 begin
   // Root = <EpiData>
@@ -271,12 +274,39 @@ begin
 
   // Then language!
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
-  // And last - file settings.
-  LoadNode(Node, Root, rsSettings, true);
-  XMLSettings.LoadFromXml(Node, ReferenceMap);
+
+  // Version 4:
+  // Now check for User login;
+  if (Version >= 4) and
+     (LoadNode(Node, Root, rsUsers, false))
+  then
+    try
+    // Preloading the basic user information also sends a
+    // request for password from user.
+    // Loading the rest of the user information (Name, etc.) is
+    // done later.
+      Admin.Users.PreLoadFromXml(Node);
+      LoadNode(Node, Root, 'Crypt', true);
+
+      SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
+      MS := TMemoryStream.Create;
+
+      DeCrypter := TDCP_rijndael.Create(nil);
+      DeCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+      DeCrypter.DecryptStream(SS, MS, SS.Size);
+
+      MS.Position := 0;
+      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+    finally
+      SS.Free;
+      MS.Free;
+      DeCrypter.Free;
+    end;
+
+  WriteXML(Root, '/tmp/test_decrypted.epx');
 
   // XML Version 2:
-  if Version >= 2 then
+  if (Version >= 2) then
   begin
     PW := LoadAttrString(Root, rsPassword, '', false);
 
@@ -290,12 +320,13 @@ begin
     FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
   end;
 
+  // Version 1:
+  // And last - file settings.
+  LoadNode(Node, Root, rsSettings, true);
+  XMLSettings.LoadFromXml(Node, ReferenceMap);
+
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node, ReferenceMap);
-
-  // TODO : Include in later versions.
-//  LoadNode(Node, Root, rsAdmin, true);
-//  Admin.LoadFromXml(Node);
 
   if LoadNode(Node, Root, rsProjectSettings, false) then
     ProjectSettings.LoadFromXml(Node, ReferenceMap);
@@ -306,13 +337,20 @@ begin
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node, ReferenceMap);
 
-  if Version <= 2 then
+  if (Version <= 2) then
+  begin
     // Version 2 only supported 1 DataFile and no relations,
     // hence this must be created to have a correct data container.
-    Relations.NewMasterRelation.Datafile := DataFiles[0]
-  else
-    if LoadNode(Node, Root, rsRelations, false) then
+    if (DataFiles.Count > 0) then
+      Relations.NewMasterRelation.Datafile := DataFiles[0]
+  end else
+  // Version 3:
+    if LoadNode(Node, Root, rsRelations, (DataFiles.Count > 0)) then
       Relations.LoadFromXml(Node, ReferenceMap);
+
+  // Version 4:
+  if LoadNode(Node, Root, rsAdmin, false) then
+    Admin.LoadFromXml(Node, ReferenceMap);
 
   FLoading := false;
   Modified := false;
@@ -369,11 +407,12 @@ var
   TmpNode: TDOMNode;
   S: String;
   CryptElem: TDOMElement;
+  L: LongInt;
 begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  if XMLSettings.Scrambled then
+  if (Admin.Users.Count > 0) then
   begin
     RootDoc := Result.FirstChild;
 
@@ -382,7 +421,7 @@ begin
 
     for Elem in RootDoc do
     begin
-      if Elem.NodeName = Admin.XMLName then continue;
+      if Elem.NodeName = Admin.Users.XMLName then continue;
       WriteXML(Elem, MSIn);
     end;
     MSIn.Position := 0;
@@ -393,21 +432,28 @@ begin
       TmpNode := Node;
       Node := Node.NextSibling;
 
-      if TmpNode.NodeName = Admin.XMLName then continue;
+      if TmpNode.NodeName = Admin.Users.XMLName then continue;
       RootDoc.RemoveChild(TmpNode).Free;
     end;
 
-    EnCrypter := TDCP_rijndael.Create(nil);
-    EnCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
-    EnCrypter.EncryptStream(MSIn, MSOut, MSIn.Size);
-    MSIn.Free;
+    try
+      EnCrypter := TDCP_rijndael.Create(nil);
+      EnCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+      EnCrypter.EncryptStream(MSIn, MSOut, MSIn.Size);
 
-    SetLength(S, (4 * MSOut.Size) div 3);
-    Base64Encode(MSOut.Memory, @S[1], MSOut.Size);
+      SetLength(S, (4 * MSOut.Size) div 3 + 10);
+      L := Base64Encode(MSOut.Memory, @S[1], MSOut.Size);
+      SetLength(S, L);
 
-    CryptElem := Result.CreateElement('Crypt');
-    CryptElem.AppendChild(Result.CreateTextNode(S));
-    RootDoc.AppendChild(CryptElem);
+      CryptElem := Result.CreateElement('Crypt');
+      CryptElem.AppendChild(Result.CreateTextNode(S));
+      RootDoc.AppendChild(CryptElem);
+    finally
+      S := '';
+      MSIn.Free;
+      MSOut.Free;
+      EnCrypter.Free;
+    end;
   end;
 end;
 
@@ -430,6 +476,11 @@ begin
     SaveDomAttr(Result, rsPassword, StrToSHA1Base64(PassWord));
 
   SaveDomAttr(Result, rsCycle, CycleNo);
+
+
+  // Version 4:
+  if Admin.Users.Count > 0 then
+    Admin.Users.PreSaveToDom(RootDoc, Result);
 end;
 
 { TEpiRelationListEx }
