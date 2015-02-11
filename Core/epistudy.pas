@@ -191,7 +191,7 @@ begin
   FPublisher            := TEpiTranslatedTextWrapper.Create(Self, rsPublisher, rsText);
   FPurpose              := TEpiTranslatedTextWrapper.Create(Self, rsPurpose, rsText);
   FPopulation           := TEpiTranslatedTextWrapper.Create(Self, rsPopulation, rsText);
-  FRights               := TEpiTranslatedTextWrapper.Create(Self, rsRights, rsText);
+  FRights               := TEpiTranslatedTextWrapper.Create(Self, rsEntryRights, rsText);
   FTitle                := TEpiTranslatedTextWrapper.Create(Self, rsTitle, rsText);
   FVersion              := '';
   FCreated              := Now;

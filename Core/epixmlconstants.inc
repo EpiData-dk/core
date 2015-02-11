@@ -42,14 +42,19 @@ const
       rsLastName        = 'LastName';
       rsPassword        = 'Password';
       rsMasterPassword  = 'MasterPassword';
-      rsLastLogin       = 'LastLogin';
-      rsExpireDate      = 'ExpireDate';
-      rsGroupId         = 'GroupId';
+      rsLastLogin       = 'lastLogin';
+      rsExpireDate      = 'expireDate';
+      rsGroupRefs       = 'GroupRefs';
 
     // Group
     rsGroups          = 'Groups';
      rsGroup           = 'Group';
-      rsRights          = 'Rights';
+      rsManageRights    = 'manageRights';
+
+    rsGroupRights     = 'GroupRights';
+     rsGroupRight      = 'GroupRight';
+      rsEntryRights     = 'entryRights';
+      rsGroupRef        = 'groupRef';
 
    rsStudy           = 'StudyInfo';
     rsAbstract        = 'Abstract';
@@ -86,15 +91,6 @@ const
        rsMissing         = 'missing';
 
      rsFilename            = 'filename';
-
-
-
-{     // version 1+2 property, but never used
-      rsExternal        = 'External';
-      rsFile            = 'File';
-      rsDataFileId      = 'DataFileId';
-      rsValueField      = 'ValueField';
-      rsLabelField      = 'LabelField';}
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';

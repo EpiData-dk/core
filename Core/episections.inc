@@ -58,32 +58,6 @@ end;
 
 { TEpiSection }
 
-procedure TEpiSection.ItemsHook(const Sender, Initiator: TEpiCustomBase;
-  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
-begin
-{  if EventGroup <> eegCustomBase then exit;
-  if not (
-    (Initiator = Fields) or
-    (Initiator = Headings)
-    )
-  then
-    Exit;
-
-  case TEpiCustomChangeEventType(EventType) of
-{    ecceDestroy: ;
-    ecceUpdate: ;
-    ecceName: ;}
-    ecceAddItem:
-      FAllControls.AddItem(TEpiCustomControlItem(Data));
-    ecceDelItem:
-      FAllControls.RemoveItem(TEpiCustomControlItem(Data));
-{    ecceSetItem: ;
-    ecceSetTop: ;
-    ecceSetLeft: ;
-    ecceText: ;}
-  end; }
-end;
-
 function TEpiSection.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
@@ -129,27 +103,27 @@ begin
 
   FFields := TEpiFields.Create(self);
   FFields.ItemOwner := true;
-  FFields.RegisterOnChangeHook(@ItemsHook, true);
+//  FFields.RegisterOnChangeHook(@ItemsHook, true);
 
   FHeadings := TEpiHeadings.Create(self);
   FHeadings.ItemOwner := true;
-  FHeadings.RegisterOnChangeHook(@ItemsHook, true);
+//  FHeadings.RegisterOnChangeHook(@ItemsHook, true);
 
   FAllControls := TAllItemsList.Create(self);
   FAllControls.ItemOwner := false;
 
-  FGroups := TEpiGroups.Create(Self);
+  FGroupRights := TEpiGroupRights.Create(Self);
 
-  RegisterClasses([Caption, Fields, Headings]);
+  RegisterClasses([Caption, Fields, Headings, GroupRights]);
 end;
 
 destructor TEpiSection.Destroy;
 begin
   FAllControls.Destroy;
-  FGroups.Free;
-  FHeadings.UnRegisterOnChangeHook(@ItemsHook);
+  FGroupRights.Free;
+//  FHeadings.UnRegisterOnChangeHook(@ItemsHook);
   FHeadings.Free;
-  FFields.UnRegisterOnChangeHook(@ItemsHook);
+//  FFields.UnRegisterOnChangeHook(@ItemsHook);
   FFields.Free;
   FCaption.Free;
   inherited Destroy;
@@ -176,19 +150,14 @@ begin
   Width := LoadAttrInt(Root, rsWidth);
   Height := LoadAttrInt(Root, rsHeight);
 
-{  GroupList := nil;
-  if LoadNode(Node, Root, rsGroupIdList, false) then
-  begin
-    SplitString(LoadNodeString(Root, rsGroupIdList), GroupList, [',']);
-    for i := 0 to GroupList.Count - 1 do
-      Groups.AddItem(TEpiDocument(RootOwner).Admin.Groups.GetItemById(GroupList[i]));
-  end;    }
-
   if LoadNode(Node, Root, rsFields, false) then
     Fields.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, rsHeadings, false) then
     Headings.LoadFromXml(Node, ReferenceMap);
+
+  if LoadNode(Node, Root, rsGroupRights, false) then
+    GroupRights.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiSection.NewField(FieldType: TEpiFieldType): TEpiField;

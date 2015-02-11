@@ -278,14 +278,16 @@ begin
   // Version 4:
   // Now check for User login;
   if (Version >= 4) and
-     (LoadNode(Node, Root, rsUsers, false))
+     (LoadNode(Node, Root, rsUsers, false)) and
+
+     // Preloading the basic user information also sends a
+     // request for password from user.
+     // Loading the rest of the user information (Name, etc.) is
+     // done later.
+     (Admin.Users.PreLoadFromXml(Node)) and
+     false
   then
     try
-    // Preloading the basic user information also sends a
-    // request for password from user.
-    // Loading the rest of the user information (Name, etc.) is
-    // done later.
-      Admin.Users.PreLoadFromXml(Node);
       LoadNode(Node, Root, 'Crypt', true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
@@ -302,8 +304,6 @@ begin
       MS.Free;
       DeCrypter.Free;
     end;
-
-  WriteXML(Root, '/tmp/test_decrypted.epx');
 
   // XML Version 2:
   if (Version >= 2) then
@@ -412,7 +412,7 @@ begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  if (Admin.Users.Count > 0) then
+  if {(Admin.Users.Count > 0)} false then
   begin
     RootDoc := Result.FirstChild;
 

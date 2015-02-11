@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Laz2_DOM, epicustombase, episettings, epidatafilestypes,
-  epivaluelabels, epiadmin, epiranges, epirelates;
+  epivaluelabels, epirights, epiranges, epirelates;
 
 type
   TEpiSaveModeEnum = (esmDatafile, esmField);

@@ -1562,11 +1562,11 @@ var
   ItemProperty: Pointer;
   PItemProperty: Pointer;
 begin
-  Idx := FReferenceList.IndexOfObject(Initiator);
-
-  if (Idx = -1) then exit;
   if (EventGroup <> eegCustomBase) then exit;
   if (TEpiCustomChangeEventType(EventType) <> ecceDestroy) then exit;
+
+  Idx := FReferenceList.IndexOfObject(Initiator);
+  if (Idx = -1) then exit;
 
   S := FReferenceList[Idx];
   RemoveReferece(Idx);
@@ -1589,6 +1589,8 @@ end;
 procedure TEpiCustomItem.ObserveReference(Item: TEpiCustomItem;
   PropertyName: shortstring);
 begin
+  if not Assigned(Item) then exit;
+
   if not Assigned(FReferenceList) then
     FReferenceList := TStringList.Create;
 
@@ -1599,6 +1601,7 @@ end;
 procedure TEpiCustomItem.ReferenceDestroyed(Item: TEpiCustomItem;
   PropertyName: shortstring);
 begin
+  Item.UnRegisterOnChangeHook(@ItemDestroyHook);
   DoChange(eegCustomBase, Word(ecceReferenceDestroyed), Item);
 end;
 
