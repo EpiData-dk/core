@@ -38,10 +38,9 @@ const
     // User
     rsUsers           = 'Users';
      rsUser            = 'User';
-      rsFirstName       = 'FirstName';
-      rsLastName        = 'LastName';
-      rsPassword        = 'Password';
-      rsMasterPassword  = 'MasterPassword';
+      rsFullName        = 'FullName';
+      rsPassword        = 'password';
+      rsMasterPassword  = 'masterPassword';
       rsLastLogin       = 'lastLogin';
       rsExpireDate      = 'expireDate';
       rsGroupRefs       = 'GroupRefs';

@@ -25,7 +25,7 @@ type
 
   TEpiAdminChangeEventType = (
     // User related events:
-    eaceUserSetFirstName,  eaceUserSetLastName,
+    eaceUserSetFullName,
     eaceUserSetPassword,   eaceUserSetGroup,
     eaceUserSetExpireDate, eaceUserSetLastLogin,
     // Group related events:
@@ -77,6 +77,8 @@ type
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
 
+  TEpiUsersEnumerator = class;
+
   { TEpiUsers }
 
   TEpiUsers = class(TEpiCustomList)
@@ -94,7 +96,8 @@ type
     function   PreLoadFromXml(Root: TDOMNode): Boolean;
     procedure  PreSaveToDom(RootDoc: TDOMDocument; Root: TDOMNode);
     function   NewUser: TEpiUser;
-    Property   Users[Index: integer]: TEpiUser read GetUsers;
+    function   GetEnumerator: TEpiUsersEnumerator;
+    Property   Users[Index: integer]: TEpiUser read GetUsers; default;
     Property   Admin: TEpiAdmin read GetAdmin;
   end;
 
@@ -105,8 +108,7 @@ type
     FGroups: TEpiGroups;
     FExpireDate: TDateTime;
     FLastLogin: TDateTime;
-    FFirstName: string;
-    FLastName: string;
+    FFullName: string;
     // Master password as stored in file:
     // - Base64( AES ( CleearTextPassword ))
     FMasterPassword: string;
@@ -121,9 +123,8 @@ type
     function GetAdmin: TEpiAdmin;
     function GetLogin: string;
     procedure SetExpireDate(const AValue: TDateTime);
-    procedure SetFirstName(const AValue: string);
+    procedure SetFullName(const AValue: string);
     procedure SetLastLogin(const AValue: TDateTime);
-    procedure SetLastName(const AValue: string);
     procedure SetLogin(AValue: string);
     procedure SetMasterPassword(const AValue: string);
     procedure SetPassword(const AValue: string);
@@ -145,12 +146,20 @@ type
     Property   Login: string read GetLogin write SetLogin;
     Property   Password: string read FPassword write SetPassword;
     Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
-    // Scrambled data (in UserInfo section):
+    // Scrambled data:
     Property   Groups: TEpiGroups read FGroups;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
-    property   FirstName: string read FFirstName write SetFirstName;
-    property   LastName: string read FLastName write SetLastName;
+    property   FullName: string read FFullName write SetFullName;
+  end;
+
+  { TEpiUsersEnumerator }
+
+  TEpiUsersEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiUser; override;
+  public
+    property Current: TEpiUser read Getcurrent;
   end;
 
   TEpiGroupsEnumerator = class;
@@ -208,6 +217,13 @@ implementation
 
 uses
   DCPbase64, DCPsha256, epistringutils, epimiscutils;
+
+{ TEpiUsersEnumerator }
+
+function TEpiUsersEnumerator.GetCurrent: TEpiUser;
+begin
+  Result := TEpiUser(inherited GetCurrent);
+end;
 
 { TEpiGroupsEnumerator }
 
@@ -461,6 +477,11 @@ begin
   Result := TEpiUser(NewItem(TEpiUser));
 end;
 
+function TEpiUsers.GetEnumerator: TEpiUsersEnumerator;
+begin
+  Result := TEpiUsersEnumerator.Create(Self);
+end;
+
 procedure TEpiUsers.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
@@ -507,14 +528,14 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetExpireDate), @Val);
 end;
 
-procedure TEpiUser.SetFirstName(const AValue: string);
+procedure TEpiUser.SetFullName(const AValue: string);
 var
   Val: String;
 begin
-  if FFirstName = AValue then exit;
-  Val := FFirstName;
-  FFirstName := AValue;
-  DoChange(eegAdmin, Word(eaceUserSetFirstName), @Val);
+  if FFullName = AValue then exit;
+  Val := FFullName;
+  FFullName := AValue;
+  DoChange(eegAdmin, Word(eaceUserSetFullName), @Val);
 end;
 
 function TEpiUser.GetAdmin: TEpiAdmin;
@@ -535,16 +556,6 @@ begin
   Val := FLastLogin;
   FLastLogin := AValue;
   DoChange(eegAdmin, Word(eaceUserSetLastLogin), @Val);
-end;
-
-procedure TEpiUser.SetLastName(const AValue: string);
-var
-  Val: String;
-begin
-  if FLastName = AValue then exit;
-  Val := FLastName;
-  FLastName := AValue;
-  DoChange(eegAdmin, Word(eaceUserSetLastName), @Val);
 end;
 
 procedure TEpiUser.SetLogin(AValue: string);
@@ -592,8 +603,7 @@ begin
 //    FGroup      := TEpiGroup(Admin.Groups.GetItemByName(Self.FGroup.Name));
     FExpireDate := Self.FExpireDate;
     FLastLogin  := Self.FLastLogin;
-    FFirstName  := Self.FFirstName;
-    FLastName   := Self.FLastName;
+    FFullName   := Self.FFullName;
     FMasterPassword := Self.FMasterPassword;
     FPassword       := Self.FPassword;
     FSalt           := Self.FSalt;
@@ -624,12 +634,17 @@ begin
   inherited Create(AOwner);
   FGroups := TEpiGroups.Create(Self);
   FGroups.ItemOwner := false;
+  FFullName := '';
+  FMasterPassword := '';
+  FPassword := '';
+  FSalt := '';
+  FExpireDate := 0;
+  FLastLogin := 0;
 end;
 
 destructor TEpiUser.Destroy;
 begin
-  FFirstName := '';
-  FLastName := '';
+  FFullName := '';
   FMasterPassword := '';
   FPassword := '';
   FSalt := '';
@@ -651,8 +666,7 @@ begin
   // read by now... only scrambled things need to be obtained now.
   inherited LoadFromXml(Root, ReferenceMap);
 
-  FirstName  := LoadNodeString(Root, rsFirstName);
-  LastName   := LoadNodeString(Root, rsLastName);
+  FullName   := LoadNodeString(Root, rsFullName);
   LastLogin  := LoadAttrDateTime(Root, rsLastLogin);
   ExpireDate := LoadAttrDateTime(Root, rsExpireDate);
 
@@ -667,8 +681,7 @@ var
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  SaveTextContent(Result, rsFirstName, FirstName);
-  SaveTextContent(Result, rsLastName,  LastName);
+  SaveTextContent(Result, rsFullName, FullName);
 
   SaveDomAttr(Result, rsLastLogin, LastLogin);
   SaveDomAttr(Result, rsExpireDate, ExpireDate);
