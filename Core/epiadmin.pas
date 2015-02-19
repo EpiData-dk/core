@@ -32,7 +32,17 @@ type
     eaceGroupSetManageRights
   );
 
-  TRequestPasswordEvent = procedure(Sender: TObject; var Login: string; var Password: string) of object;
+  TEpiRequestPasswordType = (
+    erpSinglePassword,          // Only a valid password is required - login is ignored.
+    erpUserLogin                // Project is managed by a user/password and both are requred.
+  );
+
+  TRequestPasswordEvent = procedure(
+    Sender: TObject;
+    RequestType: TEpiRequestPasswordType;
+    var Login: string;
+    var Password: string
+  ) of object;
 
   { TEpiAdmin }
 
@@ -244,7 +254,7 @@ begin
 
   if not Assigned(OnPassword) then exit;
 
-  OnPassword(Self, Login, Password);
+  OnPassword(Self, erpUserLogin, Login, Password);
 
   TheUser := Users.GetUserByLogin(Login);
   if not Assigned(TheUser) then exit;
@@ -667,8 +677,8 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 
   FullName   := LoadNodeString(Root, rsFullName);
-  LastLogin  := LoadAttrDateTime(Root, rsLastLogin);
-  ExpireDate := LoadAttrDateTime(Root, rsExpireDate);
+  LastLogin  := LoadAttrDateTime(Root, rsLastLogin, '', 0, false);
+  ExpireDate := LoadAttrDateTime(Root, rsExpireDate, '', 0, false);
 
   if LoadNode(Node, Root, rsGroupRefs, false) then
     ReferenceMap.AddFixupReference(Self,TEpiUser, 0, LoadNodeString(Root, rsGroupRefs));
@@ -683,8 +693,11 @@ begin
 
   SaveTextContent(Result, rsFullName, FullName);
 
-  SaveDomAttr(Result, rsLastLogin, LastLogin);
-  SaveDomAttr(Result, rsExpireDate, ExpireDate);
+  if (LastLogin > 0) then
+    SaveDomAttr(Result, rsLastLogin, LastLogin);
+
+  if (ExpireDate > 0) then
+    SaveDomAttr(Result, rsExpireDate, ExpireDate);
 
   if Groups.Count > 0 then
   begin

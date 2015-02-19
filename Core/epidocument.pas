@@ -311,7 +311,7 @@ begin
     PW := LoadAttrString(Root, rsPassword, '', false);
 
     if (PW <> '') and (Assigned(OnPassword)) then
-      OnPassword(Self, Login, UserPW);
+      OnPassword(Self, erpSinglePassword, Login, UserPW);
 
     if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
       Raise EEpiBadPassword.Create('Incorrect Password');

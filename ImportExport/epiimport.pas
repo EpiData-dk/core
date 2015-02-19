@@ -748,7 +748,7 @@ const
   begin
     result := false;
     if Assigned(FOnRequestPassword) then
-      FOnRequestPassword(Self, S, FPassword);
+      FOnRequestPassword(Self, erpSinglePassword, S, FPassword);
     try
       // The initialization of the IV like this, makes importing encrypted .rec
       // files possible, without using the DCP1COMPAT defines

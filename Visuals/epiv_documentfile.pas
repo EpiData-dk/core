@@ -5,7 +5,7 @@ unit epiv_documentfile;
 interface
 
 uses
-  Classes, SysUtils, epiopenfile, epidocument;
+  Classes, SysUtils, Forms, epiopenfile, epidocument, epiadmin;
 
 type
 
@@ -13,7 +13,9 @@ type
 
   TDocumentFile = class(TEpiDocumentFile)
   private
-    procedure DoPassWord(Sender: TObject; var Login: string;
+    procedure DoPassWord(Sender: TObject;
+      RequestType: TEpiRequestPasswordType;
+      var Login: string;
       var Password: string);
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
@@ -76,15 +78,25 @@ begin
   ShowMessage(Msg);
 end;
 
-procedure TDocumentFile.DoPassWord(Sender: TObject; var Login: string;
-  var Password: string);
+procedure TDocumentFile.DoPassWord(Sender: TObject;
+  RequestType: TEpiRequestPasswordType; var Login: string; var Password: string
+  );
 begin
-  Password :=
-    PasswordBox('Project Password',
-                'File: ' + FileName + LineEnding +
-                LineEnding +
-                'Project data is password protected.' + LineEnding +
-                'Please enter password:');
+  case RequestType of
+    erpSinglePassword:
+      Password :=
+        PasswordBox('Project Password',
+                    'File: ' + FileName + LineEnding +
+                    LineEnding +
+                    'Project data is password protected.' + LineEnding +
+                    'Please enter password:');
+
+    erpUserLogin:
+      begin
+        Login := 'torsten';
+        Password := 'ostemad';
+      end;
+  end;
 end;
 
 end.
