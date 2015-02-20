@@ -239,6 +239,8 @@ var
   DeCrypter: TDCP_rijndael;
   SS: TStringStream;
   MS: TMemoryStream;
+  Res: TEpiRequestPasswordResponse;
+  Count: Integer;
 
 begin
   // Root = <EpiData>
@@ -278,16 +280,21 @@ begin
   // Version 4:
   // Now check for User login;
   if (Version >= 4) and
-     (LoadNode(Node, Root, rsUsers, false)) and
-
-     // Preloading the basic user information also sends a
-     // request for password from user.
-     // Loading the rest of the user information (Name, etc.) is
-     // done later.
-     (Admin.Users.PreLoadFromXml(Node)) and
-     false
+     (LoadNode(Node, Root, rsUsers, false))
   then
     try
+      SS := nil;
+      MS := nil;
+      DeCrypter := nil;
+
+      // Preloading the basic user information also sends a
+      // request for password from user.
+      // Loading the rest of the user information (Name, etc.) is
+      // done later.
+      if (not  Admin.Users.PreLoadFromXml(Node))
+      then
+        Raise EEpiBadPassword.Create('Incorrect Username/Password');
+
       LoadNode(Node, Root, 'Crypt', true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
@@ -310,8 +317,13 @@ begin
   begin
     PW := LoadAttrString(Root, rsPassword, '', false);
 
+    Count := 1;
     if (PW <> '') and (Assigned(OnPassword)) then
-      OnPassword(Self, erpSinglePassword, Login, UserPW);
+    repeat
+      Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
+      Inc(Count);
+    until (StrToSHA1Base64(UserPW) = PW) or
+          (Res = rprStopOnFail);
 
     if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
       Raise EEpiBadPassword.Create('Incorrect Password');
@@ -412,7 +424,7 @@ begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  if {(Admin.Users.Count > 0)} false then
+  if (Admin.Users.Count > 0) then
   begin
     RootDoc := Result.FirstChild;
 

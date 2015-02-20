@@ -9,7 +9,8 @@ interface
 uses
   epiv_dataset_viewer_frame, epiv_documentfile, epiv_dataset_viewer_frame_mac, 
   epiv_dataform_treeview, epiv_projecttreeview_frame, epiv_datamodule, 
-  epiv_field_list_frame, epiv_checkversionform, LazarusPackageIntf;
+  epiv_field_list_frame, epiv_checkversionform, epiv_userlogin_form, 
+  LazarusPackageIntf;
 
 implementation
 

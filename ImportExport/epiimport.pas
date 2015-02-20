@@ -745,33 +745,39 @@ const
     Digest: Pointer;
     Hash: TDCP_sha1;
     InitVector: array[0..15] of byte;
+    Res: TEpiRequestPasswordResponse;
+    Count: Integer;
   begin
     result := false;
-    if Assigned(FOnRequestPassword) then
-      FOnRequestPassword(Self, erpSinglePassword, S, FPassword);
-    try
-      // The initialization of the IV like this, makes importing encrypted .rec
-      // files possible, without using the DCP1COMPAT defines
-      // in DCPCrypt package.
-      GetMem(Digest,TDCP_sha1.GetHashSize div 8);
-      Hash:= TDCP_sha1.Create(nil);
-      Hash.Init;
-      Hash.UpdateStr(FPassword);
-      Hash.Final(Digest^);
-      Hash.Free;
+    if not Assigned(FOnRequestPassword) then Exit;
 
-      S := Base64DecodeStr(EncryptedString);
-      FillChar(InitVector, 16, $FF);
-      Decrypter := TDCP_rijndael.Create(nil);
-      Decrypter.Init(Digest^, TDCP_sha1.GetHashSize, @InitVector);
-      Decrypter.EncryptECB(InitVector, InitVector);
-      Decrypter.SetIV(InitVector);
-      DeCrypter.DecryptCFB8bit(S[1], S[1], Length(S));
-      DeCrypter.Reset;
-      Result := (AnsiCompareText(FPassword, S) = 0);
-    except
-      Abort;
-    end;
+    Count := 1;
+    repeat
+      Res := FOnRequestPassword(Self, erpSinglePassword, Count, S, FPassword);
+      try
+        // The initialization of the IV like this, makes importing encrypted .rec
+        // files possible, without using the DCP1COMPAT defines
+        // in DCPCrypt package.
+        GetMem(Digest,TDCP_sha1.GetHashSize div 8);
+        Hash:= TDCP_sha1.Create(nil);
+        Hash.Init;
+        Hash.UpdateStr(FPassword);
+        Hash.Final(Digest^);
+        Hash.Free;
+
+        S := Base64DecodeStr(EncryptedString);
+        FillChar(InitVector, 16, $FF);
+        Decrypter := TDCP_rijndael.Create(nil);
+        Decrypter.Init(Digest^, TDCP_sha1.GetHashSize, @InitVector);
+        Decrypter.EncryptECB(InitVector, InitVector);
+        Decrypter.SetIV(InitVector);
+        DeCrypter.DecryptCFB8bit(S[1], S[1], Length(S));
+        DeCrypter.Reset;
+        Result := (AnsiCompareText(FPassword, S) = 0);
+      except
+        Abort;
+      end;
+    until (Result) or (Res = rprStopOnFail);
   end;
 
   function TextPos(var F: Textfile): Cardinal;

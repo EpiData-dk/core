@@ -37,12 +37,18 @@ type
     erpUserLogin                // Project is managed by a user/password and both are requred.
   );
 
-  TRequestPasswordEvent = procedure(
+  TEpiRequestPasswordResponse = (
+     rprAskOnFail,              // If login/password failed send request again.
+     rprStopOnFail              // If login/password failed stop loading.
+  );
+
+  TRequestPasswordEvent = function(
     Sender: TObject;
     RequestType: TEpiRequestPasswordType;
+    RequestNo: Integer;
     var Login: string;
     var Password: string
-  ) of object;
+  ): TEpiRequestPasswordResponse of object;
 
   { TEpiAdmin }
 
@@ -249,18 +255,23 @@ var
   Login, Password: string;
   TheUser: TEpiUser;
   Key: String;
+  Res: TEpiRequestPasswordResponse;
+  Count: Integer;
 begin
   result := false;
 
   if not Assigned(OnPassword) then exit;
 
-  OnPassword(Self, erpUserLogin, Login, Password);
+  Count := 1;
+  repeat
+    Res := OnPassword(Self, erpUserLogin, Count, Login, Password);
+    Inc(Count);
 
-  TheUser := Users.GetUserByLogin(Login);
-  if not Assigned(TheUser) then exit;
+    TheUser := Users.GetUserByLogin(Login);
+    if not Assigned(TheUser) then exit;
 
-  result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
-  if not result then exit;
+    result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
+  until (Result) or (Res = rprStopOnFail);
 
   Key := TheUser.Salt + Password + Login;
   MasterPassword := Decrypt(Key, TheUser.MasterPassword);

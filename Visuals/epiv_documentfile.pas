@@ -5,7 +5,7 @@ unit epiv_documentfile;
 interface
 
 uses
-  Classes, SysUtils, Forms, epiopenfile, epidocument, epiadmin;
+  Classes, SysUtils, epiopenfile, epidocument, epiadmin;
 
 type
 
@@ -13,10 +13,11 @@ type
 
   TDocumentFile = class(TEpiDocumentFile)
   private
-    procedure DoPassWord(Sender: TObject;
+    function DoPassWord(Sender: TObject;
       RequestType: TEpiRequestPasswordType;
+      RequestNo: Integer;
       var Login: string;
-      var Password: string);
+      var Password: string): TEpiRequestPasswordResponse;
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
     procedure DoError(const Msg: string);
@@ -28,7 +29,7 @@ type
 implementation
 
 uses
-  Dialogs, Controls;
+  Dialogs, Controls, Forms, StdCtrls, epiv_userlogin_form;
 
 { TDocumentFile }
 
@@ -78,9 +79,11 @@ begin
   ShowMessage(Msg);
 end;
 
-procedure TDocumentFile.DoPassWord(Sender: TObject;
-  RequestType: TEpiRequestPasswordType; var Login: string; var Password: string
-  );
+function TDocumentFile.DoPassWord(Sender: TObject;
+  RequestType: TEpiRequestPasswordType; RequestNo: Integer; var Login: string;
+  var Password: string): TEpiRequestPasswordResponse;
+var
+  F: TUserLoginForm;
 begin
   case RequestType of
     erpSinglePassword:
@@ -90,13 +93,23 @@ begin
                     LineEnding +
                     'Project data is password protected.' + LineEnding +
                     'Please enter password:');
-
     erpUserLogin:
       begin
-        Login := 'torsten';
-        Password := 'ostemad';
+        F := TUserLoginForm.Create(nil);
+        F.Caption := 'Password required for: ' + ExtractFileName(FileName);
+        F.ShowModal;
+
+        Login := F.LoginEdit.Text;
+        Password := F.PasswordEdit.Text;
+
+        F.Free;
       end;
   end;
+
+  if (RequestNo < 3) then
+    Result := rprAskOnFail
+  else
+    Result := rprStopOnFail;
 end;
 
 end.
