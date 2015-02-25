@@ -23,6 +23,17 @@ type
   );
   TEpiManagerRights = set of TEpiManagerRight;
 
+const
+  EpiManagerRightCaptions: array[TEpiManagerRight] of string =
+    (
+      'Edit Struncture',
+      'Translate project',
+      'Manage users',
+      'Reset password'
+    );
+
+
+type
   TEpiAdminChangeEventType = (
     // User related events:
     eaceUserSetFullName,
