@@ -34,7 +34,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="2"/>
-    <Files Count="70">
+    <Files Count="71">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -315,6 +315,10 @@
         <Filename Value="Core/epirelates.pas"/>
         <UnitName Value="epirelates"/>
       </Item70>
+      <Item71>
+        <Filename Value="Utils/ufileassociation.pas"/>
+        <UnitName Value="ufileassociation"/>
+      </Item71>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

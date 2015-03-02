@@ -40,6 +40,7 @@ type
     function SaveAttributesToXml: string; override;
     function XMLName: string; override;
     function NewDetailRelation: TEpiDetailRelation;
+    function IsChild(Relation: TEpiMasterRelation; Recurse: Boolean): boolean;
     property Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property DetailRelation[Index: integer]: TEpiDetailRelation read GetDetailRelation; default;
     property DetailRelations: TEpiRelationList read FDetailRelations;
@@ -246,6 +247,26 @@ end;
 function TEpiMasterRelation.NewDetailRelation: TEpiDetailRelation;
 begin
   result := TEpiDetailRelation(FDetailRelations.NewItem(TEpiDetailRelation));
+end;
+
+function TEpiMasterRelation.IsChild(Relation: TEpiMasterRelation;
+  Recurse: Boolean): boolean;
+var
+  LRelation: TEpiMasterRelation;
+begin
+  result := false;
+
+  for LRelation in DetailRelations do
+  begin
+    result := (LRelation = Relation);
+
+    if Recurse then
+      Result :=
+        Result or
+        (LRelation.IsChild(Relation, Recurse));
+
+    if Result then exit;
+  end;
 end;
 
 { TEpiDetailRelation }
