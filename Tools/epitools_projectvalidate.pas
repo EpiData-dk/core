@@ -242,6 +242,7 @@ begin
         end;
       end;
 
+      // Check that MUST ENTER fields are filled
       if (pvCheckMustEnter in FOptions) then
       begin
         if (F.EntryMode = emMustEnter) and
@@ -255,6 +256,7 @@ begin
           end;
       end;
 
+      // Check that Fields in Key all have data.
       if (pvCheckKeyFields in FOptions) then
       begin
         if (Df.KeyFields.IndexOf(F) > -1) and
@@ -268,6 +270,7 @@ begin
           end;
       end;
 
+      // Check that fields with Range / Valuelabel are correct
       if (pvCheckDataRange in FOptions) and
          ((Assigned(F.Ranges)) or
           (Assigned(F.ValueLabelSet))
