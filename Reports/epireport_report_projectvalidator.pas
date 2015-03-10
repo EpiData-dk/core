@@ -54,7 +54,9 @@ type
     procedure DoRecordsSummarizedResultTable(
       Const Relation: TEpiMasterRelation;
       Const RecordArray: TEpiProjectResultArray);
-    procedure DoRecordsReport(Const RecordResult: TEpiProjectResultArray);
+    procedure DoRecordsReport(
+      Const Relation: TEpiMasterRelation;
+      Const RecordResult: TEpiProjectResultArray);
   protected
     procedure DoSanityCheck; override;
   public
@@ -122,7 +124,7 @@ begin
   DoLineText('');
   DoRecordsSummarizedResultTable(Relation, ResultArray);
   DoLineText('');
-  DoRecordsReport(ResultArray);
+  DoRecordsReport(Relation, ResultArray);
 
   Fields.Free;
 end;
@@ -330,30 +332,34 @@ begin
 end;
 
 procedure TEpiReportProjectValidator.DoRecordsReport(
-  const RecordResult: TEpiProjectResultArray);
+  const Relation: TEpiMasterRelation; const RecordResult: TEpiProjectResultArray
+  );
 var
   S: String;
   i: Integer;
   j: Integer;
   ResRecord: TEpiProjectValidateResultRecord;
   Jmp: TEpiJump;
+  SortFields: TStrings;
 begin
   i := Low(RecordResult);
   while i <= High(RecordResult) do
   begin
     DoHeading('Record no: ' + IntToStr(RecordResult[i].RecNo + 1));
 
-{    if Assigned(KeyFields) and
-       (KeyFields.Count > 0)
+    SortFields := SortFieldsFromRelation(Relation);
+
+    if Assigned(SortFields) and
+       (SortFields.Count > 0)
     then
       begin
-        S := 'Key Fields:';
+        S := 'List by Fields:';
 
-        for j := 0 to KeyFields.Count -1 do
-          S += '  ' + KeyFields[j].Name + ' = ' + KeyFields[j].AsString[RecordResult[i].RecNo];
+        for j := 0 to SortFields.Count -1 do
+          S += '  ' + SortFields[j] + ' = ' + Relation.Datafile.Fields.FieldByName[SortFields[j]].AsString[RecordResult[i].RecNo];
 
         DoLineText(S);
-      end;            }
+      end;
 
     repeat
       ResRecord := RecordResult[i];

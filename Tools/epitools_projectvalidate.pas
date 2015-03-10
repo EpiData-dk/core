@@ -113,9 +113,6 @@ type
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
     procedure   ValidateProject(Const Doc: TEpiDocument;
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
-//    property    Document: TEpiDocument read FDocument write FDocument;
-//    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
-//    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
 
   private
     FOnDataFileResult: TEpiProjectValidationDataFileResultEvent;
@@ -227,7 +224,8 @@ begin
 
     for j := 0 to LValidationFields.Count - 1 do
     begin
-      F := DF.Fields.FieldByName[LValidationFields[j]];
+      S := LValidationFields[j];
+      F := DF.Fields.FieldByName[S];
 
       if (pvCheckSystemMissing in FOptions) then
       begin
@@ -369,9 +367,6 @@ begin
     DF.RootOwner.Modified := false;
 
   DoDataFileResult(Relation, FResultArray);
-
-//  FieldResultArray := FResultArray;
-//  StudyResultArray := FStudyArray;
 end;
 
 constructor TEpiProjectValidationTool.Create;
