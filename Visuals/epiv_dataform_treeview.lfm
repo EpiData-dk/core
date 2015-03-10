@@ -3,8 +3,7 @@ object DataFormTreeViewFrame: TDataFormTreeViewFrame
   Height = 464
   Top = 0
   Width = 532
-  LCLVersion = '1.3'
   TabOrder = 0
-  DesignLeft = 1280
-  DesignTop = 326
+  DesignLeft = 2086
+  DesignTop = 435
 end
