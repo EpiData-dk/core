@@ -22,6 +22,7 @@ type
     ExportFileName: string;
     Doc: TEpiDocument;
     DataFileIndex: integer;
+
     // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
     // (usually used for secondary file export settings, assigned during export).
     AdditionalExportSettings: TEpiExportSetting;
@@ -92,9 +93,25 @@ type
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
+
+  { TEpiCustomCompleteProjectExportSetting }
+
+  TEpiCustomCompleteProjectExportSetting = class(TEpiCustomValueLabelExportSetting)
+  private
+    FExportCompleteProject: boolean;
+  public
+    property ExportCompleteProject: boolean read FExportCompleteProject write FExportCompleteProject;
+  public
+    constructor Create; override;
+    procedure Assign(const ASettings: TEpiExportSetting); override;
+  public
+    // Visitor Pattern
+    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
+  end;
+
   { TEpiDDIExportSetting }
 
-  TEpiDDIExportSetting = class(TEpiCustomValueLabelExportSetting)
+  TEpiDDIExportSetting = class(TEpiCustomCompleteProjectExportSetting)
   private
     FExportLang: string;
     FFilterTagIsUserId: boolean;
@@ -161,7 +178,7 @@ type
 
   { TEpiEPXExportSetting }
 
-  TEpiEPXExportSetting = class(TEpiCustomValueLabelExportSetting)
+  TEpiEPXExportSetting = class(TEpiCustomCompleteProjectExportSetting)
   public
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
@@ -187,6 +204,7 @@ type
     constructor Create; virtual;
     procedure Visit(Const ExportSetting: TEpiExportSetting); virtual; abstract; overload;
     procedure Visit(Const ExportSetting: TEpiCustomValueLabelExportSetting); virtual; abstract; overload;
+    procedure Visit(Const ExportSetting: TEpiCustomCompleteProjectExportSetting); virtual; abstract; overload;
     procedure Visit(Const ExportSetting: TEpiStataExportSetting); virtual; abstract; overload;
     procedure Visit(Const ExportSetting: TEpiSPSSExportSetting); virtual; abstract; overload;
     procedure Visit(Const ExportSetting: TEpiSASExportSetting); virtual; abstract; overload;
@@ -202,6 +220,36 @@ implementation
 
 uses
   LazUTF8Classes;
+
+{ TEpiCustomCompleteProjectExportSetting }
+
+constructor TEpiCustomCompleteProjectExportSetting.Create;
+begin
+  inherited Create;
+
+  FExportCompleteProject := false;
+end;
+
+procedure TEpiCustomCompleteProjectExportSetting.Assign(
+  const ASettings: TEpiExportSetting);
+begin
+  inherited Assign(ASettings);
+  if not (ASettings is TEpiCustomCompleteProjectExportSetting) then exit;
+
+  ExportCompleteProject := TEpiCustomCompleteProjectExportSetting(ASettings).ExportCompleteProject;
+end;
+
+procedure TEpiCustomCompleteProjectExportSetting.AcceptVisitor(
+  const Visitor: TEpiExportSettingCustomVisitor);
+begin
+  if Visitor.VisitorTraversal = vtInheritedFirst then
+    inherited AcceptVisitor(Visitor);
+
+  Visitor.Visit(Self);
+
+  if Visitor.VisitorTraversal = vtDerivedFirst then
+    inherited AcceptVisitor(Visitor);
+end;
 
 { TEpiEPXExportSetting }
 

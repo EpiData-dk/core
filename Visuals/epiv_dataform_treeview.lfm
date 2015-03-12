@@ -4,6 +4,6 @@ object DataFormTreeViewFrame: TDataFormTreeViewFrame
   Top = 0
   Width = 532
   TabOrder = 0
-  DesignLeft = 2086
+  DesignLeft = 1382
   DesignTop = 435
 end

@@ -25,6 +25,8 @@ type
     procedure Visit(const ExportSetting: TEpiExportSetting); override; overload;
     procedure Visit(const ExportSetting: TEpiCustomValueLabelExportSetting);
       override; overload;
+    procedure Visit(const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+      override; overload;
     procedure Visit(const ExportSetting: TEpiStataExportSetting); override;
       overload;
     procedure Visit(const ExportSetting: TEpiCSVExportSetting); override;
@@ -59,6 +61,8 @@ type
     constructor Create; override;
     procedure Visit(const ExportSetting: TEpiExportSetting); override; overload;
     procedure Visit(const ExportSetting: TEpiCustomValueLabelExportSetting);
+      override; overload;
+    procedure Visit(const ExportSetting: TEpiCustomCompleteProjectExportSetting);
       override; overload;
     procedure Visit(const ExportSetting: TEpiStataExportSetting); override;
       overload;
@@ -152,6 +156,16 @@ begin
 
   DoTableCell(0, 'Export Valuelabels');
   DoTableCell(1, BoolToStr(ExportSetting.ExportValueLabels, true));
+  Inc(FRowIndex);
+end;
+
+procedure TSettingsTableOutputVisitor.Visit(
+  const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+begin
+  if not CanVisit(ExportSetting, TEpiCustomCompleteProjectExportSetting) then exit;
+
+  DoTableCell(0, 'Export Complete Project');
+  DoTableCell(1, BoolToStr(ExportSetting.ExportCompleteProject, true));
   Inc(FRowIndex);
 end;
 
@@ -331,6 +345,12 @@ procedure TSettingCountVisitor.Visit(
   const ExportSetting: TEpiCustomValueLabelExportSetting);
 begin
   CommonVisit(1, TEpiCustomValueLabelExportSetting);
+end;
+
+procedure TSettingCountVisitor.Visit(
+  const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+begin
+  CommonVisit(1, TEpiCustomCompleteProjectExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(
