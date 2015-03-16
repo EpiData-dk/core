@@ -62,67 +62,76 @@ var
   RecordCoundField: TEpiField;
   F: TEpiField;
   VLSetList: TList;
+  j: Integer;
+  DFSetting: TEpiExportDatafileSettings;
 begin
   Doc := Settings.Doc;
   Result := TEpiDocument(Settings.Doc.Clone);
-  NewDF  := Result.DataFiles[Settings.DataFileIndex];
-
-  // Structure export:
-  CIList := Doc.DataFiles[Settings.DataFileIndex].ControlItems;
-  NewCIList := NewDf.ControlItems;
-  for i := 0 to CIList.Count - 1 do
-    if (Settings.Fields.IndexOf(CIList[i]) < 0) then
-      NewCIList.GetItemByName(CIList[i].Name).Free;
 
   // Valuelabels export:
   //  only include actuall used valuelabels
   VLSetList := TList.Create;
 
-  for i := 0 to NewDF.Fields.Count - 1 do
+  for i := 0 to Settings.DataformSettings.Count - 1 do
   begin
-    F := NewDF.Field[i];
-    if Assigned(F.ValueLabelSet) and
-       (VLSetList.IndexOf(F.ValueLabelSet) < 0)
-    then
-      VLSetList.Add(F.ValueLabelSet);
-  end;
+    DFSetting := TEpiExportDatafileSettings(Settings.DataformSettings[i]);
+    NewDF     := TEpiDataFile(Result.DataFiles.GetItemByName(DFSetting.Datafile.Name));
 
-  for i := Result.ValueLabelSets.Count - 1 downto 0 do
-    if (VLSetList.IndexOf(Result.ValueLabelSets[i]) < 0) then
-      Result.ValueLabelSets[i].Free;
+    // Structure export:
+    CIList    := DFSetting.Datafile.ControlItems;
+    NewCIList := NewDf.ControlItems;
+    for j := 0 to CIList.Count - 1 do
+      if (DFSetting.Fields.IndexOf(CIList[j]) < 0) then
+        NewCIList.GetItemByName(CIList[j].Name).Free;
 
-  // Selected records:
-  // Negative record cound => Structure only.
-  if (Settings.ToRecord - Settings.FromRecord) < 0 then
-  begin
-    NewDF.Size := 0;
-  end else begin
-    RecordCoundField := TEpiField.CreateField(nil, ftInteger);
-    RecordCoundField.Size := (Settings.ToRecord - Settings.FromRecord) + 1;
-    for i := Settings.FromRecord to Settings.ToRecord do
+    // Add included fields valuelabel sets.
+    for j := 0 to NewDF.Fields.Count - 1 do
     begin
-      if NewDF.Deleted[i] then
-        RecordCoundField.AsInteger[i - Settings.FromRecord] := 1
-      else
-        RecordCoundField.AsInteger[i - Settings.FromRecord] := 0;
-      NewDF.Deleted[i] := false
+      F := NewDF.Field[j];
+      if Assigned(F.ValueLabelSet) and
+         (VLSetList.IndexOf(F.ValueLabelSet) < 0)
+      then
+        VLSetList.Add(F.ValueLabelSet);
     end;
 
-    for i := 0 to Settings.FromRecord - 1 do
-      NewDF.Deleted[i] := true;
-    for i := Settings.ToRecord + 1 to NewDF.Size - 1 do
-      NewDF.Deleted[i] := true;
+    // Selected records:
+    // Negative record cound => Structure only.
+    if (DFSetting.ToRecord - DFSetting.FromRecord) < 0 then
+    begin
+      NewDF.Size := 0;
+    end else begin
+      RecordCoundField := TEpiField.CreateField(nil, ftInteger);
+      RecordCoundField.Size := (DFSetting.ToRecord - DFSetting.FromRecord) + 1;
+      for j := DFSetting.FromRecord to DFSetting.ToRecord do
+      begin
+        if NewDF.Deleted[j] then
+          RecordCoundField.AsInteger[j - DFSetting.FromRecord] := 1
+        else
+          RecordCoundField.AsInteger[j - DFSetting.FromRecord] := 0;
+        NewDF.Deleted[j] := false
+      end;
 
-    NewDF.Pack;
+      for j := 0 to DFSetting.FromRecord - 1 do
+        NewDF.Deleted[j] := true;
+      for j := DFSetting.ToRecord + 1 to NewDF.Size - 1 do
+        NewDF.Deleted[j] := true;
 
-    for i := 0 to RecordCoundField.Size - 1 do
-      if RecordCoundField.AsInteger[i] = 1 then
-        NewDF.Deleted[i] := true;
+      NewDF.Pack;
+
+      for j := 0 to RecordCoundField.Size - 1 do
+        if RecordCoundField.AsInteger[j] = 1 then
+          NewDF.Deleted[j] := true;
+    end;
+
+    // Export deleted:
+    if not Settings.ExportDeleted then
+      NewDF.Pack;
   end;
 
-  // Export deleted:
-  if not Settings.ExportDeleted then
-    NewDF.Pack;
+  // Now remove all not needed valuelabels
+  for j := Result.ValueLabelSets.Count - 1 downto 0 do
+    if (VLSetList.IndexOf(Result.ValueLabelSets[j]) < 0) then
+      Result.ValueLabelSets[j].Free;
 end;
 
 function TEpiExport.EncodeString(const Str: string; Encoding: TEpiEncoding

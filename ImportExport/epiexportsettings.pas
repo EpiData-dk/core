@@ -5,11 +5,31 @@ unit epiexportsettings;
 interface
 
 uses
-  Classes, SysUtils, epieximtypes, epidocument;
+  Classes, SysUtils, epieximtypes, epidocument, epidatafiles;
 
 type
 
   TEpiExportSettingCustomVisitor = class;
+
+  TEpiExportDatafileSettings = class
+  private
+    FCreatedStream: boolean;
+  public
+    Datafile: TEpiDataFile;
+
+    ExportStream: TStream;
+    ExportFileName: string;
+
+    FromRecord: integer;
+    ToRecord:   integer;
+
+    Condition:  string;
+    Fields:     TList;
+    // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
+    // (usually used for secondary file export settings, assigned during export).
+    AdditionalExportSettings: TEpiExportDatafileSettings;
+  end;
+
 
   { TEpiExportSetting }
 
@@ -34,6 +54,7 @@ type
     Condition:  string;
     ExportDeleted: boolean;
     Fields:     TList;
+    DataformSettings: TList;
 
     // Helpers
     constructor Create; virtual;
@@ -378,6 +399,7 @@ constructor TEpiExportSetting.Create;
 begin
   FCreatedStream := false;
   Fields := TList.Create;
+  DataformSettings := TList.Create;
 
   // Basic
   ExportFileName := '';
