@@ -27,6 +27,7 @@ type
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewDataFile: TEpiDataFile;
     function    GetEnumerator: TEpiDataFilesEnumerator;
+    function    GetDataFileByName(Const AName: string): TEpiDataFile;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 

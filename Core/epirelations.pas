@@ -88,7 +88,7 @@ type
     function XMLName: string; override;
     function NewMasterRelation: TEpiMasterRelation;
     function ItemClass: TEpiCustomItemClass; override;
-    function GetItemByName(AName: string): TEpiCustomItem; override;
+    function GetItemByName(Const AName: string): TEpiCustomItem; override;
     function ValidateRename(const NewName: string; RenameOnSuccess: boolean
        ): boolean; override;
     function GetEnumerator: TEpiRelationListEnumerator;
@@ -418,7 +418,7 @@ begin
   Result := TEpiMasterRelation;
 end;
 
-function TEpiRelationList.GetItemByName(AName: string): TEpiCustomItem;
+function TEpiRelationList.GetItemByName(const AName: string): TEpiCustomItem;
 begin
   // Override this to make an easy traversal of the relationship tree.
   result := TEpiDocument(RootOwner).Relations.RecursiveGetItemByName(AName);

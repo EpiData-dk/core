@@ -11,57 +11,67 @@ type
 
   TEpiExportSettingCustomVisitor = class;
 
+  { TEpiExportDatafileSettings }
+
   TEpiExportDatafileSettings = class
   private
     FCreatedStream: boolean;
   public
-    Datafile: TEpiDataFile;
+    DatafileName:   string;
 
-    ExportStream: TStream;
+    ExportStream:   TStream;
     ExportFileName: string;
 
-    FromRecord: integer;
-    ToRecord:   integer;
+    FromRecord:     integer;
+    ToRecord:       integer;
 
-    Condition:  string;
-    Fields:     TList;
+    Condition:      string;
+    ExportItems:    TStrings;
+
     // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
     // (usually used for secondary file export settings, assigned during export).
     AdditionalExportSettings: TEpiExportDatafileSettings;
+  public
+    constructor Create;
+    destructor  Destroy; override;
+  public
+    procedure   Assign(Const OriginalSetting: TEpiExportDatafileSettings);
+    function    SanetyCheck: boolean; virtual;
+  end;
+
+  { TEpiExportDatafileSettingsList }
+
+  TEpiExportDatafileSettingsList = class(TList)
+  private
+    function GetExportItem(const Index: integer): TEpiExportDatafileSettings;
+  public
+    procedure ClearAndFree;
+    property Items[Const Index: integer]: TEpiExportDatafileSettings read GetExportItem; default;
   end;
 
 
   { TEpiExportSetting }
 
   TEpiExportSetting = class
-  private
-    FCreatedStream: boolean;
   public
-    // Basic properties
-    ExportStream: TStream;
-    ExportFileName: string;
     Doc: TEpiDocument;
-    DataFileIndex: integer;
 
     // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
     // (usually used for secondary file export settings, assigned during export).
     AdditionalExportSettings: TEpiExportSetting;
 
-    // Filters
-    FromRecord: integer;
-    ToRecord:   integer;
     Encoding:   TEpiEncoding;
-    Condition:  string;
     ExportDeleted: boolean;
-    Fields:     TList;
-    DataformSettings: TList;
+
+    // A list of individual datafile settings
+    DatafileSettings: TEpiExportDatafileSettingsList;
 
     // Helpers
     constructor Create; virtual;
     destructor  Destroy; override;
-    procedure   Assign(Const ASettings: TEpiExportSetting); virtual;
     function    SanetyCheck: boolean; virtual;
   public
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); virtual;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); virtual;
   end;
@@ -72,8 +82,8 @@ type
   TEpiCustomValueLabelExportSetting = class(TEpiExportSetting)
   public
     ExportValueLabels: boolean;
-    procedure Assign(Const ASettings: TEpiExportSetting); override;
   public
+    procedure   Assign(Const OriginalSettings: TEpiCustomValueLabelExportSetting); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -88,9 +98,9 @@ type
 
     // Helper
     constructor Create; override;
-    procedure Assign(Const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
   public
+    procedure   Assign(Const OriginalSettings: TEpiStataExportSetting); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -102,6 +112,7 @@ type
   public
     Delimiter: char;
   public
+    procedure   Assign(Const OriginalSettings: TEpiSPSSExportSetting); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -124,8 +135,8 @@ type
     property ExportCompleteProject: boolean read FExportCompleteProject write FExportCompleteProject;
   public
     constructor Create; override;
-    procedure Assign(const ASettings: TEpiExportSetting); override;
   public
+    procedure   Assign(Const OriginalSettings: TEpiCustomCompleteProjectExportSetting); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -156,9 +167,9 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-    procedure Assign(const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
   public
+    procedure   Assign(Const OriginalSettings: TEpiDDIExportSetting); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -172,8 +183,8 @@ type
     QuoteChar: string;
 
     constructor Create; override;
-    procedure Assign(const ASettings: TEpiExportSetting); override;
   public
+    procedure   Assign(Const OriginalSettings: TEpiCustomTextExportSettings); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -190,9 +201,9 @@ type
     FixedFormat: boolean;
 
     constructor Create; override;
-    procedure Assign(const ASettings: TEpiExportSetting); override;
     function SanetyCheck: boolean; override;
   public
+    procedure   Assign(Const OriginalSettings: TEpiCSVExportSetting); reintroduce;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -242,6 +253,76 @@ implementation
 uses
   LazUTF8Classes;
 
+{ TEpiExportDatafileSettingsList }
+
+function TEpiExportDatafileSettingsList.GetExportItem(const Index: integer
+  ): TEpiExportDatafileSettings;
+begin
+  result := TEpiExportDatafileSettings(Get(Index));
+end;
+
+procedure TEpiExportDatafileSettingsList.ClearAndFree;
+var
+  i: Integer;
+begin
+  for i := count - 1 downto 0 do
+    Items[i].Free;
+
+  Clear;
+end;
+
+
+{ TEpiExportDatafileSettings }
+
+constructor TEpiExportDatafileSettings.Create;
+begin
+  DatafileName    := '';
+
+  ExportStream    := nil;
+  ExportFileName  := '';
+
+  FromRecord      := -1;
+  ToRecord        := -1;
+
+  Condition       := '';
+  ExportItems     := TStringListUTF8.Create;
+end;
+
+destructor TEpiExportDatafileSettings.Destroy;
+begin
+  ExportItems.Free;
+
+  if FCreatedStream then
+    ExportStream.Free;
+
+  inherited Destroy;
+end;
+
+procedure TEpiExportDatafileSettings.Assign(
+  const OriginalSetting: TEpiExportDatafileSettings);
+begin
+  DatafileName    := OriginalSetting.DatafileName;
+
+  ExportFileName  := OriginalSetting.ExportFileName;
+
+  FromRecord      := OriginalSetting.FromRecord;
+  ToRecord        := OriginalSetting.ToRecord;
+
+  Condition       := OriginalSetting.Condition;
+  ExportItems.Assign(OriginalSetting.ExportItems);
+end;
+
+function TEpiExportDatafileSettings.SanetyCheck: boolean;
+begin
+  if (ExportStream = nil) and (ExportFileName <> '') then
+  begin
+    ExportStream := TFileStreamUTF8.Create(ExportFileName, fmCreate);
+    FCreatedStream := true;
+  end;
+
+  result := true;
+end;
+
 { TEpiCustomCompleteProjectExportSetting }
 
 constructor TEpiCustomCompleteProjectExportSetting.Create;
@@ -252,12 +333,10 @@ begin
 end;
 
 procedure TEpiCustomCompleteProjectExportSetting.Assign(
-  const ASettings: TEpiExportSetting);
+  const OriginalSettings: TEpiCustomCompleteProjectExportSetting);
 begin
-  inherited Assign(ASettings);
-  if not (ASettings is TEpiCustomCompleteProjectExportSetting) then exit;
-
-  ExportCompleteProject := TEpiCustomCompleteProjectExportSetting(ASettings).ExportCompleteProject;
+  inherited Assign(OriginalSettings);
+  ExportCompleteProject := OriginalSettings.ExportCompleteProject;
 end;
 
 procedure TEpiCustomCompleteProjectExportSetting.AcceptVisitor(
@@ -302,6 +381,13 @@ end;
 
 { TEpiSPSSExportSetting }
 
+procedure TEpiSPSSExportSetting.Assign(
+  const OriginalSettings: TEpiSPSSExportSetting);
+begin
+  inherited Assign(OriginalSettings);
+  Delimiter := OriginalSettings.Delimiter;
+end;
+
 procedure TEpiSPSSExportSetting.AcceptVisitor(
   const Visitor: TEpiExportSettingCustomVisitor);
 begin
@@ -335,27 +421,26 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiDDIExportSetting.Assign(const ASettings: TEpiExportSetting);
-begin
-  inherited Assign(ASettings);
-  with TEpiDDIExportSetting(ASettings) do
-  begin
-    Self.FExportLang            := FExportLang;
-    Self.FFilterTagIsUserId     := FFilterTagIsUserId;
-    Self.FRemoveMissingVL       := FRemoveMissingVL;
-    Self.FRenameVariablesPrefix := FRenameVariablesPrefix;
-    Self.FSectionCaptionIsQText := FSectionCaptionIsQText;
-    Self.FSoftwareName          := FSoftwareName;
-    Self.FSoftwareVersion       := FSoftwareVersion;
-    Self.FVersion               := FVersion;
-  end;
-end;
-
 function TEpiDDIExportSetting.SanetyCheck: boolean;
 begin
   Result :=
     (ExportLang <> '') and
     (inherited SanetyCheck);
+end;
+
+procedure TEpiDDIExportSetting.Assign(
+  const OriginalSettings: TEpiDDIExportSetting);
+begin
+  inherited Assign(OriginalSettings);
+
+  SoftwareName          := OriginalSettings.SoftwareName;
+  SoftwareVersion       := OriginalSettings.SoftwareVersion;
+  Version               := OriginalSettings.Version;
+  ExportLang            := OriginalSettings.ExportLang;
+  RemoveMissingVL       := OriginalSettings.RemoveMissingVL;
+  FilterTagIsUserId     := OriginalSettings.FilterTagIsUserId;
+  SectionCaptionIsQText := OriginalSettings.SectionCaptionIsQText;
+  RenameVariablesPrefix := OriginalSettings.RenameVariablesPrefix;
 end;
 
 procedure TEpiDDIExportSetting.AcceptVisitor(
@@ -373,12 +458,10 @@ end;
 { TEpiCustomValueLabelExportSetting }
 
 procedure TEpiCustomValueLabelExportSetting.Assign(
-  const ASettings: TEpiExportSetting);
+  const OriginalSettings: TEpiCustomValueLabelExportSetting);
 begin
-  inherited Assign(ASettings);
-  if not (ASettings is TEpiCustomValueLabelExportSetting) then exit;
-
-  ExportValueLabels := TEpiCustomValueLabelExportSetting(ASettings).ExportValueLabels;
+  inherited Assign(OriginalSettings);
+  ExportValueLabels := OriginalSettings.ExportValueLabels;
 end;
 
 procedure TEpiCustomValueLabelExportSetting.AcceptVisitor(
@@ -397,78 +480,55 @@ end;
 
 constructor TEpiExportSetting.Create;
 begin
-  FCreatedStream := false;
-  Fields := TList.Create;
-  DataformSettings := TList.Create;
+  DatafileSettings := TEpiExportDatafileSettingsList.Create;
 
-  // Basic
-  ExportFileName := '';
   Doc            := nil;
-  DataFileIndex  := -1;
   AdditionalExportSettings := nil;
 
-  // Filters
-  FromRecord     := -1;
-  ToRecord       := -1;
   Encoding       := eeUTF8;
-  Condition      := '';
   ExportDeleted  := false;
 end;
 
 destructor TEpiExportSetting.Destroy;
+var
+  i: Integer;
 begin
+  DatafileSettings.ClearAndFree;
+  DatafileSettings.Free;
+
   if Assigned(AdditionalExportSettings) then
     AdditionalExportSettings.Free;
-  if FCreatedStream then
-    ExportStream.Free;
   inherited Destroy;
 end;
 
-procedure TEpiExportSetting.Assign(const ASettings: TEpiExportSetting);
+function TEpiExportSetting.SanetyCheck: boolean;
+var
+  i: Integer;
 begin
-  if not Assigned(ASettings) then exit;
-  ExportFileName := ASettings.ExportFileName;
-  ExportStream   := ASettings.ExportStream;
-//  FCreatedStream := ASettings.FCreatedStream;
-  Doc            := ASettings.Doc;
-  DataFileIndex  := ASettings.DataFileIndex;
+  if not (Assigned(Doc)) then exit(False);
 
-  // Filters
-  FromRecord     := ASettings.FromRecord;
-  ToRecord       := ASettings.ToRecord;
-  Encoding       := ASettings.Encoding;
-  Condition      := ASettings.Condition;
-  ExportDeleted  := ASettings.ExportDeleted;
+  Result := true;
 
-  Fields.Assign(ASettings.Fields);
-
-  if Assigned(ASettings.AdditionalExportSettings) then
-  begin
-    AdditionalExportSettings := TEpiExportSettingClass(ASettings.AdditionalExportSettings.ClassType).Create;
-    AdditionalExportSettings.Assign(ASettings.AdditionalExportSettings);
-  end;
+  for i := 0 to DatafileSettings.Count - 1 do
+    result := result and DatafileSettings[i].SanetyCheck;
 end;
 
-function TEpiExportSetting.SanetyCheck: boolean;
+procedure TEpiExportSetting.Assign(const OriginalSettings: TEpiExportSetting);
+var
+  NewDFSetting: TEpiExportDatafileSettings;
+  i: Integer;
 begin
-  if not (Assigned(Doc)) and
-     not ((DataFileIndex >= 0) and (DataFileIndex < Doc.DataFiles.Count)) then exit(False);
+  Doc               := OriginalSettings.Doc;
 
-  if FromRecord = -1 then FromRecord := 0;
-  if ToRecord   = -1 then ToRecord := Doc.DataFiles[DataFileIndex].Size - 1;
+  Encoding          := OriginalSettings.Encoding;
+  ExportDeleted     := OriginalSettings.ExportDeleted;
 
-  if (ExportStream = nil) and (ExportFileName <> '') then
+  for i := 0 to OriginalSettings.DatafileSettings.Count - 1 do
   begin
-    ExportStream := TFileStreamUTF8.Create(ExportFileName, fmCreate);
-    FCreatedStream := true;
+    NewDFSetting := TEpiExportDatafileSettings.Create;
+    NewDFSetting.Assign(OriginalSettings.DatafileSettings[i]);
+    DatafileSettings.Add(NewDFSetting);
   end;
-
-
-  result :=
-    (Assigned(ExportStream)) and
-//    (Fields.Count > 0) and
-    (FromRecord >= 0) and
-    (ToRecord < Doc.DataFiles[DataFileIndex].Size);
 end;
 
 procedure TEpiExportSetting.AcceptVisitor(
@@ -488,20 +548,18 @@ begin
   Version       := dta10;
 end;
 
-procedure TEpiStataExportSetting.Assign(const ASettings: TEpiExportSetting);
-begin
-  inherited Assign(ASettings);
-
-  if not (ASettings is TEpiStataExportSetting) then exit;
-
-  FieldNameCase := TEpiStataExportSetting(ASettings).FieldNameCase;
-  Version       := TEpiStataExportSetting(ASettings).Version;
-  ExportLines.Assign(TEpiStataExportSetting(ASettings).ExportLines);
-end;
-
 function TEpiStataExportSetting.SanetyCheck: boolean;
 begin
   Result := inherited SanetyCheck;
+end;
+
+procedure TEpiStataExportSetting.Assign(
+  const OriginalSettings: TEpiStataExportSetting);
+begin
+  inherited Assign(OriginalSettings);
+  FieldNameCase  := OriginalSettings.FieldNameCase;
+  Version        := OriginalSettings.Version;
+  ExportLines.Assign(OriginalSettings.ExportLines);
 end;
 
 procedure TEpiStataExportSetting.AcceptVisitor(
@@ -525,15 +583,13 @@ begin
   ByteOrderMark := false;
 end;
 
-procedure TEpiCustomTextExportSettings.Assign(const ASettings: TEpiExportSetting
-  );
+procedure TEpiCustomTextExportSettings.Assign(
+  const OriginalSettings: TEpiCustomTextExportSettings);
 begin
-  inherited Assign(ASettings);
-  if not (ASettings is TEpiCustomTextExportSettings) then exit;
-
-  ExportFieldNames := TEpiCustomTextExportSettings(ASettings).ExportFieldNames;
-  QuoteChar        := TEpiCustomTextExportSettings(ASettings).QuoteChar;
-  ByteOrderMark    := TEpiCustomTextExportSettings(ASettings).ByteOrderMark;
+  inherited Assign(OriginalSettings);
+  ByteOrderMark    := OriginalSettings.ByteOrderMark;
+  ExportFieldNames := OriginalSettings.ExportFieldNames;
+  QuoteChar        := OriginalSettings.QuoteChar;
 end;
 
 procedure TEpiCustomTextExportSettings.AcceptVisitor(
@@ -561,22 +617,6 @@ begin
   NewLine           := LineEnding;
 end;
 
-procedure TEpiCSVExportSetting.Assign(const ASettings: TEpiExportSetting);
-begin
-  inherited Assign(ASettings);
-  if not (ASettings is TEpiCSVExportSetting) then exit;
-
-  with (TEpiCSVExportSetting(ASettings)) do
-  begin
-    Self.FieldSeparator   := FieldSeparator;
-    Self.DateSeparator    := DateSeparator;
-    Self.TimeSeparator    := TimeSeparator;
-    Self.DecimalSeparator := DecimalSeparator;
-    Self.NewLine          := NewLine;
-    Self.FixedFormat      := FixedFormat;
-  end;
-end;
-
 function TEpiCSVExportSetting.SanetyCheck: boolean;
 begin
   Result := inherited SanetyCheck;
@@ -590,6 +630,18 @@ begin
 
   Result := Result and
     (FieldSeparator <> QuoteChar);
+end;
+
+procedure TEpiCSVExportSetting.Assign(
+  const OriginalSettings: TEpiCSVExportSetting);
+begin
+  inherited Assign(OriginalSettings);
+  FieldSeparator  := OriginalSettings.FieldSeparator;
+  DateSeparator   := OriginalSettings.DateSeparator;
+  TimeSeparator   := OriginalSettings.TimeSeparator;
+  DecimalSeparator := OriginalSettings.DecimalSeparator;
+  NewLine          := OriginalSettings.NewLine;
+  FixedFormat      := OriginalSettings.FixedFormat;
 end;
 
 procedure TEpiCSVExportSetting.AcceptVisitor(

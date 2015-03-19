@@ -82,8 +82,8 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure AddFixupReference(
-      Obj: TEpiCustomBase;                 // The object which has a reference which cannot be fulfilled
-      EpiClassType: TEpiCustomBaseClass;   // The class type of the object. (should be used by Obj to chech at what level of the class hierachy the reference should be fixed
+      Obj: TEpiCustomBase;                 // The object which has a reference that cannot be fulfilled
+      EpiClassType: TEpiCustomBaseClass;   // The class type of the object. (should be used by Obj to check at what level of the class hierachy the reference should be fixed
       ReferenceType: Byte;                 // An identifier, indicating what reference (based on class-lvl) must be updated.
       Const ReferenceId: string);          // The reference identifier.
     procedure FixupReferences;
@@ -429,7 +429,7 @@ type
     // RemoveItem uses DeleteItem internally, so only that method need overriding if needed.
     procedure   RemoveItem(Item: TEpiCustomItem); virtual;
     function    DeleteItem(Index: integer): TEpiCustomItem; virtual;
-    function    GetItemByName(AName: string): TEpiCustomItem; virtual;
+    function    GetItemByName(Const AName: string): TEpiCustomItem; virtual;
     function    ItemExistsByName(AName: string): boolean; virtual;
     function    IndexOf(Item: TEpiCustomItem): integer; virtual;
     procedure   Move(Const CurIndex, NewIndex: Integer);
@@ -2171,7 +2171,7 @@ begin
   UnRegisterItem(Result);
 end;
 
-function TEpiCustomList.GetItemByName(AName: string): TEpiCustomItem;
+function TEpiCustomList.GetItemByName(const AName: string): TEpiCustomItem;
 var
   i: Integer;
 begin

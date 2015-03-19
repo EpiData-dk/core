@@ -98,6 +98,11 @@ begin
   result := TEpiDataFilesEnumerator.Create(Self);
 end;
 
+function TEpiDataFiles.GetDataFileByName(const AName: string): TEpiDataFile;
+begin
+  result := TEpiDataFile(GetItemByName(AName));
+end;
+
 { TEpiDataFile }
 
 function TEpiDataFile.GetField(Index: integer): TEpiField;

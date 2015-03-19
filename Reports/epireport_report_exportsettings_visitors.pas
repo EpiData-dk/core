@@ -137,7 +137,7 @@ begin
   if not CanVisit(ExportSetting, TEpiExportSetting) then exit;
 
   DoTableCell(0, 'Records Exported');
-  DoTableCell(1, Format('%d - %d', [ExportSetting.FromRecord+1, ExportSetting.ToRecord+1]));
+//  DoTableCell(1, Format('%d - %d', [ExportSetting.FromRecord+1, ExportSetting.ToRecord+1]));
   Inc(FRowIndex);
 
   DoTableCell(0, 'Encoding');
