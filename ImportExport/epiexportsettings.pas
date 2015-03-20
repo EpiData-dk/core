@@ -83,7 +83,7 @@ type
   public
     ExportValueLabels: boolean;
   public
-    procedure   Assign(Const OriginalSettings: TEpiCustomValueLabelExportSetting); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -100,7 +100,7 @@ type
     constructor Create; override;
     function SanetyCheck: boolean; override;
   public
-    procedure   Assign(Const OriginalSettings: TEpiStataExportSetting); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -112,7 +112,7 @@ type
   public
     Delimiter: char;
   public
-    procedure   Assign(Const OriginalSettings: TEpiSPSSExportSetting); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -136,7 +136,7 @@ type
   public
     constructor Create; override;
   public
-    procedure   Assign(Const OriginalSettings: TEpiCustomCompleteProjectExportSetting); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -169,7 +169,7 @@ type
     destructor Destroy; override;
     function SanetyCheck: boolean; override;
   public
-    procedure   Assign(Const OriginalSettings: TEpiDDIExportSetting); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -184,7 +184,7 @@ type
 
     constructor Create; override;
   public
-    procedure   Assign(Const OriginalSettings: TEpiCustomTextExportSettings); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -203,7 +203,7 @@ type
     constructor Create; override;
     function SanetyCheck: boolean; override;
   public
-    procedure   Assign(Const OriginalSettings: TEpiCSVExportSetting); reintroduce;
+    procedure   Assign(Const OriginalSettings: TEpiExportSetting); override;
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
@@ -333,10 +333,12 @@ begin
 end;
 
 procedure TEpiCustomCompleteProjectExportSetting.Assign(
-  const OriginalSettings: TEpiCustomCompleteProjectExportSetting);
+  const OriginalSettings: TEpiExportSetting);
 begin
   inherited Assign(OriginalSettings);
-  ExportCompleteProject := OriginalSettings.ExportCompleteProject;
+  if not (OriginalSettings is TEpiCustomCompleteProjectExportSetting) then exit;
+
+  ExportCompleteProject := TEpiCustomCompleteProjectExportSetting(OriginalSettings).ExportCompleteProject;
 end;
 
 procedure TEpiCustomCompleteProjectExportSetting.AcceptVisitor(
@@ -381,11 +383,13 @@ end;
 
 { TEpiSPSSExportSetting }
 
-procedure TEpiSPSSExportSetting.Assign(
-  const OriginalSettings: TEpiSPSSExportSetting);
+procedure TEpiSPSSExportSetting.Assign(const OriginalSettings: TEpiExportSetting
+  );
 begin
   inherited Assign(OriginalSettings);
-  Delimiter := OriginalSettings.Delimiter;
+  if not (OriginalSettings is TEpiSPSSExportSetting) then exit;
+
+  Delimiter := TEpiSPSSExportSetting(OriginalSettings).Delimiter;
 end;
 
 procedure TEpiSPSSExportSetting.AcceptVisitor(
@@ -428,19 +432,20 @@ begin
     (inherited SanetyCheck);
 end;
 
-procedure TEpiDDIExportSetting.Assign(
-  const OriginalSettings: TEpiDDIExportSetting);
+procedure TEpiDDIExportSetting.Assign(const OriginalSettings: TEpiExportSetting
+  );
 begin
   inherited Assign(OriginalSettings);
+  if not (OriginalSettings is TEpiDDIExportSetting) then exit;
 
-  SoftwareName          := OriginalSettings.SoftwareName;
-  SoftwareVersion       := OriginalSettings.SoftwareVersion;
-  Version               := OriginalSettings.Version;
-  ExportLang            := OriginalSettings.ExportLang;
-  RemoveMissingVL       := OriginalSettings.RemoveMissingVL;
-  FilterTagIsUserId     := OriginalSettings.FilterTagIsUserId;
-  SectionCaptionIsQText := OriginalSettings.SectionCaptionIsQText;
-  RenameVariablesPrefix := OriginalSettings.RenameVariablesPrefix;
+  SoftwareName          := TEpiDDIExportSetting(OriginalSettings).SoftwareName;
+  SoftwareVersion       := TEpiDDIExportSetting(OriginalSettings).SoftwareVersion;
+  Version               := TEpiDDIExportSetting(OriginalSettings).Version;
+  ExportLang            := TEpiDDIExportSetting(OriginalSettings).ExportLang;
+  RemoveMissingVL       := TEpiDDIExportSetting(OriginalSettings).RemoveMissingVL;
+  FilterTagIsUserId     := TEpiDDIExportSetting(OriginalSettings).FilterTagIsUserId;
+  SectionCaptionIsQText := TEpiDDIExportSetting(OriginalSettings).SectionCaptionIsQText;
+  RenameVariablesPrefix := TEpiDDIExportSetting(OriginalSettings).RenameVariablesPrefix;
 end;
 
 procedure TEpiDDIExportSetting.AcceptVisitor(
@@ -458,10 +463,13 @@ end;
 { TEpiCustomValueLabelExportSetting }
 
 procedure TEpiCustomValueLabelExportSetting.Assign(
-  const OriginalSettings: TEpiCustomValueLabelExportSetting);
+  const OriginalSettings: TEpiExportSetting);
 begin
   inherited Assign(OriginalSettings);
-  ExportValueLabels := OriginalSettings.ExportValueLabels;
+  if not (OriginalSettings is TEpiCustomValueLabelExportSetting) then
+    Exit;
+
+  ExportValueLabels := TEpiCustomValueLabelExportSetting(OriginalSettings).ExportValueLabels;
 end;
 
 procedure TEpiCustomValueLabelExportSetting.AcceptVisitor(
@@ -554,12 +562,14 @@ begin
 end;
 
 procedure TEpiStataExportSetting.Assign(
-  const OriginalSettings: TEpiStataExportSetting);
+  const OriginalSettings: TEpiExportSetting);
 begin
   inherited Assign(OriginalSettings);
-  FieldNameCase  := OriginalSettings.FieldNameCase;
-  Version        := OriginalSettings.Version;
-  ExportLines.Assign(OriginalSettings.ExportLines);
+  if not (OriginalSettings is TEpiStataExportSetting) then exit;
+
+  FieldNameCase  := TEpiStataExportSetting(OriginalSettings).FieldNameCase;
+  Version        := TEpiStataExportSetting(OriginalSettings).Version;
+  ExportLines.Assign(TEpiStataExportSetting(OriginalSettings).ExportLines);
 end;
 
 procedure TEpiStataExportSetting.AcceptVisitor(
@@ -584,12 +594,14 @@ begin
 end;
 
 procedure TEpiCustomTextExportSettings.Assign(
-  const OriginalSettings: TEpiCustomTextExportSettings);
+  const OriginalSettings: TEpiExportSetting);
 begin
   inherited Assign(OriginalSettings);
-  ByteOrderMark    := OriginalSettings.ByteOrderMark;
-  ExportFieldNames := OriginalSettings.ExportFieldNames;
-  QuoteChar        := OriginalSettings.QuoteChar;
+  if not (OriginalSettings is TEpiCustomTextExportSettings) then exit;
+
+  ByteOrderMark    := TEpiCustomTextExportSettings(OriginalSettings).ByteOrderMark;
+  ExportFieldNames := TEpiCustomTextExportSettings(OriginalSettings).ExportFieldNames;
+  QuoteChar        := TEpiCustomTextExportSettings(OriginalSettings).QuoteChar;
 end;
 
 procedure TEpiCustomTextExportSettings.AcceptVisitor(
@@ -632,16 +644,18 @@ begin
     (FieldSeparator <> QuoteChar);
 end;
 
-procedure TEpiCSVExportSetting.Assign(
-  const OriginalSettings: TEpiCSVExportSetting);
+procedure TEpiCSVExportSetting.Assign(const OriginalSettings: TEpiExportSetting
+  );
 begin
   inherited Assign(OriginalSettings);
-  FieldSeparator  := OriginalSettings.FieldSeparator;
-  DateSeparator   := OriginalSettings.DateSeparator;
-  TimeSeparator   := OriginalSettings.TimeSeparator;
-  DecimalSeparator := OriginalSettings.DecimalSeparator;
-  NewLine          := OriginalSettings.NewLine;
-  FixedFormat      := OriginalSettings.FixedFormat;
+  if not (OriginalSettings is TEpiCSVExportSetting) then exit;
+
+  FieldSeparator  := TEpiCSVExportSetting(OriginalSettings).FieldSeparator;
+  DateSeparator   := TEpiCSVExportSetting(OriginalSettings).DateSeparator;
+  TimeSeparator   := TEpiCSVExportSetting(OriginalSettings).TimeSeparator;
+  DecimalSeparator := TEpiCSVExportSetting(OriginalSettings).DecimalSeparator;
+  NewLine          := TEpiCSVExportSetting(OriginalSettings).NewLine;
+  FixedFormat      := TEpiCSVExportSetting(OriginalSettings).FixedFormat;
 end;
 
 procedure TEpiCSVExportSetting.AcceptVisitor(
