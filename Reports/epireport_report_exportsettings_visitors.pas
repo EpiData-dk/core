@@ -97,7 +97,7 @@ begin
   Adjust := tcaAutoAdjust;
   if Col = 1 then
     Adjust := tcaRightAdjust;
-  FReportGenerator.TableCell(Text, Col, RowIndex, Adjust);
+  ReportGenerator.TableCell(Text, Col, RowIndex, Adjust);
 end;
 
 function TSettingsTableOutputVisitor.BoolToStr(B: Boolean; Unused: Boolean
@@ -126,6 +126,9 @@ end;
 
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiExportSetting);
+var
+  S: String;
+  i: Integer;
 begin
   if Assigned(ExportSetting.AdditionalExportSettings) then
   begin
@@ -135,10 +138,6 @@ begin
   end;
 
   if not CanVisit(ExportSetting, TEpiExportSetting) then exit;
-
-  DoTableCell(0, 'Records Exported');
-//  DoTableCell(1, Format('%d - %d', [ExportSetting.FromRecord+1, ExportSetting.ToRecord+1]));
-  Inc(FRowIndex);
 
   DoTableCell(0, 'Encoding');
   DoTableCell(1, EpiEncodingToString[ExportSetting.Encoding]);
@@ -214,7 +213,7 @@ begin
   else
     if Length(S) = 1
     then
-      S := 'Max'
+      S := 'Mac'
     else
       S := 'Windows';
 
@@ -337,7 +336,7 @@ end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiExportSetting);
 begin
-  CommonVisit(3, TEpiExportSetting);
+  CommonVisit(2, TEpiExportSetting);
   AdditionalVisit(ExportSetting);
 end;
 

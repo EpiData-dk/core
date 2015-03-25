@@ -5,7 +5,7 @@ unit epiexportsettings;
 interface
 
 uses
-  Classes, SysUtils, epieximtypes, epidocument, epidatafiles;
+  Classes, SysUtils, epieximtypes, epidocument, epidatafiles, epiopenfile;
 
 type
 
@@ -54,6 +54,7 @@ type
 
   TEpiExportSetting = class
   public
+    PreparedDoc: TEpiDocument;
     Doc: TEpiDocument;
 
     // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
@@ -131,8 +132,10 @@ type
   TEpiCustomCompleteProjectExportSetting = class(TEpiCustomValueLabelExportSetting)
   private
     FExportCompleteProject: boolean;
+    FExportFileName: string;
   public
     property ExportCompleteProject: boolean read FExportCompleteProject write FExportCompleteProject;
+    property ExportFileName: string read FExportFileName write FExportFileName;
   public
     constructor Create; override;
   public
@@ -211,9 +214,15 @@ type
   { TEpiEPXExportSetting }
 
   TEpiEPXExportSetting = class(TEpiCustomCompleteProjectExportSetting)
+  private
+    FDocumentClass: TEpiDocumentFileClass;
   public
+    property DocumentClass: TEpiDocumentFileClass read FDocumentClass write FDocumentClass;
+  public
+    procedure Assign(const OriginalSettings: TEpiExportSetting); override;
+    function  SanetyCheck: boolean; override;
     // Visitor Pattern
-    procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
+    procedure AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
   end;
 
 {  TEpiSpreadSheetExportSetting = class(TEpiCustomTextExportSettings)
@@ -339,6 +348,7 @@ begin
   if not (OriginalSettings is TEpiCustomCompleteProjectExportSetting) then exit;
 
   ExportCompleteProject := TEpiCustomCompleteProjectExportSetting(OriginalSettings).ExportCompleteProject;
+  ExportFileName        := TEpiCustomCompleteProjectExportSetting(OriginalSettings).ExportFileName;
 end;
 
 procedure TEpiCustomCompleteProjectExportSetting.AcceptVisitor(
@@ -354,6 +364,22 @@ begin
 end;
 
 { TEpiEPXExportSetting }
+
+procedure TEpiEPXExportSetting.Assign(const OriginalSettings: TEpiExportSetting
+  );
+begin
+  inherited Assign(OriginalSettings);
+  if not (OriginalSettings is TEpiEPXExportSetting) then exit;
+
+  DocumentClass := TEpiEPXExportSetting(OriginalSettings).DocumentClass;
+end;
+
+function TEpiEPXExportSetting.SanetyCheck: boolean;
+begin
+  Result :=
+    Assigned(DocumentClass) and
+    inherited SanetyCheck;
+end;
 
 procedure TEpiEPXExportSetting.AcceptVisitor(
   const Visitor: TEpiExportSettingCustomVisitor);
@@ -495,17 +521,19 @@ begin
 
   Encoding       := eeUTF8;
   ExportDeleted  := false;
+
+  PreparedDoc    := nil;
 end;
 
 destructor TEpiExportSetting.Destroy;
-var
-  i: Integer;
 begin
   DatafileSettings.ClearAndFree;
   DatafileSettings.Free;
 
   if Assigned(AdditionalExportSettings) then
     AdditionalExportSettings.Free;
+
+  FreeAndNil(PreparedDoc);
   inherited Destroy;
 end;
 

@@ -48,7 +48,7 @@ implementation
 
 uses
   FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8,
-  epiexport_ddi, strutils, epicustombase, epidatafileutils;
+  epiexport_ddi, strutils, epicustombase, epidatafileutils, epiopenfile;
 
 
 { TEpiExport }
@@ -67,18 +67,25 @@ var
   j: Integer;
   DFSetting: TEpiExportDatafileSettings;
   DF: TEpiDataFile;
+  Item: TEpiCustomItem;
+  FreeItems: TList;
 begin
   Doc := Settings.Doc;
   Result := TEpiDocument(Settings.Doc.Clone);
 
   // Remove unwanted Datafiles:
-  for DF in Settings.Doc.DataFiles do
+  for i := Result.DataFiles.Count - 1 downto 0 do
   begin
-    for i := 0 to Settings.DatafileSettings.Count - 1 do
-      if (Settings.DatafileSettings[i].DatafileName = DF.Name) then
-        break;
+    DF := Result.DataFiles[i];
 
-    if (I >= Settings.DatafileSettings.Count) then
+    j := 0;
+    while j <= Settings.DatafileSettings.Count - 1 do
+      if (Settings.DatafileSettings[j].DatafileName = DF.Name) then
+        break
+      else
+        inc(j);
+
+    if (j >= Settings.DatafileSettings.Count) then
       DF.Free;
   end;
 
@@ -92,10 +99,17 @@ begin
     NewDF     := TEpiDataFile(Result.DataFiles.GetItemByName(DFSetting.DatafileName));
 
     // Structure export:
+    FreeItems := TList.Create;
     NewCIList := NewDf.ControlItems;
-    for j := NewCIList.Count - 1 downto 0 do
-      if DFSetting.ExportItems.IndexOf(NewCIList[j].Name) < 0 then
-        NewCIList[j].Free;
+    for j := 0 to NewCIList.Count - 1 do
+    begin
+      Item := NewCIList[j];
+      if DFSetting.ExportItems.IndexOf(Item.Name) < 0 then
+        FreeItems.Add(Item);
+    end;
+    for j := FreeItems.Count -1 downto 0 do
+      TEpiCustomItem(FreeItems[j]).Free;
+    FreeItems.Free;
 
     // Add included fields valuelabel sets.
     for j := 0 to NewDF.Fields.Count - 1 do
@@ -278,7 +292,7 @@ begin
   if Settings is TEpiEPXExportSetting then
     Result := (ExportEPX(TEpiEPXExportSetting(Settings)));
 
-  Settings.Doc.Free;
+  Settings.PreparedDoc := Settings.Doc;
   Settings.Doc := OldDoc;
 end;
 
@@ -1404,25 +1418,49 @@ var
   NewDoc: TEpiDocument;
   i: Integer;
   NewMR: TEpiMasterRelation;
+  DocFile: TEpiDocumentFile;
+  DFSettings: TEpiExportDatafileSettings;
+  DF: TEpiDataFile;
 begin
   Result := false;
-{  try
-    for i := Settings.Doc.DataFiles.Count - 1 downto 0 do
-      if i = Settings.DataFileIndex then
-        continue
-      else
-        Settings.Doc.DataFiles[i].Free;
 
-    Settings.Doc.Relations.Clear;
+  try
+    if Settings.ExportCompleteProject then
+      begin
+        DocFile := Settings.DocumentClass.Create;
+        DocFile.CreateClonedDocument(Settings.Doc);
+        DocFile.SaveFile(Settings.ExportFileName);
+        DocFile.Free;
+      end
+    else
+      begin
+        for i := 0 to Settings.DatafileSettings.Count - 1 do
+        begin
+          DFSettings := Settings.DatafileSettings[i];
+          DFSettings.ExportStream.Free;
+          DFSettings.ExportStream := nil;
 
-    NewMR := Settings.Doc.Relations.NewMasterRelation;
-    NewMR.Datafile := Settings.Doc.DataFiles[0];
+          DocFile := Settings.DocumentClass.Create;
+          NewDoc := DocFile.CreateClonedDocument(Settings.Doc);
 
-    Settings.Doc.SaveToStream(Settings.ExportStream);
+          for DF in DocFile.Document.DataFiles do
+            if DF.Name <> DFSettings.DatafileName then
+              DF.Free;
+
+          NewDoc.Relations.Clear;
+
+          NewMR := NewDoc.Relations.NewMasterRelation;
+          NewMR.Datafile := NewDoc.DataFiles[0];
+
+          DocFile.SaveFile(DFSettings.ExportFileName);
+          DocFile.Free;
+        end;
+      end;
+
     Result := true;
   finally
 
-  end;    }
+  end;
 end;
 
 end.
