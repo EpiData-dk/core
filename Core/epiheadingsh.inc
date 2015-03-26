@@ -4,6 +4,8 @@ type
 
   TEpiHeadingChangeEvent = (ehceType);
 
+  TEpiHeadingsEnumerator = class;
+
   { TEpiHeadings }
 
   TEpiHeadings = class(TEpiCustomControlItemList)
@@ -16,6 +18,7 @@ type
     function   ItemClass: TEpiCustomItemClass; override;
     function   NewHeading: TEpiHeading;
     function   GetHeadingByName(Const AName: string): TEpiHeading;
+    function   GetEnumerator: TEpiHeadingsEnumerator;
     procedure  Assign(const AEpiCustomBase: TEpiCustomBase); override;
   end;
 
@@ -46,4 +49,14 @@ type
     property    Section:  TEpiSection read GetSection;
     property    HeadingType: TEpiHeadingType read FHeadingType write SetHeadingType;
   end;
+
+  { TEpiHeadingsEnumerator }
+
+  TEpiHeadingsEnumerator = class(TEpiCustomControlItemListEnumerator)
+  protected
+    function GetCurrent: TEpiHeading; override;
+  public
+    property Current: TEpiHeading read GetCurrent;
+  end;
+
 

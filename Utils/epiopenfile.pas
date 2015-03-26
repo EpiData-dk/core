@@ -535,6 +535,9 @@ begin
       St.LoadFromFile(UTF8ToSys(AFileName));
     St.Position := 0;
 
+    if (St.Size = 0) then
+      Raise TEpiCoreException.Create('File is empty!');
+
     FEpiDoc.OnPassword := OnPassword;
     FEpiDoc.OnProgress := OnProgress;
     FEpiDoc.OnLoadError := OnLoadError;

@@ -25,8 +25,10 @@ type
   TEpiVProjectCheckType = (
     pctIndividual,        // Allow individual selection of datafiles
     pctTriState,          // Normal tri-state functionality
-    pctCascade            // Only allow cascading select -> selecting a Master automatically selects
+    pctCascadeBottomUp,   // Only allow cascading select -> selecting a Master automatically selects
                           //   details. Details cannot be de-selected.
+    pctCascadeTopDown     // Only allow cascading select -> Selecting a detail automatically selects
+                          //   all masters.
   );
 
   TEpiVTreeNodeObjectType = (
@@ -330,43 +332,92 @@ var
   CNode: PVirtualNode;
   Obj: TEpiCustomBase;
   ObjT: TEpiVTreeNodeObjectType;
+  NodeChecked: Boolean;
 begin
   ObjectAndType(Node, Obj, ObjT);
 
-  DoChecked(Obj, ObjT, VST.CheckState[Node] in [csCheckedNormal, csMixedNormal]);
+  NodeChecked := VST.CheckState[Node] in [csCheckedNormal, csMixedNormal];
+  DoChecked(Obj, ObjT, NodeChecked);
 
-  if (CheckType <> pctCascade) then exit;
+  case CheckType of
+    // Individual and TriState just exit, it is handled by the Virtual Tree itself.
+    pctIndividual,
+    pctTriState:
+      Exit;
 
-  CNode := Node^.FirstChild;
-  while Assigned(CNode) do
-  begin
-    if Sender.CheckState[Node] in [csCheckedNormal, csMixedNormal] then
-      Sender.CheckState[CNode] := csMixedNormal
-    else
-      Sender.CheckState[CNode] := csUncheckedNormal;
-    CNode := CNode^.NextSibling;
+    // For Cascading Bottom-Up, child nodes are either set to
+    // a) "Mixed" mode if Parent was checked.
+    // b) Not checked if Parent was un-checked.
+    pctCascadeBottomUp:
+      begin
+        CNode := Node^.FirstChild;
+        while Assigned(CNode) do
+        begin
+          if NodeChecked then
+            Sender.CheckState[CNode] := csMixedNormal
+          else
+            Sender.CheckState[CNode] := csUncheckedNormal;
+          CNode := CNode^.NextSibling;
+        end;
+      end;
+
+    // For Cascading Top-Down, two scenarios happen:
+    // a) If node was checked, then check all parent nodes.
+    // b) If node was unchecked, then uncheck all child nodes.
+    pctCascadeTopDown:
+      begin
+        if NodeChecked then
+        begin
+          // Case a)
+          CNode := Sender.NodeParent[Node];
+          if Assigned(CNode) then
+            Sender.CheckState[CNode] := csCheckedNormal;
+        end else begin
+          // Case b)
+          CNode := Node^.FirstChild;
+          while Assigned(CNode) do
+          begin
+            Sender.CheckState[CNode] := csUncheckedNormal;
+            CNode := CNode^.NextSibling;
+          end;
+        end;
+      end;
   end;
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTChecking(Sender: TBaseVirtualTree;
   Node: PVirtualNode; var NewState: TCheckState; var Allowed: Boolean);
+var
+  CNode: PVirtualNode;
 begin
-  if (CheckType <> pctCascade) then
-  begin
-    Allowed := true;
-    Exit;
-  end;
+  case CheckType of
+    pctIndividual,
+    pctTriState,
+    pctCascadeTopDown:
+      begin
+        Allowed := true;
+        Exit;
+      end;
 
-  if (Sender.CheckState[Node] = csMixedNormal) and
-     (Sender.CheckState[Node^.Parent] in [csCheckedNormal, csMixedNormal])
-  then
-  begin
-    Allowed := false;
-    Exit;
-  end;
 
-  if (Node^.Parent <> nil) and (NewState = csUncheckedNormal) then
-    Allowed := Sender.CheckState[Node^.Parent] = csUncheckedNormal;
+    // For Cascading Bottom-Up, one can only either:
+    // a) Check a so-far uncheck node
+    // b) Un-check a "normal checked" node.
+    // *) "Mixed" mode nodes can neither be checked nor uncheck.
+    pctCascadeBottomUp:
+      begin
+        if (Sender.CheckState[Node] = csMixedNormal) and
+           (Sender.CheckState[Node^.Parent] in [csCheckedNormal, csMixedNormal])
+        then
+        begin
+          Allowed := false;
+          Exit;
+        end;
+
+        if (Node^.Parent <> nil) and (NewState = csUncheckedNormal) then
+          Allowed := Sender.CheckState[Node^.Parent] = csUncheckedNormal;
+      end;
+  end;
 end;
 
 procedure TEpiVProjectTreeViewFrame.VSTContextPopup(Sender: TObject;
@@ -1170,7 +1221,7 @@ begin
 
     case CheckType of
       pctTriState: ; // Do nothing - this is handled perfectly by the VST it-self.
-      pctCascade:
+      pctCascadeBottomUp:
         begin
           if VST.CheckState[ParentNode] in [csCheckedNormal, csMixedNormal] then
             VST.CheckState[Node] := csMixedNormal;
@@ -1210,7 +1261,7 @@ var
   ObjT: TEpiVTreeNodeObjectType;
 begin
   if ShowCheckBoxes then
-    if CheckType = pctIndividual then
+    if CheckType in [pctIndividual, pctCascadeTopDown] then
       Val := ctCheckBox
     else
       Val := ctTriStateCheckBox
@@ -1249,7 +1300,8 @@ begin
     case CheckType of
       pctTriState:
         AutoOptions := AutoOptions + [toAutoTristateTracking];
-      pctCascade,
+      pctCascadeBottomUp,
+      pctCascadeTopDown,
       pctIndividual:
         AutoOptions := AutoOptions - [toAutoTristateTracking];
   end;
@@ -1380,7 +1432,7 @@ begin
       end;
 
     pctTriState,
-    pctCascade:
+    pctCascadeBottomUp:
       begin
         if (not ShowProject) or
            (AllowSelectProject and ShowProject)
@@ -1419,7 +1471,7 @@ begin
   case CheckType of
     pctIndividual,
     pctTriState,
-    pctCascade:
+    pctCascadeBottomUp:
       while Assigned(Node) do
       begin
         VST.CheckState[Node] := csUncheckedNormal;

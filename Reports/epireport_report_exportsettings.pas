@@ -5,7 +5,8 @@ unit epireport_report_exportsettings;
 interface
 
 uses
-  Classes, SysUtils, epireport_base, epireport_generator_base, epiexportsettings;
+  Classes, SysUtils, epireport_base, epireport_generator_base,
+  epiexportsettings, epidatafiles;
 
 type
 
@@ -59,8 +60,9 @@ procedure TEpiReportExportSettings.RunReport;
 var
   OptionCount: Integer;
   CountVisitor: TSettingCountVisitor;
-  CurrentSetting: TEpiExportSetting;
   TableVisitor: TSettingsTableOutputVisitor;
+  DF: TEpiDataFile;
+  i: Integer;
 begin
   inherited RunReport;
 
@@ -80,6 +82,14 @@ begin
   FExportSetting.AcceptVisitor(TableVisitor);
 
   DoTableFooter(TableFooter);
+
+  DoLineText('');
+  DoHeading('Exported Dataforms:');
+  for i := 0 to ExportSetting.DatafileSettings.Count -1 do
+  begin
+    DF := ExportSetting.Doc.DataFiles.GetDataFileByName(ExportSetting.DatafileSettings[i].DatafileName);
+    DoLineText(DF.Caption.Text);
+  end;
 end;
 
 end.
