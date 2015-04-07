@@ -37,6 +37,11 @@ begin
   result := TEpiHeading(GetItemByName(AName));
 end;
 
+function TEpiHeadings.GetEnumerator: TEpiHeadingsEnumerator;
+begin
+  result := TEpiHeadingsEnumerator.Create(Self);
+end;
+
 procedure TEpiHeadings.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);
@@ -114,6 +119,13 @@ begin
   inherited Assign(AEpiCustomBase);
 
   TEpiHeading(AEpiCustomBase).HeadingType := HeadingType;
+end;
+
+{ TEpiHeadingsEnumerator }
+
+function TEpiHeadingsEnumerator.GetCurrent: TEpiHeading;
+begin
+  Result := TEpiHeading(inherited GetCurrent);
 end;
 
 

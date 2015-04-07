@@ -113,9 +113,6 @@ type
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
     procedure   ValidateProject(Const Doc: TEpiDocument;
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
-//    property    Document: TEpiDocument read FDocument write FDocument;
-//    property    ValidationFields: TEpiFields read FValidationFields write FValidationFields;
-//    property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
 
   private
     FOnDataFileResult: TEpiProjectValidationDataFileResultEvent;
@@ -227,7 +224,8 @@ begin
 
     for j := 0 to LValidationFields.Count - 1 do
     begin
-      F := DF.Fields.FieldByName[LValidationFields[j]];
+      S := LValidationFields[j];
+      F := DF.Fields.FieldByName[S];
 
       if (pvCheckSystemMissing in FOptions) then
       begin
@@ -242,6 +240,7 @@ begin
         end;
       end;
 
+      // Check that MUST ENTER fields are filled
       if (pvCheckMustEnter in FOptions) then
       begin
         if (F.EntryMode = emMustEnter) and
@@ -255,6 +254,7 @@ begin
           end;
       end;
 
+      // Check that Fields in Key all have data.
       if (pvCheckKeyFields in FOptions) then
       begin
         if (Df.KeyFields.IndexOf(F) > -1) and
@@ -268,6 +268,7 @@ begin
           end;
       end;
 
+      // Check that fields with Range / Valuelabel are correct
       if (pvCheckDataRange in FOptions) and
          ((Assigned(F.Ranges)) or
           (Assigned(F.ValueLabelSet))
@@ -366,9 +367,6 @@ begin
     DF.RootOwner.Modified := false;
 
   DoDataFileResult(Relation, FResultArray);
-
-//  FieldResultArray := FResultArray;
-//  StudyResultArray := FStudyArray;
 end;
 
 constructor TEpiProjectValidationTool.Create;

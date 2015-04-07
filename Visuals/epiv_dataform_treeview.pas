@@ -10,11 +10,19 @@ uses
 
 type
 
+  TEpiVDataFormTreeViewKeyFieldSelectedState = (
+     kssAlwaysSelected,     // KeyFields are ALWAYS selected and cannot be deselected.
+     kssNeverSelected,      // KeyFields are NEWER  selected and cannot be selected.
+     kssCustomSelected      // KeyFields behave as all other selectable items.
+  );
+
   { TDataFormTreeViewFrame }
 
   TDataFormTreeViewFrame = class(TFrame)
   private
     VST: TVirtualStringTree;
+    procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      var NewState: TCheckState; var Allowed: Boolean);
     procedure VSTGetImageIndex(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
       var Ghosted: Boolean; var ImageIndex: Integer);
@@ -24,12 +32,15 @@ type
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
   private
     FDataFile: TEpiDataFile;
+    FKeyFieldsSelectState: TEpiVDataFormTreeViewKeyFieldSelectedState;
     FShowFieldTypes: TEpiFieldTypes;
     FShowHeadings: Boolean;
     function GetCustomItemFromNode(Const Node: PVirtualNode): TEpiCustomControlItem;
     function GetSelectedList: TList;
     procedure PopulateTree(Const Datafile: TEpiDataFile);
     procedure SetDataFile(AValue: TEpiDataFile);
+    procedure SetKeyFieldsSelectState(
+      AValue: TEpiVDataFormTreeViewKeyFieldSelectedState);
     procedure SetSelectedList(AValue: TList);
     procedure SetShowFieldTypes(AValue: TEpiFieldTypes);
     procedure SetShowHeadings(AValue: Boolean);
@@ -41,6 +52,8 @@ type
     procedure SelectFieldTypes(Const FieldTypes: TEpiFieldTypes;
       DeSelect: Boolean);
     property DataFile: TEpiDataFile read FDataFile write SetDataFile;
+    property KeyFieldsSelectState: TEpiVDataFormTreeViewKeyFieldSelectedState read FKeyFieldsSelectState write SetKeyFieldsSelectState;
+    // The list of currently selected items in the treeview
     property SelectedList: TList read GetSelectedList write SetSelectedList;
     property ShowHeadings: Boolean read FShowHeadings write SetShowHeadings;
     property ShowFieldTypes: TEpiFieldTypes read FShowFieldTypes write SetShowFieldTypes;
@@ -54,6 +67,30 @@ uses
   epiv_datamodule;
 
 { TDataFormTreeViewFrame }
+
+procedure TDataFormTreeViewFrame.VSTChecking(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; var NewState: TCheckState; var Allowed: Boolean);
+var
+  CI: TEpiCustomControlItem;
+begin
+  CI := GetCustomItemFromNode(Node);
+
+  if (CI is TEpiField) then
+  begin
+    case KeyFieldsSelectState of
+      kssAlwaysSelected:
+        if (DataFile.KeyFields.IndexOf(CI) >= 0) then
+          NewState := csCheckedNormal;
+      kssNeverSelected:
+        if (DataFile.KeyFields.IndexOf(CI) >= 0) then
+          NewState := csUnCheckedNormal;
+
+      // Always true, no matter what the node is...
+      kssCustomSelected:
+        Allowed := true;
+    end;
+  end;
+end;
 
 procedure TDataFormTreeViewFrame.VSTGetImageIndex(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
@@ -95,11 +132,19 @@ procedure TDataFormTreeViewFrame.VSTInitNode(Sender: TBaseVirtualTree; ParentNod
 var
   CI: TEpiCustomControlItem;
 begin
+  CI := GetCustomItemFromNode(Node);
+
   Sender.CheckType[Node]  := ctTriStateCheckBox;
-  Sender.CheckState[Node] := csCheckedNormal;
+
+  if (KeyFieldsSelectState = kssNeverSelected) and
+     (CI is TEpiField) and
+     (DataFile.KeyFields.IndexOf(CI) > 0)
+  then
+    Sender.CheckState[Node] := csUncheckedNormal
+  else
+    Sender.CheckState[Node] := csCheckedNormal;
   Sender.IsVisible[Node] := true;
 
-  CI := GetCustomItemFromNode(Node);
 
   // Visibility for headings
   if (CI is TEpiHeading) then
@@ -190,6 +235,15 @@ begin
   PopulateTree(FDataFile);
 end;
 
+procedure TDataFormTreeViewFrame.SetKeyFieldsSelectState(
+  AValue: TEpiVDataFormTreeViewKeyFieldSelectedState);
+begin
+  if FKeyFieldsSelectState = AValue then Exit;
+  FKeyFieldsSelectState := AValue;
+
+  PopulateTree(DataFile);
+end;
+
 procedure TDataFormTreeViewFrame.SetSelectedList(AValue: TList);
 var
   Node: PVirtualNode;
@@ -233,7 +287,7 @@ begin
   FDataFile := nil;
   FShowHeadings := true;
   FShowFieldTypes := AllFieldTypes;
-
+  FKeyFieldsSelectState := kssCustomSelected;
 
   VST := TVirtualStringTree.Create(self);
   with VST do
@@ -287,6 +341,7 @@ begin
     OnInitNode      := @VSTInitNode;
     OnGetImageIndex := @VSTGetImageIndex;
     OnGetText       := @VSTGetText;
+    OnChecking := @VSTChecking;
 
     Align := alClient;
     Parent := Self;

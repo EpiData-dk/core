@@ -51,9 +51,12 @@ type
     function CompareFieldsFromRelation(Const Relation: TEpiMasterRelation): TStrings;
 
     procedure DoReportStart;
-    procedure DoReportResultTable(Const RecordArray: TEpiProjectResultArray;
-      Const StudyArray: TEpiProjectStudyArray);
-    procedure DoRecordsReport(Const RecordResult: TEpiProjectResultArray);
+    procedure DoRecordsSummarizedResultTable(
+      Const Relation: TEpiMasterRelation;
+      Const RecordArray: TEpiProjectResultArray);
+    procedure DoRecordsReport(
+      Const Relation: TEpiMasterRelation;
+      Const RecordResult: TEpiProjectResultArray);
   protected
     procedure DoSanityCheck; override;
   public
@@ -117,6 +120,11 @@ begin
   R.TableHeader := 'Validation Fields:';
   R.RunReport;
   R.Free;
+
+  DoLineText('');
+  DoRecordsSummarizedResultTable(Relation, ResultArray);
+  DoLineText('');
+  DoRecordsReport(Relation, ResultArray);
 
   Fields.Free;
 end;
@@ -225,14 +233,13 @@ begin
   DoTableFooter('');
 end;
 
-procedure TEpiReportProjectValidator.DoReportResultTable(
-  const RecordArray: TEpiProjectResultArray;
-  const StudyArray: TEpiProjectStudyArray);
+procedure TEpiReportProjectValidator.DoRecordsSummarizedResultTable(
+  const Relation: TEpiMasterRelation; const RecordArray: TEpiProjectResultArray
+  );
 var
   RecordErrorCount: Integer;
   i: Integer;
   FieldErrorCount: Integer;
-  DF: TEpiDataFile;
   RecordCount: Integer;
   OptCount: Integer;
   SumTable: array[TEpiToolsProjectValidateOption] of array of cardinal;
@@ -241,8 +248,10 @@ var
   Rec: TEpiProjectValidateResultRecord;
   S: String;
   j: Integer;
+  ValidationFields: TStrings;
+  DF: TEpiDataFile;
 
-{  function CalcErrorPct: Extended;
+  function CalcErrorPct: Extended;
   begin
     Result := RecordErrorCount / RecordCount;
   end;
@@ -250,14 +259,15 @@ var
   function CalcErrorFieldPct: Extended;
   begin
     Result := FieldErrorCount / (RecordCount * ValidationFields.Count);
-  end;                  }
+  end;
 
 begin
-  {RecordErrorCount := 0;
+  RecordErrorCount := 0;
   FieldErrorCount  := Length(RecordArray);
+  DF := Relation.Datafile;
+  ValidationFields := CompareFieldsFromRelation(Relation);
 
   RecordCount := 0;
-  DF := Document.DataFiles[0];
   for i := 0 to DF.Size - 1 do
     if not DF.Deleted[i] then
       Inc(RecordCount);
@@ -270,15 +280,14 @@ begin
       Inc(RecordErrorCount);
   end;
 
-  DoTableHeader('Overview', 2, 8);
+  DoTableHeader('Overview', 2, 7);
   DoTableCell(0, 0, 'Test');                               DoTableCell(1, 0, 'Result');
-  DoTableCell(0, 1, 'Unspecified studyinformation items'); DoTableCell(1, 1, IntToStr(Length(StudyArray)));
-  DoTableCell(0, 2, 'Number of fields checked');           DoTableCell(1, 2, IntToStr(ValidationFields.Count));
-  DoTableCell(0, 3, 'Number of records checked');          DoTableCell(1, 3, IntToStr(RecordCount));
-  DoTableCell(0, 4, 'Records with errors');                DoTableCell(1, 4, IntToStr(RecordErrorCount));
-  DoTableCell(0, 5, 'Field entries with errors');          DoTableCell(1, 5, IntToStr(FieldErrorCount));
-  DoTableCell(0, 6, 'Error percentage (#records)');        DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorPct * 100));
-  DoTableCell(0, 7, 'Error percentage (#fields)');         DoTableCell(1, 7, FormatFloat('##0.00', CalcErrorFieldPct * 100));
+  DoTableCell(0, 1, 'Number of fields checked');           DoTableCell(1, 1, IntToStr(ValidationFields.Count));
+  DoTableCell(0, 2, 'Number of records checked');          DoTableCell(1, 2, IntToStr(RecordCount));
+  DoTableCell(0, 3, 'Records with errors');                DoTableCell(1, 3, IntToStr(RecordErrorCount));
+  DoTableCell(0, 4, 'Field entries with errors');          DoTableCell(1, 4, IntToStr(FieldErrorCount));
+  DoTableCell(0, 5, 'Error percentage (#records)');        DoTableCell(1, 5, FormatFloat('##0.00', CalcErrorPct * 100));
+  DoTableCell(0, 6, 'Error percentage (#fields)');         DoTableCell(1, 6, FormatFloat('##0.00', CalcErrorFieldPct * 100));
   DoTableFooter('');
 
 
@@ -295,13 +304,13 @@ begin
   for i := Low(RecordArray) to High(RecordArray) do
   begin
     Rec := RecordArray[i];
-    Inc(SumTable[Rec.FailedCheck, ValidationFields.IndexOf(Rec.Field)]);
+    Inc(SumTable[Rec.FailedCheck, ValidationFields.IndexOf(Rec.Field.Name)]);
     Inc(TotalTable[Rec.FailedCheck]);
   end;
 
   DoTableHeader('Summarised overview', OptCount + 1, ValidationFields.Count + 2);
   for i := 0 to ValidationFields.Count - 1 do
-    DoTableCell(0, i + 1, ValidationFields[i].Name);
+    DoTableCell(0, i + 1, ValidationFields[i]);
   DoTableCell(0, ValidationFields.Count + 1, 'Total', tcaLeftAdjust, [tcoTopBorder]);
 
   for i := 0 to OptCount - 1 do
@@ -319,18 +328,97 @@ begin
       tcaCenter,
       [tcoTopBorder]);
 
-  DoTableFooter('Counts indicate number of errors.');  }
+  DoTableFooter('Counts indicate number of errors.');
 end;
 
 procedure TEpiReportProjectValidator.DoRecordsReport(
-  const RecordResult: TEpiProjectResultArray);
+  const Relation: TEpiMasterRelation; const RecordResult: TEpiProjectResultArray
+  );
 var
   S: String;
   i: Integer;
   j: Integer;
   ResRecord: TEpiProjectValidateResultRecord;
   Jmp: TEpiJump;
+  SortFields: TStrings;
 begin
+  i := Low(RecordResult);
+  while i <= High(RecordResult) do
+  begin
+    DoHeading('Record no: ' + IntToStr(RecordResult[i].RecNo + 1));
+
+    SortFields := SortFieldsFromRelation(Relation);
+
+    if Assigned(SortFields) and
+       (SortFields.Count > 0)
+    then
+      begin
+        S := 'List by Fields:';
+
+        for j := 0 to SortFields.Count -1 do
+          S += '  ' + SortFields[j] + ' = ' + Relation.Datafile.Fields.FieldByName[SortFields[j]].AsString[RecordResult[i].RecNo];
+
+        DoLineText(S);
+      end;
+
+    repeat
+      ResRecord := RecordResult[i];
+
+      S := ResRecord.Field.Name + ': ';
+      case ResRecord.FailedCheck of
+        pvCheckSystemMissing:
+          S += 'System Missing';
+        pvCheckMustEnter:
+          S += 'Must Enter has system missing';
+        pvCheckKeyFields:
+          S += 'Key Field has system missing';
+        pvCheckDataRange:
+          with ResRecord do
+          begin
+            S += 'Value = ' + Field.AsString[RecNo] + ', ';
+            if Assigned(Field.Ranges) and
+               (not Field.Ranges.InRange(Field.AsValue[RecNo]))
+            then
+              S += Format('Not in range = (%s, %s) ',
+                [Field.Ranges[0].AsString[true],
+                 Field.Ranges[0].AsString[false]]
+              );
+
+            if Assigned(Field.ValueLabelSet) and
+               (not Field.ValueLabelSet.ValueLabelExists[Field.AsValue[RecNo]])
+            then
+              S += 'Not a valid value label!'
+          end;
+        pvCheckComparison:
+          with ResRecord.Field do
+            S += Format('Comparison: %s=%s %s %s=%s',
+                        [Name, AsString[ResRecord.RecNo],
+                         ComparisonTypeToString(Comparison.CompareType),
+                         Comparison.CompareField.Name, Comparison.CompareField.AsString[ResRecord.RecNo]
+                        ]);
+        pvCheckDataLength:
+          with ResRecord.Field do
+            S += Format('Field length = %d, Data length: %d',
+                        [Length, UTF8Length(AsString[ResRecord.RecNo])]);
+        pvCheckJumpReset:
+          // Either a reset value is NOT missing OR a jump back in flow.
+          with ResRecord.Field do
+          begin
+            Jmp := Jumps.JumpFromValue[AsString[ResRecord.RecNo]];
+            if not (Jmp.ResetType in [jrMaxMissing, jr2ndMissing]) then
+              S += Format('Value = %s, is not a valid jump reset value (MaxMissing or 2ndMaxMissing)!', [AsString[ResRecord.RecNo]])
+            else
+              S += Format('Value = %s, is a jump backward in flow!', [AsString[ResRecord.RecNo]]);
+          end;
+      else
+          S += Format('Report not implemented for ToolCheck: %s',
+                      [GetEnumName(TypeInfo(TEpiToolsProjectValidateOption), Integer(ResRecord.FailedCheck))]);
+      end;
+      DoLineText(S);
+      Inc(i);
+    until (i > High(RecordResult)) or (RecordResult[i].RecNo <> ResRecord.RecNo);
+    DoLineText('');
+  end;
 end;
 
 procedure TEpiReportProjectValidator.DoSanityCheck;

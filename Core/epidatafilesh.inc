@@ -23,6 +23,7 @@ type
     function    XMLName: string; override;
     function    NewDataFile: TEpiDataFile;
     function    GetEnumerator: TEpiDataFilesEnumerator;
+    function    GetDataFileByName(Const AName: string): TEpiDataFile;
     Property    DataFile[Index: integer]: TEpiDataFile read GetDataFile; default;
   end;
 

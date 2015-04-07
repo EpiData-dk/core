@@ -38,7 +38,7 @@ implementation
 
 uses
   epimiscutils, epidatafilestypes, epidocument, epidatafileutils,
-  lazutf8sysutils;
+  lazutf8sysutils, epireport_types;
 
 resourcestring
   rsDocumentsNotAssigned = 'Documents not assigned to report';
@@ -143,9 +143,10 @@ begin
   DoLineText('');
 
   DoTableHeader('Field(s): ' + S, 1 + CountsFieldList.Count, 1 + ResultDF.Size);
-  DoTableCell(0, 0, 'Value(s)');
+
+  DoTableCell(0, 0, 'Value(s)', tcaLeftAdjust, [tcoRightBorder]);
   for i := 0 to CountsFieldList.Count - 1 do
-    DoTableCell(1 + i, 0, CountsFieldList[i].Question.Text);
+    DoTableCell(1 + i, 0, CountsFieldList[i].Question.Text, tcaLeftAdjust, [tcoRightBorder]);
 
 
   for i := 0 to ResultDF.Size - 1 do

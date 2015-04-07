@@ -39,6 +39,7 @@ type
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function XMLName: string; override;
     function NewDetailRelation: TEpiDetailRelation;
+    function IsChild(Relation: TEpiMasterRelation; Recurse: Boolean): boolean;
     property Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property DetailRelation[Index: integer]: TEpiDetailRelation read GetDetailRelation; default;
     property DetailRelations: TEpiRelationList read FDetailRelations;
@@ -85,7 +86,7 @@ type
     function XMLName: string; override;
     function NewMasterRelation: TEpiMasterRelation;
     function ItemClass: TEpiCustomItemClass; override;
-    function GetItemByName(AName: string): TEpiCustomItem; override;
+    function GetItemByName(Const AName: string): TEpiCustomItem; override;
     function ValidateRename(const NewName: string; RenameOnSuccess: boolean
        ): boolean; override;
     function GetEnumerator: TEpiRelationListEnumerator;
@@ -238,6 +239,26 @@ begin
   result := TEpiDetailRelation(FDetailRelations.NewItem(TEpiDetailRelation));
 end;
 
+function TEpiMasterRelation.IsChild(Relation: TEpiMasterRelation;
+  Recurse: Boolean): boolean;
+var
+  LRelation: TEpiMasterRelation;
+begin
+  result := false;
+
+  for LRelation in DetailRelations do
+  begin
+    result := (LRelation = Relation);
+
+    if Recurse then
+      Result :=
+        Result or
+        (LRelation.IsChild(Relation, Recurse));
+
+    if Result then exit;
+  end;
+end;
+
 { TEpiDetailRelation }
 
 function TEpiDetailRelation.GetMasterRelation: TEpiMasterRelation;
@@ -381,7 +402,7 @@ begin
   Result := TEpiMasterRelation;
 end;
 
-function TEpiRelationList.GetItemByName(AName: string): TEpiCustomItem;
+function TEpiRelationList.GetItemByName(const AName: string): TEpiCustomItem;
 begin
   // Override this to make an easy traversal of the relationship tree.
   result := TEpiDocument(RootOwner).Relations.RecursiveGetItemByName(AName);

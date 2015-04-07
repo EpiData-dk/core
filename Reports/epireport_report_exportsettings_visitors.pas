@@ -25,6 +25,8 @@ type
     procedure Visit(const ExportSetting: TEpiExportSetting); override; overload;
     procedure Visit(const ExportSetting: TEpiCustomValueLabelExportSetting);
       override; overload;
+    procedure Visit(const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+      override; overload;
     procedure Visit(const ExportSetting: TEpiStataExportSetting); override;
       overload;
     procedure Visit(const ExportSetting: TEpiCSVExportSetting); override;
@@ -60,6 +62,8 @@ type
     procedure Visit(const ExportSetting: TEpiExportSetting); override; overload;
     procedure Visit(const ExportSetting: TEpiCustomValueLabelExportSetting);
       override; overload;
+    procedure Visit(const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+      override; overload;
     procedure Visit(const ExportSetting: TEpiStataExportSetting); override;
       overload;
     procedure Visit(const ExportSetting: TEpiCSVExportSetting); override;
@@ -93,7 +97,7 @@ begin
   Adjust := tcaAutoAdjust;
   if Col = 1 then
     Adjust := tcaRightAdjust;
-  FReportGenerator.TableCell(Text, Col, RowIndex, Adjust);
+  ReportGenerator.TableCell(Text, Col, RowIndex, Adjust);
 end;
 
 function TSettingsTableOutputVisitor.BoolToStr(B: Boolean; Unused: Boolean
@@ -122,6 +126,9 @@ end;
 
 procedure TSettingsTableOutputVisitor.Visit(
   const ExportSetting: TEpiExportSetting);
+var
+  S: String;
+  i: Integer;
 begin
   if Assigned(ExportSetting.AdditionalExportSettings) then
   begin
@@ -131,10 +138,6 @@ begin
   end;
 
   if not CanVisit(ExportSetting, TEpiExportSetting) then exit;
-
-  DoTableCell(0, 'Records Exported');
-  DoTableCell(1, Format('%d - %d', [ExportSetting.FromRecord+1, ExportSetting.ToRecord+1]));
-  Inc(FRowIndex);
 
   DoTableCell(0, 'Encoding');
   DoTableCell(1, EpiEncodingToString[ExportSetting.Encoding]);
@@ -152,6 +155,16 @@ begin
 
   DoTableCell(0, 'Export Valuelabels');
   DoTableCell(1, BoolToStr(ExportSetting.ExportValueLabels, true));
+  Inc(FRowIndex);
+end;
+
+procedure TSettingsTableOutputVisitor.Visit(
+  const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+begin
+  if not CanVisit(ExportSetting, TEpiCustomCompleteProjectExportSetting) then exit;
+
+  DoTableCell(0, 'Export Complete Project');
+  DoTableCell(1, BoolToStr(ExportSetting.ExportCompleteProject, true));
   Inc(FRowIndex);
 end;
 
@@ -200,7 +213,7 @@ begin
   else
     if Length(S) = 1
     then
-      S := 'Max'
+      S := 'Mac'
     else
       S := 'Windows';
 
@@ -323,7 +336,7 @@ end;
 
 procedure TSettingCountVisitor.Visit(const ExportSetting: TEpiExportSetting);
 begin
-  CommonVisit(3, TEpiExportSetting);
+  CommonVisit(2, TEpiExportSetting);
   AdditionalVisit(ExportSetting);
 end;
 
@@ -331,6 +344,12 @@ procedure TSettingCountVisitor.Visit(
   const ExportSetting: TEpiCustomValueLabelExportSetting);
 begin
   CommonVisit(1, TEpiCustomValueLabelExportSetting);
+end;
+
+procedure TSettingCountVisitor.Visit(
+  const ExportSetting: TEpiCustomCompleteProjectExportSetting);
+begin
+  CommonVisit(1, TEpiCustomCompleteProjectExportSetting);
 end;
 
 procedure TSettingCountVisitor.Visit(
