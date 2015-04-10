@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
-  epivaluelabels, epieximtypes;
+  epivaluelabels, epieximtypes, epiimport_stata;
 
 type
 
@@ -24,6 +24,7 @@ type
     FOnRequestPassword: TRequestPasswordEvent;
   private
     { Stata help functions }
+    FStataImport: TEpiStataImport;  // Importer for Stata v 117+  (XML)
     procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
     procedure   ReadBuf(Const St: TStream; var Buf: Array of Byte; Count: Integer);
     function    ReadInts(Const St: TStream; Count: Integer): Integer;
@@ -661,10 +662,12 @@ end;
 constructor TEpiImport.Create;
 begin
   FImportEncoding := eeGuess;
+  FStataImport    := TEpiStataImport.Create;
 end;
 
 destructor TEpiImport.Destroy;
 begin
+  FStataImport.Free;
   inherited Destroy;
 end;
 
@@ -1200,6 +1203,25 @@ var
 begin
   result := false;
 
+  // ********************************
+  //           STATA HEADER
+  // ********************************
+
+  // With Stata 13+ (dta 117+), the format have changed significantly
+  // ie. to XML like structure, hence we must make a test for this
+  // first.
+  SetLength(CharBuf, 11);
+  DataStream.Read(CharBuf[0], 11);
+  if (CharBuf[0] = '<') and (CharBuf[10] = '>')
+  then
+    begin
+      FStataImport.ImportStata(DataStream, Doc, DataFile, ImportData);
+{      RaiseError(Exception,
+        'Stata 13 is not yet supported' + LineEnding +
+        'Use "saveold" command in Stata to import in EpiData.');  }
+      Exit;
+    end;
+
   if not Assigned(DataFile) then
     DataFile := Doc.DataFiles.NewDataFile;
 
@@ -1207,23 +1229,6 @@ begin
 
   With DataFile do
   try
-    // ********************************
-    //           STATA HEADER
-    // ********************************
-
-    // With Stata 13 (dta 117), the format have changed significantly
-    // ie. to XML like structure, hence we must make a test for this
-    // first.
-    SetLength(CharBuf, 11);
-    DataStream.Read(CharBuf[0], 11);
-    if (CharBuf[0] = '<') and (CharBuf[10] = '>')
-    then
-      begin
-        RaiseError(Exception,
-          'Stata 13 is not yet supported' + LineEnding +
-          'Use "saveold" command in Stata to import in EpiData.');
-        Exit;
-      end;
 
     DataStream.Position := 0;
 
