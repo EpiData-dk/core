@@ -98,6 +98,7 @@ const
   StataFloatConst  = #254;
   StataDoubleConst = #255;
 
+  StataStrLsConstXML  = 32768;
   StataDoubleConstXML = 65526;
   StataFloatConstXML  = 65527;
   StataLongConstXML   = 65528;
