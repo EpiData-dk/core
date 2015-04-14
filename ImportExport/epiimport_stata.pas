@@ -101,13 +101,14 @@ uses
   epistringutils, epidatafilestypes, LazUTF8, dateutils;
 
 const
-  STATA_STRLS_FIELD = 'STATA_STRLS_FIELD';
+  STATA_STRLS_VVAL = 'STATA_STRLS_VVAL';
+  STATA_STRLS_OVAL = 'STATA_STRLS_OVAL';
 
 { TEpiStataImport }
 
 procedure TEpiStataImport.DoError(const Msg: String);
 begin
-  Raise Exception.Create(Msg);
+//  Raise Exception.Create(Msg);
 end;
 
 function TEpiStataImport.DoProgress(ProgressType: TEpiProgressType;
@@ -190,7 +191,7 @@ end;
 
 function TEpiStataImport.Read6Word: QWord;
 var
-  Buffer: Array[6] of byte;
+  Buffer: Array[0..5] of byte;
 begin
   FStream.ReadBuffer(Buffer[0], 6);
 end;
@@ -247,14 +248,18 @@ var
   j: Integer;
   TmpField: TEpiField;
   FieldType: TEpiFieldType;
-  StrLsField: TEpiField;
+  StrLsVVals: TEpiFields;
+  StrLsOVals: TEpiField;
 begin
   SetLength(FDateTypeList, FFieldCount);
   FRecordDataLength := 0;
 
+  FDataFile.Size := FObsCount;
+
   for i := 0 to FFieldCount - 1 do
   begin
-    StrLsField := nil;
+    StrLsVVals := nil;
+    StrLsOVals := nil;
 
     // Find basic type from Stata types
     Case FVariableTypes[i] of
@@ -267,8 +272,14 @@ begin
       StataStrLsConstXML:
         begin
           FieldType := ftString;
+
+          // Create a field list, which points to the field holding the value
+          StrLsVVals := TEpiFields.Create(nil);
+          StrLsVVals.UniqueNames := false;
+
           // Create an Int field to hold indices during data-read.
-          StrLsField := TEpiField.CreateField(nil, ftInteger);
+          StrLsOVals := TEpiField.CreateField(nil, ftInteger);
+          StrLsOVals.Size := FObsCount;
           Inc(FRecordDataLength, 8);
         end;
 
@@ -353,8 +364,10 @@ begin
 
     // Now created fields
     TmpField := FDataFile.NewField(FieldType);
-    if Assigned(StrLsField) then
-      TmpField.AddCustomData(STATA_STRLS_FIELD, StrLsField);
+    if Assigned(StrLsVVals) then
+      TmpField.AddCustomData(STATA_STRLS_VVAL, StrLsVVals);
+    if Assigned(StrLsOVals) then
+      TmpField.AddCustomData(STATA_STRLS_OVAL, StrLsOVals);
 
     TmpField.BeginUpdate;
     with TmpField do
@@ -658,8 +671,9 @@ var
   CurField: Integer;
   I, J: LongInt;
   TmpField: TEpiField;
-  StrLsField: TEpiField;
-  StrLsVal: QWord;
+  S: String;
+  StrLsVVal: TEpiFields;
+  StrLsOVal: TEpiField;
 begin
   ReadStartTag('data');
 
@@ -670,11 +684,11 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
-    DoProgress(eptInit, 0, NObs);
+    DoProgress(eptInit, 0, FObsCount);
 
     FOR CurRec := 0 TO FObsCount -1 DO
     BEGIN
-      DoProgress(eptRecords, CurRec, NObs);
+      DoProgress(eptRecords, CurRec, FObsCount);
 
       FOR CurField := 0 TO FFieldCount - 1 DO
       BEGIN
@@ -683,19 +697,20 @@ begin
         Case FVariableTypes[CurField] of
           StataStrLsConstXML:
             begin
-              StrLsField := TEpiField(TmpField.RemoveCustomData(STATA_STRLS_FIELD));
+              StrLsVVal := TEpiFields(TmpField.FindCustomData(STATA_STRLS_VVAL));
+              StrLsOVal := TEpiField(TmpField.FindCustomData(STATA_STRLS_OVAL));
 
               // we really only need the O number from the (V, O) tuple.
               case FStataVersion of
                 dta13:
                   begin
-                    ReadDWord;
-                    StrLsField.AsInteger[CurRec] := ReadDWord;
+                    StrLsVVal.AddItem(FDataFile.Field[ReadDWord - 1]);
+                    StrLsOVal.AsInteger[CurRec] := ReadDWord - 1;
                   end;
                 dta14:
                   begin
-                    ReadWord;
-                    StrLsField.AsInteger[CurRec] := ReadDWord;
+                    StrLsVVal.AddItem(FDataFile.Field[ReadWord - 1]);
+                    StrLsOVal.AsInteger[CurRec] := Read6Word - 1;
                   end;
               end;
 
@@ -712,12 +727,12 @@ begin
                     I := ReadSByte;
                     J := $65;
                   end;
-                StataIntConst:
+                StataIntConstXML:
                   begin
                     I := ReadSWord;
                     J := $7FE5;
                   end;
-                StataLongConst:
+                StataLongConstXML:
                   begin
                     I := ReadSDWord;
                     J := $7FFFFFE5;
@@ -758,7 +773,7 @@ begin
 
 
               {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
-              case DateTypeList[CurField] of
+              case FDateTypeList[CurField] of
                 tnone: TmpField.AsInteger[CurRec]  := I;                                     // Do nothing - conversion is not needed.
                 tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, I);  // I - measured in ms. since 1960.
                 td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   I);
@@ -770,8 +785,10 @@ begin
               end;
             end;
 
-          StataFloatConstXML,
+          StataFloatConstXML:
+            ReadDWord;
           StataDoubleConstXML:
+            ReadQWord;
 (*            Begin
               if FVariableTypes[CurField] = StataFloatConst then
                 TmpFlt := ReadSingleMissing(MisVal)
@@ -821,7 +838,7 @@ begin
             end;     *)
         else
           // This is a string field.
-          S := ReadAsString(FVariableTypes[i]);
+          S := ReadAsString(FVariableTypes[CurField]);
 
           if (FStataVersion <= dta13) then
             S := EpiUnknownStrToUTF8(S);
@@ -831,9 +848,9 @@ begin
       END;  //for CurField
     END;  //for CurRec
 
-    DoProgress(eptFinish, CurRec, NObs);
+    DoProgress(eptFinish, CurRec, FObsCount);
   EXCEPT
-    RaiseError(Exception, 'Error reading data from Stata-file');
+    DoError('Error reading data from Stata-file');
     Exit;
   END;  //try..except
 
