@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
-  epivaluelabels, epieximtypes, epiimport_stata;
+  epivaluelabels, epieximtypes, epiimport_stata, epicustombase;
 
 type
 
@@ -14,6 +14,7 @@ type
   EIncorrectPasswordException = Exception;
 
   TEpiClipBoardReadHook = procedure (ClipBoardLine: TStrings) of object;
+
 
   { TEpiImport }
 
@@ -53,10 +54,13 @@ type
     function    MinFt(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType;
   private
     FImportCasing: TEpiFieldNamingCase;
+    FOnControlItemPosition: TEpiControlItemPosition;
     FOnProgress: TEpiProgressEvent;
     function    TruncToInt(e: Extended): integer;
     function    DoProgress(ProgressType: TEpiProgressType;
       Const Current, Max: Cardinal): boolean;
+    procedure   DoControlItemPosition(Const Item: TEpiCustomControlItem;
+      out Top, Left: Integer);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -75,6 +79,7 @@ type
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
     property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+    property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write FOnControlItemPosition;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
     // Import casing only relevant for .rec files, since they are considere case-incensitive.
     property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
@@ -208,6 +213,16 @@ begin
   result := false;
   if Assigned(OnProgress) then
     OnProgress(nil, ProgressType, Current, Max, Result);
+end;
+
+procedure TEpiImport.DoControlItemPosition(const Item: TEpiCustomControlItem;
+  out Top, Left: Integer);
+begin
+  Top := 0;
+  Left := 0;
+
+  if Assigned(OnControlItemPosition) then
+    OnControlItemPosition(Self, Item, Top, Left);
 end;
 
 function TEpiImport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings; out
@@ -1208,7 +1223,7 @@ begin
   // ********************************
 
   // With Stata 13+ (dta 117+), the format have changed significantly
-  // ie. to XML like structure, hence we must make a test for this
+  // ie. to a XML like structure, hence we must make a test for this
   // first.
   SetLength(CharBuf, 11);
   DataStream.Read(CharBuf[0], 11);
@@ -1499,6 +1514,7 @@ begin
       TmpField.Question.Text := StrBuf;
 
       // No more field information exists. The update may complete.
+
       TmpField.EndUpdate;
     END;
 

@@ -5,10 +5,14 @@ unit epieximtypes;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epicustombase;
 
 type
   TEpiFieldNamingCase = (fncUpper, fncLower, fncAsIs);
+
+  TEpiControlItemPosition = procedure (Const Sender: TObject;
+    Const ControlItem: TEpiCustomControlItem;
+    out Top, Left: Integer) of object;
 
 const
   EpiFieldNamingCaseToString: array[TEpiFieldNamingCase] of string =

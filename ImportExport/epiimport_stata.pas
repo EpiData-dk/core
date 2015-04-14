@@ -5,7 +5,8 @@ unit epiimport_stata;
 interface
 
 uses
-  Classes, SysUtils, epidocument, epidatafiles, epivaluelabels, epieximtypes;
+  Classes, SysUtils, epidocument, epidatafiles, epivaluelabels, epieximtypes,
+  epicustombase;
 
 type
 
@@ -40,6 +41,8 @@ type
     procedure DoError(Const Msg: String);
     function  DoProgress(ProgressType: TEpiProgressType;
       Const Current, Max: Cardinal): boolean;
+    procedure DoControlItemPosition(Const Item: TEpiCustomControlItem;
+      out Top, Left: Integer);
   private
     { Stream Read functions }
     // Reads from the stream a start-/end tag with the given name. If not found reports an error.
@@ -92,9 +95,11 @@ type
                   ImportData: boolean = true
                 ): Boolean; overload;
   private
+    FOnControlItemPosition: TEpiControlItemPosition;
     FOnProgress: TEpiProgressEvent;
   public
     property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+    property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write FOnControlItemPosition;
   end;
 
 
@@ -121,6 +126,16 @@ begin
 
   if Assigned(OnProgress) then
     OnProgress(FDataFile, ProgressType, Current, Max, Result);
+end;
+
+procedure TEpiStataImport.DoControlItemPosition(
+  const Item: TEpiCustomControlItem; out Top, Left: Integer);
+begin
+  Top := 0;
+  Left := 0;
+
+  if Assigned(OnControlItemPosition) then
+    OnControlItemPosition(Self, Item, Top, Left);
 end;
 
 function TEpiStataImport.ReadStartTag(const Name: String;
@@ -280,6 +295,8 @@ var
   FieldType: TEpiFieldType;
   StrLsVVals: TEpiField;
   StrLsOVals: TEpiField;
+  ATop: Integer;
+  ALeft: Integer;
 begin
   SetLength(FDateTypeList, FFieldCount);
   FRecordDataLength := 0;
@@ -399,30 +416,30 @@ begin
     if Assigned(StrLsOVals) then
       TmpField.AddCustomData(STATA_STRLS_OVAL, StrLsOVals);
 
-    TmpField.BeginUpdate;
     with TmpField do
     begin
-      Top      := -1;
-
       // Length and Decimal is found post-data read.
       Length   := 0;
       Decimals := 0;
-    end;
 
-    // Dates:
-    if TmpField.FieldType in (DateFieldTypes + TimeFieldTypes) then
-    begin
-      if TmpField.FieldType in TimeFieldTypes then
-        TmpField.Length := 8
-      else
-        TmpField.Length := 10;
-      TmpField.Decimals := 0;
-    end;
+      // Dates:
+      if FieldType in (DateFieldTypes + TimeFieldTypes) then
+      begin
+        if FieldType in TimeFieldTypes then
+          Length := 8
+        else
+          Length := 10;
+        Decimals := 0;
+      end;
 
-    // Variable names + variable labels
-    TmpField.Name          := FVariableNames[i];
-    TmpField.Question.Text := FVariableLabels[i];
-    TmpField.EndUpdate;
+      // Variable names + variable labels
+      Name          := FVariableNames[i];
+      Question.Text := FVariableLabels[i];
+
+      DoControlItemPosition(TmpField, ATop, ALeft);
+      Top  := ATop;
+      Left := ALeft;
+    end;
   end;
 end;
 
