@@ -5,7 +5,7 @@ unit epiimport_stata;
 interface
 
 uses
-  Classes, SysUtils, epidocument, epidatafiles, epieximtypes;
+  Classes, SysUtils, epidocument, epidatafiles, epivaluelabels, epieximtypes;
 
 type
 
@@ -18,6 +18,7 @@ type
 
   private
     { Internal variables }
+    FDocument: TEpiDocument;
     FDataFile: TEpiDataFile;
     FStream:   TStream;
     FStataVersion:    TEpiStataVersion;
@@ -41,9 +42,9 @@ type
       Const Current, Max: Cardinal): boolean;
   private
     { Stream Read functions }
-
     // Reads from the stream a start-/end tag with the given name. If not found reports an error.
-    function  ReadStartTag(Const Name: String): boolean;
+    function  ReadStartTag(Const Name: String;
+      Const FailOnNotFound: boolean = true): boolean;
     function  ReadEndTag(Const Name: String): boolean;
 
     // Read text content in tag
@@ -51,8 +52,7 @@ type
     function  ReadByte:  Byte;
     function  ReadWord:  Word;
     function  ReadDWord: DWord;
-    // The very-very unusual 6-byte integer, used by the StrLs in Stata 14
-    function  Read6Word: QWord;
+    function  Read6Word: QWord; // The very-very unusual 6-byte integer, used by the StrLs in Stata 14
     function  ReadQWord: QWord;
 
     // Mostly for data reading (signed types)
@@ -60,6 +60,8 @@ type
     function  ReadSWord: SmallInt;  // Signed Word
     function  ReadSDWord: LongInt;  // Signed DWord
     function  ReadSQWord: Int64;    // Signed QWord
+    function  ReadSingle: Single;   // Signed single precision float
+    function  ReadDouble: Double;   // Signed double precision float
 
   private
     { EpiData methods }
@@ -79,8 +81,9 @@ type
     procedure ReadCharacteristics;
     procedure ReadCharacteristic;
     procedure ReadData(ImportData: Boolean);
-    procedure ReadStrls;
+    procedure ReadStrls(ImportData: Boolean);
     procedure ReadValueLabels;
+    procedure ReadValueLabel;
   public
     function    ImportStata(
                   Const DataStream: TStream;
@@ -98,7 +101,7 @@ type
 implementation
 
 uses
-  epistringutils, epidatafilestypes, LazUTF8, dateutils;
+  epistringutils, epidatafilestypes, LazUTF8, dateutils, math;
 
 const
   STATA_STRLS_VVAL = 'STATA_STRLS_VVAL';
@@ -120,19 +123,28 @@ begin
     OnProgress(FDataFile, ProgressType, Current, Max, Result);
 end;
 
-function TEpiStataImport.ReadStartTag(const Name: String): boolean;
+function TEpiStataImport.ReadStartTag(const Name: String;
+  const FailOnNotFound: boolean): boolean;
 var
   TagName: String;
   S: String;
   Len: Integer;
+  CPos: Int64;
 begin
   TagName := '<' + Name + '>';
   Len :=  Length(TagName);
+
+  CPos := FStream.Position;
   S := ReadAsString(Len);
 
   Result := (S = TagName);
-  if not Result then
-    DoError('Tag not found: ' + TagName);
+  if (not Result) then
+  begin
+    if (FailOnNotFound) then
+      DoError('Tag not found: ' + TagName)
+    else
+      FStream.Position := CPos;
+  end;
 end;
 
 function TEpiStataImport.ReadEndTag(const Name: String): boolean;
@@ -161,7 +173,7 @@ begin
   FStream.Read(Buffer[0], Length);
   Buffer[Length] := #0;
 
-  Result := String(Buffer);
+  Result := StrPas(@Buffer[0]);
 end;
 
 function TEpiStataImport.ReadByte: Byte;
@@ -241,6 +253,24 @@ begin
   end;
 end;
 
+function TEpiStataImport.ReadSingle: Single;
+var
+  Val: DWord;
+  Buf: Array[0..3] of Byte absolute Val;
+begin
+  Val := ReadDWord;
+  Result := Single(Buf);
+end;
+
+function TEpiStataImport.ReadDouble: Double;
+var
+  Val: QWord;
+  Buf: Array[0..7] of Byte absolute Val;
+begin
+  Val := ReadQWord;
+  Result := Double(Buf);
+end;
+
 procedure TEpiStataImport.CreateFields;
 var
   i: Integer;
@@ -248,7 +278,7 @@ var
   j: Integer;
   TmpField: TEpiField;
   FieldType: TEpiFieldType;
-  StrLsVVals: TEpiFields;
+  StrLsVVals: TEpiField;
   StrLsOVals: TEpiField;
 begin
   SetLength(FDateTypeList, FFieldCount);
@@ -273,11 +303,11 @@ begin
         begin
           FieldType := ftString;
 
-          // Create a field list, which points to the field holding the value
-          StrLsVVals := TEpiFields.Create(nil);
-          StrLsVVals.UniqueNames := false;
+          // Create an Int field to hold field indices during data-read.
+          StrLsVVals := TEpiField.CreateField(nil, ftInteger);
+          StrLsVVals.Size := FObsCount;
 
-          // Create an Int field to hold indices during data-read.
+          // Create an Int field to hold value indices during data-read.
           StrLsOVals := TEpiField.CreateField(nil, ftInteger);
           StrLsOVals.Size := FObsCount;
           Inc(FRecordDataLength, 8);
@@ -397,8 +427,54 @@ begin
 end;
 
 procedure TEpiStataImport.TrimFields;
+var
+  F: TEpiField;
+  Len: Integer;
+  Dec: Integer;
+  i: Integer;
+  ULen: PtrInt;
+  S: String;
+  P: SizeInt;
+  Fmt: String;
+  j: Integer;
 begin
-  // TODO: Trim fields (set correct length) according to data content
+  for j := 0 to FFieldCount - 1 do
+  begin
+    F := FDataFile[j];
+
+    Len := 0;
+    Dec := 0;
+
+    if F.FieldType in FloatFieldTypes then
+    begin
+      Fmt := FVariableFormats[j];
+
+      for i := 0 to F.Size - 1 do
+      begin
+        if F.IsMissing[i] then Continue;
+
+        S := Trim(Format(Fmt, [F.AsFloat[i]]));
+        ULen := UTF8Length(S);
+        P := Pos(DefaultFormatSettings.DecimalSeparator, S);
+
+        if P > 0 then
+        begin
+          Dec := Max(Dec, ULen - P);
+          Len := Max(Len, P - 1);
+        end else
+          Len := Max(Len, ULen);
+      end;
+
+      F.Length   := Len + 1 + Dec;
+      F.Decimals := Dec;
+    end else begin
+      for i := 0 to F.Size - 1 do
+        Len := Max(Len, UTF8Length(F.AsString[i]));
+
+      F.Length   := Len;
+      F.Decimals := 0;
+    end;
+  end;
 end;
 
 procedure TEpiStataImport.ReadHeader;
@@ -639,14 +715,10 @@ begin
   // Read consecutive <ch> tags...
   while true do
   begin
-    CPos := FStream.Position;
+    if not ReadStartTag('ch', false) then
+      Break;
 
-    if not ReadStartTag('ch')
-    then
-      begin
-        FStream.Position := CPos;
-        Break;
-      end;
+    ReadCharacteristic;
   end;
 
   ReadEndTag('characteristics');
@@ -656,7 +728,6 @@ procedure TEpiStataImport.ReadCharacteristic;
 var
   Len: DWord;
 begin
-
   // Read "llll", length of Characteristic.
   Len := ReadDWord;
   // For now - just skip that part.
@@ -674,6 +745,9 @@ var
   S: String;
   StrLsVVal: TEpiFields;
   StrLsOVal: TEpiField;
+  O: QWord;
+  V: DWord;
+  TmpFloat: EpiFloat;
 begin
   ReadStartTag('data');
 
@@ -697,23 +771,20 @@ begin
         Case FVariableTypes[CurField] of
           StataStrLsConstXML:
             begin
-              StrLsVVal := TEpiFields(TmpField.FindCustomData(STATA_STRLS_VVAL));
-              StrLsOVal := TEpiField(TmpField.FindCustomData(STATA_STRLS_OVAL));
-
-              // we really only need the O number from the (V, O) tuple.
               case FStataVersion of
                 dta13:
                   begin
-                    StrLsVVal.AddItem(FDataFile.Field[ReadDWord - 1]);
-                    StrLsOVal.AsInteger[CurRec] := ReadDWord - 1;
+                    V := ReadDWord - 1;
+                    O := ReadDWord - 1;
                   end;
                 dta14:
                   begin
-                    StrLsVVal.AddItem(FDataFile.Field[ReadWord - 1]);
-                    StrLsOVal.AsInteger[CurRec] := Read6Word - 1;
+                    V := ReadWord - 1;
+                    O := Read6Word - 1;
                   end;
               end;
-
+              TEpiField(TmpField.FindCustomData(STATA_STRLS_VVAL)).AsInteger[CurRec] := V;
+              TEpiField(TmpField.FindCustomData(STATA_STRLS_OVAL)).AsInteger[CurRec] := O;
             end;
 
 
@@ -785,17 +856,15 @@ begin
               end;
             end;
 
-          StataFloatConstXML:
-            ReadDWord;
+          StataFloatConstXML,
           StataDoubleConstXML:
-            ReadQWord;
-(*            Begin
-              if FVariableTypes[CurField] = StataFloatConst then
-                TmpFlt := ReadSingleMissing(MisVal)
+            Begin
+              if FVariableTypes[CurField] = StataFloatConstXML then
+                TmpFloat := ReadSingle
               else
-                TmpFlt := ReadDoubleMissing(MisVal);
+                TmpFloat := ReadDouble;
 
-              // This is a missing value type.
+{              // This is a missing value type.
               if MisVal >= 0 then
               begin
                 // This corresponds to Stata's ".a", ".b", and ".c"
@@ -822,20 +891,20 @@ begin
                   TmpField.AsFloat[CurRec] := TmpFlt;
                 end else
                   TmpField.IsMissing[CurRec] := true;
-              end else begin
+              end else} begin
                 {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
-                case DateTypeList[CurField] of
-                  tnone: TmpField.AsFloat[CurRec]    := TmpFlt;                                  // Do nothing - conversion is not needed.
-                  tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, trunc(TmpFlt));       // I - measured in ms. since 1960.
-                  td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   TruncToInt(TmpFlt));
-                  tw:    TmpField.AsDateTime[CurRec] := IncWeek(StataBaseDateTime,  TruncToInt(TmpFlt));
-                  tm:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, TruncToInt(TmpFlt));
-                  tq:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, TruncToInt(TmpFlt) * 3);
-                  th:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, TruncToInt(TmpFlt) * 6);
-                  ty:    TmpField.AsDateTime[CurRec] := IncYear(StataBaseDateTime,  TruncToInt(TmpFlt));
+                case FDateTypeList[CurField] of
+                  tnone: TmpField.AsFloat[CurRec]    := TmpFloat;                                                 // Do nothing - conversion is not needed.
+                  tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, trunc(TmpFloat));       // I - measured in ms. since 1960.
+                  td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   trunc(TmpFloat));
+                  tw:    TmpField.AsDateTime[CurRec] := IncWeek(StataBaseDateTime,  trunc(TmpFloat));
+                  tm:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat));
+                  tq:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat) * 3);
+                  th:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat) * 6);
+                  ty:    TmpField.AsDateTime[CurRec] := IncYear(StataBaseDateTime,  trunc(TmpFloat));
                 end;
               end;
-            end;     *)
+            end;
         else
           // This is a string field.
           S := ReadAsString(FVariableTypes[CurField]);
@@ -857,16 +926,170 @@ begin
   ReadEndTag('data');
 end;
 
-procedure TEpiStataImport.ReadStrls;
+procedure TEpiStataImport.ReadStrls(ImportData: Boolean);
+var
+  Field: TEpiField;
+  V: Int64;
+  O: Int64;
+  j: QWord;
+  i: Integer;
+  GSO: String;
+  gsoV: DWord;
+  gsoO: QWord;
+  gsoType: Byte;
+  gsoLen: DWord;
+  S: String;
 begin
   ReadStartTag('strls');
+
+  for j := 0 to FObsCount - 1 do
+  begin
+    for i := 0 to FFieldCount - 1 do
+    begin
+      Field := FDataFile.Field[i];
+
+      if (not Assigned(Field.FindCustomData(STATA_STRLS_VVAL)))
+      then
+        Continue;
+
+      V := TEpiField(Field.FindCustomData(STATA_STRLS_VVAL)).AsInteger[j];
+      O := TEpiField(Field.FindCustomData(STATA_STRLS_OVAL)).AsInteger[j];
+
+      // Empty StrLs content!
+      if (V < 0) and (O < 0) then
+        Continue;
+
+      // The StrLs is unique and not seen before! It belongs to this field
+      // and at this record no.
+      if (V = i) and (O = j) then
+      begin
+        GSO := ReadAsString(3);
+        if (GSO <> 'GSO') then
+          DoError('Incorrect GSO header in StrLs!');
+
+        gsoV := ReadDWord - 1;
+        case FStataVersion of
+          dta13: gsoO := ReadDWord - 1;
+          dta14: gsoO := ReadQWord - 1;
+        end;
+
+        if (V <> gsoV) or
+           (O <> gsoO)
+        then
+          DoError('Incorrect GSO content in StrLs!');
+
+        gsoType := ReadByte;
+        if (not (gsoType in [129, 130]))
+        then
+          DoError('Incorrect GSO type in StrLs!');
+
+        gsoLen  := ReadDWord;
+        S := ReadAsString(gsoLen);
+
+        if (FStataVersion = dta13) then
+          S := EpiUnknownStrToUTF8(S);
+
+        if ImportData then
+          Field.AsString[j] := S;
+
+        Continue;
+      end;
+
+      // This StrLs has been seen before, use the reference field and record no.
+      // to get the existing content.
+      if (O < j) or ((O = j) and (V < i)) then
+      begin
+        if ImportData then
+          Field.AsString[j] := FDataFile.Field[V].AsString[O];
+
+        Continue;
+      end;
+
+      DoError('Incorrect GSO: Forward declaration');
+    end;
+  end;
+
   ReadEndTag('strls');
 end;
 
 procedure TEpiStataImport.ReadValueLabels;
 begin
-  ReadStartTag('valuelabels');
-  ReadEndTag('valuelabels');
+  ReadStartTag('value_labels');
+
+  while true do
+  begin
+    if (not ReadStartTag('lbl', false)) then
+      break;
+
+    ReadValueLabel;
+  end;
+
+  ReadEndTag('value_labels');
+end;
+
+procedure TEpiStataImport.ReadValueLabel;
+var
+  Len: DWord;
+  LabelLen: DWord;
+  LabelName: String;
+  N: DWord;
+  TxtLen: DWord;
+  Off: Array of DWord;
+  Val: Array of DWord;
+  Txt: Array of Char;
+  VLSet: TEpiValueLabelSet;
+  VL: TEpiIntValueLabel;
+  i: Integer;
+  S: String;
+begin
+  // Len
+  Len := ReadDWord;
+
+  case FStataVersion of
+    //  80 Characters (* 4 for UTF-8) and a terminal #0
+    dta13: LabelLen := (32 * 1) + 1; // 33
+    dta14: LabelLen := (32 * 4) + 1; // 129
+  end;
+
+  // Labelname...
+  LabelName := ReadAsString(LabelLen);
+  if FStataVersion = dta13 then
+    LabelName := EpiUnknownStrToUTF8(LabelName);
+
+  // Padding...
+  ReadAsString(3);
+
+  // Value Label Table
+  N := ReadDWord;
+  TxtLen := ReadDWord;
+
+  SetLength(Off, N);
+  for i := 0 to N - 1 do
+    Off[i] := ReadDWord;
+
+  SetLength(Val, N);
+  for i := 0 to N - 1 do
+    Val[i] := ReadDWord;
+
+  SetLength(Txt, TxtLen);
+  FStream.ReadBuffer(Txt[0], TxtLen);
+
+  VLSet := FDocument.ValueLabelSets.NewValueLabelSet(ftInteger);
+  VLSet.Name := LabelName;
+
+  for i := 0 to N -1 do
+  begin
+    VL := TEpiIntValueLabel(VLset.NewValueLabel);
+    VL.Value := Val[i];
+
+    S := StrPas(@Txt[Off[i]]);
+    if (FStataVersion = dta13) then
+      S := EpiUnknownStrToUTF8(S);
+
+    VL.TheLabel.Text := S;
+  end;
+
+  ReadEndTag('lbl');
 end;
 
 function TEpiStataImport.ImportStata(const DataStream: TStream;
@@ -875,6 +1098,8 @@ function TEpiStataImport.ImportStata(const DataStream: TStream;
 begin
   FStream := DataStream;
   FStream.Position := 0;
+
+  FDocument := Doc;
 
   if not Assigned(DataFile) then
     DataFile := Doc.DataFiles.NewDataFile;
@@ -899,10 +1124,15 @@ begin
 
     ReadCharacteristics;
     ReadData(ImportData);
-    ReadStrls;
+    ReadStrls(ImportData);
     ReadValueLabels;
 
     ReadEndTag('stata_dta');
+
+    // Now find the correct lengts
+    TrimFields;
+
+    Result := true;
   finally
   end;
 end;
