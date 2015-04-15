@@ -60,7 +60,7 @@ type
     function    DoProgress(ProgressType: TEpiProgressType;
       Const Current, Max: Cardinal): boolean;
     procedure   DoControlItemPosition(Const Item: TEpiCustomControlItem;
-      out Top, Left: Integer);
+      var Top, Left: Integer);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -216,11 +216,8 @@ begin
 end;
 
 procedure TEpiImport.DoControlItemPosition(const Item: TEpiCustomControlItem;
-  out Top, Left: Integer);
+  var Top, Left: Integer);
 begin
-  Top := 0;
-  Left := 0;
-
   if Assigned(OnControlItemPosition) then
     OnControlItemPosition(Self, Item, Top, Left);
 end;
@@ -248,6 +245,8 @@ var
   BoolVal: EpiBool;
   FloatVal: EpiFloat;
   DateVal: EpiDate;
+  ATop: Integer;
+  ALeft: Integer;
 
 begin
   result := false;
@@ -370,7 +369,10 @@ begin
           Length := 0;
           Decimals := 0;
         end;
-      TmpField.Top := i + 1;
+
+      DoControlItemPosition(TmpField, ATop, ALeft);
+      TmpField.Top := ATop;
+      TmpField.Left := ALeft;
       TmpField.EndUpdate;
     end;
 
@@ -933,6 +935,8 @@ begin
         with EHeading do
         begin
           Caption.Text := EpiUnknownStrToUTF8(TmpLabel);
+
+          DoControlItemPosition(EHeading, TmpQuestX, TmpQuestY);
           Left         := TmpQuestX;
           Top          := TmpQuestY;
         end;
@@ -944,8 +948,6 @@ begin
       EField.BeginUpdate;
       with EField do
       begin
-        Left           := TmpFieldX;
-        Top            := TmpFieldY;
         Length         := TmpLength;
         Decimals       := 0;
         if TmpFieldTypeInt >= 100 then
@@ -961,6 +963,10 @@ begin
         end;
         // Ensure valid variable name.
         Name := TmpName;
+
+        DoControlItemPosition(EHeading, TmpFieldX, TmpFieldY);
+        Left           := TmpFieldX;
+        Top            := TmpFieldY;
 
         // Summerize field findings.
         TotFieldLength := TotFieldLength + Length;
@@ -1192,6 +1198,9 @@ var
   Off: Array of Integer;
   Val: Array of Integer;
   n: Integer;
+  S: String;
+  ATop: Integer;
+  ALeft: Integer;
 
   function ReadSingleMissing(var MisVal: Integer): Single;
   var
@@ -1227,7 +1236,10 @@ begin
   // first.
   SetLength(CharBuf, 11);
   DataStream.Read(CharBuf[0], 11);
-  if (CharBuf[0] = '<') and (CharBuf[10] = '>')
+  S := StringFromBuffer(@CharBuf[0], 11);
+
+  // first line in Stata 13+ is <stata_dta>
+  if (S = '<stata_dta>') // (CharBuf[0] = '<') and (CharBuf[10] = '>')
   then
     begin
       FStataImport.ImportStata(DataStream, Doc, DataFile, ImportData);
@@ -1514,6 +1526,11 @@ begin
       TmpField.Question.Text := StrBuf;
 
       // No more field information exists. The update may complete.
+
+      DoControlItemPosition(TmpField, ATop, ALeft);
+
+      TmpField.Top  := ATop;
+      TmpField.Left := ALeft;
 
       TmpField.EndUpdate;
     END;

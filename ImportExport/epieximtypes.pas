@@ -12,7 +12,7 @@ type
 
   TEpiControlItemPosition = procedure (Const Sender: TObject;
     Const ControlItem: TEpiCustomControlItem;
-    out Top, Left: Integer) of object;
+    var Top, Left: Integer) of object;
 
 const
   EpiFieldNamingCaseToString: array[TEpiFieldNamingCase] of string =

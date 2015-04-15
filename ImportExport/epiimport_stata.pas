@@ -42,7 +42,7 @@ type
     function  DoProgress(ProgressType: TEpiProgressType;
       Const Current, Max: Cardinal): boolean;
     procedure DoControlItemPosition(Const Item: TEpiCustomControlItem;
-      out Top, Left: Integer);
+      var Top, Left: Integer);
   private
     { Stream Read functions }
     // Reads from the stream a start-/end tag with the given name. If not found reports an error.
@@ -129,7 +129,7 @@ begin
 end;
 
 procedure TEpiStataImport.DoControlItemPosition(
-  const Item: TEpiCustomControlItem; out Top, Left: Integer);
+  const Item: TEpiCustomControlItem; var Top, Left: Integer);
 begin
   Top := 0;
   Left := 0;
