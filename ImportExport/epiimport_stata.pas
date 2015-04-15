@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epivaluelabels, epieximtypes,
-  epicustombase;
+  epicustombase, epidatafilestypes;
 
 type
 
@@ -67,6 +67,10 @@ type
     function  ReadDouble: Double;   // Signed double precision float
 
   private
+    function  IsMissing(Const Val: Integer; Const FieldIndex: DWord; OutVal: EpiInteger): Boolean; overload;
+    function  IsMissing(Const Val: Single; out OutVal: EpiFloat): Boolean; overload;
+    function  IsMissing(Const Val: Double; out OutVal: EpiFloat): Boolean; overload;
+  private
     { EpiData methods }
     procedure CreateFields;
     procedure TrimFields;
@@ -106,11 +110,12 @@ type
 implementation
 
 uses
-  epistringutils, epidatafilestypes, LazUTF8, dateutils, math;
+  epistringutils, LazUTF8, dateutils, math;
 
 const
   STATA_STRLS_VVAL = 'STATA_STRLS_VVAL';
   STATA_STRLS_OVAL = 'STATA_STRLS_OVAL';
+  STATA_MISSING_FIELD = 'STATA_MISSING_FIELD';
 
 { TEpiStataImport }
 
@@ -131,9 +136,6 @@ end;
 procedure TEpiStataImport.DoControlItemPosition(
   const Item: TEpiCustomControlItem; var Top, Left: Integer);
 begin
-  Top := 0;
-  Left := 0;
-
   if Assigned(OnControlItemPosition) then
     OnControlItemPosition(Self, Item, Top, Left);
 end;
@@ -218,9 +220,12 @@ end;
 
 function TEpiStataImport.Read6Word: QWord;
 var
-  Buffer: Array[0..5] of byte;
+  Buffer: Array[0..7] of byte;
 begin
-  FStream.ReadBuffer(Buffer[0], 6);
+  Buffer[0] := 0;
+  Buffer[1] := 0;
+  FStream.ReadBuffer(Buffer[2], 6);
+  Result := QWord(Buffer);
 end;
 
 function TEpiStataImport.ReadQWord: QWord;
@@ -286,6 +291,72 @@ begin
   Result := Double(Buf);
 end;
 
+function TEpiStataImport.IsMissing(const Val: Integer; const FieldIndex: DWord;
+  OutVal: EpiInteger): Boolean;
+begin
+  Result := false;
+
+  Case FVariableTypes[FieldIndex] of
+    StataByteConstXML: OutVal := (Val -       $65);
+    StataIntConstXML:  OutVal := (Val -     $7FE5);
+    StataLongConstXML: OutVal := (Val - $7FFFFFE5);
+  end;
+
+  Result := (OutVal >= 0);
+
+  if not (Result) then
+    OutVal := Val;
+end;
+
+
+function TEpiStataImport.IsMissing(const Val: Single; out OutVal: EpiFloat
+  ): Boolean;
+var
+  Buf:    Array[0..3] of Byte absolute Val;
+begin
+  Result := false;
+
+  // Single missing values look like this (in MSF format)
+  // 7F 00 ?? 00
+  // Where ?? is a multiple of 8 wrt. actual value.
+  //   .a = $08
+  //   .b = $10
+  //   .c = $18
+  //   ....
+  //   .z = $d0
+  if (Buf[3]=$7F) and ((Buf[0] AND Buf[2]) = 0) then
+  begin
+    Result := true;
+    OutVal := Integer(Buf[1] div $08);
+  end else
+    OutVal := Val;
+end;
+
+function TEpiStataImport.IsMissing(const Val: Double; out OutVal: EpiFloat
+  ): Boolean;
+var
+  Buf: Array[0..7] of Byte absolute Val;
+begin
+  Result := false;
+
+  // Single missing values look like this (in MSF format)
+  // 7F E0 ?? 00 00 00 00 00
+  // Where ?? is the actual value.
+  //   .a = $01
+  //   .b = $02
+  //   .c = $03
+  //   ....
+  //   .z = $1a
+  if (Buf[7]=$7F) and (Buf[6]=$E0) and
+     ((Buf[0] or Buf[1] or Buf[2] or Buf[3] or Buf[4]) = 0)
+  then
+  begin
+    Result := true;
+    OutVal := Integer(Buf[5]);
+  end else
+    OutVal := Val;
+end;
+
 procedure TEpiStataImport.CreateFields;
 var
   i: Integer;
@@ -297,6 +368,7 @@ var
   StrLsOVals: TEpiField;
   ATop: Integer;
   ALeft: Integer;
+  MissingField: TEpiField;
 begin
   SetLength(FDateTypeList, FFieldCount);
   FRecordDataLength := 0;
@@ -340,6 +412,9 @@ begin
             StataIntConstXML:  Inc(FRecordDataLength, 2);
             StataLongConstXML: Inc(FRecordDataLength, 4);
           end;
+
+          MissingField := TEpiField.CreateField(nil, ftInteger);
+          MissingField.Size := FObsCount;
         end;
 
       StataFloatConstXML,
@@ -350,6 +425,9 @@ begin
             Inc(FRecordDataLength, 4)
           else
             Inc(FRecordDataLength, 8);
+
+          MissingField := TEpiField.CreateField(nil, ftInteger);
+          MissingField.Size := FObsCount;
         end;
 
       else
@@ -360,10 +438,10 @@ begin
 
     FormatStr := UTF8UpperString(FVariableFormats[i]);
     if not (FormatStr[1] = '%') then
-    BEGIN
+    begin
       DoError(Format('Unknown format specified for variable no: %d', [i+1]));
       Exit;
-    END;
+    end;
 
     // "%-..." formats are the left adjusted versions. Not needed in EpiData, just skip.
     j := 0;
@@ -415,6 +493,8 @@ begin
       TmpField.AddCustomData(STATA_STRLS_VVAL, StrLsVVals);
     if Assigned(StrLsOVals) then
       TmpField.AddCustomData(STATA_STRLS_OVAL, StrLsOVals);
+    if Assigned(MissingField) then
+      TmpField.AddCustomData(STATA_MISSING_FIELD, MissingField);
 
     with TmpField do
     begin
@@ -436,6 +516,9 @@ begin
       Name          := FVariableNames[i];
       Question.Text := FVariableLabels[i];
 
+      ATop := 0;
+      ALeft := 0;
+
       DoControlItemPosition(TmpField, ATop, ALeft);
       Top  := ATop;
       Left := ALeft;
@@ -454,7 +537,13 @@ var
   P: SizeInt;
   Fmt: String;
   j: Integer;
+  MissingField: TEpiField;
+  MaxMissing: Integer;
+  VLSet: TEpiValueLabelSet;
+  VL: TEpiCustomValueLabel;
+  MissingValue: EpiInteger;
 begin
+  // First find field lengths / Decimals
   for j := 0 to FFieldCount - 1 do
   begin
     F := FDataFile[j];
@@ -468,7 +557,8 @@ begin
 
       for i := 0 to F.Size - 1 do
       begin
-        if F.IsMissing[i] then Continue;
+        if F.IsMissing[i] then
+          Continue;
 
         S := Trim(Format(Fmt, [F.AsFloat[i]]));
         ULen := UTF8Length(S);
@@ -492,6 +582,127 @@ begin
       F.Decimals := 0;
     end;
   end;
+
+
+  // Now adapt missingvalues if present.
+  for j := 0 to FFieldCount - 1 do
+  begin
+    F := FDataFile[j];
+
+    if (F.FieldType in StringFieldTypes) then
+      Continue;
+
+    MissingField := TEpiField(F.FindCustomData(STATA_MISSING_FIELD));
+
+    VLSet := F.ValueLabelSet;
+    if (not Assigned(VLSet)) then
+    begin
+      VLSet := FDocument.ValueLabelSets.NewValueLabelSet(F.FieldType);
+      VLSet.Name := F.Name + '_missingvalues';
+      F.ValueLabelSet := VLSet;
+    end;
+
+    if (F.FieldType in FloatFieldTypes) then
+      Len := F.Length - 1 - F.Decimals
+    else
+      Len := F.Length;
+
+    for i := 0 to FDataFile.Size - 1 do
+    begin
+      if MissingField.IsMissing[i] then continue;
+
+      MissingValue := (10 ** Len) - MissingField.AsInteger[i];
+      if not VLSet.ValueLabelExists[MissingValue] then
+      begin
+        VL := VLSet.NewValueLabel;
+        TEpiIntValueLabel(VL).Value := MissingValue;
+        VL.TheLabel.Text := '.' + Char(MissingValue + 96);
+        VL.IsMissingValue := true;
+      end;
+    end;
+  end;
+  {
+                // This is a missing value type.
+                if MisVal >= 0 then
+                begin
+                  // This corresponds to Stata's ".a", ".b", and ".c"
+                  if (MisVal > 0) and
+                     (not (TmpField.FieldType in DateFieldTypes+TimeFieldTypes)) then
+                  begin
+                    VLSet := TmpField.ValueLabelSet;
+                    if not Assigned(VLSet) then
+                    begin
+                      VLSet := ValueLabels.NewValueLabelSet(ftFloat);
+                      VLSet.Name := TmpField.Name + '_MissingLabel';
+                      TmpField.ValueLabelSet := VLSet;
+                    end;
+
+                    // TODO: What should .a -> .z float missing value be?
+                    TmpFlt := (10 ** 10) - MisVal;
+                    if not VLSet.ValueLabelExists[TmpInt] then
+                    begin
+                      VL := VLSet.NewValueLabel;
+                      TEpiFloatValueLabel(VL).Value := TmpFlt;
+                      VL.TheLabel.Text := '.' + Char(MisVal + 96);
+                      VL.IsMissingValue := true;
+                    end;
+                    TmpField.AsFloat[CurRec] := TmpFlt;
+                  end else
+                    TmpField.IsMissing[CurRec] := true;
+                end else begin
+
+
+
+                Case FVariableTypes[CurField] of
+                  StataByteConstXML:
+                    begin
+                      I := ReadSByte;
+                      J := $65;
+                    end;
+                  StataIntConstXML:
+                    begin
+                      I := ReadSWord;
+                      J := $7FE5;
+                    end;
+                  StataLongConstXML:
+                    begin
+                      I := ReadSDWord;
+                      J := $7FFFFFE5;
+                    end;
+                end;
+
+                // This is a missing value type.
+                if (I >= J) then
+                begin
+
+                  // This corresponds to Stata's ".a", ".b", and ".c"
+                  if ((I - J) > 0) and
+                     (not (TmpField.FieldType in (DateFieldTypes + TimeFieldTypes)))  then
+                  begin
+                    VLSet := TmpField.ValueLabelSet;
+                    if not Assigned(VLSet) then
+                    begin
+                      VLSet := ValueLabels.NewValueLabelSet(ftInteger);
+                      VLSet.Name := TmpField.Name + '_MissingLabel';
+                      TmpField.ValueLabelSet := VLSet;
+                    end;
+
+                    TmpInt := (10 ** TmpField.Length) - MisVal;
+                    if not VLSet.ValueLabelExists[TmpInt] then
+                    begin
+                      VL := TEpiIntValueLabel(VLSet.NewValueLabel);
+                      TEpiIntValueLabel(VL).Value := TmpInt;
+                      VL.TheLabel.Text := '.' + Char(MisVal + 96);
+                      VL.IsMissingValue := true;
+                    end;
+                    TmpField.AsInteger[CurRec] := TmpInt;
+                  end else
+                    TmpField.IsMissing[CurRec] := true;
+
+                  // Read next field/value;
+                  Continue;
+                end;
+  }
 end;
 
 procedure TEpiStataImport.ReadHeader;
@@ -748,6 +959,7 @@ begin
   // Read "llll", length of Characteristic.
   Len := ReadDWord;
   // For now - just skip that part.
+  // TODO: Read Characteristics
   ReadAsString(Len);
 
   ReadEndTag('ch');
@@ -757,14 +969,13 @@ procedure TEpiStataImport.ReadData(ImportData: Boolean);
 var
   CurRec: Integer;
   CurField: Integer;
-  I, J: LongInt;
+  I: EpiInteger;
   TmpField: TEpiField;
   S: String;
-  StrLsVVal: TEpiFields;
-  StrLsOVal: TEpiField;
   O: QWord;
   V: DWord;
   TmpFloat: EpiFloat;
+  Mis: Boolean;
 begin
   ReadStartTag('data');
 
@@ -810,55 +1021,17 @@ begin
           StataLongConstXML:
             begin
               Case FVariableTypes[CurField] of
-                StataByteConstXML:
-                  begin
-                    I := ReadSByte;
-                    J := $65;
-                  end;
-                StataIntConstXML:
-                  begin
-                    I := ReadSWord;
-                    J := $7FE5;
-                  end;
-                StataLongConstXML:
-                  begin
-                    I := ReadSDWord;
-                    J := $7FFFFFE5;
-                  end;
+                StataByteConstXML: I := ReadSByte;
+                StataIntConstXML:  I := ReadSWord;
+                StataLongConstXML: I := ReadSDWord;
               end;
 
-              // This is a missing value type.
-              if (I >= J) then
+              if IsMissing(I, CurField, I) then
               begin
-
-{                // This corresponds to Stata's ".a", ".b", and ".c"
-                if ((I - J) > 0) and
-                   (not (TmpField.FieldType in (DateFieldTypes + TimeFieldTypes)))  then
-                begin
-                  VLSet := TmpField.ValueLabelSet;
-                  if not Assigned(VLSet) then
-                  begin
-                    VLSet := ValueLabels.NewValueLabelSet(ftInteger);
-                    VLSet.Name := TmpField.Name + '_MissingLabel';
-                    TmpField.ValueLabelSet := VLSet;
-                  end;
-
-                  TmpInt := (10 ** TmpField.Length) - MisVal;
-                  if not VLSet.ValueLabelExists[TmpInt] then
-                  begin
-                    VL := TEpiIntValueLabel(VLSet.NewValueLabel);
-                    TEpiIntValueLabel(VL).Value := TmpInt;
-                    VL.TheLabel.Text := '.' + Char(MisVal + 96);
-                    VL.IsMissingValue := true;
-                  end;
-                  TmpField.AsInteger[CurRec] := TmpInt;
-                end else
-                  TmpField.IsMissing[CurRec] := true;}
-
-                // Read next field/value;
+                TmpField.IsMissing[CurRec]  := True;
+                TEpiField(TmpField.FindCustomData(STATA_MISSING_FIELD)).AsInteger[CurRec] := I;
                 Continue;
               end;
-
 
               {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
               case FDateTypeList[CurField] of
@@ -877,49 +1050,27 @@ begin
           StataDoubleConstXML:
             Begin
               if FVariableTypes[CurField] = StataFloatConstXML then
-                TmpFloat := ReadSingle
+                Mis := IsMissing(ReadSingle, TmpFloat)
               else
-                TmpFloat := ReadDouble;
+                Mis := IsMissing(ReadDouble, TmpFloat);
 
-{              // This is a missing value type.
-              if MisVal >= 0 then
+              if Mis then
               begin
-                // This corresponds to Stata's ".a", ".b", and ".c"
-                if (MisVal > 0) and
-                   (not (TmpField.FieldType in DateFieldTypes+TimeFieldTypes)) then
-                begin
-                  VLSet := TmpField.ValueLabelSet;
-                  if not Assigned(VLSet) then
-                  begin
-                    VLSet := ValueLabels.NewValueLabelSet(ftFloat);
-                    VLSet.Name := TmpField.Name + '_MissingLabel';
-                    TmpField.ValueLabelSet := VLSet;
-                  end;
+                TmpField.IsMissing[CurRec] := True;
+                TEpiField(TmpField.FindCustomData(STATA_MISSING_FIELD)).AsInteger[CurRec] := trunc(TmpFloat);
+                Continue;
+              end;
 
-                  // TODO: What should .a -> .z float missing value be?
-                  TmpFlt := (10 ** 10) - MisVal;
-                  if not VLSet.ValueLabelExists[TmpInt] then
-                  begin
-                    VL := VLSet.NewValueLabel;
-                    TEpiFloatValueLabel(VL).Value := TmpFlt;
-                    VL.TheLabel.Text := '.' + Char(MisVal + 96);
-                    VL.IsMissingValue := true;
-                  end;
-                  TmpField.AsFloat[CurRec] := TmpFlt;
-                end else
-                  TmpField.IsMissing[CurRec] := true;
-              end else} begin
-                {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
-                case FDateTypeList[CurField] of
-                  tnone: TmpField.AsFloat[CurRec]    := TmpFloat;                                                 // Do nothing - conversion is not needed.
-                  tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, trunc(TmpFloat));       // I - measured in ms. since 1960.
-                  td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   trunc(TmpFloat));
-                  tw:    TmpField.AsDateTime[CurRec] := IncWeek(StataBaseDateTime,  trunc(TmpFloat));
-                  tm:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat));
-                  tq:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat) * 3);
-                  th:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat) * 6);
-                  ty:    TmpField.AsDateTime[CurRec] := IncYear(StataBaseDateTime,  trunc(TmpFloat));
-                end;
+              {Date is converted from Stata's 1/1-1960 base to Lazarus's 30/12-1899 base}
+              case FDateTypeList[CurField] of
+                tnone: TmpField.AsFloat[CurRec]    := TmpFloat;                                                 // Do nothing - conversion is not needed.
+                tc:    TmpField.AsDateTime[CurRec] := IncMilliSecond(StataBaseDateTime, trunc(TmpFloat));       // I - measured in ms. since 1960.
+                td:    TmpField.AsDateTime[CurRec] := IncDay(StataBaseDateTime,   trunc(TmpFloat));
+                tw:    TmpField.AsDateTime[CurRec] := IncWeek(StataBaseDateTime,  trunc(TmpFloat));
+                tm:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat));
+                tq:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat) * 3);
+                th:    TmpField.AsDateTime[CurRec] := IncMonth(StataBaseDateTime, trunc(TmpFloat) * 6);
+                ty:    TmpField.AsDateTime[CurRec] := IncYear(StataBaseDateTime,  trunc(TmpFloat));
               end;
             end;
         else
