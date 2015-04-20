@@ -5,10 +5,14 @@ unit epieximtypes;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, epicustombase;
 
 type
   TEpiFieldNamingCase = (fncUpper, fncLower, fncAsIs);
+
+  TEpiControlItemPosition = procedure (Const Sender: TObject;
+    Const ControlItem: TEpiCustomControlItem;
+    var Top, Left: Integer) of object;
 
 const
   EpiFieldNamingCaseToString: array[TEpiFieldNamingCase] of string =
@@ -70,14 +74,22 @@ type
 //  Stata Version 8+9  = $71; // dta_113
 //  Stata Version 10   = $72; // dta_114
 //  Stata Version 12   = $73; // dta_115
+//  Stata Version 13   = $75; // dta_117    // Currently not supported
+//  Stata Version 14   = $76; // dta_118    // FIRST STATA FORMAT TO SUPPORT UTF-8!
+
   TEpiStataVersion =
     (dta4 = $69,
      dta6 = 108,
      dta7 = 110,
      dta8 = 113,
      dta10 = 114,
-     dta12 = 115
+     dta12 = 115,
+     dta13 = 117,
+     dta14 = 118
     );
+
+  TEpiStataEndian =
+    (eseLittleEndian, eseBigEndian);
 
 const
   // 21916 days after 30 dec. 1899 = 1/1/1960 Stata base date.
@@ -89,6 +101,13 @@ const
   StataLongConst   = #253;
   StataFloatConst  = #254;
   StataDoubleConst = #255;
+
+  StataStrLsConstXML  = 32768;
+  StataDoubleConstXML = 65526;
+  StataFloatConstXML  = 65527;
+  StataLongConstXML   = 65528;
+  StataIntConstXML    = 65529;
+  StataByteConstXML   = 65530;
 
 function EpiStataVersionToString(Const StataVersion: TEpiStataVersion): string;
 
@@ -104,6 +123,8 @@ begin
     dta8:  result := 'Stata 8, 9';
     dta10: result := 'Stata 10, 11';
     dta12: result := 'Stata 12';
+    dta13: result := 'Stata 13';
+    dta14: result := 'Stata 14';
   else
     result := 'Stata version is missing string representation in: epieximtypes.pas';
   end;

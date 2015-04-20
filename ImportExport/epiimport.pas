@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
-  epivaluelabels, epieximtypes;
+  epivaluelabels, epieximtypes, epiimport_stata, epicustombase;
 
 type
 
@@ -14,6 +14,7 @@ type
   EIncorrectPasswordException = Exception;
 
   TEpiClipBoardReadHook = procedure (ClipBoardLine: TStrings) of object;
+
 
   { TEpiImport }
 
@@ -24,6 +25,7 @@ type
     FOnRequestPassword: TRequestPasswordEvent;
   private
     { Stata help functions }
+    FStataImport: TEpiStataImport;  // Importer for Stata v 117+  (XML)
     procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
     procedure   ReadBuf(Const St: TStream; var Buf: Array of Byte; Count: Integer);
     function    ReadInts(Const St: TStream; Count: Integer): Integer;
@@ -52,10 +54,13 @@ type
     function    MinFt(Const Ft1, Ft2: TEpiFieldType): TEpiFieldType;
   private
     FImportCasing: TEpiFieldNamingCase;
+    FOnControlItemPosition: TEpiControlItemPosition;
     FOnProgress: TEpiProgressEvent;
     function    TruncToInt(e: Extended): integer;
     function    DoProgress(ProgressType: TEpiProgressType;
       Const Current, Max: Cardinal): boolean;
+    procedure   DoControlItemPosition(Const Item: TEpiCustomControlItem;
+      var Top, Left: Integer);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -74,6 +79,7 @@ type
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
     property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+    property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write FOnControlItemPosition;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
     // Import casing only relevant for .rec files, since they are considere case-incensitive.
     property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
@@ -209,6 +215,13 @@ begin
     OnProgress(nil, ProgressType, Current, Max, Result);
 end;
 
+procedure TEpiImport.DoControlItemPosition(const Item: TEpiCustomControlItem;
+  var Top, Left: Integer);
+begin
+  if Assigned(OnControlItemPosition) then
+    OnControlItemPosition(Self, Item, Top, Left);
+end;
+
 function TEpiImport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings; out
   FieldList: TList; out SkipFirstLine: boolean; out FieldSeparator: Char
   ): boolean;
@@ -232,6 +245,8 @@ var
   BoolVal: EpiBool;
   FloatVal: EpiFloat;
   DateVal: EpiDate;
+  ATop: Integer;
+  ALeft: Integer;
 
 begin
   result := false;
@@ -354,7 +369,10 @@ begin
           Length := 0;
           Decimals := 0;
         end;
-      TmpField.Top := i + 1;
+
+      DoControlItemPosition(TmpField, ATop, ALeft);
+      TmpField.Top := ATop;
+      TmpField.Left := ALeft;
       TmpField.EndUpdate;
     end;
 
@@ -661,10 +679,12 @@ end;
 constructor TEpiImport.Create;
 begin
   FImportEncoding := eeGuess;
+  FStataImport    := TEpiStataImport.Create;
 end;
 
 destructor TEpiImport.Destroy;
 begin
+  FStataImport.Free;
   inherited Destroy;
 end;
 
@@ -921,6 +941,8 @@ begin
         with EHeading do
         begin
           Caption.Text := EpiUnknownStrToUTF8(TmpLabel);
+
+          DoControlItemPosition(EHeading, TmpQuestX, TmpQuestY);
           Left         := TmpQuestX;
           Top          := TmpQuestY;
         end;
@@ -932,8 +954,6 @@ begin
       EField.BeginUpdate;
       with EField do
       begin
-        Left           := TmpFieldX;
-        Top            := TmpFieldY;
         Length         := TmpLength;
         Decimals       := 0;
         if TmpFieldTypeInt >= 100 then
@@ -949,6 +969,10 @@ begin
         end;
         // Ensure valid variable name.
         Name := TmpName;
+
+        DoControlItemPosition(EHeading, TmpFieldX, TmpFieldY);
+        Left           := TmpFieldX;
+        Top            := TmpFieldY;
 
         // Summerize field findings.
         TotFieldLength := TotFieldLength + Length;
@@ -1180,6 +1204,9 @@ var
   Off: Array of Integer;
   Val: Array of Integer;
   n: Integer;
+  S: String;
+  ATop: Integer;
+  ALeft: Integer;
 
   function ReadSingleMissing(var MisVal: Integer): Single;
   var
@@ -1206,6 +1233,28 @@ var
 begin
   result := false;
 
+  // ********************************
+  //           STATA HEADER
+  // ********************************
+
+  // With Stata 13+ (dta 117+), the format have changed significantly
+  // ie. to a XML like structure, hence we must make a test for this
+  // first.
+  SetLength(CharBuf, 11);
+  DataStream.Read(CharBuf[0], 11);
+  S := StringFromBuffer(@CharBuf[0], 11);
+
+  // first line in Stata 13+ is <stata_dta>
+  if (S = '<stata_dta>') // (CharBuf[0] = '<') and (CharBuf[10] = '>')
+  then
+    begin
+      FStataImport.ImportStata(DataStream, Doc, DataFile, ImportData);
+{      RaiseError(Exception,
+        'Stata 13 is not yet supported' + LineEnding +
+        'Use "saveold" command in Stata to import in EpiData.');  }
+      Exit;
+    end;
+
   if not Assigned(DataFile) then
     DataFile := Doc.DataFiles.NewDataFile;
 
@@ -1213,23 +1262,6 @@ begin
 
   With DataFile do
   try
-    // ********************************
-    //           STATA HEADER
-    // ********************************
-
-    // With Stata 13 (dta 117), the format have changed significantly
-    // ie. to XML like structure, hence we must make a test for this
-    // first.
-    SetLength(CharBuf, 11);
-    DataStream.Read(CharBuf[0], 11);
-    if (CharBuf[0] = '<') and (CharBuf[10] = '>')
-    then
-      begin
-        RaiseError(Exception,
-          'Stata 13 is not yet supported' + LineEnding +
-          'Use "saveold" command in Stata to import in EpiData.');
-        Exit;
-      end;
 
     DataStream.Position := 0;
 
@@ -1500,6 +1532,12 @@ begin
       TmpField.Question.Text := StrBuf;
 
       // No more field information exists. The update may complete.
+
+      DoControlItemPosition(TmpField, ATop, ALeft);
+
+      TmpField.Top  := ATop;
+      TmpField.Left := ALeft;
+
       TmpField.EndUpdate;
     END;
 

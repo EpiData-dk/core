@@ -322,6 +322,10 @@
         <Filename Value="Utils/ufileassociation.pas"/>
         <UnitName Value="ufileassociation"/>
       </Item72>
+      <Item72>
+        <Filename Value="ImportExport/epiimport_stata.pas"/>
+        <UnitName Value="epiimport_stata"/>
+      </Item72>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
