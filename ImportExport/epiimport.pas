@@ -56,6 +56,7 @@ type
     FImportCasing: TEpiFieldNamingCase;
     FOnControlItemPosition: TEpiControlItemPosition;
     FOnProgress: TEpiProgressEvent;
+    procedure SetOnControlItemPosition(AValue: TEpiControlItemPosition);
     function    TruncToInt(e: Extended): integer;
     function    DoProgress(ProgressType: TEpiProgressType;
       Const Current, Max: Cardinal): boolean;
@@ -79,7 +80,12 @@ type
     // The RequestPasswordEvent does in this case not require a login name - since old .REC files do no support logins. It is discarded and not used.
     property    OnRequestPassword: TRequestPasswordEvent read FOnRequestPassword write FOnRequestPassword;
     property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
-    property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write FOnControlItemPosition;
+    // If the OnControlItemPosition event is set, the importer request for a position of the new ControlItem.
+    // The Top, Left parameters will either be
+    //   a)  0  = "I do not carry positional information, just give me a position"
+    //   b)  1+ = "I subsequent values are equal, position should be the same. Eg. if two consecutive calls contain the same
+    //             Top value, then these two Items should both have the same resulting top value"
+    property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write SetOnControlItemPosition;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
     // Import casing only relevant for .rec files, since they are considere case-incensitive.
     property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
@@ -205,6 +211,13 @@ end;
 function TEpiImport.TruncToInt(e: Extended): integer;
 begin
   Result:=integer(Trunc(e));
+end;
+
+procedure TEpiImport.SetOnControlItemPosition(AValue: TEpiControlItemPosition);
+begin
+  if FOnControlItemPosition = AValue then Exit;
+  FOnControlItemPosition := AValue;
+  FStataImport.OnControlItemPosition := FOnControlItemPosition;
 end;
 
 function TEpiImport.DoProgress(ProgressType: TEpiProgressType; const Current,
@@ -970,7 +983,7 @@ begin
         // Ensure valid variable name.
         Name := TmpName;
 
-        DoControlItemPosition(EHeading, TmpFieldX, TmpFieldY);
+        DoControlItemPosition(EField, TmpFieldY, TmpFieldX);
         Left           := TmpFieldX;
         Top            := TmpFieldY;
 
