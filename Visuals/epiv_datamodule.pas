@@ -11,6 +11,56 @@ uses
   epidatafiles,
   epidatafilestypes;
 
+const
+  // ImageIndixes:
+  epiv_iiPointer               = 0;
+  epiv_iiBoolean               = 1;
+  epiv_iiInteger               = 2;
+  epiv_iiFloat                 = 3;
+  epiv_iiDate                  = 4;
+  epiv_iiString                = 5;
+  epiv_iiTime                  = 6;
+  epiv_iiAutoInc               = 7;
+  epiv_iiAutoDate              = 8;
+  epiv_iiAutoTime              = 9;
+  epiv_iiSection               = 10;
+  epiv_iiHeading               = 11;
+  epiv_iiOther                 = 12;
+  epiv_iiEdit                  = 13;
+  epiv_iiExtender              = 14;
+  epiv_iiDelete                = 15;
+  epiv_iiErase                 = 16;
+  epiv_iiExport                = 17;
+  epiv_iiImport                = 18;
+  epiv_iiOpenFile              = 19;
+  epiv_iiSaveFile              = 20;
+  epiv_iiSaveFileAs            = 21;
+  epiv_iiPrint                 = 22;
+  epiv_iiAlignCenterHorz       = 23;
+  epiv_iiAlignCenterVert       = 24;
+  epiv_iiAlignLeft             = 25;
+  epiv_iiAlignRight            = 26;
+  epiv_iiAlignEvenDistVert     = 27;
+  epiv_iiAlignEvenDistHorz     = 28;
+  epiv_iiAlignTop              = 29;
+  epiv_iiAlignBottom           = 30;
+  epiv_iiAddElem               = 31;
+  epiv_iiRemoveElem            = 32;
+  epiv_iiMoveElemRight         = 33;
+  epiv_iiMoveElemLeft          = 34;
+  epiv_iiMoveElemUp            = 35;
+  epiv_iiMoveElemDown          = 36;
+  epiv_iiEpiDataIcon           = 37;
+  epiv_iiAnalysisIcon          = 38;
+  epiv_iiEntryClientIcon       = 39;
+  epiv_iiManagerIcon           = 40;
+  epiv_iiNewProject            = 41;
+  epiv_iiClose                 = 42;
+  epiv_iiDocument              = 43;
+  epiv_iiDataform              = 44;
+  epiv_iiProjectDetails        = 45;
+  epiv_iiGarbageBin            = 46;
+
 type
 
   { TDM }
@@ -56,38 +106,38 @@ begin
 
   case Ft of
     ftBoolean:
-      Result := 1;
+      Result := epiv_iiBoolean;
     ftInteger:
-      Result := 2;
+      Result := epiv_iiInteger;
     ftFloat:
-      Result := 3;
+      Result := epiv_iiFloat;
     ftDMYDate,
     ftMDYDate,
     ftYMDDate:
-      Result := 4;
+      Result := epiv_iiDate;
     ftTime:
-      Result := 5;
+      Result := epiv_iiTime;
     ftString,
     ftUpperString:
-      Result := 6;
+      Result := epiv_iiString;
     ftAutoInc:
-      Result := 7;
+      Result := epiv_iiAutoInc;
     ftDMYAuto,
     ftMDYAuto,
     ftYMDAuto:
-      Result := 8;
+      Result := epiv_iiAutoDate;
     ftTimeAuto:
-      Result := 9;
+      Result := epiv_iiAutoTime;
   end;
 end;
 
 function TDM.GetImageIndex(const ControlItem: TEpiCustomControlItem): Integer;
 begin
   if ControlItem.InheritsFrom(TEpiSection) then
-    Result := 10;
+    Result := epiv_iiSection;
 
   if ControlItem.InheritsFrom(TEpiHeading) then
-    Result := 11;
+    Result := epiv_iiHeading;
 
   if ControlItem.InheritsFrom(TEpiField) then
     Result := GetImageIndex(TEpiField(ControlItem).FieldType);

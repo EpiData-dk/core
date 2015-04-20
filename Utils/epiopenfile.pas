@@ -72,6 +72,10 @@ type
     procedure CreateLockFile;
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
+  private
+    { User Authorization }
+    FAuthedUser: TEpiUser;
+    procedure UserAuthorized(Sender: TEpiAdmin; User: TEpiUser); virtual;
   protected
     function GetFileName: string; virtual;
     function LockFileExists(Const FileName: string;
@@ -110,6 +114,7 @@ type
     property Document: TEpiDocument read FEpiDoc;
     property ReadOnly: Boolean read FReadOnly;
     property IsSaved: boolean read GetIsSaved;
+    property AuthedUser: TEpiUser read FAuthedUser;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
   TEpiDocumentFileClass = class of TEpiDocumentFile;
@@ -495,6 +500,11 @@ begin
     DeleteFileUTF8(BackupFileName);
 end;
 
+procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
+begin
+  FAuthedUser := User;
+end;
+
 procedure TEpiDocumentFile.DoSaveFile(const AFileName: string);
 var
   Ms: TMemoryStream;
@@ -541,6 +551,7 @@ begin
     FEpiDoc.OnPassword := OnPassword;
     FEpiDoc.OnProgress := OnProgress;
     FEpiDoc.OnLoadError := OnLoadError;
+    FEpiDoc.Admin.OnUserAuthorized := @UserAuthorized;
     FEpiDoc.LoadFromStream(St);
   finally
     St.Free;

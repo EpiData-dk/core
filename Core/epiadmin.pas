@@ -61,12 +61,18 @@ type
     var Password: string
   ): TEpiRequestPasswordResponse of object;
 
+  TEpiUserAuthorizedEvent = procedure(
+    Sender: TEpiAdmin;
+    User:   TEpiUser
+  ) of object;
+
   { TEpiAdmin }
 
   TEpiAdmin = class(TEpiCustomBase)
   private
     FGroups: TEpiGroups;
     FOnPassWord: TRequestPasswordEvent;
+    FOnUserAuthorized: TEpiUserAuthorizedEvent;
     FUsers: TEpiUsers;
     // Clear Text master password for all scrambling.
     // -- although clear text here means a sequence of 16 random bytes.
@@ -94,6 +100,7 @@ type
     function   RequestPassword(Const RepeatCount: Byte): Boolean;
     property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     property   OnPassWord: TRequestPasswordEvent read FOnPassWord write FOnPassWord;
+    property   OnUserAuthorized: TEpiUserAuthorizedEvent read FOnUserAuthorized write FOnUserAuthorized;
   public
     // OnChange-hook methods
     procedure  BeginUpdate; override;
@@ -206,6 +213,7 @@ type
     function    NewGroup: TEpiGroup;
     function    ItemClass: TEpiCustomItemClass; override;
     function    GetEnumerator: TEpiGroupsEnumerator;
+    function    HasRights(Const ManagerRights: TEpiManagerRights): Boolean;
     Property    Group[Index: integer]: TEpiGroup read GetGroup; default;
     Property    Admin: TEpiAdmin read GetAdmin;
   end;
@@ -283,6 +291,11 @@ begin
 
     result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
   until (Result) or (Res = rprStopOnFail);
+
+  if (Result) and
+     (Assigned(OnUserAuthorized))
+  then
+    OnUserAuthorized(Self, TheUser);
 
   Key := TheUser.Salt + Password + Login;
   MasterPassword := Decrypt(Key, TheUser.MasterPassword);
@@ -777,6 +790,31 @@ end;
 function TEpiGroups.GetEnumerator: TEpiGroupsEnumerator;
 begin
   result := TEpiGroupsEnumerator.Create(Self);
+end;
+
+function TEpiGroups.HasRights(const ManagerRights: TEpiManagerRights): Boolean;
+var
+  Grp: TEpiGroup;
+  RightsNeeded: TEpiManagerRights;
+  Right: TEpiManagerRight;
+begin
+  RightsNeeded := ManagerRights;
+
+  // Walk through all ground, and each groups right to see if the list of
+  // managerights are present.
+  // Do this by removing a right found in a group from the list of needed rights
+  // and if this list is empty by the end of the loop, then all rights were found.
+  for Grp in Self do
+  begin
+    for Right in Grp.ManageRights do
+      if Right in RightsNeeded then
+        Exclude(RightsNeeded, Right);
+
+    if (RightsNeeded = []) then
+      break;
+  end;
+
+  Result := (RightsNeeded = []);
 end;
 
 { TEpiGroup }

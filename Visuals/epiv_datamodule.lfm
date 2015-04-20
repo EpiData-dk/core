@@ -1,8 +1,8 @@
 object DM: TDM
   OldCreateOrder = False
   Height = 452
-  HorizontalOffset = 1979
-  VerticalOffset = 352
+  HorizontalOffset = 971
+  VerticalOffset = 305
   Width = 519
   object Icons16: TImageList
     left = 64
