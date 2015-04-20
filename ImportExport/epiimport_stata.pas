@@ -67,13 +67,13 @@ type
     function  ReadDouble: Double;   // Signed double precision float
 
   private
-    function  IsMissing(Const Val: Integer; Const FieldIndex: DWord; OutVal: EpiInteger): Boolean; overload;
+    function  IsMissing(Const Val: Integer; Const FieldIndex: DWord; out OutVal: EpiInteger): Boolean; overload;
     function  IsMissing(Const Val: Single; out OutVal: EpiFloat): Boolean; overload;
     function  IsMissing(Const Val: Double; out OutVal: EpiFloat): Boolean; overload;
   private
     { EpiData methods }
     procedure CreateFields;
-    procedure TrimFields;
+    procedure FinishFields;
 
   private
     { .dta section loaders }
@@ -292,7 +292,7 @@ begin
 end;
 
 function TEpiStataImport.IsMissing(const Val: Integer; const FieldIndex: DWord;
-  OutVal: EpiInteger): Boolean;
+  out OutVal: EpiInteger): Boolean;
 begin
   Result := false;
 
@@ -526,7 +526,7 @@ begin
   end;
 end;
 
-procedure TEpiStataImport.TrimFields;
+procedure TEpiStataImport.FinishFields;
 var
   F: TEpiField;
   Len: Integer;
@@ -544,9 +544,12 @@ var
   MissingValue: EpiInteger;
 begin
   // First find field lengths / Decimals
+  // and find possible valuelabels
   for j := 0 to FFieldCount - 1 do
   begin
     F := FDataFile[j];
+    F.ValueLabelSet := FDocument.ValueLabelSets.GetValueLabelSetByName(FValuelabelNames[j]);
+
 
     Len := 0;
     Dec := 0;
@@ -576,7 +579,8 @@ begin
       F.Decimals := Dec;
     end else begin
       for i := 0 to F.Size - 1 do
-        Len := Max(Len, UTF8Length(F.AsString[i]));
+        if (not F.IsMissing[i]) then
+          Len := Max(Len, UTF8Length(F.AsString[i]));
 
       F.Length   := Len;
       F.Decimals := 0;
@@ -592,7 +596,7 @@ begin
     if (F.FieldType in StringFieldTypes) then
       Continue;
 
-    MissingField := TEpiField(F.FindCustomData(STATA_MISSING_FIELD));
+    MissingField := TEpiField(F.RemoveCustomData(STATA_MISSING_FIELD));
 
     VLSet := F.ValueLabelSet;
     if (not Assigned(VLSet)) then
@@ -612,14 +616,26 @@ begin
       if MissingField.IsMissing[i] then continue;
 
       MissingValue := (10 ** Len) - MissingField.AsInteger[i];
-      if not VLSet.ValueLabelExists[MissingValue] then
+      if (not VLSet.ValueLabelExists[MissingValue]) then
       begin
         VL := VLSet.NewValueLabel;
-        TEpiIntValueLabel(VL).Value := MissingValue;
-        VL.TheLabel.Text := '.' + Char(MissingValue + 96);
+
+        case VLSet.LabelType of
+          ftInteger: TEpiIntValueLabel(VL).Value := MissingValue;
+          ftFloat:   TEpiFloatValueLabel(VL).Value := MissingValue;
+        end;
+
+        VL.TheLabel.Text := '.' + Char(MissingField.AsInteger[i] + 96);
         VL.IsMissingValue := true;
       end;
+
+      F.AsInteger[i] := MissingValue;
     end;
+
+    if VLSet.Count = 0 then
+      VLSet.Free;
+
+    MissingField.Free;
   end;
   {
                 // This is a missing value type.
@@ -1029,7 +1045,8 @@ begin
               if IsMissing(I, CurField, I) then
               begin
                 TmpField.IsMissing[CurRec]  := True;
-                TEpiField(TmpField.FindCustomData(STATA_MISSING_FIELD)).AsInteger[CurRec] := I;
+                if I > 0 then
+                  TEpiField(TmpField.FindCustomData(STATA_MISSING_FIELD)).AsInteger[CurRec] := I;
                 Continue;
               end;
 
@@ -1057,7 +1074,8 @@ begin
               if Mis then
               begin
                 TmpField.IsMissing[CurRec] := True;
-                TEpiField(TmpField.FindCustomData(STATA_MISSING_FIELD)).AsInteger[CurRec] := trunc(TmpFloat);
+                if I > 0 then
+                  TEpiField(TmpField.FindCustomData(STATA_MISSING_FIELD)).AsInteger[CurRec] := trunc(TmpFloat);
                 Continue;
               end;
 
@@ -1099,7 +1117,7 @@ var
   Field: TEpiField;
   V: Int64;
   O: Int64;
-  j: QWord;
+  j: Integer;
   i: Integer;
   GSO: String;
   gsoV: DWord;
@@ -1297,8 +1315,8 @@ begin
 
     ReadEndTag('stata_dta');
 
-    // Now find the correct lengts
-    TrimFields;
+    // Now find the correct lengts, connect valuelabels, etc.
+    FinishFields;
 
     Result := true;
   finally
