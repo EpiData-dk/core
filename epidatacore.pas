@@ -22,8 +22,8 @@ uses
   epireport_report_projectvalidator, epitools_projectvalidate, 
   epitools_filterinfo, epireport_report_controllist, 
   epireport_report_exportsettings, epireport_report_exportsettings_visitors, 
-  epiopenfile_cache, epitools_append, epitools_search, epirelates,
-  epirights, ufileassociation, epiimport_stata;
+  epiopenfile_cache, epitools_append, epitools_search, epirelates, epirights, 
+  ufileassociation;
 
 implementation
 

@@ -672,6 +672,8 @@ begin
 
   for S in GroupList do
     Groups.AddItem(Admin.Groups.GetItemByName(S));
+
+  GroupList.Free;
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
