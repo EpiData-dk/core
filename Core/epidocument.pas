@@ -424,7 +424,7 @@ begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  if (Admin.Users.Count > 0) then
+  if false {(Admin.Users.Count > 0) }then
   begin
     RootDoc := Result.FirstChild;
 

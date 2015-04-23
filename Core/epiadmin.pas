@@ -17,20 +17,29 @@ type
 
   EEpiBadPassword = class(Exception);
 
+  // Rights in manager
   TEpiManagerRight = (
-    // User/Admin access
-    earStructure, earTranslate, earUsers, earPassword
+    earData,
+    earEntry,
+    earSections,
+    earStructure,       // Structural CRUD in Datafile, Valuelabels but not data.
+    earTranslate,       // May change all TEpiTranslatedText objects
+    earUsers,           // CRUD for Users and groups based on EpiData RBAC model.
+    earPassword         // May change password for ALL users.
   );
   TEpiManagerRights = set of TEpiManagerRight;
 
 const
   EpiManagerRightCaptions: array[TEpiManagerRight] of string =
-    (
+    ( '', '', '',
       'Edit Struncture',
       'Translate project',
       'Manage users',
       'Reset password'
     );
+
+  EpiAllManageRights: TEpiManagerRights =
+    [earStructure, earTranslate, earUsers, earPassword];
 
 
 type
@@ -70,7 +79,7 @@ type
 
   TEpiAdmin = class(TEpiCustomBase)
   private
-    FGroups: TEpiGroups;
+    FAdminsGroup: TEpiGroup;
     FOnPassWord: TRequestPasswordEvent;
     FOnUserAuthorized: TEpiUserAuthorizedEvent;
     FUsers: TEpiUsers;
@@ -91,8 +100,9 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    Property   Users: TEpiUsers read FUsers;
-    Property   Groups: TEpiGroups read FGroups;
+    property   Users: TEpiUsers read FUsers;
+    property   Admins: TEpiGroup read FAdminsGroup;
+
   public
     // User / Group related functions.
     function   NewUser: TEpiUser;
@@ -223,19 +233,26 @@ type
   TEpiGroup = class(TEpiCustomItem)
   private
     FCaption: TEpiTranslatedTextWrapper;
+    FGroups: TEpiGroups;
     FManageRights: TEpiManagerRights;
+    function GetParentGroup: TEpiGroup;
     procedure SetManageRights(const AValue: TEpiManagerRights);
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
+    { Helper methods }
+    function NewGroup: TEpiGroup;
+  public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    property   Groups: TEpiGroups read FGroups;
     property   Caption: TEpiTranslatedTextWrapper read FCaption;
     Property   ManageRights: TEpiManagerRights read FManageRights write SetManageRights;
+    property   ParentGroup: TEpiGroup read GetParentGroup;
   end;
 
   { TEpiGroupsEnumerator }
@@ -334,18 +351,21 @@ begin
 
   FUsers := TEpiUsers.Create(self);
   FUsers.ItemOwner := true;
-  FGroups := TEpiGroups.Create(self);
-  FGroups.ItemOwner := true;
+
+  FAdminsGroup := TEpiGroup.Create(self);
+  FAdminsGroup.ManageRights := EpiAllManageRights;
+  FAdminsGroup.Caption.Text := 'Admins';
+  FAdminsGroup.Name := 'admins_group';
 
   FCrypter := TDCP_rijndael.Create(nil);
 
-  RegisterClasses([Groups, Users]);
+  RegisterClasses([Admins, Users]);
 end;
 
 destructor TEpiAdmin.Destroy;
 begin
   FCrypter.Free;
-  FGroups.Free;
+  FAdminsGroup.Free;
   FUsers.Free;
   inherited Destroy;
 end;
@@ -363,8 +383,8 @@ begin
   // Root = <Admin>
 
   // Load groups
-  if LoadNode(Node, Root, rsGroups, false) then
-    Groups.LoadFromXml(Node, ReferenceMap);
+  if LoadNode(Node, Root, rsGroup, false) then
+    Admins.LoadFromXml(Node, ReferenceMap);
 
   // Then load users
   LoadNode(Node, Root, rsUsers, true);
@@ -378,7 +398,7 @@ end;
 
 function TEpiAdmin.NewGroup: TEpiGroup;
 begin
-  result := Groups.NewGroup;
+//  result := Groups.NewGroup;
 end;
 
 function TEpiAdmin.RequestPassword(const RepeatCount: Byte): Boolean;
@@ -670,8 +690,8 @@ begin
   GroupList := TStringList.Create;
   SplitString(ReferenceId, GroupList, [',']);
 
-  for S in GroupList do
-    Groups.AddItem(Admin.Groups.GetItemByName(S));
+ {  for S in GroupList do
+    Groups.AddItem(Admin.Groups.GetItemByName(S));    }
 
   GroupList.Free;
 end;
@@ -831,6 +851,18 @@ begin
   DoChange(eegAdmin, Word(eaceGroupSetManageRights), @Val);
 end;
 
+function TEpiGroup.GetParentGroup: TEpiGroup;
+begin
+  Result := nil;
+
+  if (Assigned(Owner)) and
+     (Owner is TEpiGroups) and
+     (Assigned(Owner.Owner)) and
+     (Owner.Owner is TEpiGroup)
+  then
+    Result := TEpiGroup(Owner.Owner);
+end;
+
 function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
@@ -845,12 +877,22 @@ begin
   SaveDomAttrEnum(Result, rsManageRights, ManageRights, TypeInfo(TEpiManagerRights));
 end;
 
+function TEpiGroup.NewGroup: TEpiGroup;
+begin
+  result := Groups.NewGroup;
+end;
+
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
 
+  FGroups  := TEpiGroups.Create(Self);
+  FGroups.ItemOwner := true;
+  FGroups.OnValidateRename := @InternalValidateRename;
+
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
-  RegisterClasses([Caption]);
+
+  RegisterClasses([Caption, Groups]);
 end;
 
 destructor TEpiGroup.Destroy;

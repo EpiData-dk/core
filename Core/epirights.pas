@@ -135,7 +135,7 @@ begin
         if not Obj.InheritsFrom(TEpiDocument) then
           Exit; //TODO: raise an exception
 
-        Group := TEpiGroup(TEpiDocument(Obj).Admin.Groups.GetItemByName(ReferenceId));
+//        Group := TEpiGroup(TEpiDocument(Obj).Admin.Groups.GetItemByName(ReferenceId));
       end;
   end;
 end;
