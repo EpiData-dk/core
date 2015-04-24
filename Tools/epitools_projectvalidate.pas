@@ -5,7 +5,7 @@ unit epitools_projectvalidate;
 interface
 
 uses
-  Classes, SysUtils, math, epidocument, epidatafiles, epirelations;
+  Classes, SysUtils, math, epidocument, epidatafiles, epidatafilerelations;
 
 type
   TEpiToolsProjectValidateOption = (

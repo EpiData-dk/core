@@ -88,7 +88,7 @@ type
 implementation
 
 uses
-  epirelations, sysutils, epidocument;
+  epidatafilerelations, sysutils, epidocument;
 
 { TEpiRelatesEnumerator }
 

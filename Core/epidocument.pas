@@ -8,7 +8,7 @@ interface
 uses
   Classes, sysutils, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
-  epistudy, epirelations, epivaluelabels,
+  epistudy, epidatafilerelations, epivaluelabels,
   epicustombase, epidatafilestypes;
 
 type

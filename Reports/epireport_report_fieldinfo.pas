@@ -30,7 +30,7 @@ implementation
 
 uses
   epireport_report_valuelabelsetlist, epidatafilestypes,
-  epistringutils, epimiscutils, epireport_types, epirelations;
+  epistringutils, epimiscutils, epireport_types, epidatafilerelations;
 
 resourcestring
   SEpiReportFieldInfoNoField = 'EpiReport: No field assigned to field info.';

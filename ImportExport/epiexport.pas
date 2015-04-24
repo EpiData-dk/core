@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes,
-  epivaluelabels, epirelations, epieximtypes, epiexportsettings;
+  epivaluelabels, epidatafilerelations, epieximtypes, epiexportsettings;
 
 type
 
