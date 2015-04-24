@@ -233,26 +233,19 @@ type
   TEpiGroup = class(TEpiCustomItem)
   private
     FCaption: TEpiTranslatedTextWrapper;
-    FGroups: TEpiGroups;
     FManageRights: TEpiManagerRights;
-    function GetParentGroup: TEpiGroup;
     procedure SetManageRights(const AValue: TEpiManagerRights);
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    { Helper methods }
-    function NewGroup: TEpiGroup;
-  public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    property   Groups: TEpiGroups read FGroups;
     property   Caption: TEpiTranslatedTextWrapper read FCaption;
     Property   ManageRights: TEpiManagerRights read FManageRights write SetManageRights;
-    property   ParentGroup: TEpiGroup read GetParentGroup;
   end;
 
   { TEpiGroupsEnumerator }
@@ -851,18 +844,6 @@ begin
   DoChange(eegAdmin, Word(eaceGroupSetManageRights), @Val);
 end;
 
-function TEpiGroup.GetParentGroup: TEpiGroup;
-begin
-  Result := nil;
-
-  if (Assigned(Owner)) and
-     (Owner is TEpiGroups) and
-     (Assigned(Owner.Owner)) and
-     (Owner.Owner is TEpiGroup)
-  then
-    Result := TEpiGroup(Owner.Owner);
-end;
-
 function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
@@ -877,22 +858,13 @@ begin
   SaveDomAttrEnum(Result, rsManageRights, ManageRights, TypeInfo(TEpiManagerRights));
 end;
 
-function TEpiGroup.NewGroup: TEpiGroup;
-begin
-  result := Groups.NewGroup;
-end;
-
 constructor TEpiGroup.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
 
-  FGroups  := TEpiGroups.Create(Self);
-  FGroups.ItemOwner := true;
-  FGroups.OnValidateRename := @InternalValidateRename;
-
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
 
-  RegisterClasses([Caption, Groups]);
+  RegisterClasses([Caption]);
 end;
 
 destructor TEpiGroup.Destroy;
