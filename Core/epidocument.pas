@@ -107,7 +107,7 @@ type
     Const Depth: Cardinal; Const Index: Cardinal; Var aContinue: boolean;
     Data: Pointer = nil) of object;
 
-  TEpiRelationListEx = class(TEpiRelationList)
+  TEpiRelationListEx = class(TEpiDatafileRelationList)
   public
     function GetOrderedDataFiles: TEpiDataFiles;
     procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack;

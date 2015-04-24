@@ -138,8 +138,8 @@ var
   j: Integer;
   LastEdit: TDateTime;
   OrderedDataFiles: TEpiDataFiles;
-  List: TEpiRelationList;
-  Relations: TEpiRelationList;
+  List: TEpiDatafileRelationList;
+  Relations: TEpiDatafileRelationList;
   ColCount: Integer;
   MultiLevel: Boolean;
   ColNo: Integer;
