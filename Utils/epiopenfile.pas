@@ -597,7 +597,7 @@ var
   LoadSuccess: Boolean;
 begin
   Result         := false;
-  FFileName      := AFileName;
+  FFileName      := ExpandFileNameUTF8(AFileName);
   FReadOnly      := AReadOnly;
   LoadBackupFile := false;
 
