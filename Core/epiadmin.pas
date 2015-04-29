@@ -6,7 +6,7 @@ unit epiadmin;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, Laz2_DOM, DCPrijndael;
+  Classes, SysUtils, epicustombase, Laz2_DOM, DCPrijndael, epicustomrelations;
 
 type
   TEpiAdmin = class;
@@ -14,6 +14,8 @@ type
   TEpiUser = class;
   TEpiGroups = class;
   TEpiGroup = class;
+  TEpiGroupRelation     = class;
+  TEpiGroupRelationList = class;
 
   EEpiBadPassword = class(Exception);
 
@@ -43,6 +45,7 @@ const
 
 
 type
+
   TEpiAdminChangeEventType = (
     // User related events:
     eaceUserSetFullName,
@@ -75,14 +78,18 @@ type
     User:   TEpiUser
   ) of object;
 
+
   { TEpiAdmin }
 
   TEpiAdmin = class(TEpiCustomBase)
   private
     FAdminsGroup: TEpiGroup;
+    FAdminRelation: TEpiGroupRelation;
+    FAdminRelations: TEpiGroupRelationList; // An internal only relationslist. Needed to have ValidateRename work correctly for GroupRelations.
     FOnPassWord: TRequestPasswordEvent;
     FOnUserAuthorized: TEpiUserAuthorizedEvent;
     FUsers: TEpiUsers;
+    FGroups: TEpiGroups;
     // Clear Text master password for all scrambling.
     // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
@@ -101,8 +108,9 @@ type
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Users: TEpiUsers read FUsers;
+    property   Groups: TEpiGroups read FGroups;
     property   Admins: TEpiGroup read FAdminsGroup;
-
+    property   AdminRelation: TEpiGroupRelation read FAdminRelation;
   public
     // User / Group related functions.
     function   NewUser: TEpiUser;
@@ -111,10 +119,11 @@ type
     property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     property   OnPassWord: TRequestPasswordEvent read FOnPassWord write FOnPassWord;
     property   OnUserAuthorized: TEpiUserAuthorizedEvent read FOnUserAuthorized write FOnUserAuthorized;
-  public
-    // OnChange-hook methods
-    procedure  BeginUpdate; override;
-    procedure  EndUpdate; override;
+
+  { Load/Save }
+  protected
+    function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+
   {Cloning}
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -257,11 +266,61 @@ type
     property Current: TEpiGroup read GetCurrent;
   end;
 
+  { TEpiGroupRelation }
+
+  TEpiGroupRelation = class(TEpiCustomRelationItem)
+  private
+    FGroup: TEpiGroup;
+    function GetGroupRelation(const Index: integer): TEpiGroupRelation;
+    function GetGroupRelations: TEpiGroupRelationList;
+    procedure SetGroup(AValue: TEpiGroup);
+  protected
+    class function GetRelationListClass: TEpiCustomRelationListClass; override;
+    procedure ReferenceDestroyed(Item: TEpiCustomItem; PropertyName: shortstring
+      ); override;
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+       ReferenceType: Byte; const ReferenceId: string); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      RefenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  public
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    function XMLName: string; override;
+    property Group: TEpiGroup read FGroup write SetGroup;
+    property GroupRelation[Const Index: integer]: TEpiGroupRelation read GetGroupRelation; default;
+    property GroupRelations: TEpiGroupRelationList read GetGroupRelations;
+  end;
+
+  TEpiGroupRelationListEnumerator = class;
+
+  { TEpiGroupRelationList }
+
+  TEpiGroupRelationList = class(TEpiCustomRelationItemList)
+  private
+    function GetGroupRelation(const Index: Integer): TEpiGroupRelation;
+  protected
+    function Prefix: string; override;
+  public
+    function XMLName: string; override;
+    function NewGroupRelation: TEpiGroupRelation;
+    function ItemClass: TEpiCustomItemClass; override;
+    function GetEnumerator: TEpiGroupRelationListEnumerator;
+    property GroupRelation[Const Index: Integer]: TEpiGroupRelation read GetGroupRelation; default;
+  end;
+
+  { TEpiGroupRelationListEnumerator }
+
+  TEpiGroupRelationListEnumerator = class(TEpiCustomRelationItemListEnumerator)
+  protected
+    function GetCurrent: TEpiGroupRelation; override;
+  public
+    property Current: TEpiGroupRelation read GetCurrent;
+  end;
 
 implementation
 
 uses
-  DCPbase64, DCPsha256, epistringutils, epimiscutils;
+  DCPbase64, DCPsha256, epistringutils, epimiscutils, epidocument;
 
 { TEpiUsersEnumerator }
 
@@ -344,15 +403,26 @@ begin
 
   FUsers := TEpiUsers.Create(self);
   FUsers.ItemOwner := true;
+  FUsers.Name := 'TEpiAdmin.Users';
 
-  FAdminsGroup := TEpiGroup.Create(self);
+  FGroups := TEpiGroups.Create(self);
+  FGroups.ItemOwner := true;
+  FGroups.Name := 'TEpiAdmin.Groups';
+
+  FAdminsGroup := FGroups.NewGroup;
   FAdminsGroup.ManageRights := EpiAllManageRights;
-  FAdminsGroup.Caption.Text := 'Admins';
+  FAdminsGroup.Caption.TextLang['en'] := 'Admins';
   FAdminsGroup.Name := 'admins_group';
+
+  FAdminRelations := TEpiGroupRelationList.Create(Self);
+  FAdminRelations.ItemOwner := true;
+
+  FAdminRelation := FAdminRelations.NewGroupRelation;
+  FAdminRelation.Group := FAdminsGroup;
 
   FCrypter := TDCP_rijndael.Create(nil);
 
-  RegisterClasses([Admins, Users]);
+  RegisterClasses([Users, Groups]);
 end;
 
 destructor TEpiAdmin.Destroy;
@@ -371,17 +441,27 @@ end;
 procedure TEpiAdmin.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
-  I: Integer;
 begin
+  // Since the Admin group is autocreated we remove it during load.
+  FreeAndNil(FAdminRelation);
+  FreeAndNil(FAdminsGroup);
+
+  inherited LoadFromXml(Root, ReferenceMap);
   // Root = <Admin>
 
   // Load groups
-  if LoadNode(Node, Root, rsGroup, false) then
-    Admins.LoadFromXml(Node, ReferenceMap);
+  if LoadNode(Node, Root, rsGroups, false) then
+    Groups.LoadFromXml(Node, ReferenceMap);
 
   // Then load users
   LoadNode(Node, Root, rsUsers, true);
   Users.LoadFromXml(Node, ReferenceMap);
+
+  // finally load the relationships
+  LoadNode(Node, Root, 'GroupRelation', true);
+
+  FAdminRelation := FAdminRelations.NewGroupRelation;
+  AdminRelation.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiAdmin.NewUser: TEpiUser;
@@ -391,7 +471,7 @@ end;
 
 function TEpiAdmin.NewGroup: TEpiGroup;
 begin
-//  result := Groups.NewGroup;
+  result := Groups.NewGroup;
 end;
 
 function TEpiAdmin.RequestPassword(const RepeatCount: Byte): Boolean;
@@ -410,14 +490,15 @@ begin
     end;
 end;
 
-procedure TEpiAdmin.BeginUpdate;
+function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
 begin
-  inherited BeginUpdate;
-end;
+  Result := inherited SaveToDom(RootDoc);
 
-procedure TEpiAdmin.EndUpdate;
-begin
-  inherited EndUpdate;
+  Elem := AdminRelation.SaveToDom(RootDoc);
+  if Assigned(Elem) then
+    Result.AppendChild(Elem);
 end;
 
 function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -683,8 +764,8 @@ begin
   GroupList := TStringList.Create;
   SplitString(ReferenceId, GroupList, [',']);
 
- {  for S in GroupList do
-    Groups.AddItem(Admin.Groups.GetItemByName(S));    }
+  for S in GroupList do
+    Groups.AddItem(Admin.Groups.GetItemByName(S));
 
   GroupList.Free;
 end;
@@ -886,6 +967,131 @@ begin
   // If no name present, TEpiTranslatedText will take care of it.
   Caption.LoadFromXml(Root, ReferenceMap);
   ManageRights := TEpiManagerRights(LoadAttrEnum(Root, rsManageRights, TypeInfo(TEpiManagerRights), '', false));
+end;
+
+{ TEpiGroupRelation }
+
+procedure TEpiGroupRelation.SetGroup(AValue: TEpiGroup);
+begin
+  if FGroup = AValue then Exit;
+  FGroup := AValue;
+
+  ObserveReference(FGroup, 'Group');
+end;
+
+class function TEpiGroupRelation.GetRelationListClass: TEpiCustomRelationListClass;
+begin
+  result := TEpiGroupRelationList;
+end;
+
+function TEpiGroupRelation.GetGroupRelation(const Index: integer
+  ): TEpiGroupRelation;
+begin
+  result := TEpiGroupRelation(RelationList.Items[Index]);
+end;
+
+function TEpiGroupRelation.GetGroupRelations: TEpiGroupRelationList;
+begin
+  result := TEpiGroupRelationList(RelationList);
+end;
+
+procedure TEpiGroupRelation.ReferenceDestroyed(Item: TEpiCustomItem;
+  PropertyName: shortstring);
+begin
+  case PropertyName of
+    'Group': FGroup := nil;
+  end;
+
+  inherited ReferenceDestroyed(Item, PropertyName);
+end;
+
+procedure TEpiGroupRelation.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
+begin
+  if (EpiClassType = TEpiGroupRelation)
+  then
+    begin
+      case ReferenceType of
+        0: // Datafile
+          Group := TEpiGroup(TEpiDocument(RootOwner).Admin.Groups.GetItemByName(ReferenceId));
+      end;
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+end;
+
+function TEpiGroupRelation.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; RefenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, RefenceMap);
+
+  if Assigned(Group) then
+    RefenceMap.AddFixupReference(Result, TEpiGroupRelation, 0, Group.Name);
+end;
+
+function TEpiGroupRelation.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsGroupRef, Group.Name);
+end;
+
+procedure TEpiGroupRelation.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+var
+  Node: TDOMNode;
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  ReferenceMap.AddFixupReference(Self, TEpiGroupRelation, 0, LoadAttrString(Root, rsGroupRef));
+
+  if LoadNode(Node, Root, 'GroupRelations', false) then
+    RelationList.LoadFromXml(Node, ReferenceMap);
+end;
+
+function TEpiGroupRelation.XMLName: string;
+begin
+  Result := 'GroupRelation';
+end;
+
+{ TEpiGroupRelationList }
+
+function TEpiGroupRelationList.GetGroupRelation(const Index: Integer
+  ): TEpiGroupRelation;
+begin
+  result := TEpiGroupRelation(Items[Index]);
+end;
+
+function TEpiGroupRelationList.Prefix: string;
+begin
+  Result := 'grouprelation_id_';
+end;
+
+function TEpiGroupRelationList.XMLName: string;
+begin
+  Result := 'GroupRelations';
+end;
+
+function TEpiGroupRelationList.NewGroupRelation: TEpiGroupRelation;
+begin
+  Result := TEpiGroupRelation(NewItem());
+end;
+
+function TEpiGroupRelationList.ItemClass: TEpiCustomItemClass;
+begin
+  Result := TEpiGroupRelation;
+end;
+
+function TEpiGroupRelationList.GetEnumerator: TEpiGroupRelationListEnumerator;
+begin
+  result := TEpiGroupRelationListEnumerator.Create(Self);
+end;
+
+{ TEpiGroupRelationListEnumerator }
+
+function TEpiGroupRelationListEnumerator.GetCurrent: TEpiGroupRelation;
+begin
+  Result := TEpiGroupRelation(inherited GetCurrent);
 end;
 
 end.

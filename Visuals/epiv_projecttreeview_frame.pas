@@ -13,7 +13,7 @@ uses
   {$ELSE}
   FakeActiveX,
   {$ENDIF}
-  epicustombase, epidocument, epirelations, epidatafiles, epidatafilestypes,
+  epicustombase, epidocument, epidatafilerelations, epidatafiles, epidatafilestypes,
   Graphics, Menus;
 
 type
@@ -500,14 +500,14 @@ procedure TEpiVProjectTreeViewFrame.VSTDragDrop(Sender: TBaseVirtualTree;
 var
   OldNode: PVirtualNode;
   MR: TEpiMasterRelation;
-  MRList: TEpiRelationList;
+  MRList: TEpiDatafileRelationList;
   OldIndex: Integer;
   NewIndex: Integer;
 begin
   OldNode := TNodeDragObject(Source).DragNode;
 
   MR := MasterRelationFromNode(OldNode);
-  MRList := TEpiRelationList(MR.Owner);
+  MRList := TEpiDatafileRelationList(MR.Owner);
   OldIndex := MRList.IndexOf(MR);
 
   MR := MasterRelationFromNode(Sender.DropTargetNode);
@@ -796,7 +796,7 @@ end;
 
 function TEpiVProjectTreeViewFrame.AllRelationsAreEqual: boolean;
 
-  function CompareTreeStructure(Const RelationListA, RelationListB: TEpiRelationList): boolean;
+  function CompareTreeStructure(Const RelationListA, RelationListB: TEpiDatafileRelationList): boolean;
   var
     i: Integer;
     MRA: TEpiMasterRelation;

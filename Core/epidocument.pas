@@ -295,7 +295,7 @@ begin
       then
         Raise EEpiBadPassword.Create('Incorrect Username/Password');
 
-      LoadNode(Node, Root, 'Crypt', true);
+ {     LoadNode(Node, Root, 'Crypt', true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
       MS := TMemoryStream.Create;
@@ -305,7 +305,7 @@ begin
       DeCrypter.DecryptStream(SS, MS, SS.Size);
 
       MS.Position := 0;
-      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);  }
     finally
       SS.Free;
       MS.Free;
@@ -424,7 +424,7 @@ begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  if false {(Admin.Users.Count > 0) }then
+  if false{ (Admin.Users.Count > 0) }then
   begin
     RootDoc := Result.FirstChild;
 

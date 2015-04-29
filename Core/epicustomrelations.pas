@@ -124,7 +124,12 @@ begin
   Result := nil;
 
   Runner := Self;
-  While Assigned(Runner) and (Runner.Owner is TEpiCustomRelationItemList) do
+  While Assigned(Runner) and
+        (
+         (Runner.Owner is TEpiCustomRelationItemList) or
+         (Runner.Owner is TEpiCustomRelationItem)
+        )
+  do
     Runner := Runner.Owner;
 
   Result := TEpiCustomRelationItemList(Runner);

@@ -33,7 +33,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="2" Minor="1"/>
-    <Files Count="72">
+    <Files Count="74">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -322,6 +322,14 @@
         <Filename Value="Core/epicustomrelations.pas"/>
         <UnitName Value="epicustomrelations"/>
       </Item72>
+      <Item73>
+        <Filename Value="Core/epidatafilerelations.pas"/>
+        <UnitName Value="epidatafilerelations"/>
+      </Item73>
+      <Item74>
+        <Filename Value="Core/epigrouprelations.pas"/>
+        <UnitName Value="epigrouprelations"/>
+      </Item74>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
