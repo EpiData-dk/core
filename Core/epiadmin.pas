@@ -33,7 +33,9 @@ type
 
 const
   EpiManagerRightCaptions: array[TEpiManagerRight] of string =
-    ( '', '', '',
+    ( 'Data',
+      'Entry',
+      'Assigned Section Rights',
       'Edit Struncture',
       'Translate project',
       'Manage users',
@@ -107,6 +109,8 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string); override;
     property   Users: TEpiUsers read FUsers;
     property   Groups: TEpiGroups read FGroups;
     property   Admins: TEpiGroup read FAdminsGroup;
@@ -273,6 +277,7 @@ type
     FGroup: TEpiGroup;
     function GetGroupRelation(const Index: integer): TEpiGroupRelation;
     function GetGroupRelations: TEpiGroupRelationList;
+    function GetParentRelation: TEpiGroupRelation;
     procedure SetGroup(AValue: TEpiGroup);
   protected
     class function GetRelationListClass: TEpiCustomRelationListClass; override;
@@ -289,6 +294,7 @@ type
     property Group: TEpiGroup read FGroup write SetGroup;
     property GroupRelation[Const Index: integer]: TEpiGroupRelation read GetGroupRelation; default;
     property GroupRelations: TEpiGroupRelationList read GetGroupRelations;
+    property ParentRelation: TEpiGroupRelation read GetParentRelation;
   end;
 
   TEpiGroupRelationListEnumerator = class;
@@ -301,6 +307,7 @@ type
   protected
     function Prefix: string; override;
   public
+    constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
     function NewGroupRelation: TEpiGroupRelation;
     function ItemClass: TEpiCustomItemClass; override;
@@ -462,6 +469,20 @@ begin
 
   FAdminRelation := FAdminRelations.NewGroupRelation;
   AdminRelation.LoadFromXml(Node, ReferenceMap);
+
+  // During fixup, set the correct admingroup!
+  ReferenceMap.AddFixupReference(Self, TEpiAdmin, 0, '');
+end;
+
+procedure TEpiAdmin.FixupReferences(EpiClassType: TEpiCustomBaseClass;
+  ReferenceType: Byte; const ReferenceId: string);
+begin
+  if EpiClassType = TEpiAdmin then
+    case ReferenceType of
+      0: FAdminsGroup := AdminRelation.Group;
+    end
+  else
+    inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
 end;
 
 function TEpiAdmin.NewUser: TEpiUser;
@@ -995,6 +1016,18 @@ begin
   result := TEpiGroupRelationList(RelationList);
 end;
 
+function TEpiGroupRelation.GetParentRelation: TEpiGroupRelation;
+begin
+  result := nil;
+
+  if (Assigned(Owner)) and
+     (Owner is TEpiGroupRelationList) and
+     (Assigned(Owner.Owner)) and
+     (Owner.Owner is TEpiGroupRelation)
+  then
+    Result := TEpiGroupRelation(Owner.Owner);
+end;
+
 procedure TEpiGroupRelation.ReferenceDestroyed(Item: TEpiCustomItem;
   PropertyName: shortstring);
 begin
@@ -1065,6 +1098,11 @@ end;
 function TEpiGroupRelationList.Prefix: string;
 begin
   Result := 'grouprelation_id_';
+end;
+
+constructor TEpiGroupRelationList.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
 end;
 
 function TEpiGroupRelationList.XMLName: string;

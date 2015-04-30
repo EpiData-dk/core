@@ -38,7 +38,7 @@ type
 implementation
 
 uses
-  epireport_types, math, epidatafiles, strutils, epimiscutils;
+  epireport_types, math, epidatafiles, strutils, epimiscutils, epidatafilerelations_helper;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';

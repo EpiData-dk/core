@@ -134,7 +134,7 @@ type
 implementation
 
 uses
-  epidatafilestypes, epidatafileutils, LazUTF8;
+  epidatafilestypes, epidatafileutils, LazUTF8, epidatafilerelations_helper;
 
 { TEpiProjectValidationTool }
 

@@ -26,6 +26,14 @@ type
 
   TEpiCustomRelationItemListEnumerator = class;
 
+  TEpiCustomRelationItemListCallBack = procedure(
+    Const Relation: TEpiCustomRelationItem;
+    Const Depth: Cardinal;
+    Const Index: Cardinal;
+    var aContinue: boolean;
+    Data: Pointer = nil
+  ) of object;
+
   { TEpiCustomRelationItemList }
 
   TEpiCustomRelationItemList = class(TEpiCustomList)
@@ -42,6 +50,7 @@ type
        ): boolean; override;
     function GetEnumerator: TEpiCustomRelationItemListEnumerator;
   end;
+
 
   { TEpiCustomRelationItemListEnumerator }
 

@@ -35,8 +35,6 @@ type
     out Continue: boolean
   ) of object;
 
-  TEpiRelationListEx = class;
-
   { TEpiDocument }
 
   TEpiDocument = class(TEpiCustomBase)
@@ -53,7 +51,7 @@ type
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
-    FRelations: TEpiRelationListEx;
+    FRelations: TEpiDatafileRelationList;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
@@ -74,7 +72,7 @@ type
     Property   Study: TEpiStudy read FStudy;
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
-    Property   Relations: TEpiRelationListEx read FRelations;
+    Property   Relations: TEpiDatafileRelationList read FRelations;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
@@ -98,23 +96,6 @@ type
     function   SaveToXmlDocument: TXMLDocument;
   protected
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
-  end;
-
-
-  { TEpiRelationListEx }
-
-  TEpiRelationListExCallBack = procedure(Const Relation: TEpiMasterRelation;
-    Const Depth: Cardinal; Const Index: Cardinal; Var aContinue: boolean;
-    Data: Pointer = nil) of object;
-
-  TEpiRelationListEx = class(TEpiDatafileRelationList)
-  public
-    function GetOrderedDataFiles: TEpiDataFiles;
-    procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack;
-      Data: Pointer = nil);
-  public
-    { Aux. methods }
-    function IsMultiLeveled: boolean;     // Returns true if any top-level Master relation have a Detail relation.
   end;
 
 implementation
@@ -162,7 +143,7 @@ begin
   FValueLabelSets.ItemOwner := true;
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
-  FRelations       := TEpiRelationListEx.Create(Self);
+  FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
   FCycleNo         := 0;
 
@@ -493,74 +474,6 @@ begin
   // Version 4:
   if Admin.Users.Count > 0 then
     Admin.Users.PreSaveToDom(RootDoc, Result);
-end;
-
-{ TEpiRelationListEx }
-
-function TEpiRelationListEx.GetOrderedDataFiles: TEpiDataFiles;
-
-  procedure BuildOrderedDataFiles(ARelation: TEpiMasterRelation);
-  var
-    i: integer;
-  begin
-    Result.AddItem(ARelation.Datafile);
-
-    for i := 0 to ARelation.DetailRelations.Count - 1 do
-      BuildOrderedDataFiles(ARelation.DetailRelation[i]);
-  end;
-
-var
-  i: Integer;
-begin
-  Result := TEpiDataFiles.Create(nil);
-  Result.ItemOwner := false;
-
-  for i := 0 to Count - 1 do
-    BuildOrderedDataFiles(MasterRelation[i]);
-end;
-
-procedure TEpiRelationListEx.OrderedWalk(
-  const CallBackMethod: TEpiRelationListExCallBack; Data: Pointer);
-
-var
-  Depth: Cardinal;
-  aContinue: Boolean;
-  i: Integer;
-
-  procedure RecurseMasterRelations(ARelation: TEpiMasterRelation; Idx: Cardinal);
-  var
-    i: Integer;
-  begin
-    CallBackMethod(ARelation, Depth, Idx, aContinue, Data);
-    if not aContinue then exit;
-
-    Inc(Depth);
-    for i := 0 to ARelation.DetailRelations.Count - 1 do
-    begin
-      RecurseMasterRelations(ARelation.DetailRelations[i], i);
-      if not aContinue then exit;
-    end;
-    Dec(Depth);
-
-  end;
-
-begin
-  Depth := 0;
-  aContinue := true;
-
-  for i := 0 to Count - 1 do
-    RecurseMasterRelations(MasterRelation[i], i);
-end;
-
-function TEpiRelationListEx.IsMultiLeveled: boolean;
-var
-  i: Integer;
-begin
-  for i := 0 to Count - 1 do
-    if MasterRelation[i].DetailRelations.Count > 0 then
-      Exit(true);
-
-  Result := false;
 end;
 
 end.

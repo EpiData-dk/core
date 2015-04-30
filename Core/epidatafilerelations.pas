@@ -96,6 +96,7 @@ type
     property Current: TEpiMasterRelation read GetCurrent;
   end;
 
+
 implementation
 
 uses

@@ -23,7 +23,9 @@ uses
   epitools_filterinfo, epireport_report_controllist, 
   epireport_report_exportsettings, epireport_report_exportsettings_visitors, 
   epiopenfile_cache, epitools_append, epitools_search, epirelates, epirights, 
-  ufileassociation, epicustomrelations, epidatafilerelations, epigrouprelations;
+  ufileassociation, epicustomrelations, epidatafilerelations, 
+  epigrouprelations, epicustomrelations_helper, epigrouprelation_helper, 
+  epidatafilerelations_helper;
 
 implementation
 
