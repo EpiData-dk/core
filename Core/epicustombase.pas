@@ -50,7 +50,8 @@ type
     eegValueLabel,
     eegValueLabelSet,
     // epirelations.pas
-    eegRelations
+    eegRelations,
+    eegGroupRelations
     );
 
   // ecce = Epi Custom Change Event

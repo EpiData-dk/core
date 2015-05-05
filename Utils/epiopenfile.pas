@@ -65,6 +65,9 @@ type
     procedure DocumentChange(Const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure UserHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
     function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure SetDataDirectory(AValue: string);
@@ -233,6 +236,17 @@ begin
   if (Initiator <> FEpiDoc) then exit;
 
   DeleteLockFile;
+end;
+
+procedure TEpiDocumentFile.UserHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (Initiator <> FAuthedUser) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (EventType <> Word(ecceDestroy)) then exit;
+
+  FAuthedUser := nil;
 end;
 
 function TEpiDocumentFile.GetIsSaved: boolean;
@@ -503,6 +517,8 @@ end;
 procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
 begin
   FAuthedUser := User;
+
+  FAuthedUser.RegisterOnChangeHook(@UserHook, true);
 end;
 
 procedure TEpiDocumentFile.DoSaveFile(const AFileName: string);

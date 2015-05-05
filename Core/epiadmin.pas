@@ -191,6 +191,9 @@ type
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
       ReferenceType: Byte; const ReferenceId: string); override;
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -247,6 +250,7 @@ type
   private
     FCaption: TEpiTranslatedTextWrapper;
     FManageRights: TEpiManagerRights;
+    FUsers: TEpiUsers;
     procedure SetManageRights(const AValue: TEpiManagerRights);
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -258,7 +262,8 @@ type
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     property   Caption: TEpiTranslatedTextWrapper read FCaption;
-    Property   ManageRights: TEpiManagerRights read FManageRights write SetManageRights;
+    property   ManageRights: TEpiManagerRights read FManageRights write SetManageRights;
+    property   Users: TEpiUsers read FUsers;
   end;
 
   { TEpiGroupsEnumerator }
@@ -269,6 +274,10 @@ type
   public
     property Current: TEpiGroup read GetCurrent;
   end;
+
+  TEpiGroupRelationChangeEvent = (
+    egrceSetGroup
+  );
 
   { TEpiGroupRelation }
 
@@ -461,8 +470,8 @@ begin
     Groups.LoadFromXml(Node, ReferenceMap);
 
   // Then load users
-  LoadNode(Node, Root, rsUsers, true);
-  Users.LoadFromXml(Node, ReferenceMap);
+  if LoadNode(Node, Root, rsUsers, false) then
+    Users.LoadFromXml(Node, ReferenceMap);
 
   // finally load the relationships
   LoadNode(Node, Root, 'GroupRelation', true);
@@ -755,12 +764,14 @@ end;
 
 function TEpiUser.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+var
+  S: String;
+  G: TEpiGroup;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   with TEpiUser(Result) do
   begin
-//    FGroup      := TEpiGroup(Admin.Groups.GetItemByName(Self.FGroup.Name));
     FExpireDate := Self.FExpireDate;
     FLastLogin  := Self.FLastLogin;
     FFullName   := Self.FFullName;
@@ -768,6 +779,15 @@ begin
     FPassword       := Self.FPassword;
     FSalt           := Self.FSalt;
   end;
+
+  S := '';
+  for G in Groups do
+    S := S + ',' + G.Name;
+
+  if S <> '' then
+    Delete(S,1,1);
+
+  ReferenceMap.AddFixupReference(Self, TEpiUser, 0, S);
 end;
 
 procedure TEpiUser.FixupReferences(EpiClassType: TEpiCustomBaseClass;
@@ -789,6 +809,27 @@ begin
     Groups.AddItem(Admin.Groups.GetItemByName(S));
 
   GroupList.Free;
+end;
+
+procedure TEpiUser.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+
+  // Use the Dochange to catch add/remove in the Groups container, which
+  // in turn should be added/removed from the Group.Users container.
+  if (ebsDestroying in State) then exit;
+  if (Initiator <> Groups) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if not (TEpiCustomChangeEventType(EventType) in [ecceAddItem, ecceDelItem]) then exit;
+
+
+  case TEpiCustomChangeEventType(EventType) of
+    ecceAddItem:
+      TEpiGroup(Data).Users.AddItem(Self);
+    ecceDelItem:
+      TEpiGroup(Data).Users.RemoveItem(Self);
+  end;
 end;
 
 constructor TEpiUser.Create(AOwner: TEpiCustomBase);
@@ -966,6 +1007,10 @@ begin
 
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
 
+  FUsers   := TEpiUsers.Create(self);
+  FUsers.ItemOwner := false;
+  FUsers.Sorted := false;
+
   RegisterClasses([Caption]);
 end;
 
@@ -998,6 +1043,7 @@ begin
   FGroup := AValue;
 
   ObserveReference(FGroup, 'Group');
+  DoChange(eegGroupRelations, Word(egrceSetGroup), Group);
 end;
 
 class function TEpiGroupRelation.GetRelationListClass: TEpiCustomRelationListClass;
