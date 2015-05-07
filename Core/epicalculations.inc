@@ -43,17 +43,20 @@ end;
 
 procedure TEpiCalculation.FixupReferences(EpiClassType: TEpiCustomBaseClass;
   ReferenceType: Byte; const ReferenceId: string);
+var
+  OField: TEpiField;
 begin
   if (EpiClassType = TEpiCalculation)
   then
-    begin
-
-      case ReferenceType of
-        0: // ResultField
-          if Assigned(GetOwnerField) then
-            ResultField := GetOwnerField.DataFile.Fields.FieldByName[ReferenceId];
-      end;
-
+    case ReferenceType of
+      0: // ResultField
+        begin
+          OField := GetOwnerField;
+          if Assigned(OField) and
+             Assigned(OField.DataFile)
+          then
+            ResultField := OField.DataFile.Fields.FieldByName[ReferenceId];
+        end;
     end
   else
     inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
@@ -66,14 +69,6 @@ begin
 
   if Assigned(ResultField) then
     ReferenceMap.AddFixupReference(Result, TEpiCalculation, 0, ResultField.Name);
-
-{  with TEpiCalculation(Result) do
-  if (not Assigned(OwnerField.DataFile)) or
-     (OwnerField.DataFile = Self.OwnerField.DataFile)
-  then
-    ResultField := Self.FResultField
-  else
-    ResultField := GetOwnerField.DataFile.Fields.FieldByName[Self.FResultField.Name]; }
 end;
 
 function TEpiCalculation.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
