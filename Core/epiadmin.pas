@@ -43,7 +43,7 @@ const
     );
 
   EpiAllManageRights: TEpiManagerRights =
-    [earStructure, earTranslate, earUsers, earPassword];
+    [earData..earPassword];
 
 
 type
@@ -488,7 +488,12 @@ procedure TEpiAdmin.FixupReferences(EpiClassType: TEpiCustomBaseClass;
 begin
   if EpiClassType = TEpiAdmin then
     case ReferenceType of
-      0: FAdminsGroup := AdminRelation.Group;
+      0: begin
+           FAdminsGroup := AdminRelation.Group;
+           // Always reset the mangerights, since these may change on XML version change.
+           // and the ADMIN group must ALWAYS have all management rights.
+           FAdminsGroup.FManageRights := EpiAllManageRights;
+         end;
     end
   else
     inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
