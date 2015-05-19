@@ -41,9 +41,12 @@ const
       'Manage users',
       'Reset password'
     );
+  EpiManageRightFirst = earData;
+  EpiManageRightLast  = earPassword;
+
 
   EpiAllManageRights: TEpiManagerRights =
-    [earData..earPassword];
+    [EpiManageRightFirst..EpiManageRightLast];
 
 
 type
