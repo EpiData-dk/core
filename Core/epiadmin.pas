@@ -21,27 +21,25 @@ type
 
   // Rights in manager
   TEpiManagerRight = (
-    earData,
-    earEntry,
-    earSections,
+    earViewData,        // Can view Data
     earStructure,       // Structural CRUD in Datafile, Valuelabels but not data.
     earTranslate,       // May change all TEpiTranslatedText objects
-    earUsers,           // CRUD for Users and groups based on EpiData RBAC model.
-    earPassword         // May change password for ALL users.
+    earUsers,           // CRUD for Users based on EpiData RBAC model.
+    earGroups,          // CRUD for Groups based on EpiData RBAC model AND Assign groups to sections!
+    earPassword         // May change password for users.
   );
   TEpiManagerRights = set of TEpiManagerRight;
 
 const
   EpiManagerRightCaptions: array[TEpiManagerRight] of string =
-    ( 'Data',
-      'Entry',
-      'Assigned Section Rights',
+    ( 'View Data',
       'Edit Struncture',
       'Translate project',
-      'Manage users',
+      'Manage Users',
+      'Manage Groups',
       'Reset password'
     );
-  EpiManageRightFirst = earData;
+  EpiManageRightFirst = earViewData;
   EpiManageRightLast  = earPassword;
 
 
@@ -966,7 +964,7 @@ var
 begin
   RightsNeeded := ManagerRights;
 
-  // Walk through all ground, and each groups right to see if the list of
+  // Walk through all groups, and each groups right to see if the list of
   // managerights are present.
   // Do this by removing a right found in a group from the list of needed rights
   // and if this list is empty by the end of the loop, then all rights were found.
