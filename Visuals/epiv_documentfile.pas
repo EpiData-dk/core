@@ -104,6 +104,14 @@ begin
 
         F.Free;
       end;
+
+    erpNewPassword:
+      begin
+        Password :=
+          PasswordBox('Change Password',
+                      'Your password has expired!' + LineEnding +
+                      'Please enter a new password:');
+      end;
   end;
 
   if (RequestNo < 3) then

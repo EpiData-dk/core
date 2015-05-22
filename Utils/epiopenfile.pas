@@ -78,6 +78,7 @@ type
   private
     { User Authorization }
     FAuthedUser: TEpiUser;
+  protected
     procedure UserAuthorized(Sender: TEpiAdmin; User: TEpiUser); virtual;
   protected
     function GetFileName: string; virtual;
@@ -517,7 +518,6 @@ end;
 procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
 begin
   FAuthedUser := User;
-
   FAuthedUser.RegisterOnChangeHook(@UserHook, true);
 end;
 

@@ -39,9 +39,20 @@ const
       'Manage Groups',
       'Reset password'
     );
+
+  EpiManagerRightCaptionsShort: array[TEpiManagerRight] of string =
+    ( 'D',
+      'S',
+      'T',
+      'U',
+      'G',
+      'P'
+    );
+
+
+
   EpiManageRightFirst = earViewData;
   EpiManageRightLast  = earPassword;
-
 
   EpiAllManageRights: TEpiManagerRights =
     [EpiManageRightFirst..EpiManageRightLast];
@@ -55,17 +66,23 @@ type
     eaceUserSetPassword,   eaceUserSetGroup,
     eaceUserSetExpireDate, eaceUserSetLastLogin,
     // Group related events:
-    eaceGroupSetManageRights
+    eaceGroupSetManageRights,
+    // Admin related events:
+    eaceAdminLoginSuccessfull,       // Data: TEpiUser = the authenticated user.
+    eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
+    eaceAdminIncorrectPassword,      // Data: string   = the incorrect login name
+    eaceAdminIncorrectNewPassword    // Data: TEpiUser = the authenticated user.
   );
 
   TEpiRequestPasswordType = (
     erpSinglePassword,          // Only a valid password is required - login is ignored.
-    erpUserLogin                // Project is managed by a user/password and both are requred.
+    erpUserLogin,               // Project is managed by a user/password and both are requred.
+    erpNewPassword              // The authorized user needs a new password
   );
 
   TEpiRequestPasswordResponse = (
-     rprAskOnFail,              // If login/password failed send request again.
-     rprStopOnFail              // If login/password failed stop loading.
+     rprAskOnFail,              // If login/password/new password failed send request again.
+     rprStopOnFail              // If login/password/new password failed stop loading.
   );
 
   TRequestPasswordEvent = function(
@@ -98,6 +115,7 @@ type
     FMasterPassword: string;
     function   DoRequestPassword: Boolean;
     procedure  SetMasterPassword(const AValue: string);
+    procedure  DoUserAuthorized(Const User: TEpiUser);
 
   { Encrypt / Decrypt methods for user handling }
   private
@@ -357,7 +375,7 @@ end;
 
 function TEpiAdmin.DoRequestPassword: Boolean;
 var
-  Login, Password: string;
+  Login, Password, NewPassword: string;
   TheUser: TEpiUser;
   Key: String;
   Res: TEpiRequestPasswordResponse;
@@ -366,6 +384,9 @@ begin
   result := false;
 
   if not Assigned(OnPassword) then exit;
+  Login := '';
+  Password := '';
+  NewPassword := '';
 
   Count := 1;
   repeat
@@ -373,15 +394,40 @@ begin
     Inc(Count);
 
     TheUser := Users.GetUserByLogin(Login);
-    if not Assigned(TheUser) then exit;
+    if not Assigned(TheUser) then
+      begin
+        DoChange(eegAdmin, Word(eaceAdminIncorrectUserName), @Login);
+        Continue;
+      end;
 
     result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
+    if (Not Result) then
+      DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
   until (Result) or (Res = rprStopOnFail);
 
   if (Result) and
-     (Assigned(OnUserAuthorized))
+     (TheUser.ExpireDate <> 0) and
+     (Now >= TheUser.ExpireDate)
   then
-    OnUserAuthorized(Self, TheUser);
+    begin
+      Count := 1;
+      repeat
+        Res := OnPassword(Self, erpNewPassword, Count, Login, NewPassword);
+        Result := (NewPassword <> Password);
+
+        if (Not Result) then
+          DoChange(eegAdmin, Word(eaceAdminIncorrectNewPassword), TheUser);
+
+      until (Result) or (Res = rprStopOnFail);
+    end;
+
+  if (Result)
+  then
+    begin
+      TheUser.LastLogin := Now;
+      DoUserAuthorized(TheUser);
+      DoChange(eegAdmin, Word(eaceAdminLoginSuccessfull), TheUser);
+    end;
 
   Key := TheUser.Salt + Password + Login;
   MasterPassword := Decrypt(Key, TheUser.MasterPassword);
@@ -391,6 +437,12 @@ procedure TEpiAdmin.SetMasterPassword(const AValue: string);
 begin
   if FMasterPassword = AValue then exit;
   FMasterPassword := AValue;
+end;
+
+procedure TEpiAdmin.DoUserAuthorized(const User: TEpiUser);
+begin
+  if Assigned(OnUserAuthorized) then
+    OnUserAuthorized(Self, User);
 end;
 
 function TEpiAdmin.Encrypt(const Key, Data: String): String;
