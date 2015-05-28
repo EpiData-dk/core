@@ -21,38 +21,49 @@ type
 
   // Rights in manager
   TEpiManagerRight = (
-    earViewData,        // Can view Data
-    earStructure,       // Structural CRUD in Datafile, Valuelabels but not data.
-    earTranslate,       // May change all TEpiTranslatedText objects
-    earUsers,           // CRUD for Users based on EpiData RBAC model.
-    earGroups,          // CRUD for Groups based on EpiData RBAC model AND Assign groups to sections!
-    earPassword         // May change password for users.
+    // Project Content Design:
+    earDefineProject,           // Structural CRUD in Datafile, Valuelabels, Study Info, etc. related to project management but not data.
+    earTranslate,               // May change all TEpiTranslatedText objects
+
+    // Assign Project Rights:
+    earGroups,                  // CRUD for Groups based on EpiData RBAC model AND Assign groups to sections!
+
+    // User Management:
+    earUsers,                   // CRUD for Users based on EpiData RBAC model.
+    earPassword,                // May change password for users.
+
+    // Data Access:
+    earExtentendedData,         // Export, pack
+    earViewData                 // Can view Data
   );
   TEpiManagerRights = set of TEpiManagerRight;
 
 const
   EpiManagerRightCaptions: array[TEpiManagerRight] of string =
-    ( 'View Data',
-      'Edit Struncture',
-      'Translate project',
-      'Manage Users',
-      'Manage Groups',
-      'Reset password'
+    (
+      '&Define Project',
+      '&Translate Project',
+      'Manage &Groups',
+      'Manage &Users',
+      'Reset &Password',
+      '&Extended Data',
+      '&View Data'
     );
 
   EpiManagerRightCaptionsShort: array[TEpiManagerRight] of string =
     ( 'D',
-      'S',
       'T',
-      'U',
       'G',
-      'P'
+      'U',
+      'P',
+      'E',
+      'V'
     );
 
 
 
-  EpiManageRightFirst = earViewData;
-  EpiManageRightLast  = earPassword;
+  EpiManageRightFirst = earDefineProject;
+  EpiManageRightLast  = earViewData;
 
   EpiAllManageRights: TEpiManagerRights =
     [EpiManageRightFirst..EpiManageRightLast];
