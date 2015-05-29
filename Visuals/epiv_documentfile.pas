@@ -84,7 +84,14 @@ function TDocumentFile.DoPassWord(Sender: TObject;
   var Password: string): TEpiRequestPasswordResponse;
 var
   F: TUserLoginForm;
+  ModalRes: Integer;
 begin
+  if (RequestNo < 3) then
+    Result := rprAskOnFail
+  else
+    Result := rprStopOnFail;
+
+
   case RequestType of
     erpSinglePassword:
       Password :=
@@ -97,7 +104,10 @@ begin
       begin
         F := TUserLoginForm.Create(nil);
         F.Caption := 'Password required for: ' + ExtractFileName(FileName);
-        F.ShowModal;
+
+        // Forces a close
+        if F.ShowModal = mrCancel then
+          Result := rprCanceled;
 
         Login := F.LoginEdit.Text;
         Password := F.PasswordEdit.Text;
@@ -114,10 +124,6 @@ begin
       end;
   end;
 
-  if (RequestNo < 3) then
-    Result := rprAskOnFail
-  else
-    Result := rprStopOnFail;
 end;
 
 end.

@@ -272,11 +272,18 @@ begin
       // request for password from user.
       // Loading the rest of the user information (Name, etc.) is
       // done later.
-      if (not  Admin.Users.PreLoadFromXml(Node))
-      then
-        Raise EEpiBadPassword.Create('Incorrect Username/Password');
+      case Admin.Users.PreLoadFromXml(Node) of
+        prSuccess:
+          ;
 
- {     LoadNode(Node, Root, 'Crypt', true);
+        prFailed:
+          raise EEpiBadPassword.Create('Incorrect Username/Password');
+
+        prCanceled:
+          raise EEpiPasswordCanceled.Create('');
+      end;
+
+    {     LoadNode(Node, Root, 'Crypt', true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
       MS := TMemoryStream.Create;

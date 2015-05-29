@@ -711,6 +711,12 @@ begin
           LoadSuccess := false;
         end;
 
+      on E: EEpiPasswordCanceled do
+        begin
+          LoadSuccess := false;
+          Msg := '';
+        end;
+
       on E: EEpiBadVersion do
         begin
           Msg := E.Message;

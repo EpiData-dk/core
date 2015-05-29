@@ -18,6 +18,7 @@ type
   TEpiGroupRelationList = class;
 
   EEpiBadPassword = class(Exception);
+  EEpiPasswordCanceled = class(Exception);
 
   // Rights in manager
   TEpiManagerRight = (
@@ -91,9 +92,16 @@ type
     erpNewPassword              // The authorized user needs a new password
   );
 
+  TEpiRequestPasswordResult = (
+    prSuccess,      // Asking user for password succeeded (correct username/password combo)
+    prFailed,       // Asking user for password failed    (incorrect username/password combo)
+    prCanceled      // The user canceled the login
+  );
+
   TEpiRequestPasswordResponse = (
      rprAskOnFail,              // If login/password/new password failed send request again.
-     rprStopOnFail              // If login/password/new password failed stop loading.
+     rprStopOnFail,             // If login/password/new password failed stop loading.
+     rprCanceled                 // The user cancled at the password form.
   );
 
   TRequestPasswordEvent = function(
@@ -124,7 +132,7 @@ type
     // Clear Text master password for all scrambling.
     // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
-    function   DoRequestPassword: Boolean;
+    function   DoRequestPassword: TEpiRequestPasswordResult;
     procedure  SetMasterPassword(const AValue: string);
     procedure  DoUserAuthorized(Const User: TEpiUser);
 
@@ -149,7 +157,7 @@ type
     // User / Group related functions.
     function   NewUser: TEpiUser;
     function   NewGroup: TEpiGroup;
-    function   RequestPassword(Const RepeatCount: Byte): Boolean;
+//    function   RequestPassword(Const RepeatCount: Byte): TRequestPasswordResult;
     property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     property   OnPassWord: TRequestPasswordEvent read FOnPassWord write FOnPassWord;
     property   OnUserAuthorized: TEpiUserAuthorizedEvent read FOnUserAuthorized write FOnUserAuthorized;
@@ -180,7 +188,7 @@ type
     function   XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function   PreLoadFromXml(Root: TDOMNode): Boolean;
+    function   PreLoadFromXml(Root: TDOMNode): TEpiRequestPasswordResult;
     procedure  PreSaveToDom(RootDoc: TDOMDocument; Root: TDOMNode);
     function   NewUser: TEpiUser;
     function   GetEnumerator: TEpiUsersEnumerator;
@@ -384,7 +392,7 @@ end;
 
 { TEpiAdmin }
 
-function TEpiAdmin.DoRequestPassword: Boolean;
+function TEpiAdmin.DoRequestPassword: TEpiRequestPasswordResult;
 var
   Login, Password, NewPassword: string;
   TheUser: TEpiUser;
@@ -392,7 +400,7 @@ var
   Res: TEpiRequestPasswordResponse;
   Count: Integer;
 begin
-  result := false;
+  result := prFailed;
 
   if not Assigned(OnPassword) then exit;
   Login := '';
@@ -401,22 +409,37 @@ begin
 
   Count := 1;
   repeat
+    // Send the password request to the program (reciever)
     Res := OnPassword(Self, erpUserLogin, Count, Login, Password);
+
+    // The user canceled the login
+    if (Res = rprCanceled) then
+      begin
+        Result := prCanceled;
+        Break;
+      end;
+
+    // Increate the try counter
     Inc(Count);
 
+    // Find user
     TheUser := Users.GetUserByLogin(Login);
     if not Assigned(TheUser) then
       begin
+        // Login did not exists - send an event abount it.
         DoChange(eegAdmin, Word(eaceAdminIncorrectUserName), @Login);
         Continue;
       end;
 
-    result := '$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password;
-    if (Not Result) then
-      DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
-  until (Result) or (Res = rprStopOnFail);
+    if ('$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password) then
+      Result := prSuccess
+    else begin
+      Result := prFailed;
+       DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
+    end;
+  until (Result = prSuccess) or (Res = rprStopOnFail);
 
-  if (Result) and
+  if (Result = prSuccess) and
      (TheUser.ExpireDate <> 0) and
      (Now >= TheUser.ExpireDate)
   then
@@ -424,24 +447,34 @@ begin
       Count := 1;
       repeat
         Res := OnPassword(Self, erpNewPassword, Count, Login, NewPassword);
-        Result := (NewPassword <> Password);
 
-        if (Not Result) then
+        // The user canceled the login
+        if (Res = rprCanceled) then
+          begin
+            Result := prCanceled;
+            Break;
+          end;
+
+        if (NewPassword <> Password) then
+          Result := prSuccess
+        else begin
+          Result := prFailed;
           DoChange(eegAdmin, Word(eaceAdminIncorrectNewPassword), TheUser);
+        end;
 
-      until (Result) or (Res = rprStopOnFail);
+      until (Result = prSuccess) or (Res = rprStopOnFail);
     end;
 
-  if (Result)
+  if (Result = prSuccess)
   then
     begin
       TheUser.LastLogin := Now;
       DoUserAuthorized(TheUser);
       DoChange(eegAdmin, Word(eaceAdminLoginSuccessfull), TheUser);
-    end;
 
-  Key := TheUser.Salt + Password + Login;
-  MasterPassword := Decrypt(Key, TheUser.MasterPassword);
+      Key := TheUser.Salt + Password + Login;
+      MasterPassword := Decrypt(Key, TheUser.MasterPassword);
+    end;
 end;
 
 procedure TEpiAdmin.SetMasterPassword(const AValue: string);
@@ -573,7 +606,7 @@ begin
   result := Groups.NewGroup;
 end;
 
-function TEpiAdmin.RequestPassword(const RepeatCount: Byte): Boolean;
+{function TEpiAdmin.RequestPassword(const RepeatCount: Byte): Boolean;
 var
   i: Integer;
 begin
@@ -587,7 +620,7 @@ begin
       Result := DoRequestPassword;
       Inc(i);
     end;
-end;
+end;}
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 var
@@ -654,13 +687,13 @@ begin
   result := rsUsers;
 end;
 
-function TEpiUsers.PreLoadFromXml(Root: TDOMNode): Boolean;
+function TEpiUsers.PreLoadFromXml(Root: TDOMNode): TEpiRequestPasswordResult;
 var
   Node: TDOMNode;
   NUser: TEpiUser;
 begin
   // Root = <Users>
-  Result := false;
+  Result := prFailed;
 
   // Load all basic user info before requesting user for login.
   Node := Root.FirstChild;
