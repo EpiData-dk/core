@@ -11,7 +11,10 @@ type
 
   TEpiEntryRight = (
     // Data access
-    eerCreate, eerRead, eerUpdate, eerDelete
+    eerCreate,
+    eerRead,
+    eerUpdate,
+    eerDelete
   );
   TEpiEntryRights = set of TEpiEntryRight;
 
@@ -32,7 +35,8 @@ type
     function    XMLName: string; override;
     function    NewGroupRight: TEpiGroupRight;
     function    ItemClass: TEpiCustomItemClass; override;
-    Property    GroupRight[Index: integer]: TEpiGroupRight read GetGroupRight; default;
+    function    GroupRightFromGroup(Const Group: TEpiGroup): TEpiGroupRight;
+    property    GroupRight[Index: integer]: TEpiGroupRight read GetGroupRight; default;
   end;
 
   TEpiGroupRight = class(TEpiCustomItem)
@@ -108,6 +112,21 @@ end;
 function TEpiGroupRights.ItemClass: TEpiCustomItemClass;
 begin
   Result := TEpiGroupRight;
+end;
+
+function TEpiGroupRights.GroupRightFromGroup(const Group: TEpiGroup
+  ): TEpiGroupRight;
+var
+  Runner: TEpiCustomItem;
+begin
+  result := nil;
+
+  for Runner in Self do
+    if (TEpiGroupRight(Runner).Group = Group) then
+      begin
+        Result := TEpiGroupRight(Runner);
+        Break;
+      end;
 end;
 
 { TEpiGroupRight }
