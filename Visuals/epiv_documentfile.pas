@@ -84,22 +84,29 @@ function TDocumentFile.DoPassWord(Sender: TObject;
   var Password: string): TEpiRequestPasswordResponse;
 var
   F: TUserLoginForm;
-  ModalRes: Integer;
 begin
   if (RequestNo < 3) then
     Result := rprAskOnFail
   else
     Result := rprStopOnFail;
 
+  Password := '';
 
   case RequestType of
     erpSinglePassword:
-      Password :=
-        PasswordBox('Project Password',
-                    'File: ' + FileName + LineEnding +
-                    LineEnding +
-                    'Project data is password protected.' + LineEnding +
-                    'Please enter password:');
+      begin
+        if (not InputQuery(
+                 'Project Password',
+                 'File: ' + FileName + LineEnding +
+                        LineEnding +
+                        'Project data is password protected.' + LineEnding +
+                        'Please enter password:',
+                 True, Password)
+           )
+        then
+          Result := rprCanceled;
+      end;
+
     erpUserLogin:
       begin
         F := TUserLoginForm.Create(nil);

@@ -311,7 +311,10 @@ begin
       Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
       Inc(Count);
     until (StrToSHA1Base64(UserPW) = PW) or
-          (Res = rprStopOnFail);
+          (Res in [rprStopOnFail, rprCanceled]);
+
+    if (Res = rprCanceled) then
+      Raise EEpiPasswordCanceled.Create('');
 
     if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
       Raise EEpiBadPassword.Create('Incorrect Password');
