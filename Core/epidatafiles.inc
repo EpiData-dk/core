@@ -977,6 +977,7 @@ begin
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FNotes := TEpiTranslatedTextWrapper.Create(Self, rsNotes, rsText);
+  FGroupRights := TEpiGroupRights.Create(Self);
   FVersion := '';
   FCreated := Now;
   FRecModifiedDate := Now;
@@ -1017,7 +1018,7 @@ begin
   // Relates
   FRelates   := TEpiRelates.Create(Self);
 
-  RegisterClasses([Caption, Notes, Sections, Relates]);
+  RegisterClasses([Caption, Notes, Sections, Relates, GroupRights]);
 end;
 
 destructor TEpiDataFile.Destroy;

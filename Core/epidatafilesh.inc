@@ -46,8 +46,8 @@ type
   { TEpiDataFile }
 
   TEpiDataFile = class(TEpiCustomItem)
+  { Data containers }
   private
-    { Data containers }
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
     FAllControlItems: TEpiCustomControlItemList;
@@ -57,8 +57,9 @@ type
     function    GetSection(Index: integer): TEpiSection;
     function    GetHeading(Index: integer): TEpiHeading;
     function    GetValueLabelSet(Index: integer): TEpiValueLabelSet;
+
+  { Private housekeeping }
   private
-    { Private housekeeping }
     FRecordStatus: TEpiField;
     function    GetControlItem(Index: integer): TEpiCustomControlItem;
     function    GetDeleted(Index: integer): boolean;
@@ -75,6 +76,7 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
     function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+
   { Load/Save methods }
   private
     FLoadingRecs: Boolean;
@@ -124,6 +126,7 @@ type
     FAfterRecordState: TEpiDataFileAfterRecordState;
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
+    FGroupRights: TEpiGroupRights;
     FKeyFields: TEpiFields;
     FRecModified: boolean;
     FRecModifiedDate: TDateTime;
@@ -141,6 +144,7 @@ type
     property    Notes: TEpiTranslatedTextWrapper read FNotes;
     property    RecModifiedDate: TDateTime read FRecModifiedDate write FRecModifiedDate;  // version 2
     property    Relates: TEpiRelates read FRelates;                                       // version 3
+    property    GroupRights: TEpiGroupRights read FGroupRights;                           // version 4
     property    StructureModifiedDate: TDateTime read FStructureModifiedDate write FStructureModifiedDate;
     property    Version: string read FVersion write SetVersion;
 
