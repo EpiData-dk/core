@@ -11,13 +11,29 @@ type
 
   TEpiEntryRight = (
     // Data access
-    eerCreate,
+    eerCreate = 0,
     eerRead,
     eerUpdate,
     eerDelete
   );
   TEpiEntryRights = set of TEpiEntryRight;
 
+const
+  EpiEntryRightCaption: array[TEpiEntryRight] of string = (
+    'Create',
+    'Read',
+    'Update',
+    'Delete'
+  );
+
+  EpiEntryRightCaptionShort: array[TEpiEntryRight] of string = (
+    'C',
+    'R',
+    'U',
+    'D'
+  );
+
+type
   TEpiGroupRight = class;
 
   { TEpiGroupRights }
@@ -55,6 +71,8 @@ type
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  public
+    function   PrintEntryRights: string;
   public
     { Porperties }
     property   Group: TEpiGroup read FGroup write SetGroup;
@@ -199,6 +217,18 @@ begin
 
   SaveDomAttr(Result, rsGroupRef, Group.Name);
   SaveDomAttrEnum(Result, rsEntryRights, EntryRights, TypeInfo(TEpiEntryRights));
+end;
+
+function TEpiGroupRight.PrintEntryRights: string;
+var
+  Item: TEpiEntryRight;
+begin
+  Result := '';
+
+  for Item in EntryRights do
+    Result += EpiEntryRightCaptionShort[Item] + ', ';
+
+  Delete(Result, Length(Result) - 1, 2);
 end;
 
 end.
