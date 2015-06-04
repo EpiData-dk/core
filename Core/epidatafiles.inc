@@ -1100,6 +1100,10 @@ begin
       FRelates.LoadFromXml(Node, ReferenceMap);
   end;
 
+  // Version 4:
+  if LoadNode(Node, Root, rsGroupRights, false) then
+    GroupRights.LoadFromXml(Node, ReferenceMap);
+
   {$IFNDEF RELEASE}
   T1 := Now;
   {$ENDIF}

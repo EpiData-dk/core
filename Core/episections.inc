@@ -112,15 +112,12 @@ begin
   FAllControls := TAllItemsList.Create(self);
   FAllControls.ItemOwner := false;
 
-  FGroupRights := TEpiGroupRights.Create(Self);
-
-  RegisterClasses([Caption, Fields, Headings, GroupRights]);
+  RegisterClasses([Caption, Fields, Headings]);
 end;
 
 destructor TEpiSection.Destroy;
 begin
   FAllControls.Destroy;
-  FGroupRights.Free;
 //  FHeadings.UnRegisterOnChangeHook(@ItemsHook);
   FHeadings.Free;
 //  FFields.UnRegisterOnChangeHook(@ItemsHook);
@@ -155,9 +152,6 @@ begin
 
   if LoadNode(Node, Root, rsHeadings, false) then
     Headings.LoadFromXml(Node, ReferenceMap);
-
-  if LoadNode(Node, Root, rsGroupRights, false) then
-    GroupRights.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiSection.NewField(FieldType: TEpiFieldType): TEpiField;

@@ -10,26 +10,27 @@ uses
 type
 
   TEpiEntryRight = (
-    // Data access
-    eerCreate = 0,
-    eerRead,
+    // Data access - do NOT change order!
+    // It is the "normal" entry hierachy!
+    eerRead = 0,
     eerUpdate,
+    eerCreate,
     eerDelete
   );
   TEpiEntryRights = set of TEpiEntryRight;
 
 const
   EpiEntryRightCaption: array[TEpiEntryRight] of string = (
-    'Create',
     'Read',
     'Update',
+    'Create',
     'Delete'
   );
 
   EpiEntryRightCaptionShort: array[TEpiEntryRight] of string = (
-    'C',
     'R',
     'U',
+    'C',
     'D'
   );
 
@@ -172,7 +173,7 @@ begin
         if not Obj.InheritsFrom(TEpiDocument) then
           Exit; //TODO: raise an exception
 
-//        Group := TEpiGroup(TEpiDocument(Obj).Admin.Groups.GetItemByName(ReferenceId));
+        Group := TEpiGroup(TEpiDocument(Obj).Admin.Groups.GetItemByName(ReferenceId));
       end;
   end;
 end;

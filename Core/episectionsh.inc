@@ -30,7 +30,6 @@ type
   private
     FDataFile: TEpiDataFile;
     FFields: TEpiFields;
-    FGroupRights: TEpiGroupRights;
     FHeadings: TEpiHeadings;
     FHeight: integer;
     FCaption: TEpiTranslatedTextWrapper;
@@ -55,7 +54,6 @@ type
     property    Field[Index: integer]: TEpiField read GetField;
     property    Headings: TEpiHeadings read FHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
-    property    GroupRights: TEpiGroupRights read FGroupRights;
     property    DataFile: TEpiDataFile read FDataFile;
     property    Width: integer read FWidth write SetWidth;
     property    Height: integer read FHeight write SetHeight;
