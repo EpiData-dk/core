@@ -83,6 +83,7 @@ type
   EEpiDFNotAssigned = class(Exception);
   EEpiFieldsNotAssigned = class(Exception);
   EEpiInvalidCompare = class(Exception);
+  EEpiFieldMissing = class(Exception);
 
   { TEpiToolsDblEntryValidator }
 
@@ -113,9 +114,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure   ValidateDataFiles(
-      out ResultArray: TEpiDblEntryResultArray;
-      ValidateOptions: TEpiToolsDblEntryValidateOptions = EpiDefaultDblEntryValidateOptions);
+    procedure ValidateDataFiles(out ResultArray: TEpiDblEntryResultArray;
+      ValidateOptions: TEpiToolsDblEntryValidateOptions);
     property    MainDF: TEpiDataFile read FMainDF write FMainDF;
     property    DuplDF: TEpiDataFile read FDuplDF write FDuplDF;
     // Sort fields is a list of common fields in which the Datafiles are sorted.
@@ -429,6 +429,8 @@ var
   V: TEpiValueLabelSet;
   VL: TEpiIntValueLabel;
   RR: TEpiDblEntryRecordResult;
+  F: TEpiField;
+  Fd: TEpiField;
 begin
   if (not Assigned(MainDF)) or (not Assigned(DuplDF)) then
     RaiseError(EEpiDFNotAssigned, 'Main or Duplicate datafile not assigned');
@@ -438,8 +440,14 @@ begin
 
   // Make duplicate list of fields to compare.
   FDuplCmpFields := TEpiFields.Create(nil);
-  for i := 0 to CompareFields.Count - 1 do
-    FDuplCmpFields.AddItem(FDuplDF.Fields.FieldByName[CompareFields.Field[i].Name]);
+  for F in CompareFields do
+    begin
+      Fd := FDuplDF.Fields.FieldByName[F.Name];
+      if (not Assigned(Fd)) then
+        RaiseError(EEpiFieldsNotAssigned, 'Field: ' + F.Name + '(' + F.Question.Text + ') is missing in duplicate dataform');
+
+      FDuplCmpFields.AddItem(Fd);
+    end;
 
   FValidateOPtions := ValidateOptions;
   if devAddResultToField in FValidateOptions then
