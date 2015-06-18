@@ -452,7 +452,7 @@ begin
               BEGIN
                 IF Length <= 2 THEN
                   TmpChar := ByteChar
-                ELSE IF Length <= 5 THEN
+                ELSE IF Length <= 4 THEN
                   TmpChar := IntChar
                 ELSE IF Length <= 9 THEN
                   TmpChar := LongChar

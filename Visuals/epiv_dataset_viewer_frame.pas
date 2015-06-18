@@ -425,7 +425,13 @@ end;
 procedure TDatasetViewerFrame.UpdateDataFile;
 var
   i: Integer;
+  DoSmartResize: Boolean;
 begin
+  // Smart Resize makes the VLG resize columns only to the currently visible columns.
+  //   on very large datasets, this is must be actived or alse a calculation of the columnwidth
+  //   take forever.
+  DoSmartResize := ((FDataFile.Size * FDataFile.Fields.Count) > 25000);
+
   VLG.BeginUpdate;
   with VLG.Header do
   begin
@@ -437,7 +443,10 @@ begin
     begin
       CaptionAlignment := taLeftJustify;
       Text := 'Record No:';
-      Options := [coFixed, coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
+      Options := [coFixed, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
+      if DoSmartResize then
+        Options := Options + [coSmartResize];
+
       Width := 50;
       Alignment := taRightJustify;
     end;
@@ -447,7 +456,10 @@ begin
     begin
       CaptionAlignment := taLeftJustify;
       Text := FDataFile.Fields[i].Name;
-      Options := [coSmartResize, coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coVisible, coUseCaptionAlignment];
+      Options := [coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coVisible, coUseCaptionAlignment];
+      if DoSmartResize then
+        Options := Options + [coSmartResize];
+
       Width := 100;
       Alignment := taRightJustify;
     end;
@@ -523,6 +535,7 @@ begin
     OnClick := @VLGClick;
     OnDblClick := @VLGDoubleClick;
     OnColumnWidthTracking := @VLGColumnWidthTracking;
+//    OnShortenString := @TEST;
   end;
 
   with VLG.TreeOptions do
