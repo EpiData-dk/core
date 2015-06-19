@@ -74,8 +74,8 @@ type
 //  Stata Version 8+9  = $71; // dta_113
 //  Stata Version 10   = $72; // dta_114
 //  Stata Version 12   = $73; // dta_115
-//  Stata Version 13   = $75; // dta_117    // Currently not supported
-//  Stata Version 14   = $76; // dta_118    // FIRST STATA FORMAT TO SUPPORT UTF-8!
+//  Stata Version 13   = $75; // dta_117    // First Stata format with XML-Like structure.
+//  Stata Version 14   = $76; // dta_118    // First Stata format to SUPPORT UTF-8! Yay!
 
   TEpiStataVersion =
     (dta4 = $69,
