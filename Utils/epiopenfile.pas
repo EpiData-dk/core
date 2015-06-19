@@ -50,6 +50,7 @@ type
     FOnPassword: TRequestPasswordEvent;
     FOnWarning: TOpenEpiWarningEvent;
     FOnProgress: TEpiProgressEvent;
+    FOnDocumentChangeEvent: TEpiChangeEvent;
   private
     // Aux. functions
     function GetHostNameWrapper: string;
@@ -92,6 +93,7 @@ type
       out Msg: string): boolean;  virtual;
     procedure DoSaveFile(Const AFileName: string);
     procedure DoOpenFile(Const AFileName: string);
+    function InternalCreateNewDocument(const Lang: string): TEpiDocument; virtual;
   protected
     function DefaultWarningResult(WarningType: TOpenEpiWarningType): TOpenEpiWarningResult; virtual;
     function DoWarning(WarningType: TOpenEpiWarningType;
@@ -112,6 +114,7 @@ type
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
     property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent;
   public
     // Other properties
     property FileName: string read GetFileName;
@@ -170,10 +173,7 @@ end;
 function TEpiDocumentFile.CreateNewDocument(const Lang: string): TEpiDocument;
 begin
   if not Assigned(FEpiDoc) then
-  begin
-    FEpiDoc := TEpiDocument.Create(Lang);
-    Result := FEpiDoc;
-  end;
+    Result := InternalCreateNewDocument(Lang);
 end;
 
 function TEpiDocumentFile.CreateClonedDocument(const SourceDoc: TEpiDocument
@@ -183,6 +183,10 @@ begin
   if not Assigned(SourceDoc) then exit;
 
   FEpiDoc := TEpiDocument(SourceDoc.Clone);
+
+  if Assigned(OnDocumentChangeEvent) then
+    FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
+
   Result := FEpiDoc;
 end;
 
@@ -548,7 +552,7 @@ var
   St: TMemoryStream;
   CurrentDir: String;
 begin
-  FEpiDoc := TEpiDocument.Create('en');
+  InternalCreateNewDocument('en');
   St := TMemoryStream.Create;
 
   CurrentDir := GetCurrentDirUTF8;
@@ -573,6 +577,17 @@ begin
     St.Free;
     SetCurrentDirUTF8(CurrentDir);
   end;
+end;
+
+function TEpiDocumentFile.InternalCreateNewDocument(const Lang: string
+  ): TEpiDocument;
+begin
+  FEpiDoc := TEpiDocument.Create(Lang);
+
+  if Assigned(OnDocumentChangeEvent) then
+    FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
+
+  Result := FEpiDoc;
 end;
 
 function TEpiDocumentFile.DefaultWarningResult(WarningType: TOpenEpiWarningType

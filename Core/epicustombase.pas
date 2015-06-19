@@ -56,8 +56,17 @@ type
 
   // ecce = Epi Custom Change Event
   TEpiCustomChangeEventType = (
-    ecceDestroy, ecceUpdate, ecceName, ecceAddItem, ecceDelItem, ecceSetItem,
-    ecceSetTop, ecceSetLeft, ecceText, ecceReferenceDestroyed, ecceListMove
+    ecceDestroy,
+    ecceUpdate,
+    ecceName,
+    ecceAddItem,
+    ecceDelItem,
+    ecceSetItem,
+    ecceSetTop,
+    ecceSetLeft,
+    ecceText,
+    ecceReferenceDestroyed,
+    ecceListMove
   );
 
   TEpiChangeEvent = procedure(
