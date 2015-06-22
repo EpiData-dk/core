@@ -17,6 +17,7 @@ type
     FDataFile: TEpiDataFile;
     FDataFileSetting: TEpiExportDatafileSettings;
     FStataSettings: TEpiStataExportSetting;
+    FStataVersion: TEpiStataVersion;
     FStream: TStream;
   private
     function EncodeString(Const S: String): string;
@@ -26,7 +27,8 @@ type
     procedure WriteEndTag(Const TagName: string);
 
     // Read text content in tag
-    procedure  WriteAsString(Const S: string);
+    procedure  WriteAsString(Const S: string); overload;
+    procedure  WriteAsString(Const S: string; Const Len: Integer); overload;
     procedure  WriteByte(Value: Byte);
     procedure  WriteWord(Value:  Word);
     procedure  WriteDWord(Value: DWord);
@@ -44,7 +46,6 @@ type
     procedure WriteValueLabelNames;
     procedure WriteVariabelLabels;
     procedure WriteCharacteristics;
-    procedure WriteCharacteristic;
     procedure WriteData;
     procedure WriteStrls;
     procedure WriteValueLabels;
@@ -81,7 +82,24 @@ end;
 
 procedure TEpiStataExport.WriteAsString(const S: string);
 begin
-  FStream.Write(S[1], Length(S));
+  WriteAsString(S, Length(S));
+end;
+
+procedure TEpiStataExport.WriteAsString(const S: string; const Len: Integer);
+var
+  S1: String;
+  L: Integer;
+begin
+  S1 := S;
+
+  L := Length(S1);
+  if (L < Len) then
+  begin
+    SetLength(S1, Len);
+    FillChar(S1[L + 1], Len - L, #0);
+  end;
+
+  FStream.Write(S1[1], Len);
 end;
 
 procedure TEpiStataExport.WriteByte(Value: Byte);
@@ -137,7 +155,7 @@ begin
 
   // <N>  = Number of observartions/records
   WriteStartTag('N');
-  case FStataSettings.Version of
+  case FStataVersion of
     dta13: WriteDWord(FDataFile.Size);
     dta14: WriteQWord(FDataFile.Size);
   end;
@@ -145,7 +163,7 @@ begin
 
   // <label>  = EpiData DataFile Caption
   WriteStartTag('label');
-  case FStataSettings.Version of
+  case FStataVersion of
     dta13:
       begin
         S := EpiCutString(EncodeString(FDataFile.Caption.Text), 80);
@@ -263,7 +281,7 @@ var
 begin
   WriteStartTag('varnames');
 
-  case FStataSettings.Version of
+  case FStataVersion of
     //  32 Characters (* 4 for UTF-8) and a terminal #0
     dta13: Len := (32 * 1) + 1;
     dta14: Len := (32 * 4) + 1;
@@ -271,14 +289,12 @@ begin
 
   for F in FDataFile.Fields do
     begin
-      SetLength(S, Len);
-      FillChar(S, Len, #0);
       case FStataSettings.Version of
         dta13: S := EncodeString(F.Name);
         dta14: S := F.Name;
       end;
 
-      WriteAsString(S);
+      WriteAsString(S, Len);
     end;
 
   WriteEndTag('varnames');
@@ -297,28 +313,186 @@ begin
 end;
 
 procedure TEpiStataExport.WriteFormat;
+var
+  S: String;
+  Len: Integer;
+  F: TEpiField;
 begin
+  // <format>
+  WriteStartTag('formats');
 
+  case FStataVersion of
+    dta13: Len := 49;
+    dta14: Len := 57;
+  end;
+
+  for F in FDataFile.Fields do
+    begin
+      case F.FieldType of
+        ftInteger, ftAutoInc:
+          S := '%' + IntToStr(F.Length) + '.0f';
+        ftFloat:
+          S := '%' + IntToStr(F.Length) + '.' + IntToStr(F.Decimals) + 'f';
+        ftBoolean:
+          S := '%1.0f';
+        ftString, ftUpperString:
+          S := '%' + IntToStr(F.Length) + 's';
+        ftDMYDate, ftMDYDate, ftYMDDate,
+        ftDMYAuto, ftMDYAuto, ftYMDAuto:
+          S := '%d';
+        ftTime, ftTimeAuto:
+          if FStataSettings.Version >= dta10 then
+            begin
+              // Stata 10 supports a new time format!
+              S := '%tcHH:MM:SS';
+              //TimeFields.AddObject(Name, Field[j]);
+            end
+          else
+            S := '%6.5f';
+      end;
+
+      WriteAsString(S, Len);
+    end;
+
+  WriteEndTag('formats');
 end;
 
 procedure TEpiStataExport.WriteValueLabelNames;
+var
+  Len: Integer;
+  F: TEpiField;
+  S: String;
 begin
+  WriteStartTag('value_label_names');
 
+  case FStataVersion of
+    //  32 Characters (* 4 for UTF-8) and a terminal #0
+    dta13: Len := (32 * 1) + 1; // 33
+    dta14: Len := (32 * 4) + 1; // 129
+  end;
+
+  for F in FDataFile.Fields do
+    begin
+      S := '';
+      if Assigned(F.ValueLabelSet) then
+        S := F.ValueLabelSet.Name;
+
+      if FStataVersion = dta13 then
+        S := EncodeString(S);
+
+      WriteAsString(S, Len);
+    end;
+
+  WriteEndTag('value_label_names');
 end;
 
 procedure TEpiStataExport.WriteVariabelLabels;
+var
+  Len: Integer;
+  F: TEpiField;
+  S: String;
 begin
+  WriteStartTag('variable_labels');
 
+  case FStataVersion of
+    //  80 Characters (* 4 for UTF-8) and a terminal #0
+    dta13: Len := (80 * 1) + 1; // 81
+    dta14: Len := (80 * 4) + 1; // 321
+  end;
+
+  for F in FDataFile.Fields do
+    begin
+      S := '';
+      if Assigned(F.ValueLabelSet) then
+        S := F.Question.Text;
+
+      if FStataVersion = dta13 then
+        S := EncodeString(S);
+
+      WriteAsString(S, Len);
+    end;
+
+  WriteEndTag('variable_labels');
 end;
 
 procedure TEpiStataExport.WriteCharacteristics;
+var
+  Len: Integer;
+  S: String;
+  F: TEpiField;
+  I: Integer;
+  j: Integer;
 begin
+  WriteStartTag('characteristics');
 
-end;
+  case FStataVersion of
+    //  32 Characters (* 4 for UTF-8) and a terminal #0
+    dta13: Len := (32 * 1) + 1; // 81
+    dta14: Len := (32 * 4) + 1; // 321
+  end;
 
-procedure TEpiStataExport.WriteCharacteristic;
-begin
+  // Write export lines to datafile notes first.
+  if FStataSettings.ExportLines.Count > 0 then
+  begin
+    WriteStartTag('ch');
 
+    // We start out by writing the length of the notes in a "special" characteristic called 'note0'
+    S := IntToStr(FStataSettings.ExportLines.Count);
+
+    // I = len  (sum of 2 * 33 + length(TmpStr)
+    I := 2 * Len + Length(S) + 1;
+    WriteDWord(I);
+    WriteAsString('_dta', 33);
+    WriteAsString('note0', 33);
+    WriteAsString(S, Length(S) + 1);
+    WriteEndTag('ch');
+  end;
+
+  for j := 0 to FStataSettings.ExportLines.Count - 1 do
+  begin
+    WriteStartTag('ch');
+
+    S := FStataSettings.ExportLines[j];
+    I := Len +                 // First variable name or _dta for notes regarding the dataset.
+         Len +                 // Character name, in our case 'noteX'
+         Length(S) + 1;
+    WriteDWord(I);
+    WriteAsString('_dta', 33);
+    WriteAsString('note' + IntToStr(j+1), 33);
+    WriteAsString(S, Length(S) + 1);
+
+    WriteEndTag('ch');
+  end;
+
+  // Then write notes for individual fields.
+  for F in FDataFile.Fields do
+  begin
+    if not (F.FieldType in TimeFieldTypes) then
+      Continue;
+
+    WriteStartTag('ch');
+
+    I := 2 * Len + 2;  // 2 = 1 char for "1" and 1 char for #0;
+    WriteDWord(I);
+    WriteAsString(F.Name, 33);
+    WriteAsString('note0', 33);
+    WriteAsString('1', 2);
+
+    WriteEndTag('ch');
+    WriteStartTag('ch');
+
+    S := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)" for details. Date coded as Jan. 1st 1960.';
+    WriteByte(1);
+    I := 2*33 + Length(S) + 1;
+    WriteDWord(I);
+    WriteAsString(F.Name, 33);
+    WriteAsString('note1', 33);
+    WriteAsString(S, Length(S) + 1);
+
+    WriteEndTag('ch');
+  end;
+
+  WriteEndTag('characteristics');
 end;
 
 procedure TEpiStataExport.WriteData;
@@ -347,11 +521,13 @@ var
   i: Integer;
 begin
   FStataSettings := StataSettings;
+  FStataVersion  := FStataSettings.Version;
 
   for i := 0 to StataSettings.DatafileSettings.Count - 1 do
   begin
     FDataFileSetting := TEpiExportDatafileSettings(StataSettings.DatafileSettings[i]);
     FDataFile        := StataSettings.Doc.DataFiles.GetDataFileByName(FDataFileSetting.DatafileName);
+    FStream          := FDataFileSetting.ExportStream;
 
     WriteStartTag('stata_dta');
 

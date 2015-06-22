@@ -698,7 +698,7 @@ begin
             StataLongConst:
               begin
                 if IsMissing[CurRec] then
-                  WriteInt(DataStream, $7FFFFFFF)
+                  WriteInt(DataStream, $7fffffe5)
                 else if IsMissingValue[CurRec] then
                 begin
                   VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
