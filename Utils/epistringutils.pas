@@ -48,7 +48,7 @@ type
   function ValidateIdentifierUTF8(Const AValue: string): boolean;
   function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
   function CreateUniqueAnsiVariableName(Const Varname: string; MaxLength: integer;
-    CompareList: TStrings = nil): String;
+    CompareList: TStrings = nil; Const ConvertToAnsi: boolean = true): String;
 
 implementation
 
@@ -80,7 +80,7 @@ begin
   end;
 end;
 
-function CountChar(const UTF8String: string; Const WChar: WideChar): integer;
+function CountChar(const UTF8String: string; const WChar: WideChar): integer;
 var
   WS: WideString;
   L: LongInt;
@@ -206,7 +206,7 @@ begin
   result := UTF8CompareText(List[Index1], List[Index2]);
 end;
 
-function FirstWord(Const S: string; MaxLength: Cardinal): string;
+function FirstWord(const S: string; MaxLength: Cardinal): string;
 var
   n: Integer;
 begin
@@ -241,7 +241,8 @@ begin
     exit(false);}
 end;
 
-function CheckVariableName(Const VarName: string; ValidChars: TCharSet): boolean;
+function CheckVariableName(const VarName: string; ValidChars: TCharSet
+  ): boolean;
 var
   i: integer;
 begin
@@ -252,12 +253,16 @@ begin
 end;
 
 function CreateUniqueAnsiVariableName(const Varname: string;
-  MaxLength: integer; CompareList: TStrings): String;
+  MaxLength: integer; CompareList: TStrings; const ConvertToAnsi: boolean
+  ): String;
 var
   TmpStr: String;
   Number: Integer;
 begin
-  TmpStr := EpiUtf8ToAnsi(Varname);
+  TmpStr := Varname;
+
+  if ConvertToAnsi then
+    TmpStr := EpiUtf8ToAnsi(TmpStr);
 
   if Length(TmpStr) > MaxLength then
     TmpStr := Copy(TmpStr, 1, MaxLength);

@@ -109,6 +109,16 @@ const
   StataIntConstXML    = 65529;
   StataByteConstXML   = 65530;
 
+
+  // Stata Value Ranges
+  StataMinByte =        -127;
+  StataMaxByte =         100;
+  StataMinInt  =      -32767;
+  StataMaxInt  =       32740;
+  StataMinLong = -2147483647;
+  StataMaxLong =  2147483620;
+
+
 function EpiStataVersionToString(Const StataVersion: TEpiStataVersion): string;
 
 

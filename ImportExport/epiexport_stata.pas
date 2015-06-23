@@ -14,10 +14,15 @@ type
 
   TEpiStataExport = class
   private
+    const
+      STATA_CONTENT_KEY = 'STATA_CONTENT_KEY';
     type
       TStataContent = record
-        StataName: string;
-        StataValueLabel: TEpiValueLabelSet;
+        Typ: Integer;
+        Name: string;
+        Format: string;
+        ValueLabelName: string;
+        ValueLabelSet: TEpiValueLabelSet;
       end;
       PStataContent = ^TStataContent;
   private
@@ -43,7 +48,9 @@ type
     procedure  WriteQWord(Value: QWord);
 
   private
+    { CustomData Helpers }
     procedure SetupFields;
+    function StataContent(Const Field: TEpiField): PStataContent;
 
   private
     { .dta section loaders }
@@ -67,7 +74,7 @@ type
 implementation
 
 uses
-  epistringutils, epidatafilestypes, LConvEncoding;
+  epistringutils, epidatafilestypes, LConvEncoding, LazUTF8, epifields_helper;
 
 { TEpiStataExport }
 
@@ -144,8 +151,14 @@ var
 begin
   for F in FDataFile.Fields do
   begin
-    Content := New(TStataContent)
+    Content := New(PStataContent);
+    F.AddCustomData(STATA_CONTENT_KEY, TObject(Content));
   end;
+end;
+
+function TEpiStataExport.StataContent(const Field: TEpiField): PStataContent;
+begin
+  Result := PStataContent(Field.FindCustomData(STATA_CONTENT_KEY));
 end;
 
 procedure TEpiStataExport.WriteHeader;
@@ -248,48 +261,64 @@ end;
 procedure TEpiStataExport.WriteVariableTypes;
 var
   F: TEpiField;
+  StataType: Integer;
+  I64: EpiInteger;
+
 begin
   WriteStartTag('variable_types');
 
   for F in FDataFile.Fields do
+  begin
     with F do
       case FieldType of
         ftBoolean:
-          WriteWord(StataByteConstXML);
+          StataType := StataByteConstXML;
 
         ftInteger,
         ftAutoInc:
           begin
-            if Length <= 2 then
-              WriteWord(StataByteConstXML)
-            else if Length <= 4 then
-              WriteWord(StataIntConstXML)
-            else if Length <= 9 then
-              WriteWord(StataLongConstXML)
-            else if Length >= 10 then
-              WriteWord(StataDoubleConstXML)
+            I64 := TEpiIntField(F).MaxValue;
+            case I64 of
+              // Stata byte
+              StataMinByte..StataMaxByte:
+                StataType := StataByteConstXML;
+
+              StataMinInt..(StataMinByte - 1),
+              (StataMaxByte+1)..StataMaxInt:
+                StataType := StataIntConstXML;
+
+              StataMinLong..(StataMinInt - 1),
+              (StataMaxInt+1)..StataMaxLong:
+                StataType := StataLongConstXML;
+
+            else
+              StataType := StataDoubleConstXML;
+            end;
           end;
 
         ftString,
         ftUpperString:
           begin
-            if (FStataSettings.Version >= dta14) and
-               (Length > (2045 div 4))
+            if (F.MaxByteLength > 2045)
             then
-              WriteWord(StataStrLsConstXML)
+              StataType := StataStrLsConstXML
             else
-              WriteWord(Length);
+              StataType := Length;
           end;
 
 
         ftDMYDate, ftMDYDate, ftYMDDate,
         ftDMYAuto, ftMDYAuto, ftYMDAuto:
-          WriteWord(StataLongConstXML);
+          StataType := StataLongConstXML;
 
         ftTime, ftTimeAuto,
         ftFloat:
-          WriteWord(StataDoubleConstXML);
+          StataType := StataDoubleConstXML;
       end;
+
+    WriteWord(StataType);
+    StataContent(F)^.Typ := StataType;
+  end;
 
   WriteEndTag('variable_types');
 end;
@@ -299,6 +328,7 @@ var
   Len: Integer;
   F: TEpiField;
   S: String;
+  FieldNames: TStrings;
 begin
   WriteStartTag('varnames');
 
@@ -308,15 +338,24 @@ begin
     dta14: Len := (32 * 4) + 1;
   end;
 
+  FieldNames := TStringList.Create;
   for F in FDataFile.Fields do
     begin
+      case FStataSettings.FieldNameCase of
+        fncUpper: S := UTF8UpperCase(Trim(F.Name));
+        fncLower: S := UTF8LowerCase(Trim(F.Name));
+        fncAsIs:  S := Trim(F.Name);
+      end;
+
       case FStataSettings.Version of
-        dta13: S := EncodeString(F.Name);
-        dta14: S := F.Name;
+        dta13: S := CreateUniqueAnsiVariableName(S, Len - 1, FieldNames, true);
+        dta14: S := CreateUniqueAnsiVariableName(S, Len - 1, FieldNames, false);
       end;
 
       WriteAsString(S, Len);
+      StataContent(F)^.Name := S;
     end;
+  FieldNames.Free;
 
   WriteEndTag('varnames');
 end;
@@ -372,6 +411,7 @@ begin
       end;
 
       WriteAsString(S, Len);
+      StataContent(F)^.Format := S;
     end;
 
   WriteEndTag('formats');
@@ -382,6 +422,7 @@ var
   Len: Integer;
   F: TEpiField;
   S: String;
+  ValueLabelNames: TStrings;
 begin
   WriteStartTag('value_label_names');
 
@@ -391,17 +432,20 @@ begin
     dta14: Len := (32 * 4) + 1; // 129
   end;
 
+  ValueLabelNames := TStringList.Create;
   for F in FDataFile.Fields do
     begin
       S := '';
       if Assigned(F.ValueLabelSet) then
-        S := F.ValueLabelSet.Name;
-
-      if FStataVersion = dta13 then
-        S := EncodeString(S);
+        case FStataVersion of
+          dta13: S := CreateUniqueAnsiVariableName(F.ValueLabelSet.Name, Len - 1, ValueLabelNames, true);
+          dta14: S := CreateUniqueAnsiVariableName(F.ValueLabelSet.Name, Len - 1, ValueLabelNames, false);
+        end;
 
       WriteAsString(S, Len);
+      StataContent(F)^.ValueLabelName := S;
     end;
+  ValueLabelNames.Free;
 
   WriteEndTag('value_label_names');
 end;
@@ -422,12 +466,12 @@ begin
 
   for F in FDataFile.Fields do
     begin
-      S := '';
-      if Assigned(F.ValueLabelSet) then
-        S := F.Question.Text;
+      S := F.Question.Text;
 
-      if FStataVersion = dta13 then
-        S := EncodeString(S);
+      case FStataVersion of
+        dta13: S := EpiCutString(EpiUtf8ToAnsi(S), Len - 1);
+        dta14: S := EpiCutString(S, Len - 1);
+      end;
 
       WriteAsString(S, Len);
     end;
@@ -462,8 +506,8 @@ begin
     // I = len  (sum of 2 * 33 + length(TmpStr)
     I := 2 * Len + Length(S) + 1;
     WriteDWord(I);
-    WriteAsString('_dta', 33);
-    WriteAsString('note0', 33);
+    WriteAsString('_dta', Len);
+    WriteAsString('note0', Len);
     WriteAsString(S, Length(S) + 1);
     WriteEndTag('ch');
   end;
@@ -473,12 +517,17 @@ begin
     WriteStartTag('ch');
 
     S := FStataSettings.ExportLines[j];
+    if FStataVersion = dta13 then
+      S := EpiUtf8ToAnsi(S);
+
+    S := EpiCutString(S, Len - 1);
+
     I := Len +                 // First variable name or _dta for notes regarding the dataset.
          Len +                 // Character name, in our case 'noteX'
          Length(S) + 1;
     WriteDWord(I);
-    WriteAsString('_dta', 33);
-    WriteAsString('note' + IntToStr(j+1), 33);
+    WriteAsString('_dta', Len);
+    WriteAsString('note' + IntToStr(j+1), Len);
     WriteAsString(S, Length(S) + 1);
 
     WriteEndTag('ch');
@@ -494,19 +543,18 @@ begin
 
     I := 2 * Len + 2;  // 2 = 1 char for "1" and 1 char for #0;
     WriteDWord(I);
-    WriteAsString(F.Name, 33);
-    WriteAsString('note0', 33);
+    WriteAsString(F.Name, Len);
+    WriteAsString('note0', Len);
     WriteAsString('1', 2);
 
     WriteEndTag('ch');
     WriteStartTag('ch');
 
     S := 'Time variable: Formatted with %tcHH:MM:SS. See "help dates_and_times, marker(formatting)" for details. Date coded as Jan. 1st 1960.';
-    WriteByte(1);
-    I := 2*33 + Length(S) + 1;
+    I := 2 * Len + Length(S) + 1;
     WriteDWord(I);
-    WriteAsString(F.Name, 33);
-    WriteAsString('note1', 33);
+    WriteAsString(F.Name, Len);
+    WriteAsString('note1', Len);
     WriteAsString(S, Length(S) + 1);
 
     WriteEndTag('ch');
@@ -516,8 +564,36 @@ begin
 end;
 
 procedure TEpiStataExport.WriteData;
+var
+  CurRec: Integer;
+  F: TEpiField;
 begin
+  WriteStartTag('data');
 
+  for CurRec := 0 to FDataFile.Size - 1 do
+  begin
+    for F in FDataFile.Fields do
+    begin
+      Case StataContent(F)^.Typ of
+        StataStrLsConstXML:;
+
+        StataDoubleConstXML:;
+
+        StataFloatConstXML:;
+
+        StataLongConstXML:;
+
+        StataIntConstXML:;
+
+        StataByteConstXML:;
+
+      else
+        WriteAsString(F.AsString[CurRec], StataContent(F)^.Typ);
+      end;
+    end;
+  end;
+
+  WriteEndTag('data');
 end;
 
 procedure TEpiStataExport.WriteStrls;
