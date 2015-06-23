@@ -14,6 +14,9 @@ type
 
   TEpiStataExport = class
   private
+    type
+      T
+  private
     FDataFile: TEpiDataFile;
     FDataFileSetting: TEpiExportDatafileSettings;
     FStataSettings: TEpiStataExportSetting;
@@ -34,6 +37,9 @@ type
     procedure  WriteDWord(Value: DWord);
     procedure  Write6Word(Value: QWord); // The very-very unusual 6-byte integer, used by the StrLs in Stata 14
     procedure  WriteQWord(Value: QWord);
+
+  private
+    procedure SetupFields;
 
   private
     { .dta section loaders }
@@ -125,6 +131,16 @@ end;
 procedure TEpiStataExport.WriteQWord(Value: QWord);
 begin
   FStream.WriteQWord(Value);
+end;
+
+procedure TEpiStataExport.SetupFields;
+var
+  F: TEpiField;
+begin
+  for F in FDataFile.Fields do
+  begin
+
+  end;
 end;
 
 procedure TEpiStataExport.WriteHeader;
@@ -345,7 +361,6 @@ begin
             begin
               // Stata 10 supports a new time format!
               S := '%tcHH:MM:SS';
-              //TimeFields.AddObject(Name, Field[j]);
             end
           else
             S := '%6.5f';
@@ -528,6 +543,8 @@ begin
     FDataFileSetting := TEpiExportDatafileSettings(StataSettings.DatafileSettings[i]);
     FDataFile        := StataSettings.Doc.DataFiles.GetDataFileByName(FDataFileSetting.DatafileName);
     FStream          := FDataFileSetting.ExportStream;
+
+    SetupFields;
 
     WriteStartTag('stata_dta');
 
