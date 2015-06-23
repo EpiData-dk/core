@@ -5,7 +5,7 @@ unit epiexport_stata;
 interface
 
 uses
-  Classes, SysUtils, epidocument, epidatafiles,
+  Classes, SysUtils, epidocument, epidatafiles, epivaluelabels,
   epiexportsettings, epieximtypes;
 
 type
@@ -15,7 +15,11 @@ type
   TEpiStataExport = class
   private
     type
-      T
+      TStataContent = record
+        StataName: string;
+        StataValueLabel: TEpiValueLabelSet;
+      end;
+      PStataContent = ^TStataContent;
   private
     FDataFile: TEpiDataFile;
     FDataFileSetting: TEpiExportDatafileSettings;
@@ -136,10 +140,11 @@ end;
 procedure TEpiStataExport.SetupFields;
 var
   F: TEpiField;
+  Content: PStataContent;
 begin
   for F in FDataFile.Fields do
   begin
-
+    Content := New(TStataContent)
   end;
 end;
 
