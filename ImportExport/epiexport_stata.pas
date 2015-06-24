@@ -17,12 +17,15 @@ type
     const
       STATA_CONTENT_KEY = 'STATA_CONTENT_KEY';
     type
-      TValueLabelMap = specialize TFPGMap<EpiInteger, Integer>;
+      TIntValueLabelMap = specialize TFPGMap<EpiInteger, Integer>;
+      TFloatValueLabelMap = specialize TFPGMap<EpiFloat, Integer>;
 
       TStataContent = record
         Typ: Integer;
         Name: string;
         Format: string;
+        IntValueLabelMap: TIntValueLabelMap;
+        FloatValueLabelMap: TIntValueLabelMap;
       end;
       PStataContent = ^TStataContent;
   private
@@ -146,14 +149,100 @@ begin
   FStream.WriteQWord(Value);
 end;
 
+function CompareValueLabelKeys(const Key1, Key2: EpiInteger
+  ): Integer;
+begin
+  result := Key1 - Key2;
+end;
+
 procedure TEpiStataExport.SetupFields;
 var
   F: TEpiField;
   Content: PStataContent;
+  StataType: Integer;
+  I64: EpiInteger;
+//  ValueLabelMap: TValueLabelMap;
 begin
   for F in FDataFile.Fields do
   begin
     Content := New(PStataContent);
+
+    case F.FieldType of
+      ftBoolean:
+        StataType := StataByteConstXML;
+
+      ftInteger,
+      ftAutoInc:
+        begin
+          I64 := TEpiIntField(F).MaxValue;
+          case I64 of
+            // Stata byte
+            0..StataMaxByte:
+              StataType := StataByteConstXML;
+
+            (StataMaxByte+1)..StataMaxInt:
+              StataType := StataIntConstXML;
+
+            (StataMaxInt+1)..StataMaxLong:
+              StataType := StataLongConstXML;
+          else
+            StataType := StataDoubleConstXML;
+          end;
+
+          I64 := TEpiIntField(F).MinValue;
+          case I64 of
+            // Stata byte
+            StataMinByte..0:
+              StataType := Max(StataByteConstXML, StataType);
+
+            StataMinInt..(StataMinByte-1):
+              StataType := Max(StataIntConstXML, StataType);
+
+            StataMinLong..(StataMinInt-1):
+              StataType := Max(StataLongConstXML, StataType);
+          end;
+        end;
+
+      ftString,
+      ftUpperString:
+        begin
+          if (F.MaxByteLength > 2045)
+          then
+            StataType := StataStrLsConstXML
+          else
+            StataType := F.Length;
+        end;
+
+
+      ftDMYDate, ftMDYDate, ftYMDDate,
+      ftDMYAuto, ftMDYAuto, ftYMDAuto:
+        StataType := StataLongConstXML;
+
+      ftTime, ftTimeAuto,
+      ftFloat:
+        StataType := StataDoubleConstXML;
+    end;
+    Content^.Typ := StataType;
+
+
+{    if (F.FieldType in [ftInteger, ftFloat]) and
+       Assigned(F.ValueLabelSet) and
+       (F.ValueLabelSet.MissingCount > 0)
+    then
+      begin
+        ValueLabelMap := TValueLabelMap.Create;
+        ValueLabelMap.OnKeyCompare := @CompareValueLabelKeys;
+
+        for i := 0 to F.ValueLabelSet.Count - 1 do
+          if F.ValueLabelSet[i].IsMissingValue then
+            if F.FieldType = ftInteger then
+
+            else;
+            ValueLabelMap.Add(F.ValueLabelSet[i]);
+
+        Content^.ValueLabelMap := ValueLabelMap;
+      end;
+                }
     F.AddCustomData(STATA_CONTENT_KEY, TObject(Content));
   end;
 end;
@@ -296,74 +385,11 @@ end;
 procedure TEpiStataExport.WriteVariableTypes;
 var
   F: TEpiField;
-  StataType: Integer;
-  I64: EpiInteger;
-
 begin
   WriteStartTag('variable_types');
 
   for F in FDataFile.Fields do
-  begin
-    with F do
-      case FieldType of
-        ftBoolean:
-          StataType := StataByteConstXML;
-
-        ftInteger,
-        ftAutoInc:
-          begin
-            I64 := TEpiIntField(F).MaxValue;
-            case I64 of
-              // Stata byte
-              0..StataMaxByte:
-                StataType := StataByteConstXML;
-
-              (StataMaxByte+1)..StataMaxInt:
-                StataType := StataIntConstXML;
-
-              (StataMaxInt+1)..StataMaxLong:
-                StataType := StataLongConstXML;
-            else
-              StataType := StataDoubleConstXML;
-            end;
-
-            I64 := TEpiIntField(F).MinValue;
-            case I64 of
-              // Stata byte
-              StataMinByte..0:
-                StataType := Max(StataByteConstXML, StataType);
-
-              StataMinInt..(StataMinByte-1):
-                StataType := Max(StataIntConstXML, StataType);
-
-              StataMinLong..(StataMinInt-1):
-                StataType := Max(StataLongConstXML, StataType);
-            end;
-          end;
-
-        ftString,
-        ftUpperString:
-          begin
-            if (F.MaxByteLength > 2045)
-            then
-              StataType := StataStrLsConstXML
-            else
-              StataType := Length;
-          end;
-
-
-        ftDMYDate, ftMDYDate, ftYMDDate,
-        ftDMYAuto, ftMDYAuto, ftYMDAuto:
-          StataType := StataLongConstXML;
-
-        ftTime, ftTimeAuto,
-        ftFloat:
-          StataType := StataDoubleConstXML;
-      end;
-
-    WriteWord(StataType);
-    StataContent(F)^.Typ := StataType;
-  end;
+    WriteWord(StataContent(F)^.Typ);
 
   WriteEndTag('variable_types');
 end;
@@ -625,21 +651,21 @@ begin
         StataIntConstXML:;
 
         StataByteConstXML:
-{          begin
+          begin
             Val := F.AsInteger[CurRec];
 
             if F.IsMissing[CurRec] then
               Val := $65;
 
-            if IsMissingValue[CurRec] then
+            if F.IsMissingValue[CurRec] then
             begin
-              VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
-              TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
-              WriteByte(DataStream, (TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5 + $65));
+{              VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
+              TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);}
+//              WriteByte(F.ValueLabelSet (TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5 + $65));
             end else
 
             WriteByte(Val);
-          end;                     }
+          end;
       else
         WriteAsString(F.AsString[CurRec], StataContent(F)^.Typ);
       end;
