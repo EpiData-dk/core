@@ -264,7 +264,7 @@ begin
   if ConvertToAnsi then
     TmpStr := EpiUtf8ToAnsi(TmpStr);
 
-  if Length(TmpStr) > MaxLength then
+  if UTF8Length(TmpStr) > MaxLength then
     TmpStr := Copy(TmpStr, 1, MaxLength);
 
   if Assigned(CompareList) then

@@ -21,6 +21,7 @@ type
 
   TEpiIntFieldHelper = class helper(TEpiFieldHelper) for TEpiIntField
   public
+    function MinValue: EpiInteger;
     function MaxValue: EpiInteger;
   end;
 
@@ -28,6 +29,7 @@ type
 
   TEpiFloatFieldHelper = class helper(TEpiFieldHelper) for TEpiFloatField
   public
+    function MinValue: EpiFloat;
     function MaxValue: EpiFloat;
   end;
 
@@ -39,7 +41,7 @@ type
 
   TEpiDateFieldHelper = class helper(TEpiFieldHelper) for TEpiDateField
   public
-    function MaxValue: EpiDate;
+
   end;
 
   TEpiBoolFieldHelper = class helper(TEpiFieldHelper) for TEpiBoolField
@@ -50,7 +52,7 @@ type
 
   TEpiDateTimeFieldHelper = class helper(TEpiFieldHelper) for TEpiDateTimeField
   public
-    function MaxValue: EpiTime;
+
   end;
 
 implementation
@@ -80,6 +82,16 @@ end;
 
 { TEpiIntFieldHelper }
 
+function TEpiIntFieldHelper.MinValue: EpiInteger;
+var
+  i: Integer;
+begin
+  Result := High(EpiInteger);
+  for i := 0 to Size - 1 do
+    if (not IsMissing[i]) then
+      Result := Min(Result, AsInteger[i]);
+end;
+
 function TEpiIntFieldHelper.MaxValue: EpiInteger;
 var
   i: Integer;
@@ -92,6 +104,16 @@ end;
 
 { TEpiFloatFieldHelper }
 
+function TEpiFloatFieldHelper.MinValue: EpiFloat;
+var
+  i: Integer;
+begin
+  Result := MaxExtended;
+  for i := 0 to Size - 1 do
+    if (not IsMissing[i]) then
+      Result := Min(Result, AsInteger[i]);
+end;
+
 function TEpiFloatFieldHelper.MaxValue: EpiFloat;
 var
   i: Integer;
@@ -100,20 +122,6 @@ begin
   for i := 0 to Size - 1 do
     if (not IsMissing[i]) then
       Result := Max(Result, AsFloat[i]);
-end;
-
-{ TEpiDateFieldHelper }
-
-function TEpiDateFieldHelper.MaxValue: EpiDate;
-begin
-
-end;
-
-{ TEpiDateTimeFieldHelper }
-
-function TEpiDateTimeFieldHelper.MaxValue: EpiTime;
-begin
-
 end;
 
 end.

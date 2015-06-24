@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epivaluelabels,
-  epiexportsettings, epieximtypes;
+  epiexportsettings, epieximtypes, epidatafilestypes, epicustombase, fgl;
 
 type
 
@@ -17,12 +17,12 @@ type
     const
       STATA_CONTENT_KEY = 'STATA_CONTENT_KEY';
     type
+      TValueLabelMap = specialize TFPGMap<EpiInteger, Integer>;
+
       TStataContent = record
         Typ: Integer;
         Name: string;
         Format: string;
-        ValueLabelName: string;
-        ValueLabelSet: TEpiValueLabelSet;
       end;
       PStataContent = ^TStataContent;
   private
@@ -50,6 +50,7 @@ type
   private
     { CustomData Helpers }
     procedure SetupFields;
+    procedure SetupValueLabels;
     function StataContent(Const Field: TEpiField): PStataContent;
 
   private
@@ -74,7 +75,8 @@ type
 implementation
 
 uses
-  epistringutils, epidatafilestypes, LConvEncoding, LazUTF8, epifields_helper;
+  epistringutils, LConvEncoding, LazUTF8, epifields_helper,
+  math;
 
 { TEpiStataExport }
 
@@ -154,6 +156,39 @@ begin
     Content := New(PStataContent);
     F.AddCustomData(STATA_CONTENT_KEY, TObject(Content));
   end;
+end;
+
+procedure TEpiStataExport.SetupValueLabels;
+var
+  Len: Integer;
+  ValueLabelNames: TStringList;
+  VLset: TEpiCustomItem;
+
+  function UniqueValueLabelName(Const Str: string; Const Count: Integer): string;
+  var
+    i: integer;
+  begin
+    case FStataVersion of
+      dta13: Result := EncodeString(Str);
+      dta14: Result := Str;
+    end;
+
+    Result := UTF8Copy(StringReplace(Result, ' ', '_', [rfReplaceAll]), 1, Count-1);
+
+    i := 1;
+    if result = '' then result := '_ValueLabel';
+    while ValueLabelNames.IndexOf(result) >= 0 do
+    begin
+      result := Copy(result, 1, Count - Length(IntToStr(i - 1))) + IntToStr(i);
+      Inc(i);
+    end;
+  end;
+
+begin
+  ValueLabelNames := TStringList.Create;
+
+  for VLset in FDataFile.ValueLabels do             // ValueLabels in Stata 13+ can have up to 32-characters (UTF-8 or Not)
+     VLSet.Name := UniqueValueLabelName(VLSet.Name, 32);
 end;
 
 function TEpiStataExport.StataContent(const Field: TEpiField): PStataContent;
@@ -280,19 +315,29 @@ begin
             I64 := TEpiIntField(F).MaxValue;
             case I64 of
               // Stata byte
-              StataMinByte..StataMaxByte:
+              0..StataMaxByte:
                 StataType := StataByteConstXML;
 
-              StataMinInt..(StataMinByte - 1),
               (StataMaxByte+1)..StataMaxInt:
                 StataType := StataIntConstXML;
 
-              StataMinLong..(StataMinInt - 1),
               (StataMaxInt+1)..StataMaxLong:
                 StataType := StataLongConstXML;
-
             else
               StataType := StataDoubleConstXML;
+            end;
+
+            I64 := TEpiIntField(F).MinValue;
+            case I64 of
+              // Stata byte
+              StataMinByte..0:
+                StataType := Max(StataByteConstXML, StataType);
+
+              StataMinInt..(StataMinByte-1):
+                StataType := Max(StataIntConstXML, StataType);
+
+              StataMinLong..(StataMinInt-1):
+                StataType := Max(StataLongConstXML, StataType);
             end;
           end;
 
@@ -333,7 +378,7 @@ begin
   WriteStartTag('varnames');
 
   case FStataVersion of
-    //  32 Characters (* 4 for UTF-8) and a terminal #0
+    //  32 Bytes (* 4 for UTF-8) and a terminal #0
     dta13: Len := (32 * 1) + 1;
     dta14: Len := (32 * 4) + 1;
   end;
@@ -342,14 +387,14 @@ begin
   for F in FDataFile.Fields do
     begin
       case FStataSettings.FieldNameCase of
-        fncUpper: S := UTF8UpperCase(Trim(F.Name));
-        fncLower: S := UTF8LowerCase(Trim(F.Name));
-        fncAsIs:  S := Trim(F.Name);
+        fncUpper: S := UTF8UpperCase(F.Name);
+        fncLower: S := UTF8LowerCase(F.Name);
+        fncAsIs:  S := F.Name;
       end;
 
       case FStataSettings.Version of
-        dta13: S := CreateUniqueAnsiVariableName(S, Len - 1, FieldNames, true);
-        dta14: S := CreateUniqueAnsiVariableName(S, Len - 1, FieldNames, false);
+        dta13: S := CreateUniqueAnsiVariableName(S, 32, FieldNames, true);
+        dta14: S := CreateUniqueAnsiVariableName(S, 32, FieldNames, false);
       end;
 
       WriteAsString(S, Len);
@@ -432,18 +477,13 @@ begin
     dta14: Len := (32 * 4) + 1; // 129
   end;
 
-  ValueLabelNames := TStringList.Create;
   for F in FDataFile.Fields do
     begin
       S := '';
       if Assigned(F.ValueLabelSet) then
-        case FStataVersion of
-          dta13: S := CreateUniqueAnsiVariableName(F.ValueLabelSet.Name, Len - 1, ValueLabelNames, true);
-          dta14: S := CreateUniqueAnsiVariableName(F.ValueLabelSet.Name, Len - 1, ValueLabelNames, false);
-        end;
+        S := F.ValueLabelSet.Name;
 
       WriteAsString(S, Len);
-      StataContent(F)^.ValueLabelName := S;
     end;
   ValueLabelNames.Free;
 
@@ -459,7 +499,7 @@ begin
   WriteStartTag('variable_labels');
 
   case FStataVersion of
-    //  80 Characters (* 4 for UTF-8) and a terminal #0
+    //  80 Bytes (* 4 for UTF-8) and a terminal #0
     dta13: Len := (80 * 1) + 1; // 81
     dta14: Len := (80 * 4) + 1; // 321
   end;
@@ -469,8 +509,8 @@ begin
       S := F.Question.Text;
 
       case FStataVersion of
-        dta13: S := EpiCutString(EpiUtf8ToAnsi(S), Len - 1);
-        dta14: S := EpiCutString(S, Len - 1);
+        dta13: S := EpiCutString(EpiUtf8ToAnsi(S), 80);
+        dta14: S := EpiCutString(S, 80);
       end;
 
       WriteAsString(S, Len);
@@ -490,7 +530,7 @@ begin
   WriteStartTag('characteristics');
 
   case FStataVersion of
-    //  32 Characters (* 4 for UTF-8) and a terminal #0
+    //  32 bytes (* 4 for UTF-8) and a terminal #0
     dta13: Len := (32 * 1) + 1; // 81
     dta14: Len := (32 * 4) + 1; // 321
   end;
@@ -519,8 +559,6 @@ begin
     S := FStataSettings.ExportLines[j];
     if FStataVersion = dta13 then
       S := EpiUtf8ToAnsi(S);
-
-    S := EpiCutString(S, Len - 1);
 
     I := Len +                 // First variable name or _dta for notes regarding the dataset.
          Len +                 // Character name, in our case 'noteX'
@@ -567,6 +605,7 @@ procedure TEpiStataExport.WriteData;
 var
   CurRec: Integer;
   F: TEpiField;
+  Val: EpiInteger;
 begin
   WriteStartTag('data');
 
@@ -576,7 +615,7 @@ begin
     begin
       Case StataContent(F)^.Typ of
         StataStrLsConstXML:;
-
+          // TODO:
         StataDoubleConstXML:;
 
         StataFloatConstXML:;
@@ -585,8 +624,22 @@ begin
 
         StataIntConstXML:;
 
-        StataByteConstXML:;
+        StataByteConstXML:
+{          begin
+            Val := F.AsInteger[CurRec];
 
+            if F.IsMissing[CurRec] then
+              Val := $65;
+
+            if IsMissingValue[CurRec] then
+            begin
+              VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
+              TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);
+              WriteByte(DataStream, (TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5 + $65));
+            end else
+
+            WriteByte(Val);
+          end;                     }
       else
         WriteAsString(F.AsString[CurRec], StataContent(F)^.Typ);
       end;
