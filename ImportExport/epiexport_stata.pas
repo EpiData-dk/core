@@ -18,14 +18,14 @@ type
       STATA_CONTENT_KEY = 'STATA_CONTENT_KEY';
     type
       TIntValueLabelMap = specialize TFPGMap<EpiInteger, Integer>;
-      TFloatValueLabelMap = specialize TFPGMap<EpiFloat, Integer>;
+      TFloatValueLabelMap = specialize TFPGMap<EpiFloat, Double>;
 
       TStataContent = record
         Typ: Integer;
         Name: string;
         Format: string;
         IntValueLabelMap: TIntValueLabelMap;
-        FloatValueLabelMap: TIntValueLabelMap;
+        FloatValueLabelMap: TFloatValueLabelMap;
       end;
       PStataContent = ^TStataContent;
   private
@@ -41,7 +41,7 @@ type
     procedure WriteStartTag(Const TagName: string);
     procedure WriteEndTag(Const TagName: string);
 
-    // Read text content in tag
+    // Write text content in tag
     procedure  WriteAsString(Const S: string); overload;
     procedure  WriteAsString(Const S: string; Const Len: Integer); overload;
     procedure  WriteByte(Value: Byte);
@@ -50,8 +50,15 @@ type
     procedure  Write6Word(Value: QWord); // The very-very unusual 6-byte integer, used by the StrLs in Stata 14
     procedure  WriteQWord(Value: QWord);
 
+{    // Write signed data
+    procedure  WriteSbyte(Value: ShortInt);
+    procedure  WriteInt(Value: SmallInt);
+    procedure  WriteLong(Value: LongInt);    }
+    procedure  WriteDouble(Value: Double);
+
   private
     { CustomData Helpers }
+    function MissingDouble(Const MisVal: Word): Double;
     procedure SetupFields;
     procedure SetupValueLabels;
     function StataContent(Const Field: TEpiField): PStataContent;
@@ -70,7 +77,7 @@ type
     procedure WriteData;
     procedure WriteStrls;
     procedure WriteValueLabels;
-    procedure WriteValueLabel;
+    procedure WriteValueLabel(ValueLabelSet: TEpiValueLabelSet);
   public
     function  ExportStata(StataSettings: TEpiStataExportSetting): boolean;
   end;
@@ -79,7 +86,7 @@ implementation
 
 uses
   epistringutils, LConvEncoding, LazUTF8, epifields_helper,
-  math;
+  math, epimiscutils;
 
 { TEpiStataExport }
 
@@ -149,10 +156,33 @@ begin
   FStream.WriteQWord(Value);
 end;
 
-function CompareValueLabelKeys(const Key1, Key2: EpiInteger
-  ): Integer;
+procedure TEpiStataExport.WriteDouble(Value: Double);
 begin
-  result := Key1 - Key2;
+  FStream.Write(Value, 8);
+end;
+
+function TEpiStataExport.MissingDouble(const MisVal: Word): Double;
+var
+  FltByte: Array[0..7] of Byte absolute Result;
+begin
+  FltByte[0] := 0;
+  FltByte[1] := 0;
+  FltByte[2] := 0;
+  FltByte[3] := 0;
+  FltByte[4] := hi(MisVal);
+  FltByte[5] := lo(MisVal);
+  FltByte[6] := $e0;
+  FltByte[7] := $7f;
+end;
+
+function IntCompareValueLabelKeys(const Key1, Key2: EpiInteger): Integer;
+begin
+  result := CompareValue(Key2, Key1);
+end;
+
+function FloatCompareValueLabelKeys(const Key1, Key2: EpiFloat): Integer;
+begin
+  result := CompareValue(Key2, Key1);
 end;
 
 procedure TEpiStataExport.SetupFields;
@@ -161,12 +191,18 @@ var
   Content: PStataContent;
   StataType: Integer;
   I64: EpiInteger;
-//  ValueLabelMap: TValueLabelMap;
+  IntValueLabelMap: TIntValueLabelMap;
+  IMissingVal: Integer;
+  FloatValueLabelMap: TFloatValueLabelMap;
+  i: Integer;
+
 begin
   for F in FDataFile.Fields do
   begin
     Content := New(PStataContent);
 
+
+    // Find appropriate Stata type
     case F.FieldType of
       ftBoolean:
         StataType := StataByteConstXML;
@@ -225,24 +261,50 @@ begin
     Content^.Typ := StataType;
 
 
-{    if (F.FieldType in [ftInteger, ftFloat]) and
-       Assigned(F.ValueLabelSet) and
+    // Convert EpiData missing values to Stata missing values.
+    if Assigned(F.ValueLabelSet) and
        (F.ValueLabelSet.MissingCount > 0)
     then
-      begin
-        ValueLabelMap := TValueLabelMap.Create;
-        ValueLabelMap.OnKeyCompare := @CompareValueLabelKeys;
+      case F.FieldType of
+        ftInteger:
+          begin
+            IntValueLabelMap := TIntValueLabelMap.Create;
+            IntValueLabelMap.OnKeyCompare := @IntCompareValueLabelKeys;
 
-        for i := 0 to F.ValueLabelSet.Count - 1 do
-          if F.ValueLabelSet[i].IsMissingValue then
-            if F.FieldType = ftInteger then
+            for i := 0 to F.ValueLabelSet.Count - 1 do
+              if F.ValueLabelSet[i].IsMissingValue then
+                IntValueLabelMap.Add(TEpiIntValueLabel(F.ValueLabelSet[i]).Value);
 
-            else;
-            ValueLabelMap.Add(F.ValueLabelSet[i]);
+            case Content^.Typ of
+              StataLongConstXML   : IMissingVal := StataMaxLong + 2;
+              StataIntConstXML    : IMissingVal := StataMaxInt  + 2;
+              StataByteConstXML   : IMissingVal := StataMaxByte + 2;
+            end;
 
-        Content^.ValueLabelMap := ValueLabelMap;
+            for i := 0 to IntValueLabelMap.Count - 1 do
+              IntValueLabelMap.Data[i] := PostInc(IMissingVal);
+
+            Content^.IntValueLabelMap := IntValueLabelMap;
+          end;
+
+        ftFloat:
+          begin
+            FloatValueLabelMap := TFloatValueLabelMap.Create;
+            FloatValueLabelMap.OnKeyCompare := @FloatCompareValueLabelKeys;
+
+            for i := 0 to F.ValueLabelSet.Count - 1 do
+              if F.ValueLabelSet[i].IsMissingValue then
+                FloatValueLabelMap.Add(TEpiFloatValueLabel(F.ValueLabelSet[i]).Value);
+
+            IMissingVal := 1;
+
+            for i := 0 to FloatValueLabelMap.Count - 1 do
+              FloatValueLabelMap.Data[i] := MissingDouble(PostInc(IMissingVal));
+
+            Content^.FloatValueLabelMap := FloatValueLabelMap;
+          end;
       end;
-                }
+
     F.AddCustomData(STATA_CONTENT_KEY, TObject(Content));
   end;
 end;
@@ -276,8 +338,11 @@ var
 begin
   ValueLabelNames := TStringList.Create;
 
-  for VLset in FDataFile.ValueLabels do             // ValueLabels in Stata 13+ can have up to 32-characters (UTF-8 or Not)
+  for VLset in FDataFile.ValueLabels do
+  // ValueLabels in Stata 13+ can have up to 32-characters (UTF-8 or Not)
      VLSet.Name := UniqueValueLabelName(VLSet.Name, 32);
+
+  ValueLabelNames.Free;
 end;
 
 function TEpiStataExport.StataContent(const Field: TEpiField): PStataContent;
@@ -298,13 +363,13 @@ begin
   WriteEndTag('release');
 
   // <byteorder>
-  WriteStartTag('bytorder');
+  WriteStartTag('byteorder');
   {$IFDEF ENDIAN_LITTLE}
   WriteAsString('LSF');
   {$ELSE}
   WriteAsString('MSF');
   {$ENDIF}
-  WriteEndTag('bytorder');
+  WriteEndTag('byteorder');
 
   // <K>  = Number of fields
   WriteStartTag('K');
@@ -493,7 +558,6 @@ var
   Len: Integer;
   F: TEpiField;
   S: String;
-  ValueLabelNames: TStrings;
 begin
   WriteStartTag('value_label_names');
 
@@ -506,12 +570,13 @@ begin
   for F in FDataFile.Fields do
     begin
       S := '';
-      if Assigned(F.ValueLabelSet) then
+      if Assigned(F.ValueLabelSet) and
+         (F.FieldType = ftInteger)
+      then
         S := F.ValueLabelSet.Name;
 
       WriteAsString(S, Len);
     end;
-  ValueLabelNames.Free;
 
   WriteEndTag('value_label_names');
 end;
@@ -632,6 +697,7 @@ var
   CurRec: Integer;
   F: TEpiField;
   Val: EpiInteger;
+  FVal: Double;
 begin
   WriteStartTag('data');
 
@@ -642,27 +708,57 @@ begin
       Case StataContent(F)^.Typ of
         StataStrLsConstXML:;
           // TODO:
-        StataDoubleConstXML:;
 
-        StataFloatConstXML:;
+        StataDoubleConstXML:
+          begin
+            if F.IsMissing[CurRec] then
+              FVal := MissingDouble(0)
+            else
+              FVal := F.AsFloat[CurRec];
 
-        StataLongConstXML:;
+            if (F.IsMissingValue[CurRec]) and
+               (F.FieldType <> ftInteger)
+            then
+              FVal := StataContent(F)^.FloatValueLabelMap.KeyData[F.AsFloat[CurRec]];
 
-        StataIntConstXML:;
+            WriteDouble(FVal);
+          end;
+
+        StataLongConstXML:
+          begin
+            if F.IsMissing[CurRec] then
+              Val := StataMaxLong + 1
+            else
+              Val := F.AsInteger[CurRec];
+
+            if F.IsMissingValue[CurRec] then
+              Val := StataContent(F)^.IntValueLabelMap.KeyData[F.AsInteger[CurRec]];
+
+            WriteDWord(Val);
+          end;
+
+        StataIntConstXML:
+          begin
+            Val := F.AsInteger[CurRec];
+
+            if F.IsMissing[CurRec] then
+              Val := StataMaxInt + 1;
+
+            if F.IsMissingValue[CurRec] then
+              Val := StataContent(F)^.IntValueLabelMap.KeyData[Val];
+
+            WriteWord(Val);
+          end;
 
         StataByteConstXML:
           begin
             Val := F.AsInteger[CurRec];
 
             if F.IsMissing[CurRec] then
-              Val := $65;
+              Val := StataMaxByte + 1;
 
             if F.IsMissingValue[CurRec] then
-            begin
-{              VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
-              TmpInt := ValueLabelSet.IndexOf(ValueLabelSet.ValueLabel[AsValue[CurRec]]);}
-//              WriteByte(F.ValueLabelSet (TEpiIntValueLabel(VLblSet[TmpInt]).Value - $7fffffe5 + $65));
-            end else
+              Val := StataContent(F)^.IntValueLabelMap.KeyData[Val];
 
             WriteByte(Val);
           end;
@@ -677,17 +773,100 @@ end;
 
 procedure TEpiStataExport.WriteStrls;
 begin
-
+  WriteStartTag('strls');
+  WriteEndTag('strls');
 end;
 
 procedure TEpiStataExport.WriteValueLabels;
+var
+  VLSet: TEpiValueLabelSet;
 begin
+  WriteStartTag('value_labels');
 
+  for VLSet in FDataFile.ValueLabels do
+    if VLSet.LabelType = ftInteger then
+      WriteValueLabel(VLSet);
+
+  WriteEndTag('value_labels');
 end;
 
-procedure TEpiStataExport.WriteValueLabel;
-begin
+procedure TEpiStataExport.WriteValueLabel(ValueLabelSet: TEpiValueLabelSet);
+var
+  Len: Integer;
+  VL:     TEpiIntValueLabel;
+  i: Integer;
 
+  // Stata ValueLabelTable
+{       value_label_table      len   format     comment
+  ----------------------------------------------------------
+  n                        4   int        number of entries
+  txtlen                   4   int        length of txt[]
+  off[]                  4*n   int array  txt[] offset table
+  val[]                  4*n   int array  sorted value table
+  txt[]               txtlen   char       text table
+  ---------------------------------------------------------- }
+
+  N:      DWord;
+  TxtLen: DWord;
+  Off:    Array of DWord;
+  Val:    Array of LongInt;
+  Txt:    Array of String;
+
+  // For keeping track of the offset index:
+  OffIdx: DWord;
+begin
+  WriteStartTag('lbl');
+
+  N := ValueLabelSet.Count;
+  SetLength(Off, N);
+  SetLength(Val, N);
+  SetLength(Txt, N);
+  OffIdx := 0;
+
+  for i := 0 to ValueLabelSet.Count do
+  begin
+    VL := TEpiIntValueLabel(ValueLabelSet[i]);
+
+    Off[i] := OffIdx;
+    Val[i] := VL.Value;
+    Txt[i] := VL.TheLabel.Text;
+    Inc(OffIdx, Length(Txt[i]) + 1);
+  end;
+
+  case FStataVersion of
+    //  32 Characters (* 4 for UTF-8) and a terminal #0
+    dta13: Len := (32 * 1) + 1; // 33
+    dta14: Len := (32 * 4) + 1; // 129
+  end;
+
+  // Length of "value_label_table"
+  WriteDWord(4 +            // n
+             4 +            // txtlen
+             (4 * N) +      // off[]
+             (4 * N) +      // val[]
+             OffIdx);       // txt[]
+
+  // Labelname and padding...
+  WriteAsString(ValueLabelSet.Name, Len + 3);
+
+  // n
+  WriteDWord(N);
+
+  // txtlen
+  WriteDWord(OffIdx);
+
+  // off[]
+  for i := 0 to N - 1 do
+    WriteDWord(Off[i]);
+
+  // val[]
+  for i := 0 to N - 1 do
+    WriteDWord(Val[i]);
+
+  for i := 0 to N - 1 do
+    WriteAsString(Txt[i], Length(Txt[i]) + 1);
+
+  WriteEndTag('lbl');
 end;
 
 function TEpiStataExport.ExportStata(StataSettings: TEpiStataExportSetting

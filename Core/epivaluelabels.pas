@@ -173,6 +173,15 @@ type
     function    MaxValueLength: LongInt;
   end;
 
+  { TEpiValueLabelSetsEnumerator }
+
+  TEpiValueLabelSetsEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiValueLabelSet; override;
+  public
+    property Current: TEpiValueLabelSet read GetCurrent;
+  end;
+
   { TEpiValueLabelSets }
 
   TEpiValueLabelSets = class(TEpiCustomList)
@@ -196,6 +205,7 @@ type
     function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
+    function    GetEnumerator: TEpiValueLabelSetsEnumerator;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
   public
     { Aux. functions }
@@ -815,6 +825,13 @@ begin
   FDirtyCache := false;
 end;
 
+{ TEpiValueLabelSetsEnumerator }
+
+function TEpiValueLabelSetsEnumerator.GetCurrent: TEpiValueLabelSet;
+begin
+  Result := TEpiValueLabelSet(inherited GetCurrent);
+end;
+
 { TEpiValueLabelSets }
 
 function TEpiValueLabelSets.GetVLSet(const Index: Integer;
@@ -1044,6 +1061,11 @@ function TEpiValueLabelSets.GetValueLabelSetByName(const AName: string
   ): TEpiValueLabelSet;
 begin
   result := TEpiValueLabelSet(GetItemByName(AName));
+end;
+
+function TEpiValueLabelSets.GetEnumerator: TEpiValueLabelSetsEnumerator;
+begin
+  result := TEpiValueLabelSetsEnumerator.Create(Self);
 end;
 
 end.
