@@ -125,6 +125,8 @@ type
     function    GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
     function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
+    function    GetIsMaxMissingValue(const AValue: variant): boolean;
+    function    GetIs2ndMaxMissingValue(const AValue: variant): boolean;
     function    GetValueLabelString(const AValue: variant): string;
     function    GetValueLabelExists(const AValue: variant): boolean;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
@@ -167,6 +169,8 @@ type
     property    ValueLabelString[Const AValue: variant]: string read GetValueLabelString;
     property    ValueLabelExists[Const AValue: variant]: boolean read GetValueLabelExists;
     property    IsMissingValue[Const AValue: variant]: boolean read GetIsMissingValue;
+    property    IsMaxMissingValue[Const AValue: variant]: boolean read GetIsMaxMissingValue;
+    property    Is2ndMaxMissingValue[Const AValue: variant]: boolean read GetIs2ndMaxMissingValue;
   public
     { Aux. functions. }
     function    MissingCount: LongInt;
@@ -608,6 +612,46 @@ begin
   I := GetValueLabelIndex(AValue);
   Result := (I <> -1) and
             ValueLabels[i].IsMissingValue;
+end;
+
+function TEpiValueLabelSet.GetIsMaxMissingValue(const AValue: variant): boolean;
+var
+  Runner: Integer;
+  I: Integer;
+begin
+  I := GetValueLabelIndex(AValue);
+  Result := (I <> -1) and
+            ValueLabels[I].IsMissingValue;
+
+  if (not Result) then Exit;
+
+  // Assumes sorted by values.
+  for Runner := Count -1 downto I + 1 do
+    if ValueLabels[Runner].IsMissingValue then
+      Exit(false);
+end;
+
+function TEpiValueLabelSet.GetIs2ndMaxMissingValue(const AValue: variant
+  ): boolean;
+var
+  Counter: Integer;
+  Runner: Integer;
+  I: Integer;
+begin
+  I := GetValueLabelIndex(AValue);
+  Result := (I <> -1) and
+            ValueLabels[I].IsMissingValue;
+
+  if (not Result) then Exit;
+
+  Counter := 0;
+
+  // Assumes sorted by values.
+  for Runner := Count -1 downto I + 1 do
+    if ValueLabels[Runner].IsMissingValue then
+      Inc(Counter);
+
+  Result := (Counter = 1);
 end;
 
 procedure TEpiValueLabelSet.LoadOldInternalTag(Root: TDOMNode;
