@@ -202,15 +202,12 @@ var
   P: TPoint;
   Field: TEpiField;
 begin
+  if not ADblClick then exit;
+
   P := Mouse.CursorPos;
   P := VLG.ScreenToClient(P);
-
   VLG.GetHitTestInfoAt(P.X, P.Y, True, HitInfo);
-
-  if (HitInfo.HitColumn <> 0) and
-     (not ADblClick)
-  then
-    exit;
+  VLG.ScrollIntoView(HitInfo.HitNode, true);
 
   if not (hiOnItem in HitInfo.HitPositions) then exit;
 
@@ -526,15 +523,15 @@ begin
 
     // Events:
     NodeDataSize := SizeOf(Cardinal);
-    OnInitNode := @VLGInitNode;
-    OnGetText := @VLGGetNodeText;
+    OnInitNode               := @VLGInitNode;
+    OnGetText                := @VLGGetNodeText;
     OnAfterGetMaxColumnWidth := @VLGAfterGetMaxColumnWidth;
-    OnBeforeCellPaint := @VLGBeforeCellPaint;
-    OnCompareNodes := @VLGCompareNodes;
-    OnHeaderClick := @VLGHeaderClick;
-    OnClick := @VLGClick;
-    OnDblClick := @VLGDoubleClick;
-    OnColumnWidthTracking := @VLGColumnWidthTracking;
+    OnBeforeCellPaint        := @VLGBeforeCellPaint;
+    OnCompareNodes           := @VLGCompareNodes;
+    OnHeaderClick            := @VLGHeaderClick;
+    OnClick                  := @VLGClick;
+    OnDblClick               := @VLGDoubleClick;
+    OnColumnWidthTracking    := @VLGColumnWidthTracking;
 //    OnShortenString := @TEST;
   end;
 
@@ -544,7 +541,7 @@ begin
     AutoOptions := [toAutoScroll];
     MiscOptions := [toGridExtensions, toWheelPanning];
     PaintOptions := [toShowHorzGridLines, toShowVertGridLines, toThemeAware];
-    SelectionOptions := [toExtendedFocus, toRightClickSelect, toCenterScrollIntoView];
+    SelectionOptions := [toExtendedFocus, toRightClickSelect{, toCenterScrollIntoView}];
   end;
 
   UpdateDataFile;
