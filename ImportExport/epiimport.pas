@@ -1255,10 +1255,7 @@ begin
   if (S = '<stata_dta>') // (CharBuf[0] = '<') and (CharBuf[10] = '>')
   then
     begin
-      FStataImport.ImportStata(DataStream, Doc, DataFile, ImportData);
-{      RaiseError(Exception,
-        'Stata 13 is not yet supported' + LineEnding +
-        'Use "saveold" command in Stata to import in EpiData.');  }
+      result := FStataImport.ImportStata(DataStream, Doc, DataFile, ImportData);
       Exit;
     end;
 

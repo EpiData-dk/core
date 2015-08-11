@@ -70,7 +70,8 @@ type
   { Data access properties }
   private
     function    GetIsMissingValue(const index: Integer): boolean;
-    procedure   SetIsMissingValue(const index: Integer; const AValue: boolean);
+    function    GetIsMaxMissingValue(const index: Integer): boolean;
+    function    GetIs2MaxMissingValue(const index: Integer): boolean;
   protected
     procedure   CheckIndex(Const index: integer); virtual;
     function    GetAsBoolean(const index: Integer): EpiBool; virtual; abstract;
@@ -102,8 +103,10 @@ type
     property    AsDateTime[const index: Integer]: EpiDateTime read GetAsDateTime write SetAsDateTime;
     property    AsString[const index: Integer]: EpiString read GetAsString write SetAsString;
     property    AsValue[const index: Integer]: EpiVariant read GetAsValue write SetAsValue;
-    property    IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing;
-    property    IsMissingValue[const index: Integer]: boolean read GetIsMissingValue write SetIsMissingValue;
+    property    IsMissing[const index: Integer]: boolean read GetIsMissing write SetIsMissing; // Returns true if current index is system missing.
+    property    IsMissingValue[const index: Integer]: boolean read GetIsMissingValue;          // Returns true if current index is a missing value defined in the valuelabelset.
+    property    IsMaxMissingValue[const index: Integer]: boolean read GetIsMaxMissingValue;    // Returns true if current index is the max missing value defined in the valuelabelset.
+    property    Is2MaxMissingValue[const index: Integer]: boolean read GetIs2MaxMissingValue;  // Returns true if current index is the 2nd max missing value defined in the valuelabelset.
 
   { Hooks }
   private

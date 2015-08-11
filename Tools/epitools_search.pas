@@ -10,7 +10,45 @@ uses
 type
 
   TSearchBinOp = (boAnd, boOr);
-  TMatchCriteria = (mcEq, mcNEq, mcLEq, mcLT, mcGT, mcGEq, mcBegin, mcEnd, mcContains);
+  TMatchCriteria = (
+    mcEq,
+    mcNEq,
+    mcLEq,
+    mcLT,
+    mcGT,
+    mcGEq,
+    mcBegin,
+    mcEnd,
+    mcContains,
+    mcIsSysMissing,
+    mcIsMaxMissing,
+    mcIs2ndMaXMissing
+  );
+  TMatchCriterias = set of TMatchCriteria;
+
+const
+  MatchCriteriaCaption: Array[TMatchCriteria] of string =  (
+    '=',
+    '<>',
+    '<=',
+    '<',
+    '>',
+    '>=',
+    'Begins',
+    'Ends',
+    'Contains',
+    'System Missing',
+    'Max Missing',
+    '2nd Max Missing'
+  );
+
+  MatchCriteriaAll = [mcEq, mcNEq, mcLEq, mcLT, mcGT, mcGEq, mcBegin, mcEnd, mcContains, mcIsSysMissing, mcIsMaxMissing, mcIs2ndMaXMissing];
+  MatchCriteriaDefault = MatchCriteriaAll - [mcBegin, mcEnd, mcContains];
+  MatchCriteriaStrings = MatchCriteriaAll - [mcLEq, mcLT, mcGT, mcGEq];
+
+  MatchCriteriaNoTextSearch = [mcIsSysMissing, mcIsMaxMissing, mcIs2ndMaXMissing];
+
+type
 
   { TEpiSearchCondition }
 
@@ -76,7 +114,6 @@ var
   S1: String;
   S2: String;
 
-//  function Eq(Const Field: TEpiField; Const Text: string; Const Idx: integer): boolean;
   function Eq(Const SC: TEpiSearchCondition; Const Idx: integer): boolean;
   begin
     case SC.Field.FieldType of
@@ -102,7 +139,6 @@ var
     end;
   end;
 
-//  function LT(Const Field: TEpiField; Const Text: string; Const Idx: integer): boolean;
   function LT(Const SC: TEpiSearchCondition; Const Idx: integer): boolean;
   begin
     case SC.Field.FieldType of
@@ -176,6 +212,15 @@ begin
                 TmpRes := UTF8Pos(S1, S2) >= 1;
             end;
           end;
+
+        mcIsSysMissing:
+          TmpRes := SC.Field.IsMissing[Result];
+
+        mcIsMaxMissing:
+          TmpRes := SC.Field.IsMaxMissingValue[Result];
+
+        mcIs2ndMaXMissing:
+          TmpRes := SC.Field.Is2MaxMissingValue[Result];
       end; // Case MatchCriteria of;
 
       case SC.BinOp of

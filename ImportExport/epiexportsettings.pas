@@ -53,6 +53,8 @@ type
   { TEpiExportSetting }
 
   TEpiExportSetting = class
+  protected
+    function GetStaticEndNote: string; virtual;
   public
     PreparedDoc: TEpiDocument;
     Doc: TEpiDocument;
@@ -71,6 +73,7 @@ type
     constructor Create; virtual;
     destructor  Destroy; override;
     function    SanetyCheck: boolean; virtual;
+    property    StaticEndNote: string read GetStaticEndNote;
   public
     procedure   Assign(Const OriginalSettings: TEpiExportSetting); virtual;
     // Visitor Pattern
@@ -511,6 +514,12 @@ begin
 end;
 
 { TEpiExportSetting }
+
+function TEpiExportSetting.GetStaticEndNote: string;
+begin
+  result := 'Static End Not is missing for: ' + Self.ClassName + LineEnding +
+            'Please Contact EpiData and notify of this!';
+end;
 
 constructor TEpiExportSetting.Create;
 begin

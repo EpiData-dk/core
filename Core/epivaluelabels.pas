@@ -125,6 +125,8 @@ type
     function    GetValueLabel(const AValue: variant): TEpiCustomValueLabel;
     function    GetValueLabelIndex(const AValue: variant): integer;
     function    GetIsMissingValue(const AValue: variant): boolean;
+    function    GetIsMaxMissingValue(const AValue: variant): boolean;
+    function    GetIs2ndMaxMissingValue(const AValue: variant): boolean;
     function    GetValueLabelString(const AValue: variant): string;
     function    GetValueLabelExists(const AValue: variant): boolean;
     function    GetValueLabels(const index: integer): TEpiCustomValueLabel;
@@ -167,10 +169,21 @@ type
     property    ValueLabelString[Const AValue: variant]: string read GetValueLabelString;
     property    ValueLabelExists[Const AValue: variant]: boolean read GetValueLabelExists;
     property    IsMissingValue[Const AValue: variant]: boolean read GetIsMissingValue;
+    property    IsMaxMissingValue[Const AValue: variant]: boolean read GetIsMaxMissingValue;
+    property    Is2ndMaxMissingValue[Const AValue: variant]: boolean read GetIs2ndMaxMissingValue;
   public
     { Aux. functions. }
     function    MissingCount: LongInt;
     function    MaxValueLength: LongInt;
+  end;
+
+  { TEpiValueLabelSetsEnumerator }
+
+  TEpiValueLabelSetsEnumerator = class(TEpiCustomListEnumerator)
+  protected
+    function GetCurrent: TEpiValueLabelSet; override;
+  public
+    property Current: TEpiValueLabelSet read GetCurrent;
   end;
 
   { TEpiValueLabelSets }
@@ -196,6 +209,7 @@ type
     function    ValidateRename(ValueLabelSet: TEpiValueLabelSet; NewName: string): boolean;
     function    NewValueLabelSet(ALabelType: TEpiFieldType): TEpiValueLabelSet;
     function    GetValueLabelSetByName(Const AName: string): TEpiValueLabelSet;
+    function    GetEnumerator: TEpiValueLabelSetsEnumerator;
     property    ValueLabels[index: integer]: TEpiValueLabelSet read GetValueLabels; default;
   public
     { Aux. functions }
@@ -600,6 +614,46 @@ begin
             ValueLabels[i].IsMissingValue;
 end;
 
+function TEpiValueLabelSet.GetIsMaxMissingValue(const AValue: variant): boolean;
+var
+  Runner: Integer;
+  I: Integer;
+begin
+  I := GetValueLabelIndex(AValue);
+  Result := (I <> -1) and
+            ValueLabels[I].IsMissingValue;
+
+  if (not Result) then Exit;
+
+  // Assumes sorted by values.
+  for Runner := Count -1 downto I + 1 do
+    if ValueLabels[Runner].IsMissingValue then
+      Exit(false);
+end;
+
+function TEpiValueLabelSet.GetIs2ndMaxMissingValue(const AValue: variant
+  ): boolean;
+var
+  Counter: Integer;
+  Runner: Integer;
+  I: Integer;
+begin
+  I := GetValueLabelIndex(AValue);
+  Result := (I <> -1) and
+            ValueLabels[I].IsMissingValue;
+
+  if (not Result) then Exit;
+
+  Counter := 0;
+
+  // Assumes sorted by values.
+  for Runner := Count -1 downto I + 1 do
+    if ValueLabels[Runner].IsMissingValue then
+      Inc(Counter);
+
+  Result := (Counter = 1);
+end;
+
 procedure TEpiValueLabelSet.LoadOldInternalTag(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
@@ -813,6 +867,13 @@ begin
     Result := Max(Result, UTF8Length(ValueLabels[i].ValueAsString));
   FCachedLength := Result;
   FDirtyCache := false;
+end;
+
+{ TEpiValueLabelSetsEnumerator }
+
+function TEpiValueLabelSetsEnumerator.GetCurrent: TEpiValueLabelSet;
+begin
+  Result := TEpiValueLabelSet(inherited GetCurrent);
 end;
 
 { TEpiValueLabelSets }
@@ -1044,6 +1105,11 @@ function TEpiValueLabelSets.GetValueLabelSetByName(const AName: string
   ): TEpiValueLabelSet;
 begin
   result := TEpiValueLabelSet(GetItemByName(AName));
+end;
+
+function TEpiValueLabelSets.GetEnumerator: TEpiValueLabelSetsEnumerator;
+begin
+  result := TEpiValueLabelSetsEnumerator.Create(Self);
 end;
 
 end.
