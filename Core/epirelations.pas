@@ -253,19 +253,23 @@ function TEpiMasterRelation.IsChild(Relation: TEpiMasterRelation;
   Recurse: Boolean): boolean;
 var
   LRelation: TEpiMasterRelation;
+  Val: Boolean;
 begin
+  // In FPC 2.6.4, this method does not return a correct result
+  // when compiled with -O2 optimization on. Test if this is
+  // still the case when version 3.0 is out.
   result := false;
 
   for LRelation in DetailRelations do
   begin
-    result := (LRelation = Relation);
+    Result := (LRelation = Relation);
 
     if Recurse then
       Result :=
         Result or
         (LRelation.IsChild(Relation, Recurse));
 
-    if Result then exit;
+    if Result then Break;
   end;
 end;
 
