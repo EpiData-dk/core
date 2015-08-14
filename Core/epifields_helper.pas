@@ -108,7 +108,7 @@ function TEpiFloatFieldHelper.MinValue: EpiFloat;
 var
   i: Integer;
 begin
-  Result := MaxExtended;
+  Result := MaxFloat;
   for i := 0 to Size - 1 do
     if (not IsMissing[i]) then
       Result := Min(Result, AsInteger[i]);
@@ -118,7 +118,7 @@ function TEpiFloatFieldHelper.MaxValue: EpiFloat;
 var
   i: Integer;
 begin
-  Result := -(MaxExtended);
+  Result := -(MaxFloat);
   for i := 0 to Size - 1 do
     if (not IsMissing[i]) then
       Result := Max(Result, AsFloat[i]);
