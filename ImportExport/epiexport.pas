@@ -1431,6 +1431,7 @@ var
   DocFile: TEpiDocumentFile;
   DFSettings: TEpiExportDatafileSettings;
   DF: TEpiDataFile;
+  j: Integer;
 begin
   Result := false;
 
@@ -1453,9 +1454,12 @@ begin
           DocFile := Settings.DocumentClass.Create;
           NewDoc := DocFile.CreateClonedDocument(Settings.Doc);
 
-          for DF in DocFile.Document.DataFiles do
-            if DF.Name <> DFSettings.DatafileName then
-              DF.Free;
+          for j := DocFile.Document.DataFiles.Count - 1 downto 0 do
+            begin
+              DF := DocFile.Document.DataFiles[j];
+              if DF.Name <> DFSettings.DatafileName then
+                DF.Free;
+            end;
 
           NewDoc.Relations.Clear;
 
