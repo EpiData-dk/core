@@ -823,7 +823,7 @@ begin
   SetLength(Txt, N);
   OffIdx := 0;
 
-  for i := 0 to ValueLabelSet.Count do
+  for i := 0 to ValueLabelSet.Count - 1 do
   begin
     VL := TEpiIntValueLabel(ValueLabelSet[i]);
 
@@ -902,6 +902,7 @@ begin
 
     WriteEndTag('stata_dta');
   end;
+  Result := true;
 end;
 
 end.
