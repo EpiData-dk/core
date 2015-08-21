@@ -5,7 +5,8 @@ unit epiexportsettings;
 interface
 
 uses
-  Classes, SysUtils, epieximtypes, epidocument, epidatafiles, epiopenfile;
+  Classes, SysUtils, epieximtypes, epidocument, epidatafiles, epivaluelabels,
+  epiopenfile;
 
 type
 
@@ -54,6 +55,7 @@ type
 
   TEpiExportSetting = class
   protected
+    function GetExportTypeName: string; virtual;
     function GetStaticEndNote: string; virtual;
   public
     PreparedDoc: TEpiDocument;
@@ -95,6 +97,9 @@ type
   { TEpiStataExportSetting }
 
   TEpiStataExportSetting = class(TEpiCustomValueLabelExportSetting)
+  protected
+    function GetExportTypeName: string; override;
+    function GetStaticEndNote: string; override;
   public
     FieldNameCase: TEpiFieldNamingCase;
     Version:       TEpiStataVersion;
@@ -113,6 +118,9 @@ type
   { TEpiSPSSExportSetting }
 
   TEpiSPSSExportSetting = class(TEpiCustomValueLabelExportSetting)
+  protected
+    function GetExportTypeName: string; override;
+    function GetStaticEndNote: string; override;
   public
     Delimiter: char;
   public
@@ -124,6 +132,9 @@ type
   { TEpiSASExportSetting }
 
   TEpiSASExportSetting = class(TEpiCustomValueLabelExportSetting)
+  protected
+    function GetExportTypeName: string; override;
+    function GetStaticEndNote: string; override;
   public
     // Visitor Pattern
     procedure   AcceptVisitor(Const Visitor: TEpiExportSettingCustomVisitor); override;
@@ -150,6 +161,9 @@ type
   { TEpiDDIExportSetting }
 
   TEpiDDIExportSetting = class(TEpiCustomCompleteProjectExportSetting)
+  protected
+    function GetExportTypeName: string; override;
+    function GetStaticEndNote: string; override;
   private
     FExportLang: string;
     FFilterTagIsUserId: boolean;
@@ -198,6 +212,8 @@ type
   { TEpiCSVExportSetting }
 
   TEpiCSVExportSetting = class(TEpiCustomTextExportSettings)
+  protected
+    function GetExportTypeName: string; override;
   public
     FieldSeparator: string;
     DateSeparator: string;
@@ -219,6 +235,8 @@ type
   TEpiEPXExportSetting = class(TEpiCustomCompleteProjectExportSetting)
   private
     FDocumentClass: TEpiDocumentFileClass;
+  protected
+    function GetExportTypeName: string; override;
   public
     property DocumentClass: TEpiDocumentFileClass read FDocumentClass write FDocumentClass;
   public
@@ -263,7 +281,7 @@ type
 implementation
 
 uses
-  LazUTF8Classes;
+  LazUTF8Classes, epidatafilestypes;
 
 { TEpiExportDatafileSettingsList }
 
@@ -368,6 +386,11 @@ end;
 
 { TEpiEPXExportSetting }
 
+function TEpiEPXExportSetting.GetExportTypeName: string;
+begin
+  Result := 'EPX';
+end;
+
 procedure TEpiEPXExportSetting.Assign(const OriginalSettings: TEpiExportSetting
   );
 begin
@@ -398,6 +421,17 @@ end;
 
 { TEpiSASExportSetting }
 
+function TEpiSASExportSetting.GetExportTypeName: string;
+begin
+  Result := 'SAS';
+end;
+
+function TEpiSASExportSetting.GetStaticEndNote: string;
+begin
+  Result := inherited GetStaticEndNote + LineEnding +
+            'Run created command file in SAS to create SAS datafile.';
+end;
+
 procedure TEpiSASExportSetting.AcceptVisitor(
   const Visitor: TEpiExportSettingCustomVisitor);
 begin
@@ -411,6 +445,17 @@ begin
 end;
 
 { TEpiSPSSExportSetting }
+
+function TEpiSPSSExportSetting.GetExportTypeName: string;
+begin
+  Result := 'SPSS';
+end;
+
+function TEpiSPSSExportSetting.GetStaticEndNote: string;
+begin
+  Result := inherited GetStaticEndNote + LineEnding +
+            'Run created command file in SPSS to create SPSS datafile. ';
+end;
 
 procedure TEpiSPSSExportSetting.Assign(const OriginalSettings: TEpiExportSetting
   );
@@ -441,6 +486,17 @@ begin
 end;
 
 { TEpiDDIExportSetting }
+
+function TEpiDDIExportSetting.GetExportTypeName: string;
+begin
+  Result := 'DDI v3.1';
+end;
+
+function TEpiDDIExportSetting.GetStaticEndNote: string;
+begin
+  Result := inherited GetStaticEndNote + LineEnding +
+            'DDI defined by http://www.ddi-alliance.org/';
+end;
 
 constructor TEpiDDIExportSetting.Create;
 begin
@@ -515,10 +571,14 @@ end;
 
 { TEpiExportSetting }
 
+function TEpiExportSetting.GetExportTypeName: string;
+begin
+  result := 'typename not overridden for ' + ClassName;
+end;
+
 function TEpiExportSetting.GetStaticEndNote: string;
 begin
-  result := 'Static End Not is missing for: ' + Self.ClassName + LineEnding +
-            'Please Contact EpiData and notify of this!';
+  result := 'Type: ' + GetExportTypeName + ' Text Encoding: ' + EpiEncodingToString[Encoding];
 end;
 
 constructor TEpiExportSetting.Create;
@@ -526,10 +586,6 @@ begin
   DatafileSettings := TEpiExportDatafileSettingsList.Create;
 
   Doc            := nil;
-  AdditionalExportSettings := nil;
-
-  Encoding       := eeUTF8;
-  ExportDeleted  := false;
 
   PreparedDoc    := nil;
 end;
@@ -539,6 +595,10 @@ begin
   DatafileSettings.ClearAndFree;
   DatafileSettings.Free;
 
+  AdditionalExportSettings := nil;
+
+  Encoding       := eeUTF8;
+  ExportDeleted  := false;
   if Assigned(AdditionalExportSettings) then
     AdditionalExportSettings.Free;
 
@@ -583,6 +643,30 @@ begin
 end;
 
 { TEpiStataExportSetting }
+
+function TEpiStataExportSetting.GetExportTypeName: string;
+begin
+  Result := EpiStataVersionToString(Version);
+end;
+
+function TEpiStataExportSetting.GetStaticEndNote: string;
+var
+  VL: TEpiValueLabelSet;
+  Test: Boolean;
+begin
+  Result := Inherited GetStaticEndNote;
+
+  Test := false;
+  for VL in Doc.ValueLabelSets do
+    if Vl.LabelType in StringFieldTypes then
+    begin
+      Test := true;
+      Break;
+    end;
+
+  if Test then
+    Result += LineEnding + 'Value labels for string variables not allowed in Stata';
+end;
 
 constructor TEpiStataExportSetting.Create;
 begin
@@ -654,6 +738,11 @@ begin
 end;
 
 { TEpiCSVExportSetting }
+
+function TEpiCSVExportSetting.GetExportTypeName: string;
+begin
+  Result := 'CSV';
+end;
 
 constructor TEpiCSVExportSetting.Create;
 begin
