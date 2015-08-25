@@ -475,6 +475,9 @@ type
   private
     FCurrentIndex: Integer;
     FCustomList: TEpiCustomList;
+    FListCount: Integer;
+    procedure RaiseCountError;
+    procedure CheckListCount;
   protected
     function GetCurrent: TEpiCustomItem; virtual;
   public
@@ -482,6 +485,7 @@ type
     function MoveNext: Boolean;
     property Current: TEpiCustomItem read GetCurrent;
   end;
+  EEpiCustomListEnumeratorCountError = class(Exception);
 
 
   { TEpiCustomControlItemList }
@@ -2133,14 +2137,32 @@ begin
   result := FCustomList[FCurrentIndex];
 end;
 
+procedure TEpiCustomListEnumerator.RaiseCountError;
+begin
+{  raise EEpiCustomListEnumeratorCountError.CreateFmt(
+    'Enumeration error!' + LineEnding +
+    'Expected %d items in list, but MoveNext found %d!' + LineEnding +
+    'Deleting/Inserting items during iteration is NOT supported!',
+    [FListCount, FCustomList.Count]
+  );   }
+end;
+
+procedure TEpiCustomListEnumerator.CheckListCount;
+begin
+  if FCustomList.Count <> FListCount then
+    RaiseCountError;
+end;
+
 constructor TEpiCustomListEnumerator.Create(CustomList: TEpiCustomList);
 begin
   FCustomList := CustomList;
   FCurrentIndex := -1;
+  FListCount := CustomList.Count;
 end;
 
 function TEpiCustomListEnumerator.MoveNext: Boolean;
 begin
+  CheckListCount;
   Inc(FCurrentIndex);
   Result := (FCurrentIndex < FCustomList.Count);
 end;

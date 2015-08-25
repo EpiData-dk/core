@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, math, epireport_base,
-  epidatafiles, epireport_generator_base;
+  epidatafiles, epireport_generator_base, epiopenfile;
 
 type
 
@@ -19,6 +19,7 @@ type
     CountsFieldList: TEpiFields;
     procedure DoCounts(Const DF: TEpiDataFile; Const DFIndex: integer);
     procedure DoReport;
+    function  GetDataFileIndexInFileList(Const DataFile: TEpiDataFile): Integer;
   public
     constructor Create(ReportGenerator: TEpiReportGeneratorBase);
        override;
@@ -28,9 +29,12 @@ type
   private
     FDataFiles: TEpiDataFiles;
     FFieldNames: TStrings;
+    FDocumentFiles: TEpiDocumentFileList;
   public
     property    DataFiles: TEpiDataFiles read FDataFiles write FDataFiles;
     property    FieldNames: TStrings read FFieldNames write FFieldNames;
+    // If Assigned, the report will use the files attached to include a line in the report stating the file no. a given DataFile was in.
+    property    DocumentFiles: TEpiDocumentFileList read FDocumentFiles write FDocumentFiles;
   end;
 
 
@@ -41,8 +45,8 @@ uses
   lazutf8sysutils, epireport_types;
 
 resourcestring
-  rsDocumentsNotAssigned = 'Documents not assigned to report';
-  rsFieldlistNotAssigned = 'Fieldlist not assigned to report';
+  rsDatafilesNotAssigned = 'DataFiles not assigned to report';
+  rsFieldlistNotAssigned = 'Field names not assigned to report';
 
 { TEpiReportCountById }
 
@@ -164,6 +168,20 @@ begin
   DoTableFooter('');
 end;
 
+function TEpiReportCountById.GetDataFileIndexInFileList(
+  const DataFile: TEpiDataFile): Integer;
+begin
+  result := 1;
+
+  while Result < FDocumentFiles.Count do
+  begin
+    if FDocumentFiles[Result-1].Document.DataFiles.IndexOf(DataFile) >= 0 then
+      Break;
+
+    Inc(Result);
+  end;
+end;
+
 constructor TEpiReportCountById.Create(ReportGenerator: TEpiReportGeneratorBase);
 begin
   inherited Create(ReportGenerator);
@@ -249,13 +267,20 @@ begin
     ValueFieldList.AddItem(F);
   end;
 
+
+
 //  for i := 0 to Documents.Count - 1 do
   i := 0;
   for DF in DataFiles do
   begin
     F := ResultDF.NewField(ftInteger);
-    F.Name := 'File' + IntToStr(i + 1);
-    F.Question.Text := DF.Caption.Text;// 'File ' + IntToStr(i + 1);
+    F.Name := 'Field' + IntToStr(i + 1);
+
+    if Assigned(FDocumentFiles) then
+      F.Question.Text := 'File ' + IntToStr(GetDataFileIndexInFileList(DF)) + ':' + LineEnding +
+                         DF.Caption.Text
+    else
+      F.Question.Text := DF.Caption.Text;// 'File ' + IntToStr(i + 1);
     F.Length := 4;
     F.ResetData;
     CountsFieldList.AddItem(F);

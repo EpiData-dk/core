@@ -281,7 +281,11 @@ begin
           TmpResult := F.Ranges.InRange(F.AsValue[i]);
 
         if Assigned(F.ValueLabelSet) then
-          TmpResult := TmpResult or F.ValueLabelSet.ValueLabelExists[F.AsValue[i]];
+          if (F.IsMissing[i]) then
+            TmpResult := true
+          else
+            TmpResult := TmpResult or
+                         F.ValueLabelSet.ValueLabelExists[F.AsValue[i]];
 
         if not TmpResult
         then

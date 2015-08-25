@@ -342,12 +342,18 @@ begin
     result := ValueLabelSet.IsMissingValue[AsValue[Index]];
 end;
 
-procedure TEpiField.SetIsMissingValue(const index: Integer;
-  const AValue: boolean);
+function TEpiField.GetIsMaxMissingValue(const index: Integer): boolean;
 begin
-{  if Assigned(ValueLabelSet) then
-  // ValueLabelSet.;
-    ;          }
+  result := false;
+  if Assigned(ValueLabelSet) then
+    result := ValueLabelSet.IsMaxMissingValue[AsValue[Index]];
+end;
+
+function TEpiField.GetIs2MaxMissingValue(const index: Integer): boolean;
+begin
+  result := false;
+  if Assigned(ValueLabelSet) then
+    result := ValueLabelSet.Is2ndMaxMissingValue[AsValue[Index]];
 end;
 
 procedure TEpiField.CheckIndex(const index: integer);

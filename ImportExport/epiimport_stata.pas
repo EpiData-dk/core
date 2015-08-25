@@ -974,6 +974,7 @@ var
 begin
   // Read "llll", length of Characteristic.
   Len := ReadDWord;
+
   // For now - just skip that part.
   // TODO: Read Characteristics
   ReadAsString(Len);

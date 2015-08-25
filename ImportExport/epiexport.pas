@@ -48,7 +48,8 @@ implementation
 
 uses
   FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8,
-  epiexport_ddi, strutils, epicustombase, epidatafileutils, epiopenfile;
+  epiexport_ddi, strutils, epicustombase, epidatafileutils, epiopenfile,
+  epiexport_stata;
 
 
 { TEpiExport }
@@ -327,6 +328,7 @@ var
   MissingBaseNum: Cardinal;
   DFSettings: TEpiExportDatafileSettings;
   k: Integer;
+  Exporter: TEpiStataExport;
 
   procedure WriteMissingFloat(Const MisVal: Word);
   var
@@ -361,6 +363,14 @@ var
 
 begin
   Result := false;
+
+  if (StataSettings.Version >= dta13) then
+  begin
+    Exporter := TEpiStataExport.Create;
+    Result := Exporter.ExportStata(StataSettings);
+    Exporter.Free;
+    Exit;
+  end;
 
   for i := 0 to StataSettings.DatafileSettings.Count - 1 do
   begin
@@ -688,7 +698,7 @@ begin
             StataLongConst:
               begin
                 if IsMissing[CurRec] then
-                  WriteInt(DataStream, $7FFFFFFF)
+                  WriteInt(DataStream, $7fffffe5)
                 else if IsMissingValue[CurRec] then
                 begin
                   VLblSet := TEpiValueLabelSet(ValueLabelSet.FindCustomData('StataValueLabelsKey'));
@@ -1421,6 +1431,7 @@ var
   DocFile: TEpiDocumentFile;
   DFSettings: TEpiExportDatafileSettings;
   DF: TEpiDataFile;
+  j: Integer;
 begin
   Result := false;
 
@@ -1443,9 +1454,12 @@ begin
           DocFile := Settings.DocumentClass.Create;
           NewDoc := DocFile.CreateClonedDocument(Settings.Doc);
 
-          for DF in DocFile.Document.DataFiles do
-            if DF.Name <> DFSettings.DatafileName then
-              DF.Free;
+          for j := DocFile.Document.DataFiles.Count - 1 downto 0 do
+            begin
+              DF := DocFile.Document.DataFiles[j];
+              if DF.Name <> DFSettings.DatafileName then
+                DF.Free;
+            end;
 
           NewDoc.Relations.Clear;
 

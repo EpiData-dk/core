@@ -25,7 +25,8 @@ uses
   epiopenfile_cache, epitools_append, epitools_search, epirelates, epirights, 
   ufileassociation, epicustomrelations, epidatafilerelations, 
   epicustomrelations_helper, epigrouprelation_helper, 
-  epidatafilerelations_helper;
+  epidatafilerelations_helper, epiexport_stata, epifields_helper, 
+  epiimport_stata;
 
 implementation
 
