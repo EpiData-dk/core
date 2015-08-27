@@ -34,6 +34,8 @@ const
     'D'
   );
 
+  EpiEntryRightsAll = [eerRead..eerDelete];
+
 type
   TEpiGroupRight = class;
 
