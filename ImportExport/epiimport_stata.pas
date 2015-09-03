@@ -222,9 +222,9 @@ function TEpiStataImport.Read6Word: QWord;
 var
   Buffer: Array[0..7] of byte;
 begin
-  Buffer[0] := 0;
-  Buffer[1] := 0;
-  FStream.ReadBuffer(Buffer[2], 6);
+  Buffer[6] := 0;
+  Buffer[7] := 0;
+  FStream.ReadBuffer(Buffer[0], 6);
   Result := QWord(Buffer);
 end;
 
@@ -1019,13 +1019,13 @@ begin
               case FStataVersion of
                 dta13:
                   begin
-                    V := ReadDWord - 1;
-                    O := ReadDWord - 1;
+                    V := ReadDWord;
+                    O := ReadDWord;
                   end;
                 dta14:
                   begin
-                    V := ReadWord - 1;
-                    O := Read6Word - 1;
+                    V := ReadWord;
+                    O := Read6Word;
                   end;
               end;
               TEpiField(TmpField.FindCustomData(STATA_STRLS_VVAL)).AsInteger[CurRec] := V;
@@ -1143,8 +1143,13 @@ begin
       O := TEpiField(Field.FindCustomData(STATA_STRLS_OVAL)).AsInteger[j];
 
       // Empty StrLs content!
-      if (V < 0) and (O < 0) then
+      if (V = 0) and (O = 0) then
         Continue;
+
+      // Since Stata index's record by 1 and EpiData by 0, decrease O and V to
+      // match EpiData indexing.
+      Dec(V);
+      Dec(O);
 
       // The StrLs is unique and not seen before! It belongs to this field
       // and at this record no.
