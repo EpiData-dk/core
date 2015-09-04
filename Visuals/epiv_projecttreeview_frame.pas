@@ -179,7 +179,8 @@ type
   public
     procedure AddDocument(Const Doc: TEpiDocument);
     procedure RemoveDocument(Const Doc: TEpiDocument);
-    function CreateRelation(Const MasterRelation: TEpiMasterRelation): TEpiMasterRelation;
+    procedure MoveDocument(Const StartIndex, EndIndex: Integer);
+    function  CreateRelation(Const MasterRelation: TEpiMasterRelation): TEpiMasterRelation;
     procedure DeleteRelation(Relation: TEpiMasterRelation);
   public
     property  DocumentCount: Integer read GetDocumentCount;
@@ -1166,6 +1167,13 @@ procedure TEpiVProjectTreeViewFrame.RemoveDocument(const Doc: TEpiDocument);
 begin
   RemoveHooks(Doc);
   FDocumentList.Remove(Doc);
+  DoUpdateTree;
+end;
+
+procedure TEpiVProjectTreeViewFrame.MoveDocument(const StartIndex,
+  EndIndex: Integer);
+begin
+  FDocumentList.Move(StartIndex, EndIndex);
   DoUpdateTree;
 end;
 
