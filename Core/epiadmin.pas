@@ -157,6 +157,7 @@ type
     // User / Group related functions.
     function   NewUser: TEpiUser;
     function   NewGroup: TEpiGroup;
+    procedure  ResetAll;
 //    function   RequestPassword(Const RepeatCount: Byte): TRequestPasswordResult;
     property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     property   OnPassWord: TRequestPasswordEvent read FOnPassWord write FOnPassWord;
@@ -544,6 +545,12 @@ begin
   FGroups.ItemOwner := true;
   FGroups.Name := 'TEpiAdmin.Groups';
 
+  FAdminRelations := TEpiGroupRelationList.Create(Self);
+  FAdminRelations.ItemOwner := true;
+
+  ResetAll;
+
+  {
   FAdminsGroup := FGroups.NewGroup;
   FAdminsGroup.ManageRights := EpiAllManageRights;
   FAdminsGroup.Caption.TextLang['en'] := 'Admins';
@@ -553,7 +560,7 @@ begin
   FAdminRelations.ItemOwner := true;
 
   FAdminRelation := FAdminRelations.NewGroupRelation;
-  FAdminRelation.Group := FAdminsGroup;
+  FAdminRelation.Group := FAdminsGroup;  }
 
   FCrypter := TDCP_rijndael.Create(nil);
 
@@ -626,6 +633,20 @@ end;
 function TEpiAdmin.NewGroup: TEpiGroup;
 begin
   result := Groups.NewGroup;
+end;
+
+procedure TEpiAdmin.ResetAll;
+begin
+  Users.ClearAndFree;
+  Groups.ClearAndFree;
+
+  FAdminsGroup := FGroups.NewGroup;
+  FAdminsGroup.ManageRights := EpiAllManageRights;
+  FAdminsGroup.Caption.TextLang['en'] := 'Admins';
+  FAdminsGroup.Name := 'admins_group';
+
+  FAdminRelation := FAdminRelations.NewGroupRelation;
+  FAdminRelation.Group := FAdminsGroup;
 end;
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
