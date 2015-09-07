@@ -11,6 +11,16 @@ type
   TEpiCustomRelationItemList = class;
   TEpiCustomRelationListClass = class of TEpiCustomRelationItemList;
 
+  TEpiCustomRelationEvent = (
+    ecreAssignObject
+  );
+
+  TEpiCustomRelationAssignObjectData = record
+    ObjectName: String;
+    ObjectData: TEpiCustomItem;
+  end;
+
+
   { TEpiCustomRelationItem }
 
   TEpiCustomRelationItem = class(TEpiCustomItem)

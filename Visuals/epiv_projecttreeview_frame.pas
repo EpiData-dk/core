@@ -139,6 +139,9 @@ type
     procedure TitleChange(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    procedure DataFilesChangeHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
     procedure DataFileCaptionChange(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -146,6 +149,7 @@ type
   { Misc. }
   private
     PROJECTTREE_NODE_CUSTOMKEY: String;  //     = 'PROJECTTREE_NODE_CUSTOMKEY';
+    FCreatingRelation: Boolean;
     FUpdatingTree: Boolean;
     FDocumentList: TList;
     FFakeRoot: TEpiCustomItem;
@@ -776,6 +780,23 @@ begin
     VST.InvalidateNode(Node);
 end;
 
+procedure TEpiVProjectTreeViewFrame.DataFilesChangeHook(
+  const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  if (FCreatingRelation) then exit;
+  if not (Initiator is TEpiDataFiles) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if not (TEpiCustomChangeEventType(EventType) in [ecceAddItem, ecceDelItem]) then exit;
+
+  DoUpdateTree;
+
+  if TEpiCustomChangeEventType(EventType) = ecceAddItem then
+    TEpiDataFile(Data).RegisterOnChangeHook(@DataFileCaptionChange, true)
+  else
+    TEpiDataFile(Data).UnRegisterOnChangeHook(@DataFileCaptionChange);
+end;
+
 procedure TEpiVProjectTreeViewFrame.DataFileCaptionChange(
   const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
@@ -1020,6 +1041,7 @@ var
 begin
   Doc.RegisterOnChangeHook(@DocumentHook, true);
   Doc.Study.Title.RegisterOnChangeHook(@TitleChange, true);
+  Doc.DataFiles.RegisterOnChangeHook(@DataFilesChangeHook, true);
 
   for DF in Doc.DataFiles do
     DF.Caption.RegisterOnChangeHook(@DataFileCaptionChange, true);
@@ -1185,6 +1207,7 @@ var
   Node: PVirtualNode;
 begin
   if not EditStructure then exit;
+  FCreatingRelation := true;
 
   if Assigned(MasterRelation) then
   begin
@@ -1239,6 +1262,7 @@ begin
   // internal node data.
   VST.Expanded[ParentNode] := true;
   Result := NewRelation;
+  FCreatingRelation := false;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DeleteRelation(Relation: TEpiMasterRelation
