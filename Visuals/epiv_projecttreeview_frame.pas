@@ -145,6 +145,7 @@ type
 
   { Misc. }
   private
+    PROJECTTREE_NODE_CUSTOMKEY: String;  //     = 'PROJECTTREE_NODE_CUSTOMKEY';
     FUpdatingTree: Boolean;
     FDocumentList: TList;
     FFakeRoot: TEpiCustomItem;
@@ -179,7 +180,7 @@ type
   public
     procedure AddDocument(Const Doc: TEpiDocument);
     procedure RemoveDocument(Const Doc: TEpiDocument);
-    function CreateRelation(Const MasterRelation: TEpiMasterRelation): TEpiMasterRelation;
+    function  CreateRelation(Const MasterRelation: TEpiMasterRelation): TEpiMasterRelation;
     procedure DeleteRelation(Relation: TEpiMasterRelation);
   public
     property  DocumentCount: Integer read GetDocumentCount;
@@ -295,9 +296,6 @@ implementation
 
 uses
   Dialogs;
-
-const
-  PROJECTTREE_NODE_CUSTOMKEY     = 'PROJECTTREE_NODE_CUSTOMKEY';
 
 type
 
@@ -1039,8 +1037,14 @@ begin
 end;
 
 constructor TEpiVProjectTreeViewFrame.Create(TheOwner: TComponent);
+var
+  GUID: TGUID;
 begin
   inherited Create(TheOwner);
+
+  CreateGUID(GUID);
+  PROJECTTREE_NODE_CUSTOMKEY := GUIDToString(GUID);
+
   FRightMouseIsDown := false;
 
   // Document properties:
