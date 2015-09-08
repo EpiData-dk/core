@@ -335,10 +335,6 @@ type
     property Current: TEpiGroup read GetCurrent;
   end;
 
-  TEpiGroupRelationChangeEvent = (
-    egrceSetGroup
-  );
-
   { TEpiGroupRelation }
 
   TEpiGroupRelation = class(TEpiCustomRelationItem)
@@ -1218,7 +1214,7 @@ begin
   FGroup := AValue;
 
   ObserveReference(FGroup, 'Group');
-  DoChange(eegGroupRelations, Word(egrceSetGroup), Group);
+  DoSendAssignObjectChangeEvent('Group', Group);
 end;
 
 class function TEpiGroupRelation.GetRelationListClass: TEpiCustomRelationListClass;

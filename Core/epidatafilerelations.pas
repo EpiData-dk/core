@@ -163,6 +163,7 @@ begin
   if FDatafile = AValue then Exit;
   UpdateDataFileHook(FDatafile, AValue);
   FDatafile := AValue;
+  DoSendAssignObjectChangeEvent('DataFile', Datafile);
 end;
 
 procedure TEpiMasterRelation.FixupReferences(EpiClassType: TEpiCustomBaseClass;

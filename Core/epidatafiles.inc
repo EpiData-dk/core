@@ -978,6 +978,7 @@ begin
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FNotes := TEpiTranslatedTextWrapper.Create(Self, rsNotes, rsText);
   FGroupRights := TEpiGroupRights.Create(Self);
+  FGroupRights.ItemOwner := true;
   FVersion := '';
   FCreated := Now;
   FRecModifiedDate := Now;
@@ -1023,6 +1024,7 @@ end;
 
 destructor TEpiDataFile.Destroy;
 begin
+  FGroupRights.Free;
   FCaption.Free;
   FNotes.Free;
   FVersion := '';

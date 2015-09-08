@@ -19,6 +19,7 @@ type
     ObjectName: String;
     ObjectData: TEpiCustomItem;
   end;
+  PEpiCustomRelationAssignObjectData = ^TEpiCustomRelationAssignObjectData;
 
 
   { TEpiCustomRelationItem }
@@ -28,6 +29,7 @@ type
     FRelationList: TEpiCustomRelationItemList;
   protected
     class function GetRelationListClass: TEpiCustomRelationListClass; virtual; abstract;
+    procedure DoSendAssignObjectChangeEvent(Const ObjectName: string; Const Data: TEpiCustomItem);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -81,6 +83,20 @@ begin
 end;
 
 { TEpiCustomRelationItem }
+
+procedure TEpiCustomRelationItem.DoSendAssignObjectChangeEvent(
+  const ObjectName: string; const Data: TEpiCustomItem);
+var
+  EventData: PEpiCustomRelationAssignObjectData;
+begin
+  EventData := New(PEpiCustomRelationAssignObjectData);
+
+  EventData^.ObjectName := ObjectName;
+  EventData^.ObjectData := Data;
+
+  DoChange(eegRelations, Word(ecreAssignObject), EventData);
+  Dispose(EventData);
+end;
 
 constructor TEpiCustomRelationItem.Create(AOwner: TEpiCustomBase);
 begin
