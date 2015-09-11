@@ -18,8 +18,9 @@ type
     ValueFieldList: TEpiFields;
     CountsFieldList: TEpiFields;
     procedure DoCounts(Const DF: TEpiDataFile; Const DFIndex: integer);
+    procedure DoSumStats;
     procedure DoReport;
-    function  GetDataFileIndexInFileList(Const DataFile: TEpiDataFile): Integer;
+    function GetDataFileIndexInFileList(Const DataFile: TEpiDataFile): PtrInt;
   public
     constructor Create(ReportGenerator: TEpiReportGeneratorBase);
        override;
@@ -47,6 +48,9 @@ uses
 resourcestring
   rsDatafilesNotAssigned = 'DataFiles not assigned to report';
   rsFieldlistNotAssigned = 'Field names not assigned to report';
+
+const
+  COUNT_BY_ID_DOCUMENTFILE_KEY = 'COUNT_BY_ID_DOCUMENTFILE_KEY';
 
 { TEpiReportCountById }
 
@@ -93,7 +97,6 @@ begin
   // Fetch list of field in current DF with same names as in user specified
   // field list.
   LocalValueFields := TEpiFields.Create(nil);
-//  for i := 0 to FieldList.Count - 1 do
   for i := 0 to FieldNames.Count - 1 do
   begin
     F := DF.Fields.FieldByName[FieldNames[i]];
@@ -126,11 +129,67 @@ begin
   FreeAndNil(OrgSortingField);
 end;
 
+procedure TEpiReportCountById.DoSumStats;
+var
+  UniqueObs: Integer;
+  F: TEpiField;
+  HasAll: Boolean;
+  CombinedObs: Integer;
+  j: Integer;
+  MissingObs: array of Integer;
+  i: Integer;
+
+begin
+  UniqueObs := ResultDF.Size;
+  CombinedObs := 0;
+  SetLength(MissingObs, CountsFieldList.Count);
+
+  for i := 0 to ResultDF.Size  - 1 do
+  begin
+    HasAll := true;
+    for j := 0 to CountsFieldList.Count - 1 do
+    begin
+      F := CountsFieldList[j];
+
+      if F.IsMissing[i] then
+      begin
+        Inc(MissingObs[j]);
+        HasAll := false;
+        Break;
+      end;
+    end;
+
+    if HasAll then
+      Inc(CombinedObs);
+  end;
+
+  DoTableHeader('', 2, 3 + CountsFieldList.Count);
+
+  I := 0;
+  DoTableCell(0, I, 'Test');                              DoTableCell(1, PostInc(I), 'Result');
+  DoTableCell(0, I, 'Total Combinations');                DoTableCell(1, PostInc(I), IntToStr(UniqueObs));
+  DoTableCell(0, I, 'Present in all files');              DoTableCell(1, PostInc(I), IntToStr(CombinedObs));
+
+  for J := 0 to CountsFieldList.Count - 1 do
+  begin
+    F := CountsFieldList[J];
+    DoTableCell(0, I, 'File ' + IntToStr(PtrInt(F.FindCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY))) + ': ' +
+                      'Not found in ' + F.Question.Text + LineEnding +
+                      '  Percentage contained:');
+    DoTableCell(1, PostInc(I),
+      IntToStr(MissingObs[J]) + LineEnding +
+      FormatFloat('%1.2f', (UniqueObs - MissingObs[j]) / UniqueObs)
+    );
+  end;
+  DoTableFooter('');
+end;
+
 procedure TEpiReportCountById.DoReport;
 var
   S: String;
   i: Integer;
   j: Integer;
+  F: TEpiField;
 begin
   ResultDF.SortRecords(ValueFieldList);
 
@@ -142,15 +201,27 @@ begin
   for i := 1 to FieldNames.Count - 1 do
     S += ', ' + FieldNames[i];
 
-  DoLineText('');
-  DoLineText(IntToStr(ResultDF.Size) + ' different values found.');
-  DoLineText('');
+//  DoLineText('');
+//  DoLineText(IntToStr(ResultDF.Size) + ' different values found.');
+//  DoLineText('');
+
+
+  { Do a summerized table first }
+  DoSumStats;
 
   DoTableHeader('Field(s): ' + S, 1 + CountsFieldList.Count, 1 + ResultDF.Size);
 
   DoTableCell(0, 0, 'Value(s)', tcaLeftAdjust, [tcoRightBorder]);
+
   for i := 0 to CountsFieldList.Count - 1 do
-    DoTableCell(1 + i, 0, CountsFieldList[i].Question.Text, tcaLeftAdjust, [tcoRightBorder]);
+  begin
+    F := CountsFieldList[i];
+    DoTableCell(
+       1 + i, 0,
+      'File '  + IntToStr(PtrInt(F.FindCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY))) + ': ' + LineEnding +
+        F.Question.Text,
+      tcaLeftAdjust, [tcoRightBorder]);
+  end;
 
 
   for i := 0 to ResultDF.Size - 1 do
@@ -169,9 +240,9 @@ begin
 end;
 
 function TEpiReportCountById.GetDataFileIndexInFileList(
-  const DataFile: TEpiDataFile): Integer;
+  const DataFile: TEpiDataFile): PtrInt;
 begin
-  result := 1;
+  Result := 1;
 
   while Result < FDocumentFiles.Count do
   begin
@@ -267,9 +338,6 @@ begin
     ValueFieldList.AddItem(F);
   end;
 
-
-
-//  for i := 0 to Documents.Count - 1 do
   i := 0;
   for DF in DataFiles do
   begin
@@ -277,10 +345,9 @@ begin
     F.Name := 'Field' + IntToStr(i + 1);
 
     if Assigned(FDocumentFiles) then
-      F.Question.Text := 'File ' + IntToStr(GetDataFileIndexInFileList(DF)) + ':' + LineEnding +
-                         DF.Caption.Text
-    else
-      F.Question.Text := DF.Caption.Text;// 'File ' + IntToStr(i + 1);
+      F.AddCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY, TObject(GetDataFileIndexInFileList(DF)));
+
+    F.Question.Text := DF.Caption.Text;
     F.Length := 4;
     F.ResetData;
     CountsFieldList.AddItem(F);
