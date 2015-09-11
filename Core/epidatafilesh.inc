@@ -18,7 +18,6 @@ type
     function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor  Destroy; override;
     function    ItemClass: TEpiCustomItemClass; override;
     function    XMLName: string; override;
     function    NewDataFile: TEpiDataFile;

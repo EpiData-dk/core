@@ -37,11 +37,19 @@ const
   EpiEntryRightsAll = [eerRead..eerDelete];
 
 type
+  TEpiGroupRightEvent = (
+    egreSetGroup,
+    egreSetEntryRights
+  );
+
   TEpiGroupRight = class;
 
   { TEpiGroupRights }
 
   TEpiGroupRights = class(TEpiCustomList)
+    procedure AdminGroupChangeEvent(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   private
     function GetGroupRight(Index: integer): TEpiGroupRight;
   protected
@@ -51,6 +59,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    XMLName: string; override;
     function    NewGroupRight: TEpiGroupRight;
     function    ItemClass: TEpiCustomItemClass; override;
@@ -63,6 +72,10 @@ type
     FEntryRights: TEpiEntryRights;
     FGroup: TEpiGroup;
     procedure SetGroup(AValue: TEpiGroup);
+    procedure SetEntryRights(AValue: TEpiEntryRights);
+    procedure GroupHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   protected
     procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
                 ReferenceType: Byte; const ReferenceId: string); override;
@@ -79,7 +92,7 @@ type
   public
     { Porperties }
     property   Group: TEpiGroup read FGroup write SetGroup;
-    property   EntryRights: TEpiEntryRights read FEntryRights write FEntryRights;
+    property   EntryRights: TEpiEntryRights read FEntryRights write SetEntryRights;
   end;
 
 
@@ -89,6 +102,23 @@ uses
   typinfo, epidocument;
 
 { TEpiGroupRights }
+
+procedure TEpiGroupRights.AdminGroupChangeEvent(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  RO: TEpiCustomBase;
+begin
+  if (Sender <> Initiator) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (TEpiCustomChangeEventType(EventType) <> ecceAddItem) then Exit;
+
+  RO := RootOwner;
+  if (RO is TEpiDocument) and (TEpiDocument(RO).Loading) then exit;
+
+  writeln('NewGroup!');
+  NewGroupRight.Group := TEpiGroup(Data);
+end;
 
 function TEpiGroupRights.GetGroupRight(Index: integer): TEpiGroupRight;
 begin
@@ -111,13 +141,39 @@ begin
 end;
 
 constructor TEpiGroupRights.Create(AOwner: TEpiCustomBase);
+var
+  RO: TEpiCustomBase;
+  G: TEpiGroup;
+  GR: TEpiGroupRight;
 begin
   inherited Create(AOwner);
+
+  RO := RootOwner;
+  if RO is TEpiDocument then
+    with TEpiDocument(RO) do
+      begin
+        Admin.Groups.RegisterOnChangeHook(@AdminGroupChangeEvent, true);
+
+        if (not Loading) then
+          for G in Admin.Groups do
+          begin
+            GR := NewGroupRight;
+            GR.Group := G;
+            if G = Admin.Admins then
+              GR.EntryRights := EpiEntryRightsAll;
+          end;
+      end;
 end;
 
 destructor TEpiGroupRights.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TEpiGroupRights.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
 end;
 
 function TEpiGroupRights.XMLName: string;
@@ -153,11 +209,42 @@ end;
 { TEpiGroupRight }
 
 procedure TEpiGroupRight.SetGroup(AValue: TEpiGroup);
+var
+  Val: TEpiGroup;
 begin
   if FGroup = AValue then Exit;
+  Val := FGroup;
   FGroup := AValue;
-
   ObserveReference(FGroup, 'Group');
+
+  if Assigned(Val) then
+    Val.UnRegisterOnChangeHook(@GroupHook);
+  if Assigned(Group) then
+    Group.RegisterOnChangeHook(@GroupHook, true);
+
+  DoChange(eegRights, Word(egreSetGroup), Val);
+end;
+
+procedure TEpiGroupRight.SetEntryRights(AValue: TEpiEntryRights);
+var
+  Val: TEpiEntryRights;
+begin
+  if FEntryRights = AValue then Exit;
+  Val := FEntryRights;
+  FEntryRights := AValue;
+  DoChange(eegRights, Word(egreSetEntryRights), @Val);
+end;
+
+procedure TEpiGroupRight.GroupHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (Initiator <> Group) then exit;
+  if (EventGroup <> eegAdmin) then exit;
+  if (TEpiAdminChangeEventType(EventType) <> eaceGroupSetManageRights) then exit;
+
+  if not (earViewData in Group.ManageRights) then
+    EntryRights := [];
 end;
 
 procedure TEpiGroupRight.FixupReferences(EpiClassType: TEpiCustomBaseClass;

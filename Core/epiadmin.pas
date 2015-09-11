@@ -24,6 +24,7 @@ type
   TEpiManagerRight = (
     // Project Content Design:
     earDefineProject,           // Structural CRUD in Datafile, Valuelabels, Study Info, etc. related to project management but not data.
+    earPrepareDoubleEntry,      // Single right for allowing prepare double entry
     earTranslate,               // May change all TEpiTranslatedText objects
 
     // Assign Project Rights:
@@ -34,8 +35,10 @@ type
     earPassword,                // May change password for users.
 
     // Data Access:
-    earExtentendedData,         // Export, pack
-    earViewData                 // Can view Data
+    earExport,                  // Export project AND Import project into other projects.
+    earExtentendedData,         // Pac, Append
+    earViewData,                // Can view Data
+    earReport                   // Can run reports.
   );
   TEpiManagerRights = set of TEpiManagerRight;
 
@@ -43,28 +46,34 @@ const
   EpiManagerRightCaptions: array[TEpiManagerRight] of string =
     (
       '&Define Project',
+      'Prepare &Double Entry',
       '&Translate Project',
       'Manage &Groups',
       'Manage &Users',
       'Reset &Password',
-      '&Extended Data',
-      '&View Data'
+      '&Export Data',
+      'E&xtended Data',
+      '&View Data',
+      '&Reports'
     );
 
   EpiManagerRightCaptionsShort: array[TEpiManagerRight] of string =
     ( 'D',
+      'DE',
       'T',
       'G',
       'U',
       'P',
       'E',
-      'V'
+      'Ex',
+      'V',
+      'R'
     );
 
 
 
   EpiManageRightFirst = earDefineProject;
-  EpiManageRightLast  = earViewData;
+  EpiManageRightLast  = earReport;
 
   EpiAllManageRights: TEpiManagerRights =
     [EpiManageRightFirst..EpiManageRightLast];
@@ -344,6 +353,9 @@ type
     function GetGroupRelations: TEpiGroupRelationList;
     function GetParentRelation: TEpiGroupRelation;
     procedure SetGroup(AValue: TEpiGroup);
+    procedure GroupHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   protected
     class function GetRelationListClass: TEpiCustomRelationListClass; override;
     procedure ReferenceDestroyed(Item: TEpiCustomItem; PropertyName: shortstring
@@ -1211,10 +1223,38 @@ end;
 procedure TEpiGroupRelation.SetGroup(AValue: TEpiGroup);
 begin
   if FGroup = AValue then Exit;
+
+  if Assigned(Group) then
+    Group.UnRegisterOnChangeHook(@GroupHook);
+
   FGroup := AValue;
+
+  if Assigned(Group) then
+    Group.RegisterOnChangeHook(@GroupHook, true);
 
   ObserveReference(FGroup, 'Group');
   DoSendAssignObjectChangeEvent('Group', Group);
+end;
+
+procedure TEpiGroupRelation.GroupHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  GR: TEpiGroupRelation;
+  RightsDiff: TEpiManagerRights;
+begin
+  if (Initiator <> Group) then exit;
+  if (EventGroup <> eegAdmin) then exit;
+  if (TEpiAdminChangeEventType(EventType) <> eaceGroupSetManageRights) then Exit;
+
+  // if there is a change in the rights for this group, we need to remove
+  // rights from child groups that was removed from this group.
+  // We should not add managerrights, since this is a job for programs to
+  // implement.
+  RightsDiff := TEpiManagerRights(Data^) - Group.ManageRights;
+  if RightsDiff <> [] then
+    for GR in GroupRelations do
+      GR.Group.ManageRights := GR.Group.ManageRights - RightsDiff;
 end;
 
 class function TEpiGroupRelation.GetRelationListClass: TEpiCustomRelationListClass;
@@ -1249,7 +1289,7 @@ procedure TEpiGroupRelation.ReferenceDestroyed(Item: TEpiCustomItem;
   PropertyName: shortstring);
 begin
   case PropertyName of
-    'Group': FGroup := nil;
+    'Group': Group := nil;
   end;
 
   inherited ReferenceDestroyed(Item, PropertyName);

@@ -224,6 +224,8 @@ var
   Count: Integer;
 
 begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
   // Root = <EpiData>
   FLoading := true;
 

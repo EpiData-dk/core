@@ -42,7 +42,6 @@ type
     eegDataFiles,
     eegSections,
     eegFields,
-    eegGroups,
     eegHeading,
     // epirange.pas
     eegRange,
@@ -50,7 +49,9 @@ type
     eegValueLabel,
     eegValueLabelSet,
     // epirelations.pas
-    eegRelations
+    eegRelations,
+    // epirights.pas
+    eegRights
     );
 
   // ecce = Epi Custom Change Event
@@ -76,7 +77,11 @@ type
     Data: Pointer                     // Data associated with the event
   ) of object;
 
-  TEpiCustomBaseState = set of (ebsDestroying, ebsUpdating);
+  TEpiCustomBaseState = set of (
+    ebsDestroying,     // Set on BeforeDestruction when freeing an object
+    ebsUpdating,       // UNKNOWN???
+    ebsLoading         // Set on loading from XML file.
+  );
 
   TEpiCoreException = class (Exception);
 
