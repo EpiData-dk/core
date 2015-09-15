@@ -29,9 +29,10 @@ type
       var aContinue: boolean;
       Data: Pointer = nil
     );
+    function DataFileItemMethod(InputItem: TEpiCustomRelationItem): TEpiCustomItem;
   public
-    function CreateOrderedItemsList: TEpiCustomList;
     function GetOrderedDataFiles: TEpiDataFiles;
+    function GetOrderedMasterRelations: TEpiDatafileRelationList;
     procedure OrderedWalk(Const CallBackMethod: TEpiDatafileRelationListCallBack;
       Data: Pointer = nil);
   end;
@@ -57,14 +58,20 @@ begin
     ExternalMethod(TEpiMasterRelation(Relation), Depth, Index, aContinue, ExternalData);
 end;
 
-function TEpiDataFileRelationItemListHelper.CreateOrderedItemsList: TEpiCustomList;
+function TEpiDataFileRelationItemListHelper.DataFileItemMethod(
+  InputItem: TEpiCustomRelationItem): TEpiCustomItem;
 begin
-  result := TEpiDatafiles.Create(nil);
+  result := TEpiMasterRelation(InputItem).Datafile;
 end;
 
 function TEpiDataFileRelationItemListHelper.GetOrderedDataFiles: TEpiDataFiles;
 begin
-  result := TEpiDataFiles(inherited GetOrderedItems);
+  result := TEpiDataFiles(inherited GetOrderedItems(TEpiDataFiles, @DataFileItemMethod));
+end;
+
+function TEpiDataFileRelationItemListHelper.GetOrderedMasterRelations: TEpiDatafileRelationList;
+begin
+  result := TEpiDatafileRelationList(inherited GetOrderedItems(TEpiDatafileRelationList));
 end;
 
 procedure TEpiDataFileRelationItemListHelper.OrderedWalk(

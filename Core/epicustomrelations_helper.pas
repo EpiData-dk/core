@@ -8,6 +8,9 @@ uses
   Classes, SysUtils, epicustombase, epicustomrelations;
 
 type
+  TEpiCustomRelationGetOrderedItem = function(
+    InputItem: TEpiCustomRelationItem
+  ): TEpiCustomItem of object;
 
   TEpiCustomRelationItemListCallBack = procedure(
     Const Relation: TEpiCustomRelationItem;
@@ -20,8 +23,11 @@ type
   { TEpiCustomRelationItemListHelper }
 
   TEpiCustomRelationItemListHelper = class helper for TEpiCustomRelationItemList
-    function CreateOrderedItemsList: TEpiCustomList;
-    function GetOrderedItems: TEpiCustomList;
+  private
+    function InternalGetOrderedItem(InputItem: TEpiCustomRelationItem): TEpiCustomItem;
+  public
+    function GetOrderedItems(ListClass: TEpiCustomListClass;
+      ItemMethod: TEpiCustomRelationGetOrderedItem = nil): TEpiCustomList;
     procedure OrderedWalk(Const CallBackMethod: TEpiCustomRelationItemListCallBack;
       Data: Pointer = nil);
     function IsMultiLeveled: boolean;     // Returns true if any top-level Master relation have a Detail relation.
@@ -35,19 +41,21 @@ uses
 
 { TEpiCustomRelationItemListHelper }
 
-function TEpiCustomRelationItemListHelper.CreateOrderedItemsList: TEpiCustomList;
+function TEpiCustomRelationItemListHelper.InternalGetOrderedItem(
+  InputItem: TEpiCustomRelationItem): TEpiCustomItem;
 begin
-  result := nil;
-  raise Exception.Create('TEpiCustomRelationItemListHelper.CreateOrderedItemsList not overriden!');
+  result := InputItem;
 end;
 
-function TEpiCustomRelationItemListHelper.GetOrderedItems: TEpiCustomList;
+function TEpiCustomRelationItemListHelper.GetOrderedItems(
+  ListClass: TEpiCustomListClass; ItemMethod: TEpiCustomRelationGetOrderedItem
+  ): TEpiCustomList;
 
   procedure BuildOrderedItems(Const Item: TEpiCustomRelationItem);
   var
     NewItem: TEpiCustomRelationItem;
   begin
-    result.AddItem(Item);
+    result.AddItem(ItemMethod(Item));
 
     for NewItem in Item.RelationList do
       BuildOrderedItems(NewItem);
@@ -56,7 +64,10 @@ function TEpiCustomRelationItemListHelper.GetOrderedItems: TEpiCustomList;
 var
   Item: TEpiCustomRelationItem;
 begin
-  result := CreateOrderedItemsList;
+  if not Assigned(ItemMethod) then
+    ItemMethod := @InternalGetOrderedItem;
+
+  result := ListClass.Create(nil);
   result.ItemOwner := false;
   result.Sorted := false;
 

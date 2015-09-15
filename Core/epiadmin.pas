@@ -28,7 +28,7 @@ type
     earTranslate,               // May change all TEpiTranslatedText objects
 
     // Assign Project Rights:
-    earGroups,                  // CRUD for Groups based on EpiData RBAC model AND Assign groups to sections!
+    earGroups,                  // CRUD for Groups based on EpiData RBAC model AND Assign GroupRights to datafiles.
 
     // User Management:
     earUsers,                   // CRUD for Users based on EpiData RBAC model.

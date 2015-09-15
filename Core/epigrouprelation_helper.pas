@@ -29,7 +29,6 @@ type
       Data: Pointer = nil
     );
   public
-    function CreateOrderedItemsList: TEpiCustomList;
     function GetOrderedItems: TEpiGroupRelationList;
     procedure OrderedWalk(Const CallBackMethod: TEpiGroupRelationListCallBack;
       Data: Pointer = nil);
@@ -54,14 +53,9 @@ begin
     ExternalMethod(TEpiGroupRelation(Relation), Depth, Index, aContinue, ExternalData);
 end;
 
-function TEpiGroupRelationItemListHelper.CreateOrderedItemsList: TEpiCustomList;
-begin
-  result := TEpiGroupRelationList.Create(nil);
-end;
-
 function TEpiGroupRelationItemListHelper.GetOrderedItems: TEpiGroupRelationList;
 begin
-  result := TEpiGroupRelationList(inherited GetOrderedItems);
+  result := TEpiGroupRelationList(inherited GetOrderedItems(TEpiGroupRelationList));
 end;
 
 procedure TEpiGroupRelationItemListHelper.OrderedWalk(

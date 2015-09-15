@@ -386,8 +386,9 @@ type
        EventType: Word; Data: Pointer);
     procedure   RegisterItem(Item: TEpiCustomItem);
     procedure   UnRegisterItem(Item: TEpiCustomItem);
-  protected
+  public
     constructor Create(AOwner: TEpiCustomBase); override;
+  protected
     function    GetCount: Integer; virtual;
     function    GetItems(Index: integer): TEpiCustomItem; virtual;
     procedure   SetItems(Index: integer; const AValue: TEpiCustomItem); virtual;
@@ -472,6 +473,7 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
+  TEpiCustomListClass = class of TEpiCustomList;
 
   { TEpiCustomListEnumerator }
 
