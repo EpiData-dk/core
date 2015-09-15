@@ -47,10 +47,10 @@ type
   { TEpiGroupRights }
 
   TEpiGroupRights = class(TEpiCustomList)
+  private
     procedure AdminGroupChangeEvent(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
-  private
     function GetGroupRight(Index: integer): TEpiGroupRight;
   protected
     procedure DoChange(const Initiator: TEpiCustomBase;
@@ -116,7 +116,6 @@ begin
   RO := RootOwner;
   if (RO is TEpiDocument) and (TEpiDocument(RO).Loading) then exit;
 
-  writeln('NewGroup!');
   NewGroupRight.Group := TEpiGroup(Data);
 end;
 
