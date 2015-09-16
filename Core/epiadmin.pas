@@ -84,7 +84,7 @@ type
   TEpiAdminChangeEventType = (
     // User related events:
     eaceUserSetFullName,
-    eaceUserSetPassword,   eaceUserSetGroup,
+    eaceUserSetPassword,
     eaceUserSetExpireDate, eaceUserSetLastLogin,
     // Group related events:
     eaceGroupSetManageRights,
