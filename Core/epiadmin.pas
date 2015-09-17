@@ -89,6 +89,7 @@ type
     // Group related events:
     eaceGroupSetManageRights,
     // Admin related events:
+    eaceAdminResetting,              // Data: nil  (Send right before all users/groups are freed!)
     eaceAdminLoginSuccessfull,       // Data: TEpiUser = the authenticated user.
     eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
     eaceAdminIncorrectPassword,      // Data: string   = the incorrect login name
@@ -556,9 +557,6 @@ begin
   FAdminRelations := TEpiGroupRelationList.Create(Self);
   FAdminRelations.ItemOwner := true;
 
-  ResetAll;
-
-  {
   FAdminsGroup := FGroups.NewGroup;
   FAdminsGroup.ManageRights := EpiAllManageRights;
   FAdminsGroup.Caption.TextLang['en'] := 'Admins';
@@ -566,9 +564,8 @@ begin
 
   FAdminRelations := TEpiGroupRelationList.Create(Self);
   FAdminRelations.ItemOwner := true;
-
   FAdminRelation := FAdminRelations.NewGroupRelation;
-  FAdminRelation.Group := FAdminsGroup;  }
+  FAdminRelation.Group := FAdminsGroup;
 
   FCrypter := TDCP_rijndael.Create(nil);
 
@@ -644,17 +641,17 @@ begin
 end;
 
 procedure TEpiAdmin.ResetAll;
+var
+  i: Integer;
 begin
+  DoChange(eegAdmin, Word(eaceAdminResetting), nil);
+
   Users.ClearAndFree;
-  Groups.ClearAndFree;
-
-  FAdminsGroup := FGroups.NewGroup;
-  FAdminsGroup.ManageRights := EpiAllManageRights;
-  FAdminsGroup.Caption.TextLang['en'] := 'Admins';
-  FAdminsGroup.Name := 'admins_group';
-
-  FAdminRelation := FAdminRelations.NewGroupRelation;
-  FAdminRelation.Group := FAdminsGroup;
+  for i := Groups.Count - 1 downto 0 do
+    if Groups[i] = Admins then
+      Continue
+    else
+      Groups[i].Free;
 end;
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
