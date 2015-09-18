@@ -285,7 +285,8 @@ begin
           raise EEpiPasswordCanceled.Create('');
       end;
 
-    {     LoadNode(Node, Root, 'Crypt', true);
+      {$IFNDEF EPI_ADMIN_NOCRYPT}
+      LoadNode(Node, Root, 'Crypt', true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
       MS := TMemoryStream.Create;
@@ -295,7 +296,8 @@ begin
       DeCrypter.DecryptStream(SS, MS, SS.Size);
 
       MS.Position := 0;
-      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);  }
+      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+      {$ENDIF}
     finally
       SS.Free;
       MS.Free;
@@ -417,7 +419,8 @@ begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  if false{ (Admin.Users.Count > 0) }then
+  {$IFNDEF EPI_ADMIN_NOCRYPT}
+  if (Admin.Users.Count > 0) then
   begin
     RootDoc := Result.FirstChild;
 
@@ -460,6 +463,7 @@ begin
       EnCrypter.Free;
     end;
   end;
+  {$ENDIF}
 end;
 
 function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;

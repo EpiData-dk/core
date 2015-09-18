@@ -26,10 +26,7 @@
         </Debugging>
       </Linking>
       <Other>
-        <CustomOptions Value="-dEPI_INTEGRITY_DEBUG1
--dEPI_TEST_LOAD
--dEPI_SAVE_STRING1
--dEPI_LOAD_METHOD"/>
+        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT"/>
       </Other>
     </CompilerOptions>
     <Version Major="2" Minor="1"/>
