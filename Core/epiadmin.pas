@@ -46,7 +46,7 @@ const
   EpiManagerRightCaptions: array[TEpiManagerRight] of string =
     (
       '&Define Project',
-      'Prepare &Double Entry',
+      'Prepare D&ouble Entry',
       '&Translate Project',
       'Manage &Groups',
       'Manage &Users',
@@ -59,13 +59,13 @@ const
 
   EpiManagerRightCaptionsShort: array[TEpiManagerRight] of string =
     ( 'D',
-      'DE',
+      'De',
       'T',
       'G',
       'U',
       'P',
       'E',
-      'ED',
+      'X',
       'V',
       'R'
     );
