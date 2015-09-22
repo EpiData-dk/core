@@ -58,7 +58,8 @@ const
     );
 
   EpiManagerRightCaptionsShort: array[TEpiManagerRight] of string =
-    ( 'D',
+    (
+      'D',
       'De',
       'T',
       'G',
@@ -70,6 +71,19 @@ const
       'R'
     );
 
+  EpiManagerRightHint: array[TEpiManagerRight] of string =
+    (
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      'Can export projects and allow import into other projects.',
+      '8',
+      '9',
+      '10'
+    );
 
 
   EpiManageRightFirst = earDefineProject;
