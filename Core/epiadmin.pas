@@ -481,7 +481,7 @@ begin
       Result := prSuccess
     else begin
       Result := prFailed;
-       DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
+      DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
     end;
   until (Result = prSuccess) or (Res = rprStopOnFail);
 
@@ -1012,7 +1012,7 @@ begin
   FPassword := '';
   FSalt := '';
   FExpireDate := 0;
-  FLastLogin := 0;
+  FLastLogin := MinDateTime;
   FCreated := Now;
   FModified := FCreated;
 end;
@@ -1042,7 +1042,11 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 
   FFullName   := LoadNodeString(Root, rsFullName);
-  FLastLogin  := LoadAttrDateTime(Root, rsLastLogin, '', 0, false);
+
+  // When loading the authenticated user, the LastLogin is set immediately, hence
+  // this user should not have loaded the last-login information from the XML.
+  if (FLastLogin = MinDateTime) then
+    FLastLogin  := LoadAttrDateTime(Root, rsLastLogin, '', 0, false);
   FExpireDate := LoadAttrDateTime(Root, rsExpireDate, '', 0, false);
 
   FCreated    := LoadAttrDateTime(Root, rsCreatedAttr, '', Now, false);
