@@ -99,7 +99,9 @@ type
     // User related events:
     eaceUserSetFullName,
     eaceUserSetPassword,
-    eaceUserSetExpireDate, eaceUserSetLastLogin,
+    eaceUserSetExpireDate,
+    eaceUserSetLastLogin,
+    eaceUserSetNotes,
     // Group related events:
     eaceGroupSetManageRights,
     // Admin related events:
@@ -252,6 +254,7 @@ type
     // - this gives approx. 2^32 different ways to store the same password.
     FSalt: string;
     FLogin: string;
+    FNotes: string;
     function GetAdmin: TEpiAdmin;
     function GetLogin: string;
     procedure SetExpireDate(const AValue: TDateTime);
@@ -260,6 +263,7 @@ type
     procedure SetLogin(AValue: string);
     procedure SetMasterPassword(const AValue: string);
     procedure SetPassword(const AValue: string);
+    procedure SetNotes(AValue: string);
   protected
     property  Salt: string read FSalt;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -286,6 +290,7 @@ type
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
     property   FullName: string read FFullName write SetFullName;
+    property   Notes: string read FNotes write SetNotes;
     property   Created: TDateTime read FCreated;
     property   Modified: TDateTime read FModified;
   end;
@@ -928,6 +933,16 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
 
+procedure TEpiUser.SetNotes(AValue: string);
+var
+  Val: String;
+begin
+  if FNotes = AValue then Exit;
+  Val := FNotes;
+  FNotes := AValue;
+  DoChange(eegAdmin, Word(eaceUserSetNotes), @Val);
+end;
+
 function TEpiUser.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 var
@@ -1041,7 +1056,8 @@ begin
   // read by now... only scrambled things need to be obtained now.
   inherited LoadFromXml(Root, ReferenceMap);
 
-  FFullName   := LoadNodeString(Root, rsFullName);
+  FFullName   := LoadNodeString(Root, rsFullName, '', false);
+  FNotes      := LoadNodeString(Root, rsNotes, '', false);
 
   // When loading the authenticated user, the LastLogin is set immediately, hence
   // this user should not have loaded the last-login information from the XML.
@@ -1063,7 +1079,10 @@ var
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  SaveTextContent(Result, rsFullName, FullName);
+  if (FullName <> '') then
+    SaveTextContent(Result, rsFullName, FullName);
+  if (Notes <> '') then
+    SaveTextContent(Result, rsNotes, Notes);
 
   if (LastLogin > 0) then
     SaveDomAttr(Result, rsLastLogin, LastLogin);
