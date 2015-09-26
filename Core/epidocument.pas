@@ -285,7 +285,7 @@ begin
           raise EEpiPasswordCanceled.Create('');
       end;
 
-      {$IFNDEF EPI_ADMIN_NOCRYPT}
+      {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
       LoadNode(Node, Root, 'Crypt', true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
@@ -419,7 +419,7 @@ begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
 
-  {$IFNDEF EPI_ADMIN_NOCRYPT}
+  {$IFNDEF EPI_ADMIN_NOCRYPT_SAVE}
   if (Admin.Users.Count > 0) then
   begin
     RootDoc := Result.FirstChild;
