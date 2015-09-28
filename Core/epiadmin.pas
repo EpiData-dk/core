@@ -53,7 +53,7 @@ const
       'Reset &Password',
       '&Export Data',
       'E&xtended Data',
-      '&View Data',
+      '&EntryClient Access',
       '&Reports'
     );
 
@@ -67,22 +67,26 @@ const
       'P',
       'E',
       'X',
-      'V',
+      'Ea',
       'R'
     );
 
   EpiManagerRightHint: array[TEpiManagerRight] of string =
     (
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
+      'Can manage fields/sections/heading, Valuelabels, Define Key.' + LineEnding +
+        'In general everything related to the structure of the project.',
+      'Can use the "Prepare Double Entry" tool',
+      'Allow the user to translate the captions of the project (Field/Section/Heading caption)' + LineEnding +
+        'Label part of the Valuelabels, etc.',
+      'Can add/delete new groups as a sub-group of users own group(s) and assign' + LineEnding +
+        'Manager/EntryClient Rights',
+      'Can add/delete other users in users own group or sub-groups',
+      'Can reset password for ALL users EXCEPT for the Admin group',
       'Can export projects and allow import into other projects.',
-      '8',
-      '9',
-      '10'
+      'Can the Append and Pack data tools',
+      'User is allowed to access data in EntryClient' + LineEnding +
+        'Seperate rights apply on dataform level',
+      'Can run reports'
     );
 
 

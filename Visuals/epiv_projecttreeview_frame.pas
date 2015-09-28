@@ -1360,6 +1360,7 @@ begin
   FShowHint := AValue;
 
   VST.ShowHint := FShowHint;
+  VST.HintMode := hmHint;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetShowRecordCount(AValue: boolean);
