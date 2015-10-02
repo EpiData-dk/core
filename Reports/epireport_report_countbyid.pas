@@ -178,7 +178,7 @@ begin
                       '  Percentage contained:');
     DoTableCell(1, PostInc(I),
       IntToStr(MissingObs[J]) + LineEnding +
-      FormatFloat('%1.2f', (UniqueObs - MissingObs[j]) / UniqueObs)
+      FloatToStrF(100 * (UniqueObs - MissingObs[j]) / UniqueObs, ffFixed, 2, 1)
     );
   end;
   DoTableFooter('');
