@@ -21,7 +21,7 @@ const
    rsCycle          = 'cycle';
    // Settings
    rsSettings        = 'Settings';
-//    rsScrambled       = 'Scrambled';
+    rsCapitalPassword = 'Password' deprecated;
     rsDateSep         = 'dateSeparator';
     rsTimeSep         = 'timeSeparator';
     rsDecSep          = 'decimalSeparator';

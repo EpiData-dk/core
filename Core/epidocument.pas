@@ -307,7 +307,10 @@ begin
   // XML Version 2:
   if (Version >= 2) then
   begin
-    PW := LoadAttrString(Root, rsPassword, '', false);
+    if (Version <= 3) then
+      PW := LoadAttrString(Root, rsCapitalPassword, '', false)
+    else
+      PW := LoadAttrString(Root, rsPassword, '', false);
 
     Count := 1;
     if (PW <> '') and (Assigned(OnPassword)) then
@@ -470,9 +473,9 @@ function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/2.0');
+  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/2.1');
   SaveDomAttr(Result, 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/2.0 http://www.epidata.dk/XML/2.0/epx.xsd');
+  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/2.1 http://www.epidata.dk/XML/2.1/epx.xsd');
   SaveDomAttr(Result, rsVersionAttr, Version);
   SaveDomAttr(Result, 'xml:lang', DefaultLang);
 
