@@ -13,7 +13,9 @@ uses
 
 type
 
-  TEpiDocumentChangeEvent = (edcePassword);
+  TEpiDocumentChangeEvent = (
+    edcePassword
+  );
 
   TEpiProgressType =
     (
