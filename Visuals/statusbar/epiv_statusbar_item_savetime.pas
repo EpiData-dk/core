@@ -47,7 +47,7 @@ var
   DiffTime: TDateTime;
 begin
   DiffTime := (Now - FLastSave);
-  FTimerLabel.Caption := TimeToStr(DiffTime);
+  FTimerLabel.Caption := FormatDateTime('HH:MM:SS', DiffTime);
 end;
 
 procedure TEpiVStatusBarItem_SaveTimer.Update(

@@ -37,7 +37,6 @@ type
     // Data Access:
     earExport,                  // Export project AND Import project into other projects.
     earExtentendedData,         // Pac, Append
-    earViewData,                // Can view Data
     earReport                   // Can run reports.
   );
   TEpiManagerRights = set of TEpiManagerRight;
@@ -53,7 +52,6 @@ const
       'Reset &Password',
       '&Export Data',
       'E&xtended Data',
-      '&EntryClient Access',
       '&Reports'
     );
 
@@ -67,7 +65,6 @@ const
       'P',
       'E',
       'X',
-      'Ea',
       'R'
     );
 
@@ -83,9 +80,7 @@ const
       'Can add/delete other users in users own group or sub-groups',
       'Can reset password for ALL users EXCEPT for the Admin group',
       'Can export projects and allow import into other projects.',
-      'Can the Append and Pack data tools',
-      'User is allowed to access data in EntryClient' + LineEnding +
-        'Seperate rights apply on dataform level',
+      'Can use the Append and Pack data tools',
       'Can run reports'
     );
 

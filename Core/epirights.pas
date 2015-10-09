@@ -73,9 +73,6 @@ type
     FGroup: TEpiGroup;
     procedure SetGroup(AValue: TEpiGroup);
     procedure SetEntryRights(AValue: TEpiEntryRights);
-    procedure GroupHook(const Sender: TEpiCustomBase;
-      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
   protected
     procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
                 ReferenceType: Byte; const ReferenceId: string); override;
@@ -216,11 +213,6 @@ begin
   FGroup := AValue;
   ObserveReference(FGroup, 'Group');
 
-  if Assigned(Val) then
-    Val.UnRegisterOnChangeHook(@GroupHook);
-  if Assigned(Group) then
-    Group.RegisterOnChangeHook(@GroupHook, true);
-
   DoChange(eegRights, Word(egreSetGroup), Val);
 end;
 
@@ -232,18 +224,6 @@ begin
   Val := FEntryRights;
   FEntryRights := AValue;
   DoChange(eegRights, Word(egreSetEntryRights), @Val);
-end;
-
-procedure TEpiGroupRight.GroupHook(const Sender: TEpiCustomBase;
-  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-begin
-  if (Initiator <> Group) then exit;
-  if (EventGroup <> eegAdmin) then exit;
-  if (TEpiAdminChangeEventType(EventType) <> eaceGroupSetManageRights) then exit;
-
-  if not (earViewData in Group.ManageRights) then
-    EntryRights := [];
 end;
 
 procedure TEpiGroupRight.FixupReferences(EpiClassType: TEpiCustomBaseClass;

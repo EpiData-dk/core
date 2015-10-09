@@ -32,7 +32,8 @@ uses
 
 procedure TEpiVStatusBarItem_RecordCount.DoUpdate;
 begin
-  FRecordsLabel.Caption := IntToStr(Statusbar.Datafile.Size);
+  if Assigned(Statusbar.Datafile) then
+    FRecordsLabel.Caption := IntToStr(Statusbar.Datafile.Size);
 end;
 
 procedure TEpiVStatusBarItem_RecordCount.Update(
@@ -41,7 +42,7 @@ begin
   inherited Update(Condition);
 
   case Condition of
-    sucDefault: ;
+    sucDefault: DoUpdate;
     sucDocFile: ;
     sucDataFile: DoUpdate;
     sucSelection: ;

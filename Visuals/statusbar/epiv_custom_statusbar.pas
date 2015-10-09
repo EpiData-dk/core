@@ -12,6 +12,7 @@ type
 
   TEpiVCustomStatusbarUpdateCondition = (
     sucDefault,     // Regular update requested from program
+    sucCustom,      // Specieal update performed by a descending class.
     sucDocFile,     // Updated docfile
     sucDataFile,    // Updated datafile
     sucSelection,   // Updated selection
@@ -218,7 +219,8 @@ begin
         Inc(ItemCount);
     end;
 
-  ResizableWidth := (ClientWidth - TotalFixedWidth - (FInterItemSpace * (ItemCount - 1))) div FResizableItemsCount;
+  if FResizableItemsCount > 0 then
+    ResizableWidth := (ClientWidth - TotalFixedWidth - (FInterItemSpace * (ItemCount - 1))) div FResizableItemsCount;
 
   for I := 0 to FItemList.Count - 1 do
     with TEpiVCustomStatusBarItem(FItemList[i]) do
