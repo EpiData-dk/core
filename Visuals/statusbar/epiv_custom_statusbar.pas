@@ -12,7 +12,6 @@ type
 
   TEpiVCustomStatusbarUpdateCondition = (
     sucDefault,     // Regular update requested from program
-    sucCustom,      // Specieal update performed by a descending class.
     sucDocFile,     // Updated docfile
     sucDataFile,    // Updated datafile
     sucSelection,   // Updated selection
@@ -199,6 +198,8 @@ begin
     FItemList[i].Free;
 
   FItemList.Clear;
+
+  EndAutoSizing;
 end;
 
 procedure TEpiVCustomStatusBar.Resize;
