@@ -294,7 +294,7 @@ end;
 constructor TEpiDetailRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  MaxRecordCount := 0;
+  MaxRecordCount := 1;
 end;
 
 destructor TEpiDetailRelation.Destroy;
