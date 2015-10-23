@@ -93,6 +93,7 @@ const
 
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
+      rsStatusbarContentString = 'StatusbarContentString';
      rsAfterRecordState = 'afterRecordState';
      rsSections        = 'Sections';
       rsSection         = 'Section';

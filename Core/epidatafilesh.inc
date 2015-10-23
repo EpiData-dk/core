@@ -3,7 +3,9 @@
 type
 
   TEpiDataFileChangeEventType = (
-    edceSize, edceRecordStatus
+    edceSize,                      // Size of datafile changed
+    edceRecordStatus,              // Status of record changed
+    edceStatusbarContentString     // Statusbar Content string changed
   );
 
   TEpiDataFilesEnumerator = class;
@@ -134,7 +136,9 @@ type
     FStructureModified: boolean;
     FStructureModifiedDate: TDateTime;
     FVersion:   string;
+    FStatusbarContentString: string;
     procedure   SetVersion(const AValue: string);
+    procedure   SetStatusbarContentString(AValue: string);
   public
     property    AfterRecordState: TEpiDataFileAfterRecordState read FAfterRecordState write FAfterRecordState;
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
@@ -146,6 +150,7 @@ type
     property    GroupRights: TEpiGroupRights read FGroupRights;                           // version 4
     property    StructureModifiedDate: TDateTime read FStructureModifiedDate write FStructureModifiedDate;
     property    Version: string read FVersion write SetVersion;
+    property    StatusbarContentString: string read FStatusbarContentString write SetStatusbarContentString;
 
   { Update Overrides}
   private

@@ -606,6 +606,16 @@ begin
   FVersion := AValue;
 end;
 
+procedure TEpiDataFile.SetStatusbarContentString(AValue: string);
+var
+  Val: String;
+begin
+  if FStatusbarContentString = AValue then Exit;
+  Val := FStatusbarContentString;
+  FStatusbarContentString := AValue;
+  DoChange(eegDataFiles, Word(edceStatusbarContentString), @Val);
+end;
+
 procedure TEpiDataFile.DoControlChange(const Initiator: TEpiCustomBase;
   EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
 var
@@ -894,6 +904,7 @@ begin
   SaveDomAttrEnum(Result, rsAfterRecordState, AfterRecordState, TypeInfo(TEpiDataFileAfterRecordState));
 
   SaveKeyFieldsToDom(Result);
+  SaveTextContent(Result, rsStatusbarContentString, FStatusbarContentString);
   if (EpiSaveMode = esmDatafile) then
     SaveRecordToDom(Result);
 end;
@@ -1102,6 +1113,8 @@ begin
   // Version 4:
   if LoadNode(Node, Root, rsGroupRights, false) then
     GroupRights.LoadFromXml(Node, ReferenceMap);
+
+  FStatusbarContentString := LoadNodeString(Root, rsStatusbarContentString, FStatusbarContentString, false);
 
   {$IFNDEF RELEASE}
   T1 := Now;

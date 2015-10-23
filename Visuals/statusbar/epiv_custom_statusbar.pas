@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, ExtCtrls, contnrs, epiopenfile,
-  epidatafiles, epicustombase;
+  epidatafiles, epicustombase, LMessages;
 
 type
 
@@ -43,6 +43,7 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     procedure   Update(Condition: TEpiVCustomStatusbarUpdateCondition = sucDefault);
+    procedure   IsShortCut(var Msg: TLMKey; var Handled: Boolean);
     property    InterItemSpace: Integer read FInterItemSpace write SetInterItemSpace;
     property    DocFile: TEpiDocumentFile read FDocFile write SetDocFile;
     property    Datafile: TEpiDataFile read FDatafile write SetDatafile;
@@ -58,6 +59,7 @@ type
     FStatusBar: TEpiVCustomStatusBar;
     FVisible: Boolean;
   protected
+    procedure  IsShortCut(var Msg: TLMKey; var Handled: Boolean); virtual;
     procedure  Update(Condition: TEpiVCustomStatusbarUpdateCondition); virtual;
     procedure  SetVisible(AValue: Boolean); virtual;
     property   Panel: TCustomPanel read FPanel;
@@ -165,6 +167,18 @@ begin
   Resize;
 end;
 
+procedure TEpiVCustomStatusBar.IsShortCut(var Msg: TLMKey; var Handled: Boolean
+  );
+var
+  I: Integer;
+begin
+  for I := 0 to FItemList.Count - 1 do
+  begin
+    TEpiVCustomStatusBarItem(FItemList[i]).IsShortCut(Msg, Handled);
+    if Handled then Exit;
+  end;
+end;
+
 procedure TEpiVCustomStatusBar.AddItem(StatusBarItem: TEpiVCustomStatusBarItem);
 begin
   // Code to side-by-side setting the items.
@@ -265,6 +279,12 @@ begin
 
   Panel.Visible := FVisible;
   Statusbar.Update(sucDefault);
+end;
+
+procedure TEpiVCustomStatusBarItem.IsShortCut(var Msg: TLMKey;
+  var Handled: Boolean);
+begin
+  Handled := false;
 end;
 
 procedure TEpiVCustomStatusBarItem.Update(
