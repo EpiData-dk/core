@@ -9,8 +9,6 @@ uses
 
 type
 
-  { TEpiVStatusBarItem_CycleNo }
-
   { TEpiVStatusBarItem_SaveTimer }
 
   TEpiVStatusBarItem_SaveTimer = class(TEpiVCustomStatusBarItem)
