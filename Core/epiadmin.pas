@@ -676,6 +676,9 @@ function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 var
   Elem: TDOMElement;
 begin
+  if Users.Count = 0 then
+    Exit(nil);
+
   Result := inherited SaveToDom(RootDoc);
 
   Elem := AdminRelation.SaveToDom(RootDoc);

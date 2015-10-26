@@ -491,7 +491,6 @@ begin
 
   SaveDomAttr(Result, rsCycle, CycleNo);
 
-
   // Version 4:
   if Admin.Users.Count > 0 then
     Admin.Users.PreSaveToDom(RootDoc, Result);
