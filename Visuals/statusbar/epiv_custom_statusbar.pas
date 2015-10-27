@@ -42,6 +42,7 @@ type
     procedure   Resize; override;
   public
     constructor Create(TheOwner: TComponent); override;
+    destructor  Destroy; override;
     procedure   Update(Condition: TEpiVCustomStatusbarUpdateCondition = sucDefault);
     procedure   IsShortCut(var Msg: TLMKey; var Handled: Boolean);
     property    InterItemSpace: Integer read FInterItemSpace write SetInterItemSpace;
@@ -65,9 +66,11 @@ type
     property   Panel: TCustomPanel read FPanel;
     property   Statusbar: TEpiVCustomStatusBar read FStatusBar;
   public
-    class function Caption: string;
+    class function Caption: string; virtual;
+    class function Name: string; virtual; abstract;
   public
     constructor Create(AStatusBar: TEpiVCustomStatusBar); virtual;
+    destructor  Destroy; override;
     function    GetPreferedWidth: Integer; virtual;
     property    Resizable: Boolean read FResizable write FResizable;
     property    Visible: Boolean read FVisible write SetVisible;
@@ -76,7 +79,7 @@ type
 
 
 procedure EpiV_RegisterCustomStatusBarItem(Const CustomStatusBarItemClass: TEpiVCustomStatusBarItemClass);
-function  EpiV_GetCustomStatusBarItems: TList;
+function  EpiV_GetCustomStatusBarItems: TStringList;
 
 implementation
 
@@ -84,18 +87,25 @@ uses
   Controls, Graphics;
 
 var
-  FCustomStatusBarItemList: TList = nil;
+  FCustomStatusBarItemList: TStringList = nil;
 
 procedure EpiV_RegisterCustomStatusBarItem(
   const CustomStatusBarItemClass: TEpiVCustomStatusBarItemClass);
 begin
   if (not Assigned(FCustomStatusBarItemList)) then
-    FCustomStatusBarItemList := TList.Create;
+    FCustomStatusBarItemList := TStringList.Create;
 
-  FCustomStatusBarItemList.Add(CustomStatusBarItemClass);
+  if FCustomStatusBarItemList.IndexOf(CustomStatusBarItemClass.Name) >= 0 then
+    Raise Exception.Create(
+      'Duplicate CustomStatusbarItemClass names:' + LineEnding +
+      ' Name:      ' + CustomStatusBarItemClass.Name + LineEnding +
+      ' ClassName: ' + CustomStatusBarItemClass.ClassName
+      );
+
+  FCustomStatusBarItemList.AddObject(CustomStatusBarItemClass.Name, TObject(CustomStatusBarItemClass));
 end;
 
-function EpiV_GetCustomStatusBarItems: TList;
+function EpiV_GetCustomStatusBarItems: TStringList;
 begin
   result := FCustomStatusBarItemList;
 end;
@@ -160,6 +170,12 @@ begin
   BevelOuter := bvNone;
 end;
 
+destructor TEpiVCustomStatusBar.Destroy;
+begin
+  Clear;
+  inherited Destroy;
+end;
+
 procedure TEpiVCustomStatusBar.Update(
   Condition: TEpiVCustomStatusbarUpdateCondition);
 begin
@@ -212,6 +228,7 @@ begin
     FItemList[i].Free;
 
   FItemList.Clear;
+  FResizableItemsCount := 0;
 
   EndAutoSizing;
 end;
@@ -265,6 +282,12 @@ begin
 
   FResizable := false;
   FVisible   := true;
+end;
+
+destructor TEpiVCustomStatusBarItem.Destroy;
+begin
+  FPanel.Free;
+  inherited Destroy;
 end;
 
 function TEpiVCustomStatusBarItem.GetPreferedWidth: Integer;

@@ -25,6 +25,9 @@ type
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
+    class function Caption: string; override;
+    class function Name: string; override;
+  public
     constructor Create(AStatusBar: TEpiVCustomStatusBar); override;
     destructor Destroy; override;
     function GetPreferedWidth: Integer; override;
@@ -40,7 +43,6 @@ uses
 procedure TEpiVStatusBarItem_CurrentUser.UpdateHooks;
 begin
   FDocument.RegisterOnChangeHook(@DocumentChangeEvent, false);
-//  FDocument.Admin;
 end;
 
 procedure TEpiVStatusBarItem_CurrentUser.DoUpdate;
@@ -98,6 +100,16 @@ begin
     sucSelection: ;
     sucSave: ;
   end;
+end;
+
+class function TEpiVStatusBarItem_CurrentUser.Caption: string;
+begin
+  Result := 'Encryption/Login Information';
+end;
+
+class function TEpiVStatusBarItem_CurrentUser.Name: string;
+begin
+  result := 'CurrentUser';
 end;
 
 constructor TEpiVStatusBarItem_CurrentUser.Create(

@@ -19,6 +19,9 @@ type
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
+    class function Caption: string; override;
+    class function Name: string; override;
+  public
     constructor Create(AStatusBar: TEpiVCustomStatusBar); override;
     function GetPreferedWidth: Integer; override;
   end;
@@ -47,6 +50,16 @@ begin
     sucSelection: ;
     sucSave: DoUpdate;
   end;
+end;
+
+class function TEpiVStatusBarItem_CycleNo.Caption: string;
+begin
+  Result := 'Current Cycle Number';
+end;
+
+class function TEpiVStatusBarItem_CycleNo.Name: string;
+begin
+  result := 'CycleNo';
 end;
 
 constructor TEpiVStatusBarItem_CycleNo.Create(AStatusBar: TEpiVCustomStatusBar);

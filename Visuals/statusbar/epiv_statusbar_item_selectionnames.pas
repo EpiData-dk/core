@@ -23,6 +23,9 @@ type
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
+    class function Caption: string; override;
+    class function Name: string; override;
+  public
     constructor Create(AStatusBar: TEpiVCustomStatusBar); override;
     destructor Destroy; override;
     function GetPreferedWidth: Integer; override;
@@ -105,6 +108,16 @@ begin
       end;
     sucSave: ;
   end;
+end;
+
+class function TEpiVStatusBarItem_SelectionNames.Caption: string;
+begin
+  Result := 'Selected Items';
+end;
+
+class function TEpiVStatusBarItem_SelectionNames.Name: string;
+begin
+  result := 'SelectedNames';
 end;
 
 constructor TEpiVStatusBarItem_SelectionNames.Create(

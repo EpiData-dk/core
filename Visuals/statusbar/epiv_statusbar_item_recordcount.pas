@@ -19,6 +19,9 @@ type
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
+    class function Caption: string; override;
+    class function Name: string; override;
+  public
     constructor Create(AStatusBar: TEpiVCustomStatusBar); override;
     function GetPreferedWidth: Integer; override;
   end;
@@ -47,6 +50,16 @@ begin
     sucDataFile: DoUpdate;
     sucSelection: ;
   end;
+end;
+
+class function TEpiVStatusBarItem_RecordCount.Caption: string;
+begin
+  Result := 'Total count of Records';
+end;
+
+class function TEpiVStatusBarItem_RecordCount.Name: string;
+begin
+  Result := 'RecourdCount';
 end;
 
 constructor TEpiVStatusBarItem_RecordCount.Create(
