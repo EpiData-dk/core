@@ -61,9 +61,7 @@ type
     FVisible: Boolean;
   protected
     procedure  IsShortCut(var Msg: TLMKey; var Handled: Boolean); virtual;
-    procedure  Update(Condition: TEpiVCustomStatusbarUpdateCondition); virtual;
     procedure  SetVisible(AValue: Boolean); virtual;
-    property   Panel: TCustomPanel read FPanel;
     property   Statusbar: TEpiVCustomStatusBar read FStatusBar;
   public
     class function Caption: string; virtual;
@@ -72,7 +70,9 @@ type
     constructor Create(AStatusBar: TEpiVCustomStatusBar); virtual;
     destructor  Destroy; override;
     function    GetPreferedWidth: Integer; virtual;
+    procedure   Update(Condition: TEpiVCustomStatusbarUpdateCondition); virtual;
     property    Resizable: Boolean read FResizable write FResizable;
+    property    Panel: TCustomPanel read FPanel;
     property    Visible: Boolean read FVisible write SetVisible;
   end;
   TEpiVCustomStatusBarItemClass = class of TEpiVCustomStatusBarItem;
