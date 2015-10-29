@@ -498,7 +498,7 @@ var
   i: Integer;
 begin
   inherited Create(TheOwner);
-  FShowAllRecords := true;
+  FShowAllRecords := false;
   FUpdateCount := 0;
   FReverseIndex := nil;
   FDataFile := DataFile;
