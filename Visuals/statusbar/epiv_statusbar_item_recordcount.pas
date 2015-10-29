@@ -13,9 +13,12 @@ type
 
   TEpiVStatusBarItem_RecordCount = class(TEpiVCustomStatusBarItem)
   private
+    FExampleValue: Integer;
     FLabel: TLabel;
     FRecordsLabel: TLabel;
-    procedure DoUpdate;
+    procedure MouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+    procedure DoUpdate(Example: Boolean = false);
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
@@ -33,10 +36,30 @@ uses
 
 { TEpiVStatusBarItem_RecordCount }
 
-procedure TEpiVStatusBarItem_RecordCount.DoUpdate;
+procedure TEpiVStatusBarItem_RecordCount.MouseWheel(Sender: TObject;
+  Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint;
+  var Handled: Boolean);
 begin
-  if Assigned(Statusbar.Datafile) then
-    FRecordsLabel.Caption := IntToStr(Statusbar.Datafile.Size);
+  if WheelDelta > 0 then
+    Inc(FExampleValue)
+  else
+    Dec(FExampleValue);
+
+  if (FExampleValue < 0) then
+    FExampleValue := 0;
+  if (FExampleValue > 9999) then
+    FExampleValue := 9999;
+
+  DoUpdate(true);
+end;
+
+procedure TEpiVStatusBarItem_RecordCount.DoUpdate(Example: Boolean);
+begin
+  if Example then
+    FRecordsLabel.Caption := IntToStr(FExampleValue)
+  else
+    if Assigned(Statusbar.Datafile) then
+      IntToStr(Statusbar.Datafile.Size);
 end;
 
 procedure TEpiVStatusBarItem_RecordCount.Update(
@@ -49,6 +72,15 @@ begin
     sucDocFile: ;
     sucDataFile: DoUpdate;
     sucSelection: ;
+    sucSave: ;
+    sucExample:
+      begin
+        FExampleValue := 42;
+        Panel.OnMouseWheel := @MouseWheel;
+        FLabel.OnMouseWheel := @MouseWheel;
+        FRecordsLabel.OnMouseWheel := @MouseWheel;
+        DoUpdate(true);
+      end;
   end;
 end;
 

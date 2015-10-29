@@ -17,6 +17,7 @@ type
     FNamesLabel: TLabel;
     procedure AssignHooks;
     procedure DoUpdate;
+    procedure DoExample;
     procedure ItemChangeHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -68,6 +69,11 @@ begin
   FNamesLabel.Caption := S;
 end;
 
+procedure TEpiVStatusBarItem_SelectionNames.DoExample;
+begin
+  FNamesLabel.Caption := 'V1, V2, V3';
+end;
+
 procedure TEpiVStatusBarItem_SelectionNames.ItemChangeHook(
   const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
@@ -107,6 +113,8 @@ begin
         DoUpdate;
       end;
     sucSave: ;
+    sucExample:
+      DoExample;
   end;
 end;
 

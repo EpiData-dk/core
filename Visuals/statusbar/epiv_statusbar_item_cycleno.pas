@@ -13,9 +13,12 @@ type
 
   TEpiVStatusBarItem_CycleNo = class(TEpiVCustomStatusBarItem)
   private
+    FExampleValue: Integer;
     FLabel: TLabel;
     FCycleNoLabel: TLabel;
-    procedure DoUpdate;
+    procedure DoUpdate(Example: boolean = false);
+    procedure MouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
@@ -33,9 +36,29 @@ uses
 
 { TEpiVStatusBarItem_CycleNo }
 
-procedure TEpiVStatusBarItem_CycleNo.DoUpdate;
+procedure TEpiVStatusBarItem_CycleNo.DoUpdate(Example: boolean);
 begin
-  FCycleNoLabel.Caption := IntToStr(Statusbar.DocFile.Document.CycleNo);
+  if Example then
+    FCycleNoLabel.Caption := IntToSTr(FExampleValue)
+  else
+    FCycleNoLabel.Caption := IntToStr(Statusbar.DocFile.Document.CycleNo);
+end;
+
+procedure TEpiVStatusBarItem_CycleNo.MouseWheel(Sender: TObject;
+  Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  if WheelDelta > 0 then
+    Inc(FExampleValue)
+  else
+    Dec(FExampleValue);
+
+  if (FExampleValue < 0) then
+    FExampleValue := 0;
+  if (FExampleValue > 9999) then
+    FExampleValue := 9999;
+
+  DoUpdate(true);
 end;
 
 procedure TEpiVStatusBarItem_CycleNo.Update(
@@ -49,6 +72,14 @@ begin
     sucDataFile: ;
     sucSelection: ;
     sucSave: DoUpdate;
+    sucExample:
+      begin
+        FExampleValue := 9;
+        Panel.OnMouseWheel  := @MouseWheel;
+        FLabel.OnMouseWheel := @MouseWheel;
+        FCycleNoLabel.OnMouseWheel := @MouseWheel;
+        DoUpdate(true);
+      end;
   end;
 end;
 

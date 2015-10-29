@@ -66,6 +66,11 @@ begin
     sucDataFile: ;
     sucSelection: ;
     sucSave: FLastSave := Now;
+    sucExample:
+      begin
+        Update(sucDocFile);
+        DoUpdate;
+      end;
   end;
 end;
 

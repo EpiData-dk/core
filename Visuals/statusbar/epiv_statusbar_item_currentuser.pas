@@ -17,11 +17,17 @@ type
     FDocument: TEpiDocument;
     FLabel: TLabel;
     FLoginLabel: TLabel;
+    FExampleType: byte;
     procedure UpdateHooks;
     procedure DoUpdate;
+    procedure BumpExampleType;
+    procedure DoExample;
     procedure DocumentChangeEvent(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
+    procedure MouseClick(Sender: TObject);
+    procedure MouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
@@ -39,6 +45,20 @@ uses
   Controls;
 
 { TEpiVStatusBarItem_CurrentUser }
+
+procedure TEpiVStatusBarItem_CurrentUser.MouseClick(Sender: TObject);
+begin
+  BumpExampleType;
+  DoExample;
+end;
+
+procedure TEpiVStatusBarItem_CurrentUser.MouseWheel(Sender: TObject;
+  Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  BumpExampleType;
+  DoExample;
+end;
 
 procedure TEpiVStatusBarItem_CurrentUser.UpdateHooks;
 begin
@@ -71,6 +91,37 @@ begin
   end;
 end;
 
+procedure TEpiVStatusBarItem_CurrentUser.BumpExampleType;
+begin
+  Inc(FExampleType);
+  if (FExampleType > 2) then
+    FExampleType := 0;
+end;
+
+procedure TEpiVStatusBarItem_CurrentUser.DoExample;
+begin
+  Case FExampleType of
+    0:
+      begin
+        FLabel.Visible      := True;
+        FLoginLabel.Visible := True;
+        FLabel.Caption      := 'Login: ';
+        FLoginLabel.Caption := 'admin';
+      end;
+    1:
+      begin
+        FLabel.Visible      := True;
+        FLoginLabel.Visible := false;
+        FLabel.Caption      := 'Encrypted';
+      end;
+    2:
+      begin
+        FLabel.Visible      := false;
+        FLoginLabel.Visible := false;
+      end;
+  end;
+end;
+
 procedure TEpiVStatusBarItem_CurrentUser.DocumentChangeEvent(
   const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
@@ -99,6 +150,15 @@ begin
     sucDataFile: ;
     sucSelection: ;
     sucSave: ;
+    sucExample:
+      begin
+        FExampleType := 0;
+        Panel.OnMouseWheel := @MouseWheel;
+        Panel.OnClick := @MouseClick;
+        FLabel.OnMouseWheel := @MouseWheel;
+        FLoginLabel.OnMouseWheel := @MouseWheel;
+        DoExample;
+      end;
   end;
 end;
 

@@ -15,7 +15,8 @@ type
     sucDocFile,     // Updated docfile
     sucDataFile,    // Updated datafile
     sucSelection,   // Updated selection
-    sucSave         // Project was saved
+    sucSave,        // Project was saved
+    sucExample      // All items should display an example, not using the statusbar/datafile, etc...
   );
 
   TEpiVCustomStatusBarItem = class;
@@ -56,7 +57,7 @@ type
   TEpiVCustomStatusBarItem = class
   private
     FResizable: Boolean;
-    FPanel: TCustomPanel;
+    FPanel: TPanel;
     FStatusBar: TEpiVCustomStatusBar;
     FVisible: Boolean;
   protected
@@ -72,7 +73,7 @@ type
     function    GetPreferedWidth: Integer; virtual;
     procedure   Update(Condition: TEpiVCustomStatusbarUpdateCondition); virtual;
     property    Resizable: Boolean read FResizable write FResizable;
-    property    Panel: TCustomPanel read FPanel;
+    property    Panel: TPanel read FPanel;
     property    Visible: Boolean read FVisible write SetVisible;
   end;
   TEpiVCustomStatusBarItemClass = class of TEpiVCustomStatusBarItem;
@@ -271,7 +272,7 @@ end;
 
 constructor TEpiVCustomStatusBarItem.Create(AStatusBar: TEpiVCustomStatusBar);
 begin
-  FPanel := TCustomPanel.Create(StatusBar);
+  FPanel := TPanel.Create(StatusBar);
   with FPanel do
     begin
       Color := clWhite;
