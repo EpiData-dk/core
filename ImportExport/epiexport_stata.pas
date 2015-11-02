@@ -38,7 +38,7 @@ type
     function EncodeString(Const S: String): string;
 
   private
-    procedure WriteStartTag(Const TagName: string);
+    procedure WriteStartTag(Const TagName: string; MapIndex: Integer = -1);
     procedure WriteEndTag(Const TagName: string);
 
     // Write text content in tag
@@ -58,6 +58,7 @@ type
 
   private
     { CustomData Helpers }
+    FMapOffsets: Array[0..13] of QWord;
     function MissingDouble(Const MisVal: Word): Double;
     procedure SetupFields;
     procedure SetupValueLabels;
@@ -99,8 +100,11 @@ begin
             );
 end;
 
-procedure TEpiStataExport.WriteStartTag(const TagName: string);
+procedure TEpiStataExport.WriteStartTag(const TagName: string; MapIndex: Integer
+  );
 begin
+  if (MapIndex >= 0) then
+    FMapOffsets[MapIndex] := FStream.Position;
   WriteAsString('<' + TagName + '>');
 end;
 
@@ -147,8 +151,11 @@ begin
 end;
 
 procedure TEpiStataExport.Write6Word(Value: QWord);
+var
+  Buffer: array[0..7] of byte absolute Value;
 begin
-  FStream.WriteQWord(Value);
+  FStream.WriteBuffer(Buffer[0], 6);
+//  FStream.WriteQWord(Value);
 end;
 
 procedure TEpiStataExport.WriteQWord(Value: QWord);
@@ -242,8 +249,7 @@ begin
       ftString,
       ftUpperString:
         begin
-          if (F.MaxByteLength > 2045)
-          then
+          if (F.MaxByteLength > 2045) then
             StataType := StataStrLsConstXML
           else
             StataType := F.Length;
@@ -355,7 +361,7 @@ var
   S: String;
 begin
   // HEADER
-  WriteStartTag('header');
+  WriteStartTag('header', 0);
 
   // <release>
   WriteStartTag('release');
@@ -413,36 +419,36 @@ end;
 
 procedure TEpiStataExport.WriteMap;
 begin
-  WriteStartTag('map');
+  WriteStartTag('map', 1);
 
   //1.       <stata_data>, definitionally 0
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[0]);
   //2.       <map>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[1]);
   //3.       <variable_types>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[2]);
   // 4.       <varnames>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[3]);
   // 5.       <sortlist>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[4]);
   // 6.       <formats>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[5]);
   // 7.       <value_label_names>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[6]);
   // 8.       <variable_labels>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[7]);
   // 9.       <characteristics>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[8]);
   // 10.       <data>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[9]);
   // 11.       <strls>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[10]);
   // 12.       <value_labels>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[11]);
   // 13.       </stata_data>
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[12]);
   // 14.       end-of-file
-  WriteQWord(0);
+  WriteQWord(FMapOffsets[13]);
 
   WriteEndTag('map');
 end;
@@ -451,7 +457,7 @@ procedure TEpiStataExport.WriteVariableTypes;
 var
   F: TEpiField;
 begin
-  WriteStartTag('variable_types');
+  WriteStartTag('variable_types', 2);
 
   for F in FDataFile.Fields do
     WriteWord(StataContent(F)^.Typ);
@@ -466,7 +472,7 @@ var
   S: String;
   FieldNames: TStrings;
 begin
-  WriteStartTag('varnames');
+  WriteStartTag('varnames', 3);
 
   case FStataVersion of
     //  32 Bytes (* 4 for UTF-8) and a terminal #0
@@ -500,7 +506,7 @@ procedure TEpiStataExport.WriteSortList;
 var
   i: Integer;
 begin
-  WriteStartTag('sortlist');
+  WriteStartTag('sortlist', 4);
 
   for i := 1 to FDataFile.Fields.Count + 1 do
     WriteWord(0);
@@ -515,7 +521,7 @@ var
   F: TEpiField;
 begin
   // <format>
-  WriteStartTag('formats');
+  WriteStartTag('formats', 5);
 
   case FStataVersion of
     dta13: Len := 49;
@@ -559,7 +565,7 @@ var
   F: TEpiField;
   S: String;
 begin
-  WriteStartTag('value_label_names');
+  WriteStartTag('value_label_names', 6);
 
   case FStataVersion of
     //  32 Characters (* 4 for UTF-8) and a terminal #0
@@ -587,7 +593,7 @@ var
   F: TEpiField;
   S: String;
 begin
-  WriteStartTag('variable_labels');
+  WriteStartTag('variable_labels', 7);
 
   case FStataVersion of
     //  80 Bytes (* 4 for UTF-8) and a terminal #0
@@ -618,7 +624,7 @@ var
   I: Integer;
   j: Integer;
 begin
-  WriteStartTag('characteristics');
+  WriteStartTag('characteristics', 8);
 
   case FStataVersion of
     //  32 bytes (* 4 for UTF-8) and a terminal #0
@@ -699,15 +705,31 @@ var
   Val: EpiInteger;
   FVal: Double;
 begin
-  WriteStartTag('data');
+  WriteStartTag('data', 9);
 
   for CurRec := 0 to FDataFile.Size - 1 do
   begin
     for F in FDataFile.Fields do
     begin
       Case StataContent(F)^.Typ of
-        StataStrLsConstXML:;
-          // TODO:
+        StataStrLsConstXML:
+          begin
+            if F.IsMissing[CurRec] then
+              WriteQWord(0)  // GSO = (0,0)
+            else
+              case FStataVersion of
+                dta13:
+                  begin
+                    WriteDWord(FDataFile.Fields.IndexOf(F) +1);
+                    WriteDWord(CurRec + 1);
+                  end;
+                dta14:
+                  begin
+                    WriteWord(FDataFile.Fields.IndexOf(F) + 1);
+                    Write6Word(CurRec + 1);
+                  end;
+              end;
+          end;
 
         StataDoubleConstXML:
           begin
@@ -772,8 +794,49 @@ begin
 end;
 
 procedure TEpiStataExport.WriteStrls;
+var
+  RecNo: Integer;
+  F: TEpiField;
+  S: String;
+  L: Integer;
 begin
-  WriteStartTag('strls');
+  WriteStartTag('strls', 10);
+
+  for RecNo := 0 to FDataFile.Size -1 do
+  begin
+    for F in FDataFile.Fields do
+    begin
+      if (StataContent(F)^.Typ <> StataStrLsConstXML) then Continue;
+      if F.IsMissing[RecNo] then continue;
+
+      // GSO:
+      WriteAsString('GSO');
+
+      // v:
+      WriteDWord(FDataFile.Fields.IndexOf(F) + 1);
+
+      // o:
+      case FStataVersion of
+        dta13:
+          WriteDWord(RecNo + 1);
+        dta14:
+          WriteQWord(RecNo + 1);
+      end;
+
+      // t:  (Always as ASCII)
+      WriteByte(130);
+
+      S := F.AsString[RecNo];
+      L := Length(S) + 1;  // +1 because the string MUST end in \0
+
+      // len:
+      WriteDWord(L);
+
+      // content:
+      WriteAsString(S, L);
+    end;
+  end;
+
   WriteEndTag('strls');
 end;
 
@@ -781,7 +844,7 @@ procedure TEpiStataExport.WriteValueLabels;
 var
   VLSet: TEpiValueLabelSet;
 begin
-  WriteStartTag('value_labels');
+  WriteStartTag('value_labels', 11);
 
   for VLSet in FDataFile.ValueLabels do
     if VLSet.LabelType = ftInteger then
@@ -900,7 +963,12 @@ begin
     WriteStrls;
     WriteValueLabels;
 
+    FMapOffsets[12] := FStream.Position;
     WriteEndTag('stata_dta');
+    FMapOffsets[13] := FStream.Position;
+
+    FStream.Position := FMapOffsets[1];
+    WriteMap;
   end;
   Result := true;
 end;

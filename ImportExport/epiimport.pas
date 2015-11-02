@@ -29,6 +29,7 @@ type
     procedure   RaiseError(EClass: ExceptClass; Const Msg: string);
     procedure   ReadBuf(Const St: TStream; var Buf: Array of Byte; Count: Integer);
     function    ReadInts(Const St: TStream; Count: Integer): Integer;
+    function    ReadSInts(Const St: TStream; Count: Integer): Integer;
     function    ReadSingle(Const St: TStream): Single;
     function    ReadDouble(Const St: TStream): Double;
     function    ReEncodeString(Const Str: string): string;
@@ -166,6 +167,20 @@ begin
   FillChar(Buf, 4, 0);
   ReadBuf(St, Buf, Count);
   Result := Integer(Buf);
+end;
+
+function TEpiImport.ReadSInts(const St: TStream; Count: Integer): Integer;
+var
+  Buf: Array[0..3] of Byte;
+  Buf2: Array[0..1] of Word absolute Buf;
+begin
+  FillChar(Buf, 4, 0);
+  ReadBuf(St, Buf, Count);
+  case Count of
+    1: Result := ShortInt(Buf[0]);
+    2: Result := SmallInt(Buf2[0]);
+    4: Result := LongInt(Buf);
+  end;
 end;
 
 function TEpiImport.ReadSingle(const St: TStream): Single;
@@ -1651,17 +1666,17 @@ begin
                 Case TypeList[CurField] of
                   StataByteConst:
                     begin
-                      I := ReadInts(DataStream, 1);
+                      I := ReadSInts(DataStream, 1);
                       J := $7F;
                     end;
                   StataIntConst:
                     begin
-                      I := ReadInts(DataStream, 2);
+                      I := ReadSInts(DataStream, 2);
                       J := $7FFF;
                     end;
                   StataLongConst:
                     begin
-                      I := ReadInts(DataStream, 4);
+                      I := ReadSInts(DataStream, 4);
                       J := $7FFFFFFF;
                     end;
                 end;

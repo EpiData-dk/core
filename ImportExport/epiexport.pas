@@ -254,6 +254,7 @@ end;
 function TEpiExport.Export(const Settings: TEpiExportSetting): boolean;
 var
   OldDoc: TEpiDocument;
+  AdditionalSettings: TEpiExportSetting;
 begin
   // Pre-process the current document.
   Result := Settings.SanetyCheck;
@@ -261,6 +262,13 @@ begin
 
   OldDoc := Settings.Doc;
   Settings.Doc := PrepareExportDocument(Settings);
+
+  AdditionalSettings := Settings.AdditionalExportSettings;
+  while Assigned(AdditionalSettings) do
+  begin
+    AdditionalSettings.Doc := Settings.Doc;
+    AdditionalSettings := AdditionalSettings.AdditionalExportSettings;
+  end;
 
   if (Settings is TEpiCustomValueLabelExportSetting) and
      // Stata export need the valuelabel information to create missing value.
@@ -295,6 +303,14 @@ begin
 
   Settings.PreparedDoc := Settings.Doc;
   Settings.Doc := OldDoc;
+
+  AdditionalSettings := Settings.AdditionalExportSettings;
+  while Assigned(AdditionalSettings) do
+  begin
+    AdditionalSettings.PreparedDoc := Settings.PreparedDoc;
+    AdditionalSettings.Doc         := Settings.Doc;
+    AdditionalSettings := AdditionalSettings.AdditionalExportSettings;
+  end;
 end;
 
 function TEpiExport.ExportStata(const StataSettings: TEpiStataExportSetting
@@ -1101,7 +1117,7 @@ begin
     //  FILE LABEL <text>
     if Df.Caption.Text <> '' then
     begin
-      ExpLines.Append('FILE LABEL ' + AnsiQuotedStr(Df.Caption.Text, '"'));
+      ExpLines.Append('FILE LABEL ' + AnsiQuotedStr(Df.Caption.Text, '"') + '.');
       ExpLines.Append('');
     end;
 
@@ -1140,8 +1156,12 @@ begin
       TmpLines.Add(' ' + S + Name);
 
       // <value> <"label">
-      for k := 0 to ValueLabelSet.Count - 1 do
-        TmpLines.Add('    "' + ValueLabelSet[k].ValueAsString + '" "' + ValueLabelSet[k].TheLabel.Text + '"');
+      if FieldType in StringFieldTypes then
+        for k := 0 to ValueLabelSet.Count - 1 do
+          TmpLines.Add('    "' + ValueLabelSet[k].ValueAsString + '" "' + ValueLabelSet[k].TheLabel.Text + '"')
+      else
+        for k := 0 to ValueLabelSet.Count - 1 do
+          TmpLines.Add('    ' + ValueLabelSet[k].ValueAsString + ' "' + ValueLabelSet[k].TheLabel.Text + '"');
 
       S := '/ ';
     end;

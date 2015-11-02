@@ -307,7 +307,7 @@ end;
 constructor TEpiDetailRelation.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  MaxRecordCount := 0;
+  MaxRecordCount := 1;
 end;
 
 destructor TEpiDetailRelation.Destroy;
@@ -317,11 +317,8 @@ end;
 
 procedure TEpiDetailRelation.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
-var
-  FieldId: EpiString;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
-
   MaxRecordCount := LoadAttrInt(Root, rsMaxRecordCount, 0, false);
 end;
 
