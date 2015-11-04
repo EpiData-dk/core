@@ -475,7 +475,10 @@ var
 begin
   if Assigned(FRecords) then
   begin
-    Result := Length(FRecords);
+    if FRecords[0] = -1 then
+      Result := 0
+    else
+      Result := Length(FRecords);
     Exit;
   end;
 
@@ -498,7 +501,7 @@ var
   i: Integer;
 begin
   inherited Create(TheOwner);
-  FShowAllRecords := true;
+  FShowAllRecords := false;
   FUpdateCount := 0;
   FReverseIndex := nil;
   FDataFile := DataFile;
