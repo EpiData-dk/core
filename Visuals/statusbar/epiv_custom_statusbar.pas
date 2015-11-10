@@ -139,7 +139,7 @@ end;
 
 procedure TEpiVCustomStatusBar.SetSelection(AValue: TEpiCustomList);
 begin
-  if FSelection = AValue then Exit;
+//  if FSelection = AValue then Exit;
   FSelection := AValue;
   DoUpdateItems(sucSelection);
 end;
@@ -223,7 +223,7 @@ procedure TEpiVCustomStatusBar.Clear;
 var
   I: Integer;
 begin
-  BeginAutoSizing;
+  DisableAutoSizing;
 
   for I := 0 to FItemList.Count - 1 do
     FItemList[i].Free;
@@ -231,7 +231,7 @@ begin
   FItemList.Clear;
   FResizableItemsCount := 0;
 
-  EndAutoSizing;
+  EnableAutoSizing;
 end;
 
 procedure TEpiVCustomStatusBar.Resize;
