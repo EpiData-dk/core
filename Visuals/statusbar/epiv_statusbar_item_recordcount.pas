@@ -59,7 +59,7 @@ begin
     FRecordsLabel.Caption := IntToStr(FExampleValue)
   else
     if Assigned(Statusbar.Datafile) then
-      IntToStr(Statusbar.Datafile.Size);
+      FRecordsLabel.Caption := IntToStr(Statusbar.Datafile.Size);
 end;
 
 procedure TEpiVStatusBarItem_RecordCount.Update(
