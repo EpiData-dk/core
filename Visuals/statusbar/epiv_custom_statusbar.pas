@@ -25,7 +25,7 @@ type
 
   TEpiVCustomStatusBar = class(TCustomPanel)
   private
-    FItemList: TObjectList;
+    FItemList: TStringList;
     FResizableItemsCount: Integer;
     FInterItemSpace: Integer;
     FDocFile: TEpiDocumentFile;
@@ -36,11 +36,16 @@ type
     procedure   SetDatafile(AValue: TEpiDataFile);
     procedure   SetSelection(AValue: TEpiCustomList);
     procedure   DoUpdateItems(Condition: TEpiVCustomStatusbarUpdateCondition);
+    function GetCount: Integer;
+    function GetStatusbarItem(const Index: Integer): TEpiVCustomStatusBarItem;
   protected
     procedure   DoSetBounds(ALeft, ATop, AWidth, AHeight: integer); override;
-    procedure   AddItem(StatusBarItem: TEpiVCustomStatusBarItem); virtual;
+    procedure   AddItem(AStatusBarItem: TEpiVCustomStatusBarItem); virtual;
     procedure   Clear; virtual;
     procedure   Resize; override;
+    property    Count: Integer read GetCount;
+    property    StatusbarItem[Const Index: Integer]: TEpiVCustomStatusBarItem read GetStatusbarItem;
+    property    StatusbarItems: TStringList read FItemList;
   public
     constructor Create(TheOwner: TComponent); override;
     destructor  Destroy; override;
@@ -134,7 +139,18 @@ var
   I: Integer;
 begin
   for I := 0 to FItemList.Count - 1 do
-    TEpiVCustomStatusBarItem(FItemList[i]).Update(Condition);
+    TEpiVCustomStatusBarItem(FItemList.Objects[i]).Update(Condition);
+end;
+
+function TEpiVCustomStatusBar.GetCount: Integer;
+begin
+  result := FItemList.Count;
+end;
+
+function TEpiVCustomStatusBar.GetStatusbarItem(const Index: Integer
+  ): TEpiVCustomStatusBarItem;
+begin
+  result := TEpiVCustomStatusBarItem(FItemList.Objects[Index]);
 end;
 
 procedure TEpiVCustomStatusBar.SetSelection(AValue: TEpiCustomList);
@@ -163,7 +179,7 @@ constructor TEpiVCustomStatusBar.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
 
-  FItemList := TObjectList.create(false);
+  FItemList := TStringList.Create;
   FResizableItemsCount := 0;
   FInterItemSpace      := 2;
 
@@ -191,32 +207,33 @@ var
 begin
   for I := 0 to FItemList.Count - 1 do
   begin
-    TEpiVCustomStatusBarItem(FItemList[i]).IsShortCut(Msg, Handled);
+    TEpiVCustomStatusBarItem(FItemList.Objects[i]).IsShortCut(Msg, Handled);
     if Handled then Exit;
   end;
 end;
 
-procedure TEpiVCustomStatusBar.AddItem(StatusBarItem: TEpiVCustomStatusBarItem);
+procedure TEpiVCustomStatusBar.AddItem(AStatusBarItem: TEpiVCustomStatusBarItem
+  );
 begin
   // Code to side-by-side setting the items.
-  BeginAutoSizing;
+  DisableAutoSizing;
 
-  StatusBarItem.Panel.Parent := Self;
+  AStatusBarItem.Panel.Parent := Self;
 
   if FItemList.Count = 0 then
-    StatusBarItem.Panel.AnchorParallel(akLeft, 0, Self)
+    AStatusBarItem.Panel.AnchorParallel(akLeft, 0, Self)
   else
-    StatusBarItem.Panel.AnchorToNeighbour(akLeft, FInterItemSpace, TEpiVCustomStatusBarItem(FItemList.Last).Panel);
+    AStatusBarItem.Panel.AnchorToNeighbour(akLeft, FInterItemSpace, TEpiVCustomStatusBarItem(FItemList.Objects[Count - 1]).Panel);
 
-  StatusBarItem.Panel.AnchorParallel(akTop,    2, Self);
-  StatusBarItem.Panel.AnchorParallel(akBottom, 2, Self);
+  AStatusBarItem.Panel.AnchorParallel(akTop,    2, Self);
+  AStatusBarItem.Panel.AnchorParallel(akBottom, 2, Self);
 
-  EndAutoSizing;
+  EnableAutoSizing;
 
-  if StatusBarItem.Resizable then
+  if AStatusBarItem.Resizable then
     Inc(FResizableItemsCount);
 
-  FItemList.Add(StatusBarItem);
+  FItemList.AddObject(AStatusBarItem.Name, AStatusBarItem);
 end;
 
 procedure TEpiVCustomStatusBar.Clear;
@@ -226,7 +243,7 @@ begin
   DisableAutoSizing;
 
   for I := 0 to FItemList.Count - 1 do
-    FItemList[i].Free;
+    FItemList.Objects[i].Free;
 
   FItemList.Clear;
   FResizableItemsCount := 0;
@@ -244,7 +261,7 @@ begin
   TotalFixedWidth := 0;
   ItemCount := 0;
   for I := 0 to FItemList.Count - 1 do
-    with TEpiVCustomStatusBarItem(FItemList[i]) do
+    with TEpiVCustomStatusBarItem(FItemList.Objects[i]) do
     begin
       if (not Resizable) and (Visible) then
         Inc(TotalFixedWidth, GetPreferedWidth);
@@ -256,7 +273,7 @@ begin
     ResizableWidth := (ClientWidth - TotalFixedWidth - (FInterItemSpace * (ItemCount - 1))) div FResizableItemsCount;
 
   for I := 0 to FItemList.Count - 1 do
-    with TEpiVCustomStatusBarItem(FItemList[i]) do
+    with TEpiVCustomStatusBarItem(FItemList.Objects[i]) do
       if Resizable then
         Panel.Width := ResizableWidth
       else if (Visible) then
