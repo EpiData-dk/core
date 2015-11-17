@@ -265,7 +265,7 @@ begin
   // Version 4:
   // Now check for User login;
   if (Version >= 4) and
-     (LoadNode(Node, Root, rsUsers, false))
+     (LoadNode(Node, Root, rsCrypto, false))
   then
     try
       SS := nil;
@@ -288,7 +288,7 @@ begin
       end;
 
       {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
-      LoadNode(Node, Root, 'Crypt', true);
+      LoadNode(Node, Root, rsEncrypted, true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
       MS := TMemoryStream.Create;
@@ -434,7 +434,7 @@ begin
 
     for Elem in RootDoc do
     begin
-      if Elem.NodeName = Admin.Users.XMLName then continue;
+      if Elem.NodeName = rsCrypto then continue;
       WriteXML(Elem, MSIn);
     end;
     MSIn.Position := 0;
@@ -458,7 +458,7 @@ begin
       L := Base64Encode(MSOut.Memory, @S[1], MSOut.Size);
       SetLength(S, L);
 
-      CryptElem := Result.CreateElement('Crypt');
+      CryptElem := Result.CreateElement(rsEncrypted);
       CryptElem.AppendChild(Result.CreateTextNode(S));
       RootDoc.AppendChild(CryptElem);
     finally

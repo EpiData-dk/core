@@ -34,6 +34,9 @@ const
     rsShowFieldNames  = 'showFieldNames';
     rsShowFieldBorders= 'showFieldBorders';
 
+   rsCrypto          = 'Crypto';
+   rsEncrypted       = 'Encrypted';
+
    rsAdmin           = 'Admin';
     // User
     rsUsers           = 'Users';
