@@ -904,7 +904,11 @@ begin
   SaveDomAttrEnum(Result, rsAfterRecordState, AfterRecordState, TypeInfo(TEpiDataFileAfterRecordState));
 
   SaveKeyFieldsToDom(Result);
-  SaveTextContent(Result, rsStatusbarContentString, FStatusbarContentString);
+
+  // Version 4:
+  if (StatusbarContentString <> '') then
+    SaveTextContent(Result, rsStatusbarContentString, FStatusbarContentString);
+
   if (EpiSaveMode = esmDatafile) then
     SaveRecordToDom(Result);
 end;

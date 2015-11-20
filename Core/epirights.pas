@@ -96,7 +96,7 @@ type
 implementation
 
 uses
-  typinfo, epidocument;
+  typinfo, epidocument, epiglobals;
 
 { TEpiGroupRights }
 
@@ -113,7 +113,12 @@ begin
   RO := RootOwner;
   if (RO is TEpiDocument) and (TEpiDocument(RO).Loading) then exit;
 
-  NewGroupRight.Group := TEpiGroup(Data);
+  with NewGroupRight do
+  begin
+    Group := TEpiGroup(Data);
+    if (Group.Name = EpiAdminGroupName) then
+      EntryRights := EpiEntryRightsAll;
+  end;
 end;
 
 function TEpiGroupRights.GetGroupRight(Index: integer): TEpiGroupRight;

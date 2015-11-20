@@ -950,11 +950,15 @@ procedure TEpiCustomBase.SaveDomAttrEnum(const Node: TDomElement;
 var
   V: Byte;
   I: Integer;
+  S: String;
 begin
   if (TypeInfo^.Kind = tkSet) then
   begin
     I := Integer(Value);
-    SaveDomAttr(Node, Tag, SetToString(TypeInfo, I, false));
+    // All Sets are save with " " (space) delimiter in order to have a sound XML
+    // that can be validate by an XSD.
+    S := StringReplace(SetToString(TypeInfo, I, false), ',', ' ', [rfReplaceAll]);
+    SaveDomAttr(Node, Tag, S);
   end else begin
     V := Byte(Value);
     SaveDomAttr(Node, Tag, GetEnumName(TypeInfo, V));

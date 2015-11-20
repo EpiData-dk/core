@@ -333,19 +333,26 @@ begin
   end;
 
   // Version 1:
-  // And last - file settings.
   LoadNode(Node, Root, rsSettings, true);
   XMLSettings.LoadFromXml(Node, ReferenceMap);
 
+  // Version 4:
+  if LoadNode(Node, Root, rsAdmin, false) then
+    Admin.LoadFromXml(Node, ReferenceMap);
+
+  // Version 1:
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node, ReferenceMap);
 
+  // Version 1:
   if LoadNode(Node, Root, rsProjectSettings, false) then
     ProjectSettings.LoadFromXml(Node, ReferenceMap);
 
+  // Version 1:
   if LoadNode(Node, Root, rsValueLabelSets, false) then
     ValueLabelSets.LoadFromXml(Node, ReferenceMap);
 
+  // Version 1:
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node, ReferenceMap);
 
@@ -360,9 +367,6 @@ begin
     if LoadNode(Node, Root, rsRelations, (DataFiles.Count > 0)) then
       Relations.LoadFromXml(Node, ReferenceMap);
 
-  // Version 4:
-  if LoadNode(Node, Root, rsAdmin, false) then
-    Admin.LoadFromXml(Node, ReferenceMap);
 
   FLoading := false;
   Modified := false;

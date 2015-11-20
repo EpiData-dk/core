@@ -183,6 +183,7 @@ type
     function   NewUser: TEpiUser;
     function   NewGroup: TEpiGroup;
     procedure  ResetAll;
+    procedure  InitAdmin;
 //    function   RequestPassword(Const RepeatCount: Byte): TRequestPasswordResult;
     property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     property   OnPassWord: TRequestPasswordEvent read FOnPassWord write FOnPassWord;
@@ -424,7 +425,7 @@ implementation
 
 uses
   DCPbase64, DCPsha256, epistringutils, epimiscutils, epidocument,
-  math;
+  math, epiglobals;
 
 { TEpiUsersEnumerator }
 
@@ -559,7 +560,6 @@ var
 begin
   inherited Create(AOwner);
 
-  // A little speedier and more secure (uses full spectre af possible byte combinations)
   for i := 0 to 3 do
     Key[i] := Random(maxLongint - 1) + 1;
   MasterPassword := String(KeyByte);
@@ -575,7 +575,7 @@ begin
   FAdminRelations := TEpiGroupRelationList.Create(Self);
   FAdminRelations.ItemOwner := true;
 
-  FAdminsGroup := FGroups.NewGroup;
+{  FAdminsGroup := FGroups.NewGroup;
   FAdminsGroup.ManageRights := EpiAllManageRights;
   FAdminsGroup.Caption.TextLang['en'] := 'Admins';
   FAdminsGroup.Name := 'admins_group';
@@ -583,7 +583,7 @@ begin
   FAdminRelations := TEpiGroupRelationList.Create(Self);
   FAdminRelations.ItemOwner := true;
   FAdminRelation := FAdminRelations.NewGroupRelation;
-  FAdminRelation.Group := FAdminsGroup;
+  FAdminRelation.Group := FAdminsGroup;       }
 
   FCrypter := TDCP_rijndael.Create(nil);
 
@@ -659,17 +659,27 @@ begin
 end;
 
 procedure TEpiAdmin.ResetAll;
-var
-  i: Integer;
 begin
   DoChange(eegAdmin, Word(eaceAdminResetting), nil);
 
   Users.ClearAndFree;
-  for i := Groups.Count - 1 downto 0 do
-    if Groups[i] = Admins then
-      Continue
-    else
-      Groups[i].Free;
+  Groups.ClearAndFree;
+  FAdminsGroup := nil;
+  FAdminRelation := nil;
+end;
+
+procedure TEpiAdmin.InitAdmin;
+begin
+  if Assigned(FAdminsGroup) then exit;
+
+  FAdminsGroup := TEpiGroup.Create(nil);
+  FAdminsGroup.ManageRights := EpiAllManageRights;
+  FAdminsGroup.Caption.TextLang['en'] := 'Admins';
+  FAdminsGroup.Name := EpiAdminGroupName;
+  FGroups.AddItem(FAdminsGroup);
+
+  FAdminRelation := FAdminRelations.NewGroupRelation;
+  FAdminRelation.Group := FAdminsGroup;
 end;
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -1250,7 +1260,7 @@ begin
   Caption.LoadFromXml(Root, ReferenceMap);
   ManageRights := TEpiManagerRights(LoadAttrEnum(Root, rsManageRights, TypeInfo(TEpiManagerRights), '', false));
 
-  FCreated    := LoadAttrDateTime(Root, rsCreatedAttr, '', Now, false);
+  FCreated    := LoadAttrDateTime(Root, rsCreatedAttr, '', Now);
   FModified   := LoadAttrDateTime(Root, rsModifiedAttr, '', Now, false);
 end;
 
