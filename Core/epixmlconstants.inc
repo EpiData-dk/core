@@ -162,7 +162,10 @@ const
       rsRecord          = 'Record';
        rsRecordStatus    = 'status';
 
-   rsRelations       = 'Relations';
-    rsRelation        = 'Relation';
-     rsDataFileRef     = 'dataFileRef';
-     rsMaxRecordCount  = 'maxRecordCount';
+   rsRelations       = 'Relations';                     // Version 3
+    rsRelation        = 'Relation';                     // Version 3
+
+   rsDataFileRelations = 'DataFileRelations';           // Version 4+
+    rsDataFileRelation  = 'DataFileRelation';           // Version 4+
+     rsDataFileRef       = 'dataFileRef';
+     rsMaxRecordCount    = 'maxRecordCount';

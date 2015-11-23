@@ -219,20 +219,39 @@ end;
 procedure TEpiMasterRelation.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
-  DfId: EpiString;
   Node: TDOMNode;
+  S: String;
+  RO: TEpiCustomBase;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
   ReferenceMap.AddFixupReference(Self, TEpiMasterRelation, 0, LoadAttrString(Root, rsDataFileRef));
 
-  if LoadNode(Node, Root, rsRelations, false) then
+  RO := RootOwner;
+  if (RO is TEpiDocument) and
+     (TEpiDocument(RO).Loading) and
+     (TEpiDocument(RO).Version = 3)
+  then
+    S := rsRelations
+  else
+    S := rsDataFileRelations;
+
+  if LoadNode(Node, Root, S, false) then
     DetailRelations.LoadFromXml(Node, ReferenceMap);
 end;
 
 function TEpiMasterRelation.XMLName: string;
+var
+  RO: TEpiCustomBase;
 begin
-  Result := rsRelation;
+  RO := RootOwner;
+  if (RO is TEpiDocument) and
+     (TEpiDocument(RO).Loading) and
+     (TEpiDocument(RO).Version = 3)
+  then
+    result := rsRelation
+  else
+    Result := rsDataFileRelation;
 end;
 
 function TEpiMasterRelation.NewDetailRelation: TEpiDetailRelation;
@@ -338,7 +357,7 @@ end;
 
 function TEpiDatafileRelationList.XMLName: string;
 begin
-  Result := rsRelations;
+  Result := rsDataFileRelations;
 end;
 
 function TEpiDatafileRelationList.NewMasterRelation: TEpiMasterRelation;

@@ -216,7 +216,7 @@ procedure TEpiDocument.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
-  PW, Login, UserPW: String;
+  PW, Login, UserPW, S: String;
   TmpVersion: EpiInteger;
   TmpBranch: EpiString;
   DeCrypter: TDCP_rijndael;
@@ -357,16 +357,23 @@ begin
     DataFiles.LoadFromXml(Node, ReferenceMap);
 
   if (Version <= 2) then
-  begin
-    // Version 2 only supported 1 DataFile and no relations,
-    // hence this must be created to have a correct data container.
-    if (DataFiles.Count > 0) then
-      Relations.NewMasterRelation.Datafile := DataFiles[0]
-  end else
-  // Version 3:
-    if LoadNode(Node, Root, rsRelations, (DataFiles.Count > 0)) then
-      Relations.LoadFromXml(Node, ReferenceMap);
+    begin
+      // Version 2 only supported 1 DataFile and no relations,
+      // hence this must be created to have a correct data container.
+      if (DataFiles.Count > 0) then
+        Relations.NewMasterRelation.Datafile := DataFiles[0]
+    end
+  else
+    // Version 3+:
+    begin
+      if (Version = 3) then
+        S := rsRelations
+      else  // Name change for Version 4+
+        S := rsDataFileRelations;
 
+      if LoadNode(Node, Root, S, (DataFiles.Count > 0)) then
+        Relations.LoadFromXml(Node, ReferenceMap);
+    end;
 
   FLoading := false;
   Modified := false;
