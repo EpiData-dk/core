@@ -438,7 +438,7 @@ begin
 
     for Elem in RootDoc do
     begin
-      if Elem.NodeName = rsCrypto then continue;
+      if (Elem.NodeName = rsCrypto) then continue;
       WriteXML(Elem, MSIn);
     end;
     MSIn.Position := 0;
@@ -449,7 +449,7 @@ begin
       TmpNode := Node;
       Node := Node.NextSibling;
 
-      if TmpNode.NodeName = Admin.Users.XMLName then continue;
+      if (TmpNode.NodeName = rsCrypto) then continue;
       RootDoc.RemoveChild(TmpNode).Free;
     end;
 
