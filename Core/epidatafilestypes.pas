@@ -17,7 +17,7 @@ type
   EpiDate      = Integer;
   EpiTime      = TDateTime;
   EpiDateTime  = TDateTime;
-  EpiString    = string;
+  EpiString    = UTF8String;
   EpiBool      = Byte;
   EpiVariant   = Variant;
 
