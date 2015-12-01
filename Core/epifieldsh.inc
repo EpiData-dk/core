@@ -184,13 +184,12 @@ type
     procedure   MovePackData(Const SrcIdx, DstIdx, Count: integer); virtual; abstract;
 
   { Helper methods }
-  private
+  protected
     FDataFile: TEpiDataFile;
     FSize: Integer;
     FCapacity: Integer;
     function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
-  protected
     function    LoadingRecs: boolean;
     procedure   SetDataModified;
     function    GetSize: Integer; virtual;

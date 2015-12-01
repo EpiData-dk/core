@@ -9,7 +9,7 @@ uses
   Classes, sysutils, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
   epistudy, epidatafilerelations, epivaluelabels,
-  epicustombase, epidatafilestypes;
+  epicustombase, epidatafilestypes, epilogger;
 
 type
 
@@ -54,6 +54,7 @@ type
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
     FRelations: TEpiDatafileRelationList;
+    FLogger: TEpiLogger;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
@@ -75,6 +76,7 @@ type
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
     Property   Relations: TEpiDatafileRelationList read FRelations;
+    Property   Logger: TEpiLogger read FLogger;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
@@ -147,9 +149,10 @@ begin
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
+  FLogger          := TEpiLogger.Create(Self);
   FCycleNo         := 0;
 
-  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations]);
+  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations, Logger]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.
@@ -165,6 +168,7 @@ begin
   FAdmin.Free;
   FDataFiles.Free;
   FValueLabelSets.Free;
+  FLogger.Free;
   inherited Destroy;
 end;
 
