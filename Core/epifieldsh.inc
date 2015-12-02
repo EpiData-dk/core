@@ -3,10 +3,22 @@
 type
 
   TEpiFieldsChangeEventType = (
-    efceSetDecimal, efceSetLeft, efceSetLength,
-    efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
-    efceShowValueLabel, efceShowValueLabelNotes, efceRepeatValue, efceDefaultValue,
-    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet,
+    efceSetDecimal,
+    efceSetLeft,
+    efceSetLength,
+    efceSetTop,
+    efceSetSize,
+    efceData,
+    efceResetData,
+    efceEntryMode,
+    efceConfirmEntry,
+    efceShowValueLabel,
+    efceShowValueLabelNotes,
+    efceRepeatValue,
+    efceDefaultValue,
+    efceValueLabelWriteTo,
+    efceForcePickList,
+    efceValueLabelSet,
     efceZeroFilled
   );
 

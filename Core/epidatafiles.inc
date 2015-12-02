@@ -733,7 +733,7 @@ procedure TEpiDataFile.DoModifiedChange(const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
   if (EventGroup = eegFields) and
-     (TEpiFieldsChangeEventType(EventType) = efceData)
+     (TEpiFieldsChangeEventType(EventType) in [efceData, efceResetData])
   then
     FRecModified := true
   else

@@ -5,7 +5,8 @@ unit epilogger;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles, epidatafilestypes, epicustombase, epitools_search;
+  Classes, SysUtils, epidatafiles, epidatafilestypes, epicustombase, epitools_search,
+  Laz2_DOM;
 
 type
   TEpiLogEntry = (
@@ -25,10 +26,10 @@ type
 
   TEpiEnumField = class(TEpiField)
   private
-    FData: array of TEpiLogType;
+    FData: array of TEpiLogEntry;
   protected
-    function GetAsEnum(const Index: Integer): TEpiLogType; virtual;
-    procedure SetAsEnum(const Index: Integer; AValue: TEpiLogType); virtual;
+    function GetAsEnum(const Index: Integer): TEpiLogEntry; virtual;
+    procedure SetAsEnum(const Index: Integer; AValue: TEpiLogEntry); virtual;
     procedure SetCapacity(AValue: Integer); override;
     procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
     procedure SetAsString(const index: Integer; const AValue: EpiString); override;
@@ -60,10 +61,10 @@ type
     procedure ResetDefaultValue; override;
     procedure ResetData; override;
     function FormatString(const FillSpace: boolean = false): string; override;
-    property AsEnum[Const Index: Integer]: TEpiLogType read GetAsEnum write SetAsEnum;
+    property AsEnum[Const Index: Integer]: TEpiLogEntry read GetAsEnum write SetAsEnum;
   public
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); override;
-    class function DefaultMissing: TEpiLogType;
+    class function DefaultMissing: TEpiLogEntry;
   end;
 
   { TEpiLog }
@@ -102,11 +103,11 @@ uses
 
 { TEpiLogger }
 
-procedure TEpiLogger.SetUserName(AValue: String);
-begin
-  if FUserName = AValue then Exit;
-  FUserName := AValue;
-end;
+//procedure TEpiLogger.SetUserName(AValue: String);
+//begin
+//  if FUserName = AValue then Exit;
+//  FUserName := AValue;
+//end;
 
 procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
@@ -142,25 +143,15 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 end;
 
-procedure TEpiLogger.LogSearch(Search: TEpiSearch);
-begin
-
-end;
-
-procedure TEpiLogger.LogLogin(Success: boolean);
-begin
-
-end;
-
 { TEpiEnumField }
 
-function TEpiEnumField.GetAsEnum(const Index: Integer): TEpiLogType;
+function TEpiEnumField.GetAsEnum(const Index: Integer): TEpiLogEntry;
 begin
   CheckIndex(Index);
   Result := FData[Index];
 end;
 
-procedure TEpiEnumField.SetAsEnum(const Index: Integer; AValue: TEpiLogType);
+procedure TEpiEnumField.SetAsEnum(const Index: Integer; AValue: TEpiLogEntry);
 begin
   CheckIndex(Index);
   FData[Index] := AValue;
@@ -169,7 +160,7 @@ end;
 
 function TEpiEnumField.GetAsString(const index: Integer): EpiString;
 begin
-  Result := GetEnumName(TypeInfo(TEpiLogType), AsInteger[Index]);
+  Result := GetEnumName(TypeInfo(TEpiLogEntry), AsInteger[Index]);
 end;
 
 function TEpiEnumField.DoCompare(i, j: integer): integer;
@@ -290,7 +281,7 @@ end;
 procedure TEpiEnumField.SetAsString(const index: Integer;
   const AValue: EpiString);
 begin
-  SetAsInteger(Index, GetEnumValue(TypeInfo(TEpiLogType), AValue));
+  SetAsInteger(Index, GetEnumValue(TypeInfo(TEpiLogEntry), AValue));
 end;
 
 procedure TEpiEnumField.SetCapacity(AValue: Integer);
@@ -307,12 +298,12 @@ end;
 procedure TEpiEnumField.SetAsInteger(const index: Integer;
   const AValue: EpiInteger);
 begin
-  SetAsEnum(Index, TEpiLogType(AValue));
+  SetAsEnum(Index, TEpiLogEntry(AValue));
 end;
 
 procedure TEpiEnumField.Exchange(i, j: integer);
 var
-  Tmp: TEpiLogType;
+  Tmp: TEpiLogEntry;
 begin
   Tmp := AsEnum[I];
   AsEnum[J] := AsEnum[I];
@@ -340,17 +331,12 @@ begin
   inherited Create(AOwner, AFieldType);
 end;
 
-class function TEpiEnumField.DefaultMissing: TEpiLogType;
+class function TEpiEnumField.DefaultMissing: TEpiLogEntry;
 begin
   result := ltNone;
 end;
 
 { TEpiLog }
-
-function TEpiLog.XMLName: string;
-begin
-  Result := 'Log';
-end;
 
 constructor TEpiLog.Create(AOwner: TEpiCustomBase; const aSize: integer);
 begin
@@ -361,9 +347,6 @@ begin
   FCycle     := Fields.NewField(ftInteger);
   FType      := TEpiEnumField.Create(nil, ftBoolean);
   MainSection.Fields.AddItem(FType);
-  FSearch    := Fields.NewField(ftString);
-  FKeyValue  := Fields.NewField(ftString);
-  FChanges   := Fields.NewField(ftString);
 end;
 
 end.
