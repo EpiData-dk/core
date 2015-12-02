@@ -1207,6 +1207,7 @@ begin
   SetLength(L, C);
   L[C-1] := Size;
 
+  DoChange(eegDataFiles, word(edcePack), @L);
   for i := 1 to High(L) do
   begin
     S := L[i-1] + 1;          // Source Index

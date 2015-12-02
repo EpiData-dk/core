@@ -5,7 +5,8 @@ type
   TEpiDataFileChangeEventType = (
     edceSize,                      // Size of datafile changed
     edceRecordStatus,              // Status of record changed
-    edceStatusbarContentString     // Statusbar Content string changed
+    edceStatusbarContentString,    // Statusbar Content string changed
+    edcePack,                      // A pack procedure is starting: Data = Array of recnums to be deleted.
   );
 
   TEpiDataFilesEnumerator = class;

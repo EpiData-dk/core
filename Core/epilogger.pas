@@ -10,15 +10,15 @@ uses
 
 type
   TEpiLogEntry = (
-    ltNone,
-    ltSuccessLogin,
-    ltFailedLogin,
-    ltSearch,
-    ltNewRecord,
-    ltEditRecord,
-    ltViewRecord,
-    ltPack,
-    ltAppend
+    ltNone,            // The "empty" entry in the EnumField
+    ltSuccessLogin,    // A succesfull login
+    ltFailedLogin,     // An unsuccessfull login
+    ltSearch,          // Search performed
+    ltNewRecord,       // New Record added
+    ltEditRecord,      // Edited an existing record
+    ltViewRecord,      // Changed record no. in viewer
+    ltPack,            // Packed datafiles
+    ltAppend           // Appended data to datafiles
   );
 
 
@@ -86,14 +86,32 @@ type
   TEpiLogger = class(TEpiCustomBase)
   private
     FLogDatafile: TEpiLog;
-    procedure DocumentHook(const Sender: TEpiCustomBase;
-      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+
+  { Logging properties }
+  private
+    FUserName: string;
+    FDatafile: TEpiDataFile;
+    procedure SetUserName(AValue: string);
+    procedure SetDatafile(AValue: TEpiDataFile);
+  public
+    property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
+    property   UserName: string read FUserName write SetUserName;
+
+  { Logging methods }
+  public
+    procedure  LogLoginSuccess();
+    procedure  LogLoginFail();
+    procedure  LogSearch(Search: TEpiSearch);
+    procedure  LogRecordNew();
+    procedure  LogRecordEdit(EditedFields: TEpiFields);
+    procedure  LogRecordView(RecordNo: Integer);
+    procedure  LogPack();
+    procedure  LogAppend();
   end;
 
 implementation
@@ -101,30 +119,9 @@ implementation
 uses
   typinfo, epidocument;
 
-{ TEpiLogger }
-
-//procedure TEpiLogger.SetUserName(AValue: String);
-//begin
-//  if FUserName = AValue then Exit;
-//  FUserName := AValue;
-//end;
-
-procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
-  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
-  Data: Pointer);
-begin
-
-end;
-
 constructor TEpiLogger.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-
-  if (not (RootOwner is TEpiDocument)) then
-    Raise Exception.Create('TEpiLogger cannot work when not created from EpiDocument');
-
-
-  RootOwner.RegisterOnChangeHook(@DocumentHook, true);
 end;
 
 function TEpiLogger.XMLName: string;
@@ -141,6 +138,58 @@ procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
   );
 begin
   inherited LoadFromXml(Root, ReferenceMap);
+end;
+
+procedure TEpiLogger.SetUserName(AValue: string);
+begin
+  if FUserName = AValue then Exit;
+  FUserName := AValue;
+end;
+
+procedure TEpiLogger.SetDatafile(AValue: TEpiDataFile);
+begin
+  if FDatafile = AValue then Exit;
+  FDatafile := AValue;
+end;
+
+procedure TEpiLogger.LogLoginSuccess;
+begin
+
+end;
+
+procedure TEpiLogger.LogLoginFail;
+begin
+
+end;
+
+procedure TEpiLogger.LogSearch(Search: TEpiSearch);
+begin
+
+end;
+
+procedure TEpiLogger.LogRecordNew;
+begin
+
+end;
+
+procedure TEpiLogger.LogRecordEdit(EditedFields: TEpiFields);
+begin
+
+end;
+
+procedure TEpiLogger.LogRecordView(RecordNo: Integer);
+begin
+
+end;
+
+procedure TEpiLogger.LogPack;
+begin
+
+end;
+
+procedure TEpiLogger.LogAppend;
+begin
+
 end;
 
 { TEpiEnumField }
