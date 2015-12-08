@@ -84,8 +84,19 @@ type
   { TEpiLogger }
 
   TEpiLogger = class(TEpiCustomBase)
+  { Data Logging  }
+  private type
+    TCommitState = (csNone, csNewRecord, csEditRecord);
+  private
+    FCommitState: TCommitState;
+    FDataLog: TStrings;
+    procedure ClearDataLog;
+
   private
     FLogDatafile: TEpiLog;
+    procedure DocumentHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    XMLName: string; override;
@@ -98,12 +109,14 @@ type
     FDatafile: TEpiDataFile;
     procedure SetUserName(AValue: string);
     procedure SetDatafile(AValue: TEpiDataFile);
+    function  DoNewLog(LogType: TEpiLogEntry): Integer;  // Result = Index for new record.
+    function  GetKeyValues: EpiString;
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: string read FUserName write SetUserName;
 
   { Logging methods }
-  public
+  private
     procedure  LogLoginSuccess();
     procedure  LogLoginFail();
     procedure  LogSearch(Search: TEpiSearch);
@@ -111,17 +124,171 @@ type
     procedure  LogRecordEdit(EditedFields: TEpiFields);
     procedure  LogRecordView(RecordNo: Integer);
     procedure  LogPack();
+  public
     procedure  LogAppend();
   end;
 
 implementation
 
 uses
-  typinfo, epidocument;
+  typinfo, epidocument, epiadmin, strutils;
+
+procedure TEpiLogger.ClearDataLog;
+var
+  PData: PEpiFieldDataEventRecord;
+begin
+  for i := 0 to FDataLog.Count - 1 do
+    begin
+      PData := PEpiFieldDataEventRecord(FDataLog.Objects[I]);
+      Dispose(PData);
+    end;
+  FDataLog.Clear;
+end;
+
+procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  PData: PEpiFieldDataEventRecord;
+begin
+  case EventGroup of
+    eegAdmin:
+      case TEpiAdminChangeEventType(EventType) of
+        eaceAdminLoginSuccessfull:       // Data: TEpiUser = the authenticated user.
+          begin
+            UserName := TEpiUser(Data).Login;
+            LogLoginSuccess();
+          end;
+
+        eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
+        eaceAdminIncorrectPassword:      // Data: string   = the incorrect login name
+          begin
+            UserName := string(Data);
+            LogLoginFail();
+          end;
+
+        eaceAdminIncorrectNewPassword:   // Data: TEpiUser = the authenticated user.
+          ;
+
+      else
+        {
+        eaceUserSetFullName: ;
+        eaceUserSetPassword: ;
+        eaceUserSetExpireDate: ;
+        eaceUserSetLastLogin: ;
+        eaceUserSetNotes: ;
+        eaceGroupSetManageRights: ;
+        eaceAdminResetting: ;
+        }
+        Exit;
+      end;
+
+
+    eegDataFiles:
+      case TEpiDataFileChangeEventType(EventType) of
+        edcePack:
+          LogPack();
+
+        edceBeginCommit:
+          begin
+            if PtrInt(Data) = 0 then
+              FCommitState := csNewRecord
+            else
+              begin
+                ClearDataLog;
+                FCommitState := csEditRecord;
+              end;
+          end;
+
+        edceEndCommit:
+          begin
+            case FCommitState of
+              csNone: ;
+
+              csNewRecord:
+                LogRecordNew();
+
+              csEditRecord:
+                LogRecordEdit(nil);
+            end;
+
+            FCommitState := csNone;
+          end
+
+      else
+        {
+        edceSize: ;
+        edceRecordStatus: ;
+        edceStatusbarContentString: ;
+        }
+        Exit;
+      end;
+
+    eegFields:
+      case TEpiFieldsChangeEventType(EventType) of
+        efceData:
+          begin
+            if (FCommitState <> csEditRecord) then Exit;
+
+            PData := PEpiFieldDataEventRecord(Data);
+            FDataLog.AddObject(TEpiField(Initiator).Name, );
+            // TODO : Store data changes during a commit fase.
+          end;
+      else
+        {
+        efceSetDecimal: ;
+        efceSetLeft: ;
+        efceSetLength: ;
+        efceSetTop: ;
+        efceSetSize: ;
+        efceResetData: ;
+        efceEntryMode: ;
+        efceConfirmEntry: ;
+        efceShowValueLabel: ;
+        efceShowValueLabelNotes: ;
+        efceRepeatValue: ;
+        efceDefaultValue: ;
+        efceValueLabelWriteTo: ;
+        efceForcePickList: ;
+        efceValueLabelSet: ;
+        efceZeroFilled: ;
+        }
+        Exit;
+      end;
+
+   else {
+    eegCustomBase: ;
+    eegDocument: ;
+    eegXMLSetting: ;
+    eegProjectSettings: ;
+    eegStudy: ;
+    eegSections: ;
+    eegHeading: ;
+    eegRange: ;
+    eegValueLabel: ;
+    eegValueLabelSet: ;
+    eegRelations: ;
+    eegRights: ;
+    }
+    Exit;
+  end;
+
+
+end;
 
 constructor TEpiLogger.Create(AOwner: TEpiCustomBase);
+var
+  RO: TEpiCustomBase;
 begin
   inherited Create(AOwner);
+  FCommitState := csNone;
+  FDataLog := TStringList.Create;
+
+  RO := RootOwner;
+  if not (RO is TEpiDocument) then
+    Exit;
+
+  RO.RegisterOnChangeHook(@DocumentHook, true);
 end;
 
 function TEpiLogger.XMLName: string;
@@ -152,29 +319,99 @@ begin
   FDatafile := AValue;
 end;
 
+function TEpiLogger.DoNewLog(LogType: TEpiLogEntry): Integer;
+var
+  Doc: TEpiDocument;
+begin
+  FLogDatafile.NewRecords();
+  Result := FLogDatafile.Size - 1;
+  Doc := TEpiDocument(RootOwner);
+
+  with FLogDatafile do
+  begin
+    FUserNames.AsString[Result]        := UserName;
+    FTime.AsDateTime[Result]           := Now;
+    FCycle.AsInteger[Result]           := Doc.CycleNo;
+    FType.AsEnum[Result]               := LogType;
+  end;
+end;
+
+function TEpiLogger.GetKeyValues: EpiString;
+var
+  F: TEpiField;
+  Idx: Integer;
+begin
+  Idx := FDatafile.Size - 1;
+
+  Result := '';
+  for F in FDatafile.KeyFields do
+    Result += F.Name + '=' + F.AsString[Idx] + ',';
+end;
+
 procedure TEpiLogger.LogLoginSuccess;
 begin
-
+  DoNewLog(ltSuccessLogin);
 end;
 
 procedure TEpiLogger.LogLoginFail;
 begin
-
+  DoNewLog(ltFailedLogin);
+  // TODO: Force a save...
 end;
 
 procedure TEpiLogger.LogSearch(Search: TEpiSearch);
+var
+  Idx, i: Integer;
+  S: String;
 begin
+  Idx := DoNewLog(ltSearch);
 
+  S := DupeString('(', Search.ConditionCount - 2);
+
+  for i := 0 to Search.ConditionCount - 1 do
+    with Search.SearchCondiction[I] do
+      begin
+        if I > 0 then
+          case BinOp of
+            boAnd: S += ' And ';
+            boOr:  S += ' Or ';
+          end;
+        S += '(' + Field.Name + ' ' + MatchCriteriaCaption[MatchCriteria] + ' ' + Text + ')';
+        if (I > 0) and (I < Search.ConditionCount - 1) then
+          S += ')';
+      end;
+
+  with FLogDatafile do
+  begin
+    FDataFileNames.AsString[Idx] := FDatafile.Name;
+    FLogContent.AsString[Idx]    := S;
+  end;
 end;
 
 procedure TEpiLogger.LogRecordNew;
+var
+  Idx: Integer;
 begin
+  Idx := DoNewLog(ltNewRecord);
 
+  with FLogDatafile do
+  begin
+    FDataFileNames.AsString[Idx] := FDatafile.Name;
+    FLogContent.AsString[Idx]    := GetKeyValues;
+  end;
 end;
 
 procedure TEpiLogger.LogRecordEdit(EditedFields: TEpiFields);
+var
+  Idx: Integer;
 begin
+  Idx := DoNewLog(ltNewRecord);
 
+  with FLogDatafile do
+  begin
+    FDataFileNames.AsString[Idx] := FDatafile.Name;
+    FLogContent.AsString[Idx]    := GetKeyValues;
+  end;
 end;
 
 procedure TEpiLogger.LogRecordView(RecordNo: Integer);
@@ -254,17 +491,17 @@ end;
 
 function TEpiEnumField.GetAsValue(const index: Integer): EpiVariant;
 begin
-
+  result := 0;
 end;
 
 function TEpiEnumField.GetHasDefaultValue: boolean;
 begin
-
+  result := false;
 end;
 
 function TEpiEnumField.GetIsMissing(const index: Integer): boolean;
 begin
-
+  result := (AsEnum[Index] = ltNone);
 end;
 
 procedure TEpiEnumField.MovePackData(const SrcIdx, DstIdx, Count: integer);

@@ -7,6 +7,8 @@ type
     edceRecordStatus,              // Status of record changed
     edceStatusbarContentString,    // Statusbar Content string changed
     edcePack,                      // A pack procedure is starting: Data = Array of recnums to be deleted.
+    edceBeginCommit,               // Sent (by user) before a commit is initiated. Data: 0 = new records, 1 = edited record.
+    edceEndCommit                  // Sent (by user) when a commit is completed.
   );
 
   TEpiDataFilesEnumerator = class;
@@ -122,6 +124,11 @@ type
     property    VerifiedCount: Integer read GetVerifiedCount;
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
+
+  { Record commit }
+  public
+    procedure  BeginCommitRecord(NewRecord: boolean = true);
+    procedure  EndCommitRecord;
 
   { DataFile properties }
   private

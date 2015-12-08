@@ -1251,6 +1251,16 @@ begin
   SortFields.Free;
 end;
 
+procedure TEpiDataFile.BeginCommitRecord(NewRecord: boolean);
+begin
+  DoChange(eegDataFiles, Word(edceBeginCommit), Pointer(ifthen(NewRecord, 0, 1)));
+end;
+
+procedure TEpiDataFile.EndCommitRecord;
+begin
+  DoChange(eegDataFiles, Word(edceEndCommit), nil);
+end;
+
 procedure TEpiDataFile.BeginUpdate;
 begin
   inherited BeginUpdate;

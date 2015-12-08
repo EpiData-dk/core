@@ -77,7 +77,6 @@ type
   TEpiSearchDirection = (sdForward, sdBackward);
   TEpiSearch = class
   private
-    FConditionCount: integer;
     FDataFile: TEpiDataFile;
     FDirection: TEpiSearchDirection;
     FList: TList;
