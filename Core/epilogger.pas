@@ -1,12 +1,13 @@
 unit epilogger;
 
+{$codepage UTF8}
 {$mode objfpc}{$H+}
 
 interface
 
 uses
   Classes, SysUtils, epidatafiles, epidatafilestypes, epicustombase, epitools_search,
-  Laz2_DOM;
+  Laz2_DOM, DCPrijndael;
 
 type
   TEpiLogEntry = (
@@ -21,6 +22,11 @@ type
     ltAppend           // Appended data to datafiles
   );
 
+
+const
+  EpiLogEntryDataFileSet = [ltSearch, ltNewRecord, ltEditRecord, ltViewRecord, ltPack, ltAppend];
+
+type
 
   { TEpiEnumField }
 
@@ -71,12 +77,14 @@ type
 
   TEpiLog = class(TEpiDataFile)
   private
-    FUserNames:      TEpiField;
-    FTime:           TEpiField;
-    FCycle:          TEpiField;
-    FType:           TEpiEnumField;
-    FDataFileNames:  TEpiField;
-    FLogContent:     TEpiField;
+    FUserNames:      TEpiField;       // Username for the log entry
+    FTime:           TEpiField;       // Time of log entry
+    FCycle:          TEpiField;       // Cycly no fo the log entry
+    FType:           TEpiEnumField;   // Type of log entry
+    FDataFileNames:  TEpiField;       // Name of datafile for log entry (if applicable)
+    FKeyFieldValues: TEpiField;       // Commaseperated string with Field=Value entries of key field values.
+    FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
+    FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
   public
     constructor Create(AOwner: TEpiCustomBase; const aSize: integer = 0);
   end;
@@ -89,8 +97,8 @@ type
     TCommitState = (csNone, csNewRecord, csEditRecord);
   private
     FCommitState: TCommitState;
-    FDataLog: TStrings;
-    procedure ClearDataLog;
+    FDataLog: TList;
+    procedure StoreDataEvent(Field: TEpiField; Data: PEpiFieldDataEventRecord);
 
   private
     FLogDatafile: TEpiLog;
@@ -99,50 +107,151 @@ type
       EventType: Word; Data: Pointer);
   public
     constructor Create(AOwner: TEpiCustomBase); override;
+
+  { Save/Load }
+  private
+    function    CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer): TDOMElement;
+    procedure   AddKeyFieldValues(RootNode: TDOMElement; LogIndex: Integer);
+    procedure   AddEditFieldValue(RootNode: TDOMElement; LogIndex: Integer);
+    procedure   AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
+  public
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
 
   { Logging properties }
   private
-    FUserName: string;
+    FUserName: UTF8String;
     FDatafile: TEpiDataFile;
-    procedure SetUserName(AValue: string);
+    procedure SetUserName(AValue: UTF8String);
     procedure SetDatafile(AValue: TEpiDataFile);
     function  DoNewLog(LogType: TEpiLogEntry): Integer;  // Result = Index for new record.
-    function  GetKeyValues: EpiString;
+    function  GetKeyValues(Index: integer): EpiString;
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
-    property   UserName: string read FUserName write SetUserName;
+    property   UserName: UTF8String read FUserName write SetUserName;
 
   { Logging methods }
   private
     procedure  LogLoginSuccess();
-    procedure  LogLoginFail();
-    procedure  LogSearch(Search: TEpiSearch);
+    procedure  LogLoginFail(IncorrectUserName: boolean);
     procedure  LogRecordNew();
-    procedure  LogRecordEdit(EditedFields: TEpiFields);
+    procedure  LogRecordEdit(RecordNo: Integer);
     procedure  LogRecordView(RecordNo: Integer);
     procedure  LogPack();
   public
+    procedure  LogSearch(Search: TEpiSearch);
     procedure  LogAppend();
+  end;
+
+  { TEpiFailedLogger }
+
+  TEpiFailedLogger = class(TEpiCustomBase)
+  private
+    FEncrypter: TDCP_rijndael;
+    procedure DocumentHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+    function    XMLName: string; override;
+    function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
   end;
 
 implementation
 
 uses
-  typinfo, epidocument, epiadmin, strutils;
+  typinfo, epidocument, epiadmin, strutils, DCPsha512;
 
-procedure TEpiLogger.ClearDataLog;
+type
+  TDataLogEntry = record
+    FieldName:      EpiString;
+    OldStringValue: EpiString;
+    NewStringValue: EpiString;
+    case FieldType: TEpiFieldType of      // The senders Fieldtype (also accessible through the change event, but convient)
+      ftBoolean:                          // Old Value as per field type
+        (OldBoolValue: EpiBool;
+         NewBoolValue: EpiBool);
+      ftInteger,
+      ftAutoInc:
+        (OldIntValue: EpiInteger;
+         NewIntValue: EpiInteger);
+      ftFloat:
+        (OldFloatValue: EpiFloat;
+         NewFloatValue: EpiFloat);
+      ftDMYDate,
+      ftMDYDate,
+      ftYMDDate,
+      ftDMYAuto,
+      ftMDYAuto,
+      ftYMDAuto:
+        (OldDateValue: EpiDate;
+         NewDateValue: EpiDate);
+      ftTime,
+      ftTimeAuto:
+        (OldTimeValue: EpiTime;
+         NewTimeValue: EpiTime);
+  end;
+  PDataLogEntry = ^TDataLogEntry;
+
+procedure TEpiLogger.StoreDataEvent(Field: TEpiField;
+  Data: PEpiFieldDataEventRecord);
 var
-  PData: PEpiFieldDataEventRecord;
+  NewData: PDataLogEntry;
 begin
-  for i := 0 to FDataLog.Count - 1 do
-    begin
-      PData := PEpiFieldDataEventRecord(FDataLog.Objects[I]);
-      Dispose(PData);
+  NewData := New(PDataLogEntry);
+
+  NewData^.FieldType := Field.FieldType;
+  NewData^.FieldName := Field.Name;
+  with Data^, NewData^ do
+    case Data^.FieldType of
+      ftBoolean:
+        begin
+          OldBoolValue := BoolValue;
+          NewBoolValue := Field.AsBoolean[Data^.Index];
+        end;
+
+      ftInteger,
+      ftAutoInc:
+        begin
+          OldIntValue := IntValue;
+          NewIntValue := Field.AsInteger[Data^.Index];
+        end;
+
+      ftFloat:
+        begin
+          OldFloatValue := FloatValue;
+          NewFloatValue := Field.AsFloat[Data^.Index];
+        end;
+
+      ftDMYDate,
+      ftMDYDate,
+      ftYMDDate,
+      ftDMYAuto,
+      ftMDYAuto,
+      ftYMDAuto:
+        begin
+          OldDateValue := DateValue;
+          NewDateValue := Field.AsDate[Data^.Index];
+        end;
+
+      ftTime,
+      ftTimeAuto:
+        begin
+          OldTimeValue := TimeValue;
+          NewTimeValue := Field.AsTime[Data^.Index];
+        end;
+
+      ftString,
+      ftUpperString:
+        begin
+          OldStringValue := StringValue^;
+          NewStringValue := Field.AsString[Data^.Index];
+        end;
     end;
-  FDataLog.Clear;
+
+  FDataLog.Add(NewData);
 end;
 
 procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
@@ -160,12 +269,12 @@ begin
             LogLoginSuccess();
           end;
 
-        eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
+{        eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
         eaceAdminIncorrectPassword:      // Data: string   = the incorrect login name
           begin
-            UserName := string(Data);
-            LogLoginFail();
-          end;
+            UserName := PUTF8String(Data)^;
+            LogLoginFail(TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectUserName);
+          end;                    }
 
         eaceAdminIncorrectNewPassword:   // Data: TEpiUser = the authenticated user.
           ;
@@ -195,8 +304,8 @@ begin
               FCommitState := csNewRecord
             else
               begin
-                ClearDataLog;
                 FCommitState := csEditRecord;
+                FDataLog := TList.Create;
               end;
           end;
 
@@ -209,11 +318,13 @@ begin
                 LogRecordNew();
 
               csEditRecord:
-                LogRecordEdit(nil);
+                LogRecordEdit(PtrInt(Data));
             end;
-
             FCommitState := csNone;
-          end
+          end;
+
+        edceLoadRecord:
+          LogRecordView(PtrInt(Data));
 
       else
         {
@@ -229,11 +340,9 @@ begin
         efceData:
           begin
             if (FCommitState <> csEditRecord) then Exit;
-
-            PData := PEpiFieldDataEventRecord(Data);
-            FDataLog.AddObject(TEpiField(Initiator).Name, );
-            // TODO : Store data changes during a commit fase.
+            StoreDataEvent(TEpiField(Initiator), Data);
           end;
+
       else
         {
         efceSetDecimal: ;
@@ -272,8 +381,6 @@ begin
     }
     Exit;
   end;
-
-
 end;
 
 constructor TEpiLogger.Create(AOwner: TEpiCustomBase);
@@ -282,7 +389,7 @@ var
 begin
   inherited Create(AOwner);
   FCommitState := csNone;
-  FDataLog := TStringList.Create;
+  FLogDatafile := TEpiLog.Create(nil);
 
   RO := RootOwner;
   if not (RO is TEpiDocument) then
@@ -291,14 +398,201 @@ begin
   RO.RegisterOnChangeHook(@DocumentHook, true);
 end;
 
+function TEpiLogger.CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer
+  ): TDOMElement;
+var
+  S: String;
+begin
+  case FLogDatafile.FType.AsEnum[LogIndex] of
+    ltNone: ;
+    ltSuccessLogin:
+      S := 'LoginSuccess';
+    ltFailedLogin:
+      S := 'LoginFailed';
+    ltSearch:
+      S := 'Search';
+    ltNewRecord:
+      S := 'NewRecord';
+    ltEditRecord:
+      S := 'EditRecord';
+    ltViewRecord:
+      S := 'ViewRecord';
+    ltPack:
+      S := 'Pack';
+    ltAppend:
+      S := 'Append';
+  end;
+
+  Result := RootDoc.CreateElement(S);
+
+  if (FLogDatafile.FType.AsEnum[LogIndex] in EpiLogEntryDataFileSet) then
+    SaveDomAttr(Result, rsDataFileRef, FLogDatafile.FDataFileNames.AsString[LogIndex]);
+  SaveDomAttr(Result, 'time', FLogDatafile.FTime.AsDateTime[LogIndex]);
+  SaveDomAttr(Result, 'username', FLogDatafile.FUserNames.AsString[LogIndex]);
+  SaveDomAttr(Result, rsCycle, FLogDatafile.FCycle.AsString[LogIndex]);
+end;
+
+procedure TEpiLogger.AddKeyFieldValues(RootNode: TDOMElement; LogIndex: Integer
+  );
+begin
+  SaveTextContent(RootNode, 'Keys', FLogDatafile.FKeyFieldValues.AsString[LogIndex]);
+end;
+
+procedure TEpiLogger.AddEditFieldValue(RootNode: TDOMElement; LogIndex: Integer
+  );
+var
+  AList: TList;
+  Data: PDataLogEntry;
+  Elem: TDOMElement;
+  MissingStr: EpiString;
+begin
+  AList := TList(FLogDatafile.FDataContent.AsInteger[LogIndex]);
+  MissingStr := TEpiStringField.DefaultMissing;
+
+  for Data in AList do
+  with Data^ do
+  begin
+    Elem := RootNode.OwnerDocument.CreateElement('Change');
+    SaveDomAttr(Elem, 'fieldRef', FieldName);
+    case FieldType of
+      ftBoolean:
+        begin
+          if TEpiBoolField.CheckMissing(OldBoolValue) then
+            SaveDomAttr(Elem, 'before', MissingStr)
+          else
+            SaveDomAttr(Elem, 'before', OldBoolValue);
+
+          if TEpiBoolField.CheckMissing(NewBoolValue) then
+            SaveDomAttr(Elem, 'after', MissingStr)
+          else
+            SaveDomAttr(Elem, 'after', NewBoolValue);
+        end;
+
+      ftInteger,
+      ftAutoInc:
+        begin
+          if TEpiIntField.CheckMissing(OldIntValue) then
+            SaveDomAttr(Elem, 'before', MissingStr)
+          else
+            SaveDomAttr(Elem, 'before', OldIntValue);
+
+          if TEpiIntField.CheckMissing(NewIntValue) then
+            SaveDomAttr(Elem, 'after', MissingStr)
+          else
+            SaveDomAttr(Elem, 'after', NewIntValue);
+        end;
+
+      ftFloat:
+        begin
+          if TEpiFloatField.CheckMissing(OldFloatValue) then
+            SaveDomAttr(Elem, 'before', MissingStr)
+          else
+            SaveDomAttr(Elem, 'before', OldFloatValue);
+
+          if TEpiFloatField.CheckMissing(NewFloatValue) then
+            SaveDomAttr(Elem, 'after', MissingStr)
+          else
+            SaveDomAttr(Elem, 'after', NewFloatValue);
+        end;
+
+      ftDMYDate,
+      ftMDYDate,
+      ftYMDDate,
+      ftDMYAuto,
+      ftMDYAuto,
+      ftYMDAuto:
+        begin
+          if TEpiDateField.CheckMissing(OldDateValue) then
+            SaveDomAttr(Elem, 'before', MissingStr)
+          else
+            SaveDomAttr(Elem, 'before', OldDateValue);
+
+          if TEpiDateField.CheckMissing(NewDateValue) then
+            SaveDomAttr(Elem, 'after', MissingStr)
+          else
+            SaveDomAttr(Elem, 'after', NewDateValue);
+        end;
+
+      ftTime,
+      ftTimeAuto:
+        begin
+          if TEpiDateTimeField.CheckMissing(OldTimeValue) then
+            SaveDomAttr(Elem, 'before', MissingStr)
+          else
+            SaveDomAttr(Elem, 'before', OldTimeValue);
+
+          if TEpiDateTimeField.CheckMissing(NewTimeValue) then
+            SaveDomAttr(Elem, 'after', MissingStr)
+          else
+            SaveDomAttr(Elem, 'after', NewTimeValue);
+        end;
+
+      ftString,
+      ftUpperString:
+        begin
+          if TEpiStringField.CheckMissing(OldStringValue) then
+            SaveDomAttr(Elem, 'before', MissingStr)
+          else
+            SaveDomAttr(Elem, 'before', OldStringValue);
+
+          if TEpiStringField.CheckMissing(NewStringValue) then
+            SaveDomAttr(Elem, 'after', MissingStr)
+          else
+            SaveDomAttr(Elem, 'after', NewStringValue);
+        end;
+    end;
+    RootNode.AppendChild(Elem);
+  end;
+end;
+
+procedure TEpiLogger.AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
+begin
+  SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
+end;
+
 function TEpiLogger.XMLName: string;
 begin
-  Result := inherited XMLName;
+  Result := 'Log';
 end;
 
 function TEpiLogger.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  i: Integer;
+  S: String;
+  Elem: TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
+
+  with FLogDatafile do
+    for i := 0 to FType.Size - 1 do
+    begin
+      Elem := CreateCommonNode(RootDoc, I);
+
+      case FType.AsEnum[I] of
+        ltNone: ;
+        ltSuccessLogin: ;
+        ltFailedLogin:
+          if FDataContent.AsInteger[I] = 0
+            then
+              SaveDomAttr(Elem, 'type', 'password')
+            else
+              SaveDomAttr(Elem, 'type', 'login');
+        ltSearch:
+          AddSearchString(Elem, I);
+        ltNewRecord:
+          AddKeyFieldValues(Elem, I);
+        ltEditRecord:
+          begin
+            AddKeyFieldValues(Elem, I);
+            AddEditFieldValue(Elem, I );
+          end;
+        ltViewRecord:
+          AddKeyFieldValues(Elem, I);
+        ltPack: ;
+        ltAppend: ;
+      end;
+      Result.AppendChild(Elem);
+    end;
 end;
 
 procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
@@ -307,7 +601,7 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 end;
 
-procedure TEpiLogger.SetUserName(AValue: string);
+procedure TEpiLogger.SetUserName(AValue: UTF8String);
 begin
   if FUserName = AValue then Exit;
   FUserName := AValue;
@@ -333,19 +627,21 @@ begin
     FTime.AsDateTime[Result]           := Now;
     FCycle.AsInteger[Result]           := Doc.CycleNo;
     FType.AsEnum[Result]               := LogType;
+    if Assigned(FDatafile) then
+      FDataFileNames.AsString[Result]    := FDatafile.Name;
   end;
 end;
 
-function TEpiLogger.GetKeyValues: EpiString;
+function TEpiLogger.GetKeyValues(Index: integer): EpiString;
 var
   F: TEpiField;
-  Idx: Integer;
 begin
-  Idx := FDatafile.Size - 1;
-
   Result := '';
   for F in FDatafile.KeyFields do
-    Result += F.Name + '=' + F.AsString[Idx] + ',';
+    Result += F.Name + '=' + F.AsString[Index] + ',';
+
+  if (Result <> '') then
+    Delete(Result, Length(Result), 1);
 end;
 
 procedure TEpiLogger.LogLoginSuccess;
@@ -353,9 +649,18 @@ begin
   DoNewLog(ltSuccessLogin);
 end;
 
-procedure TEpiLogger.LogLoginFail;
+procedure TEpiLogger.LogLoginFail(IncorrectUserName: boolean);
+var
+  Idx: Integer;
 begin
-  DoNewLog(ltFailedLogin);
+  Idx := DoNewLog(ltFailedLogin);
+
+  with FLogDatafile do
+    if IncorrectUserName then
+      FDataContent.AsInteger[Idx] := 1
+    else
+      FDataContent.AsInteger[Idx] := 0;
+
   // TODO: Force a save...
 end;
 
@@ -383,7 +688,6 @@ begin
 
   with FLogDatafile do
   begin
-    FDataFileNames.AsString[Idx] := FDatafile.Name;
     FLogContent.AsString[Idx]    := S;
   end;
 end;
@@ -396,37 +700,41 @@ begin
 
   with FLogDatafile do
   begin
-    FDataFileNames.AsString[Idx] := FDatafile.Name;
-    FLogContent.AsString[Idx]    := GetKeyValues;
+    FKeyFieldValues.AsString[Idx]    := GetKeyValues(FDatafile.Size - 1);
   end;
 end;
 
-procedure TEpiLogger.LogRecordEdit(EditedFields: TEpiFields);
+procedure TEpiLogger.LogRecordEdit(RecordNo: Integer);
 var
   Idx: Integer;
 begin
-  Idx := DoNewLog(ltNewRecord);
+  if (FDataLog.Count = 0) then Exit;
 
+  Idx := DoNewLog(ltEditRecord);
   with FLogDatafile do
   begin
-    FDataFileNames.AsString[Idx] := FDatafile.Name;
-    FLogContent.AsString[Idx]    := GetKeyValues;
+    FKeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
+    FDataContent.AsInteger[Idx]   := EpiInteger(PtrInt(FDataLog));
   end;
 end;
 
 procedure TEpiLogger.LogRecordView(RecordNo: Integer);
+var
+  Idx: Integer;
 begin
-
+  Idx := DoNewLog(ltViewRecord);
+  with FLogDatafile do
+    FKeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
 end;
 
 procedure TEpiLogger.LogPack;
 begin
-
+  DoNewLog(ltPack);
 end;
 
 procedure TEpiLogger.LogAppend;
 begin
-
+  DoNewLog(ltAppend);
 end;
 
 { TEpiEnumField }
@@ -441,7 +749,6 @@ procedure TEpiEnumField.SetAsEnum(const Index: Integer; AValue: TEpiLogEntry);
 begin
   CheckIndex(Index);
   FData[Index] := AValue;
-
 end;
 
 function TEpiEnumField.GetAsString(const index: Integer): EpiString;
@@ -633,6 +940,71 @@ begin
   FCycle     := Fields.NewField(ftInteger);
   FType      := TEpiEnumField.Create(nil, ftBoolean);
   MainSection.Fields.AddItem(FType);
+  FDataFileNames  := Fields.NewField(ftString);
+  FKeyFieldValues := Fields.NewField(ftString);
+  FDataContent    := Fields.NewField(ftInteger);
+  FLogContent     := Fields.NewField(ftString);
+end;
+
+{ TEpiFailedLogger }
+
+procedure TEpiFailedLogger.DocumentHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+var
+  UserName: UTF8String;
+begin
+  if (EventGroup <> eegAdmin) then exit;
+
+
+  if TEpiAdminChangeEventType(EventType) in
+       [
+         eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
+         eaceAdminIncorrectPassword       // Data: string   = the incorrect login name
+       ]
+  then
+    begin
+      UserName := PUTF8String(Data)^;
+
+//      LogLoginFail(TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectUserName);
+    end;
+end;
+
+constructor TEpiFailedLogger.Create(AOwner: TEpiCustomBase);
+var
+  RO: TEpiCustomBase;
+  GUID: TGUID;
+begin
+  inherited Create(AOwner);
+
+  RO := RootOwner;
+  if not (RO is TEpiDocument) then
+    Exit;
+
+  CreateGUID(GUID);
+  FEncrypter := TDCP_rijndael.Create(nil);
+  FEncrypter.Init(GUID, SizeOf(TGuid)*8, nil);
+
+  RO.RegisterOnChangeHook(@DocumentHook, true);
+end;
+
+function TEpiFailedLogger.XMLName: string;
+begin
+  Result := inherited XMLName;
+end;
+
+function TEpiFailedLogger.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+
+
+end;
+
+procedure TEpiFailedLogger.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
 end;
 
 end.

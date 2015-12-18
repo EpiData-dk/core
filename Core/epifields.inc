@@ -914,6 +914,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1213,6 +1214,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1476,6 +1478,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1823,8 +1826,10 @@ procedure TEpiStringField.SetAsString(const index: Integer;
 var
   Val: PEpiFieldDataEventRecord;
   OldString: EpiString;
+  I: SizeInt;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1840,8 +1845,10 @@ begin
   if not LoadingRecs then
   begin
     DoChange(eegFields, word(efceData), Val);
+    I := StringRefCount(OldString);
     Dispose(Val);
   end;
+  I := StringRefCount(OldString);
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -2202,6 +2209,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin
@@ -2441,6 +2449,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin

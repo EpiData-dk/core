@@ -14,7 +14,12 @@ uses
 type
 
   TEpiDocumentChangeEvent = (
-    edcePassword
+    // Simple document password has changed.
+    edcePassword,
+
+    // Any listeners are requested to force a save, due to eg. log changes.
+    //  data = TDomDocument (OwnerDocument)
+    edceRequestSave
   );
 
   TEpiProgressType =
@@ -23,6 +28,11 @@ type
       eptFinish,
       eptRecords
     );
+
+  TEpiDocumentFlag = (
+    edfLoginFailed                    // Set during load if at least one failed login attempt was detected.
+  );
+  TEpiDocumentFlags = set of TEpiDocumentFlag;
 
   TEpiProgressEvent = procedure (
     Const Sender: TEpiCustomBase;
@@ -55,6 +65,7 @@ type
     FDataFiles: TEpiDataFiles;
     FRelations: TEpiDatafileRelationList;
     FLogger: TEpiLogger;
+    FFailedLog: TEpiFailedLogger;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
@@ -82,6 +93,7 @@ type
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
+
     // EpiData XML Version 2 perperties:
     property   PassWord: string read FPassWord write SetPassWord;
 
@@ -96,6 +108,13 @@ type
     function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
 
+  { Flags }
+  private
+    FFlags: TEpiDocumentFlags;
+  protected
+    property   Flags: TEpiDocumentFlags read FFlags;
+
+  { Save }
   public
     function   SaveToXmlDocument: TXMLDocument;
   protected
@@ -150,7 +169,9 @@ begin
   FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
   FLogger          := TEpiLogger.Create(Self);
+  FFailedLog       := TEpiFailedLogger.Create(Self);
   FCycleNo         := 0;
+  FFlags           := [];
 
   RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations, Logger]);
 
@@ -266,6 +287,16 @@ begin
   // Then language!
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
 
+  // Third is cycle no:
+  if (Version >= 2) then
+    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
+
+  // Load any failed logins in the external log before loading users.
+  if (Version >= 4) and
+     (LoadNode(Node, Root, 'ExLog', false)
+  then
+    FFailedLog.LoadFromXml(Node, ReferenceMap);
+
   // Version 4:
   // Now check for User login;
   if (Version >= 4) and
@@ -280,15 +311,35 @@ begin
       // request for password from user.
       // Loading the rest of the user information (Name, etc.) is
       // done later.
-      case Admin.Users.PreLoadFromXml(Node) of
+//      case Admin.Users.PreLoadFromXml(Node) of
+      case Admin.LoadCrypto(Node, ReferenceMap) of
         prSuccess:
           ;
 
         prFailed:
-          raise EEpiBadPassword.Create('Incorrect Username/Password');
+          begin
+            Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
+            LoadNode(Node, Root, 'ExLog', false);
+            Root.ReplaceChild(Node, Elem)
+
+            DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
+            raise EEpiBadPassword.Create('Incorrect Username/Password');
+          end;
 
         prCanceled:
-          raise EEpiPasswordCanceled.Create('');
+          begin
+            if (edfLoginFailed in Flags) then
+            begin
+              Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
+              LoadNode(Node, Root, 'ExLog', false);
+              Root.ReplaceChild(Node, Elem)
+
+              DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
+              Exclude(FFlags, edfLoginFailed);
+            end;
+
+            raise EEpiPasswordCanceled.Create('Login Canceled');
+          end;
       end;
 
       {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
@@ -333,7 +384,6 @@ begin
       Raise EEpiBadPassword.Create('Incorrect Password');
 
     PassWord := UserPW;
-    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
   end;
 
   // Version 1:

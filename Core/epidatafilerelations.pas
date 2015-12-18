@@ -227,6 +227,7 @@ begin
 
   ReferenceMap.AddFixupReference(Self, TEpiMasterRelation, 0, LoadAttrString(Root, rsDataFileRef));
 
+  // XML tag changed from <Relation(s)> to <DataFileRelation(s)> in version 4.
   RO := RootOwner;
   if (RO is TEpiDocument) and
      (TEpiDocument(RO).Loading) and
@@ -244,6 +245,7 @@ function TEpiMasterRelation.XMLName: string;
 var
   RO: TEpiCustomBase;
 begin
+  // XML tag changed from <Relation(s)> to <DataFileRelation(s)> in version 4.
   RO := RootOwner;
   if (RO is TEpiDocument) and
      (TEpiDocument(RO).Loading) and

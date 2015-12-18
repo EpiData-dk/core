@@ -1022,6 +1022,7 @@ begin
 
   // Special field to hold status of current record.
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
+  FRecordStatus.FDataFile := Self;
   FRecordStatus.Size := Size;
 
   // Container for Key Fields.
@@ -1256,9 +1257,14 @@ begin
   DoChange(eegDataFiles, Word(edceBeginCommit), Pointer(ifthen(NewRecord, 0, 1)));
 end;
 
-procedure TEpiDataFile.EndCommitRecord;
+procedure TEpiDataFile.EndCommitRecord(RecordNo: Integer);
 begin
-  DoChange(eegDataFiles, Word(edceEndCommit), nil);
+  DoChange(eegDataFiles, Word(edceEndCommit), Pointer(RecordNo));
+end;
+
+procedure TEpiDataFile.LoadRecord(RecordNo: Integer);
+begin
+  DoChange(eegDataFiles, Word(edceLoadRecord), Pointer(RecordNo));
 end;
 
 procedure TEpiDataFile.BeginUpdate;

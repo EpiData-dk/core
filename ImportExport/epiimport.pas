@@ -789,7 +789,7 @@ const
 
   function RequestPassword(Const EncryptedString: string): boolean;
   var
-    S, FPassword: string;
+    S, FPassword: UTF8String;
     Digest: Pointer;
     Hash: TDCP_sha1;
     InitVector: array[0..15] of byte;

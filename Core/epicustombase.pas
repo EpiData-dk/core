@@ -145,13 +145,15 @@ type
     procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
       Const Value: boolean); overload;
     procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
-      Const Value: integer); overload;
+      Const Value: EpiBool); overload;
     procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
-      Const Value: extended); overload;
+      Const Value: EpiInteger); overload;
     procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
-      Const Value: TDateTime); overload;
+      Const Value: EpiFloat); overload;
     procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
-      Const Value: string); overload;
+      Const Value: EpiDateTime); overload;
+    procedure  SaveDomAttr(Const Node: TDomElement; Const Tag: String;
+      Const Value: EpiString); overload;
     procedure  SaveDomAttrEnum(Const Node: TDomElement; Const Tag: String;
       Const Value; TypeInfo: PTypeInfo);
     // Dom Text Content
@@ -940,7 +942,7 @@ begin
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
-  const Tag: String; const Value: string);
+  const Tag: String; const Value: EpiString);
 begin
   Node.SetAttribute(Tag, Value);
 end;
@@ -966,13 +968,13 @@ begin
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
-  const Tag: String; const Value: integer);
+  const Tag: String; const Value: EpiInteger);
 begin
   SaveDomAttr(Node, Tag, IntToStr(Value));
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
-  const Tag: String; const Value: extended);
+  const Tag: String; const Value: EpiFloat);
 begin
   if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
@@ -985,7 +987,7 @@ begin
 end;
 
 procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
-  const Tag: String; const Value: TDateTime);
+  const Tag: String; const Value: EpiDateTime);
 begin
   if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
@@ -1001,6 +1003,12 @@ procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
   const Tag: String; const Value: boolean);
 begin
   SaveDomAttr(Node, Tag, BoolToStr(Value, 'true', 'false'));
+end;
+
+procedure TEpiCustomBase.SaveDomAttr(const Node: TDomElement;
+  const Tag: String; const Value: EpiBool);
+begin
+  SaveDomAttr(Node, Tag, EpiInteger(Value));
 end;
 
 procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;

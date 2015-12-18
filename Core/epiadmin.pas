@@ -133,8 +133,8 @@ type
     Sender: TObject;
     RequestType: TEpiRequestPasswordType;
     RequestNo: Integer;
-    var Login: string;
-    var Password: string
+    var Login: UTF8String;
+    var Password: UTF8String
   ): TEpiRequestPasswordResponse of object;
 
   TEpiUserAuthorizedEvent = procedure(
@@ -172,6 +172,7 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    function   LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap): TEpiRequestPasswordResult;
     procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
   ReferenceType: Byte; const ReferenceId: string); override;
     property   Users: TEpiUsers read FUsers;
@@ -632,6 +633,12 @@ begin
   ReferenceMap.AddFixupReference(Self, TEpiAdmin, 0, '');
 end;
 
+function TEpiAdmin.LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
+  ): TEpiRequestPasswordResult;
+begin
+
+end;
+
 procedure TEpiAdmin.FixupReferences(EpiClassType: TEpiCustomBaseClass;
   ReferenceType: Byte; const ReferenceId: string);
 begin
@@ -773,7 +780,7 @@ var
   Node: TDOMNode;
   NUser: TEpiUser;
 begin
-  // Root = <Users>
+  // Root = <Crypto>
   Result := prFailed;
 
   // Load all basic user info before requesting user for login.

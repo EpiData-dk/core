@@ -8,7 +8,8 @@ type
     edceStatusbarContentString,    // Statusbar Content string changed
     edcePack,                      // A pack procedure is starting: Data = Array of recnums to be deleted.
     edceBeginCommit,               // Sent (by user) before a commit is initiated. Data: 0 = new records, 1 = edited record.
-    edceEndCommit                  // Sent (by user) when a commit is completed.
+    edceEndCommit,                 // Sent (by user) when a commit is completed. Data = index of record edited.
+    edceLoadRecord                 // Sent (by user) when loading a record. Data = index of record viewed
   );
 
   TEpiDataFilesEnumerator = class;
@@ -125,10 +126,15 @@ type
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
 
-  { Record commit }
+  { Record load/commit: Logging related }
   public
     procedure  BeginCommitRecord(NewRecord: boolean = true);
-    procedure  EndCommitRecord;
+    procedure  EndCommitRecord(RecordNo: Integer);
+    // At the moment LoadRecord does nothing other than sending an event throught the
+    // document, notifying listeners that RecordNo is currently being viewed.
+    // There is no check for correct index, filtered dataset, etc.
+    // Currently used for logging.
+    procedure  LoadRecord(RecordNo: Integer);
 
   { DataFile properties }
   private
