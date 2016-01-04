@@ -148,6 +148,7 @@ type
 
   TEpiFailedLogger = class(TEpiCustomBase)
   private
+    FLogDataFile: TEpiLog;
     FEncrypter: TDCP_rijndael;
     procedure DocumentHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
@@ -952,7 +953,7 @@ procedure TEpiFailedLogger.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 var
-  UserName: UTF8String;
+  Idx: Integer;
 begin
   if (EventGroup <> eegAdmin) then exit;
 
@@ -962,11 +963,20 @@ begin
          eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
          eaceAdminIncorrectPassword       // Data: string   = the incorrect login name
        ]
-  then
+  then with FLogDataFile do
     begin
-      UserName := PUTF8String(Data)^;
+      NewRecords();
+      Idx := Size - 1;
 
-//      LogLoginFail(TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectUserName);
+      FType.AsEnum[Idx]        := ltFailedLogin;
+      FTime.AsDateTime[Idx]    := Now;
+      FUserNames.AsString[Idx] := PUTF8String(Data)^;
+      FCycle.AsInteger[Idx]    := TEpiDocument(RootOwner).CycleNo;
+
+      if TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectPassword then
+        FLogContent.AsInteger[Idx] := 0
+      else
+        FLogContent.AsInteger[Idx] := 1;
     end;
 end;
 
@@ -985,18 +995,19 @@ begin
   FEncrypter := TDCP_rijndael.Create(nil);
   FEncrypter.Init(GUID, SizeOf(TGuid)*8, nil);
 
+  FLogDataFile := TEpiLog.Create(nil);
+
   RO.RegisterOnChangeHook(@DocumentHook, true);
 end;
 
 function TEpiFailedLogger.XMLName: string;
 begin
-  Result := inherited XMLName;
+  Result := 'ExLog';
 end;
 
 function TEpiFailedLogger.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
-
 
 
 end;

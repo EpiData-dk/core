@@ -249,6 +249,7 @@ var
   MS: TMemoryStream;
   Res: TEpiRequestPasswordResponse;
   Count: Integer;
+  Elem: TDOMElement;
 
 begin
   inherited LoadFromXml(Root, ReferenceMap);
@@ -293,7 +294,7 @@ begin
 
   // Load any failed logins in the external log before loading users.
   if (Version >= 4) and
-     (LoadNode(Node, Root, 'ExLog', false)
+     (LoadNode(Node, Root, 'ExLog', false))
   then
     FFailedLog.LoadFromXml(Node, ReferenceMap);
 
@@ -311,7 +312,7 @@ begin
       // request for password from user.
       // Loading the rest of the user information (Name, etc.) is
       // done later.
-//      case Admin.Users.PreLoadFromXml(Node) of
+//      case Admin.Users.PreLoadUsers(Node) of
       case Admin.LoadCrypto(Node, ReferenceMap) of
         prSuccess:
           ;
@@ -320,7 +321,7 @@ begin
           begin
             Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
             LoadNode(Node, Root, 'ExLog', false);
-            Root.ReplaceChild(Node, Elem)
+            Root.ReplaceChild(Node, Elem);
 
             DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
             raise EEpiBadPassword.Create('Incorrect Username/Password');
@@ -332,7 +333,7 @@ begin
             begin
               Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
               LoadNode(Node, Root, 'ExLog', false);
-              Root.ReplaceChild(Node, Elem)
+              Root.ReplaceChild(Node, Elem);
 
               DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
               Exclude(FFlags, edfLoginFailed);

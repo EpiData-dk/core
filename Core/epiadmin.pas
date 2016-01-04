@@ -6,7 +6,8 @@ unit epiadmin;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, Laz2_DOM, DCPrijndael, epicustomrelations;
+  Classes, SysUtils, epicustombase, Laz2_DOM, DCPrijndael, epicustomrelations,
+  epidatafilestypes, epi_rsa;
 
 type
   TEpiAdmin = class;
@@ -164,9 +165,12 @@ type
   { Encrypt / Decrypt methods for user handling }
   private
     FCrypter: TDCP_rijndael;
+    FRSA:     TEpiRSA;
   protected
     function   Encrypt(Const Key, Data: String): String;  //encrypts a value with given key, using the Rijndael crytp engine.
     function   Decrypt(Const Key, Data: String): String;  //decrypts a value with given key, using the Rijndael crytp engine.
+
+  { Class stuff }
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor Destroy; override;
@@ -218,6 +222,8 @@ type
   private
     function GetAdmin: TEpiAdmin;
     function GetUsers(Index: integer): TEpiUser;
+    procedure  PreLoadUsers(Root: TDOMNode);
+    procedure  PreSaveUsers(RootDoc: TDOMDocument; Root: TDOMNode);
   protected
     function Prefix: string; override;
   public
@@ -226,8 +232,6 @@ type
     function   XMLName: string; override;
     function   GetUserByLogin(const Login: string): TEpiUser;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function   PreLoadFromXml(Root: TDOMNode): TEpiRequestPasswordResult;
-    procedure  PreSaveToDom(RootDoc: TDOMDocument; Root: TDOMNode);
     function   NewUser: TEpiUser;
     function   GetEnumerator: TEpiUsersEnumerator;
     Property   Users[Index: integer]: TEpiUser read GetUsers; default;
@@ -244,7 +248,7 @@ type
     FLastLogin: TDateTime;
     FFullName: string;
     // Master password as stored in file:
-    // - Base64( AES ( CleearTextPassword ))
+    // - Base64( AES ( ClearTextPassword ))
     FMasterPassword: string;
     FModified: TDateTime;
     // Users password as stored in file:
@@ -446,7 +450,7 @@ end;
 
 function TEpiAdmin.DoRequestPassword: TEpiRequestPasswordResult;
 var
-  Login, Password, NewPassword: string;
+  Login, Password, NewPassword: UTF8String;
   TheUser: TEpiUser;
   Key: String;
   Res: TEpiRequestPasswordResponse;
@@ -587,6 +591,7 @@ begin
   FAdminRelation.Group := FAdminsGroup;       }
 
   FCrypter := TDCP_rijndael.Create(nil);
+  FRSA     := TEpiRSA.Create;
 
   RegisterClasses([Users, Groups]);
 end;
@@ -635,8 +640,20 @@ end;
 
 function TEpiAdmin.LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
   ): TEpiRequestPasswordResult;
+var
+  Node: TDOMNode;
+  S: EpiString;
 begin
+  // Root = <Crypto>
 
+//  LoadNode(Node, Root, rsUsers, true);
+  Users.PreLoadUsers(Root);
+
+  S := LoadNodeString(Root, 'PubCert', '', false);
+  if (S <> '') then
+    FRSA.PublicKey := S;
+
+  Result := DoRequestPassword;
 end;
 
 procedure TEpiAdmin.FixupReferences(EpiClassType: TEpiCustomBaseClass;
@@ -687,6 +704,8 @@ begin
 
   FAdminRelation := FAdminRelations.NewGroupRelation;
   FAdminRelation.Group := FAdminsGroup;
+
+  FRSA.GenerateKeys();
 end;
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -775,14 +794,12 @@ begin
   result := rsUsers;
 end;
 
-function TEpiUsers.PreLoadFromXml(Root: TDOMNode): TEpiRequestPasswordResult;
+procedure TEpiUsers.PreLoadUsers(Root: TDOMNode);
 var
   Node: TDOMNode;
   NUser: TEpiUser;
 begin
-  // Root = <Crypto>
-  Result := prFailed;
-
+  // Root = <Users>
   // Load all basic user info before requesting user for login.
   Node := Root.FirstChild;
   while Assigned(Node) do
@@ -803,18 +820,16 @@ begin
 
     Node := Node.NextSibling;
   end;
-
-  result := Admin.DoRequestPassword;
 end;
 
-procedure TEpiUsers.PreSaveToDom(RootDoc: TDOMDocument; Root: TDOMNode);
+procedure TEpiUsers.PreSaveUsers(RootDoc: TDOMDocument; Root: TDOMNode);
 var
   UsersNode: TDOMElement;
   UserNode: TDOMElement;
   i: Integer;
 begin
-  // Root = <EpiData>
-  UsersNode := RootDoc.CreateElement(rsCrypto);
+  // Root = <Crypto>
+  UsersNode := RootDoc.CreateElement(rsUsers);
 
   // for User in Self do
   for i := 0 to Count - 1 do
@@ -828,7 +843,7 @@ begin
     UsersNode.AppendChild(UserNode);
   end;
 
-  Root.InsertBefore(UsersNode, Root.FirstChild);
+  Root.AppendChild(UsersNode);
 end;
 
 function TEpiUsers.NewUser: TEpiUser;
@@ -863,7 +878,7 @@ begin
     if not Assigned(NUser) then
     begin
       // This situation should only occur if someone delete the XML line with
-      // login/pw that should have been loaded during PreLoadFromXml;
+      // login/pw that should have been loaded during PreLoadUsers;
       NUser := NewUser;
       NUser.Login := LoadAttrString(Node, rsId);
       NUser.FPassword := LoadAttrString(Node, rsPassword);
