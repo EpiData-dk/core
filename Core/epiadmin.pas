@@ -177,8 +177,8 @@ type
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function   LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap): TEpiRequestPasswordResult;
-    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
-  ReferenceType: Byte; const ReferenceId: string); override;
+    function   SaveCrypto(RootDoc: TDOMDocument): TDOMElement;
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
     property   Users: TEpiUsers read FUsers;
     property   Groups: TEpiGroups read FGroups;
     property   Admins: TEpiGroup read FAdminsGroup;
@@ -223,7 +223,7 @@ type
     function GetAdmin: TEpiAdmin;
     function GetUsers(Index: integer): TEpiUser;
     procedure  PreLoadUsers(Root: TDOMNode);
-    procedure  PreSaveUsers(RootDoc: TDOMDocument; Root: TDOMNode);
+    function   PreSaveUsers(RootDoc: TDOMDocument): TDOMElement;
   protected
     function Prefix: string; override;
   public
@@ -645,8 +645,6 @@ var
   S: EpiString;
 begin
   // Root = <Crypto>
-
-//  LoadNode(Node, Root, rsUsers, true);
   Users.PreLoadUsers(Root);
 
   S := LoadNodeString(Root, 'PubCert', '', false);
@@ -654,6 +652,14 @@ begin
     FRSA.PublicKey := S;
 
   Result := DoRequestPassword;
+end;
+
+function TEpiAdmin.SaveCrypto(RootDoc: TDOMDocument): TDOMElement;
+begin
+  result := RootDoc.CreateElement(rsCrypto);
+
+  Result.AppendChild(Users.PreSaveUsers(RootDoc));
+  SaveTextContent(Result, 'PubCert', FRSA.PublicKey);
 end;
 
 procedure TEpiAdmin.FixupReferences(EpiClassType: TEpiCustomBaseClass;
@@ -822,14 +828,12 @@ begin
   end;
 end;
 
-procedure TEpiUsers.PreSaveUsers(RootDoc: TDOMDocument; Root: TDOMNode);
+function TEpiUsers.PreSaveUsers(RootDoc: TDOMDocument): TDOMElement;
 var
-  UsersNode: TDOMElement;
   UserNode: TDOMElement;
   i: Integer;
 begin
-  // Root = <Crypto>
-  UsersNode := RootDoc.CreateElement(rsUsers);
+  Result := RootDoc.CreateElement(rsUsers);
 
   // for User in Self do
   for i := 0 to Count - 1 do
@@ -840,10 +844,8 @@ begin
     SaveDomAttr(UserNode, rsPassword,       Users[i].Password);
     SaveDomAttr(UserNode, rsMasterPassword, Users[i].MasterPassword);
 
-    UsersNode.AppendChild(UserNode);
+    Result.AppendChild(UserNode);
   end;
-
-  Root.AppendChild(UsersNode);
 end;
 
 function TEpiUsers.NewUser: TEpiUser;

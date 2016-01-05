@@ -158,7 +158,7 @@ type
       Const Value; TypeInfo: PTypeInfo);
     // Dom Text Content
     procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
-      Const Value: String); overload;
+      Const Value: UTF8String); overload;
     procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
       Const Value: Integer); overload;
     procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
@@ -1012,7 +1012,7 @@ begin
 end;
 
 procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
-  const Tag: String; const Value: String);
+  const Tag: String; const Value: UTF8String);
 var
   Elem: TDOMElement;
 begin
