@@ -63,7 +63,7 @@ type
     FFileName: string;
     FTimeStamp: TTimeStamp;
     FEpiDoc: TEpiDocument;
-    procedure DocumentChange(Const Sender: TEpiCustomBase;
+    procedure DocumentHook(Const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
     procedure UserHook(const Sender: TEpiCustomBase;
@@ -137,7 +137,8 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes;
+  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM,
+  laz2_XMLWrite;
 
 var
   OpenEpiDocumentInstance: TEpiDocumentFile = nil;
@@ -157,7 +158,7 @@ begin
   if Assigned(FEpiDoc)
   then
   begin
-    FEpiDoc.UnRegisterOnChangeHook(@DocumentChange);
+    FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
     FreeAndNil(FEpiDoc);
 
     if not ReadOnly then
@@ -230,17 +231,38 @@ begin
     Result := 'Unknown';
 end;
 
-procedure TEpiDocumentFile.DocumentChange(const Sender: TEpiCustomBase;
+procedure TEpiDocumentFile.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 begin
-  // Housekeeping to know if document is being destroyed.
+  {
+    2 jobs for hook:
 
-  if not (EventGroup = eegCustomBase) then exit;
-  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
-  if (Initiator <> FEpiDoc) then exit;
+    A) Housekeeping to know if document is being destroyed.
+    B) Force a save if the document request it.
 
-  DeleteLockFile;
+  }
+
+
+  if (EventGroup = eegCustomBase) and
+     (TEpiCustomChangeEventType(EventType) = ecceDestroy) and
+     (Initiator = FEpiDoc)
+  then
+    begin
+      DeleteLockFile;
+      FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
+      Exit
+    end;
+
+  if (EventGroup = eegDocument) and
+     (TEpiDocumentChangeEvent(EventType) = edceRequestSave) and
+     (Initiator = FEpiDoc)
+  then
+    begin
+      // TODO: Perhaps make this save asyncronous?
+      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
+      Exit;
+    end;
 end;
 
 procedure TEpiDocumentFile.UserHook(const Sender: TEpiCustomBase;
@@ -572,6 +594,7 @@ begin
     FEpiDoc.OnProgress := OnProgress;
     FEpiDoc.OnLoadError := OnLoadError;
     FEpiDoc.Admin.OnUserAuthorized := @UserAuthorized;
+    FEpiDoc.RegisterOnChangeHook(@DocumentHook, true);
     FEpiDoc.LoadFromStream(St);
   finally
     St.Free;
@@ -766,7 +789,6 @@ begin
 
     if not ReadOnly then
       CreateLockFile;
-    FEpiDoc.RegisterOnChangeHook(@DocumentChange, true);
     Result := true;
   finally
 

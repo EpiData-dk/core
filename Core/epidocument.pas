@@ -70,6 +70,9 @@ type
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
   protected
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
     procedure  SetModified(const AValue: Boolean); override;
   public
     constructor Create(Const LangCode: string);
@@ -149,6 +152,19 @@ begin
   DoChange(eegDocument, Word(edcePassword), @Val);
 end;
 
+procedure TEpiDocument.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  // Catch invalid login/password before passing them on in order to set
+  // internal flag correctly.
+  if (EventGroup = eegAdmin) and
+     (TEpiAdminChangeEventType(EventType) in [eaceAdminIncorrectPassword, eaceAdminIncorrectUserName])
+  then
+    Include(FFlags, edfLoginFailed);
+
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+end;
+
 procedure TEpiDocument.SetModified(const AValue: Boolean);
 begin
   inherited SetModified(AValue);
@@ -200,11 +216,13 @@ end;
 
 procedure TEpiDocument.LoadFromFile(const AFileName: string);
 var
-  St: TFileStream;
+  St: TMemoryStream;
 begin
   St := nil;
   try
-    St := TFileStream.Create(AFileName, fmOpenRead);
+    St := TMemoryStream.Create;
+    St.LoadFromFile(AFileName);
+    ST.Position := 0;
     LoadFromStream(St);
   finally
     St.Free;
@@ -250,6 +268,7 @@ var
   Res: TEpiRequestPasswordResponse;
   Count: Integer;
   Elem: TDOMElement;
+  CRes: TEpiRequestPasswordResult;
 
 begin
   inherited LoadFromXml(Root, ReferenceMap);
@@ -313,34 +332,21 @@ begin
       // Loading the rest of the user information (Name, etc.) is
       // done later.
 //      case Admin.Users.PreLoadUsers(Node) of
-      case Admin.LoadCrypto(Node, ReferenceMap) of
-        prSuccess:
-          ;
+      CRes := Admin.LoadCrypto(Node, ReferenceMap);
+      if (edfLoginFailed in Flags) then
+      begin
+        Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
+        LoadNode(Node, Root, 'ExLog', false);
+        Root.ReplaceChild(Elem, Node);
 
-        prFailed:
-          begin
-            Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
-            LoadNode(Node, Root, 'ExLog', false);
-            Root.ReplaceChild(Node, Elem);
+        DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
+        Exclude(FFlags, edfLoginFailed);
+      end;
 
-            DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
-            raise EEpiBadPassword.Create('Incorrect Username/Password');
-          end;
-
-        prCanceled:
-          begin
-            if (edfLoginFailed in Flags) then
-            begin
-              Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
-              LoadNode(Node, Root, 'ExLog', false);
-              Root.ReplaceChild(Node, Elem);
-
-              DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
-              Exclude(FFlags, edfLoginFailed);
-            end;
-
-            raise EEpiPasswordCanceled.Create('Login Canceled');
-          end;
+      case CRes of
+        prSuccess:  ;
+        prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
+        prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
       end;
 
       {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
@@ -429,6 +435,13 @@ begin
       if LoadNode(Node, Root, S, (DataFiles.Count > 0)) then
         Relations.LoadFromXml(Node, ReferenceMap);
     end;
+
+  // Version 4:
+  if LoadNode(Node, Root, 'Log', false) then
+    FLogger.LoadFromXml(Node, ReferenceMap);
+
+  if LoadNode(Node, Root, 'ExLog', false) then
+    FLogger.LoadFromXml();
 
   FLoading := false;
   Modified := false;
@@ -559,7 +572,7 @@ begin
 
   // Version 4:
   if Admin.Users.Count > 0 then
-    Admin.SaveCrypto(RootDoc);
+    Result.InsertBefore(Admin.SaveCrypto(RootDoc), Result.FirstChild);
 end;
 
 end.

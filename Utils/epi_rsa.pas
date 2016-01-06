@@ -116,8 +116,8 @@ begin
   // 5: Get lengths of PEM's
   Prilen := BioCtrlPending(PriBIO);
   Publen := BioCtrlPending(PubBIO);
-  SetLength(PriKey, PriLen+1);
-  SetLength(PubKey, PubLen+1);
+  SetLength(PriKey, PriLen);
+  SetLength(PubKey, PubLen);
 
   // 6: Write from bI/O to strings.
   if (BioRead(PriBIO, PriKey, PriLen) <= 0) then
@@ -163,7 +163,9 @@ procedure TEpiRSA.SetPublicKey(AValue: RawByteString);
 begin
   if FPublicKey = AValue then Exit;
 
-  RSA_free(FPublicRSA);
+  if Assigned(FPublicRSA) then
+    RSA_free(FPublicRSA);
+
   FPublicRSA := PEMToRSA(AValue, rsaPub);
   if Assigned(FPublicRSA) then
     FPublicKey := AValue;
@@ -176,6 +178,7 @@ var
 begin
   KeyBIO := nil;
   Result := nil;
+  TmpRsa := nil;
 
   try
     KeyBIO := BIO_new_mem_buf(@Pem[1], -1);

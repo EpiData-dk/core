@@ -169,6 +169,8 @@ type
   protected
     function   Encrypt(Const Key, Data: String): String;  //encrypts a value with given key, using the Rijndael crytp engine.
     function   Decrypt(Const Key, Data: String): String;  //decrypts a value with given key, using the Rijndael crytp engine.
+  public
+    property   RSA: TEpiRSA;
 
   { Class stuff }
   public
@@ -178,7 +180,7 @@ type
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function   LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap): TEpiRequestPasswordResult;
     function   SaveCrypto(RootDoc: TDOMDocument): TDOMElement;
-    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
+    procedure  FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
     property   Users: TEpiUsers read FUsers;
     property   Groups: TEpiGroups read FGroups;
     property   Admins: TEpiGroup read FAdminsGroup;
@@ -246,7 +248,7 @@ type
     FGroups: TEpiGroups;
     FExpireDate: TDateTime;
     FLastLogin: TDateTime;
-    FFullName: string;
+    FFullName: UTF8String;
     // Master password as stored in file:
     // - Base64( AES ( ClearTextPassword ))
     FMasterPassword: string;
@@ -257,20 +259,20 @@ type
     // a 4-byte string used for scrambling the password.
     // - is reset every time the user changes password (even if it is the same password).
     // - this gives approx. 2^32 different ways to store the same password.
-    FSalt: string;
-    FLogin: string;
+    FSalt: UTF8String;
+    FLogin: UTF8String;
     FNotes: string;
     function GetAdmin: TEpiAdmin;
-    function GetLogin: string;
+    function GetLogin: UTF8String;
     procedure SetExpireDate(const AValue: TDateTime);
-    procedure SetFullName(const AValue: string);
+    procedure SetFullName(const AValue: UTF8String);
     procedure SetLastLogin(const AValue: TDateTime);
-    procedure SetLogin(AValue: string);
+    procedure SetLogin(AValue: UTF8String);
     procedure SetMasterPassword(const AValue: string);
-    procedure SetPassword(const AValue: string);
+    procedure SetPassword(const AValue: UTF8String);
     procedure SetNotes(AValue: string);
   protected
-    property  Salt: string read FSalt;
+    property  Salt: UTF8String read FSalt;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
     procedure FixupReferences(EpiClassType: TEpiCustomBaseClass;
@@ -287,14 +289,14 @@ type
     property   Admin: TEpiAdmin read GetAdmin;
     // ====== DATA =======
     // Unscrambled data:
-    Property   Login: string read GetLogin write SetLogin;
-    Property   Password: string read FPassword write SetPassword;
+    Property   Login: UTF8String read GetLogin write SetLogin;
+    Property   Password: UTF8String read FPassword write SetPassword;
     Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
     // Scrambled data:
     Property   Groups: TEpiGroups read FGroups;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
-    property   FullName: string read FFullName write SetFullName;
+    property   FullName: UTF8String read FFullName write SetFullName;
     property   Notes: string read FNotes write SetNotes;
     property   Created: TDateTime read FCreated;
     property   Modified: TDateTime read FModified;
@@ -612,6 +614,7 @@ end;
 procedure TEpiAdmin.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
+  S: EpiString;
 begin
   // Since the Admin group is autocreated we remove it during load.
   FreeAndNil(FAdminRelation);
@@ -631,8 +634,14 @@ begin
   // finally load the relationships
   LoadNode(Node, Root, 'GroupRelation', true);
 
+  // Load the always existing Admin relation.
   FAdminRelation := FAdminRelations.NewGroupRelation;
   AdminRelation.LoadFromXml(Node, ReferenceMap);
+
+  // Now load the private certificate (in case we need to decrypt failed logins)
+  S := LoadNodeString(Root, 'PrivCert');
+  if (S <> '') then
+    FRSA.PrivateKey := S;
 
   // During fixup, set the correct admingroup!
   ReferenceMap.AddFixupReference(Self, TEpiAdmin, 0, '');
@@ -645,7 +654,8 @@ var
   S: EpiString;
 begin
   // Root = <Crypto>
-  Users.PreLoadUsers(Root);
+  if LoadNode(Node, Root, rsUsers, True) then
+    Users.PreLoadUsers(Node);
 
   S := LoadNodeString(Root, 'PubCert', '', false);
   if (S <> '') then
@@ -717,6 +727,7 @@ end;
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 var
   Elem: TDOMElement;
+  S: String;
 begin
   if Users.Count = 0 then
     Exit(nil);
@@ -726,6 +737,8 @@ begin
   Elem := AdminRelation.SaveToDom(RootDoc);
   if Assigned(Elem) then
     Result.AppendChild(Elem);
+
+  SaveTextContent(Result, 'PrivCert', FRSA.PrivateKey);
 end;
 
 function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -904,7 +917,7 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetExpireDate), @Val);
 end;
 
-procedure TEpiUser.SetFullName(const AValue: string);
+procedure TEpiUser.SetFullName(const AValue: UTF8String);
 var
   Val: String;
 begin
@@ -919,7 +932,7 @@ begin
   result := TEpiAdmin(TEpiUsers(Owner).Owner);
 end;
 
-function TEpiUser.GetLogin: string;
+function TEpiUser.GetLogin: UTF8String;
 begin
   result := FLogin;
 end;
@@ -934,7 +947,7 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetLastLogin), @Val);
 end;
 
-procedure TEpiUser.SetLogin(AValue: string);
+procedure TEpiUser.SetLogin(AValue: UTF8String);
 begin
   // TODO: changing login name should trigger a whole lot of things:
   // 1: Validating that no other user has the same login
@@ -950,7 +963,7 @@ begin
   FMasterPassword := AValue;
 end;
 
-procedure TEpiUser.SetPassword(const AValue: string);
+procedure TEpiUser.SetPassword(const AValue: UTF8String);
 var
   SaltInt: LongInt;
   SaltByte: array[0..3] of char absolute SaltInt;

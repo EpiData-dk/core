@@ -118,15 +118,16 @@ type
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure   LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
 
   { Logging properties }
   private
     FUserName: UTF8String;
     FDatafile: TEpiDataFile;
-    procedure SetUserName(AValue: UTF8String);
-    procedure SetDatafile(AValue: TEpiDataFile);
-    function  DoNewLog(LogType: TEpiLogEntry): Integer;  // Result = Index for new record.
-    function  GetKeyValues(Index: integer): EpiString;
+    procedure  SetUserName(AValue: UTF8String);
+    procedure  SetDatafile(AValue: TEpiDataFile);
+    function   DoNewLog(LogType: TEpiLogEntry): Integer;  // Result = Index for new record.
+    function   GetKeyValues(Index: integer): EpiString;
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: UTF8String read FUserName write SetUserName;
@@ -164,6 +165,12 @@ implementation
 
 uses
   typinfo, epidocument, epiadmin, strutils, DCPsha512;
+
+
+function Doc(AValue: TEpiCustomBase): TEpiDocument;
+begin
+  Result := TEpiDocument(AValue.RootOwner);
+end;
 
 type
   TDataLogEntry = record
@@ -602,6 +609,18 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 end;
 
+procedure TEpiLogger.LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
+var
+  Admin: TEpiAdmin;
+begin
+  // Root = <ExLog>
+  Admin := Doc(self).Admin;
+
+
+
+//  Admin.RSA.Decrypt();
+end;
+
 procedure TEpiLogger.SetUserName(AValue: UTF8String);
 begin
   if FUserName = AValue then Exit;
@@ -620,7 +639,7 @@ var
 begin
   FLogDatafile.NewRecords();
   Result := FLogDatafile.Size - 1;
-  Doc := TEpiDocument(RootOwner);
+  Doc := Doc(Self);
 
   with FLogDatafile do
   begin
@@ -971,7 +990,7 @@ begin
       FType.AsEnum[Idx]        := ltFailedLogin;
       FTime.AsDateTime[Idx]    := Now;
       FUserNames.AsString[Idx] := PUTF8String(Data)^;
-      FCycle.AsInteger[Idx]    := TEpiDocument(RootOwner).CycleNo;
+      FCycle.AsInteger[Idx]    := Doc(Self).CycleNo;
 
       if TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectPassword then
         FLogContent.AsInteger[Idx] := 0
@@ -997,7 +1016,7 @@ begin
 
   FLogDataFile := TEpiLog.Create(nil);
 
-  RO.RegisterOnChangeHook(@DocumentHook, true);
+  Doc(Self).RegisterOnChangeHook(@DocumentHook, true);
 end;
 
 function TEpiFailedLogger.XMLName: string;
@@ -1006,10 +1025,28 @@ begin
 end;
 
 function TEpiFailedLogger.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
+  i: Integer;
 begin
   Result := inherited SaveToDom(RootDoc);
 
+  with FLogDatafile do
+    for i := 0 to FType.Size - 1 do
+    begin
+      Elem := RootDoc.CreateElement('LoginFailed');
+      SaveDomAttr(Elem, 'time',     FTime.AsDateTime[i]);
+      SaveDomAttr(Elem, 'username', FUserNames.AsString[i]);
+      SaveDomAttr(Elem, rsCycle,    FCycle.AsString[i]);
 
+      if FDataContent.AsInteger[i] = 0
+        then
+          SaveDomAttr(Elem, 'type', 'password')
+        else
+          SaveDomAttr(Elem, 'type', 'login');
+
+      Result.AppendChild(Elem);
+    end;
 end;
 
 procedure TEpiFailedLogger.LoadFromXml(Root: TDOMNode;
