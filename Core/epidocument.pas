@@ -441,7 +441,7 @@ begin
     FLogger.LoadFromXml(Node, ReferenceMap);
 
   if LoadNode(Node, Root, 'ExLog', false) then
-    FLogger.LoadFromXml();
+    FLogger.LoadExLog(Node, ReferenceMap);
 
   FLoading := false;
   Modified := false;

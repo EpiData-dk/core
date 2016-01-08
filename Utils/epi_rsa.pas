@@ -26,12 +26,15 @@ type
     procedure SetPublicKey(AValue: RawByteString);
     function PEMToRSA(PEM: RawByteString; KeyType: TRSAKeyType): PRSA;
     function CryptMsg(Const InMsg: RawByteString; out OutMsg: RawByteString; KeyType: TRSAKeyType): boolean;
+    function CryptMsg(Const Input: Pointer; InLen: Integer; out Output: Pointer; out OutLen: Integer; KeyType: TRSAKeyType): boolean;
   public
     constructor Create;
     destructor Destroy; override;
     procedure GenerateKeys(const BitSize: Integer = 2048);
     function Encrypt(Const OrigMsg: RawByteString; out EncMsg: RawByteString): boolean; overload;
+    function Encrypt(Const Input: Pointer; InLen: Integer; out Output: Pointer; out OutLen: Integer): boolean; overload;
     function Decrypt(const EncMsg: RawByteString; out OrigMsg: RawByteString): boolean; overload;
+    function Decrypt(Const Input: Pointer; InLen: Integer; out Output: Pointer; out OutLen: Integer): boolean; overload;
     property PrivateKey: RawByteString read FPrivateKey write SetPrivateKey;
     property PublicKey: RawByteString read FPublicKey write SetPublicKey;
   end;
@@ -238,16 +241,59 @@ begin
   Freemem(OMsg);
 end;
 
+function TEpiRSA.CryptMsg(const Input: Pointer; InLen: Integer; out
+  Output: Pointer; out OutLen: Integer; KeyType: TRSAKeyType): boolean;
+var
+  RsaFunc: function (flen: cint; from_buf, to_buf: PByte; arsa: PRSA; padding: cint): cint;
+  Key: PRSA;
+  S: UTF8String;
+begin
+  case KeyType of
+    rsaPub:
+      begin
+        Key     := FPublicRSA;
+        RsaFunc := @RSA_public_encrypt;
+        S       := 'encrypt: ';
+      end;
+    rsaPriv:
+      begin
+        Key     := FPrivateRSA;
+        RsaFunc := @RSA_private_decrypt;
+        S       := 'decrypt: ';
+      end;
+  end;
+
+  Output := GetMem(RSA_size(Key));
+  OutLen := RsaFunc(InLen, Input, Output, Key, RSA_PKCS1_OAEP_PADDING);
+
+  Result := (OutLen >= 0);
+
+  if (not Result) then
+    DoError('Failed to ' + S);
+end;
+
 function TEpiRSA.Encrypt(const OrigMsg: RawByteString; out EncMsg: RawByteString
   ): boolean;
 begin
   result := CryptMsg(OrigMsg, EncMsg, rsaPub);
 end;
 
+function TEpiRSA.Encrypt(const Input: Pointer; InLen: Integer; out
+  Output: Pointer; out OutLen: Integer): boolean;
+begin
+  result := CryptMsg(Input, InLen, Output, OutLen, rsaPub);
+end;
+
 function TEpiRSA.Decrypt(const EncMsg: RawByteString; out OrigMsg: RawByteString
   ): boolean;
 begin
   result := CryptMsg(EncMsg, OrigMsg, rsaPriv);
+end;
+
+function TEpiRSA.Decrypt(const Input: Pointer; InLen: Integer; out
+  Output: Pointer; out OutLen: Integer): boolean;
+begin
+  result := CryptMsg(Input, InLen, Output, OutLen, rsaPriv);
 end;
 
 end.

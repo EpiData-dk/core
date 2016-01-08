@@ -170,7 +170,7 @@ type
     function   Encrypt(Const Key, Data: String): String;  //encrypts a value with given key, using the Rijndael crytp engine.
     function   Decrypt(Const Key, Data: String): String;  //decrypts a value with given key, using the Rijndael crytp engine.
   public
-    property   RSA: TEpiRSA;
+    property   RSA: TEpiRSA read FRSA;
 
   { Class stuff }
   public

@@ -118,7 +118,7 @@ type
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure   LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure   LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 
   { Logging properties }
   private
@@ -164,7 +164,7 @@ type
 implementation
 
 uses
-  typinfo, epidocument, epiadmin, strutils, DCPsha512;
+  typinfo, epidocument, epiadmin, strutils, DCPsha512, DCPbase64;
 
 
 function Doc(AValue: TEpiCustomBase): TEpiDocument;
@@ -612,10 +612,79 @@ end;
 procedure TEpiLogger.LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Admin: TEpiAdmin;
+  S: EpiString;
+  Data: Pointer;
+  Len: LongInt;
+  Dummy, Idx: Integer;
+  GuidPTR: PGuid;
+  GUID: TGuid;
+  FDecrypter: TDCP_rijndael;
+  Node: TDOMNode;
+  EncryptSt, PlainTxtSt: TMemoryStream;
 begin
   // Root = <ExLog>
   Admin := Doc(self).Admin;
 
+  FDecrypter := TDCP_rijndael.Create(nil);
+  EncryptSt  := TMemoryStream.Create;
+  PlainTxtSt := TMemoryStream.Create;
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    CheckNode(Node, 'LoginFailed');
+
+    S := LoadAttrString(Node, 'aesKey');
+    Data := GetMem(Length(S));
+    Len  := Base64Decode(@S[1], Data, Length(S));
+    Admin.RSA.Decrypt(Data, Len, GuidPTR, Dummy);
+    Freemem(Data);
+
+
+    EncryptSt.Clear;
+    PlainTxtSt.Clear;
+
+    S := Node.TextContent;
+    Data := GetMem(Length(S));
+    Len  := Base64Decode(@S[1], Data, Length(S));
+    EncryptSt.Write(Data^, Len);
+    Freemem(Data);
+
+    EncryptSt.Position := 0;
+    FDecrypter.Init(GuidPTR^, SizeOf(TGuid)*8, nil);
+    FDecrypter.DecryptStream(EncryptSt, PlainTxtSt, EncryptSt.Size);
+    PlainTxtSt.Position := 0;
+
+    FLogDatafile.NewRecords();
+    Idx := FLogDatafile.Size - 1;
+
+    //PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
+    //PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
+    //PlainTxtMs.WriteByte(FDataContent.AsInteger[i]);
+    BackupFormatSettings(Doc(Self).XMLSettings.FormatSettings);
+    with FLogDatafile do
+    begin
+      FTime.AsDateTime[Idx]           := StrToDateTime(PlainTxtSt.ReadAnsiString);
+      FUserNames.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
+      FCycle.AsInteger[Idx]           := PlainTxtSt.ReadQWord;
+      FLogContent.AsInteger[Idx]      := PlainTxtSt.ReadByte;
+      FType.AsEnum[Idx]               := ltFailedLogin;
+    end;
+    RestoreFormatSettings;
+
+
+    Node := Node.NextSibling;
+  end;
+
+
+  FDecrypter.Free;
+  EncryptSt.Free;
+  PlainTxtSt.Free;
 
 
 //  Admin.RSA.Decrypt();
@@ -635,17 +704,17 @@ end;
 
 function TEpiLogger.DoNewLog(LogType: TEpiLogEntry): Integer;
 var
-  Doc: TEpiDocument;
+  ADoc: TEpiDocument;
 begin
   FLogDatafile.NewRecords();
   Result := FLogDatafile.Size - 1;
-  Doc := Doc(Self);
+  ADoc := Doc(Self);
 
   with FLogDatafile do
   begin
     FUserNames.AsString[Result]        := UserName;
     FTime.AsDateTime[Result]           := Now;
-    FCycle.AsInteger[Result]           := Doc.CycleNo;
+    FCycle.AsInteger[Result]           := ADoc.CycleNo;
     FType.AsEnum[Result]               := LogType;
     if Assigned(FDatafile) then
       FDataFileNames.AsString[Result]    := FDatafile.Name;
@@ -1002,7 +1071,6 @@ end;
 constructor TEpiFailedLogger.Create(AOwner: TEpiCustomBase);
 var
   RO: TEpiCustomBase;
-  GUID: TGUID;
 begin
   inherited Create(AOwner);
 
@@ -1010,10 +1078,7 @@ begin
   if not (RO is TEpiDocument) then
     Exit;
 
-  CreateGUID(GUID);
   FEncrypter := TDCP_rijndael.Create(nil);
-  FEncrypter.Init(GUID, SizeOf(TGuid)*8, nil);
-
   FLogDataFile := TEpiLog.Create(nil);
 
   Doc(Self).RegisterOnChangeHook(@DocumentHook, true);
@@ -1027,17 +1092,35 @@ end;
 function TEpiFailedLogger.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 var
   Elem: TDOMElement;
-  i: Integer;
+  i, OLen: Integer;
+  GUID: TGUID;
+  Data: PByte;
+  B64Len: LongInt;
+  AesKey, S: String;
+  PlainTxtMs, EncryptMs: TMemoryStream;
 begin
   Result := inherited SaveToDom(RootDoc);
+
+  CreateGUID(GUID);
+  FEncrypter.Init(GUID, SizeOf(TGuid)*8, nil);
+  Doc(Self).Admin.RSA.Encrypt(@GUID, SizeOf(TGuid), Data, OLen);
+  SetLength(AesKey, OLen * 2);
+  B64Len := Base64Encode(Data, @AesKey[1], OLen);
+  SetLength(AesKey, B64Len);
+
+  PlainTxtMs := TMemoryStream.Create;
+  EncryptMs  := TMemoryStream.Create;
+
+
 
   with FLogDatafile do
     for i := 0 to FType.Size - 1 do
     begin
       Elem := RootDoc.CreateElement('LoginFailed');
+      SaveDomAttr(Elem, 'aesKey',   AesKey);
       SaveDomAttr(Elem, 'time',     FTime.AsDateTime[i]);
       SaveDomAttr(Elem, 'username', FUserNames.AsString[i]);
-      SaveDomAttr(Elem, rsCycle,    FCycle.AsString[i]);
+      SaveDomAttr(Elem, rsCycle,    FCycle.AsInteger[i]);
 
       if FDataContent.AsInteger[i] = 0
         then
@@ -1045,8 +1128,32 @@ begin
         else
           SaveDomAttr(Elem, 'type', 'login');
 
+
+
+
+
+      PlainTxtMs.Clear;
+      PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
+      PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
+      PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
+      PlainTxtMs.WriteByte(FDataContent.AsInteger[i]);
+
+      PlainTxtMs.Position := 0;
+      EncryptMs.Clear;
+      FEncrypter.Reset;
+      FEncrypter.EncryptStream(PlainTxtMs, EncryptMs, PlainTxtMs.Size);
+
+      SetLength(S, EncryptMs.Size * 2);
+      B64Len := Base64Encode(EncryptMs.Memory, @S[1], EncryptMs.Size);
+      SetLength(S, B64Len);
+
+      Elem.TextContent := S;
+
       Result.AppendChild(Elem);
     end;
+
+  PlainTxtMs.Free;
+  EncryptMs.Free;
 end;
 
 procedure TEpiFailedLogger.LoadFromXml(Root: TDOMNode;
