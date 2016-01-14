@@ -73,6 +73,9 @@ const
   function PostInc(var Value: Integer; Const N: Integer = 1): Integer;
   function PreInc(var Value: Integer; Const N: Integer = 1): Integer;
 
+  function GetHostNameWrapper: UTF8String;
+  function GetUserNameWrapper: UTF8String;
+
   {$IFDEF MSWINDOWS}
   function AssociateFiles(Const ApplicationName, ApplicationDescription,
     ExePath: String): Boolean;
@@ -84,6 +87,12 @@ const
 implementation
 
 uses
+  {$IFDEF Windows}
+  windows,
+  {$ENDIF}
+  {$IFDEF unix}
+  Unix,
+  {$ENDIF}
   zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation;
 
 type
@@ -304,6 +313,46 @@ function PreInc(var Value: Integer; const N: Integer): Integer;
 begin
   Inc(Value, N);
   result := Value;
+end;
+
+function GetHostNameWrapper: UTF8String;
+{$IFDEF WINDOWS}
+var
+  Buffer: Array[0..127] of WideChar;
+  Sz: DWORD;
+{$ENDIF}
+begin
+  Result := '';
+
+  {$IFDEF Windows}
+  Sz := SizeOf(Buffer);
+  GetComputerNameW(Buffer, Sz);
+  Result := WideCharToString(Buffer);
+  {$ENDIF}
+  {$IFDEF unix}
+  Result := GetHostName;
+  {$ENDIF}
+end;
+
+function GetUserNameWrapper: UTF8String;
+{$IFDEF WINDOWS}
+var
+  Buffer: Array[0..127] of WideChar;
+  Sz: DWORD;
+{$ENDIF}
+begin
+  Result := '';
+
+  {$IFDEF MSWINDOWS}
+  Sz := SizeOf(Buffer);
+  GetUserNameW(Buffer, Sz);
+  Result := WideCharToString(Buffer);
+  {$ENDIF}
+  {$IFDEF UNIX}
+  Result := GetEnvironmentVariableUTF8('USER');
+  {$ENDIF}
+  if Result = '' then
+    Result := 'Unknown';
 end;
 
 {$IFDEF MSWINDOWS}

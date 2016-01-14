@@ -311,14 +311,13 @@ begin
   if (Version >= 2) then
     FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
 
-  // Load any failed logins in the external log before loading users.
-  if (Version >= 4) and
-     (LoadNode(Node, Root, 'ExLog', false))
-  then
+  // Version 4:
+  //  - load External log
+  if LoadNode(Node, Root, 'ExLog', false) then
     FFailedLog.LoadFromXml(Node, ReferenceMap);
 
   // Version 4:
-  // Now check for User login;
+  //  - Now check for User login;
   if (Version >= 4) and
      (LoadNode(Node, Root, rsCrypto, false))
   then
@@ -331,7 +330,6 @@ begin
       // request for password from user.
       // Loading the rest of the user information (Name, etc.) is
       // done later.
-//      case Admin.Users.PreLoadUsers(Node) of
       CRes := Admin.LoadCrypto(Node, ReferenceMap);
       if (edfLoginFailed in Flags) then
       begin
@@ -440,8 +438,7 @@ begin
   if LoadNode(Node, Root, 'Log', false) then
     FLogger.LoadFromXml(Node, ReferenceMap);
 
-  if LoadNode(Node, Root, 'ExLog', false) then
-    FLogger.LoadExLog(Node, ReferenceMap);
+  FLogger.LoadExLog(FFailedLog);
 
   FLoading := false;
   Modified := false;

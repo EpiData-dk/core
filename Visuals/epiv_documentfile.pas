@@ -1,5 +1,6 @@
 unit epiv_documentfile;
 
+{$codepage UTF-8}
 {$mode objfpc}{$H+}
 
 interface
@@ -16,8 +17,8 @@ type
     function DoPassWord(Sender: TObject;
       RequestType: TEpiRequestPasswordType;
       RequestNo: Integer;
-      var Login: string;
-      var Password: string): TEpiRequestPasswordResponse;
+      var Login: UTF8String;
+      var Password: UTF8String): TEpiRequestPasswordResponse;
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
     procedure DoError(const Msg: string);
@@ -80,10 +81,11 @@ begin
 end;
 
 function TDocumentFile.DoPassWord(Sender: TObject;
-  RequestType: TEpiRequestPasswordType; RequestNo: Integer; var Login: string;
-  var Password: string): TEpiRequestPasswordResponse;
+  RequestType: TEpiRequestPasswordType; RequestNo: Integer;
+  var Login: UTF8String; var Password: UTF8String): TEpiRequestPasswordResponse;
 var
   F: TUserLoginForm;
+  APassword: String;
 begin
   if (RequestNo < 3) then
     Result := rprAskOnFail
@@ -91,6 +93,7 @@ begin
     Result := rprStopOnFail;
 
   Password := '';
+  APassword := '';
 
   case RequestType of
     erpSinglePassword:
@@ -101,10 +104,12 @@ begin
                         LineEnding +
                         'Project data is password protected.' + LineEnding +
                         'Please enter password:',
-                 True, Password)
+                 True, APassword)
            )
         then
-          Result := rprCanceled;
+          Result := rprCanceled
+        else
+          Password := APassword;
       end;
 
     erpUserLogin:

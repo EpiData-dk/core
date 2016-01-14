@@ -52,10 +52,6 @@ type
     FOnProgress: TEpiProgressEvent;
     FOnDocumentChangeEvent: TEpiChangeEvent;
   private
-    // Aux. functions
-    function GetHostNameWrapper: string;
-    function GetUserNameWrapper: string;
-  private
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
     // Internal housekeeping of current open EpiDocument.
@@ -189,46 +185,6 @@ begin
     FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
 
   Result := FEpiDoc;
-end;
-
-function TEpiDocumentFile.GetHostNameWrapper: string;
-{$IFDEF WINDOWS}
-var
-  Buffer: Array[0..127] of WideChar;
-  Sz: DWORD;
-{$ENDIF}
-begin
-  Result := '';
-
-  {$IFDEF Windows}
-  Sz := SizeOf(Buffer);
-  GetComputerNameW(Buffer, Sz);
-  Result := WideCharToString(Buffer);
-  {$ENDIF}
-  {$IFDEF unix}
-  Result := GetHostName;
-  {$ENDIF}
-end;
-
-function TEpiDocumentFile.GetUserNameWrapper: string;
-{$IFDEF WINDOWS}
-var
-  Buffer: Array[0..127] of WideChar;
-  Sz: DWORD;
-{$ENDIF}
-begin
-  Result := '';
-
-  {$IFDEF MSWINDOWS}
-  Sz := SizeOf(Buffer);
-  GetUserNameW(Buffer, Sz);
-  Result := WideCharToString(Buffer);
-  {$ENDIF}
-  {$IFDEF UNIX}
-  Result := GetEnvironmentVariableUTF8('USER');
-  {$ENDIF}
-  if Result = '' then
-    Result := 'Unknown';
 end;
 
 procedure TEpiDocumentFile.DocumentHook(const Sender: TEpiCustomBase;

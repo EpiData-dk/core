@@ -19,7 +19,8 @@ type
     ltEditRecord,      // Edited an existing record
     ltViewRecord,      // Changed record no. in viewer
     ltPack,            // Packed datafiles
-    ltAppend           // Appended data to datafiles
+    ltAppend,          // Appended data to datafiles
+    ltExport           // Exported data (or part of) to uncontrolled file.
   );
 
 
@@ -27,6 +28,8 @@ const
   EpiLogEntryDataFileSet = [ltSearch, ltNewRecord, ltEditRecord, ltViewRecord, ltPack, ltAppend];
 
 type
+
+  TEpiFailedLogger = class;
 
   { TEpiEnumField }
 
@@ -108,6 +111,10 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase); override;
 
+  { Misc. }
+  private
+    function    LogEntryFromNodeName(Const NodeName: DOMString): TEpiLogEntry;
+
   { Save/Load }
   private
     function    CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer): TDOMElement;
@@ -118,10 +125,11 @@ type
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure   LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
+    procedure   LoadExLog(ExLogObject: TEpiFailedLogger);
 
   { Logging properties }
   private
+    FSuccessLoginTime: TDateTime;
     FUserName: UTF8String;
     FDatafile: TEpiDataFile;
     procedure  SetUserName(AValue: UTF8String);
@@ -135,7 +143,6 @@ type
   { Logging methods }
   private
     procedure  LogLoginSuccess();
-    procedure  LogLoginFail(IncorrectUserName: boolean);
     procedure  LogRecordNew();
     procedure  LogRecordEdit(RecordNo: Integer);
     procedure  LogRecordView(RecordNo: Integer);
@@ -149,7 +156,15 @@ type
 
   TEpiFailedLogger = class(TEpiCustomBase)
   private
-    FLogDataFile: TEpiLog;
+    FLogDataFile: TEpiDataFile;
+    FUserNames:      TEpiField;       // Username for the log entry
+    FTime:           TEpiField;       // Time of log entry
+    FCycle:          TEpiField;       // Cycly no fo the log entry
+    FAesKey:         TEpiField;       // The aes key for the line
+    FLoginFailType:  TEpiField;       // Numbers for type of failed login: 0 = username, 1 = password, 2 = read from XML
+    FEncryptedTxt:   TEpiField;       // If read from XML, store the encrypted TXT here.
+    FHostName:       TEpiField;       //  -   "    -     , store the hostname here.
+  private
     FEncrypter: TDCP_rijndael;
     procedure DocumentHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
@@ -164,7 +179,8 @@ type
 implementation
 
 uses
-  typinfo, epidocument, epiadmin, strutils, DCPsha512, DCPbase64;
+  typinfo, epidocument, epiadmin, strutils, DCPsha512, DCPbase64, epimiscutils,
+  dateutils;
 
 
 function Doc(AValue: TEpiCustomBase): TEpiDocument;
@@ -277,18 +293,11 @@ begin
             LogLoginSuccess();
           end;
 
-{        eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
-        eaceAdminIncorrectPassword:      // Data: string   = the incorrect login name
-          begin
-            UserName := PUTF8String(Data)^;
-            LogLoginFail(TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectUserName);
-          end;                    }
-
-        eaceAdminIncorrectNewPassword:   // Data: TEpiUser = the authenticated user.
-          ;
-
       else
         {
+        eaceAdminIncorrectUserName: ;
+        eaceAdminIncorrectPassword: ;
+        eaceAdminIncorrectNewPassword: ;
         eaceUserSetFullName: ;
         eaceUserSetPassword: ;
         eaceUserSetExpireDate: ;
@@ -406,6 +415,23 @@ begin
   RO.RegisterOnChangeHook(@DocumentHook, true);
 end;
 
+function TEpiLogger.LogEntryFromNodeName(const NodeName: DOMString
+  ): TEpiLogEntry;
+begin
+  case NodeName of
+    'LoginSuccess': result := ltSuccessLogin;
+    'LoginFailed':  result := ltFailedLogin;
+    'Search':       result := ltSearch;
+    'NewRecord':    result := ltNewRecord;
+    'EditRecord':   result := ltEditRecord;
+    'ViewRecord':   result := ltViewRecord;
+    'Pack':         result := ltPack;
+    'Append':       result := ltAppend;
+  else
+    result := ltNone;
+  end;
+end;
+
 function TEpiLogger.CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer
   ): TDOMElement;
 var
@@ -433,9 +459,9 @@ begin
 
   Result := RootDoc.CreateElement(S);
 
+  SaveDomAttr(Result, 'time', FLogDatafile.FTime.AsDateTime[LogIndex]);
   if (FLogDatafile.FType.AsEnum[LogIndex] in EpiLogEntryDataFileSet) then
     SaveDomAttr(Result, rsDataFileRef, FLogDatafile.FDataFileNames.AsString[LogIndex]);
-  SaveDomAttr(Result, 'time', FLogDatafile.FTime.AsDateTime[LogIndex]);
   SaveDomAttr(Result, 'username', FLogDatafile.FUserNames.AsString[LogIndex]);
   SaveDomAttr(Result, rsCycle, FLogDatafile.FCycle.AsString[LogIndex]);
 end;
@@ -578,13 +604,18 @@ begin
 
       case FType.AsEnum[I] of
         ltNone: ;
-        ltSuccessLogin: ;
+        ltSuccessLogin:
+          SaveDomAttr(Elem, 'hostname', FLogContent.AsString[i]);
         ltFailedLogin:
-          if FDataContent.AsInteger[I] = 0
-            then
-              SaveDomAttr(Elem, 'type', 'password')
-            else
-              SaveDomAttr(Elem, 'type', 'login');
+          begin
+            if FDataContent.AsInteger[I] = 0
+              then
+                SaveDomAttr(Elem, 'type', 'password')
+              else
+                SaveDomAttr(Elem, 'type', 'login');
+
+            SaveDomAttr(Elem, 'hostname', FLogContent.AsString[I]);
+          end;
         ltSearch:
           AddSearchString(Elem, I);
         ltNewRecord:
@@ -592,7 +623,7 @@ begin
         ltEditRecord:
           begin
             AddKeyFieldValues(Elem, I);
-            AddEditFieldValue(Elem, I );
+            AddEditFieldValue(Elem, I);
           end;
         ltViewRecord:
           AddKeyFieldValues(Elem, I);
@@ -605,89 +636,150 @@ end;
 
 procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
   );
+var
+  Node: TDOMNode;
+  Idx: Integer;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    FLogDatafile.NewRecords();
+    Idx := FLogDatafile.Size - 1;
+
+    with FLogDatafile do
+    begin
+      FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
+      FTime.AsDateTime[Idx]        := LoadAttrDateTime(Node, 'time', 'YYYY/MM/DD HH:NN:SS');
+      FDataFileNames.AsString[Idx] := LoadAttrString(Node, rsDataFileRef, '', false);
+      FUserNames.AsString[Idx]     := LoadAttrString(Node, 'username');
+      FCycle.AsInteger[Idx]        := LoadAttrInt(Node, rsCycle);
+
+      case FType.AsEnum[Idx] of
+        ltNone: ;
+        ltSuccessLogin:
+          FLogContent.AsString[Idx] := LoadAttrString(Node, 'hostname');
+        ltFailedLogin:
+          begin
+            case LoadAttrString(Node, 'type') of
+              'password': FDataContent.AsInteger[Idx] := 0;
+              'login':    FDataContent.AsInteger[Idx] := 1;
+            else
+              //
+            end;
+            FLogContent.AsString[Idx] := LoadAttrString(Node, 'hostname');
+          end;
+        ltSearch:
+          FLogContent :=  AddSearchString(Node, I);
+        ltNewRecord:
+          AddKeyFieldValues(Node, I);
+        ltEditRecord:
+          begin
+            AddKeyFieldValues(Node, I);
+            AddEditFieldValue(Node, I);
+          end;
+        ltViewRecord:
+          AddKeyFieldValues(Node, I);
+        ltPack: ;
+        ltAppend: ;
+      end;
+    end;
+
+    Node := Node.NextSibling;
+  end;
 end;
 
-procedure TEpiLogger.LoadExLog(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
+procedure TEpiLogger.LoadExLog(ExLogObject: TEpiFailedLogger);
 var
   Admin: TEpiAdmin;
   S: EpiString;
   Data: Pointer;
   Len: LongInt;
-  Dummy, Idx: Integer;
+  Dummy, Idx, i: Integer;
   GuidPTR: PGuid;
-  GUID: TGuid;
   FDecrypter: TDCP_rijndael;
-  Node: TDOMNode;
   EncryptSt, PlainTxtSt: TMemoryStream;
 begin
-  // Root = <ExLog>
+  // ExLogRoot = <ExLog>
   Admin := Doc(self).Admin;
 
   FDecrypter := TDCP_rijndael.Create(nil);
   EncryptSt  := TMemoryStream.Create;
   PlainTxtSt := TMemoryStream.Create;
 
-  Node := Root.FirstChild;
-  while Assigned(Node) do
-  begin
-    // hack to skip whitespace nodes.
-    while NodeIsWhiteSpace(Node) do
-      Node := Node.NextSibling;
-    if not Assigned(Node) then break;
-
-    CheckNode(Node, 'LoginFailed');
-
-    S := LoadAttrString(Node, 'aesKey');
-    Data := GetMem(Length(S));
-    Len  := Base64Decode(@S[1], Data, Length(S));
-    Admin.RSA.Decrypt(Data, Len, GuidPTR, Dummy);
-    Freemem(Data);
-
-
-    EncryptSt.Clear;
-    PlainTxtSt.Clear;
-
-    S := Node.TextContent;
-    Data := GetMem(Length(S));
-    Len  := Base64Decode(@S[1], Data, Length(S));
-    EncryptSt.Write(Data^, Len);
-    Freemem(Data);
-
-    EncryptSt.Position := 0;
-    FDecrypter.Init(GuidPTR^, SizeOf(TGuid)*8, nil);
-    FDecrypter.DecryptStream(EncryptSt, PlainTxtSt, EncryptSt.Size);
-    PlainTxtSt.Position := 0;
-
-    FLogDatafile.NewRecords();
-    Idx := FLogDatafile.Size - 1;
-
-    //PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
-    //PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
-    //PlainTxtMs.WriteByte(FDataContent.AsInteger[i]);
-    BackupFormatSettings(Doc(Self).XMLSettings.FormatSettings);
-    with FLogDatafile do
+  for i := 0 to ExLogObject.FLogDataFile.Size -1 do
     begin
-      FTime.AsDateTime[Idx]           := StrToDateTime(PlainTxtSt.ReadAnsiString);
-      FUserNames.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
-      FCycle.AsInteger[Idx]           := PlainTxtSt.ReadQWord;
-      FLogContent.AsInteger[Idx]      := PlainTxtSt.ReadByte;
-      FType.AsEnum[Idx]               := ltFailedLogin;
+      FLogDatafile.NewRecords();
+      Idx := FLogDatafile.Size - 1;
+
+
+      if ExLogObject.FLoginFailType.AsInteger[i] = 2 then
+        begin
+          S := ExLogObject.FAesKey.AsString[i];
+          Data := GetMem(Length(S));
+          Len  := Base64Decode(@S[1], Data, Length(S));
+          Admin.RSA.Decrypt(Data, Len, GuidPTR, Dummy);
+          Freemem(Data);
+
+          // Prepare decryption of node content
+          EncryptSt.Clear;
+          PlainTxtSt.Clear;
+
+          // Base 64 decode first to get raw data.
+          S := ExLogObject.FEncryptedTxt.AsString[i];
+          Data := GetMem(Length(S));
+          Len  := Base64Decode(@S[1], Data, Length(S));
+          EncryptSt.Write(Data^, Len);
+          Freemem(Data);
+
+          // Decrypt using AES key from above.
+          EncryptSt.Position := 0;
+          FDecrypter.Init(GuidPTR^, SizeOf(TGuid)*8, nil);
+          FDecrypter.DecryptStream(EncryptSt, PlainTxtSt, EncryptSt.Size);
+          PlainTxtSt.Position := 0;
+
+          {
+          PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
+          PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
+          PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
+          PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
+          PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
+          }
+
+          with FLogDatafile do
+          begin
+            FUserNames.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
+            FTime.AsDateTime[Idx]           := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
+            FCycle.AsInteger[Idx]           := PlainTxtSt.ReadQWord;
+            FDataContent.AsInteger[Idx]     := PlainTxtSt.ReadByte;
+            FLogContent.AsString[Idx]       := PlainTxtSt.ReadAnsiString;
+            FType.AsEnum[Idx]               := ltFailedLogin;
+          end;
+
+        end
+      else
+        begin
+          FLogDatafile.FUserNames.AsString[Idx] := ExLogObject.FUserNames.AsString[i];
+          FLogDatafile.FTime.AsDateTime[Idx]    := ExLogObject.FTime.AsDateTime[i];
+          FLogDatafile.FCycle.AsInteger[Idx]    := ExLogObject.FCycle.AsInteger[i];
+          FLogDatafile.FDataContent.AsInteger[Idx] := ExLogObject.FLoginFailType.AsInteger[i];
+          FLogDatafile.FLogContent.AsString[Idx]   := ExLogObject.FHostName.AsString[i];
+          FLogDatafile.FType.AsEnum[Idx]          := ltFailedLogin;
+        end;
     end;
-    RestoreFormatSettings;
 
-
-    Node := Node.NextSibling;
-  end;
-
+  Idx := DoNewLog(ltSuccessLogin);
+  FLogDatafile.FTime.AsDateTime[Idx] := FSuccessLoginTime;
+  FLogDatafile.FLogContent.AsString[Idx] := GetHostNameWrapper;
 
   FDecrypter.Free;
   EncryptSt.Free;
   PlainTxtSt.Free;
-
-
-//  Admin.RSA.Decrypt();
 end;
 
 procedure TEpiLogger.SetUserName(AValue: UTF8String);
@@ -735,22 +827,8 @@ end;
 
 procedure TEpiLogger.LogLoginSuccess;
 begin
-  DoNewLog(ltSuccessLogin);
-end;
-
-procedure TEpiLogger.LogLoginFail(IncorrectUserName: boolean);
-var
-  Idx: Integer;
-begin
-  Idx := DoNewLog(ltFailedLogin);
-
-  with FLogDatafile do
-    if IncorrectUserName then
-      FDataContent.AsInteger[Idx] := 1
-    else
-      FDataContent.AsInteger[Idx] := 0;
-
-  // TODO: Force a save...
+  //DoNewLog(ltSuccessLogin);
+  FSuccessLoginTime := now;
 end;
 
 procedure TEpiLogger.LogSearch(Search: TEpiSearch);
@@ -1051,20 +1129,21 @@ begin
          eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
          eaceAdminIncorrectPassword       // Data: string   = the incorrect login name
        ]
-  then with FLogDataFile do
+  then
     begin
-      NewRecords();
-      Idx := Size - 1;
+      FLogDataFile.NewRecords();
+      Idx := FLogDataFile.Size - 1;
 
-      FType.AsEnum[Idx]        := ltFailedLogin;
-      FTime.AsDateTime[Idx]    := Now;
       FUserNames.AsString[Idx] := PUTF8String(Data)^;
+      FTime.AsDateTime[Idx]    := Now;
       FCycle.AsInteger[Idx]    := Doc(Self).CycleNo;
-
+      FAesKey.AsString[Idx]    := '';
       if TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectPassword then
-        FLogContent.AsInteger[Idx] := 0
+        FLoginFailType.AsInteger[Idx] := 0
       else
-        FLogContent.AsInteger[Idx] := 1;
+        FLoginFailType.AsInteger[Idx] := 1;
+      FEncryptedTxt.AsString[Idx] := '';
+      FHostName.AsString[Idx]     := GetHostNameWrapper;
     end;
 end;
 
@@ -1079,7 +1158,15 @@ begin
     Exit;
 
   FEncrypter := TDCP_rijndael.Create(nil);
-  FLogDataFile := TEpiLog.Create(nil);
+
+  FLogDataFile   := TEpiDataFile.Create(nil);
+  FUserNames     := FLogDataFile.NewField(ftString);
+  FTime          := FLogDataFile.NewField(ftTime);
+  FCycle         := FLogDataFile.NewField(ftInteger);
+  FAesKey        := FLogDataFile.NewField(ftString);
+  FLoginFailType := FLogDataFile.NewField(ftInteger);
+  FEncryptedTxt  := FLogDataFile.NewField(ftString);
+  FHostName      := FLogDataFile.NewField(ftString);
 
   Doc(Self).RegisterOnChangeHook(@DocumentHook, true);
 end;
@@ -1098,6 +1185,8 @@ var
   B64Len: LongInt;
   AesKey, S: String;
   PlainTxtMs, EncryptMs: TMemoryStream;
+  ATime: Double;
+  BTime: array[0..7] of byte absolute ATime;
 begin
   Result := inherited SaveToDom(RootDoc);
 
@@ -1113,44 +1202,44 @@ begin
 
 
 
-  with FLogDatafile do
-    for i := 0 to FType.Size - 1 do
-    begin
-      Elem := RootDoc.CreateElement('LoginFailed');
-      SaveDomAttr(Elem, 'aesKey',   AesKey);
-      SaveDomAttr(Elem, 'time',     FTime.AsDateTime[i]);
-      SaveDomAttr(Elem, 'username', FUserNames.AsString[i]);
-      SaveDomAttr(Elem, rsCycle,    FCycle.AsInteger[i]);
+  for i := 0 to FLogDataFile.Size - 1 do
+  begin
+    Elem := RootDoc.CreateElement('LoginFailed');
 
-      if FDataContent.AsInteger[i] = 0
-        then
-          SaveDomAttr(Elem, 'type', 'password')
-        else
-          SaveDomAttr(Elem, 'type', 'login');
+    SaveDomAttr(Elem, 'time',     FTime.AsDateTime[i]);
+    SaveDomAttr(Elem, 'hostname', FHostName.AsString[i]);
 
+    if (FLoginFailType.AsInteger[i] = 2) then
+      begin
+        SaveDomAttr(Elem, 'aesKey', FAesKey.AsString[i]);
+        Elem.TextContent := FEncryptedTxt.AsString[i];
+      end
+    else
+      begin
+        SaveDomAttr(Elem, 'aesKey', AesKey);
 
+        PlainTxtMs.Clear;
+//        PlainTxtMs.WriteAnsiString(''); // MD5 sum of previous line
+        PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
+        PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
+        PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
+        PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
+        PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
 
+        PlainTxtMs.Position := 0;
+        EncryptMs.Clear;
+        FEncrypter.Reset;
+        FEncrypter.EncryptStream(PlainTxtMs, EncryptMs, PlainTxtMs.Size);
 
+        SetLength(S, EncryptMs.Size * 2);
+        B64Len := Base64Encode(EncryptMs.Memory, @S[1], EncryptMs.Size);
+        SetLength(S, B64Len);
 
-      PlainTxtMs.Clear;
-      PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
-      PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
-      PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
-      PlainTxtMs.WriteByte(FDataContent.AsInteger[i]);
-
-      PlainTxtMs.Position := 0;
-      EncryptMs.Clear;
-      FEncrypter.Reset;
-      FEncrypter.EncryptStream(PlainTxtMs, EncryptMs, PlainTxtMs.Size);
-
-      SetLength(S, EncryptMs.Size * 2);
-      B64Len := Base64Encode(EncryptMs.Memory, @S[1], EncryptMs.Size);
-      SetLength(S, B64Len);
-
-      Elem.TextContent := S;
-
-      Result.AppendChild(Elem);
+        Elem.TextContent := S;
     end;
+
+    Result.AppendChild(Elem);
+  end;
 
   PlainTxtMs.Free;
   EncryptMs.Free;
@@ -1158,8 +1247,36 @@ end;
 
 procedure TEpiFailedLogger.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
+var
+  Node: TDOMNode;
+  Idx: Integer;
 begin
+  // Root = <ExLog>
   inherited LoadFromXml(Root, ReferenceMap);
+
+  Node := Root.FirstChild;
+  while Assigned(Node) do
+  begin
+    // hack to skip whitespace nodes.
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    CheckNode(Node, 'LoginFailed');
+
+    FLogDataFile.NewRecords();
+    Idx := FLogDataFile.Size -1;
+
+    FUserNames.AsString[Idx] := '';
+    FTime.AsTime[Idx]             := LoadAttrDateTime(Node, 'time');
+    FCycle.AsInteger[Idx]         := -1;
+    FAesKey.AsString[Idx]         := LoadAttrString(Node, 'aesKey');
+    FLoginFailType.AsInteger[Idx] := 2;
+    FEncryptedTxt.AsString[Idx]   := Node.TextContent;
+    FHostName.AsString[Idx]       := LoadAttrString(Node, 'hostname');
+
+    Node := Node.NextSibling;
+  end;
 end;
 
 end.
