@@ -269,7 +269,6 @@ var
   Count: Integer;
   Elem: TDOMElement;
   CRes: TEpiRequestPasswordResult;
-
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
@@ -277,6 +276,7 @@ begin
   FLoading := true;
 
   {$IFNDEF RELEASE}
+
   // Keep an eye in which branch we are loading from!
   TmpBranch := LoadAttrString(Root, rsBranchAttr, '', false);
   if (TmpBranch <> '') and
@@ -303,6 +303,14 @@ begin
       [EPI_XML_DATAFILE_VERSION, TmpVersion]
       );
   FVersion := TmpVersion;
+
+  // Now we need the separators, in ordet to load dates/times correctly.
+  if (Version >= 4) then
+  begin
+    XMLSettings.DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
+    XMLSettings.TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
+    XMLSettings.DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
+  end;
 
   // Then language!
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
@@ -391,9 +399,13 @@ begin
     PassWord := UserPW;
   end;
 
-  // Version 1:
-  LoadNode(Node, Root, rsSettings, true);
-  XMLSettings.LoadFromXml(Node, ReferenceMap);
+  // Version 1-3:
+  //  - from v4 separators are moved to <EpiData> tag
+  if (Version <= 3) then
+  begin
+    LoadNode(Node, Root, rsSettings, true);
+    XMLSettings.LoadFromXml(Node, ReferenceMap);
+  end;
 
   // Version 4:
   if LoadNode(Node, Root, rsAdmin, false) then
@@ -556,6 +568,9 @@ begin
   SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/2.1 http://www.epidata.dk/XML/2.1/epx.xsd');
   SaveDomAttr(Result, rsVersionAttr, Version);
   SaveDomAttr(Result, 'xml:lang', DefaultLang);
+  SaveDomAttr(Result, rsDateSep, XMLSettings.DateSeparator);
+  SaveDomAttr(Result, rsDecSep,  XMLSettings.DecimalSeparator);
+  SaveDomAttr(Result, rsTimeSep, XMLSettings.TimeSeparator);
 
   {$IFNDEF RELEASE}
   SaveDomAttr(Result, rsBranchAttr, EPI_XML_BRANCH_STRING);

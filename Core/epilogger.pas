@@ -119,7 +119,8 @@ type
   private
     function    CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer): TDOMElement;
     procedure   AddKeyFieldValues(RootNode: TDOMElement; LogIndex: Integer);
-    procedure   AddEditFieldValue(RootNode: TDOMElement; LogIndex: Integer);
+    procedure   AddEditFieldValues(RootNode: TDOMElement; LogIndex: Integer);
+    procedure   GetEditFieldValues(RootNode: TDOMNode; LogIndex: Integer);
     procedure   AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
   public
     function    XMLName: string; override;
@@ -472,7 +473,7 @@ begin
   SaveTextContent(RootNode, 'Keys', FLogDatafile.FKeyFieldValues.AsString[LogIndex]);
 end;
 
-procedure TEpiLogger.AddEditFieldValue(RootNode: TDOMElement; LogIndex: Integer
+procedure TEpiLogger.AddEditFieldValues(RootNode: TDOMElement; LogIndex: Integer
   );
 var
   AList: TList;
@@ -488,6 +489,7 @@ begin
   begin
     Elem := RootNode.OwnerDocument.CreateElement('Change');
     SaveDomAttr(Elem, 'fieldRef', FieldName);
+    SaveDomAttrEnum(Elem, rsType, FieldType, TypeInfo(TEpiFieldType));
     case FieldType of
       ftBoolean:
         begin
@@ -579,6 +581,133 @@ begin
   end;
 end;
 
+procedure TEpiLogger.GetEditFieldValues(RootNode: TDOMNode; LogIndex: Integer);
+var
+  AList: TList;
+  Data: PDataLogEntry;
+  Node: TDOMNode;
+  BeforeMissing, AfterMissing: Boolean;
+begin
+  // RootNode = <EditRecord ...>
+  AList := TList.Create;
+
+  Node := RootNode.FirstChild;
+  while Assigned(Node) do
+  begin
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    if (Node.NodeName <> 'Change') then
+      begin
+        Node := Node.NextSibling;
+        Continue;
+      end;
+
+    Data := New(PDataLogEntry);
+    with Data^ do
+    begin
+      FieldType := TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType)));
+      FieldName := LoadAttrString(Node, 'fieldRef');
+
+      BeforeMissing := (LoadAttrString(Node, 'before') = TEpiStringField.DefaultMissing);
+      AfterMissing  := (LoadAttrString(Node, 'after')  = TEpiStringField.DefaultMissing);
+
+      case FieldType of
+        ftBoolean:
+          begin
+            if BeforeMissing then
+              OldBoolValue := TEpiBoolField.DefaultMissing
+            else
+              OldBoolValue := LoadAttrInt(Node, 'before');
+
+            if AfterMissing then
+              NewBoolValue := TEpiBoolField.DefaultMissing
+            else
+              NewBoolValue := LoadAttrInt(Node, 'after', TEpiBoolField.DefaultMissing);
+          end;
+
+        ftInteger,
+        ftAutoInc:
+          begin
+            if BeforeMissing then
+              OldIntValue := TEpiIntField.DefaultMissing
+            else
+              OldIntValue := LoadAttrInt(Node, 'before');
+
+            if AfterMissing then
+              NewIntValue := TEpiIntField.DefaultMissing
+            else
+              NewIntValue := LoadAttrInt(Node, 'after');
+          end;
+
+        ftFloat:
+          begin
+            if BeforeMissing then
+              OldFloatValue := TEpiFloatField.DefaultMissing
+            else
+              OldFloatValue := LoadAttrFloat(Node, 'before');
+
+            if AfterMissing then
+              NewFloatValue := TEpiFloatField.DefaultMissing
+            else
+              NewFloatValue := LoadAttrFloat(Node, 'after');
+          end;
+
+        ftDMYDate,
+        ftMDYDate,
+        ftYMDDate,
+        ftDMYAuto,
+        ftMDYAuto,
+        ftYMDAuto:
+          begin
+            if BeforeMissing then
+              OldDateValue := TEpiDateField.DefaultMissing
+            else
+              OldDateValue := LoadAttrInt(Node, 'before');
+
+            if AfterMissing then
+              NewDateValue := TEpiDateField.DefaultMissing
+            else
+              NewDateValue := LoadAttrInt(Node, 'after');
+          end;
+
+        ftTime,
+        ftTimeAuto:
+          begin
+            if BeforeMissing then
+              OldTimeValue := TEpiDateTimeField.DefaultMissing
+            else
+              OldTimeValue := LoadAttrDateTime(Node, 'before');
+
+            if AfterMissing then
+              NewTimeValue := TEpiDateTimeField.DefaultMissing
+            else
+              NewTimeValue := LoadAttrDateTime(Node, 'after');
+          end;
+
+        ftString,
+        ftUpperString:
+          begin
+            if BeforeMissing then
+              OldStringValue := TEpiStringField.DefaultMissing
+            else
+              OldStringValue := LoadAttrString(Node, 'before');
+
+            if AfterMissing then
+              NewStringValue := TEpiStringField.DefaultMissing
+            else
+              NewStringValue := LoadAttrString(Node, 'after');
+          end;
+      end; // Case
+    end; // With Data^ do
+
+    AList.Add(Data);
+    Node := Node.NextSibling;
+  end;
+  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(AList);
+end;
+
 procedure TEpiLogger.AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
 begin
   SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
@@ -623,7 +752,7 @@ begin
         ltEditRecord:
           begin
             AddKeyFieldValues(Elem, I);
-            AddEditFieldValue(Elem, I);
+            AddEditFieldValues(Elem, I);
           end;
         ltViewRecord:
           AddKeyFieldValues(Elem, I);
@@ -639,6 +768,7 @@ procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
 var
   Node: TDOMNode;
   Idx: Integer;
+  TmpDefaultFormatSetting: TFormatSettings;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
@@ -655,7 +785,7 @@ begin
     with FLogDatafile do
     begin
       FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
-      FTime.AsDateTime[Idx]        := LoadAttrDateTime(Node, 'time', 'YYYY/MM/DD HH:NN:SS');
+      FTime.AsDateTime[Idx]        := LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
       FDataFileNames.AsString[Idx] := LoadAttrString(Node, rsDataFileRef, '', false);
       FUserNames.AsString[Idx]     := LoadAttrString(Node, 'username');
       FCycle.AsInteger[Idx]        := LoadAttrInt(Node, rsCycle);
@@ -675,16 +805,16 @@ begin
             FLogContent.AsString[Idx] := LoadAttrString(Node, 'hostname');
           end;
         ltSearch:
-          FLogContent :=  AddSearchString(Node, I);
+          FLogContent.AsString[Idx] := LoadNodeString(Node, 'SearchString');
         ltNewRecord:
-          AddKeyFieldValues(Node, I);
+          FKeyFieldValues.AsString[Idx] := LoadNodeString(Node, 'Keys');
         ltEditRecord:
           begin
-            AddKeyFieldValues(Node, I);
-            AddEditFieldValue(Node, I);
+            FKeyFieldValues.AsString[Idx] := LoadNodeString(Node, 'Keys');
+            GetEditFieldValues(Node, Idx);
           end;
         ltViewRecord:
-          AddKeyFieldValues(Node, I);
+          FKeyFieldValues.AsString[Idx] := LoadNodeString(Node, 'Keys');
         ltPack: ;
         ltAppend: ;
       end;
@@ -692,6 +822,8 @@ begin
 
     Node := Node.NextSibling;
   end;
+
+  DefaultFormatSettings := TmpDefaultFormatSetting;
 end;
 
 procedure TEpiLogger.LoadExLog(ExLogObject: TEpiFailedLogger);
