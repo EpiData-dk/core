@@ -56,6 +56,8 @@ type
     procedure DoChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
       overload;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
@@ -79,6 +81,8 @@ type
   protected
     procedure ReferenceDestroyed(Item: TEpiCustomItem; PropertyName: shortstring); override;
     function WriteNameToXml: boolean; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function   XMLName: string; override;
@@ -139,6 +143,15 @@ begin
 
   RemoveItem(TEpiCustomItem(Initiator));
   Initiator.Free;
+end;
+
+function TEpiGroupRights.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  // Dest already exists (since it is created on TEpiDataFile.
+  // - and clear the content created in "Create".
+  TEpiGroupRights(Dest).ClearAndFree;
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 end;
 
 constructor TEpiGroupRights.Create(AOwner: TEpiCustomBase);
@@ -265,9 +278,19 @@ begin
   Result := false;
 end;
 
+function TEpiGroupRight.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  TEpiGroupRight(Result).FEntryRights := FEntryRights;
+  ReferenceMap.AddFixupReference(Result, TEpiGroupRight, 0, Group.Name);
+end;
+
 constructor TEpiGroupRight.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
+  FEntryRights := [];
 end;
 
 function TEpiGroupRight.XMLName: string;

@@ -189,7 +189,6 @@ function TEpiXMLSettings.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-
   TEpiXMLSettings(Result).AssignValues(Self);
 end;
 

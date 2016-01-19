@@ -481,7 +481,7 @@ var
   Elem: TDOMElement;
   MissingStr: EpiString;
 begin
-  AList := TList(FLogDatafile.FDataContent.AsInteger[LogIndex]);
+  AList := TList(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
   MissingStr := TEpiStringField.DefaultMissing;
 
   for Data in AList do
@@ -768,7 +768,6 @@ procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
 var
   Node: TDOMNode;
   Idx: Integer;
-  TmpDefaultFormatSetting: TFormatSettings;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
@@ -785,15 +784,15 @@ begin
     with FLogDatafile do
     begin
       FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
-      FTime.AsDateTime[Idx]        := LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
-      FDataFileNames.AsString[Idx] := LoadAttrString(Node, rsDataFileRef, '', false);
-      FUserNames.AsString[Idx]     := LoadAttrString(Node, 'username');
-      FCycle.AsInteger[Idx]        := LoadAttrInt(Node, rsCycle);
+      FTime.AsDateTime[Idx]        := Self.LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
+      FDataFileNames.AsString[Idx] := Self.LoadAttrString(Node, rsDataFileRef, '', false);
+      FUserNames.AsString[Idx]     := Self.LoadAttrString(Node, 'username');
+      FCycle.AsInteger[Idx]        := Self.LoadAttrInt(Node, rsCycle);
 
       case FType.AsEnum[Idx] of
         ltNone: ;
         ltSuccessLogin:
-          FLogContent.AsString[Idx] := LoadAttrString(Node, 'hostname');
+          FLogContent.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
         ltFailedLogin:
           begin
             case LoadAttrString(Node, 'type') of
@@ -802,19 +801,19 @@ begin
             else
               //
             end;
-            FLogContent.AsString[Idx] := LoadAttrString(Node, 'hostname');
+            FLogContent.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
           end;
         ltSearch:
-          FLogContent.AsString[Idx] := LoadNodeString(Node, 'SearchString');
+          FLogContent.AsString[Idx]       := Self.LoadNodeString(Node, 'SearchString');
         ltNewRecord:
-          FKeyFieldValues.AsString[Idx] := LoadNodeString(Node, 'Keys');
+          FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
         ltEditRecord:
           begin
-            FKeyFieldValues.AsString[Idx] := LoadNodeString(Node, 'Keys');
+            FKeyFieldValues.AsString[Idx] := Self.LoadNodeString(Node, 'Keys');
             GetEditFieldValues(Node, Idx);
           end;
         ltViewRecord:
-          FKeyFieldValues.AsString[Idx] := LoadNodeString(Node, 'Keys');
+          FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
         ltPack: ;
         ltAppend: ;
       end;
@@ -822,8 +821,6 @@ begin
 
     Node := Node.NextSibling;
   end;
-
-  DefaultFormatSettings := TmpDefaultFormatSetting;
 end;
 
 procedure TEpiLogger.LoadExLog(ExLogObject: TEpiFailedLogger);

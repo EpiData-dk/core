@@ -261,7 +261,7 @@ type
     // - this gives approx. 2^32 different ways to store the same password.
     FSalt: UTF8String;
     FLogin: UTF8String;
-    FNotes: string;
+    FNotes: UTF8String;
     function GetAdmin: TEpiAdmin;
     function GetLogin: UTF8String;
     procedure SetExpireDate(const AValue: TDateTime);
@@ -270,7 +270,7 @@ type
     procedure SetLogin(AValue: UTF8String);
     procedure SetMasterPassword(const AValue: string);
     procedure SetPassword(const AValue: UTF8String);
-    procedure SetNotes(AValue: string);
+    procedure SetNotes(AValue: UTF8String);
   protected
     property  Salt: UTF8String read FSalt;
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -297,7 +297,7 @@ type
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
     property   FullName: UTF8String read FFullName write SetFullName;
-    property   Notes: string read FNotes write SetNotes;
+    property   Notes: UTF8String read FNotes write SetNotes;
     property   Created: TDateTime read FCreated;
     property   Modified: TDateTime read FModified;
   end;
@@ -582,16 +582,6 @@ begin
   FAdminRelations := TEpiGroupRelationList.Create(Self);
   FAdminRelations.ItemOwner := true;
 
-{  FAdminsGroup := FGroups.NewGroup;
-  FAdminsGroup.ManageRights := EpiAllManageRights;
-  FAdminsGroup.Caption.TextLang['en'] := 'Admins';
-  FAdminsGroup.Name := 'admins_group';
-
-  FAdminRelations := TEpiGroupRelationList.Create(Self);
-  FAdminRelations.ItemOwner := true;
-  FAdminRelation := FAdminRelations.NewGroupRelation;
-  FAdminRelation.Group := FAdminsGroup;       }
-
   FCrypter := TDCP_rijndael.Create(nil);
   FRSA     := TEpiRSA.Create;
 
@@ -683,6 +673,9 @@ begin
            // and the ADMIN group must ALWAYS have all management rights.
            FAdminsGroup.FManageRights := EpiAllManageRights;
          end;
+      1: begin
+           FAdminRelation := FAdminRelations[0];
+         end;
     end
   else
     inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
@@ -745,7 +738,17 @@ function TEpiAdmin.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  TEpiAdmin(Result).FMasterPassword := FMasterPassword;
+
+  With TEpiAdmin(Result) do
+  begin
+    Self.FAdminRelations.DoClone(Result, FAdminRelations, ReferenceMap);
+    FMasterPassword := Self.FMasterPassword;
+    FRSA.PrivateKey := Self.FRSA.PrivateKey;
+    FRSA.PublicKey  := Self.FRSA.PublicKey;
+  end;
+
+  ReferenceMap.AddFixupReference(Result, TEpiAdmin, 1, '');
+  ReferenceMap.AddFixupReference(Result, TEpiAdmin, 0, '');
 end;
 
 function TEpiAdmin.GetGroupEdited: TDateTime;
@@ -982,7 +985,7 @@ begin
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
 
-procedure TEpiUser.SetNotes(AValue: string);
+procedure TEpiUser.SetNotes(AValue: UTF8String);
 var
   Val: String;
 begin
@@ -1002,12 +1005,16 @@ begin
 
   with TEpiUser(Result) do
   begin
-    FExpireDate := Self.FExpireDate;
-    FLastLogin  := Self.FLastLogin;
-    FFullName   := Self.FFullName;
+    FCreated        := Self.FCreated;
+    FModified       := Self.FModified;
+    FExpireDate     := Self.FExpireDate;
+    FLastLogin      := Self.FLastLogin;
+    FFullName       := Self.FFullName;
+    FLogin          := Self.FLogin;
     FMasterPassword := Self.FMasterPassword;
     FPassword       := Self.FPassword;
     FSalt           := Self.FSalt;
+    FNotes          := Self.FNotes;
   end;
 
   S := '';
@@ -1017,7 +1024,7 @@ begin
   if S <> '' then
     Delete(S,1,1);
 
-  ReferenceMap.AddFixupReference(Self, TEpiUser, 0, S);
+  ReferenceMap.AddFixupReference(Result, TEpiUser, 0, S);
 end;
 
 procedure TEpiUser.FixupReferences(EpiClassType: TEpiCustomBaseClass;
@@ -1241,7 +1248,12 @@ function TEpiGroup.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-  TEpiGroup(Result).FManageRights := FManageRights;
+  with TEpiGroup(Result) do
+  begin
+    FManageRights := Self.FManageRights;
+    FCreated      := Self.FCreated;
+    FModified     := Self.FModified;
+  end;
 end;
 
 procedure TEpiGroup.DoChange(const Initiator: TEpiCustomBase;
