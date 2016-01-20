@@ -191,6 +191,7 @@ end;
 
 type
   TDataLogEntry = record
+    DataFileName:   UTF8String;
     FieldName:      EpiString;
     OldStringValue: EpiString;
     NewStringValue: EpiString;
@@ -227,6 +228,7 @@ var
 begin
   NewData := New(PDataLogEntry);
 
+  NewData^.DataFileName := Field.DataFile.Name;
   NewData^.FieldType := Field.FieldType;
   NewData^.FieldName := Field.Name;
   with Data^, NewData^ do
@@ -488,6 +490,7 @@ begin
   with Data^ do
   begin
     Elem := RootNode.OwnerDocument.CreateElement('Change');
+    SaveDomAttr(Elem, rsDataFileRef, DataFileName);
     SaveDomAttr(Elem, 'fieldRef', FieldName);
     SaveDomAttrEnum(Elem, rsType, FieldType, TypeInfo(TEpiFieldType));
     case FieldType of
@@ -607,6 +610,7 @@ begin
     Data := New(PDataLogEntry);
     with Data^ do
     begin
+      DataFileName := LoadAttrString(Node, rsDataFileRef);
       FieldType := TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType)));
       FieldName := LoadAttrString(Node, 'fieldRef');
 
@@ -947,6 +951,8 @@ var
   F: TEpiField;
 begin
   Result := '';
+  if (not Assigned(FDatafile)) then exit;
+
   for F in FDatafile.KeyFields do
     Result += F.Name + '=' + F.AsString[Index] + ',';
 
@@ -967,20 +973,25 @@ var
 begin
   Idx := DoNewLog(ltSearch);
 
-  S := DupeString('(', Search.ConditionCount - 2);
+  if Assigned(Search) then
+    begin
+      S := DupeString('(', Search.ConditionCount - 2);
 
-  for i := 0 to Search.ConditionCount - 1 do
-    with Search.SearchCondiction[I] do
-      begin
-        if I > 0 then
-          case BinOp of
-            boAnd: S += ' And ';
-            boOr:  S += ' Or ';
+      for i := 0 to Search.ConditionCount - 1 do
+        with Search.SearchCondiction[I] do
+          begin
+            if I > 0 then
+              case BinOp of
+                boAnd: S += ' And ';
+                boOr:  S += ' Or ';
+              end;
+            S += '(' + Field.Name + ' ' + MatchCriteriaCaption[MatchCriteria] + ' ' + Text + ')';
+            if (I > 0) and (I < Search.ConditionCount - 1) then
+              S += ')';
           end;
-        S += '(' + Field.Name + ' ' + MatchCriteriaCaption[MatchCriteria] + ' ' + Text + ')';
-        if (I > 0) and (I < Search.ConditionCount - 1) then
-          S += ')';
-      end;
+    end
+  else
+    S := '*';
 
   with FLogDatafile do
   begin
