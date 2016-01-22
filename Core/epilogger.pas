@@ -79,7 +79,7 @@ type
   { TEpiLog }
 
   TEpiLog = class(TEpiDataFile)
-  private
+  public
     FUserNames:      TEpiField;       // Username for the log entry
     FTime:           TEpiField;       // Time of log entry
     FCycle:          TEpiField;       // Cycly no fo the log entry
@@ -88,7 +88,6 @@ type
     FKeyFieldValues: TEpiField;       // Commaseperated string with Field=Value entries of key field values.
     FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
     FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
-  public
     constructor Create(AOwner: TEpiCustomBase; const aSize: integer = 0);
   end;
 
@@ -140,6 +139,7 @@ type
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: UTF8String read FUserName write SetUserName;
+    property   Log:  TEpiLog read FLogDatafile;
 
   { Logging methods }
   private
@@ -953,11 +953,14 @@ begin
   Result := '';
   if (not Assigned(FDatafile)) then exit;
 
-  for F in FDatafile.KeyFields do
-    Result += F.Name + '=' + F.AsString[Index] + ',';
+  if (FDatafile.KeyFields.Count > 0) then
+    for F in FDatafile.KeyFields do
+      Result += F.Name + '=' + F.AsString[Index] + ', '
+  else
+    Result := IntToStr(Index) + ', ';
 
   if (Result <> '') then
-    Delete(Result, Length(Result), 1);
+    Delete(Result, Length(Result)-1, 2);
 end;
 
 procedure TEpiLogger.LogLoginSuccess;
