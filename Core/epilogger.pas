@@ -175,6 +175,11 @@ type
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+  public
+    // Returns true if the same host has many attempts over a given interval.
+    //  @Attemps = number of tries from same host before fail
+    //  @Interval = number of second from first to last attempt.
+    function TooManyFailedLogins(Attempts, Interval: Integer): boolean;
   end;
 
 implementation
@@ -1410,7 +1415,7 @@ begin
     FLogDataFile.NewRecords();
     Idx := FLogDataFile.Size -1;
 
-    FUserNames.AsString[Idx] := '';
+    FUserNames.AsString[Idx]      := '';
     FTime.AsTime[Idx]             := LoadAttrDateTime(Node, 'time');
     FCycle.AsInteger[Idx]         := -1;
     FAesKey.AsString[Idx]         := LoadAttrString(Node, 'aesKey');
@@ -1419,6 +1424,31 @@ begin
     FHostName.AsString[Idx]       := LoadAttrString(Node, 'hostname');
 
     Node := Node.NextSibling;
+  end;
+end;
+
+function TEpiFailedLogger.TooManyFailedLogins(Attempts, Interval: Integer
+  ): boolean;
+var
+  AHostNames: TStringList;
+  MyHostName: UTF8String;
+  ATime: TDateTime;
+  Counter, i: Integer;
+begin
+  Result := false;
+
+  if FLogDataFile.Size = 0 then Exit;
+
+  MyHostName := GetHostNameWrapper;
+  Counter := 0;
+  ATime := Now - (Interval / (60 * 60 * 24));
+  for i := FLogDataFile.Size - 1 downto 0 do
+  begin
+    if (MyHostName <> FHostName.AsString[I]) then Continue;
+    if (FTime.AsDateTime[I] >= ATime) then Inc(Counter);
+
+    if (Counter >= Attempts) then
+      Exit(True);
   end;
 end;
 

@@ -20,6 +20,7 @@ type
 
   EEpiBadPassword = class(Exception);
   EEpiPasswordCanceled = class(Exception);
+  EEpiTooManyFailedLogins = class(Exception);
 
   // Rights in manager
   TEpiManagerRight = (

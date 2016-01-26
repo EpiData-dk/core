@@ -95,6 +95,7 @@ var
   WebLabel: TLabel;
 begin
   WebLabel := TLabel.Create(Self);
+
   with WebLabel do
   begin
     Caption := 'www.epidata.dk';

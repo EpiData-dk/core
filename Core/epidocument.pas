@@ -322,7 +322,11 @@ begin
   // Version 4:
   //  - load External log
   if LoadNode(Node, Root, 'ExLog', false) then
+  begin
     FFailedLog.LoadFromXml(Node, ReferenceMap);
+    if FFailedLog.TooManyFailedLogins(3, 60) then
+      raise EEpiTooManyFailedLogins.Create('Too many failed login attemps!');
+  end;
 
   // Version 4:
   //  - Now check for User login;
