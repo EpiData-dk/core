@@ -133,7 +133,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM,
+  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
   laz2_XMLWrite;
 
 var
@@ -155,6 +155,15 @@ begin
   then
   begin
     FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
+
+    if (IsSaved) and
+       (Assigned(AuthedUser))
+    then
+      begin
+        FEpiDoc.Logger.LogClose();
+        DoSaveFile(FileName);
+      end;
+
     FreeAndNil(FEpiDoc);
 
     if not ReadOnly then
@@ -720,6 +729,13 @@ begin
       on E: EEpiExternalFileNoFound do
         begin
           Msg := '';
+          LoadSuccess := false;
+        end;
+
+      on E: EEpiTooManyFailedLogins do
+        begin
+          Msg := 'Too many failed login attempts!' + LineEnding +
+                 'A cooldown period of ' + IntToStr(EpiAdminLoginInterval div 60) + ' minuts is in place!';
           LoadSuccess := false;
         end;
 

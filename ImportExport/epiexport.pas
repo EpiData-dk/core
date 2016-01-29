@@ -277,6 +277,9 @@ begin
   then
     Settings.Doc.ValueLabelSets.Clear;
 
+  Settings.Doc.Logger.LogExport(Settings);
+  OldDoc.Logger.LogExport(Settings);
+
   // CSV
   if Settings is TEpiCSVExportSetting then
     Result := (ExportCSV(TEpiCSVExportSetting(Settings)));

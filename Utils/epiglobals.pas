@@ -32,6 +32,10 @@ const
   // Special Top-level Administrators Group Name
   EpiAdminGroupName = 'admins_group';
 
+  // Failed Login Constants
+  EpiAdminLoginAttemps = 3;
+  EpiAdminLoginInterval = 5 * 60;   // 5 minuts = 300 seconds.
+
 implementation
 
 end.

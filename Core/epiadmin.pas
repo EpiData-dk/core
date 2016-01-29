@@ -159,7 +159,7 @@ type
     // Clear Text master password for all scrambling.
     // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
-    function   DoRequestPassword: TEpiRequestPasswordResult;
+    function   DoRequestPassword(FailLogger: TEpiCustomBase): TEpiRequestPasswordResult;
     procedure  SetMasterPassword(const AValue: string);
     procedure  DoUserAuthorized(Const User: TEpiUser);
 
@@ -179,7 +179,7 @@ type
     destructor Destroy; override;
     function   XMLName: string; override;
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function   LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap): TEpiRequestPasswordResult;
+    function   LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap; FailLogger: TEpiCustomBase): TEpiRequestPasswordResult;
     function   SaveCrypto(RootDoc: TDOMDocument): TDOMElement;
     procedure  FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
     property   Users: TEpiUsers read FUsers;
@@ -432,7 +432,7 @@ type
 implementation
 
 uses
-  DCPbase64, DCPsha256, epistringutils, epimiscutils, epidocument,
+  DCPbase64, DCPsha256, epistringutils, epimiscutils, epidocument, epilogger,
   math, epiglobals;
 
 { TEpiUsersEnumerator }
@@ -451,7 +451,8 @@ end;
 
 { TEpiAdmin }
 
-function TEpiAdmin.DoRequestPassword: TEpiRequestPasswordResult;
+function TEpiAdmin.DoRequestPassword(FailLogger: TEpiCustomBase
+  ): TEpiRequestPasswordResult;
 var
   Login, Password, NewPassword: UTF8String;
   TheUser: TEpiUser;
@@ -487,6 +488,8 @@ begin
       begin
         // Login did not exists - send an event abount it.
         DoChange(eegAdmin, Word(eaceAdminIncorrectUserName), @Login);
+        if TEpiFailedLogger(FailLogger).TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
+          raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
         Continue;
       end;
 
@@ -495,6 +498,9 @@ begin
     else begin
       Result := prFailed;
       DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
+
+      if TEpiFailedLogger(FailLogger).TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
+        raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
     end;
   until (Result = prSuccess) or (Res = rprStopOnFail);
 
@@ -638,8 +644,8 @@ begin
   ReferenceMap.AddFixupReference(Self, TEpiAdmin, 0, '');
 end;
 
-function TEpiAdmin.LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
-  ): TEpiRequestPasswordResult;
+function TEpiAdmin.LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap;
+  FailLogger: TEpiCustomBase): TEpiRequestPasswordResult;
 var
   Node: TDOMNode;
   S: EpiString;
@@ -652,7 +658,7 @@ begin
   if (S <> '') then
     FRSA.PublicKey := S;
 
-  Result := DoRequestPassword;
+  Result := DoRequestPassword(FailLogger);
 end;
 
 function TEpiAdmin.SaveCrypto(RootDoc: TDOMDocument): TDOMElement;

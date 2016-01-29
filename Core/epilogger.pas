@@ -9,6 +9,9 @@ uses
   Classes, SysUtils, epidatafiles, epidatafilestypes, epicustombase, epitools_search,
   Laz2_DOM, DCPrijndael;
 
+resourcestring
+  rsTooManyFailedAttemps = 'Too many failed login attemps';
+
 type
   TEpiLogEntry = (
     ltNone,            // The "empty" entry in the EnumField
@@ -20,7 +23,8 @@ type
     ltViewRecord,      // Changed record no. in viewer
     ltPack,            // Packed datafiles
     ltAppend,          // Appended data to datafiles
-    ltExport           // Exported data (or part of) to uncontrolled file.
+    ltExport,          // Exported data (or part of) to uncontrolled file.
+    ltClose            // The document was closed
   );
 
 
@@ -121,6 +125,8 @@ type
     procedure   AddEditFieldValues(RootNode: TDOMElement; LogIndex: Integer);
     procedure   GetEditFieldValues(RootNode: TDOMNode; LogIndex: Integer);
     procedure   AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
+    procedure   CreateExportNode(RootNode: TDOMElement; LogIndex: Integer);
+    procedure   ReadExportNode(RootNode: TDOMNode; LogIndex: Integer);
   public
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
@@ -151,6 +157,8 @@ type
   public
     procedure  LogSearch(Search: TEpiSearch);
     procedure  LogAppend();
+    procedure  LogClose();
+    procedure  LogExport(Settings: TObject);
   end;
 
   { TEpiFailedLogger }
@@ -186,7 +194,63 @@ implementation
 
 uses
   typinfo, epidocument, epiadmin, strutils, DCPsha512, DCPbase64, epimiscutils,
-  dateutils;
+  dateutils, math, epiexportsettings;
+
+type
+
+  { TLogExportDatafile }
+
+  TLogExportDatafile = class
+  public
+    Name: String;
+    FromRecord:     integer;
+    ToRecord:       integer;
+    ExportFields:   TStringList;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  { TLogExportDocument }
+
+  TLogExportDocument = class
+  public
+    ExportType: String;
+    ExportDeleted: Boolean;
+    ExportList: TList;
+  public
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+{ TLogExportDatafile }
+
+constructor TLogExportDatafile.Create;
+begin
+  ExportFields := TStringList.Create;
+end;
+
+destructor TLogExportDatafile.Destroy;
+begin
+  ExportFields.Free;
+  inherited Destroy;
+end;
+
+
+constructor TLogExportDocument.Create;
+begin
+  ExportList := TList.Create;
+end;
+
+destructor TLogExportDocument.Destroy;
+var
+  Item: Pointer;
+begin
+  for Item in ExportList do
+    TObject(Item).Free;
+
+  inherited Destroy;
+end;
 
 
 function Doc(AValue: TEpiCustomBase): TEpiDocument;
@@ -225,6 +289,8 @@ type
          NewTimeValue: EpiTime);
   end;
   PDataLogEntry = ^TDataLogEntry;
+
+{ TLogExportDocument }
 
 procedure TEpiLogger.StoreDataEvent(Field: TEpiField;
   Data: PEpiFieldDataEventRecord);
@@ -435,6 +501,8 @@ begin
     'ViewRecord':   result := ltViewRecord;
     'Pack':         result := ltPack;
     'Append':       result := ltAppend;
+    'Closed':       result := ltClose;
+    'Export':       result := ltExport;
   else
     result := ltNone;
   end;
@@ -463,6 +531,12 @@ begin
       S := 'Pack';
     ltAppend:
       S := 'Append';
+    ltExport:
+      S := 'Export';
+    ltClose:
+      S := 'Closed';
+  else
+    S := 'UnImplementedXmlTagInLogger';
   end;
 
   Result := RootDoc.CreateElement(S);
@@ -722,6 +796,67 @@ begin
   SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
 end;
 
+procedure TEpiLogger.CreateExportNode(RootNode: TDOMElement; LogIndex: Integer);
+var
+  LogExportDoc: TLogExportDocument;
+  LogExDF: TLogExportDatafile;
+  Elem: TDOMElement;
+  i: Integer;
+begin
+  // RootNode = <Export>
+  LogExportDoc := TLogExportDocument(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
+
+  SaveDomAttr(RootNode, 'exportDeleted', LogExportDoc.ExportDeleted);
+  SaveDomAttr(RootNode, rsType, LogExportDoc.ExportType);
+
+  for i := 0 to LogExportDoc.ExportList.Count - 1 do
+  begin
+    LogExDF := TLogExportDatafile(LogExportDoc.ExportList[i]);
+
+    Elem := RootNode.OwnerDocument.CreateElement('Dataform');
+    SaveDomAttr(Elem, rsDataFileRef, LogExDF.Name);
+    SaveDomAttr(Elem, 'fromRec', LogExDF.FromRecord);
+    SaveDomAttr(Elem, 'toRec', LogExDF.ToRecord);
+    SaveDomAttr(Elem, 'fieldsRefs', LogExDF.ExportFields.CommaText);
+
+    RootNode.AppendChild(Elem);
+  end;
+end;
+
+procedure TEpiLogger.ReadExportNode(RootNode: TDOMNode; LogIndex: Integer);
+var
+  Node: TDOMNode;
+  LogExportDoc: TLogExportDocument;
+  LogExDF: TLogExportDatafile;
+begin
+  // RootNode = <Export>
+  LogExportDoc := TLogExportDocument.Create;
+
+  LogExportDoc.ExportDeleted := LoadAttrBool(RootNode, 'exportDeleted');
+  LogExportDoc.ExportType    := LoadAttrString(RootNode, rsType);
+
+  Node := RootNode.FirstChild;
+  while Assigned(Node) do
+  begin
+    while NodeIsWhiteSpace(Node) do
+      Node := Node.NextSibling;
+    if not Assigned(Node) then break;
+
+    LogExDF := TLogExportDatafile.Create;
+
+    LogExDF.Name         := LoadAttrString(Node, rsDataFileRef, LogExDF.Name);
+    LogExDF.FromRecord   := LoadAttrInt(Node, 'fromRec');
+    LogExDF.ToRecord     := LoadAttrInt(Node, 'toRec');
+    LogExDF.ExportFields.CommaText := LoadAttrString(Node, 'fieldsRefs');
+
+    LogExportDoc.ExportList.Add(LogExDF);
+
+    Node := Node.NextSibling;
+  end;
+
+  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(LogExportDoc);
+end;
+
 function TEpiLogger.XMLName: string;
 begin
   Result := 'Log';
@@ -767,6 +902,12 @@ begin
           AddKeyFieldValues(Elem, I);
         ltPack: ;
         ltAppend: ;
+        ltExport:
+          CreateExportNode(Elem, I);
+        ltClose:
+          SaveDomAttr(Elem, 'lastEdited', FLogContent.AsString[I]);
+      else
+        SaveDomAttrEnum(Elem, 'NotImplementedLogEntry', FType.AsEnum[I], TypeInfo(TEpiLogEntry));
       end;
       Result.AppendChild(Elem);
     end;
@@ -825,6 +966,10 @@ begin
           FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
         ltPack: ;
         ltAppend: ;
+        ltExport:
+          ReadExportNode(Node, Idx);
+        ltClose:
+          FLogContent.AsString[Idx]       := Self.LoadAttrString(Node, 'lastEdited');
       end;
     end;
 
@@ -1050,6 +1195,52 @@ end;
 procedure TEpiLogger.LogAppend;
 begin
   DoNewLog(ltAppend);
+end;
+
+procedure TEpiLogger.LogClose;
+var
+  Idx, i: Integer;
+  LastEdit: TDateTime;
+  ADoc: TEpiDocument;
+begin
+  Idx := DoNewLog(ltClose);
+
+  ADoc := Doc(Self);
+  LastEdit := ADoc.Study.ModifiedDate;
+  for i := 0 to ADoc.DataFiles.Count -1 do
+  with ADoc.DataFiles[i] do
+    LastEdit := Max(LastEdit, Max(RecModifiedDate, StructureModifiedDate));
+
+  FLogDatafile.FLogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
+end;
+
+procedure TEpiLogger.LogExport(Settings: TObject);
+var
+  OrgSettings: TEpiExportSetting absolute Settings;
+  Idx, i: Integer;
+  LogExportDoc: TLogExportDocument;
+  LogExportDF: TLogExportDatafile;
+  DFSetting: TEpiExportDatafileSettings;
+begin
+  Idx := DoNewLog(ltExport);
+
+  LogExportDoc := TLogExportDocument.Create;
+  LogExportDoc.ExportDeleted := OrgSettings.ExportDeleted;
+  LogExportDoc.ExportType    := TEpiExportSettingClass(OrgSettings.ClassType).ClassName;
+
+  for i := 0 to OrgSettings.DatafileSettings.Count - 1 do
+  begin
+    DFSetting := OrgSettings.DatafileSettings[i];
+    LogExportDF := TLogExportDatafile.Create;
+    LogExportDF.Name := DFSetting.DatafileName;
+    LogExportDF.FromRecord := DFSetting.FromRecord;
+    LogExportDF.ToRecord   := DFSetting.ToRecord;
+    LogExportDF.ExportFields.Assign(DFSetting.ExportItems);
+
+    LogExportDoc.ExportList.Add(LogExportDF);
+  end;
+
+  FLogDatafile.FDataContent.AsInteger[Idx] := PtrInt(LogExportDoc);
 end;
 
 { TEpiEnumField }

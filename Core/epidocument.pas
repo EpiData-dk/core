@@ -127,7 +127,7 @@ type
 implementation
 
 uses
-  epimiscutils, laz2_XMLRead, laz2_XMLWrite,
+  epimiscutils, laz2_XMLRead, laz2_XMLWrite, epiglobals,
   DCPrijndael, DCPsha256, DCPbase64;
 
 { TEpiDocument }
@@ -304,7 +304,7 @@ begin
       );
   FVersion := TmpVersion;
 
-  // Now we need the separators, in ordet to load dates/times correctly.
+  // Now we need the separators, in order to load dates/times correctly.
   if (Version >= 4) then
   begin
     XMLSettings.DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
@@ -324,8 +324,8 @@ begin
   if LoadNode(Node, Root, 'ExLog', false) then
   begin
     FFailedLog.LoadFromXml(Node, ReferenceMap);
-    if FFailedLog.TooManyFailedLogins(3, 60) then
-      raise EEpiTooManyFailedLogins.Create('Too many failed login attemps!');
+    if FFailedLog.TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
+      raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
   end;
 
   // Version 4:
@@ -342,15 +342,18 @@ begin
       // request for password from user.
       // Loading the rest of the user information (Name, etc.) is
       // done later.
-      CRes := Admin.LoadCrypto(Node, ReferenceMap);
-      if (edfLoginFailed in Flags) then
-      begin
-        Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
-        LoadNode(Node, Root, 'ExLog', false);
-        Root.ReplaceChild(Elem, Node);
+      try
+        CRes := Admin.LoadCrypto(Node, ReferenceMap, FFailedLog);
+      finally
+        if (edfLoginFailed in Flags) then
+        begin
+          Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
+          LoadNode(Node, Root, 'ExLog', false);
+          Root.ReplaceChild(Elem, Node);
 
-        DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
-        Exclude(FFlags, edfLoginFailed);
+          DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
+          Exclude(FFlags, edfLoginFailed);
+        end;
       end;
 
       case CRes of
