@@ -747,15 +747,18 @@ begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 
   With TEpiAdmin(Result) do
-  begin
-    Self.FAdminRelations.DoClone(Result, FAdminRelations, ReferenceMap);
-    FMasterPassword := Self.FMasterPassword;
-    FRSA.PrivateKey := Self.FRSA.PrivateKey;
-    FRSA.PublicKey  := Self.FRSA.PublicKey;
-  end;
+    begin
+      Self.FAdminRelations.DoClone(Result, FAdminRelations, ReferenceMap);
+      FMasterPassword := Self.FMasterPassword;
+      FRSA.PrivateKey := Self.FRSA.PrivateKey;
+      FRSA.PublicKey  := Self.FRSA.PublicKey;
+    end;
 
-  ReferenceMap.AddFixupReference(Result, TEpiAdmin, 1, '');
-  ReferenceMap.AddFixupReference(Result, TEpiAdmin, 0, '');
+  if Assigned(FAdminsGroup) then
+    begin
+      ReferenceMap.AddFixupReference(Result, TEpiAdmin, 1, '');
+      ReferenceMap.AddFixupReference(Result, TEpiAdmin, 0, '');
+    end;
 end;
 
 function TEpiAdmin.GetGroupEdited: TDateTime;

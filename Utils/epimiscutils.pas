@@ -93,7 +93,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation;
+  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation, LazUTF8;
 
 type
   TEpiDialogFilterPair = record
