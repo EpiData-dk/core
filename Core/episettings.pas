@@ -49,7 +49,15 @@ type
   { TEpiProjectSettings }
 
   TEpiProjectSettingChangeEvent = (
-    epceFieldName, epceFieldBorder, epceBackupInterval, epceBackupShutdown, epceAutoIncStart
+    epceFieldName,
+    epceFieldBorder,
+    epceBackupInterval,
+    epceBackupShutdown,
+    epceAutoIncStart,
+    epceEmailOnShutDown,
+    epceEmailAddress,
+    epceEmailSubject,
+    epceEmailContent
   );
 
   TEpiProjectSettings = class(TEpiCustomBase)
@@ -57,14 +65,22 @@ type
     FAutoIncStartValue: EpiInteger;
     FBackupInterval: Integer;
     FBackupOnShutdown: Boolean;
+    FEmailAddress: UTF8String;
+    FEmailContent: UTF8String;
+    FEmailOnShutdown: Boolean;
+    FEmailSubject: UTF8String;
     FShowFieldBorders: Boolean;
     FShowFieldNames: Boolean;
-    procedure   SetAutoIncStartValue(const AValue: EpiInteger);
-    procedure   SetBackupInterval(const AValue: Integer);
-    procedure   SetBackupOnShutdown(const AValue: Boolean);
-    procedure   SetShowFieldBorders(const AValue: Boolean);
-    procedure   SetShowFieldNames(const AValue: Boolean);
-    procedure   AssignValues(Src: TEpiProjectSettings);
+    procedure SetAutoIncStartValue(const AValue: EpiInteger);
+    procedure SetBackupInterval(const AValue: Integer);
+    procedure SetBackupOnShutdown(const AValue: Boolean);
+    procedure SetEmailAddress(AValue: UTF8String);
+    procedure SetEmailContent(AValue: UTF8String);
+    procedure SetEmailOnShutdown(AValue: Boolean);
+    procedure SetEmailSubject(AValue: UTF8String);
+    procedure SetShowFieldBorders(const AValue: Boolean);
+    procedure SetShowFieldNames(const AValue: Boolean);
+    procedure AssignValues(Src: TEpiProjectSettings);
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
@@ -78,6 +94,10 @@ type
     property    BackupInterval: Integer read FBackupInterval write SetBackupInterval;
     property    BackupOnShutdown: Boolean read FBackupOnShutdown write SetBackupOnShutdown;
     property    AutoIncStartValue: EpiInteger read FAutoIncStartValue write SetAutoIncStartValue;
+    property    EmailOnShutdown: Boolean read FEmailOnShutdown write SetEmailOnShutdown;
+    property    EmailAddress: UTF8String read FEmailAddress write SetEmailAddress;
+    property    EmailSubject: UTF8String read FEmailSubject write SetEmailSubject;
+    property    EmailContent: UTF8String read FEmailContent write SetEmailContent;
   { Cloning }
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -234,6 +254,46 @@ begin
   DoChange(eegProjectSettings, Word(epceBackupShutdown), @Val);
 end;
 
+procedure TEpiProjectSettings.SetEmailAddress(AValue: UTF8String);
+var
+  Val: UTF8String;
+begin
+  if FEmailAddress = AValue then Exit;
+  Val := FEmailAddress;
+  FEmailAddress := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailAddress), @Val);
+end;
+
+procedure TEpiProjectSettings.SetEmailContent(AValue: UTF8String);
+var
+  Val: UTF8String;
+begin
+  if FEmailContent = AValue then Exit;
+  Val := FEmailContent;
+  FEmailContent := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailContent), @Val);
+end;
+
+procedure TEpiProjectSettings.SetEmailOnShutdown(AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FEmailOnShutdown = AValue then Exit;
+  Val := FEmailOnShutdown;
+  FEmailOnShutdown := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailOnShutDown), @Val);
+end;
+
+procedure TEpiProjectSettings.SetEmailSubject(AValue: UTF8String);
+var
+  Val: UTF8String;
+begin
+  if FEmailSubject = AValue then Exit;
+  Val := FEmailSubject;
+  FEmailSubject := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailSubject), @Val);
+end;
+
 procedure TEpiProjectSettings.SetShowFieldNames(const AValue: Boolean);
 var
   Val: Boolean;
@@ -251,9 +311,16 @@ begin
   FBackupOnShutdown  := Src.FBackupOnShutdown;
   FShowFieldBorders  := Src.FShowFieldBorders;
   FShowFieldNames    := Src.FShowFieldNames;
+
+  FEmailAddress      := Src.FEmailAddress;
+  FEmailContent      := Src.FEmailContent;
+  FEmailOnShutdown   := Src.FEmailOnShutdown;
+  FEmailSubject      := Src.FEmailSubject;
 end;
 
 function TEpiProjectSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
@@ -262,6 +329,15 @@ begin
   SaveDomAttr(Result, rsBackupOnShutdown,    BackupOnShutdown);
   SaveDomAttr(Result, rsShowFieldNames,      ShowFieldNames);
   SaveDomAttr(Result, rsShowFieldBorders,    ShowFieldBorders);
+
+  if EmailOnShutdown then
+  begin
+    Elem := SaveTextContent(Result, rsEmail, '');
+    SaveDomAttr(Elem, rsEmailOnShutdown,     EmailOnShutdown);
+    SaveDomAttr(Elem, rsEmailAddress,        EmailAddress);
+    SaveDomAttr(Elem, rsEmailSubject,        EmailSubject);
+    SaveTextContent(Elem, rsEmailContent,    EmailContent);
+  end;
 end;
 
 constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);
@@ -272,6 +348,10 @@ begin
   FShowFieldNames   := false;
   FBackupInterval   := 10;
   FAutoIncStartValue := 1;
+  FEmailAddress      := '';
+  FEmailContent      := '';
+  FEmailOnShutdown   := false;
+  FEmailSubject      := '';
 end;
 
 destructor TEpiProjectSettings.Destroy;
@@ -289,12 +369,21 @@ procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode;
 var
   I: Integer;
   B: Boolean;
+  Node: TDOMNode;
 begin
   AutoIncStartValue := LoadAttrInt(Root, rsAutoIncStart, AutoIncStartValue, false);
   BackupInterval    := LoadAttrInt(Root, rsTimedBackupInterval, BackupInterval, false);
   BackupOnShutdown  := LoadAttrBool(Root,rsBackupOnShutdown, BackupOnShutdown, false);
   ShowFieldNames    := LoadAttrBool(Root, rsShowFieldNames, ShowFieldNames, false);
   ShowFieldBorders  := LoadAttrBool(Root, rsShowFieldBorders, ShowFieldBorders, false);
+
+  if LoadNode(Node, Root, rsEmail, false) then
+  begin
+    EmailOnShutdown := LoadAttrBool(Node, rsEmailOnShutdown, EmailOnShutdown, false);
+    EmailAddress    := LoadAttrString(Node, rsEmailAddress, EmailAddress, false);
+    EmailSubject    := LoadAttrString(Node, rsEmailSubject, EmailContent, false);
+    EmailContent    := LoadNodeString(Node, rsEmailContent, EmailContent, false);
+  end;
 end;
 
 procedure TEpiProjectSettings.Assign(const AEpiCustomBase: TEpiCustomBase);

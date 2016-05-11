@@ -33,6 +33,11 @@ const
     rsBackupOnShutdown= 'backupOnShutdown';
     rsShowFieldNames  = 'showFieldNames';
     rsShowFieldBorders= 'showFieldBorders';
+    rsEmail           = 'Email';
+     rsEmailOnShutdown = 'emailOnShutdown';
+     rsEmailAddress    = 'emailAddress';
+     rsEmailSubject    = 'emailSubject';
+      rsEmailContent   = 'EmailContenct';
 
    rsCrypto          = 'Crypto';
    rsEncrypted       = 'Encrypted';

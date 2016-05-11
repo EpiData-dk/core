@@ -157,16 +157,16 @@ type
     procedure  SaveDomAttrEnum(Const Node: TDomElement; Const Tag: String;
       Const Value; TypeInfo: PTypeInfo);
     // Dom Text Content
-    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
-      Const Value: UTF8String); overload;
-    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
-      Const Value: Integer); overload;
-    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
-      Const Value: Extended); overload;
-    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
-      Const Value: TDateTime); overload;
-    procedure  SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
-      Const Value: Boolean); overload;
+    function SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: UTF8String): TDOMElement; overload;
+    function SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: Integer): TDOMElement; overload;
+    function SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: Extended): TDOMElement; overload;
+    function SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: TDateTime): TDOMElement; overload;
+    function SaveTextContent(Const RootNode: TDOMElement; Const Tag: String;
+      Const Value: Boolean): TDOMElement; overload;
     // Save To Dom
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; virtual;
 
@@ -1011,49 +1011,47 @@ begin
   SaveDomAttr(Node, Tag, EpiInteger(Value));
 end;
 
-procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
-  const Tag: String; const Value: UTF8String);
-var
-  Elem: TDOMElement;
+function TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: UTF8String): TDOMElement;
 begin
-  Elem := RootNode.OwnerDocument.CreateElement(Tag);
-  Elem.TextContent := Value;
-  RootNode.AppendChild(Elem);
+  Result := RootNode.OwnerDocument.CreateElement(Tag);
+  Result.TextContent := Value;
+  RootNode.AppendChild(Result);
 end;
 
-procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
-  const Tag: String; const Value: Integer);
+function TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: Integer): TDOMElement;
 begin
-  SaveTextContent(RootNode, Tag, IntToStr(Value));
+  Result := SaveTextContent(RootNode, Tag, IntToStr(Value));
 end;
 
-procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
-  const Tag: String; const Value: Extended);
+function TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: Extended): TDOMElement;
 begin
   if (RootOwner is TEpiDocument) then
     BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
 
-  SaveTextContent(RootNode, Tag, FloatToStr(Value));
+  Result := SaveTextContent(RootNode, Tag, FloatToStr(Value));
 
   if (RootOwner is TEpiDocument) then
     RestoreFormatSettings;
 end;
 
-procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
-  const Tag: String; const Value: TDateTime);
+function TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: TDateTime): TDOMElement;
 begin
   if (RootOwner is TEpiDocument) then
   with TEpiDocument(RootOwner).XMLSettings do
   begin
     BackupFormatSettings(FormatSettings);
-    SaveTextContent(RootNode, Tag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
+    Result := SaveTextContent(RootNode, Tag, FormatDateTime(FormatSettings.ShortDateFormat, Value));
     RestoreFormatSettings;
   end else
-    SaveTextContent(RootNode, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
+    Result := SaveTextContent(RootNode, Tag, FormatDateTime('YYYY/MM/DD HH:NN:SS', Value));
 end;
 
-procedure TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
-  const Tag: String; const Value: Boolean);
+function TEpiCustomBase.SaveTextContent(const RootNode: TDOMElement;
+  const Tag: String; const Value: Boolean): TDOMElement;
 begin
 //  SaveTextContent(RootNode, Value, BoolToStr(Value, 'true', 'false'));
 end;
