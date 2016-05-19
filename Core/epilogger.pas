@@ -24,7 +24,8 @@ type
     ltPack,            // Packed datafiles
     ltAppend,          // Appended data to datafiles
     ltExport,          // Exported data (or part of) to uncontrolled file.
-    ltClose            // The document was closed
+    ltClose,           // The document was closed
+    ltNewPassword      // The user password was changed/reset
   );
 
 
@@ -154,6 +155,7 @@ type
     procedure  LogRecordEdit(RecordNo: Integer);
     procedure  LogRecordView(RecordNo: Integer);
     procedure  LogPack();
+    procedure  LogPassword();
   public
     procedure  LogSearch(Search: TEpiSearch);
     procedure  LogAppend();
@@ -367,13 +369,17 @@ begin
             LogLoginSuccess();
           end;
 
+        eaceUserSetPassword:             // Initiator = TEpiUser.
+          begin
+            UserName := TEpiUser(Initiator).Login;
+            LogPassword();
+          end
       else
         {
         eaceAdminIncorrectUserName: ;
         eaceAdminIncorrectPassword: ;
         eaceAdminIncorrectNewPassword: ;
         eaceUserSetFullName: ;
-        eaceUserSetPassword: ;
         eaceUserSetExpireDate: ;
         eaceUserSetLastLogin: ;
         eaceUserSetNotes: ;
@@ -503,6 +509,7 @@ begin
     'Append':       result := ltAppend;
     'Closed':       result := ltClose;
     'Export':       result := ltExport;
+    'Password':     result := ltNewPassword;
   else
     result := ltNone;
   end;
@@ -535,6 +542,8 @@ begin
       S := 'Export';
     ltClose:
       S := 'Closed';
+    ltNewPassword:
+      S := 'Password';
   else
     S := 'UnImplementedXmlTagInLogger';
   end;
@@ -906,6 +915,7 @@ begin
           CreateExportNode(Elem, I);
         ltClose:
           SaveDomAttr(Elem, 'lastEdited', FLogContent.AsString[I]);
+        ltNewPassword: ;
       else
         SaveDomAttrEnum(Elem, 'NotImplementedLogEntry', FType.AsEnum[I], TypeInfo(TEpiLogEntry));
       end;
@@ -970,6 +980,7 @@ begin
           ReadExportNode(Node, Idx);
         ltClose:
           FLogContent.AsString[Idx]       := Self.LoadAttrString(Node, 'lastEdited');
+        ltNewPassword: ;
       end;
     end;
 
@@ -1190,6 +1201,11 @@ end;
 procedure TEpiLogger.LogPack;
 begin
   DoNewLog(ltPack);
+end;
+
+procedure TEpiLogger.LogPassword;
+begin
+  DoNewLog(ltNewPassword);
 end;
 
 procedure TEpiLogger.LogAppend;
