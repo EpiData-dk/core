@@ -97,7 +97,7 @@ implementation
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
   LazUTF8, dateutils, LConvEncoding, LazUTF8Classes, epimiscutils, epiconvertutils,
-  epidatafileutils;
+  epidatafileutils, LazFileUtils;
 
 var
   BigEndian: boolean = false;
@@ -353,7 +353,8 @@ begin
     // Guess field type.
     // Skip first line since it may contain headings/field names.
     SetLength(PossibleTypes, FieldCount);
-    FillDWord(PossibleTypes[0], FieldCount, Longint(AllFieldTypes - AutoFieldTypes));
+    // Remove Boolean type in detection, because we really do not want users to use boolean fields - it is bad practice.
+    FillDWord(PossibleTypes[0], FieldCount, Longint(AllFieldTypes - AutoFieldTypes - BoolFieldTypes));
     for i := 1 to LineCount - 1 do
     begin
       DoProgress(eptRecords, i, LineCount * 3);

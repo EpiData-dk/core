@@ -753,6 +753,9 @@ begin
             else
               Val := F.AsInteger[CurRec];
 
+            if (F.FieldType in DateFieldTypes) then
+              Dec(Val, StataBaseDate);
+
             if F.IsMissingValue[CurRec] then
               Val := StataContent(F)^.IntValueLabelMap.KeyData[F.AsInteger[CurRec]];
 

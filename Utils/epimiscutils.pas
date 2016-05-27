@@ -84,7 +84,7 @@ const
 implementation
 
 uses
-  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation;
+  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation,  LazUTF8;
 
 type
   TEpiDialogFilterPair = record
