@@ -153,6 +153,7 @@ type
     function  DataFileFromNode(Const Node: PVirtualNode): TEpiDataFile;
     function  DocumentCountInRange: boolean;
     procedure FocusNode(Const Node: PVirtualNode);
+    function  GetEditingCaption: boolean;
     function  MasterRelationFromNode(Const Node: PVirtualNode): TEpiMasterRelation;
     function  NodeFromCustomBase(Const AObject: TEpiCustomBase): PVirtualNode;
     function  NodeFromDataFile(Const DataFile: TEpiDataFile): PVirtualNode;
@@ -167,6 +168,7 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
+    property  EditingCaption: boolean read GetEditingCaption;
 
   { Structural }
   private
@@ -874,6 +876,11 @@ procedure TEpiVProjectTreeViewFrame.FocusNode(const Node: PVirtualNode);
 begin
   VST.FocusedNode := Node;
   VST.Selected[Node] := true;
+end;
+
+function TEpiVProjectTreeViewFrame.GetEditingCaption: boolean;
+begin
+  result := VST.IsEditing;
 end;
 
 function TEpiVProjectTreeViewFrame.MasterRelationFromNode(const Node: PVirtualNode
