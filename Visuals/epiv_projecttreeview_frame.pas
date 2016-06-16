@@ -168,6 +168,7 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
+    procedure StopEditing;
     property  EditingCaption: boolean read GetEditingCaption;
 
   { Structural }
@@ -1129,6 +1130,12 @@ begin
   FFakeRoot.Free;
   FDocumentList.Free;
   inherited Destroy;
+end;
+
+procedure TEpiVProjectTreeViewFrame.StopEditing;
+begin
+  if EditingCaption then
+    VST.EndEditNode;
 end;
 
 function TEpiVProjectTreeViewFrame.GetDocuments(const Index: integer
