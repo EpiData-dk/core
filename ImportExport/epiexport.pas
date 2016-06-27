@@ -65,7 +65,7 @@ var
   RecordCoundField: TEpiField;
   F: TEpiField;
   VLSetList: TList;
-  j: Integer;
+  j, FromRec, ToRec: Integer;
   DFSetting: TEpiExportDatafileSettings;
   DF: TEpiDataFile;
   Item: TEpiCustomItem;
@@ -130,7 +130,11 @@ begin
     end else begin
       RecordCoundField := TEpiField.CreateField(nil, ftInteger);
       RecordCoundField.Size := (DFSetting.ToRecord - DFSetting.FromRecord) + 1;
-      for j := DFSetting.FromRecord to DFSetting.ToRecord do
+
+      FromRec := Max(DFSetting.FromRecord, 0);
+      ToRec   := Min(DFSetting.ToRecord, NewDF.Size - 1);
+
+      for j := FromRec to ToRec do
       begin
         if NewDF.Deleted[j] then
           RecordCoundField.AsInteger[j - DFSetting.FromRecord] := 1
@@ -139,9 +143,9 @@ begin
         NewDF.Deleted[j] := false
       end;
 
-      for j := 0 to DFSetting.FromRecord - 1 do
+      for j := 0 to FromRec - 1 do
         NewDF.Deleted[j] := true;
-      for j := DFSetting.ToRecord + 1 to NewDF.Size - 1 do
+      for j := ToRec + 1 to NewDF.Size - 1 do
         NewDF.Deleted[j] := true;
 
       NewDF.Pack;
