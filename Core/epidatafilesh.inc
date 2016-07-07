@@ -95,7 +95,7 @@ type
     procedure   SaveRecordToDom(RootNode: TDOMElement);
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
+    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0); virtual;
     destructor  Destroy; override;
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
