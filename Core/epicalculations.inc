@@ -595,12 +595,14 @@ procedure TEpiCombineStringCalc.FixupReferences(
   EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte;
   const ReferenceId: string);
 var
-  F: TEpiField;
+  F, OwnerF: TEpiField;
 begin
   if (EpiClassType = TEpiCombineStringCalc)
   then
     begin
-      if not Assigned(GetOwnerField) then exit;
+      OwnerF := GetOwnerField;
+      if not Assigned(OwnerF) then exit;
+      if not Assigned(OwnerF.DataFile) then exit;
       F := GetOwnerField.DataFile.Fields.FieldByName[ReferenceId];
 
       case ReferenceType of
