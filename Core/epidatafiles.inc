@@ -1150,7 +1150,7 @@ begin
   result := MainSection.NewHeading;
 end;
 
-procedure TEpiDataFile.NewRecords(const Count: Cardinal);
+function TEpiDataFile.NewRecords(const Count: Cardinal): integer;
 const
   Field_Growth_Factor = 1.25;
 var
@@ -1184,6 +1184,8 @@ begin
     Field[i].Capacity    := NewCapacity;
     Field[i].Size        := NewSize;
   end;
+
+  Result := CurrentSize;
 end;
 
 procedure TEpiDataFile.Pack;

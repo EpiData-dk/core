@@ -96,7 +96,7 @@ type
     procedure   SaveRecordToDom(RootNode: TDOMElement);
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0);
+    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0); virtual;
     destructor  Destroy; override;
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
@@ -104,7 +104,8 @@ type
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
-    procedure   NewRecords(Const Count: Cardinal = 1);
+    // Returns the index to the "first" of the newly created records.
+    function    NewRecords(Const Count: Cardinal = 1): integer;
     procedure   Pack; // Removes records marked for deletion.
     procedure   ExchangeRecords(Const Index1, Index2: Integer);
     procedure   SortRecords(SortFields: TEpiFields); overload;

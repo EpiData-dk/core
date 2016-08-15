@@ -480,6 +480,10 @@ begin
   F.FShowValueLabelNotes := FShowValueLabelNotes;
   F.FForcePickList       := FForcePickList;
 
+  // Hack to make Reference map work correctly on fixup-references
+  if not Assigned(AOwner) then
+    F.FDataFile := FDataFile;
+
   if Assigned(FRanges) then
     F.FRanges := TEpiRanges(FRanges.Clone(F, ReferenceMap));
 
