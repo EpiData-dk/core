@@ -5,19 +5,19 @@ unit epiv_statusbar_item_savetime;
 interface
 
 uses
-  Classes, SysUtils, epiv_custom_statusbar, StdCtrls, fpTimer;
+  Classes, SysUtils, epiv_custom_statusbar, StdCtrls, ExtCtrls;
 
 type
 
   { TEpiVStatusBarItem_SaveTimer }
 
   TEpiVStatusBarItem_SaveTimer = class(TEpiVCustomStatusBarItem)
-    procedure TimerUpdate(Sender: TObject);
   private
     FLastSave: TDateTime;
-    FTimer: TFPTimer;
+    FTimer: TTimer;
     FLabel: TLabel;
     FTimerLabel: TLabel;
+    procedure TimerUpdate(Sender: TObject);
     procedure DoUpdate;
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
@@ -60,7 +60,7 @@ begin
     sucDefault: ;
     sucDocFile:
       begin
-        FTimer.StartTimer;
+        FTimer.Enabled := true;
         FLastSave := Now;
       end;
     sucDataFile: ;
@@ -88,7 +88,8 @@ constructor TEpiVStatusBarItem_SaveTimer.Create(AStatusBar: TEpiVCustomStatusBar
   );
 begin
   inherited Create(AStatusBar);
-  FTimer := TFPTimer.Create(Panel);
+  FTimer := TTimer.Create(Panel);
+  FTimer.Enabled := false;
   FTimer.Interval := 500;
   FTimer.OnTimer := @TimerUpdate;
 
@@ -107,7 +108,6 @@ end;
 
 destructor TEpiVStatusBarItem_SaveTimer.Destroy;
 begin
-  FTimer.StopTimer;
   inherited Destroy;
 end;
 
