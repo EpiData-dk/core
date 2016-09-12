@@ -759,6 +759,7 @@ var
   ImportFormatSettings: TFormatSettings;
   ApproxRecCount: Integer;
   C: Char;
+  RS: RawByteString;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -1025,11 +1026,13 @@ begin
       BeginUpdate;
       CurRec := 0;
 
+      SetLength(RS, TotFieldLength);
       while true do
       begin
         DoProgress(eptRecords, CurRec, ApproxRecCount);
 
-        I := DataStream.Read(CharBuf[0], TotFieldLength);
+
+        I := DataStream.Read(RS[1], TotFieldLength);
         if (I <> TotFieldLength) then
         begin
           break;
@@ -1038,13 +1041,13 @@ begin
         end;
 
         NewRecords();  // Increments by one in size, but expands using "growth factor".
-        StrBuf := CharBuf[High(CharBuf) - 2];
+        StrBuf := RS[Length(RS) - 2];// CharBuf[High(CharBuf) - 2];
         if StrBuf = '?' then
           Deleted[CurRec] := true
         else if StrBuf = '^' then
           Verified[CurRec] := true;
 
-        StrBuf := StringReplace(string(CharBuf), '!'#13#10, '', [rfReplaceAll]);
+        StrBuf := StringReplace(RS, '!'#13#10, '', [rfReplaceAll]);
         BufPos := 1;
         for i := 0 TO Fields.Count - 1 DO
         with Fields[i] do begin
