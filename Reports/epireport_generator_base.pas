@@ -146,7 +146,7 @@ begin
   // Automatically insert cell options if first col is header
   if thoColHeader in FHeaderOptions then
     for i := 0 to FRowCount - 1 do
-      TableCellOptions[0, i] := TableCellOptions[i, 0] + [tcoLeftBorder, tcoRightBorder];
+      TableCellOptions[0, i] := TableCellOptions[0, i] + [tcoLeftBorder, tcoRightBorder];
 end;
 
 procedure TEpiReportGeneratorBase.TableFooter(const Text: string);
