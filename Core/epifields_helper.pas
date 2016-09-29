@@ -5,14 +5,22 @@ unit epifields_helper;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles, epidatafilestypes;
+  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels;
 
 type
 
   { TEpiFieldHelper }
+  TEpiGetValueLabelType = (
+    gvtValue,
+    gvtLabel,
+    gvtValueLabel,
+    gvtLabelValue
+  );
 
   TEpiFieldHelper = class helper for TEpiField
   public
+    // Returns string based on enum (see description above). If no valuelabel is present, return value.
+    function GetValueLabel(Const Index: Integer; Gvt: TEpiGetValueLabelType = gvtLabel): String;
     function MaxByteLength: Cardinal;
     function MaxUTF8Length: Cardinal;
   end;
@@ -61,6 +69,36 @@ uses
   Math, LazUTF8;
 
 { TEpiFieldHelper }
+
+function TEpiFieldHelper.GetValueLabel(const Index: Integer;
+  Gvt: TEpiGetValueLabelType): String;
+var
+  VL: TEpiCustomValueLabel;
+begin
+  if (not Assigned(ValueLabelSet)) or
+     (Gvt = gvtValue)
+  then
+    begin
+      Result := AsString[Index];
+      Exit;
+    end;
+
+  VL := ValueLabelSet.ValueLabel[AsValue[Index]];
+  if not Assigned(VL) then
+    begin
+      Result := AsString[Index];
+      Exit;
+    end;
+
+  case Gvt of
+    gvtLabel:
+      Result := VL.TheLabel.Text;
+    gvtValueLabel:
+      Result := AsString[Index] + ' ' + VL.TheLabel.Text;
+    gvtLabelValue:
+      Result := VL.TheLabel.Text + ' ' + AsString[Index];
+  end;
+end;
 
 function TEpiFieldHelper.MaxByteLength: Cardinal;
 var
