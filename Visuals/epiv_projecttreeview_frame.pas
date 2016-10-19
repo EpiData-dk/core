@@ -130,6 +130,7 @@ type
       const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
       TextType: TVSTTextType);
     procedure VSTStartDrag(Sender: TObject; var DragObject: TDragObject);
+    procedure VSTDblClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
 
   { Document Hooks }
   private
@@ -258,6 +259,7 @@ type
     FOnShowPopupMenu: TEpiVProjectTreeShowPopupMenuEvent;
     FOnTreeNodeSelected: TEpiVTreeNodeSelected;
     FOnTreeNodeSelecting: TEpiVTreeNodeSelecting;
+    FOnTreeNodeDoubleClick: TEpiVTreeNodeSelected;
   protected
     procedure DoChecked(Const AObject: TEpiCustomBase;
       ObjectType: TEpiVTreeNodeObjectType; Checked: Boolean);
@@ -280,6 +282,8 @@ type
     procedure DoTreeNodeSelecting(Const OldObject, NewObject: TEpiCustomBase;
       OldObjectType, NewObjectType: TEpiVTreeNodeObjectType;
       var Allowed: Boolean); virtual;
+    procedure DoTreeNodeDoubleClick(Const AObject: TEpiCustomBase;
+      ObjectType: TEpiVTreeNodeObjectType); virtual;
   public
     property  OnChecked: TEpiVTreeNodeChecked read FOnChecked write FOnChecked;
     property  OnDelete: TEpiVProjectTreeRelationEvent read FOnDelete write FOnDelete;
@@ -292,6 +296,7 @@ type
     property  OnShowPopupMenu: TEpiVProjectTreeShowPopupMenuEvent read FOnShowPopupMenu write FOnShowPopupMenu;
     property  OnTreeNodeSelected: TEpiVTreeNodeSelected read FOnTreeNodeSelected write FOnTreeNodeSelected;
     property  OnTreeNodeSelecting: TEpiVTreeNodeSelecting read FOnTreeNodeSelecting write FOnTreeNodeSelecting;
+    property  OnTreeNodeDoubleClick: TEpiVTreeNodeSelected read FOnTreeNodeDoubleClick write FOnTreeNodeDoubleClick;
   end;
 
 implementation
@@ -751,6 +756,16 @@ begin
   TNodeDragObject(DragObject).DragNode := Node;
 end;
 
+procedure TEpiVProjectTreeViewFrame.VSTDblClick(Sender: TBaseVirtualTree;
+  const HitInfo: THitInfo);
+var
+  Ot: TEpiVTreeNodeObjectType;
+  AObject: TEpiCustomBase;
+begin
+  ObjectAndType(HitInfo.HitNode, AObject, Ot);
+  DoTreeNodeDoubleClick(AObject, Ot);
+end;
+
 procedure TEpiVProjectTreeViewFrame.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
@@ -1117,6 +1132,8 @@ begin
     OnFreeNode      := @VSTFreeNode;
 
     OnContextPopup  := @VSTContextPopup;
+
+    OnNodeDblClick := @VSTDblClick;
 
     Align           := alClient;
     Parent          := Self;
@@ -1608,6 +1625,13 @@ procedure TEpiVProjectTreeViewFrame.DoTreeNodeSelecting(const OldObject,
 begin
   if Assigned(OnTreeNodeSelecting) then
     OnTreeNodeSelecting(Self, OldObject, NewObject, OldObjectType, NewObjectType, Allowed);
+end;
+
+procedure TEpiVProjectTreeViewFrame.DoTreeNodeDoubleClick(
+  const AObject: TEpiCustomBase; ObjectType: TEpiVTreeNodeObjectType);
+begin
+  if Assigned(OnTreeNodeDoubleClick) then
+    OnTreeNodeDoubleClick(Self, AObject, ObjectType);
 end;
 
 end.
