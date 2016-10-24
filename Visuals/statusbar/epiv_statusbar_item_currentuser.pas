@@ -62,7 +62,8 @@ end;
 
 procedure TEpiVStatusBarItem_CurrentUser.UpdateHooks;
 begin
-  FDocument.RegisterOnChangeHook(@DocumentChangeEvent, false);
+  if Assigned(FDocument) then
+    FDocument.RegisterOnChangeHook(@DocumentChangeEvent, false);
 end;
 
 procedure TEpiVStatusBarItem_CurrentUser.DoUpdate;
@@ -71,24 +72,30 @@ var
 begin
   DocFile := Statusbar.DocFile;
 
-  // Extended Access is used for project
-  if Assigned(DocFile.AuthedUser) then
+  if (Assigned(FDocument) and Assigned(DocFile)) then
   begin
-    Visible := true;
-    FLabel.Caption := 'Login: ';
-    FLoginLabel.Caption := DocFile.AuthedUser.Login;
+
+    // Extended Access is used for project
+    if Assigned(DocFile.AuthedUser) then
+    begin
+      Visible := true;
+      FLabel.Caption := 'Login: ';
+      FLoginLabel.Caption := DocFile.AuthedUser.Login;
+    end else
+    // Simple password is used for project
+    if (FDocument.PassWord <> '') then
+    begin
+      Visible := true;
+      FLabel.Caption := 'Encrypted';
+      FLoginLabel.Visible := false;
+    end else
+    // No means of encryption is used for projectS
+    begin
+      Visible := false;
+    end;
+
   end else
-  // Simple password is used for project
-  if (FDocument.PassWord <> '') then
-  begin
-    Visible := true;
-    FLabel.Caption := 'Encrypted';
-    FLoginLabel.Visible := false;
-  end else
-  // No means of encryption is used for projectS
-  begin
     Visible := false;
-  end;
 end;
 
 procedure TEpiVStatusBarItem_CurrentUser.BumpExampleType;
@@ -127,10 +134,23 @@ procedure TEpiVStatusBarItem_CurrentUser.DocumentChangeEvent(
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
   if (Initiator <> FDocument) then exit;
-  if (EventGroup <> eegDocument) then exit;
+  if (not (EventGroup in [eegCustomBase, eegDocument])) then exit;
 
-  case TEpiDocumentChangeEvent(EventType) of
-    edcePassword: DoUpdate;
+  case EventGroup of
+    eegCustomBase:
+      case TEpiCustomChangeEventType(EventType) of
+        ecceDestroy:
+          begin
+            FDocument.UnRegisterOnChangeHook(@DocumentChangeEvent);
+            FDocument := nil;
+            DoUpdate;
+          end;
+      end;
+
+    eegDocument:
+      case TEpiDocumentChangeEvent(EventType) of
+        edcePassword: DoUpdate;
+      end;
   end;
 end;
 
@@ -143,7 +163,11 @@ begin
     sucDefault: ;
     sucDocFile:
       begin
-        FDocument := Statusbar.DocFile.Document;
+        if Assigned(Statusbar.DocFile) then
+          FDocument := Statusbar.DocFile.Document
+        else
+          FDocument := nil;
+
         UpdateHooks;
         DoUpdate;
       end;

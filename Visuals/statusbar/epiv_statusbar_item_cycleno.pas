@@ -39,9 +39,18 @@ uses
 procedure TEpiVStatusBarItem_CycleNo.DoUpdate(Example: boolean);
 begin
   if Example then
-    FCycleNoLabel.Caption := IntToSTr(FExampleValue)
+    begin
+      Visible := true;
+      FCycleNoLabel.Caption := IntToSTr(FExampleValue)
+    end
   else
-    FCycleNoLabel.Caption := IntToStr(Statusbar.DocFile.Document.CycleNo);
+    if Assigned(Statusbar.DocFile) then
+      begin
+        Visible := true;
+        FCycleNoLabel.Caption := IntToStr(Statusbar.DocFile.Document.CycleNo)
+      end
+    else
+      Visible := false;
 end;
 
 procedure TEpiVStatusBarItem_CycleNo.MouseWheel(Sender: TObject;
@@ -96,6 +105,8 @@ end;
 constructor TEpiVStatusBarItem_CycleNo.Create(AStatusBar: TEpiVCustomStatusBar);
 begin
   inherited Create(AStatusBar);
+
+  Visible := false;
 
   FLabel := TLabel.Create(Panel);
   FLabel.AnchorParallel(akLeft, 2, Panel);
