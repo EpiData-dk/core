@@ -106,7 +106,7 @@ constructor TEpiVStatusBarItem_CycleNo.Create(AStatusBar: TEpiVCustomStatusBar);
 begin
   inherited Create(AStatusBar);
 
-  Visible := false;
+//  Visible := false;
 
   FLabel := TLabel.Create(Panel);
   FLabel.AnchorParallel(akLeft, 2, Panel);

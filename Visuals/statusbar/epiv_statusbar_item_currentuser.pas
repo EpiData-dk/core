@@ -73,28 +73,29 @@ begin
   DocFile := Statusbar.DocFile;
 
   if (Assigned(FDocument) and Assigned(DocFile)) then
-  begin
+    begin
 
-    // Extended Access is used for project
-    if Assigned(DocFile.AuthedUser) then
-    begin
-      Visible := true;
-      FLabel.Caption := 'Login: ';
-      FLoginLabel.Caption := DocFile.AuthedUser.Login;
-    end else
-    // Simple password is used for project
-    if (FDocument.PassWord <> '') then
-    begin
-      Visible := true;
-      FLabel.Caption := 'Encrypted';
-      FLoginLabel.Visible := false;
-    end else
-    // No means of encryption is used for projectS
-    begin
-      Visible := false;
-    end;
+      // Extended Access is used for project
+      if Assigned(DocFile.AuthedUser) then
+      begin
+        Visible := true;
+        FLabel.Caption := 'Login: ';
+        FLoginLabel.Caption := DocFile.AuthedUser.Login;
+      end else
+      // Simple password is used for project
+      if (FDocument.PassWord <> '') then
+      begin
+        Visible := true;
+        FLabel.Caption := 'Encrypted';
+        FLoginLabel.Visible := false;
+      end else
+      // No means of encryption is used for projectS
+      begin
+        Visible := false;
+      end;
 
-  end else
+    end
+  else
     Visible := false;
 end;
 
@@ -216,6 +217,9 @@ end;
 
 destructor TEpiVStatusBarItem_CurrentUser.Destroy;
 begin
+  if Assigned(FDocument) then
+    FDocument.UnRegisterOnChangeHook(@DocumentChangeEvent);
+
   inherited Destroy;
 end;
 
