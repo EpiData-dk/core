@@ -46,7 +46,7 @@ const
     );
 
 type
-  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfCollection, dfAll);
+  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfPGM, dfCollection, dfAll);
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
@@ -163,6 +163,11 @@ const
     FilterExt:  '*.xml';
   );
 
+  EpiDialogFilterPGM: TEpiDialogFilterPair = (
+    FilterName: 'EpiData Analysis Progran File (*.pgm)';
+    FilterExt:  '*.pgm';
+  );
+
   EpiDialogFilterAll: TEpiDialogFilterPair = (
     FilterName: 'Show All (*.*)';
     FilterExt:  '*.*';
@@ -180,6 +185,7 @@ const
     @EpiDialogFilterSPSS,
     @EpiDialogFilterSAS,
     @EpiDialogFilterDDI,
+    @EpiDialogFilterPGM,
     @EpiDialogFilterCollection,
     @EpiDialogFilterAll
     );
