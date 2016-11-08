@@ -439,7 +439,7 @@ begin
     with Columns.Add do
     begin
       CaptionAlignment := taLeftJustify;
-      Text := 'Record No:';
+      Text := 'Obs. No:';
       Options := [coFixed, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
       if DoSmartResize then
         Options := Options + [coSmartResize];
