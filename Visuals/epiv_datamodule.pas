@@ -18,8 +18,8 @@ const
   epiv_iiInteger               = 2;
   epiv_iiFloat                 = 3;
   epiv_iiDate                  = 4;
-  epiv_iiString                = 5;
-  epiv_iiTime                  = 6;
+  epiv_iiTime                  = 5;
+  epiv_iiString                = 6;
   epiv_iiAutoInc               = 7;
   epiv_iiAutoDate              = 8;
   epiv_iiAutoTime              = 9;
