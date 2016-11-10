@@ -52,6 +52,7 @@ begin
   case WarningType of
     wtSysReadOnly,
     wtLockFile,
+    wtLockFileMissing,
     wtDatePatternNoAlt,
     wtTimeBackup2nd:
       begin

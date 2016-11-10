@@ -11,6 +11,7 @@ type
 
   TOpenEpiWarningType =
     (wtLockFile,         // Trying to open a file with a .lock file present.
+     wtLockFileMissing,  // Trying to save a file, but the original .lock file is missing
      wtDatePattern,      // A date pattern has been detected in the file, could be an auto backup
      wtDatePatternNoAlt, //   -- do -- , but no alternative file was found
      wtTimeBackup,       // A file with .bak found, which indicated that the program could have shutdown unexpectedly.
@@ -800,7 +801,7 @@ begin
     DeleteLockFile;
 
   FFileName := AFileName;
-  LockFileName := FileName + '.lock';
+  LockFileName := FFileName + '.lock';
 
   if not FileExistsUTF8(LockFileName) then
     if FirstSave then
@@ -820,7 +821,7 @@ begin
                'The project file may have been edited by another EntryClient/Manager program!' + LineEnding +
                LineEnding +
                'Continuing may overwrite data! Are you sure?';
-        if DoWarning(wtLockFile, Msg) <> wrYes then exit;
+        if DoWarning(wtLockFileMissing, Msg) <> wrYes then exit;
       end;
 
   LF := ReadLockFile(LockFileName);
