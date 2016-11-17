@@ -1697,19 +1697,27 @@ begin
 end;
 
 function TEpiStringField.GetAsDate(const index: Integer): EpiDate;
+var
+  Dummy: string;
 begin
-  if IsMissing[Index] then
-    result := TEpiDateField.DefaultMissing
-  else        // TODO : String To Date conversion.
-    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
+  if IsMissing[Index] or
+     (not EpiStrToDateGuess(AsString[Index], Result, Dummy))
+  then
+    result := TEpiDateField.DefaultMissing;
+//  else        // TODO : String To Date conversion.
+//    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
 end;
 
 function TEpiStringField.GetAsDateTime(const index: Integer): EpiDateTime;
+var
+  Dummy: string;
 begin
-  if IsMissing[Index] then
-    result := TEpiDateTimeField.DefaultMissing
-  else        // TODO : String To Date conversion.
-    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
+  if IsMissing[Index] or
+     (not EpiStrToTimeGues(AsString[Index], Result, Dummy))
+  then
+    result := TEpiDateTimeField.DefaultMissing;
+//  else        // TODO : String To Date conversion.
+//    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
 end;
 
 function TEpiStringField.GetAsFloat(const index: Integer): EpiFloat;
@@ -1735,11 +1743,15 @@ begin
 end;
 
 function TEpiStringField.GetAsTime(const index: Integer): EpiTime;
+var
+  Dummy: string;
 begin
-  if IsMissing[Index] then
-    result := TEpiDateTimeField.DefaultMissing
-  else        // TODO : String To Time conversion.
-    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
+  if IsMissing[Index] or
+     (not EpiStrToTimeGues(AsString[Index], Result, Dummy))
+  then
+    result := TEpiDateTimeField.DefaultMissing;
+//  else        // TODO : String To Time conversion.
+//    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
 end;
 
 function TEpiStringField.GetAsValue(const index: Integer): EpiVariant;
