@@ -666,6 +666,10 @@ begin
 
   if Test then
     Result += LineEnding + 'Value labels for string variables not allowed in Stata';
+
+  if (Version < dta13) then
+    Result += LineEnding + LineEnding +
+              'Please check missing in Stata for correct values.';
 end;
 
 constructor TEpiStataExportSetting.Create;
