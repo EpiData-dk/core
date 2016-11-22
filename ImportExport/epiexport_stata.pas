@@ -236,13 +236,13 @@ begin
           case I64 of
             // Stata byte
             StataMinByte..0:
-              StataType := Max(StataByteConstXML, StataType);
+              StataType := Min(StataByteConstXML, StataType);
 
             StataMinInt..(StataMinByte-1):
-              StataType := Max(StataIntConstXML, StataType);
+              StataType := Min(StataIntConstXML, StataType);
 
             StataMinLong..(StataMinInt-1):
-              StataType := Max(StataLongConstXML, StataType);
+              StataType := Min(StataLongConstXML, StataType);
           end;
         end;
 
