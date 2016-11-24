@@ -57,12 +57,16 @@ type
     FImportCasing: TEpiFieldNamingCase;
     FOnControlItemPosition: TEpiControlItemPosition;
     FOnProgress: TEpiProgressEvent;
-    procedure SetOnControlItemPosition(AValue: TEpiControlItemPosition);
+    FOnFeedbackImport: TEpiFeedBackNotification;
+    procedure   SetOnControlItemPosition(AValue: TEpiControlItemPosition);
+    procedure   SetOnFeedbackImport(AValue: TEpiFeedBackNotification);
     function    TruncToInt(e: Extended): integer;
+  protected
     function    DoProgress(ProgressType: TEpiProgressType;
-      Const Current, Max: Cardinal): boolean;
+      Const Current, Max: Cardinal): boolean; virtual;
     procedure   DoControlItemPosition(Const Item: TEpiCustomControlItem;
-      var Top, Left: Integer);
+      var Top, Left: Integer); virtual;
+    procedure   DoFeedBackImport(FeedbackType: TEpiFeedBackType; Const Msg: UTF8String);
   public
     constructor Create;
     destructor  Destroy; override;
@@ -87,6 +91,7 @@ type
     //   b)  1+ = "I subsequent values are equal, position should be the same. Eg. if two consecutive calls contain the same
     //             Top value, then these two Items should both have the same resulting top value"
     property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write SetOnControlItemPosition;
+    property    OnFeedbackImport: TEpiFeedBackNotification read FOnFeedbackImport write SetOnFeedbackImport;
     property    ImportEncoding: TEpiEncoding read FImportEncoding write FImportEncoding default eeGuess;
     // Import casing only relevant for .rec files, since they are considere case-incensitive.
     property    ImportCasing: TEpiFieldNamingCase read FImportCasing write FImportCasing;
@@ -235,6 +240,13 @@ begin
   FStataImport.OnControlItemPosition := FOnControlItemPosition;
 end;
 
+procedure TEpiImport.SetOnFeedbackImport(AValue: TEpiFeedBackNotification);
+begin
+  if FOnFeedbackImport = AValue then Exit;
+  FOnFeedbackImport := AValue;
+  FStataImport.OnFeedbackNotification := FOnFeedbackImport;
+end;
+
 function TEpiImport.DoProgress(ProgressType: TEpiProgressType; const Current,
   Max: Cardinal): boolean;
 begin
@@ -248,6 +260,13 @@ procedure TEpiImport.DoControlItemPosition(const Item: TEpiCustomControlItem;
 begin
   if Assigned(OnControlItemPosition) then
     OnControlItemPosition(Self, Item, Top, Left);
+end;
+
+procedure TEpiImport.DoFeedBackImport(FeedbackType: TEpiFeedBackType;
+  const Msg: UTF8String);
+begin
+  if Assigned(OnFeedbackImport) then
+    OnFeedbackImport(Self, FeedbackType, Msg);
 end;
 
 function TEpiImport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings; out
@@ -297,6 +316,16 @@ begin
       inc(commacount,     StrCountChars(TmpStr, [','], '"'));
       inc(spacecount,     StrCountChars(TmpStr, [' '], '"'));
     end;
+
+    DoFeedBackImport(
+      fbInfo,
+      Format('Separators: (tabs: %d) (semicolon: %d) (comma: %d) (space: %d)',
+             [tabcount, semicoloncount, commacount, spacecount]) + LineEnding +
+      Format('Lines: %d', [w])
+    );
+
+    // Above the ?count's contains all found separators.
+    // Below is how many a single line must contain. w = #lines with text in.
     tabcount       := tabcount       div w;
     semicoloncount := semicoloncount div w;
     commacount     := commacount     div w;
@@ -346,9 +375,11 @@ begin
     else if iscomma then begin FieldSeparator := ','; FieldCount := commacount + 1;     end
     else if isspace then begin FieldSeparator := ' '; FieldCount := spacecount + 1;     end
     else begin
-      RaiseError(Exception, 'Illegal format of textfile. Field separator not found.');
+      RaiseError(Exception, 'Illegal format of textfile. Separator not found.');
       Exit;
     end;
+
+    DoFeedBackImport(fbInfo, 'Separator found: ' + FieldSeparator);
 
     // Guess field type.
     // Skip first line since it may contain headings/field names.
@@ -439,8 +470,6 @@ begin
           Length := Max(Length, UTF8Length(TmpStr));
       end;
     end;
-
-
 
     // Guess field names (and variable labels).
     // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found

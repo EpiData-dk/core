@@ -1,5 +1,6 @@
 unit epieximtypes;
 
+{$CODEPAGE UTF-8}
 {$mode objfpc}{$H+}
 
 interface
@@ -13,6 +14,11 @@ type
   TEpiControlItemPosition = procedure (Const Sender: TObject;
     Const ControlItem: TEpiCustomControlItem;
     var Top, Left: Integer) of object;
+
+
+  TEpiFeedBackType = (fbInfo, fbWarning, fgError);
+  TEpiFeedBackNotification = procedure (Const Sender: TObject;
+    FeedbackType: TEpiFeedBackType; Const Msg: UTF8String) of object;
 
 const
   EpiFieldNamingCaseToString: array[TEpiFieldNamingCase] of string =
