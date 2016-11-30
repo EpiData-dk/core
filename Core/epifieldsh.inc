@@ -7,6 +7,8 @@ type
     efceSetLeft,
     efceSetLength,
     efceSetTop,
+    efceSetWidth,
+    efceSetHeight,
     efceSetSize,
     efceData,
     efceResetData,
@@ -454,6 +456,30 @@ type
     function FormatString(const FillSpace: boolean = false): string; override;
     procedure ResetData; override;
     property  DefaultValue: EpiString read FDefaultValue write SetDefaultValue;
+  end;
+
+
+  // Handles following field types:
+  // ftMemo
+
+  { TEpiMemoField }
+
+  TEpiMemoField = class(TEpiStringField)
+  private
+    FWidth: integer;
+    FHeight: integer;
+    procedure SetWidth(AValue: integer);
+    procedure SetHeight(AValue: integer);
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  public
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    function  FormatString(const FillSpace: boolean = false): string; override;
+    property  Width: integer read FWidth write SetWidth;
+    property  Height: integer read FHeight write SetHeight;
   end;
 
 

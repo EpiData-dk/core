@@ -1994,6 +1994,75 @@ begin
   DoChange(eegFields, Word(efceResetData), nil);
 end;
 
+{ TEpiMemoField }
+
+procedure TEpiMemoField.SetHeight(AValue: integer);
+var
+  Val: Integer;
+begin
+  if FHeight = AValue then Exit;
+  Val := FHeight;
+  FHeight := AValue;
+  DoChange(eegFields, Word(efceSetHeight), @Val);
+end;
+
+procedure TEpiMemoField.SetWidth(AValue: integer);
+var
+  Val: Integer;
+begin
+  if FWidth = AValue then Exit;
+  Val := FWidth;
+  FWidth := AValue;
+  DoChange(eegFields, Word(efceSetWidth), @Val);
+end;
+
+function TEpiMemoField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsWidth, Width);
+  SaveDomAttr(Result, rsHeight, Height);
+end;
+
+function TEpiMemoField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  with TEpiMemoField(Result) do
+  begin
+    FWidth  := Self.FWidth;
+    FHeight := Self.FHeight;
+  end;
+end;
+
+procedure TEpiMemoField.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  Width := LoadAttrInt(Root, rsWidth);
+  Height := LoadAttrInt(Root, rsHeight);
+end;
+
+procedure TEpiMemoField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiMemoField) then exit;
+
+  with TEpiMemoField(AEpiCustomBase) do
+  begin
+    Self.FWidth  := FWidth;
+    Self.FHeight := FHeight;
+  end;
+end;
+
+function TEpiMemoField.FormatString(const FillSpace: boolean): string;
+begin
+  Result := '';
+end;
+
 { TEpiCustomAutoField }
 
 procedure TEpiCustomAutoField.SetAutoMode(const AValue: TEpiAutoUpdateMode);
