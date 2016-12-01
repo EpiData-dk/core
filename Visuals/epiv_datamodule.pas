@@ -59,7 +59,12 @@ const
   epiv_iiDocument              = 43;
   epiv_iiDataform              = 44;
   epiv_iiProjectDetails        = 45;
-  epiv_iiGarbageBin            = 46;
+  epiv_iiNavigateRight         = 46;
+  epiv_iiNavigateLeft          = 47;
+  epiv_iiNavigateEnd           = 48;
+  epiv_iiNavigateStart         = 49;
+  epiv_iiMemoField             = 50;
+  epiv_iiGarbageBin            = 51 deprecated;
 
 type
 
@@ -120,6 +125,8 @@ begin
     ftString,
     ftUpperString:
       Result := epiv_iiString;
+    ftMemo:
+      result := epiv_iiMemoField;
     ftAutoInc:
       Result := epiv_iiAutoInc;
     ftDMYAuto,

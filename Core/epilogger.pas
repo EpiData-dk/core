@@ -655,7 +655,8 @@ begin
         end;
 
       ftString,
-      ftUpperString:
+      ftUpperString,
+      ftMemo:
         begin
           if TEpiStringField.CheckMissing(OldStringValue) then
             SaveDomAttr(Elem, 'before', MissingStr)
@@ -779,7 +780,8 @@ begin
           end;
 
         ftString,
-        ftUpperString:
+        ftUpperString,
+        ftMemo:
           begin
             if BeforeMissing then
               OldStringValue := TEpiStringField.DefaultMissing
