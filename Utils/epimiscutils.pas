@@ -69,6 +69,7 @@ const
   // Returns true if Name is a field name defined in EpiGlobals.pas
   function IsReservedEpiFieldName(Const Name: string): boolean;
 
+  function CanonicalizeFileName(Const Filename: UTF8String): UTF8String;
 
   function PostInc(var Value: Integer; Const N: Integer = 1): Integer;
   function PreInc(var Value: Integer; Const N: Integer = 1): Integer;
@@ -292,6 +293,26 @@ begin
   result :=
     (Name = EpiIndexIntegrityFieldName) or
     (Name = EpiDoubleEntryFieldName);
+end;
+
+function CanonicalizeFileName(const Filename: UTF8String): UTF8String;
+var
+  C: Char;
+const
+  {$IFDEF MSWINDOWS}
+  ErrorChars = ['\', '/', ':', '*', '?', '"', '<', '>', '|'];
+  {$ENDIF}
+  {$IFDEF UNIX}
+  ErrorChars = ['/'];
+  {$ENDIF}
+  {$IFDEF DARWIN}
+  ErrorChars = ['/', ':'];
+  {$ENDIF}
+begin
+  Result := Filename;
+
+  for C in ErrorChars do
+    Result := UTF8StringReplace(Result, C, '_', [rfReplaceAll]);
 end;
 
 function PostInc(var Value: Integer; const N: Integer): Integer;
