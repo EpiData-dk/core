@@ -26,7 +26,7 @@
         </Debugging>
       </Linking>
       <Other>
-        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT_LOAD
+        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT_LOAD1
 -dEPI_ADMIN_NOCRYPT_SAVE"/>
       </Other>
     </CompilerOptions>
