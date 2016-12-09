@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epieximtypes, epidocument, epidatafiles, epivaluelabels,
-  epiopenfile;
+  epiopenfile, epicustombase;
 
 type
 
@@ -54,11 +54,16 @@ type
   { TEpiExportSetting }
 
   TEpiExportSetting = class
+  private
+    FPreparedDoc: TEpiDocument;
+    procedure DocumentHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
+    procedure SetPreparedDoc(AValue: TEpiDocument);
   protected
     function GetExportTypeName: string; virtual;
     function GetStaticEndNote: string; virtual;
   public
-    PreparedDoc: TEpiDocument;
     Doc: TEpiDocument;
 
     // For use with multi-file export (eg. SPSS, SAS, DDI, ...)
@@ -76,6 +81,7 @@ type
     destructor  Destroy; override;
     function    SanetyCheck: boolean; virtual;
     property    StaticEndNote: string read GetStaticEndNote;
+    property    PreparedDoc: TEpiDocument read FPreparedDoc write SetPreparedDoc;
   public
     procedure   Assign(Const OriginalSettings: TEpiExportSetting); virtual;
     // Visitor Pattern
@@ -571,6 +577,27 @@ end;
 
 { TEpiExportSetting }
 
+procedure TEpiExportSetting.SetPreparedDoc(AValue: TEpiDocument);
+begin
+  if FPreparedDoc = AValue then Exit;
+  FPreparedDoc := AValue;
+
+  if Assigned(FPreparedDoc) then
+    FPreparedDoc.RegisterOnChangeHook(@DocumentHook, true);
+end;
+
+procedure TEpiExportSetting.DocumentHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (Initiator <> FPreparedDoc) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (TEpiCustomChangeEventType(EventType) <> ecceDestroy) then Exit;
+
+  FPreparedDoc.UnRegisterOnChangeHook(@DocumentHook);
+  FPreparedDoc := nil;
+end;
+
 function TEpiExportSetting.GetExportTypeName: string;
 begin
   result := 'typename not overridden for ' + ClassName;
@@ -595,14 +622,15 @@ begin
   DatafileSettings.ClearAndFree;
   DatafileSettings.Free;
 
-  AdditionalExportSettings := nil;
+//  AdditionalExportSettings := nil;
 
   Encoding       := eeUTF8;
   ExportDeleted  := false;
+
   if Assigned(AdditionalExportSettings) then
     AdditionalExportSettings.Free;
 
-  FreeAndNil(PreparedDoc);
+  FreeAndNil(FPreparedDoc);
   inherited Destroy;
 end;
 
