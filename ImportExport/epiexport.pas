@@ -49,7 +49,7 @@ implementation
 uses
   FileUtil, epistringutils, math, LConvEncoding, dateutils, LazUTF8,
   epiexport_ddi, strutils, epicustombase, epidatafileutils, epiopenfile,
-  epiexport_stata;
+  epiexport_stata, epifields_helper;
 
 
 { TEpiExport }
@@ -1114,6 +1114,8 @@ begin
         ftString,
         ftUpperString:
           S += '(A' + IntToStr(Length) + ')';
+        ftMemo:
+          S += '(A' + IntToStr(MaxByteLength) + ')';
       end;
       S += ' ';
     end;

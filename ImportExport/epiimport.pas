@@ -2033,7 +2033,7 @@ begin
         case TmpField.FieldType of
           ftInteger:
             if IsInteger(TmpStr, IntVal) then TmpField.AsInteger[RecIdx] := IntVal;
-          ftString, ftUpperString:
+          ftString, ftUpperString, ftMemo:
             TmpField.AsString[RecIdx] := TmpStr;
           ftBoolean:
             if IsBoolean(TmpStr, BoolVal) then TmpField.AsBoolean[RecIdx] := BoolVal;

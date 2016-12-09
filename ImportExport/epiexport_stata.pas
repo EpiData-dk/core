@@ -255,6 +255,14 @@ begin
             StataType := F.Length;
         end;
 
+      ftMemo:
+        begin
+          I := F.MaxByteLength;
+          if (I > 2045) then
+            StataType := StataStrLsConstXML
+          else
+            StataType := I;
+        end;
 
       ftDMYDate, ftMDYDate, ftYMDDate,
       ftDMYAuto, ftMDYAuto, ftYMDAuto:
@@ -537,7 +545,7 @@ begin
           S := '%' + IntToStr(F.Length) + '.' + IntToStr(F.Decimals) + 'f';
         ftBoolean:
           S := '%1.0f';
-        ftString, ftUpperString:
+        ftString, ftUpperString, ftMemo:
           S := '%' + IntToStr(F.Length) + 's';
         ftDMYDate, ftMDYDate, ftYMDDate,
         ftDMYAuto, ftMDYAuto, ftYMDAuto:
