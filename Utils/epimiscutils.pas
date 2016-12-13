@@ -318,7 +318,7 @@ const
   {$IFDEF MSWINDOWS}
   ErrorChars = ['\', '/', ':', '*', '?', '"', '<', '>', '|'];
   {$ENDIF}
-  {$IFDEF UNIX}
+  {$IFDEF LINUX}
   ErrorChars = ['/'];
   {$ENDIF}
   {$IFDEF DARWIN}
