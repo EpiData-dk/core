@@ -682,49 +682,6 @@ begin
   Result := rsField;
 end;
 
-function TEpiField.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  if Assigned(Calculation) then
-    Content += Calculation.SaveToXml('', Lvl + 1);
-  if Assigned(Comparison) then
-    Content += Comparison.SaveToXml('', Lvl + 1);
-  if Assigned(Jumps) then
-    Content += Jumps.SaveToXml('', Lvl + 1);
-  if Assigned(Ranges) then
-    Content += Ranges.SaveToXml('', Lvl + 1);
-  if Assigned(Relates) then
-    Content += Relates.SaveToXml('', Lvl + 1);
-
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
-function TEpiField.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttrEnum(rsType, Integer(FieldType), TypeInfo(TEpiFieldType)) +
-    SaveAttr(rsLength, Length) +
-    SaveAttr(rsDecimals, Decimals) +
-    SaveAttrEnum(rsEntryMode, Integer(EntryMode), TypeInfo(TEpiEntryMode));
-  if ConfirmEntry then
-    Result += SaveAttr(rsConfirmEntry, ConfirmEntry);
-  if RepeatValue then
-    Result += SaveAttr(rsRepeatValue, RepeatValue);
-  if ShowValueLabel then
-    Result += SaveAttr(rsShowValueLabel, ShowValueLabel);
-  // VERSION 2 Property
-  if ShowValueLabelNotes then
-    Result += SaveAttr(rsShowValueLabelNotes, ShowValueLabelNotes);
-  if ForcePickList then
-    Result += SaveAttr(rsForcePickList, ForcePickList);
-  if HasDefaultValue then
-    Result += SaveAttr(rsDefaultValue, DefaultValueAsString);
-  if Assigned(ValueLabelSet) then
-    Result += SaveAttr(rsValueLabelId, ValueLabelSet.Name);
-  if Assigned(ValueLabelWriteField) then
-    Result += SaveAttr(rsValueLabelWriteRef, ValueLabelWriteField.Name);
-end;
-
 procedure TEpiField.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
@@ -961,6 +918,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1046,14 +1004,6 @@ class function TEpiIntField.DefaultMissing: EpiInteger;
 begin
   result := NA_INT;
 end;
-// TODO -oMerge: SaveNewAttributes in DOM
-function TEpiIntField.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml;
-
-  if ZeroFilled then
-    Result += SaveAttr(rsZeroFilled, ZeroFilled);
-end;
 
 procedure TEpiIntField.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
@@ -1130,7 +1080,7 @@ end;
 procedure TEpiIntField.ResetData;
 begin
   FillQWord(FData[0], FSize, DefaultMissing);
-  DoChange(eegFields, Word(efceData), nil);
+  DoChange(eegFields, Word(efceResetData), nil);
 end;
 
 { TEpiFloatField }
@@ -1268,6 +1218,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1421,7 +1372,7 @@ begin
 //  FillDWord(FData[0], FSize, DefaultMissing);  Wrong type Extended vs. Q/DWord
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
-  DoChange(eegFields, Word(efceData), nil);
+  DoChange(eegFields, Word(efceResetData), nil);
 end;
 
 { TEpiBoolField }
@@ -1531,6 +1482,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1719,7 +1671,7 @@ end;
 procedure TEpiBoolField.ResetData;
 begin
   FillByte(FData[0], FSize, DefaultMissing);
-  DoChange(eegFields, Word(efceData), nil);
+  DoChange(eegFields, Word(efceResetData), nil);
 end;
 
 { TEpiStringField }
@@ -1745,19 +1697,27 @@ begin
 end;
 
 function TEpiStringField.GetAsDate(const index: Integer): EpiDate;
+var
+  Dummy: string;
 begin
-  if IsMissing[Index] then
-    result := TEpiDateField.DefaultMissing
-  else        // TODO : String To Date conversion.
-    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
+  if IsMissing[Index] or
+     (not EpiStrToDateGuess(AsString[Index], Result, Dummy))
+  then
+    result := TEpiDateField.DefaultMissing;
+//  else        // TODO : String To Date conversion.
+//    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
 end;
 
 function TEpiStringField.GetAsDateTime(const index: Integer): EpiDateTime;
+var
+  Dummy: string;
 begin
-  if IsMissing[Index] then
-    result := TEpiDateTimeField.DefaultMissing
-  else        // TODO : String To Date conversion.
-    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
+  if IsMissing[Index] or
+     (not EpiStrToTimeGues(AsString[Index], Result, Dummy))
+  then
+    result := TEpiDateTimeField.DefaultMissing;
+//  else        // TODO : String To Date conversion.
+//    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
 end;
 
 function TEpiStringField.GetAsFloat(const index: Integer): EpiFloat;
@@ -1783,11 +1743,15 @@ begin
 end;
 
 function TEpiStringField.GetAsTime(const index: Integer): EpiTime;
+var
+  Dummy: string;
 begin
-  if IsMissing[Index] then
-    result := TEpiDateTimeField.DefaultMissing
-  else        // TODO : String To Time conversion.
-    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
+  if IsMissing[Index] or
+     (not EpiStrToTimeGues(AsString[Index], Result, Dummy))
+  then
+    result := TEpiDateTimeField.DefaultMissing;
+//  else        // TODO : String To Time conversion.
+//    result := 0; //Trunc(EpiDateToDateTime(AsString[index], ftDate, Length(AsString[index])));
 end;
 
 function TEpiStringField.GetAsValue(const index: Integer): EpiVariant;
@@ -1878,8 +1842,10 @@ procedure TEpiStringField.SetAsString(const index: Integer;
 var
   Val: PEpiFieldDataEventRecord;
   OldString: EpiString;
+  I: SizeInt;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin;
@@ -1895,8 +1861,10 @@ begin
   if not LoadingRecs then
   begin
     DoChange(eegFields, word(efceData), Val);
+    I := StringRefCount(OldString);
     Dispose(Val);
   end;
+  I := StringRefCount(OldString);
 end;
 
 procedure TEpiStringField.SetAsTime(const index: Integer; const AValue: EpiTime
@@ -2023,7 +1991,76 @@ var
 begin
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
-  DoChange(eegFields, Word(efceData), nil);
+  DoChange(eegFields, Word(efceResetData), nil);
+end;
+
+{ TEpiMemoField }
+
+procedure TEpiMemoField.SetHeight(AValue: integer);
+var
+  Val: Integer;
+begin
+  if FHeight = AValue then Exit;
+  Val := FHeight;
+  FHeight := AValue;
+  DoChange(eegFields, Word(efceSetHeight), @Val);
+end;
+
+procedure TEpiMemoField.SetWidth(AValue: integer);
+var
+  Val: Integer;
+begin
+  if FWidth = AValue then Exit;
+  Val := FWidth;
+  FWidth := AValue;
+  DoChange(eegFields, Word(efceSetWidth), @Val);
+end;
+
+function TEpiMemoField.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+
+  SaveDomAttr(Result, rsWidth, Width);
+  SaveDomAttr(Result, rsHeight, Height);
+end;
+
+function TEpiMemoField.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+
+  with TEpiMemoField(Result) do
+  begin
+    FWidth  := Self.FWidth;
+    FHeight := Self.FHeight;
+  end;
+end;
+
+procedure TEpiMemoField.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  Width := LoadAttrInt(Root, rsWidth);
+  Height := LoadAttrInt(Root, rsHeight);
+end;
+
+procedure TEpiMemoField.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+
+  if not AEpiCustomBase.InheritsFrom(TEpiMemoField) then exit;
+
+  with TEpiMemoField(AEpiCustomBase) do
+  begin
+    Self.FWidth  := FWidth;
+    Self.FHeight := FHeight;
+  end;
+end;
+
+function TEpiMemoField.FormatString(const FillSpace: boolean): string;
+begin
+  Result := '';
 end;
 
 { TEpiCustomAutoField }
@@ -2040,15 +2077,6 @@ begin
 
   if FieldType in AutoUpdateFieldTypes then
     SaveDomAttrEnum(Result, rsAutoUpdateMode, AutoMode, TypeInfo(TEpiAutoUpdateMode));
-end;
-
-function TEpiCustomAutoField.SaveAttributesToXml: string;
-begin
-  if FieldType in AutoUpdateFieldTypes then
-    Result := SaveAttrEnum(rsAutoUpdateMode, Integer(AutoMode), TypeInfo(TEpiAutoUpdateMode));
-  Result :=
-    inherited SaveAttributesToXml +
-    Result;
 end;
 
 function TEpiCustomAutoField.DoClone(AOwner: TEpiCustomBase;
@@ -2249,7 +2277,7 @@ end;
 procedure TEpiDateField.ResetData;
 begin
   FillDWord(FData[0], FSize, DefaultMissing);
-  DoChange(eegFields, Word(efceData), nil);
+  DoChange(eegFields, Word(efceResetData), nil);
 end;
 
 procedure TEpiDateField.SetAsBoolean(const index: Integer; const AValue: EpiBool
@@ -2266,6 +2294,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin
@@ -2505,6 +2534,7 @@ var
   Val: PEpiFieldDataEventRecord;
 begin
   CheckIndex(Index);
+  if FData[Index] = AValue then exit;
 
   if not LoadingRecs then
   begin
@@ -2660,7 +2690,7 @@ var
 begin
   for i := 0 to FSize - 1 do
     FData[i] := DefaultMissing;
-  DoChange(eegFields, Word(efceData), nil);
+  DoChange(eegFields, Word(efceResetData), nil);
 end;
 
 

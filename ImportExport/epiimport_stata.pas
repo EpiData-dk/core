@@ -101,9 +101,11 @@ type
   private
     FOnControlItemPosition: TEpiControlItemPosition;
     FOnProgress: TEpiProgressEvent;
+    FOnFeedbackNotification: TEpiFeedBackNotification;
   public
     property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write FOnControlItemPosition;
+    property    OnFeedbackNotification: TEpiFeedBackNotification read FOnFeedbackNotification write FOnFeedbackNotification;
   end;
 
 

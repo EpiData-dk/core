@@ -48,6 +48,9 @@ begin
 
     ftString, ftUpperString:
       Result := TEpiStringField;
+
+    ftMemo:
+      result := TEpiMemoField;
   else
     result := nil;
   end;

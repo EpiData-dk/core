@@ -1,11 +1,12 @@
 unit epiv_documentfile;
 
+{$codepage UTF-8}
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils, epiopenfile, epidocument;
+  Classes, SysUtils, epiopenfile, epidocument, epiadmin;
 
 type
 
@@ -13,8 +14,11 @@ type
 
   TDocumentFile = class(TEpiDocumentFile)
   private
-    procedure DoPassWord(Sender: TObject; var Login: string;
-      var Password: string);
+    function DoPassWord(Sender: TObject;
+      RequestType: TEpiRequestPasswordType;
+      RequestNo: Integer;
+      var Login: UTF8String;
+      var Password: UTF8String): TEpiRequestPasswordResponse;
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
     procedure DoError(const Msg: string);
@@ -26,7 +30,7 @@ type
 implementation
 
 uses
-  Dialogs, Controls;
+  Dialogs, Controls, Forms, StdCtrls, epiv_userlogin_form;
 
 { TDocumentFile }
 
@@ -48,6 +52,7 @@ begin
   case WarningType of
     wtSysReadOnly,
     wtLockFile,
+    wtLockFileMissing,
     wtDatePatternNoAlt,
     wtTimeBackup2nd:
       begin
@@ -76,15 +81,62 @@ begin
   ShowMessage(Msg);
 end;
 
-procedure TDocumentFile.DoPassWord(Sender: TObject; var Login: string;
-  var Password: string);
+function TDocumentFile.DoPassWord(Sender: TObject;
+  RequestType: TEpiRequestPasswordType; RequestNo: Integer;
+  var Login: UTF8String; var Password: UTF8String): TEpiRequestPasswordResponse;
+var
+  F: TUserLoginForm;
+  APassword: String;
 begin
-  Password :=
-    PasswordBox('Project Password',
-                'File: ' + FileName + LineEnding +
-                LineEnding +
-                'Project data is password protected.' + LineEnding +
-                'Please enter password:');
+  if (RequestNo < 3) then
+    Result := rprAskOnFail
+  else
+    Result := rprStopOnFail;
+
+  Password := '';
+  APassword := '';
+
+  case RequestType of
+    erpSinglePassword:
+      begin
+        if (not InputQuery(
+                 'Project Password',
+                 'File: ' + FileName + LineEnding +
+                        LineEnding +
+                        'Project data is password protected.' + LineEnding +
+                        'Please enter password:',
+                 True, APassword)
+           )
+        then
+          Result := rprCanceled
+        else
+          Password := APassword;
+      end;
+
+    erpUserLogin:
+      begin
+        F := TUserLoginForm.Create(nil);
+        F.Caption := 'Password required for: ' + ExtractFileName(FileName);
+
+        // Forces a close
+        if F.ShowModal = mrCancel then
+          Result := rprCanceled;
+
+        Login := F.LoginEdit.Text;
+        Password := F.PasswordEdit.Text;
+
+        F.Free;
+      end;
+
+    erpNewPassword:
+      begin
+        Password :=
+          PasswordBox('Change Password',
+                      'Your password has expired!' + LineEnding +
+                      'Please enter a new password:');
+      end;
+  end;
+
 end;
 
 end.

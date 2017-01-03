@@ -21,7 +21,7 @@ const
    rsCycle          = 'cycle';
    // Settings
    rsSettings        = 'Settings';
-//    rsScrambled       = 'Scrambled';
+    rsCapitalPassword = 'Password' deprecated;
     rsDateSep         = 'dateSeparator';
     rsTimeSep         = 'timeSeparator';
     rsDecSep          = 'decimalSeparator';
@@ -33,23 +33,35 @@ const
     rsBackupOnShutdown= 'backupOnShutdown';
     rsShowFieldNames  = 'showFieldNames';
     rsShowFieldBorders= 'showFieldBorders';
+    rsEmail           = 'Email';
+     rsEmailOnShutdown = 'emailOnShutdown';
+     rsEmailAddress    = 'emailAddress';
+     rsEmailSubject    = 'emailSubject';
+      rsEmailContent   = 'EmailContenct';
+
+   rsCrypto          = 'Crypto';
+   rsEncrypted       = 'Encrypted';
 
    rsAdmin           = 'Admin';
     // User
     rsUsers           = 'Users';
      rsUser            = 'User';
-      rsFirstName       = 'FirstName';
-      rsLastName        = 'LastName';
-      rsPassword        = 'Password';
-      rsMasterPassword  = 'MasterPassword';
-      rsLastLogin       = 'LastLogin';
-      rsExpireDate      = 'ExpireDate';
-      rsGroupId         = 'GroupId';
+      rsFullName        = 'FullName';
+      rsPassword        = 'password';
+      rsMasterPassword  = 'masterPassword';
+      rsLastLogin       = 'lastLogin';
+      rsExpireDate      = 'expireDate';
+      rsGroupRefs       = 'GroupRefs';
 
     // Group
     rsGroups          = 'Groups';
      rsGroup           = 'Group';
-      rsRights          = 'Rights';
+      rsManageRights    = 'manageRights';
+
+    rsGroupRights     = 'GroupRights';
+     rsGroupRight      = 'GroupRight';
+      rsEntryRights     = 'entryRights';
+      rsGroupRef        = 'groupRef';
 
    rsStudy           = 'StudyInfo';
     rsAbstract        = 'Abstract';
@@ -87,17 +99,9 @@ const
 
      rsFilename            = 'filename';
 
-
-
-{     // version 1+2 property, but never used
-      rsExternal        = 'External';
-      rsFile            = 'File';
-      rsDataFileId      = 'DataFileId';
-      rsValueField      = 'ValueField';
-      rsLabelField      = 'LabelField';}
-
    rsDataFiles       = 'DataFiles';
     rsDataFile        = 'DataFile';
+      rsStatusbarContentString = 'StatusbarContentString';
      rsAfterRecordState = 'afterRecordState';
      rsSections        = 'Sections';
       rsSection         = 'Section';
@@ -163,7 +167,10 @@ const
       rsRecord          = 'Record';
        rsRecordStatus    = 'status';
 
-   rsRelations       = 'Relations';
-    rsRelation        = 'Relation';
-     rsDataFileRef     = 'dataFileRef';
-     rsMaxRecordCount  = 'maxRecordCount';
+   rsRelations       = 'Relations';                     // Version 3
+    rsRelation        = 'Relation';                     // Version 3
+
+   rsDataFileRelations = 'DataFileRelations';           // Version 4+
+    rsDataFileRelation  = 'DataFileRelation';           // Version 4+
+     rsDataFileRef       = 'dataFileRef';
+     rsMaxRecordCount    = 'maxRecordCount';

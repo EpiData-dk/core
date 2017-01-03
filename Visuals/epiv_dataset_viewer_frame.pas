@@ -78,6 +78,8 @@ type
     procedure VLGCompareNodes(Sender: TBaseVirtualTree; Node1,
       Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
     procedure VLGHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+    procedure VLGMeasureItem(Sender: TBaseVirtualTree; TargetCanvas: TCanvas;
+      Node: PVirtualNode; var NodeHeight: Integer);
   private
     { Update }
     FUpdateCount: integer;
@@ -100,7 +102,7 @@ type
 implementation
 
 uses
-  epiglobals, math, LCLIntf,LCLType;
+  epiglobals, math, LCLIntf,LCLType, epidatafilestypes;
 
 {$R *.lfm}
 
@@ -235,6 +237,8 @@ begin
     PCardinal(Sender.GetNodeData(Node))^ := FForwardIndex.AsInteger[Node^.Index]
   else
     PCardinal(Sender.GetNodeData(Node))^ := Node^.Index;
+
+  Include(InitialStates, ivsMultiline);
 end;
 
 procedure TDatasetViewerFrame.VLGHeaderClick(Sender: TVTHeader;
@@ -254,6 +258,19 @@ begin
     Screen.Cursor := crDefault;
     Application.ProcessMessages;
   end;
+end;
+
+procedure TDatasetViewerFrame.VLGMeasureItem(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; var NodeHeight: Integer);
+var
+  i: Integer;
+  S: String;
+begin
+  for i := 0 to TVirtualStringTree(Sender).Header.Columns.Count -1 do
+    begin
+      S := TVirtualStringTree(Sender).Text[Node, i];
+      NodeHeight := math.Max(NodeHeight, TargetCanvas.TextHeight(S));
+    end;
 end;
 
 procedure TDatasetViewerFrame.SetForwardIndex(AValue: TEpiField);
@@ -337,6 +354,7 @@ begin
   then
     CellText := F.ValueLabelSet.ValueLabelString[F.AsValue[Idx]]
   else
+//    CellText := StringReplace(F.AsString[Idx], LineEnding, #13#10, [rfReplaceAll]);
     CellText := F.AsString[Idx];
 end;
 
@@ -439,7 +457,7 @@ begin
     with Columns.Add do
     begin
       CaptionAlignment := taLeftJustify;
-      Text := 'Record No:';
+      Text := 'Obs. No:';
       Options := [coFixed, coAllowClick, coEnabled, coParentBidiMode, coResizable, coVisible, coUseCaptionAlignment];
       if DoSmartResize then
         Options := Options + [coSmartResize];
@@ -454,11 +472,16 @@ begin
       CaptionAlignment := taLeftJustify;
       Text := FDataFile.Fields[i].Name;
       Options := [coAllowClick, coEnabled, coParentBidiMode, coParentColor, coResizable, coVisible, coUseCaptionAlignment];
+
       if DoSmartResize then
         Options := Options + [coSmartResize];
 
       Width := 100;
-      Alignment := taRightJustify;
+
+      if FDataFile.Field[i].FieldType in StringFieldTypes then
+        Alignment := taLeftJustify
+      else
+        Alignment := taRightJustify;
     end;
     Columns.EndUpdate;
 
@@ -535,15 +558,17 @@ begin
     OnClick                  := @VLGClick;
     OnDblClick               := @VLGDoubleClick;
     OnColumnWidthTracking    := @VLGColumnWidthTracking;
+
+    OnMeasureItem            := @VLGMeasureItem;
 //    OnShortenString := @TEST;
   end;
 
   with VLG.TreeOptions do
   begin
     AnimationOptions := [];
-    AutoOptions := [toAutoScroll];
-    MiscOptions := [toGridExtensions, toWheelPanning];
-    PaintOptions := [toShowHorzGridLines, toShowVertGridLines, toThemeAware];
+    AutoOptions      := [toAutoScroll];
+    MiscOptions      := [toGridExtensions, toWheelPanning, {toVariableNodeHeight,} toNodeHeightResize, toNodeHeightDblClickResize];
+    PaintOptions     := [toShowHorzGridLines, toShowVertGridLines, toThemeAware];
     SelectionOptions := [toExtendedFocus, toRightClickSelect{, toCenterScrollIntoView}];
   end;
 

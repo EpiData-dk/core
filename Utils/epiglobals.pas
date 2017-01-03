@@ -24,9 +24,17 @@ const
   // Index strings
   EpiIndexIntegrityFieldName = '_IndexFail';
   EpiIndexIntegrityValueLabelSetName = '_label_indexFail';
+
   // Double Entry strings
   EpiDoubleEntryFieldName = '_DoubleEntry';
   EpiDoubleEntryValueLabelSetName = '_label_DoubleEntry';
+
+  // Special Top-level Administrators Group Name
+  EpiAdminGroupName = 'admins_group';
+
+  // Failed Login Constants
+  EpiAdminLoginAttemps = 3;
+  EpiAdminLoginInterval = 5 * 60;   // 5 minuts = 300 seconds.
 
 implementation
 

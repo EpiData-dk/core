@@ -234,8 +234,6 @@ var
   MDF: TEpiDataFile;
   ADF: TEpiDataFile;
   i: Integer;
-  WRes: TEpiToolWarningResult;
-  Msg: string;
 begin
   Result := eapFailed;
 

@@ -1,11 +1,12 @@
 unit epieximtypes;
 
+{$CODEPAGE UTF-8}
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils, epicustombase;
+  Classes, SysUtils, epicustombase, epimiscutils;
 
 type
   TEpiFieldNamingCase = (fncUpper, fncLower, fncAsIs);
@@ -13,6 +14,11 @@ type
   TEpiControlItemPosition = procedure (Const Sender: TObject;
     Const ControlItem: TEpiCustomControlItem;
     var Top, Left: Integer) of object;
+
+
+  TEpiFeedBackType = (fbInfo, fbWarning, fgError);
+  TEpiFeedBackNotification = procedure (Const Sender: TObject;
+    FeedbackType: TEpiFeedBackType; Const Msg: UTF8String) of object;
 
 const
   EpiFieldNamingCaseToString: array[TEpiFieldNamingCase] of string =
@@ -121,8 +127,15 @@ const
 
 function EpiStataVersionToString(Const StataVersion: TEpiStataVersion): string;
 
+// Extracts filename extension and returns best guess af to what the filetype is. If no
+// known filetype is found result is false and FileType is undefined.
+function FilenameToFileType(const Filename: UTF8String; out FileType: TEpiDialogFilter): boolean;
+
 
 implementation
+
+uses
+  LazUTF8;
 
 function EpiStataVersionToString(const StataVersion: TEpiStataVersion): string;
 begin
@@ -137,6 +150,26 @@ begin
     dta14: result := 'Stata 14';
   else
     result := 'Stata version is missing string representation in: epieximtypes.pas';
+  end;
+end;
+
+function FilenameToFileType(const Filename: UTF8String; out FileType: TEpiDialogFilter): boolean;
+var
+  Ext: RawByteString;
+begin
+  Result := true;
+  Ext := ExtractFileExt(UTF8LowerString(Filename));
+
+  // dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfCollection, dfAll;
+  case Ext of
+    '.rec':  FileType := dfREC;
+    '.dta':  FileType := dfDTA;
+    '.txt',
+    '.csv':  FileType := dfText;
+    '.epx':  FileType := dfEPX;
+    '.epz':  FileType := dfEPZ;
+  else
+    result := false;
   end;
 end;
 

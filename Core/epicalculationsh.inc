@@ -29,8 +29,6 @@ type
     destructor Destroy; override;
     function XMLName: string; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
-    function SaveAttributesToXml: string; override;
     property CalcType: TEpiCalcType read GetCalcType;
     property ResultField: TEpiField read FResultField write SetResultField;
   end;
@@ -64,7 +62,6 @@ type
   public
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
     property StartDate: TEpiDateField read FStartDate write SetStartDate;
     property StartTime: TEpiDateTimeField read FStartTime write SetStartTime;
     property EndDate: TEpiDateField read FEndDate write SetEndDate;
@@ -97,7 +94,6 @@ type
   public
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
     property Day: TEpiIntField read FDay write SetDay;
     property Month: TEpiIntField read FMonth write SetMonth;
     property Year: TEpiIntField read FYear write SetYear;
@@ -132,7 +128,6 @@ type
   public
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function SaveToXml(Content: String; Lvl: integer): string; override;
     property Field1: TEpiField read FField1 write SetField1;
     property Delim1: string read FDelim1 write SetDelim1;
     property Field2: TEpiField read FField2 write SetField2;

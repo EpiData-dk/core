@@ -3,7 +3,13 @@
 type
 
   TEpiDataFileChangeEventType = (
-    edceSize, edceRecordStatus
+    edceSize,                      // Size of datafile changed
+    edceRecordStatus,              // Status of record changed
+    edceStatusbarContentString,    // Statusbar Content string changed
+    edcePack,                      // A pack procedure is starting: Data = Array of recnums to be deleted.
+    edceBeginCommit,               // Sent (by user) before a commit is initiated. Data: 0 = new records, 1 = edited record.
+    edceEndCommit,                 // Sent (by user) when a commit is completed. Data = index of record edited.
+    edceLoadRecord                 // Sent (by user) when loading a record. Data = index of record viewed
   );
 
   TEpiDataFilesEnumerator = class;
@@ -15,16 +21,11 @@ type
     function    GetDataFile(Index: integer): TEpiDataFile;
     function    GetSettings: TEpiXMLSettings;
   protected
-    Property    Settings: TEpiXMLSettings read GetSettings;
-    function    ScrambleXml: boolean; override;
     function    Prefix: string; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
-    destructor  Destroy; override;
     function    ItemClass: TEpiCustomItemClass; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewDataFile: TEpiDataFile;
     function    GetEnumerator: TEpiDataFilesEnumerator;
     function    GetDataFileByName(Const AName: string): TEpiDataFile;
@@ -50,8 +51,8 @@ type
   { TEpiDataFile }
 
   TEpiDataFile = class(TEpiCustomItem)
+  { Data containers }
   private
-    { Data containers }
     FAllFields: TEpiFields;
     FAllHeadings: TEpiHeadings;
     FAllControlItems: TEpiCustomControlItemList;
@@ -61,8 +62,9 @@ type
     function    GetSection(Index: integer): TEpiSection;
     function    GetHeading(Index: integer): TEpiHeading;
     function    GetValueLabelSet(Index: integer): TEpiValueLabelSet;
+
+  { Private housekeeping }
   private
-    { Private housekeeping }
     FRecordStatus: TEpiField;
     function    GetControlItem(Index: integer): TEpiCustomControlItem;
     function    GetDeleted(Index: integer): boolean;
@@ -79,13 +81,12 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
     function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+
   { Load/Save methods }
   private
     FLoadingRecs: Boolean;
     procedure   HaltLoading;
-    function    SaveRecords(Lvl: integer): string;
     procedure   LoadRecords(Root: TDOMNode);
-    function    SaveKeyFields(Lvl: integer): string;
     procedure   LoadKeyFields(Root: TDOMNode);
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
@@ -99,8 +100,6 @@ type
     destructor  Destroy; override;
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewSection: TEpiSection;
@@ -128,11 +127,22 @@ type
     property    Verified[Index: integer]: boolean read GetVerified write SetVerified;
     property    Deleted[Index: integer]: boolean read GetDeleted write SetDeleted;
 
+  { Record load/commit: Logging related }
+  public
+    procedure  BeginCommitRecord(NewRecord: boolean = true);
+    procedure  EndCommitRecord(RecordNo: Integer);
+    // At the moment LoadRecord does nothing other than sending an event throught the
+    // document, notifying listeners that RecordNo is currently being viewed.
+    // There is no check for correct index, filtered dataset, etc.
+    // Currently used for logging.
+    procedure  LoadRecord(RecordNo: Integer);
+
   { DataFile properties }
   private
     FAfterRecordState: TEpiDataFileAfterRecordState;
     FCaption:   TEpiTranslatedTextWrapper;
     FCreated:   TDateTime;
+    FGroupRights: TEpiGroupRights;
     FKeyFields: TEpiFields;
     FRecModified: boolean;
     FRecModifiedDate: TDateTime;
@@ -141,7 +151,9 @@ type
     FStructureModified: boolean;
     FStructureModifiedDate: TDateTime;
     FVersion:   string;
+    FStatusbarContentString: string;
     procedure   SetVersion(const AValue: string);
+    procedure   SetStatusbarContentString(AValue: string);
   public
     property    AfterRecordState: TEpiDataFileAfterRecordState read FAfterRecordState write FAfterRecordState;
     property    Caption: TEpiTranslatedTextWrapper read FCaption;
@@ -150,8 +162,10 @@ type
     property    Notes: TEpiTranslatedTextWrapper read FNotes;
     property    RecModifiedDate: TDateTime read FRecModifiedDate write FRecModifiedDate;  // version 2
     property    Relates: TEpiRelates read FRelates;                                       // version 3
+    property    GroupRights: TEpiGroupRights read FGroupRights;                           // version 4
     property    StructureModifiedDate: TDateTime read FStructureModifiedDate write FStructureModifiedDate;
     property    Version: string read FVersion write SetVersion;
+    property    StatusbarContentString: string read FStatusbarContentString write SetStatusbarContentString;
 
   { Update Overrides}
   private

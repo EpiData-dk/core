@@ -17,7 +17,7 @@ type
   EpiDate      = Integer;
   EpiTime      = TDateTime;
   EpiDateTime  = TDateTime;
-  EpiString    = string;
+  EpiString    = UTF8String;
   EpiBool      = Byte;
   EpiVariant   = Variant;
 
@@ -37,8 +37,8 @@ type
     // Time (10, 11)
     ftTime, ftTimeAuto,
 
-    // Strings (12, 13)
-    ftString, ftUpperString
+    // Strings (12, 13, 14)
+    ftString, ftUpperString, ftMemo
   );
   TEpiFieldTypes  = Set of TEpiFieldType;
 
@@ -62,7 +62,7 @@ const
 
   TimeFieldTypes    = [ftTime, ftTimeAuto];
 
-  StringFieldTypes  = [ftString, ftUpperString];
+  StringFieldTypes  = [ftString, ftUpperString, ftMemo];
 
   // Complete set
   AllFieldTypes     = BoolFieldTypes + IntFieldTypes + FloatFieldTypes +
@@ -76,14 +76,15 @@ const
   // Composed Sets.
   AutoUpdateFieldTypes   = AutoFieldTypes - [ftAutoInc];
   RangeFieldTypes        = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
-  ValueLabelFieldTypes   = (IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
-  JumpsFieldTypes        = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes;
-  CompareFieldTypes      = AllFieldTypes - (AutoFieldTypes + BoolFieldTypes);
+  ValueLabelFieldTypes   = (IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes - [ftMemo];
+  JumpsFieldTypes        = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes - [ftMemo];
+  CompareFieldTypes      = AllFieldTypes - (AutoFieldTypes + BoolFieldTypes + [ftMemo]);
   EntryModeFieldTypes    = AllFieldTypes - AutoFieldTypes;
-  ConfirmEntryFieldTypes = AllFieldTypes - AutoFieldTypes;
+  ConfirmEntryFieldTypes = AllFieldTypes - AutoFieldTypes - [ftMemo];
   RepeatValueFieldTypes  = AllFieldTypes - AutoFieldTypes;
   NotesFieldTypes        = AllFieldTypes - AutoFieldTypes;
   DefaultValueFieldTypes = AllFieldTypes - AutoFieldTypes;
+  CalculateFieldTypes    = AllFieldTypes - AutoFieldTypes - [ftMemo];
 
   //================
   // RECORD RELATED
@@ -123,11 +124,12 @@ begin
     ftYMDDate,
     ftDMYAuto,
     ftMDYAuto,
-    ftYMDAuto: result := DateFieldTypes;
+    ftYMDAuto:  result := DateFieldTypes;
     ftTime,
-    ftTimeAuto:  result := TimeFieldTypes;
+    ftTimeAuto: result := TimeFieldTypes;
     ftString,
-    ftUpperString: result := StringFieldTypes;
+    ftUpperString,
+    ftMemo:     result := StringFieldTypes;
   end;
 end;
 
@@ -157,7 +159,8 @@ begin
 
     // String
     ftString,
-    ftUpperString:
+    ftUpperString,
+    ftMemo:
       result := StringFieldTypes;
   end;
 end;

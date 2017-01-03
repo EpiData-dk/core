@@ -41,7 +41,6 @@ type
     destructor  Destroy; override;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    SaveAttributesToXml: string; override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   public
     property    Caption: TEpiTranslatedTextWrapper read FCaption;

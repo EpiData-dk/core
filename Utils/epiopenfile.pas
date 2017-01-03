@@ -11,6 +11,7 @@ type
 
   TOpenEpiWarningType =
     (wtLockFile,         // Trying to open a file with a .lock file present.
+     wtLockFileMissing,  // Trying to save a file, but the original .lock file is missing
      wtDatePattern,      // A date pattern has been detected in the file, could be an auto backup
      wtDatePatternNoAlt, //   -- do -- , but no alternative file was found
      wtTimeBackup,       // A file with .bak found, which indicated that the program could have shutdown unexpectedly.
@@ -52,10 +53,6 @@ type
     FOnProgress: TEpiProgressEvent;
     FOnDocumentChangeEvent: TEpiChangeEvent;
   private
-    // Aux. functions
-    function GetHostNameWrapper: string;
-    function GetUserNameWrapper: string;
-  private
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
     // Internal housekeeping of current open EpiDocument.
@@ -63,9 +60,12 @@ type
     FFileName: string;
     FTimeStamp: TTimeStamp;
     FEpiDoc: TEpiDocument;
-    procedure DocumentChange(Const Sender: TEpiCustomBase;
+    procedure DocumentHook(Const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure UserHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
     function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure SetDataDirectory(AValue: string);
@@ -73,6 +73,11 @@ type
     procedure CreateLockFile;
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
+  private
+    { User Authorization }
+    FAuthedUser: TEpiUser;
+  protected
+    procedure UserAuthorized(Sender: TEpiAdmin; User: TEpiUser); virtual;
   protected
     function GetFileName: string; virtual;
     function LockFileExists(Const FileName: string;
@@ -113,6 +118,7 @@ type
     property Document: TEpiDocument read FEpiDoc;
     property ReadOnly: Boolean read FReadOnly;
     property IsSaved: boolean read GetIsSaved;
+    property AuthedUser: TEpiUser read FAuthedUser;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
   end;
   TEpiDocumentFileClass = class of TEpiDocumentFile;
@@ -128,7 +134,8 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes;
+  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
+  laz2_XMLWrite;
 
 var
   OpenEpiDocumentInstance: TEpiDocumentFile = nil;
@@ -148,7 +155,16 @@ begin
   if Assigned(FEpiDoc)
   then
   begin
-    FEpiDoc.UnRegisterOnChangeHook(@DocumentChange);
+    FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
+
+    if (IsSaved) and
+       (Assigned(AuthedUser))
+    then
+      begin
+        FEpiDoc.Logger.LogClose();
+        DoSaveFile(FileName);
+      end;
+
     FreeAndNil(FEpiDoc);
 
     if not ReadOnly then
@@ -181,57 +197,49 @@ begin
   Result := FEpiDoc;
 end;
 
-function TEpiDocumentFile.GetHostNameWrapper: string;
-{$IFDEF WINDOWS}
-var
-  Buffer: Array[0..127] of WideChar;
-  Sz: DWORD;
-{$ENDIF}
-begin
-  Result := '';
-
-  {$IFDEF Windows}
-  Sz := SizeOf(Buffer);
-  GetComputerNameW(Buffer, Sz);
-  Result := WideCharToString(Buffer);
-  {$ENDIF}
-  {$IFDEF unix}
-  Result := GetHostName;
-  {$ENDIF}
-end;
-
-function TEpiDocumentFile.GetUserNameWrapper: string;
-{$IFDEF WINDOWS}
-var
-  Buffer: Array[0..127] of WideChar;
-  Sz: DWORD;
-{$ENDIF}
-begin
-  Result := '';
-
-  {$IFDEF MSWINDOWS}
-  Sz := SizeOf(Buffer);
-  GetUserNameW(Buffer, Sz);
-  Result := WideCharToString(Buffer);
-  {$ENDIF}
-  {$IFDEF UNIX}
-  Result := GetEnvironmentVariableUTF8('USER');
-  {$ENDIF}
-  if Result = '' then
-    Result := 'Unknown';
-end;
-
-procedure TEpiDocumentFile.DocumentChange(const Sender: TEpiCustomBase;
+procedure TEpiDocumentFile.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 begin
-  // Housekeeping to know if document is being destroyed.
+  {
+    2 jobs for hook:
 
-  if not (EventGroup = eegCustomBase) then exit;
-  if TEpiCustomChangeEventType(EventType) <> ecceDestroy then exit;
-  if (Initiator <> FEpiDoc) then exit;
+    A) Housekeeping to know if document is being destroyed.
+    B) Force a save if the document request it.
 
-  DeleteLockFile;
+  }
+
+
+  if (EventGroup = eegCustomBase) and
+     (TEpiCustomChangeEventType(EventType) = ecceDestroy) and
+     (Initiator = FEpiDoc)
+  then
+    begin
+      DeleteLockFile;
+      FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
+      Exit
+    end;
+
+  if (EventGroup = eegDocument) and
+     (TEpiDocumentChangeEvent(EventType) = edceRequestSave) and
+     (Initiator = FEpiDoc)
+  then
+    begin
+      // TODO: Perhaps make this save asyncronous?
+      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
+      Exit;
+    end;
+end;
+
+procedure TEpiDocumentFile.UserHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (Initiator <> FAuthedUser) then exit;
+  if (EventGroup <> eegCustomBase) then exit;
+  if (EventType <> Word(ecceDestroy)) then exit;
+
+  FAuthedUser := nil;
 end;
 
 function TEpiDocumentFile.GetIsSaved: boolean;
@@ -499,6 +507,12 @@ begin
     DeleteFileUTF8(BackupFileName);
 end;
 
+procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
+begin
+  FAuthedUser := User;
+  FAuthedUser.RegisterOnChangeHook(@UserHook, true);
+end;
+
 procedure TEpiDocumentFile.DoSaveFile(const AFileName: string);
 var
   Ms: TMemoryStream;
@@ -545,6 +559,8 @@ begin
     FEpiDoc.OnPassword := OnPassword;
     FEpiDoc.OnProgress := OnProgress;
     FEpiDoc.OnLoadError := OnLoadError;
+    FEpiDoc.Admin.OnUserAuthorized := @UserAuthorized;
+    FEpiDoc.RegisterOnChangeHook(@DocumentHook, true);
     FEpiDoc.LoadFromStream(St);
   finally
     St.Free;
@@ -699,6 +715,12 @@ begin
           LoadSuccess := false;
         end;
 
+      on E: EEpiPasswordCanceled do
+        begin
+          LoadSuccess := false;
+          Msg := '';
+        end;
+
       on E: EEpiBadVersion do
         begin
           Msg := E.Message;
@@ -708,6 +730,13 @@ begin
       on E: EEpiExternalFileNoFound do
         begin
           Msg := '';
+          LoadSuccess := false;
+        end;
+
+      on E: EEpiTooManyFailedLogins do
+        begin
+          Msg := 'Too many failed login attempts!' + LineEnding +
+                 'A cooldown period of ' + IntToStr(EpiAdminLoginInterval div 60) + ' minuts is in place!';
           LoadSuccess := false;
         end;
 
@@ -733,7 +762,6 @@ begin
 
     if not ReadOnly then
       CreateLockFile;
-    FEpiDoc.RegisterOnChangeHook(@DocumentChange, true);
     Result := true;
   finally
 
@@ -773,7 +801,7 @@ begin
     DeleteLockFile;
 
   FFileName := AFileName;
-  LockFileName := FileName + '.lock';
+  LockFileName := FFileName + '.lock';
 
   if not FileExistsUTF8(LockFileName) then
     if FirstSave then
@@ -793,7 +821,7 @@ begin
                'The project file may have been edited by another EntryClient/Manager program!' + LineEnding +
                LineEnding +
                'Continuing may overwrite data! Are you sure?';
-        if OnWarning(wtLockFile, Msg) <> wrYes then exit;
+        if DoWarning(wtLockFileMissing, Msg) <> wrYes then exit;
       end;
 
   LF := ReadLockFile(LockFileName);
@@ -811,7 +839,7 @@ begin
              LineEnding +
              'Continuing may overwrite data! Are you sure?';
 
-      if OnWarning(wtLockFile, Msg) <> wrYes then exit;
+      if DoWarning(wtLockFile, Msg) <> wrYes then exit;
     end;
 
   try

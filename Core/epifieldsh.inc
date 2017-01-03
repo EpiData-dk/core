@@ -3,10 +3,24 @@
 type
 
   TEpiFieldsChangeEventType = (
-    efceSetDecimal, efceSetLeft, efceSetLength,
-    efceSetTop, efceSetSize, efceData, efceEntryMode, efceConfirmEntry,
-    efceShowValueLabel, efceShowValueLabelNotes, efceRepeatValue, efceDefaultValue,
-    efceValueLabelWriteTo, efceForcePickList, efceValueLabelSet,
+    efceSetDecimal,
+    efceSetLeft,
+    efceSetLength,
+    efceSetTop,
+    efceSetWidth,
+    efceSetHeight,
+    efceSetSize,
+    efceData,
+    efceResetData,
+    efceEntryMode,
+    efceConfirmEntry,
+    efceShowValueLabel,
+    efceShowValueLabelNotes,
+    efceRepeatValue,
+    efceDefaultValue,
+    efceValueLabelWriteTo,
+    efceForcePickList,
+    efceValueLabelSet,
     efceZeroFilled
   );
 
@@ -184,13 +198,12 @@ type
     procedure   MovePackData(Const SrcIdx, DstIdx, Count: integer); virtual; abstract;
 
   { Helper methods }
-  private
+  protected
     FDataFile: TEpiDataFile;
     FSize: Integer;
     FCapacity: Integer;
     function    GetSection:  TEpiSection;
     function    GetSettings: TEpiXMLSettings;
-  protected
     function    LoadingRecs: boolean;
     procedure   SetDataModified;
     function    GetSize: Integer; virtual;
@@ -220,8 +233,6 @@ type
       AFieldType: TEpiFieldType): TEpiField;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
   { Cloning }
@@ -291,7 +302,6 @@ type
   public
     class function CheckMissing(AValue: EpiInteger): boolean;
     class function DefaultMissing: EpiInteger;
-    function SaveAttributesToXml: string; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
        override;
     procedure Exchange(i, j: integer); override;
@@ -449,6 +459,30 @@ type
   end;
 
 
+  // Handles following field types:
+  // ftMemo
+
+  { TEpiMemoField }
+
+  TEpiMemoField = class(TEpiStringField)
+  private
+    FWidth: integer;
+    FHeight: integer;
+    procedure SetWidth(AValue: integer);
+    procedure SetHeight(AValue: integer);
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  public
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    function  FormatString(const FillSpace: boolean = false): string; override;
+    property  Width: integer read FWidth write SetWidth;
+    property  Height: integer read FHeight write SetHeight;
+  end;
+
+
   { TEpiCustomAutoField }
 
   // State indication whether to update value on creation or on update/save.
@@ -460,7 +494,6 @@ type
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   protected
-    function  SaveAttributesToXml: string; override;
     function  DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public

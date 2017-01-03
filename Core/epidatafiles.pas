@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Laz2_DOM, epicustombase, episettings, epidatafilestypes,
-  epivaluelabels, epiadmin, epiranges, epirelates;
+  epivaluelabels, epirights, epiranges, epirelates;
 
 type
   TEpiSaveModeEnum = (esmDatafile, esmField);
@@ -61,8 +61,8 @@ implementation
 
 uses
   epidocument, math, epiconvertutils, epidatafileutils,
-  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epirelations,
-  strutils, epistringutils;
+  DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epidatafilerelations,
+  strutils, epistringutils, epiadmin;
 
 {$I epidatafiles.inc}
 {$I episections.inc}

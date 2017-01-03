@@ -1,0 +1,118 @@
+object UserLoginForm: TUserLoginForm
+  Left = 657
+  Height = 153
+  Top = 435
+  Width = 345
+  ActiveControl = LoginEdit
+  Caption = 'UserLoginForm'
+  ClientHeight = 153
+  ClientWidth = 345
+  LCLVersion = '1.5'
+  object Panel1: TPanel
+    Left = 0
+    Height = 50
+    Top = 103
+    Width = 345
+    Align = alBottom
+    ClientHeight = 50
+    ClientWidth = 345
+    TabOrder = 0
+    object BitBtn1: TBitBtn
+      AnchorSideRight.Control = Panel1
+      AnchorSideRight.Side = asrBottom
+      Left = 259
+      Height = 30
+      Top = 8
+      Width = 75
+      Anchors = [akTop, akRight]
+      BorderSpacing.Right = 10
+      Default = True
+      DefaultCaption = True
+      Kind = bkOK
+      ModalResult = 1
+      TabOrder = 0
+    end
+    object BitBtn2: TBitBtn
+      AnchorSideRight.Control = BitBtn1
+      Left = 158
+      Height = 30
+      Top = 8
+      Width = 91
+      Anchors = [akTop, akRight]
+      BorderSpacing.Right = 10
+      Cancel = True
+      DefaultCaption = True
+      Kind = bkCancel
+      ModalResult = 2
+      TabOrder = 1
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Height = 103
+    Top = 0
+    Width = 345
+    Align = alClient
+    AutoSize = True
+    ClientHeight = 103
+    ClientWidth = 345
+    TabOrder = 1
+    object Label1: TLabel
+      AnchorSideLeft.Control = Panel2
+      AnchorSideTop.Control = Panel2
+      AnchorSideBottom.Control = LoginEdit
+      AnchorSideBottom.Side = asrBottom
+      Left = 11
+      Height = 15
+      Top = 21
+      Width = 38
+      Anchors = [akLeft, akBottom]
+      BorderSpacing.Left = 10
+      BorderSpacing.Top = 10
+      Caption = 'Login:'
+      ParentColor = False
+    end
+    object LoginEdit: TEdit
+      AnchorSideTop.Control = Panel2
+      AnchorSideRight.Control = Panel2
+      AnchorSideRight.Side = asrBottom
+      Left = 88
+      Height = 25
+      Top = 11
+      Width = 246
+      Anchors = [akTop, akLeft, akRight]
+      BorderSpacing.Top = 10
+      BorderSpacing.Right = 10
+      OnKeyDown = LoginEditKeyDown
+      TabOrder = 0
+    end
+    object Label2: TLabel
+      AnchorSideLeft.Control = Label1
+      AnchorSideBottom.Control = PasswordEdit
+      AnchorSideBottom.Side = asrBottom
+      Left = 11
+      Height = 15
+      Top = 66
+      Width = 63
+      Anchors = [akLeft, akBottom]
+      Caption = 'Password:'
+      ParentColor = False
+    end
+    object PasswordEdit: TEdit
+      AnchorSideLeft.Control = LoginEdit
+      AnchorSideTop.Control = LoginEdit
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = LoginEdit
+      AnchorSideRight.Side = asrBottom
+      Left = 88
+      Height = 25
+      Top = 56
+      Width = 246
+      Anchors = [akTop, akLeft, akRight]
+      BorderSpacing.Top = 20
+      EchoMode = emPassword
+      PasswordChar = '*'
+      TabOrder = 1
+    end
+  end
+end

@@ -226,19 +226,6 @@ begin
   end;     }
 end;
 
-function TEpiJump.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttr(rsJumpOn, GetJumpValueAsString) +
-    SaveAttrEnum(rsJumpType, Integer(JumpType), TypeInfo(TEpiJumpType)) +
-    SaveAttrEnum(rsJumpReset, Integer(ResetType), TypeInfo(TEpiJumpResetType));
-
-  if JumpType = jtToField then
-    Result := Result +
-    SaveAttr(rsJumpTo, JumpToField.Name);
-end;
-
 procedure TEpiJump.Assign(const AEpiCustomBase: TEpiCustomBase);
 var
   OrgJump: TEpiJump absolute AEpiCustomBase;

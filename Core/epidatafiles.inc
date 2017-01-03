@@ -33,11 +33,6 @@ begin
   Result := rsDataFiles;
 end;
 
-function TEpiDataFiles.ScrambleXml: boolean;
-begin
-  Result := Settings.Scrambled;
-end;
-
 function TEpiDataFiles.Prefix: string;
 begin
   Result := 'dataform_';
@@ -48,44 +43,9 @@ begin
   inherited Create(AOwner);
 end;
 
-destructor TEpiDataFiles.Destroy;
-begin
-  inherited Destroy;
-end;
-
 function TEpiDataFiles.ItemClass: TEpiCustomItemClass;
 begin
   result := TEpiDataFile;
-end;
-
-function TEpiDataFiles.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  if Count = 0 then exit;
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
-procedure TEpiDataFiles.LoadFromXml(Root: TDOMNode;
-  ReferenceMap: TEpiReferenceMap);
-var
-  NewRoot: TDOMNode;
-  Node: TDOMNode;
-  NDf: TEpiDataFile;
-begin
-  // Root = <DataFiles>
-  if not Assigned(Root) then exit;
-
-  // If file is scrambled, then we first need to descramble (using master password)
-  // and then read xml structure.
-  if Settings.Scrambled then
-    NewRoot := DeCrypt(Root)
-  else
-    NewRoot := Root;
-
-  // Inherited takes care of loading TEpiDataFile(s)
-  inherited LoadFromXml(NewRoot, ReferenceMap);
-
-  if Settings.Scrambled then
-    NewRoot.Free;
 end;
 
 function TEpiDataFiles.NewDataFile: TEpiDataFile;
@@ -277,183 +237,6 @@ begin
       ControlItems.RemoveItem(TEpiCustomItem(Data))
     else
       ControlItems.AddItem(TEpiCustomItem(Data));
-
-{  case EventGrp of
-    eegCustomBase:
-      begin
-        case TEpiCustomChangeEventType(EventType) of
-          // On AddItem "data" is a pointer to the added item.
-          ecceAddItem:
-            begin
-              // Here we make sure that fields added to any section is also added
-              // to the global list of fields.
-              if (Sender is TEpiFields) then
-              begin
-                F := TEpiField(Data);
-                // Check that id is not in conflict with others.
-                if not ValidateRename(F.Name) then
-                  F.Name := Fields.GetUniqueItemName(TEpiField);
-                Fields.AddItem(F);
-                F.Size := Size;
-                F.FDataFile := Self;
-              end;
-              // Same goes for headings
-              if (Sender is TEpiHeadings) then
-              begin
-                H := TEpiHeading(Data);
-                // Check that id is not in conflict with others.
-                if not ValidateRename(H.Name) then
-                  H.Name := Headings.GetUniqueItemName(TEpiHeading);
-                Headings.AddItem(TEpiHeading(Data));
-              end;
-
-              // If more sections are created, we need to add a hook to this also.
-              if (Sender is TEpiSections) then
-              with TEpiSection(Data) do
-              begin
-                S := TEpiSection(Data);
-                // Check that id is not in conflict with others.
-                if not Self.ValidateRename(S.Name) then
-                  S.Name := Sections.GetUniqueItemName(TEpiSection);
-
-                FDataFile := Self;
-                Fields.RegisterOnChangeHook(@LocalEventHook, true);
-                Fields.OnValidateRename := @Self.ValidateRename;
-                Fields.Sorted := true;
-                for i := 0 to Fields.Count - 1 do
-                  Fields.DoChange(eegCustomBase, Word(ecceAddItem), Fields[i]);
-
-                Headings.RegisterOnChangeHook(@LocalEventHook, true);
-                Headings.OnValidateRename := @Self.ValidateRename;
-                Headings.Sorted := true;
-                for i := 0 to Headings.Count - 1 do
-                  Headings.DoChange(eegCustomBase, Word(ecceAddItem), Heading[i]);
-              end;
-
-              // Finally add the Item the list of ALL control items.
-              ControlItems.AddItem(TEpiCustomControlItem(Data));
-            end;
-
-          // On DelIetem "data" is a pointer to the now deleted item.
-          ecceDelItem:
-            begin
-              ControlItems.RemoveItem(TEpiCustomControlItem(Data));
-
-              if (Sender is TEpiFields) then
-                Fields.RemoveItem(TEpiField(Data));
-              if (Sender is TEpiHeadings) then
-                Headings.RemoveItem(TEpiHeading(Data));
-
-              // If sections are removed, we need to delete the hook
-              // in case the section lives on elsewhere.
-              if (Sender is TEpiSections)  then
-              with TEpiSection(Data) do
-              begin
-                if (ebsDestroying in State) then exit;
-
-                for i := 0 to Fields.Count - 1 do
-                  Fields.DoChange(eegCustomBase, Word(ecceDelItem), Fields[i]);
-                Fields.UnRegisterOnChangeHook(@LocalEventHook);
-                Fields.OnValidateRename := nil;
-
-                for i := 0 to Headings.Count - 1 do
-                  Headings.DoChange(eegCustomBase, Word(ecceDelItem), Heading[i]);
-                Headings.UnRegisterOnChangeHook(@LocalEventHook);
-                Headings.OnValidateRename := nil;
-              end;
-            end;
-        end;
-      end;
-  end;     }
-end;
-
-function TEpiDataFile.SaveRecords(Lvl: integer): string;
-var
-  Sz: LongInt;
-  Fc: LongInt;
-  CurRec: Integer;
-  CurField: Integer;
-  S: String;
-  Lst: TStringList;
-  R: String;
-  EnCrypter: TDCP_rijndael;
-  Edoc: TEpiDocument;
-  ProgressMethod: TEpiProgressEvent;
-
-  function LocalEncrypt(Const S: String): string;
-  begin
-    if Assigned(EnCrypter) then
-      Result := EnCrypter.EncryptString(S)
-    else
-      Result := S;
-  end;
-
-  function DoProgress(ProgressType: TEpiProgressType;
-    Count, Max: Cardinal):boolean; inline;
-  begin
-    Result := false;
-    if Assigned(ProgressMethod) then
-      ProgressMethod(Self, ProgressType, Count, Max, Result);
-  end;
-
-var
-  SaltInt: LongInt;
-  SaltByte: array[0..3] of char absolute SaltInt;
-  Salt: String;
-begin
-  if FRecModified then
-    FRecModifiedDate := Now;
-
-  Edoc := TEpiDocument(RootOwner);
-  ProgressMethod := Edoc.OnProgress;
-
-  BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
-  Sz := Size;
-  Fc := Fields.Count;
-
-  EnCrypter := nil;
-  SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
-  Salt := String(SaltByte);
-
-  if (Edoc.Version >= 2) and (Edoc.PassWord <> '') then
-  begin
-    EnCrypter := TDCP_rijndael.Create(nil);
-    EnCrypter.InitStr(Edoc.PassWord, TDCP_sha256);
-    Salt := EnCrypter.EncryptString(Salt);
-  end else
-    Salt := '';
-
-  Lst := TStringList.Create;
-  Lst.Add(Indent(Lvl) + '<' + rsRecords +
-    SaveAttr(rsModifiedAttr, RecModifiedDate) +
-    SaveAttr(rsEncryptedSalt, Salt) +
-    '>');
-
-  DoProgress(eptInit, 0, Sz);
-  for CurRec := 0 to Sz - 1 do
-  begin
-    DoProgress(eptRecords, CurRec, Sz);
-    R := Indent(Lvl + 1) + '<' + rsRecord + SaveAttrEnum(rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState)) + '>';
-
-    S := '';
-    for CurField := 0 to Fc - 1 do
-    with Fields[CurField] do
-      if not IsMissing[CurRec] then
-        if FieldType in StringFieldTypes then
-          S += Name + '="' + StringToXml(AsString[CurRec]) + '";'
-        else
-          S += Name + '=' + AsString[CurRec] + ';';
-    Delete(S, Length(S), 1);
-
-    Lst.Add(R + LocalEncrypt(S) + '</' + rsRecord + '>');
-  end;
-  RestoreFormatSettings;
-
-  Lst.Add(Indent(Lvl) + '</' + rsRecords + '>');
-  Result := Lst.Text;
-  Lst.Free;
-
-  DoProgress(eptFinish, Sz, Sz);
 end;
 
 procedure TEpiDataFile.LoadRecords(Root: TDOMNode);
@@ -681,25 +464,6 @@ begin
   FLoadingRecs := false;
 end;
 
-function TEpiDataFile.SaveKeyFields(Lvl: integer): string;
-var
-  i: Integer;
-begin
-  Result := '';
-  if KeyFields.Count = 0 then
-    exit;
-
-  Result := Indent(Lvl) + '<KeyFields>' + LineEnding;
-
-  for i := 0 to KeyFields.Count -1 do
-  begin
-    Result += Indent(Lvl + 1) +
-      '<Key' + SaveAttr('fieldRef', KeyFields[i].Name) + '/>' + LineEnding;
-  end;
-  Result += Indent(Lvl) + '</KeyFields>' + LineEnding;
-  FLoadingRecs := false;
-end;
-
 procedure TEpiDataFile.LoadKeyFields(Root: TDOMNode);
 var
   Node: TDOMNode;
@@ -842,6 +606,16 @@ begin
   FVersion := AValue;
 end;
 
+procedure TEpiDataFile.SetStatusbarContentString(AValue: string);
+var
+  Val: String;
+begin
+  if FStatusbarContentString = AValue then Exit;
+  Val := FStatusbarContentString;
+  FStatusbarContentString := AValue;
+  DoChange(eegDataFiles, Word(edceStatusbarContentString), @Val);
+end;
+
 procedure TEpiDataFile.DoControlChange(const Initiator: TEpiCustomBase;
   EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
 var
@@ -959,7 +733,7 @@ procedure TEpiDataFile.DoModifiedChange(const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
   if (EventGroup = eegFields) and
-     (TEpiFieldsChangeEventType(EventType) = efceData)
+     (TEpiFieldsChangeEventType(EventType) in [efceData, efceResetData])
   then
     FRecModified := true
   else
@@ -1130,6 +904,11 @@ begin
   SaveDomAttrEnum(Result, rsAfterRecordState, AfterRecordState, TypeInfo(TEpiDataFileAfterRecordState));
 
   SaveKeyFieldsToDom(Result);
+
+  // Version 4:
+  if (StatusbarContentString <> '') then
+    SaveTextContent(Result, rsStatusbarContentString, FStatusbarContentString);
+
   if (EpiSaveMode = esmDatafile) then
     SaveRecordToDom(Result);
 end;
@@ -1208,6 +987,10 @@ begin
   // Caption
   FCaption := TEpiTranslatedTextWrapper.Create(Self, rsCaption, rsText);
   FNotes := TEpiTranslatedTextWrapper.Create(Self, rsNotes, rsText);
+
+  FGroupRights := TEpiGroupRights.Create(Self);
+  FGroupRights.ItemOwner := true;
+
   FVersion := '';
   FCreated := Now;
   FRecModifiedDate := Now;
@@ -1239,6 +1022,7 @@ begin
 
   // Special field to hold status of current record.
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
+  FRecordStatus.FDataFile := Self;
   FRecordStatus.Size := Size;
 
   // Container for Key Fields.
@@ -1248,11 +1032,12 @@ begin
   // Relates
   FRelates   := TEpiRelates.Create(Self);
 
-  RegisterClasses([Caption, Notes, Sections, Relates]);
+  RegisterClasses([Caption, Notes, Sections, Relates, GroupRights]);
 end;
 
 destructor TEpiDataFile.Destroy;
 begin
+  FGroupRights.Free;
   FCaption.Free;
   FNotes.Free;
   FVersion := '';
@@ -1279,25 +1064,6 @@ end;
 function TEpiDataFile.XMLName: string;
 begin
   Result := rsDataFile;
-end;
-
-function TEpiDataFile.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Content +=
-    SaveRecords(Lvl + 1) +
-    SaveKeyFields(Lvl + 1);
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
-function TEpiDataFile.SaveAttributesToXml: string;
-begin
-  if FStructureModified then
-    FStructureModifiedDate := Now;
-
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsCreatedAttr, Created) +
-    SaveAttr(rsModifiedAttr, StructureModifiedDate);
-    SaveAttr(rsVersionAttr, Version);
 end;
 
 procedure TEpiDataFile.LoadFromXml(Root: TDOMNode;
@@ -1348,6 +1114,12 @@ begin
     if LoadNode(Node, Root, rsRelates, false) then
       FRelates.LoadFromXml(Node, ReferenceMap);
   end;
+
+  // Version 4:
+  if LoadNode(Node, Root, rsGroupRights, false) then
+    GroupRights.LoadFromXml(Node, ReferenceMap);
+
+  FStatusbarContentString := LoadNodeString(Root, rsStatusbarContentString, FStatusbarContentString, false);
 
   {$IFNDEF RELEASE}
   T1 := Now;
@@ -1438,6 +1210,7 @@ begin
   SetLength(L, C);
   L[C-1] := Size;
 
+  DoChange(eegDataFiles, word(edcePack), @L);
   for i := 1 to High(L) do
   begin
     S := L[i-1] + 1;          // Source Index
@@ -1479,6 +1252,21 @@ begin
   SortFields.AddItem(SortField);
   SortRecords(SortFields);
   SortFields.Free;
+end;
+
+procedure TEpiDataFile.BeginCommitRecord(NewRecord: boolean);
+begin
+  DoChange(eegDataFiles, Word(edceBeginCommit), Pointer(ifthen(NewRecord, 0, 1)));
+end;
+
+procedure TEpiDataFile.EndCommitRecord(RecordNo: Integer);
+begin
+  DoChange(eegDataFiles, Word(edceEndCommit), Pointer(RecordNo));
+end;
+
+procedure TEpiDataFile.LoadRecord(RecordNo: Integer);
+begin
+  DoChange(eegDataFiles, Word(edceLoadRecord), Pointer(RecordNo));
 end;
 
 procedure TEpiDataFile.BeginUpdate;

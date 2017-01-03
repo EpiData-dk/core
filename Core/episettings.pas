@@ -23,15 +23,11 @@ type
     FDecimalSeparator: string;
     FFormatSettings: TFormatSettings;
     FMissingString: string;
-    FScrambled: boolean;
     FTimeSeparator: string;
     procedure SetDateSeparator(const AValue: string);
     procedure SetDecimalSeparator(const AValue: string);
-    procedure SetScrambled(const AValue: boolean);
     procedure SetTimeSeparator(const AValue: string);
     procedure AssignValues(Src: TEpiXMLSettings);
-  protected
-    function SaveAttributesToXml: string; override;
   protected
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
@@ -43,7 +39,6 @@ type
     property    DateSeparator: string read FDateSeparator write SetDateSeparator;
     property    TimeSeparator: string read FTimeSeparator write SetTimeSeparator;
     property    DecimalSeparator: string read FDecimalSeparator write SetDecimalSeparator;
-    property    Scrambled: boolean read FScrambled write SetScrambled;
     property    FormatSettings: TFormatSettings read FFormatSettings;
   { Cloning }
   protected
@@ -54,7 +49,15 @@ type
   { TEpiProjectSettings }
 
   TEpiProjectSettingChangeEvent = (
-    epceFieldName, epceFieldBorder, epceBackupInterval, epceBackupShutdown, epceAutoIncStart
+    epceFieldName,
+    epceFieldBorder,
+    epceBackupInterval,
+    epceBackupShutdown,
+    epceAutoIncStart,
+    epceEmailOnShutDown,
+    epceEmailAddress,
+    epceEmailSubject,
+    epceEmailContent
   );
 
   TEpiProjectSettings = class(TEpiCustomBase)
@@ -62,31 +65,39 @@ type
     FAutoIncStartValue: EpiInteger;
     FBackupInterval: Integer;
     FBackupOnShutdown: Boolean;
+    FEmailAddress: UTF8String;
+    FEmailContent: UTF8String;
+    FEmailOnShutdown: Boolean;
+    FEmailSubject: UTF8String;
     FShowFieldBorders: Boolean;
     FShowFieldNames: Boolean;
-    procedure   SetAutoIncStartValue(const AValue: EpiInteger);
-    procedure   SetBackupInterval(const AValue: Integer);
-    procedure   SetBackupOnShutdown(const AValue: Boolean);
-    procedure   SetShowFieldBorders(const AValue: Boolean);
-    procedure   SetShowFieldNames(const AValue: Boolean);
-    procedure   AssignValues(Src: TEpiProjectSettings);
-  protected
-    function SaveAttributesToXml: string; override;
+    procedure SetAutoIncStartValue(const AValue: EpiInteger);
+    procedure SetBackupInterval(const AValue: Integer);
+    procedure SetBackupOnShutdown(const AValue: Boolean);
+    procedure SetEmailAddress(AValue: UTF8String);
+    procedure SetEmailContent(AValue: UTF8String);
+    procedure SetEmailOnShutdown(AValue: Boolean);
+    procedure SetEmailSubject(AValue: UTF8String);
+    procedure SetShowFieldBorders(const AValue: Boolean);
+    procedure SetShowFieldNames(const AValue: Boolean);
+    procedure AssignValues(Src: TEpiProjectSettings);
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    ScrambleXml: boolean; override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property    ShowFieldNames: Boolean read FShowFieldNames write SetShowFieldNames;
     property    ShowFieldBorders: Boolean read FShowFieldBorders write SetShowFieldBorders;
     property    BackupInterval: Integer read FBackupInterval write SetBackupInterval;
     property    BackupOnShutdown: Boolean read FBackupOnShutdown write SetBackupOnShutdown;
     property    AutoIncStartValue: EpiInteger read FAutoIncStartValue write SetAutoIncStartValue;
+    property    EmailOnShutdown: Boolean read FEmailOnShutdown write SetEmailOnShutdown;
+    property    EmailAddress: UTF8String read FEmailAddress write SetEmailAddress;
+    property    EmailSubject: UTF8String read FEmailSubject write SetEmailSubject;
+    property    EmailContent: UTF8String read FEmailContent write SetEmailContent;
   { Cloning }
   protected
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
@@ -122,16 +133,6 @@ begin
   DoChange(eegXMLSetting, Word(esceDecSep), @Val);
 end;
 
-procedure TEpiXMLSettings.SetScrambled(const AValue: boolean);
-var
-  Val: Boolean;
-begin
-  if FScrambled = AValue then exit;
-  Val := FScrambled;
-  FScrambled := AValue;
-  DoChange(eegXMLSetting, Word(esceScramble), @Val);
-end;
-
 procedure TEpiXMLSettings.SetTimeSeparator(const AValue: string);
 var
   Val: String;
@@ -149,16 +150,7 @@ begin
   FDecimalSeparator  := Src.FDecimalSeparator;
   FFormatSettings    := Src.FFormatSettings;
   FMissingString     := Src.FMissingString;
-  FScrambled         := Src.FScrambled;
   FTimeSeparator     := Src.FTimeSeparator;
-end;
-
-function TEpiXMLSettings.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsDateSep,    DateSeparator) +
-    SaveAttr(rsTimeSep,    TimeSeparator) +
-    SaveAttr(rsDecSep,     DecimalSeparator);
 end;
 
 function TEpiXMLSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -173,7 +165,6 @@ end;
 constructor TEpiXMLSettings.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
-  Scrambled := false;
 
   FFormatSettings := DefaultFormatSettings;
   FFormatSettings.ShortDateFormat := 'YYYY/MM/DD HH:NN:SS';
@@ -218,7 +209,6 @@ function TEpiXMLSettings.DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
 begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
-
   TEpiXMLSettings(Result).AssignValues(Self);
 end;
 
@@ -264,6 +254,46 @@ begin
   DoChange(eegProjectSettings, Word(epceBackupShutdown), @Val);
 end;
 
+procedure TEpiProjectSettings.SetEmailAddress(AValue: UTF8String);
+var
+  Val: UTF8String;
+begin
+  if FEmailAddress = AValue then Exit;
+  Val := FEmailAddress;
+  FEmailAddress := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailAddress), @Val);
+end;
+
+procedure TEpiProjectSettings.SetEmailContent(AValue: UTF8String);
+var
+  Val: UTF8String;
+begin
+  if FEmailContent = AValue then Exit;
+  Val := FEmailContent;
+  FEmailContent := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailContent), @Val);
+end;
+
+procedure TEpiProjectSettings.SetEmailOnShutdown(AValue: Boolean);
+var
+  Val: Boolean;
+begin
+  if FEmailOnShutdown = AValue then Exit;
+  Val := FEmailOnShutdown;
+  FEmailOnShutdown := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailOnShutDown), @Val);
+end;
+
+procedure TEpiProjectSettings.SetEmailSubject(AValue: UTF8String);
+var
+  Val: UTF8String;
+begin
+  if FEmailSubject = AValue then Exit;
+  Val := FEmailSubject;
+  FEmailSubject := AValue;
+  DoChange(eegProjectSettings, Word(epceEmailSubject), @Val);
+end;
+
 procedure TEpiProjectSettings.SetShowFieldNames(const AValue: Boolean);
 var
   Val: Boolean;
@@ -281,19 +311,16 @@ begin
   FBackupOnShutdown  := Src.FBackupOnShutdown;
   FShowFieldBorders  := Src.FShowFieldBorders;
   FShowFieldNames    := Src.FShowFieldNames;
-end;
 
-function TEpiProjectSettings.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsAutoIncStart,        AutoIncStartValue) +
-    SaveAttr(rsTimedBackupInterval, BackupInterval) +
-    SaveAttr(rsBackupOnShutdown,    BackupOnShutdown) +
-    SaveAttr(rsShowFieldNames,      ShowFieldNames) +
-    SaveAttr(rsShowFieldBorders,    ShowFieldBorders);
+  FEmailAddress      := Src.FEmailAddress;
+  FEmailContent      := Src.FEmailContent;
+  FEmailOnShutdown   := Src.FEmailOnShutdown;
+  FEmailSubject      := Src.FEmailSubject;
 end;
 
 function TEpiProjectSettings.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+var
+  Elem: TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
@@ -302,6 +329,15 @@ begin
   SaveDomAttr(Result, rsBackupOnShutdown,    BackupOnShutdown);
   SaveDomAttr(Result, rsShowFieldNames,      ShowFieldNames);
   SaveDomAttr(Result, rsShowFieldBorders,    ShowFieldBorders);
+
+  if EmailOnShutdown then
+  begin
+    Elem := SaveTextContent(Result, rsEmail, '');
+    SaveDomAttr(Elem, rsEmailOnShutdown,     EmailOnShutdown);
+    SaveDomAttr(Elem, rsEmailAddress,        EmailAddress);
+    SaveDomAttr(Elem, rsEmailSubject,        EmailSubject);
+    SaveTextContent(Elem, rsEmailContent,    EmailContent);
+  end;
 end;
 
 constructor TEpiProjectSettings.Create(AOwner: TEpiCustomBase);
@@ -312,6 +348,10 @@ begin
   FShowFieldNames   := false;
   FBackupInterval   := 10;
   FAutoIncStartValue := 1;
+  FEmailAddress      := '';
+  FEmailContent      := '';
+  FEmailOnShutdown   := false;
+  FEmailSubject      := '';
 end;
 
 destructor TEpiProjectSettings.Destroy;
@@ -324,27 +364,26 @@ begin
   Result := rsProjectSettings;
 end;
 
-function TEpiProjectSettings.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
 procedure TEpiProjectSettings.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
   I: Integer;
   B: Boolean;
+  Node: TDOMNode;
 begin
   AutoIncStartValue := LoadAttrInt(Root, rsAutoIncStart, AutoIncStartValue, false);
   BackupInterval    := LoadAttrInt(Root, rsTimedBackupInterval, BackupInterval, false);
   BackupOnShutdown  := LoadAttrBool(Root,rsBackupOnShutdown, BackupOnShutdown, false);
   ShowFieldNames    := LoadAttrBool(Root, rsShowFieldNames, ShowFieldNames, false);
   ShowFieldBorders  := LoadAttrBool(Root, rsShowFieldBorders, ShowFieldBorders, false);
-end;
 
-function TEpiProjectSettings.ScrambleXml: boolean;
-begin
-  Result := TEpiDocument(RootOwner).XMLSettings.Scrambled;
+  if LoadNode(Node, Root, rsEmail, false) then
+  begin
+    EmailOnShutdown := LoadAttrBool(Node, rsEmailOnShutdown, EmailOnShutdown, false);
+    EmailAddress    := LoadAttrString(Node, rsEmailAddress, EmailAddress, false);
+    EmailSubject    := LoadAttrString(Node, rsEmailSubject, EmailContent, false);
+    EmailContent    := LoadNodeString(Node, rsEmailContent, EmailContent, false);
+  end;
 end;
 
 procedure TEpiProjectSettings.Assign(const AEpiCustomBase: TEpiCustomBase);

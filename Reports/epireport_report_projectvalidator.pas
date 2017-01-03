@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epireport_base, epidocument, epidatafiles,
-  epireport_generator_base, epirelations,
+  epireport_generator_base, epidatafilerelations,
   epitools_projectvalidate;
 
 type

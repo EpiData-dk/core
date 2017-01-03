@@ -114,13 +114,6 @@ begin
   FCaption.LoadFromXml(Root, ReferenceMap);
 end;
 
-function TEpiHeading.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttrEnum(rsType, Integer(HeadingType), TypeInfo(TEpiHeadingType));
-end;
-
 procedure TEpiHeading.Assign(const AEpiCustomBase: TEpiCustomBase);
 begin
   inherited Assign(AEpiCustomBase);

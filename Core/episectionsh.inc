@@ -30,7 +30,6 @@ type
   private
     FDataFile: TEpiDataFile;
     FFields: TEpiFields;
-    FGroups: TEpiGroups;
     FHeadings: TEpiHeadings;
     FHeight: integer;
     FCaption: TEpiTranslatedTextWrapper;
@@ -41,17 +40,12 @@ type
     procedure   SetWidth(const AValue: integer);
   private
     FAllControls: TEpiCustomControlItemList;  // Stores a local list of all fields/headings in sorted order.
-    procedure ItemsHook(Const Sender, Initiator: TEpiCustomBase;
-      EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
   protected
     function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     function    XMLName: string; override;
-    function    SaveToXml(Content: String; Lvl: integer): string; override;
-    function    SaveAttributesToXml: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField;
     function    NewHeading: TEpiHeading;
@@ -60,7 +54,6 @@ type
     property    Field[Index: integer]: TEpiField read GetField;
     property    Headings: TEpiHeadings read FHeadings;
     property    Heading[Index: integer]: TEpiHeading read GetHeading;
-    property    Groups: TEpiGroups read FGroups;
     property    DataFile: TEpiDataFile read FDataFile;
     property    Width: integer read FWidth write SetWidth;
     property    Height: integer read FHeight write SetHeight;

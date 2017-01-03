@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epireport_base,
-  epidocument, epirelations, epicustombase;
+  epidocument, epidatafilerelations, epicustombase;
 
 type
 
@@ -38,7 +38,7 @@ type
 implementation
 
 uses
-  epireport_types, math, epidatafiles, strutils, epimiscutils;
+  epireport_types, math, epidatafiles, strutils, epimiscutils, epidatafilerelations_helper;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';
@@ -138,8 +138,8 @@ var
   j: Integer;
   LastEdit: TDateTime;
   OrderedDataFiles: TEpiDataFiles;
-  List: TEpiRelationList;
-  Relations: TEpiRelationList;
+  List: TEpiDatafileRelationList;
+  Relations: TEpiDatafileRelationList;
   ColCount: Integer;
   MultiLevel: Boolean;
   ColNo: Integer;

@@ -48,7 +48,6 @@ type
   public
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    SaveAttributesToXml: string; override;
     procedure   Assign(const AEpiCustomBase: TEpiCustomBase); override;
     class function DefaultOnAnyValue: string;
     property    JumpToField: TEpiField read FJumpToField write SetJumpToField;

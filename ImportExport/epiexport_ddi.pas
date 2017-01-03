@@ -122,7 +122,7 @@ type
 implementation
 
 uses
-  laz2_XMLWrite, epiexport, LazUTF8, epitools_filterinfo;
+  laz2_XMLWrite, epiexport, LazUTF8, epitools_filterinfo, epifields_helper;
 
 const
   NSreuseable           = 'ddi:reusable:3_1';
@@ -628,6 +628,12 @@ begin
             Domain.SetAttribute('maxLength', IntToStr(F.Length));
             Domain.SetAttribute('blankIsMissingValue', 'true');
           end;
+        ftMemo:
+          begin
+            Domain := AppendElem(QItem, NSdatacollection, 'TextDomain');
+            Domain.SetAttribute('maxLength', IntToStr(F.MaxByteLength));
+            Domain.SetAttribute('blankIsMissingValue', 'true');
+          end;
       end;
 
     // Missing Value
@@ -962,6 +968,12 @@ begin
             ReprElem.SetAttribute('maxLength', IntToStr(F.Length));
             ReprElem.SetAttribute('blankIsMissingValue', 'true');
           end;
+        ftMemo:
+          begin
+            ReprElem := AppendElem(Elem, NSlogicalproduct, 'TextRepresentation');
+            ReprElem.SetAttribute('maxLength', IntToStr(F.MaxByteLength));
+            ReprElem.SetAttribute('blankIsMissingValue', 'true');
+          end;
       end;
 
     // Missing Value
@@ -1116,7 +1128,8 @@ begin
       ftTime,
       ftTimeAuto,
       ftString,
-      ftUpperString: S := 'string';
+      ftUpperString,
+      ftMemo: S := 'string';
     end;
     AppendElem(Elem, NSphysicaldataproduct, 'StorageFormat', S);
     AppendElem(Elem, NSphysicaldataproduct, 'ArrayPosition', IntToStr(I + 1));

@@ -8,12 +8,19 @@ interface
 uses
   Classes, sysutils, Laz2_DOM,
   episettings, epiadmin, epidatafiles,
-  epistudy, epirelations, epivaluelabels,
-  epicustombase, epidatafilestypes;
+  epistudy, epidatafilerelations, epivaluelabels,
+  epicustombase, epidatafilestypes, epilogger;
 
 type
 
-  TEpiDocumentChangeEvent = (edcePassword);
+  TEpiDocumentChangeEvent = (
+    // Simple document password has changed.
+    edcePassword,
+
+    // Any listeners are requested to force a save, due to eg. log changes.
+    //  data = TDomDocument (OwnerDocument)
+    edceRequestSave
+  );
 
   TEpiProgressType =
     (
@@ -21,6 +28,11 @@ type
       eptFinish,
       eptRecords
     );
+
+  TEpiDocumentFlag = (
+    edfLoginFailed                    // Set during load if at least one failed login attempt was detected.
+  );
+  TEpiDocumentFlags = set of TEpiDocumentFlag;
 
   TEpiProgressEvent = procedure (
     Const Sender: TEpiCustomBase;
@@ -34,8 +46,6 @@ type
     Data: Pointer;
     out Continue: boolean
   ) of object;
-
-  TEpiRelationListEx = class;
 
   { TEpiDocument }
 
@@ -53,13 +63,17 @@ type
     FXMLSettings: TEpiXMLSettings;
     FStudy: TEpiStudy;
     FDataFiles: TEpiDataFiles;
-    FRelations: TEpiRelationListEx;
+    FRelations: TEpiDatafileRelationList;
+    FLogger: TEpiLogger;
+    FFailedLog: TEpiFailedLogger;
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
   protected
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
     procedure  SetModified(const AValue: Boolean); override;
-    function   SaveAttributesToXml: string; override;
   public
     constructor Create(Const LangCode: string);
     destructor Destroy; override;
@@ -67,8 +81,6 @@ type
     procedure  LoadFromFile(const AFileName: string);
     procedure  LoadFromStream(const St: TStream);
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function   SaveToXml(Lvl: integer = 0;
-      IncludeHeader: boolean = true): string;
     procedure  SaveToStream(Const St: TStream);
     procedure  SaveToFile(Const AFileName: string);
     Property   XMLSettings: TEpiXMLSettings read FXMLSettings;
@@ -77,12 +89,14 @@ type
     Property   Study: TEpiStudy read FStudy;
     Property   ValueLabelSets: TEpiValueLabelSets read FValueLabelSets;
     Property   DataFiles: TEpiDataFiles read FDataFiles;
-    Property   Relations: TEpiRelationListEx read FRelations;
+    Property   Relations: TEpiDatafileRelationList read FRelations;
+    Property   Logger: TEpiLogger read FLogger;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
+
     // EpiData XML Version 2 perperties:
     property   PassWord: string read FPassWord write SetPassWord;
 
@@ -97,33 +111,24 @@ type
     function   DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
 
+  { Flags }
+  private
+    FFlags: TEpiDocumentFlags;
+  protected
+    property   Flags: TEpiDocumentFlags read FFlags;
+
+  { Save }
   public
     function   SaveToXmlDocument: TXMLDocument;
   protected
     function   SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   end;
 
-
-  { TEpiRelationListEx }
-
-  TEpiRelationListExCallBack = procedure(Const Relation: TEpiMasterRelation;
-    Const Depth: Cardinal; Const Index: Cardinal; Var aContinue: boolean;
-    Data: Pointer = nil) of object;
-
-  TEpiRelationListEx = class(TEpiRelationList)
-  public
-    function GetOrderedDataFiles: TEpiDataFiles;
-    procedure OrderedWalk(Const CallBackMethod: TEpiRelationListExCallBack;
-      Data: Pointer = nil);
-  public
-    { Aux. methods }
-    function IsMultiLeveled: boolean;     // Returns true if any top-level Master relation have a Detail relation.
-  end;
-
 implementation
 
 uses
-  epimiscutils, laz2_XMLRead, laz2_XMLWrite;
+  epimiscutils, laz2_XMLRead, laz2_XMLWrite, epiglobals,
+  DCPrijndael, DCPsha256, DCPbase64;
 
 { TEpiDocument }
 
@@ -147,44 +152,44 @@ begin
   DoChange(eegDocument, Word(edcePassword), @Val);
 end;
 
+procedure TEpiDocument.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  // Catch invalid login/password before passing them on in order to set
+  // internal flag correctly.
+  if (EventGroup = eegAdmin) and
+     (TEpiAdminChangeEventType(EventType) in [eaceAdminIncorrectPassword, eaceAdminIncorrectUserName])
+  then
+    Include(FFlags, edfLoginFailed);
+
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+end;
+
 procedure TEpiDocument.SetModified(const AValue: Boolean);
 begin
   inherited SetModified(AValue);
-end;
-
-function TEpiDocument.SaveAttributesToXml: string;
-begin
-  Result :=
-    inherited SaveAttributesToXml +
-    SaveAttr('xmlns', 'http://www.epidata.dk/XML/1.3') +
-    SaveAttr('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance') +
-    SaveAttr('xsi:schemaLocation', 'http://www.epidata.dk/XML/1.3 http://www.epidata.dk/XML/1.3/epx.xsd') +
-    SaveAttr(rsVersionAttr, Version) +
-    SaveAttr('xml:lang', DefaultLang);
-
-  // Version 2 Properties:
-  if PassWord <> '' then
-    Result += SaveAttr(rsPassword, StrToSHA1Base64(PassWord));
-  Result += SaveAttr(rsCycle, CycleNo)
 end;
 
 constructor TEpiDocument.Create(const LangCode: string);
 begin
   inherited Create(nil);
   FVersion         := EPI_XML_DATAFILE_VERSION;
+  FAdmin           := TEpiAdmin.Create(Self);
   FXMLSettings     := TEpiXMLSettings.Create(Self);
   FProjectSettings := TEpiProjectSettings.Create(Self);
-  FAdmin           := TEpiAdmin.Create(Self);
   FStudy           := TEpiStudy.Create(Self);
   FValueLabelSets  := TEpiValueLabelSets.Create(Self);
   FValueLabelSets.ItemOwner := true;
   FDataFiles       := TEpiDataFiles.Create(Self);
   FDataFiles.ItemOwner := true;
-  FRelations       := TEpiRelationListEx.Create(Self);
+  FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
+  FLogger          := TEpiLogger.Create(Self);
+  FFailedLog       := TEpiFailedLogger.Create(Self);
   FCycleNo         := 0;
+  FFlags           := [];
 
-  RegisterClasses([XMLSettings, ProjectSettings, {Admin,} Study, ValueLabelSets, DataFiles, Relations]);
+  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations, Logger]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.
@@ -200,6 +205,7 @@ begin
   FAdmin.Free;
   FDataFiles.Free;
   FValueLabelSets.Free;
+  FLogger.Free;
   inherited Destroy;
 end;
 
@@ -210,11 +216,13 @@ end;
 
 procedure TEpiDocument.LoadFromFile(const AFileName: string);
 var
-  St: TFileStream;
+  St: TMemoryStream;
 begin
   St := nil;
   try
-    St := TFileStream.Create(AFileName, fmOpenRead);
+    St := TMemoryStream.Create;
+    St.LoadFromFile(AFileName);
+    ST.Position := 0;
     LoadFromStream(St);
   finally
     St.Free;
@@ -251,15 +259,24 @@ procedure TEpiDocument.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
-  PW, Login, UserPW: String;
+  PW, Login, UserPW, S: String;
   TmpVersion: EpiInteger;
   TmpBranch: EpiString;
-
+  DeCrypter: TDCP_rijndael;
+  SS: TStringStream;
+  MS: TMemoryStream;
+  Res: TEpiRequestPasswordResponse;
+  Count: Integer;
+  Elem: TDOMElement;
+  CRes: TEpiRequestPasswordResult;
 begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
   // Root = <EpiData>
   FLoading := true;
 
   {$IFNDEF RELEASE}
+
   // Keep an eye in which branch we are loading from!
   TmpBranch := LoadAttrString(Root, rsBranchAttr, '', false);
   if (TmpBranch <> '') and
@@ -287,80 +304,173 @@ begin
       );
   FVersion := TmpVersion;
 
+  // Now we need the separators, in order to load dates/times correctly.
+  if (Version >= 4) then
+  begin
+    XMLSettings.DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
+    XMLSettings.TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
+    XMLSettings.DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
+  end;
+
   // Then language!
   SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
-  // And last - file settings.
-  LoadNode(Node, Root, rsSettings, true);
-  XMLSettings.LoadFromXml(Node, ReferenceMap);
+
+  // Third is cycle no:
+  if (Version >= 2) then
+    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
+
+  // Version 4:
+  //  - load External log
+  if LoadNode(Node, Root, 'ExLog', false) then
+  begin
+    FFailedLog.LoadFromXml(Node, ReferenceMap);
+    if FFailedLog.TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
+      raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+  end;
+
+  // Version 4:
+  //  - Now check for User login;
+  if (Version >= 4) and
+     (LoadNode(Node, Root, rsCrypto, false))
+  then
+    try
+      SS := nil;
+      MS := nil;
+      DeCrypter := nil;
+
+      // Preloading the basic user information also sends a
+      // request for password from user.
+      // Loading the rest of the user information (Name, etc.) is
+      // done later.
+      try
+        CRes := Admin.LoadCrypto(Node, ReferenceMap, FFailedLog);
+      finally
+        if (edfLoginFailed in Flags) then
+        begin
+          Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
+          LoadNode(Node, Root, 'ExLog', false);
+          Root.ReplaceChild(Elem, Node);
+
+          DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
+          Exclude(FFlags, edfLoginFailed);
+        end;
+      end;
+
+      case CRes of
+        prSuccess:  ;
+        prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
+        prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
+      end;
+
+      {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
+      LoadNode(Node, Root, rsEncrypted, true);
+
+      SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
+      MS := TMemoryStream.Create;
+
+      DeCrypter := TDCP_rijndael.Create(nil);
+      DeCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+      DeCrypter.DecryptStream(SS, MS, SS.Size);
+
+      MS.Position := 0;
+      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+      {$ENDIF}
+    finally
+      SS.Free;
+      MS.Free;
+      DeCrypter.Free;
+    end;
 
   // XML Version 2:
-  if Version >= 2 then
+  if (Version >= 2) then
   begin
-    PW := LoadAttrString(Root, rsPassword, '', false);
+    if (Version <= 3) then
+      PW := LoadAttrString(Root, rsCapitalPassword, '', false)
+    else
+      PW := LoadAttrString(Root, rsPassword, '', false);
 
+    Count := 1;
     if (PW <> '') and (Assigned(OnPassword)) then
-      OnPassword(Self, Login, UserPW);
+    repeat
+      Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
+      Inc(Count);
+    until (StrToSHA1Base64(UserPW) = PW) or
+          (Res in [rprStopOnFail, rprCanceled]);
+
+    if (Res = rprCanceled) then
+      Raise EEpiPasswordCanceled.Create('');
 
     if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
       Raise EEpiBadPassword.Create('Incorrect Password');
 
     PassWord := UserPW;
-    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
   end;
 
+  // Version 1-3:
+  //  - from v4 separators are moved to <EpiData> tag
+  if (Version <= 3) then
+  begin
+    LoadNode(Node, Root, rsSettings, true);
+    XMLSettings.LoadFromXml(Node, ReferenceMap);
+  end;
+
+  // Version 4:
+  if LoadNode(Node, Root, rsAdmin, false) then
+    Admin.LoadFromXml(Node, ReferenceMap);
+
+  // Version 1:
   LoadNode(Node, Root, rsStudy, true);
   Study.LoadFromXml(Node, ReferenceMap);
 
-  // TODO : Include in later versions.
-//  LoadNode(Node, Root, rsAdmin, true);
-//  Admin.LoadFromXml(Node);
-
+  // Version 1:
   if LoadNode(Node, Root, rsProjectSettings, false) then
     ProjectSettings.LoadFromXml(Node, ReferenceMap);
 
+  // Version 1:
   if LoadNode(Node, Root, rsValueLabelSets, false) then
     ValueLabelSets.LoadFromXml(Node, ReferenceMap);
 
+  // Version 1:
   if LoadNode(Node, Root, rsDataFiles, false) then
     DataFiles.LoadFromXml(Node, ReferenceMap);
 
-  if Version <= 2 then
-    // Version 2 only supported 1 DataFile and no relations,
-    // hence this must be created to have a correct data container.
-    Relations.NewMasterRelation.Datafile := DataFiles[0]
+  if (Version <= 2) then
+    begin
+      // Version 2 only supported 1 DataFile and no relations,
+      // hence this must be created to have a correct data container.
+      if (DataFiles.Count > 0) then
+        Relations.NewMasterRelation.Datafile := DataFiles[0]
+    end
   else
-    if LoadNode(Node, Root, rsRelations, false) then
-      Relations.LoadFromXml(Node, ReferenceMap);
+    // Version 3+:
+    begin
+      if (Version = 3) then
+        S := rsRelations
+      else  // Name change for Version 4+
+        S := rsDataFileRelations;
+
+      if LoadNode(Node, Root, S, (DataFiles.Count > 0)) then
+        Relations.LoadFromXml(Node, ReferenceMap);
+    end;
+
+  // Version 4:
+  if LoadNode(Node, Root, 'Log', false) then
+    FLogger.LoadFromXml(Node, ReferenceMap);
+
+  FLogger.LoadExLog(FFailedLog);
 
   FLoading := false;
   Modified := false;
   FVersion := EPI_XML_DATAFILE_VERSION;
 end;
 
-function TEpiDocument.SaveToXml(Lvl: integer; IncludeHeader: boolean): string;
-var
-  Content: string;
-begin
-  if IncludeHeader then
-    Result := '<?xml version="1.0" encoding="utf-8"?>' + LineEnding;
-
-  // Inherited saves everything, since the the classes have been registered in Create.
-  Result += inherited SaveToXml(Content, Lvl);
-end;
-
 procedure TEpiDocument.SaveToStream(const St: TStream);
 var
-  S: String;
   FDoc: TXMLDocument;
 begin
-  {$IFDEF EPI_SAVE_STRING}
-  S := SaveToXml(0);
-  St.Write(S[1], Length(S));
-  {$ELSE}
   FDoc := SaveToXmlDocument;
   WriteXMLFile(FDoc, St);
   FDoc.Free;
-  {$ENDIF}
 end;
 
 procedure TEpiDocument.SaveToFile(const AFileName: string);
@@ -394,20 +504,80 @@ begin
 end;
 
 function TEpiDocument.SaveToXmlDocument: TXMLDocument;
+var
+  Elem: TDOMNode;
+  RootDoc: TDOMNode;
+  EnCrypter: TDCP_rijndael;
+  MSIn: TMemoryStream;
+  MSOut: TMemoryStream;
+  Node: TDOMNode;
+  TmpNode: TDOMNode;
+  S: String;
+  CryptElem: TDOMElement;
+  L: LongInt;
 begin
   result := TXMLDocument.Create;
   result.AppendChild(SaveToDom(Result));
+
+  {$IFNDEF EPI_ADMIN_NOCRYPT_SAVE}
+  if (Admin.Users.Count > 0) then
+  begin
+    RootDoc := Result.FirstChild;
+
+    MSIn  := TMemoryStream.Create;
+    MSOut := TMemoryStream.Create;
+
+    for Elem in RootDoc do
+    begin
+      if (Elem.NodeName = rsCrypto) then continue;
+      WriteXML(Elem, MSIn);
+    end;
+    MSIn.Position := 0;
+
+    Node := RootDoc.FirstChild;
+    while Assigned(Node) do
+    begin
+      TmpNode := Node;
+      Node := Node.NextSibling;
+
+      if (TmpNode.NodeName = rsCrypto) then continue;
+      RootDoc.RemoveChild(TmpNode).Free;
+    end;
+
+    try
+      EnCrypter := TDCP_rijndael.Create(nil);
+      EnCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+      EnCrypter.EncryptStream(MSIn, MSOut, MSIn.Size);
+
+      SetLength(S, (4 * MSOut.Size) div 3 + 10);
+      L := Base64Encode(MSOut.Memory, @S[1], MSOut.Size);
+      SetLength(S, L);
+
+      CryptElem := Result.CreateElement(rsEncrypted);
+      CryptElem.AppendChild(Result.CreateTextNode(S));
+      RootDoc.AppendChild(CryptElem);
+    finally
+      S := '';
+      MSIn.Free;
+      MSOut.Free;
+      EnCrypter.Free;
+    end;
+  end;
+  {$ENDIF}
 end;
 
 function TEpiDocument.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
 begin
   Result := inherited SaveToDom(RootDoc);
 
-  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/2.0');
+  SaveDomAttr(Result, 'xmlns', 'http://www.epidata.dk/XML/2.1');
   SaveDomAttr(Result, 'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/2.0 http://www.epidata.dk/XML/2.0/epx.xsd');
+  SaveDomAttr(Result, 'xsi:schemaLocation', 'http://www.epidata.dk/XML/2.1 http://www.epidata.dk/XML/2.1/epx.xsd');
   SaveDomAttr(Result, rsVersionAttr, Version);
   SaveDomAttr(Result, 'xml:lang', DefaultLang);
+  SaveDomAttr(Result, rsDateSep, XMLSettings.DateSeparator);
+  SaveDomAttr(Result, rsDecSep,  XMLSettings.DecimalSeparator);
+  SaveDomAttr(Result, rsTimeSep, XMLSettings.TimeSeparator);
 
   {$IFNDEF RELEASE}
   SaveDomAttr(Result, rsBranchAttr, EPI_XML_BRANCH_STRING);
@@ -418,74 +588,10 @@ begin
     SaveDomAttr(Result, rsPassword, StrToSHA1Base64(PassWord));
 
   SaveDomAttr(Result, rsCycle, CycleNo);
-end;
 
-{ TEpiRelationListEx }
-
-function TEpiRelationListEx.GetOrderedDataFiles: TEpiDataFiles;
-
-  procedure BuildOrderedDataFiles(ARelation: TEpiMasterRelation);
-  var
-    i: integer;
-  begin
-    Result.AddItem(ARelation.Datafile);
-
-    for i := 0 to ARelation.DetailRelations.Count - 1 do
-      BuildOrderedDataFiles(ARelation.DetailRelation[i]);
-  end;
-
-var
-  i: Integer;
-begin
-  Result := TEpiDataFiles.Create(nil);
-  Result.ItemOwner := false;
-
-  for i := 0 to Count - 1 do
-    BuildOrderedDataFiles(MasterRelation[i]);
-end;
-
-procedure TEpiRelationListEx.OrderedWalk(
-  const CallBackMethod: TEpiRelationListExCallBack; Data: Pointer);
-
-var
-  Depth: Cardinal;
-  aContinue: Boolean;
-  i: Integer;
-
-  procedure RecurseMasterRelations(ARelation: TEpiMasterRelation; Idx: Cardinal);
-  var
-    i: Integer;
-  begin
-    CallBackMethod(ARelation, Depth, Idx, aContinue, Data);
-    if not aContinue then exit;
-
-    Inc(Depth);
-    for i := 0 to ARelation.DetailRelations.Count - 1 do
-    begin
-      RecurseMasterRelations(ARelation.DetailRelations[i], i);
-      if not aContinue then exit;
-    end;
-    Dec(Depth);
-
-  end;
-
-begin
-  Depth := 0;
-  aContinue := true;
-
-  for i := 0 to Count - 1 do
-    RecurseMasterRelations(MasterRelation[i], i);
-end;
-
-function TEpiRelationListEx.IsMultiLeveled: boolean;
-var
-  i: Integer;
-begin
-  for i := 0 to Count - 1 do
-    if MasterRelation[i].DetailRelations.Count > 0 then
-      Exit(true);
-
-  Result := false;
+  // Version 4:
+  if Admin.Users.Count > 0 then
+    Result.InsertBefore(Admin.SaveCrypto(RootDoc), Result.FirstChild);
 end;
 
 end.

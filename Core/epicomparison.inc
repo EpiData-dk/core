@@ -104,25 +104,6 @@ begin
 
   CompareType := TEpiComparisonType(LoadAttrEnum(Root, rsType, TypeInfo(TEpiComparisonType)));
   ReferenceMap.AddFixupReference(Self, TEpiComparison, 0, LoadAttrString(Root, rsCompareTo));
-
-{  CompareId := LoadAttrString(Root, rsCompareTo);
-  if Assigned(OwnerField) then
-    CompareField := OwnerField.DataFile.Fields.FieldByName[CompareId];
-  if not Assigned(CompareField) then
-    LinkMap.AddLink(ltCompare, Self, CompareId);          }
-
-end;
-
-function TEpiComparison.SaveToXml(Content: String; Lvl: integer): string;
-begin
-  Result := inherited SaveToXml(Content, Lvl);
-end;
-
-function TEpiComparison.SaveAttributesToXml: string;
-begin
-  Result := inherited SaveAttributesToXml +
-    SaveAttr(rsCompareTo, CompareField.Name) +
-    SaveAttrEnum(rsType, Integer(CompareType), TypeInfo(TEpiComparisonType));
 end;
 
 procedure TEpiComparison.Assign(const AEpiCustomBase: TEpiCustomBase);

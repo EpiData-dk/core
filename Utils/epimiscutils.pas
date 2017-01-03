@@ -10,21 +10,22 @@ uses
 const
   EpiTypeCastArray: array[TEpiFieldType, TEpiFieldType] of boolean =
       // Cast To Types
-//                ftBoolean, ftInteger, ftAutoInc, ftFloat, ftDMYDate, ftMDYDate, ftYMDDate, ftDMYToday, ftMDYToday, ftYMDToday, ftTime, ftTimeNow, ftString, ftUpperString
-{C} {ftBoolean} ((true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{a} {ftInteger}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{s} {ftAutoInc}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{t} {ftFloat}    (true,      true,      false,     true,    false,     false,     false,     false,      false,      false,      true,   false,     true,     true),
-    {ftDMYDate}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{F} {ftMDYDate}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{r} {ftYMDDate}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{o} {ftDMYToday} (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-{m} {ftMDYToday} (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-    {ftYMDToday} (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true),
-    {ftTime}     (true,      true,      false,     true,    false,     false,     false,     false,      false,      false,      true,   false,     true,     true),
-    {ftTimeNow}  (true,      true,      false,     true,    false,     false,     false,     false,      false,      false,      true,   false,     true,     true),
-    {ftString}   (true,      false,     false,     false,   false,     false,     false,     false,      false,      false,      false,  false,     true,     true),
-  {ftUpperString}(true,      false,     false,     false,   false,     false,     false,     false,      false,      false,      false,  false,     true,     true));
+//                ftBoolean, ftInteger, ftAutoInc, ftFloat, ftDMYDate, ftMDYDate, ftYMDDate, ftDMYToday, ftMDYToday, ftYMDToday, ftTime, ftTimeNow, ftString, ftUpperString ftMemo
+{C} {ftBoolean} ((true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{a} {ftInteger}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{s} {ftAutoInc}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{t} {ftFloat}    (true,      true,      false,     true,    false,     false,     false,     false,      false,      false,      true,   false,     true,     true,         true),
+    {ftDMYDate}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{F} {ftMDYDate}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{r} {ftYMDDate}  (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{o} {ftDMYToday} (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+{m} {ftMDYToday} (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+    {ftYMDToday} (true,      true,      false,     true,    true,      true,      true,      false,      false,      false,      true,   false,     true,     true,         true),
+    {ftTime}     (true,      true,      false,     true,    false,     false,     false,     false,      false,      false,      true,   false,     true,     true,         true),
+    {ftTimeNow}  (true,      true,      false,     true,    false,     false,     false,     false,      false,      false,      true,   false,     true,     true,         true),
+    {ftString}   (true,      false,     false,     false,   false,     false,     false,     false,      false,      false,      false,  false,     true,     true,         true),
+  {ftUpperString}(true,      false,     false,     false,   false,     false,     false,     false,      false,      false,      false,  false,     true,     true,         true),
+    {ftMemo}     (true,      false,     false,     false,   false,     false,     false,     false,      false,      false,      false,  false,     true,     true,         true));
 
 
   const EpiTypeNames: array[TEpiFieldType] of string =
@@ -33,7 +34,7 @@ const
      'Date (DMY)', 'Date (MDY)', 'Date (YMD)',
      'Date (DMY - Auto)', 'Date (MDY - Auto)', 'Date (YMD - Auto)',
      'Time', 'Time (Auto)',
-     'String', 'Uppercase'
+     'String', 'Uppercase', 'Memo'
     );
 
   const EpiTypeNamesShort: array[TEpiFieldType] of string =
@@ -42,11 +43,11 @@ const
      'DMY', 'MDY', 'YMD',
      'DMYa', 'MDYa', 'YMDa',
      'T', 'Ta',
-     'S', 'U'
+     'S', 'U', 'M'
     );
 
 type
-  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfCollection, dfAll);
+  TEpiDialogFilter = (dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfPGM, dfCollection, dfAll);
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
@@ -74,6 +75,9 @@ const
   function PostInc(var Value: Integer; Const N: Integer = 1): Integer;
   function PreInc(var Value: Integer; Const N: Integer = 1): Integer;
 
+  function GetHostNameWrapper: UTF8String;
+  function GetUserNameWrapper: UTF8String;
+
   {$IFDEF MSWINDOWS}
   function AssociateFiles(Const ApplicationName, ApplicationDescription,
     ExePath: String): Boolean;
@@ -85,7 +89,13 @@ const
 implementation
 
 uses
-  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation,  LazUTF8;
+  {$IFDEF Windows}
+  windows,
+  {$ENDIF}
+  {$IFDEF unix}
+  Unix,
+  {$ENDIF}
+  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation, LazUTF8;
 
 type
   TEpiDialogFilterPair = record
@@ -155,6 +165,11 @@ const
     FilterExt:  '*.xml';
   );
 
+  EpiDialogFilterPGM: TEpiDialogFilterPair = (
+    FilterName: 'EpiData Analysis Progran File (*.pgm)';
+    FilterExt:  '*.pgm';
+  );
+
   EpiDialogFilterAll: TEpiDialogFilterPair = (
     FilterName: 'Show All (*.*)';
     FilterExt:  '*.*';
@@ -172,6 +187,7 @@ const
     @EpiDialogFilterSPSS,
     @EpiDialogFilterSAS,
     @EpiDialogFilterDDI,
+    @EpiDialogFilterPGM,
     @EpiDialogFilterCollection,
     @EpiDialogFilterAll
     );
@@ -302,7 +318,7 @@ const
   {$IFDEF MSWINDOWS}
   ErrorChars = ['\', '/', ':', '*', '?', '"', '<', '>', '|'];
   {$ENDIF}
-  {$IFDEF UNIX}
+  {$IFDEF LINUX}
   ErrorChars = ['/'];
   {$ENDIF}
   {$IFDEF DARWIN}
@@ -325,6 +341,46 @@ function PreInc(var Value: Integer; const N: Integer): Integer;
 begin
   Inc(Value, N);
   result := Value;
+end;
+
+function GetHostNameWrapper: UTF8String;
+{$IFDEF WINDOWS}
+var
+  Buffer: Array[0..127] of WideChar;
+  Sz: DWORD;
+{$ENDIF}
+begin
+  Result := '';
+
+  {$IFDEF Windows}
+  Sz := SizeOf(Buffer);
+  GetComputerNameW(Buffer, Sz);
+  Result := WideCharToString(Buffer);
+  {$ENDIF}
+  {$IFDEF unix}
+  Result := GetHostName;
+  {$ENDIF}
+end;
+
+function GetUserNameWrapper: UTF8String;
+{$IFDEF WINDOWS}
+var
+  Buffer: Array[0..127] of WideChar;
+  Sz: DWORD;
+{$ENDIF}
+begin
+  Result := '';
+
+  {$IFDEF MSWINDOWS}
+  Sz := SizeOf(Buffer);
+  GetUserNameW(Buffer, Sz);
+  Result := WideCharToString(Buffer);
+  {$ENDIF}
+  {$IFDEF UNIX}
+  Result := GetEnvironmentVariableUTF8('USER');
+  {$ENDIF}
+  if Result = '' then
+    Result := 'Unknown';
 end;
 
 {$IFDEF MSWINDOWS}

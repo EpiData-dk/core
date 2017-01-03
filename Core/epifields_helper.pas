@@ -21,6 +21,8 @@ type
   public
     // Returns string based on enum (see description above). If no valuelabel is present, return value.
     function GetValueLabel(Const Index: Integer; Gvt: TEpiGetValueLabelType = gvtLabel): String;
+    function AcceptsValuelabelSet(VL: TEpiValueLabelSet): boolean; overload;
+    function AcceptsValuelabelSet(VL: TEpiValueLabelSet; ALength, ADecimals: Integer): boolean; overload;
     function MaxByteLength: Cardinal;
     function MaxUTF8Length: Cardinal;
   end;
@@ -97,6 +99,55 @@ begin
       Result := AsString[Index] + ' ' + VL.TheLabel.Text;
     gvtLabelValue:
       Result := VL.TheLabel.Text + ' ' + AsString[Index];
+  end;
+end;
+
+function TEpiFieldHelper.AcceptsValuelabelSet(VL: TEpiValueLabelSet): boolean;
+begin
+  AcceptsValuelabelSet(VL, Length, Decimals);
+end;
+
+function TEpiFieldHelper.AcceptsValuelabelSet(VL: TEpiValueLabelSet; ALength,
+  ADecimals: Integer): boolean;
+var
+  S: String;
+  l: SizeInt;
+  DecL, IntL: Integer;
+  V: TEpiCustomValueLabel;
+begin
+  case VL.LabelType of
+    ftInteger:
+      begin
+        Result := (FieldType in [ftInteger, ftFloat]) and
+                  (VL.MaxValueLength <= Length)
+      end;
+
+    ftFloat:
+      begin
+        Result := (FieldType = ftFloat);
+
+        if Result then
+        begin
+          IntL := 0;
+          DecL := 0;
+
+          for V in VL do
+          begin
+            S := V.ValueAsString;
+            l := Pos(DecimalSeparator, S);
+            if l = 0 then
+              IntL := System.Length(S)
+            else
+              IntL := Max(IntL, l - 1);
+            DecL := Max(DecL, System.Length(S) - (IntL+1));
+          end;
+        end;
+
+        Result := Result and
+          (IntL <= Length) and
+          (DecL <= Decimals);
+      end;
+    ftString:  Result := (FieldType in [ftString, ftUpperString]);
   end;
 end;
 
