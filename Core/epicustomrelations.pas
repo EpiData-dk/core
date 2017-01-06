@@ -125,9 +125,10 @@ begin
 
   for Item in Self do
   begin
-    Result := Result and
-      (Item.Name <> NewName) and
-      (Item.RelationList.RecursiveValidateRename(NewName));
+    Result := Result and (Item.Name <> NewName);
+
+    if (Self.GetRootList = Item.RelationList.GetRootList) then
+      Result := Result and (Item.RelationList.RecursiveValidateRename(NewName));
 
     if (not Result) then
       Break;
