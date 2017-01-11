@@ -52,7 +52,7 @@ const
       'Manage &Groups',
       'Manage &Users',
       'Reset &Password',
-      '&Export Data',
+      'Import / &Export Data',
       'E&xtended Data',
       '&Reports'
     );
