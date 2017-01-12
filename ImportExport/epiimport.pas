@@ -107,6 +107,9 @@ uses
 var
   BigEndian: boolean = false;
 
+const
+  MemoImportLength = 20;
+
 { TEpiImport }
 
 function TEpiImport.ReadInteger(const St: TStream; Width: Byte): Integer;
@@ -407,7 +410,7 @@ begin
     end;
 
     SetLength(FieldTypeList, FieldCount);
-    FillByte(FieldTypeList[0], FieldCount, Byte(ftString));
+    FillByte(FieldTypeList[0], FieldCount, Byte(ftMemo));
     for i := 0 to FieldCount - 1 do
     begin
       for Ft in PossibleTypes[i] do
@@ -495,7 +498,7 @@ begin
       case TmpField.FieldType of
         ftInteger:
           ok := IsInteger(TmpStr, IntVal);
-        ftString, ftUpperString:
+        ftString, ftUpperString, ftMemo:
           ok := True;
         ftBoolean:
           Ok := IsBoolean(TmpStr, BoolVal);
@@ -541,7 +544,7 @@ var
   StringVal: EpiString;
 begin
   // Only string is possible, we can do nothing to change it.
-  if PossibleTypes = [ftString] then
+  if PossibleTypes = [ftMemo] then
     Exit;
 
   // TIME
@@ -575,12 +578,18 @@ begin
   then
     Exclude(PossibleTypes, ftBoolean);
 
+  // UPPERCASE
   if (ftUpperString in PossibleTypes) and
      (not IsUppercase(Value, StringVal))
   then
     Exclude(PossibleTypes, ftUpperString);
 
-  // No check for ftString... everything can be read as string.
+  if (ftString in PossibleTypes) and
+    (UTF8Length(Value) > MemoImportLength)
+  then
+    Exclude(PossibleTypes, ftString);
+
+  // No check for ftMemo... everything can be read into a memo
 end;
 
 function TEpiImport.IsInteger(const S: String; out Val: EpiInteger): boolean;
@@ -697,7 +706,9 @@ begin
   //  2: Int
   //  3: Float
   //  3: Date/Time
-  //  4: String
+  //  4: Uppercase
+  //  5: String
+  //  6: Memo
   //
   // This order differes from CompareFieldTypeOrder, bacause
   // when importing data from string file, the text representation
@@ -727,8 +738,20 @@ begin
   then
     Exit(Ft2);
 
-  CompareSet := CompareSet + StringFieldTypes;
-  if (Ft2 in StringFieldTypes) and
+  CompareSet := CompareSet + [ftUpperString];
+  if (Ft2 = ftUpperString) and
+     (not (Ft1 in CompareSet))
+  then
+    Exit(Ft2);
+
+  CompareSet := CompareSet + [ftString];
+  if (Ft2 = ftString) and
+     (not (Ft1 in CompareSet))
+  then
+    Exit(Ft2);
+
+  CompareSet := CompareSet + [ftMemo];
+  if (Ft2 = ftMemo) and
      (not (Ft1 in CompareSet))
   then
     Exit(Ft2);
@@ -1987,7 +2010,6 @@ begin
       Exit;
 
     FieldCount := 0;
-    skipfirstline := true;
 
     if not ImportData then
       Exit(true);

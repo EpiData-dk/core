@@ -163,9 +163,17 @@ begin
   DoTableCell(1, 2, DateTimeToStr(LastEdit));
   DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
   DoTableCell(1, 4, IntToStr(Document.CycleNo), tcaLeftAdjust);
-  S :=
-    'Backup on shutdown: ' + BoolToStr(Document.ProjectSettings.BackupOnShutdown, 'yes', 'no') + LineEnding +
-    'Encrypted data: '     + BoolToStr(Document.PassWord <> '',                   'yes', 'no');
+
+  S := 'Backup on shutdown: ' + BoolToStr(Document.ProjectSettings.BackupOnShutdown, 'yes', 'no') + LineEnding +
+       'Project Encryption: ';
+
+  if (Assigned(Document.Admin.Admins)) then
+    S += 'extended access'
+  else if (Document.PassWord <> '') then
+    S += 'simple password (data only)'
+  else
+    S += 'none';
+
   DoTableFooter(Trim(S));
 
   DoLineText('');
