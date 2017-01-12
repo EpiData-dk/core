@@ -110,7 +110,8 @@ type
     eaceAdminLoginSuccessfull,       // Data: TEpiUser = the authenticated user.
     eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
     eaceAdminIncorrectPassword,      // Data: string   = the incorrect login name
-    eaceAdminIncorrectNewPassword    // Data: TEpiUser = the authenticated user.
+    eaceAdminIncorrectNewPassword,   // Data: TEpiUser = the authenticated user.
+    eaceAdminBlockedLogin            // No data
   );
 
   TEpiRequestPasswordType = (
@@ -489,7 +490,10 @@ begin
         // Login did not exists - send an event abount it.
         DoChange(eegAdmin, Word(eaceAdminIncorrectUserName), @Login);
         if TEpiFailedLogger(FailLogger).TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
-          raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+          begin
+            DoChange(eegAdmin, word(eaceAdminBlockedLogin), nil);
+            raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+          end;
         Continue;
       end;
 
@@ -500,7 +504,10 @@ begin
       DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
 
       if TEpiFailedLogger(FailLogger).TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
-        raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+        begin
+          DoChange(eegAdmin, word(eaceAdminBlockedLogin), nil);
+          raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+        end;
     end;
   until (Result = prSuccess) or (Res = rprStopOnFail);
 

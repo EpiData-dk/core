@@ -32,6 +32,22 @@ type
 const
   EpiLogEntryDataFileSet = [ltSearch, ltNewRecord, ltEditRecord, ltViewRecord, ltPack, ltAppend];
 
+  EpiLogEntryText: array[TEpiLogEntry] of string =
+    (
+      'None',
+      'Successfull Login',
+      'Failed Login',
+      'Search',
+      'New Record',
+      'Edit Record',
+      'View Record',
+      'Pack',
+      'Append',
+      'Export',
+      'Closed Project',
+      'New Password'
+    );
+
 type
 
   TEpiFailedLogger = class;
@@ -172,7 +188,7 @@ type
     FTime:           TEpiField;       // Time of log entry
     FCycle:          TEpiField;       // Cycly no fo the log entry
     FAesKey:         TEpiField;       // The aes key for the line
-    FLoginFailType:  TEpiField;       // Numbers for type of failed login: 0 = username, 1 = password, 2 = read from XML
+    FLoginFailType:  TEpiField;       // Numbers for type of failed login: 0 = username, 1 = password, 2 = read from XML, 3 = blocked login
     FEncryptedTxt:   TEpiField;       // If read from XML, store the encrypted TXT here.
     FHostName:       TEpiField;       //  -   "    -     , store the hostname here.
   private
@@ -892,11 +908,12 @@ begin
           SaveDomAttr(Elem, 'hostname', FLogContent.AsString[i]);
         ltFailedLogin:
           begin
-            if FDataContent.AsInteger[I] = 0
-              then
-                SaveDomAttr(Elem, 'type', 'password')
-              else
-                SaveDomAttr(Elem, 'type', 'login');
+            case FDataContent.AsInteger[I] of
+              0: SaveDomAttr(Elem, 'type', 'password');
+              1: SaveDomAttr(Elem, 'type', 'login');
+              2: ; // used for external log only
+              3: SaveDomAttr(Elem, 'type', 'blocked');
+            end;
 
             SaveDomAttr(Elem, 'hostname', FLogContent.AsString[I]);
           end;
@@ -960,6 +977,7 @@ begin
             case LoadAttrString(Node, 'type') of
               'password': FDataContent.AsInteger[Idx] := 0;
               'login':    FDataContent.AsInteger[Idx] := 1;
+              'blocked':  FDataContent.AsInteger[Idx] := 3;
             else
               //
             end;
@@ -1499,6 +1517,23 @@ begin
         FLoginFailType.AsInteger[Idx] := 0
       else
         FLoginFailType.AsInteger[Idx] := 1;
+      FEncryptedTxt.AsString[Idx] := '';
+      FHostName.AsString[Idx]     := GetHostNameWrapper;
+    end;
+
+
+  if TEpiAdminChangeEventType(EventType) in
+    [eaceAdminBlockedLogin]
+  then
+    begin
+      FLogDataFile.NewRecords();
+      Idx := FLogDataFile.Size - 1;
+
+      FUserNames.AsString[Idx] := '';
+      FTime.AsDateTime[Idx]    := Now;
+      FCycle.AsInteger[Idx]    := Doc(Self).CycleNo;
+      FAesKey.AsString[Idx]    := '';
+      FLoginFailType.AsInteger[Idx] := 3;
       FEncryptedTxt.AsString[Idx] := '';
       FHostName.AsString[Idx]     := GetHostNameWrapper;
     end;
