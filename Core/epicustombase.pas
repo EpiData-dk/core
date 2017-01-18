@@ -67,6 +67,9 @@ type
     ecceText,
     ecceReferenceDestroyed,
     ecceListMove,
+
+    // New in XML v5. A notification is sent from TEpiCustomItem with data in a PEpiIdCaseErrorRecord,
+    // requesting a new name for the CustomItem.
     ecceIdCaseOnLoad
   );
 
@@ -88,6 +91,7 @@ type
     CurrentName: EpiString;
     NewName:     EpiString;
   end;
+  PEpiIdCaseErrorRecord = ^TEpiIdCaseErrorRecord;
 
   TEpiCoreException = class (Exception);
 
@@ -1574,7 +1578,9 @@ var
   Attr: TDOMAttr;
   RO: TEpiCustomBase;
   RD: TEpiDocument;
-  S: EpiString;
+  S, OrgName: EpiString;
+  Data: PEpiIdCaseErrorRecord;
+  i: Integer;
 begin
   // Since XML v5 all ID's are case insensitive.
   RO := RootOwner;
@@ -1585,16 +1591,35 @@ begin
   if LoadAttr(Attr, Root, rsId, false) then
     begin
       S := LoadAttrString(Root, rsId);
+      OrgName := S;
 
       if (RD.Version < 5) then
+      begin
+        // In XML v4 and before all ID's were case sensitive, hence we need to take
+        // care of it.
+        Data := New(PEpiIdCaseErrorRecord);
+
+        i := 0;
         while true do
         begin
           if (ValidateRename(S, false)) then
             break;
 
-          DoChange();
-          RaiseErrorMsg(Root, 'Overlapping names: ' + S);
+          if (i = 3) then
+            RaiseErrorMsg(Root, 'Renaming of "' + OrgName + '" not done. Too many retries!');
+
+          Data^.CurrentName := S;
+          Data^.NewName     := '';
+
+          DoChange(eegCustomBase, Word(ecceIdCaseOnLoad), Data);
+
+          if (Data^.NewName <> '') then
+            S := Data^.NewName;
+
+          Inc(i);
         end;
+        Dispose(Data);
+      end;
       FName := S;
     end
   else if WriteNameToXml then
