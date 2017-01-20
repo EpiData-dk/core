@@ -18,6 +18,7 @@ const
 type
   EEpiBadVersion  = class(Exception);
   EEpiExternalFileNoFound = class(Exception);
+  EEpiCaseLoadError = class(Exception);
 
   TEpiCustomBase = class;
   TEpiCustomBaseClass = class of TEpiCustomBase;
@@ -87,9 +88,15 @@ type
     ebsLoading         // Set on loading from XML file.
   );
 
+  TEpiIdCaseErrorReturnState = (
+     crsRename,        // The reciever ask for a renaming
+     crsAbort          // The reciever aborts
+    );
+
   TEpiIdCaseErrorRecord = record
     CurrentName: EpiString;
     NewName:     EpiString;
+    ReturnState: TEpiIdCaseErrorReturnState;
   end;
   PEpiIdCaseErrorRecord = ^TEpiIdCaseErrorRecord;
 
@@ -1530,8 +1537,14 @@ var
 begin
   if FName = AValue then exit;
 
-  // Validate identifier
-  if not DoValidateRename(AValue) then Exit;
+     // XML v5: Identifiers may change case at will, since the CORE is now case in-sensitive
+  if (UTF8CompareText(FName, AValue) <> 0) and
+     // Validate identifier
+     (not DoValidateRename(AValue))
+  then
+    Exit;
+
+//  if not DoValidateRename(AValue) then Exit;
 
   Val := FName;
   FName := AValue;
@@ -1598,6 +1611,7 @@ begin
         // In XML v4 and before all ID's were case sensitive, hence we need to take
         // care of it.
         Data := New(PEpiIdCaseErrorRecord);
+        Data^.ReturnState := crsAbort;
 
         i := 0;
         while true do
@@ -1612,6 +1626,12 @@ begin
           Data^.NewName     := '';
 
           DoChange(eegCustomBase, Word(ecceIdCaseOnLoad), Data);
+
+          if (Data^.ReturnState = crsAbort) then
+            begin
+              Dispose(Data);
+              raise EEpiCaseLoadError.Create('Aborted load due to naming conflict');
+            end;
 
           if (Data^.NewName <> '') then
             S := Data^.NewName;
