@@ -90,7 +90,8 @@ type
 
   TEpiIdCaseErrorReturnState = (
      crsRename,        // The reciever ask for a renaming
-     crsAbort          // The reciever aborts
+     crsAbort,         // The reciever aborts (no user interaction)
+     crsCancel         // The reciever cancel (active user selection)
     );
 
   TEpiIdCaseErrorRecord = record
@@ -1631,6 +1632,12 @@ begin
             begin
               Dispose(Data);
               raise EEpiCaseLoadError.Create('Aborted load due to naming conflict');
+            end;
+
+          if (Data^.ReturnState = crsCancel) then
+            begin
+              Dispose(Data);
+              raise EEpiCaseLoadError.Create('Aborted load: user canceled');
             end;
 
           if (Data^.NewName <> '') then
