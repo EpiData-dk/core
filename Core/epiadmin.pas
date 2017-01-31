@@ -587,11 +587,11 @@ begin
 
   FUsers := TEpiUsers.Create(self);
   FUsers.ItemOwner := true;
-  FUsers.Name := 'TEpiAdmin.Users';
+  FUsers.Name := 'TEpiAdmin_Users';
 
   FGroups := TEpiGroups.Create(self);
   FGroups.ItemOwner := true;
-  FGroups.Name := 'TEpiAdmin.Groups';
+  FGroups.Name := 'TEpiAdmin_Groups';
 
   FAdminRelations := TEpiGroupRelationList.Create(Self);
   FAdminRelations.ItemOwner := true;

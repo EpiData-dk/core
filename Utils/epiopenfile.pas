@@ -740,6 +740,16 @@ begin
           LoadSuccess := false;
         end;
 
+      on E: EEpiCaseLoadError do
+        begin
+          Msg := 'Could not load the project.' + LineEnding +
+                 LineEnding +
+                 '2 or more items (variables, headings, section, dataforms, valuelabels) have conflicting names!' + LineEnding +
+                 LineEnding +
+                 'Open this project in EpiData Manager to rename the conflicting items.';
+          LoadSuccess := false;
+        end;
+
       on E: Exception do
         begin
           Msg := 'Unable to open the file: ' + Fn + LineEnding +

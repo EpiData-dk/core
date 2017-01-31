@@ -10,14 +10,15 @@ uses
   contnrs, LazMethodList;
 
 const
-  EPI_XML_DATAFILE_VERSION = 4;
+  EPI_XML_DATAFILE_VERSION = 5;
   {$IFNDEF RELEASE}
-  EPI_XML_BRANCH_STRING = 'TRUNK';
+  EPI_XML_BRANCH_STRING = 'CASENOCASE';
   {$ENDIF}
 
 type
   EEpiBadVersion  = class(Exception);
   EEpiExternalFileNoFound = class(Exception);
+  EEpiCaseLoadError = class(Exception);
 
   TEpiCustomBase = class;
   TEpiCustomBaseClass = class of TEpiCustomBase;
@@ -66,7 +67,11 @@ type
     ecceSetLeft,
     ecceText,
     ecceReferenceDestroyed,
-    ecceListMove
+    ecceListMove,
+
+    // New in XML v5. A notification is sent from TEpiCustomItem with data in a PEpiIdCaseErrorRecord,
+    // requesting a new name for the CustomItem.
+    ecceIdCaseOnLoad
   );
 
   TEpiChangeEvent = procedure(
@@ -82,6 +87,19 @@ type
     ebsUpdating,       // UNKNOWN???
     ebsLoading         // Set on loading from XML file.
   );
+
+  TEpiIdCaseErrorReturnState = (
+     crsRename,        // The reciever ask for a renaming
+     crsAbort,         // The reciever aborts (no user interaction)
+     crsCancel         // The reciever cancel (active user selection)
+    );
+
+  TEpiIdCaseErrorRecord = record
+    CurrentName: EpiString;
+    NewName:     EpiString;
+    ReturnState: TEpiIdCaseErrorReturnState;
+  end;
+  PEpiIdCaseErrorRecord = ^TEpiIdCaseErrorRecord;
 
   TEpiCoreException = class (Exception);
 
@@ -534,7 +552,7 @@ implementation
 
 uses
   StrUtils, DCPsha256, laz2_XMLRead, epistringutils, episettings, epidocument,
-  epidatafiles;
+  epidatafiles, LazUTF8;
 
 var
   BackupDefaultFormatSettings: TFormatSettings;
@@ -1520,8 +1538,14 @@ var
 begin
   if FName = AValue then exit;
 
-  // Validate identifier
-  if not DoValidateRename(AValue) then Exit;
+     // XML v5: Identifiers may change case at will, since the CORE is now case in-sensitive
+  if (UTF8CompareText(FName, AValue) <> 0) and
+     // Validate identifier
+     (not DoValidateRename(AValue))
+  then
+    Exit;
+
+//  if not DoValidateRename(AValue) then Exit;
 
   Val := FName;
   FName := AValue;
@@ -1566,9 +1590,65 @@ procedure TEpiCustomItem.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
 var
   Attr: TDOMAttr;
+  RO: TEpiCustomBase;
+  RD: TEpiDocument;
+  S, OrgName: EpiString;
+  Data: PEpiIdCaseErrorRecord;
+  i: Integer;
 begin
+  // Since XML v5 all ID's are case insensitive.
+  RO := RootOwner;
+  if (not (RO is TEpiDocument)) then
+    RaiseErrorMsg(Root, 'RootOwner is not a document. Class = ' + Self.ClassName);
+
+  RD := TEpiDocument(RO);
   if LoadAttr(Attr, Root, rsId, false) then
-    FName := LoadAttrString(Root, rsId)
+    begin
+      S := LoadAttrString(Root, rsId);
+      OrgName := S;
+
+      if (RD.Version < 5) then
+      begin
+        // In XML v4 and before all ID's were case sensitive, hence we need to take
+        // care of it.
+        Data := New(PEpiIdCaseErrorRecord);
+        Data^.ReturnState := crsAbort;
+
+        i := 0;
+        while true do
+        begin
+          if (ValidateRename(S, false)) then
+            break;
+
+          if (i = 3) then
+            RaiseErrorMsg(Root, 'Renaming of "' + OrgName + '" not done. Too many retries!');
+
+          Data^.CurrentName := S;
+          Data^.NewName     := '';
+
+          DoChange(eegCustomBase, Word(ecceIdCaseOnLoad), Data);
+
+          if (Data^.ReturnState = crsAbort) then
+            begin
+              Dispose(Data);
+              raise EEpiCaseLoadError.Create('Aborted load due to naming conflict');
+            end;
+
+          if (Data^.ReturnState = crsCancel) then
+            begin
+              Dispose(Data);
+              raise EEpiCaseLoadError.Create('Aborted load: user canceled');
+            end;
+
+          if (Data^.NewName <> '') then
+            S := Data^.NewName;
+
+          Inc(i);
+        end;
+        Dispose(Data);
+      end;
+      FName := S;
+    end
   else if WriteNameToXml then
     // This class was supposed to write an ID -> hence it also expects one! Error!
     RaiseErrorAttr(Root, rsId);
@@ -1644,8 +1724,13 @@ end;
 
 function TEpiCustomItem.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
+var
+  RO: TEpiCustomBase;
+  Cmp: PtrInt;
+  Ver: Integer;
 begin
-  if NewName = Name then exit(true);
+  Cmp := UTF8CompareText(NewName, Name);
+  if (Cmp = 0) then exit(true);
   result := DoValidateRename(NewName);
 end;
 
@@ -1969,7 +2054,7 @@ begin
   Result := nil;
   for i := 0 to Count - 1 do
   begin
-    if TEpiCustomItem(FList[i]).Name = AName then
+    if UTF8CompareText(TEpiCustomItem(FList[i]).Name, AName) = 0 then
     begin
       Result := TEpiCustomItem(FList[i]);
       Exit;
