@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, epidatafiles, epidatafilestypes, epicustombase, epitools_search,
-  Laz2_DOM, DCPrijndael;
+  Laz2_DOM, DCPrijndael, episecuritylog;
 
 resourcestring
   rsTooManyFailedAttemps = 'Too many failed login attemps';
@@ -124,12 +124,13 @@ type
     procedure StoreDataEvent(Field: TEpiField; Data: PEpiFieldDataEventRecord);
 
   private
+    FSecurityLog: TEpiSecurityDatafile;
     FLogDatafile: TEpiLog;
     procedure DocumentHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TEpiCustomBase; SecurityLog: TEpiSecurityDatafile); virtual;
 
   { Misc. }
   private
@@ -496,13 +497,15 @@ begin
   end;
 end;
 
-constructor TEpiLogger.Create(AOwner: TEpiCustomBase);
+constructor TEpiLogger.Create(AOwner: TEpiCustomBase;
+  SecurityLog: TEpiSecurityDatafile);
 var
   RO: TEpiCustomBase;
 begin
   inherited Create(AOwner);
   FCommitState := csNone;
   FLogDatafile := TEpiLog.Create(nil);
+  FSecurityLog := SecurityLog;
 
   RO := RootOwner;
   if not (RO is TEpiDocument) then
@@ -949,6 +952,9 @@ var
   Idx: Integer;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
+
+  // Only XML v4 had log as a seperate instance. Hence if we are here we are loading
+  // a v4 project and need to transfer data to the correct places.
 
   Node := Root.FirstChild;
   while Assigned(Node) do

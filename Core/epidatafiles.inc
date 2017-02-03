@@ -38,6 +38,15 @@ begin
   Result := 'dataform_';
 end;
 
+function TEpiDataFiles.NewItemLoad(const AName: EpiString;
+  AItemClass: TEpiCustomItemClass): TEpiCustomItem;
+begin
+  if AName = EpiSecurityLogDatafileName then
+    AItemClass := TEpiSecurityDatafile;
+
+  Result := inherited NewItemLoad(AName, AItemClass);
+end;
+
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
@@ -980,7 +989,7 @@ begin
   Result := Compare(C1, C2);
 end;
 
-constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const Size: integer);
+constructor TEpiDataFile.Create(AOwner: TEpiCustomBase; const ASize: integer);
 begin
   inherited Create(AOwner);
 
@@ -1023,7 +1032,7 @@ begin
   // Special field to hold status of current record.
   FRecordStatus := TEpiField.CreateField(Self, ftInteger);
   FRecordStatus.FDataFile := Self;
-  FRecordStatus.Size := Size;
+  FRecordStatus.Size := ASize;
 
   // Container for Key Fields.
   FKeyFields := TEpiFields.Create(Self);

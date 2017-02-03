@@ -4,6 +4,7 @@
 
 unit epidatacore;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
@@ -26,7 +27,7 @@ uses
   ufileassociation, epicustomrelations, epidatafilerelations, 
   epicustomrelations_helper, epigrouprelation_helper, 
   epidatafilerelations_helper, epiexport_stata, epifields_helper, 
-  epiimport_stata, epitools_statusbarparser, epi_rsa, epilogger;
+  epiimport_stata, epitools_statusbarparser, epi_rsa, epilogger, episecuritylog;
 
 implementation
 

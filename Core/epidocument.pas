@@ -69,6 +69,12 @@ type
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
+
+  // SecurityLog (XML v5)
+  private
+    procedure InitializeSecurityLog;
+    procedure DeInitializeSecurityLog;
+
   protected
     procedure DoChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
@@ -128,7 +134,7 @@ implementation
 
 uses
   epimiscutils, laz2_XMLRead, laz2_XMLWrite, epiglobals,
-  DCPrijndael, DCPsha256, DCPbase64;
+  DCPrijndael, DCPsha256, DCPbase64, episecuritylog;
 
 { TEpiDocument }
 
@@ -152,15 +158,50 @@ begin
   DoChange(eegDocument, Word(edcePassword), @Val);
 end;
 
+procedure TEpiDocument.InitializeSecurityLog;
+var
+  DF: TEpiSecurityDatafile;
+  VLSet: TEpiValueLabelSet;
+  MR: TEpiMasterRelation;
+begin
+  DF := TEpiSecurityDatafile(DataFiles.NewItem(TEpiSecurityDatafile));
+  DF.Name := EpiSecurityLogDatafileName;
+
+  MR := TEpiMasterRelation(Relations.NewItem(TEpiSecurityDatafileRelation));
+  MR.Datafile := DF;
+  MR.Name     := EpiSecurityLogRelationName;
+
+  VLSet := TEpiValueLabelSet(ValueLabelSets.NewItem(TEpiSecurityValuelabelSet));
+  VLSet.Name := EpiSecurityLogValuelLabelSetName;
+
+  DF.LogType.ValueLabelSet := VLSet;
+
+  FLogger := TEpiLogger.Create(Self, DF);
+end;
+
+procedure TEpiDocument.DeInitializeSecurityLog;
+begin
+
+end;
+
 procedure TEpiDocument.DoChange(const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
-  // Catch invalid login/password before passing them on in order to set
-  // internal flag correctly.
-  if (EventGroup = eegAdmin) and
-     (TEpiAdminChangeEventType(EventType) in [eaceAdminIncorrectPassword, eaceAdminIncorrectUserName])
-  then
-    Include(FFlags, edfLoginFailed);
+
+  case EventGroup of
+    eegAdmin:
+      case TEpiAdminChangeEventType(EventType) of
+        // Admin has been initialize, now time to setup Security Datafile and Valuelabels.
+        eaceAdminInitializing:
+          InitializeSecurityLog;
+
+        // Catch invalid login/password before passing them on in order to set
+        // internal flag correctly.
+        eaceAdminIncorrectUserName,
+        eaceAdminIncorrectPassword:
+          Include(FFlags, edfLoginFailed);
+      end;
+  end;
 
   inherited DoChange(Initiator, EventGroup, EventType, Data);
 end;
@@ -184,7 +225,7 @@ begin
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
-  FLogger          := TEpiLogger.Create(Self);
+//  FLogger          := TEpiLogger.Create(Self);
   FFailedLog       := TEpiFailedLogger.Create(Self);
   FCycleNo         := 0;
   FFlags           := [];
@@ -453,11 +494,16 @@ begin
         Relations.LoadFromXml(Node, ReferenceMap);
     end;
 
-  // Version 4:
+  // Version 4 (only):
   if LoadNode(Node, Root, 'Log', false) then
+  begin
+    // if we end up here it is because we are loading a v4 log
+    // which does not have the SecurityLog initialized.
+    InitializeSecurityLog;
     FLogger.LoadFromXml(Node, ReferenceMap);
+  end;
 
-  FLogger.LoadExLog(FFailedLog);
+//  FLogger.LoadExLog(FFailedLog);
 
   FLoading := false;
   Modified := false;

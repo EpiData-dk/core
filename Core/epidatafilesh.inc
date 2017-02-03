@@ -22,6 +22,8 @@ type
     function    GetSettings: TEpiXMLSettings;
   protected
     function    Prefix: string; override;
+    function NewItemLoad(const AName: EpiString;
+      AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    ItemClass: TEpiCustomItemClass; override;
@@ -96,7 +98,7 @@ type
     procedure   SaveRecordToDom(RootNode: TDOMElement);
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0); virtual;
+    constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); virtual;
     destructor  Destroy; override;
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;

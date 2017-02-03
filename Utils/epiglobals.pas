@@ -32,6 +32,11 @@ const
   // Special Top-level Administrators Group Name
   EpiAdminGroupName = 'admins_group';
 
+  // Security Log Names
+  EpiSecurityLogDatafileName = '_SecurityLog';
+  EpiSecurityLogValuelLabelSetName = '_label_SecurityLog';
+  EpiSecurityLogRelationName = '_SecurityLogRelation';
+
   // Failed Login Constants
   EpiAdminLoginAttemps = 3;
   EpiAdminLoginInterval = 5 * 60;   // 5 minuts = 300 seconds.

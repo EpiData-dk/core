@@ -106,6 +106,7 @@ type
     // Group related events:
     eaceGroupSetManageRights,
     // Admin related events:
+    eaceAdminInitializing,           // Data: nil  (Send right after initialinzing internal structures)
     eaceAdminResetting,              // Data: nil  (Send right before all users/groups are freed!)
     eaceAdminLoginSuccessfull,       // Data: TEpiUser = the authenticated user.
     eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
@@ -115,21 +116,21 @@ type
   );
 
   TEpiRequestPasswordType = (
-    erpSinglePassword,          // Only a valid password is required - login is ignored.
-    erpUserLogin,               // Project is managed by a user/password and both are requred.
-    erpNewPassword              // The authorized user needs a new password
+    erpSinglePassword,               // Only a valid password is required - login is ignored.
+    erpUserLogin,                    // Project is managed by a user/password and both are requred.
+    erpNewPassword                   // The authorized user needs a new password
   );
 
   TEpiRequestPasswordResult = (
-    prSuccess,      // Asking user for password succeeded (correct username/password combo)
-    prFailed,       // Asking user for password failed    (incorrect username/password combo)
-    prCanceled      // The user canceled the login
+    prSuccess,                       // Asking user for password succeeded (correct username/password combo)
+    prFailed,                        // Asking user for password failed    (incorrect username/password combo)
+    prCanceled                       // The user canceled the login
   );
 
   TEpiRequestPasswordResponse = (
-     rprAskOnFail,              // If login/password/new password failed send request again.
-     rprStopOnFail,             // If login/password/new password failed stop loading.
-     rprCanceled                 // The user cancled at the password form.
+     rprAskOnFail,                   // If login/password/new password failed send request again.
+     rprStopOnFail,                  // If login/password/new password failed stop loading.
+     rprCanceled                     // The user cancled at the password form.
   );
 
   TRequestPasswordEvent = function(
@@ -436,6 +437,57 @@ uses
   DCPbase64, DCPsha256, epistringutils, epimiscutils, epidocument, epilogger,
   math, epiglobals;
 
+type
+
+  { TEpiAdminGroups }
+
+  TEpiAdminGroups = class(TEpiGroups)
+  protected
+    function NewItemLoad(const AName: EpiString; AItemClass: TEpiCustomItemClass
+      = nil): TEpiCustomItem; override;
+  end;
+
+  { TEpiAdminGroup }
+
+  TEpiAdminGroup = class(TEpiGroup)
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+  end;
+
+  { TEpiAdminRelation }
+
+  TEpiAdminRelation = class(TEpiGroupRelation)
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+  end;
+
+{ TEpiAdminGroups }
+
+function TEpiAdminGroups.NewItemLoad(const AName: EpiString;
+  AItemClass: TEpiCustomItemClass): TEpiCustomItem;
+begin
+  if AName = EpiAdminGroupName then
+    AItemClass := TEpiAdminGroup;
+
+  Result := inherited NewItemLoad(AName, AItemClass);
+end;
+
+{ TEpiAdminsGroup }
+
+constructor TEpiAdminGroup.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FProtectedItem := true;
+end;
+
+{ TEpiAdminRelation }
+
+constructor TEpiAdminRelation.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FProtectedItem := true;
+end;
+
 { TEpiUsersEnumerator }
 
 function TEpiUsersEnumerator.GetCurrent: TEpiUser;
@@ -589,7 +641,7 @@ begin
   FUsers.ItemOwner := true;
   FUsers.Name := 'TEpiAdmin_Users';
 
-  FGroups := TEpiGroups.Create(self);
+  FGroups := TEpiAdminGroups.Create(self);
   FGroups.ItemOwner := true;
   FGroups.Name := 'TEpiAdmin_Groups';
 
@@ -620,12 +672,8 @@ var
   Node: TDOMNode;
   S: EpiString;
 begin
-  // Since the Admin group is autocreated we remove it during load.
-  FreeAndNil(FAdminRelation);
-  FreeAndNil(FAdminsGroup);
-
-  inherited LoadFromXml(Root, ReferenceMap);
   // Root = <Admin>
+  inherited LoadFromXml(Root, ReferenceMap);
 
   // Load groups
   if LoadNode(Node, Root, rsGroups, false) then
@@ -639,7 +687,7 @@ begin
   LoadNode(Node, Root, 'GroupRelation', true);
 
   // Load the always existing Admin relation.
-  FAdminRelation := FAdminRelations.NewGroupRelation;
+  FAdminRelation := TEpiGroupRelation(FAdminRelations.NewItem(TEpiAdminRelation));   //NewGroupRelation;
   AdminRelation.LoadFromXml(Node, ReferenceMap);
 
   // Now load the private certificate (in case we need to decrypt failed logins)
@@ -719,16 +767,17 @@ procedure TEpiAdmin.InitAdmin;
 begin
   if Assigned(FAdminsGroup) then exit;
 
-  FAdminsGroup := TEpiGroup.Create(nil);
+  FAdminsGroup := TEpiAdminGroup.Create(nil);
   FAdminsGroup.ManageRights := EpiAllManageRights;
   FAdminsGroup.Caption.TextLang['en'] := 'Admins';
   FAdminsGroup.Name := EpiAdminGroupName;
   FGroups.AddItem(FAdminsGroup);
 
-  FAdminRelation := FAdminRelations.NewGroupRelation;
+  FAdminRelation := TEpiGroupRelation(FAdminRelations.NewItem(TEpiAdminRelation)); //FAdminRelations.NewGroupRelation;
   FAdminRelation.Group := FAdminsGroup;
 
   FRSA.GenerateKeys();
+  DoChange(eegAdmin, word(eaceAdminInitializing), nil);
 end;
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -1360,7 +1409,7 @@ begin
   if (TEpiAdminChangeEventType(EventType) <> eaceGroupSetManageRights) then Exit;
 
   // if there is a change in the rights for this group, we need to remove
-  // rights from child groups that was removed from this group.
+  // the rights from child groups that was removed from this group.
   // We should not add managerrights, since this is a job for programs to
   // implement.
   RightsDiff := TEpiManagerRights(Data^) - Group.ManageRights;

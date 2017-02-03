@@ -79,6 +79,8 @@ type
     function GetMasterRelation(Index: integer): TEpiMasterRelation;
   protected
     function Prefix: string; override;
+    function NewItemLoad(const AName: EpiString;
+      AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
@@ -101,7 +103,7 @@ type
 implementation
 
 uses
-  epidocument;
+  epidocument, episecuritylog, epiglobals;
 
 { TEpiDatafileRelationListEnumerator }
 
@@ -350,6 +352,15 @@ end;
 function TEpiDatafileRelationList.Prefix: string;
 begin
   Result := 'relation_id_';
+end;
+
+function TEpiDatafileRelationList.NewItemLoad(const AName: EpiString;
+  AItemClass: TEpiCustomItemClass): TEpiCustomItem;
+begin
+  if AName = EpiSecurityLogRelationName then
+    AItemClass := TEpiSecurityDatafileRelation;
+
+  Result := inherited NewItemLoad(AName, AItemClass);
 end;
 
 constructor TEpiDatafileRelationList.Create(AOwner: TEpiCustomBase);

@@ -358,10 +358,18 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
+    constructor Create(AOwner: TEpiCustomBase); override;
     destructor  Destroy; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    ValidateRename(Const NewName: string; RenameOnSuccess: boolean): boolean; virtual;
     property    Name: string read GetName write SetName;
+  { Protected Item }
+  protected
+    FProtectedItem: boolean;
+  public
+    // A Protected Item means that interactive users acting on the Core structure
+    // should not be allowed to delete/free this Item
+    property    ProtectedItem: boolean read FProtectedItem;
   end;
   TEpiCustomItemClass = class of TEpiCustomItem;
 
@@ -417,6 +425,7 @@ type
     property    List: TFPList read FList;
   protected
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+    function    NewItemLoad(Const AName: EpiString; AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; virtual;
   public
     destructor  Destroy; override;
   { Standard Item Methods }
@@ -1722,6 +1731,12 @@ begin
   TEpiCustomItem(Result).FName := FName;
 end;
 
+constructor TEpiCustomItem.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FProtectedItem := false;
+end;
+
 function TEpiCustomItem.ValidateRename(const NewName: string;
   RenameOnSuccess: boolean): boolean;
 var
@@ -1886,6 +1901,7 @@ procedure TEpiCustomList.LoadFromXml(Root: TDOMNode;
 var
   NItem: TEpiCustomItem;
   Node: TDOMNode;
+  S: EpiString;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
@@ -1897,7 +1913,7 @@ begin
       Node := Node.NextSibling;
     if not Assigned(Node) then break;
 
-    NItem := NewItem();
+    NItem := NewItemLoad(LoadAttrString(Node, rsId, '', false));
     CheckNode(Node, NItem.XMLName);
     NItem.LoadFromXml(Node, ReferenceMap);
 
@@ -1921,6 +1937,12 @@ begin
     if Assigned(Elem) then
       Result.AppendChild(Elem);
   end;
+end;
+
+function TEpiCustomList.NewItemLoad(const AName: EpiString;
+  AItemClass: TEpiCustomItemClass): TEpiCustomItem;
+begin
+  result := NewItem(AItemClass);
 end;
 
 function TEpiCustomList.GetUniqueItemName(AClass: TEpiCustomItemClass): string;
