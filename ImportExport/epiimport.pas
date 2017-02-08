@@ -499,7 +499,9 @@ begin
         ftInteger:
           ok := IsInteger(TmpStr, IntVal);
         ftString, ftUpperString, ftMemo:
-          ok := True;
+          // Since a variable name is always a string, we must check that length
+          // fits.
+          ok := (UTF8Length(TmpStr) <= TmpField.Length);
         ftBoolean:
           Ok := IsBoolean(TmpStr, BoolVal);
         ftFloat:
