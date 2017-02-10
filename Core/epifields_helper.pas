@@ -25,6 +25,7 @@ type
     function AcceptsValuelabelSet(VL: TEpiValueLabelSet; ALength, ADecimals: Integer): boolean; overload;
     function MaxByteLength: Cardinal;
     function MaxUTF8Length: Cardinal;
+    function IsKeyfield: boolean;
   end;
 
   { TEpiIntFieldHelper }
@@ -167,6 +168,11 @@ begin
   Result := 0;
   for i := 0 to Size - 1 do
     result := Max(Result, UTF8Length(AsString[i]));
+end;
+
+function TEpiFieldHelper.IsKeyfield: boolean;
+begin
+  result := DataFile.KeyFields.FieldExists(Self);
 end;
 
 { TEpiIntFieldHelper }
