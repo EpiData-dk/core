@@ -38,6 +38,7 @@ type
     FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
+    destructor Destroy; override;
     property  UserName: TEpiField read FUserName;
     property  Date: TEpiField read FDate;
     property  Time: TEpiField read FTime;
@@ -90,15 +91,20 @@ begin
   inherited Create(AOwner, ASize);
   FProtectedItem := true;
 
-  FUserName       := Fields.NewField(ftString);
-  FDate           := Fields.NewField(ftDMYDate);
-  FTime           := Fields.NewField(ftTime);
-  FCycle          := Fields.NewField(ftInteger);
-  FLogType        := Fields.NewField(ftInteger);
-  FDataFileName   := Fields.NewField(ftString);
-  FKeyFieldValues := Fields.NewField(ftString);
-  FDataContent    := Fields.NewField(ftInteger);
-  FLogContent     := Fields.NewField(ftString);
+  FUserName       := NewField(ftString);
+  FDate           := NewField(ftDMYDate);
+  FTime           := NewField(ftTime);
+  FCycle          := NewField(ftInteger);
+  FLogType        := NewField(ftInteger);
+  FDataFileName   := NewField(ftString);
+  FKeyFieldValues := NewField(ftString);
+  FDataContent    := NewField(ftInteger);
+  FLogContent     := NewField(ftString);
+end;
+
+destructor TEpiSecurityDatafile.Destroy;
+begin
+  inherited Destroy;
 end;
 
 end.

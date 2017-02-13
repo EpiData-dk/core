@@ -230,7 +230,7 @@ begin
   FCycleNo         := 0;
   FFlags           := [];
 
-  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations, Logger]);
+  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.
