@@ -43,8 +43,8 @@ type
     property  Date: TEpiField read FDate;
     property  Time: TEpiField read FTime;
     property  Cycle: TEpiField read FCycle;
-    property  LogType: TEpiField read FCycle;
-    property  DataFileNames: TEpiField read FDataFileName;
+    property  LogType: TEpiField read FLogType;
+    property  DataFileName: TEpiField read FDataFileName;
     property  KeyFieldValues: TEpiField read FKeyFieldValues;
     property  LogContent: TEpiField read FLogContent;
   end;
@@ -91,15 +91,32 @@ begin
   inherited Create(AOwner, ASize);
   FProtectedItem := true;
 
-  FUserName       := NewField(ftString);
-  FDate           := NewField(ftDMYDate);
-  FTime           := NewField(ftTime);
-  FCycle          := NewField(ftInteger);
-  FLogType        := NewField(ftInteger);
-  FDataFileName   := NewField(ftString);
-  FKeyFieldValues := NewField(ftString);
-  FDataContent    := NewField(ftInteger);
-  FLogContent     := NewField(ftString);
+  FUserName            := NewField(ftString);
+  FUserName.Name       := 'UserName';
+
+  FDate                := NewField(ftDMYDate);
+  FDate.Name           := 'Date';
+
+  FTime                := NewField(ftTime);
+  FTime.Name           := 'Time';
+
+  FCycle               := NewField(ftInteger);
+  FCycle.Name          := 'Cycle';
+
+  FLogType             := NewField(ftInteger);
+  FLogType.Name        := 'LogType';
+
+  FDataFileName        := NewField(ftString);
+  FDataFileName.Name   := 'DataFormName';
+
+  FKeyFieldValues      := NewField(ftString);
+  FKeyFieldValues.Name := 'KeyFieldValues';
+
+  FDataContent         := NewField(ftInteger);
+  FDataContent.Name    := 'DataContent';
+
+  FLogContent          := NewField(ftString);
+  FLogContent.Name     := 'LogContent';
 end;
 
 destructor TEpiSecurityDatafile.Destroy;

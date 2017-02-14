@@ -398,7 +398,7 @@ begin
       end;
 
       case CRes of
-        prSuccess:  ;
+        prSuccess:  InitializeSecurityLog;
         prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
         prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
       end;
@@ -497,9 +497,8 @@ begin
   // Version 4 (only):
   if LoadNode(Node, Root, 'Log', false) then
   begin
-    // if we end up here it is because we are loading a v4 log
-    // which does not have the SecurityLog initialized.
-    InitializeSecurityLog;
+    // Logger will already be initialized here, since it is done whenever a successfull
+    // login has been performed.
     FLogger.LoadFromXml(Node, ReferenceMap);
   end;
 

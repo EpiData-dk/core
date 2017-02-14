@@ -158,7 +158,7 @@ type
     FDatafile: TEpiDataFile;
     procedure  SetUserName(AValue: UTF8String);
     procedure  SetDatafile(AValue: TEpiDataFile);
-    function   DoNewLog(LogType: TEpiLogEntry): Integer;  // Result = Index for new record.
+    function   DoNewLog(ALogType: TEpiLogEntry): Integer;  // Result = Index for new record.
     function   GetKeyValues(Index: integer): EpiString;
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
@@ -414,9 +414,11 @@ begin
 
         edceBeginCommit:
           begin
+            // 0 = new record
             if PtrInt(Data) = 0 then
               FCommitState := csNewRecord
             else
+              // 1 = edit record
               begin
                 FCommitState := csEditRecord;
                 FDataLog := TList.Create;
@@ -504,7 +506,7 @@ var
 begin
   inherited Create(AOwner);
   FCommitState := csNone;
-  FLogDatafile := TEpiLog.Create(nil);
+  FLogDatafile := nil; //TEpiLog.Create(nil);
   FSecurityLog := SecurityLog;
 
   RO := RootOwner;
@@ -539,7 +541,7 @@ function TEpiLogger.CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer
 var
   S: String;
 begin
-  case FLogDatafile.FType.AsEnum[LogIndex] of
+ { case FLogDatafile.FType.AsEnum[LogIndex] of
     ltNone: ;
     ltSuccessLogin:
       S := 'LoginSuccess';
@@ -573,13 +575,13 @@ begin
   if (FLogDatafile.FType.AsEnum[LogIndex] in EpiLogEntryDataFileSet) then
     SaveDomAttr(Result, rsDataFileRef, FLogDatafile.FDataFileNames.AsString[LogIndex]);
   SaveDomAttr(Result, 'username', FLogDatafile.FUserNames.AsString[LogIndex]);
-  SaveDomAttr(Result, rsCycle, FLogDatafile.FCycle.AsString[LogIndex]);
+  SaveDomAttr(Result, rsCycle, FLogDatafile.FCycle.AsString[LogIndex]);   }
 end;
 
 procedure TEpiLogger.AddKeyFieldValues(RootNode: TDOMElement; LogIndex: Integer
   );
 begin
-  SaveTextContent(RootNode, 'Keys', FLogDatafile.FKeyFieldValues.AsString[LogIndex]);
+//  SaveTextContent(RootNode, 'Keys', FLogDatafile.FKeyFieldValues.AsString[LogIndex]);
 end;
 
 procedure TEpiLogger.AddEditFieldValues(RootNode: TDOMElement; LogIndex: Integer
@@ -590,7 +592,7 @@ var
   Elem: TDOMElement;
   MissingStr: EpiString;
 begin
-  AList := TList(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
+{  AList := TList(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
   MissingStr := TEpiStringField.DefaultMissing;
 
   for Data in AList do
@@ -689,7 +691,7 @@ begin
         end;
     end;
     RootNode.AppendChild(Elem);
-  end;
+  end; }
 end;
 
 procedure TEpiLogger.GetEditFieldValues(RootNode: TDOMNode; LogIndex: Integer);
@@ -963,50 +965,71 @@ begin
       Node := Node.NextSibling;
     if not Assigned(Node) then break;
 
-    FLogDatafile.NewRecords();
-    Idx := FLogDatafile.Size - 1;
 
-    with FLogDatafile do
+//    FLogDatafile.NewRecords();
+    FSecurityLog.NewRecords();
+//    Idx := FLogDatafile.Size - 1;
+    Idx := FSecurityLog.Size - 1;
+
+    with FSecurityLog do
     begin
-      FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
-      FTime.AsDateTime[Idx]        := Self.LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
-      FDataFileNames.AsString[Idx] := Self.LoadAttrString(Node, rsDataFileRef, '', false);
-      FUserNames.AsString[Idx]     := Self.LoadAttrString(Node, 'username');
-      FCycle.AsInteger[Idx]        := Self.LoadAttrInt(Node, rsCycle);
+//      FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
+//      FTime.AsDateTime[Idx]        := Self.LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
+//      FDataFileNames.AsString[Idx] := Self.LoadAttrString(Node, rsDataFileRef, '', false);
+//      FUserNames.AsString[Idx]     := Self.LoadAttrString(Node, 'username');
+//      FCycle.AsInteger[Idx]        := Self.LoadAttrInt(Node, rsCycle);
 
-      case FType.AsEnum[Idx] of
-        ltNone: ;
-        ltSuccessLogin:
-          FLogContent.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
-        ltFailedLogin:
+      LogType.AsInteger[Idx]       := Integer(LogEntryFromNodeName(Node.NodeName));
+      Date.AsDate[Idx]             := trunc(Self.LoadAttrDateTime(Node, 'time'));
+      Time.AsTime[Idx]             := Frac(Self.LoadAttrDateTime(Node, 'time'));
+      DataFileName.AsString[Idx]   := Self.LoadAttrString(Node, rsDataFileRef, '', false);
+      UserName.AsString[Idx]       := Self.LoadAttrString(Node, 'username');
+      Cycle.AsInteger[Idx]         := Self.LoadAttrInt(Node, rsCycle);
+
+//      case FType.AsEnum[Idx] of
+      case LogType.AsInteger[Idx] of
+        Integer(ltNone): ;
+
+        Integer(ltSuccessLogin):
+          LogContent.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
+
+        Integer(ltFailedLogin):
           begin
-            case LoadAttrString(Node, 'type') of
-              'password': FDataContent.AsInteger[Idx] := 0;
-              'login':    FDataContent.AsInteger[Idx] := 1;
-              'blocked':  FDataContent.AsInteger[Idx] := 3;
+{            case LoadAttrString(Node, 'type') of
+              'password': DataContent.AsInteger[Idx] := 0;
+              'login':    DataContent.AsInteger[Idx] := 1;
+              'blocked':  DataContent.AsInteger[Idx] := 3;
             else
               //
-            end;
-            FLogContent.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
+            end;     }
+            LogContent.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
           end;
-        ltSearch:
-          FLogContent.AsString[Idx]       := Self.LoadNodeString(Node, 'SearchString');
-        ltNewRecord:
-          FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
-        ltEditRecord:
+
+        Integer(ltSearch):
+          LogContent.AsString[Idx]       := Self.LoadNodeString(Node, 'SearchString');
+
+        Integer(ltNewRecord):
+          KeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
+
+        Integer(ltEditRecord):
           begin
-            FKeyFieldValues.AsString[Idx] := Self.LoadNodeString(Node, 'Keys');
+            KeyFieldValues.AsString[Idx] := Self.LoadNodeString(Node, 'Keys');
             GetEditFieldValues(Node, Idx);
           end;
-        ltViewRecord:
-          FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
-        ltPack: ;
-        ltAppend: ;
-        ltExport:
+
+        Integer(ltViewRecord):
+          KeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
+
+//        ltPack: ;
+//        ltAppend: ;
+
+        Integer(ltExport):
           ReadExportNode(Node, Idx);
-        ltClose:
-          FLogContent.AsString[Idx]       := Self.LoadAttrString(Node, 'lastEdited');
-        ltNewPassword: ;
+
+        Integer(ltClose):
+          LogContent.AsString[Idx]       := Self.LoadAttrString(Node, 'lastEdited');
+
+//        ltNewPassword: ;
       end;
     end;
 
@@ -1114,22 +1137,26 @@ begin
   FDatafile := AValue;
 end;
 
-function TEpiLogger.DoNewLog(LogType: TEpiLogEntry): Integer;
+function TEpiLogger.DoNewLog(ALogType: TEpiLogEntry): Integer;
 var
   ADoc: TEpiDocument;
 begin
-  FLogDatafile.NewRecords();
-  Result := FLogDatafile.Size - 1;
+//  FLogDatafile.NewRecords();
+  FSecurityLog.NewRecords();
+//  Result := FLogDatafile.Size - 1;
+  Result := FSecurityLog.Size - 1;
   ADoc := Doc(Self);
 
-  with FLogDatafile do
+//  with FLogDatafile do
+  with FSecurityLog do
   begin
-    FUserNames.AsString[Result]        := UserName;
-    FTime.AsDateTime[Result]           := Now;
-    FCycle.AsInteger[Result]           := ADoc.CycleNo;
-    FType.AsEnum[Result]               := LogType;
+    UserName.AsString[Result]         := Self.UserName;
+    Date.AsDateTime[Result]           := Now;
+    Time.AsDateTime[Result]           := Now;
+    Cycle.AsInteger[Result]           := ADoc.CycleNo;
+    LogType.AsInteger[Result]         := Integer(ALogType);
     if Assigned(FDatafile) then
-      FDataFileNames.AsString[Result]    := FDatafile.Name;
+      DataFileName.AsString[Result]   := FDatafile.Name;
   end;
 end;
 

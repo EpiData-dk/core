@@ -215,7 +215,7 @@ implementation
 
 uses
   strutils, math, LazUTF8, LazFileUtils, epidocument, epiopenfile,
-  epiopenfile_cache;
+  epiopenfile_cache, epiglobals;
 
 { TEpiValueLabelSetEnumerator }
 
@@ -1006,8 +1006,15 @@ begin
 
       if Scope = vlsInternal then
       begin;
-        NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
-        NValueLabelSet.LoadFromXml(Node, ReferenceMap);
+        // Newer load the content of the content of the Security Valuelabel set, since in any future version
+        // we may wish to extend the content. And all new content will be appended to existing hardcoded version.
+        if (LoadAttrString(Node, rsId, '', false) = EpiSecurityLogValuelLabelSetName) then
+          NValueLabelSet := TEpiValueLabelSet(GetItemByName(EpiSecurityLogValuelLabelSetName))
+        else
+          begin
+          NValueLabelSet := NewValueLabelSet(TEpiFieldType(LoadAttrEnum(Node, rsType, TypeInfo(TEpiFieldType))));
+          NValueLabelSet.LoadFromXml(Node, ReferenceMap);
+        end;
       end else begin
         LoadExternalValueLabelSet(DocFileCache, Node);
       end;
