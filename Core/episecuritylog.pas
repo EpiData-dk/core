@@ -16,6 +16,13 @@ type
     constructor Create(AOwner: TEpiCustomBase); override;
   end;
 
+  { TEpiSecurityDatafileDetailRelation }
+
+  TEpiSecurityDatafileDetailRelation = class(TEpiDetailRelation)
+  public
+    constructor Create(AOwner: TEpiCustomBase); override;
+  end;
+
   { TEpiSecurityValuelabelSet }
 
   TEpiSecurityValuelabelSet = class(TEpiValueLabelSet)
@@ -27,6 +34,7 @@ type
 
   TEpiSecurityDatafile = class(TEpiDataFile)
   private
+    FID:             TEpiField;       // AutoInc ID and Key Variable
     FUserName:       TEpiField;       // Username for the log entry
     FDate:           TEpiField;       // Time of log entry
     FTime:           TEpiField;       // Time of log entry
@@ -49,10 +57,55 @@ type
     property  LogContent: TEpiField read FLogContent;
   end;
 
+  { TEpiSecurityDataEventLog }
+
+  TEpiSecurityDataEventLog = class(TEpiDataFile)
+  private
+    FID:           TEpiField;  // ID linked with FID on TEpiSecurityDatafile
+    FVariableName: TEpiField;
+    FBeforeValue:  TEpiField;
+    FAfterValue:   TEpiField;
+  public
+    constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
+    property VariableName: TEpiField read FVariableName;
+    property BeforeValue:  TEpiField read FBeforeValue;
+    property AfterValue:   TEpiField read FAfterValue;
+  end;
+
 implementation
 
 uses
   epidatafilestypes, epilogger;
+
+{ TEpiSecurityDatafileDetailRelation }
+
+constructor TEpiSecurityDatafileDetailRelation.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  FProtectedItem := true;
+end;
+
+{ TEpiSecurityDataEventLog }
+
+constructor TEpiSecurityDataEventLog.Create(AOwner: TEpiCustomBase;
+  const ASize: integer);
+begin
+  inherited Create(AOwner, ASize);
+  FProtectedItem := True;
+
+  FID               := NewField(ftInteger);
+  FID.Name          := 'ID';
+  KeyFields.AddItem(FID);
+
+  FVariableName     := NewField(ftString);
+  FVariableName.Name := 'VarName';
+
+  FBeforeValue       := NewField(ftString);
+  FBeforeValue.Name  := 'BeforeValue';
+
+  FAfterValue        := NewField(ftString);
+  FAfterValue.Name   := 'AfterValue';
+end;
 
 { TEpiSecurityDatafileRelation }
 
@@ -90,6 +143,10 @@ constructor TEpiSecurityDatafile.Create(AOwner: TEpiCustomBase;
 begin
   inherited Create(AOwner, ASize);
   FProtectedItem := true;
+
+  FID                  := NewField(ftAutoInc);
+  FID.Name             := 'ID';
+  KeyFields.AddItem(FID);
 
   FUserName            := NewField(ftString);
   FUserName.Name       := 'UserName';

@@ -41,11 +41,16 @@ end;
 function TEpiDataFiles.NewItemLoad(const AName: EpiString;
   AItemClass: TEpiCustomItemClass): TEpiCustomItem;
 begin
-  if AName = EpiSecurityLogDatafileName then
-//    AItemClass := TEpiSecurityDatafile;
-    result := GetDataFileByName(EpiSecurityLogDatafileName)
+  case AName of
+    EpiSecurityLogDatafileName:
+      result := GetDataFileByName(EpiSecurityLogDatafileName);
+
+    EpiSecurityLogDataEventName:
+      result := GetDataFileByName(EpiSecurityLogDataEventName);
+
   else
     result := inherited NewItemLoad(AName, AItemClass);
+  end;
 end;
 
 constructor TEpiDataFiles.Create(AOwner: TEpiCustomBase);

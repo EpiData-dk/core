@@ -54,7 +54,7 @@ type
 
   { TEpiEnumField }
 
-  TEpiEnumField = class(TEpiField)
+ { TEpiEnumField = class(TEpiField)
   private
     FData: array of TEpiLogEntry;
   protected
@@ -95,11 +95,11 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); override;
     class function DefaultMissing: TEpiLogEntry;
-  end;
+  end;   }
 
   { TEpiLog }
 
-  TEpiLog = class(TEpiDataFile)
+ { TEpiLog = class(TEpiDataFile)
   public
     FUserNames:      TEpiField;       // Username for the log entry
     FTime:           TEpiField;       // Time of log entry
@@ -110,7 +110,7 @@ type
     FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
     FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
     constructor Create(AOwner: TEpiCustomBase; const aSize: integer = 0);
-  end;
+  end;     }
 
   { TEpiLogger }
 
@@ -125,7 +125,7 @@ type
 
   private
     FSecurityLog: TEpiSecurityDatafile;
-    FLogDatafile: TEpiLog;
+//    FLogDatafile: TEpiLog;
     procedure DocumentHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -163,7 +163,7 @@ type
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: UTF8String read FUserName write SetUserName;
-    property   Log:  TEpiLog read FLogDatafile;
+//    property   Log:  TEpiLog read FLogDatafile;
 
   { Logging methods }
   private
@@ -506,7 +506,7 @@ var
 begin
   inherited Create(AOwner);
   FCommitState := csNone;
-  FLogDatafile := nil; //TEpiLog.Create(nil);
+//  FLogDatafile := nil; //TEpiLog.Create(nil);
   FSecurityLog := SecurityLog;
 
   RO := RootOwner;
@@ -820,12 +820,12 @@ begin
     AList.Add(Data);
     Node := Node.NextSibling;
   end;
-  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(AList);
+//  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(AList);
 end;
 
 procedure TEpiLogger.AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
 begin
-  SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
+//  SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
 end;
 
 procedure TEpiLogger.CreateExportNode(RootNode: TDOMElement; LogIndex: Integer);
@@ -836,7 +836,7 @@ var
   i: Integer;
 begin
   // RootNode = <Export>
-  LogExportDoc := TLogExportDocument(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
+{  LogExportDoc := TLogExportDocument(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
 
   SaveDomAttr(RootNode, 'exportDeleted', LogExportDoc.ExportDeleted);
   SaveDomAttr(RootNode, rsType, LogExportDoc.ExportType);
@@ -852,7 +852,7 @@ begin
     SaveDomAttr(Elem, 'fieldsRefs', LogExDF.ExportFields.CommaText);
 
     RootNode.AppendChild(Elem);
-  end;
+  end;        }
 end;
 
 procedure TEpiLogger.ReadExportNode(RootNode: TDOMNode; LogIndex: Integer);
@@ -886,7 +886,7 @@ begin
     Node := Node.NextSibling;
   end;
 
-  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(LogExportDoc);
+//  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(LogExportDoc);
 end;
 
 function TEpiLogger.XMLName: string;
@@ -900,7 +900,7 @@ var
   S: String;
   Elem: TDOMElement;
 begin
-  Result := inherited SaveToDom(RootDoc);
+{  Result := inherited SaveToDom(RootDoc);
 
   with FLogDatafile do
     for i := 0 to FType.Size - 1 do
@@ -944,7 +944,7 @@ begin
         SaveDomAttrEnum(Elem, 'NotImplementedLogEntry', FType.AsEnum[I], TypeInfo(TEpiLogEntry));
       end;
       Result.AppendChild(Elem);
-    end;
+    end;    }
 end;
 
 procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
@@ -1051,7 +1051,7 @@ begin
   // ExLogRoot = <ExLog>
   Admin := Doc(self).Admin;
 
-  FDecrypter := TDCP_rijndael.Create(nil);
+ { FDecrypter := TDCP_rijndael.Create(nil);
   EncryptSt  := TMemoryStream.Create;
   PlainTxtSt := TMemoryStream.Create;
 
@@ -1122,7 +1122,7 @@ begin
 
   FDecrypter.Free;
   EncryptSt.Free;
-  PlainTxtSt.Free;
+  PlainTxtSt.Free; }
 end;
 
 procedure TEpiLogger.SetUserName(AValue: UTF8String);
@@ -1210,9 +1210,9 @@ begin
   else
     S := '*';
 
-  with FLogDatafile do
+  with FSecurityLog do
   begin
-    FLogContent.AsString[Idx]    := S;
+    LogContent.AsString[Idx]    := S;
   end;
 end;
 
@@ -1222,9 +1222,9 @@ var
 begin
   Idx := DoNewLog(ltNewRecord);
 
-  with FLogDatafile do
+  with FSecurityLog do
   begin
-    FKeyFieldValues.AsString[Idx]    := GetKeyValues(FDatafile.Size - 1);
+    KeyFieldValues.AsString[Idx]    := GetKeyValues(FDatafile.Size - 1);
   end;
 end;
 
@@ -1235,10 +1235,11 @@ begin
   if (FDataLog.Count = 0) then Exit;
 
   Idx := DoNewLog(ltEditRecord);
-  with FLogDatafile do
+  with FSecurityLog do
   begin
-    FKeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
-    FDataContent.AsInteger[Idx]   := EpiInteger(PtrInt(FDataLog));
+    KeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
+    // TODO: Log content of changed data into related datafile
+//    FDataContent.AsInteger[Idx]   := EpiInteger(PtrInt(FDataLog));
   end;
 end;
 
@@ -1247,8 +1248,8 @@ var
   Idx: Integer;
 begin
   Idx := DoNewLog(ltViewRecord);
-  with FLogDatafile do
-    FKeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
+  with FSecurityLog do
+    KeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
 end;
 
 procedure TEpiLogger.LogPack;
@@ -1280,7 +1281,8 @@ begin
   with ADoc.DataFiles[i] do
     LastEdit := Max(LastEdit, Max(RecModifiedDate, StructureModifiedDate));
 
-  FLogDatafile.FLogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
+//  FLogDatafile.FLogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
+  FSecurityLog.LogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
 end;
 
 procedure TEpiLogger.LogExport(Settings: TObject);
@@ -1291,7 +1293,7 @@ var
   LogExportDF: TLogExportDatafile;
   DFSetting: TEpiExportDatafileSettings;
 begin
-  Idx := DoNewLog(ltExport);
+  {Idx := DoNewLog(ltExport);
 
   LogExportDoc := TLogExportDocument.Create;
   LogExportDoc.ExportDeleted := OrgSettings.ExportDeleted;
@@ -1309,7 +1311,7 @@ begin
     LogExportDoc.ExportList.Add(LogExportDF);
   end;
 
-  FLogDatafile.FDataContent.AsInteger[Idx] := PtrInt(LogExportDoc);
+  FLogDatafile.FDataContent.AsInteger[Idx] := PtrInt(LogExportDoc);}
 end;
 
 { TEpiEnumField }

@@ -357,11 +357,16 @@ end;
 function TEpiDatafileRelationList.NewItemLoad(const AName: EpiString;
   AItemClass: TEpiCustomItemClass): TEpiCustomItem;
 begin
-  if AName = EpiSecurityLogRelationName then
-  //  AItemClass := TEpiSecurityDatafileRelation;
-    result := GetItemByName(EpiSecurityLogRelationName)
+  case AName of
+    EpiSecurityLogRelationName:
+      result := GetItemByName(EpiSecurityLogRelationName);
+
+    EpiSecurityLogDataRelationName:
+      result := GetItemByName(EpiSecurityLogDataRelationName);
+
   else
     result := inherited NewItemLoad(AName, AItemClass);
+  end;
 end;
 
 constructor TEpiDatafileRelationList.Create(AOwner: TEpiCustomBase);

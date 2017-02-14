@@ -34,8 +34,10 @@ const
 
   // Security Log Names
   EpiSecurityLogDatafileName = '_SecurityLog';
+  EpiSecurityLogDataEventName = '_SecurityDataEventLog';
   EpiSecurityLogValuelLabelSetName = '_label_SecurityLog';
   EpiSecurityLogRelationName = '_SecurityLogRelation';
+  EpiSecurityLogDataRelationName = '_SecurityLogDataRelation';
 
   // Failed Login Constants
   EpiAdminLoginAttemps = 3;

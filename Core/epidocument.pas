@@ -163,6 +163,8 @@ var
   DF: TEpiSecurityDatafile;
   VLSet: TEpiValueLabelSet;
   MR: TEpiMasterRelation;
+  DataDF: TEpiSecurityDataEventLog;
+  DR: TEpiDetailRelation;
 begin
   DF := TEpiSecurityDatafile(DataFiles.NewItem(TEpiSecurityDatafile));
   DF.Name := EpiSecurityLogDatafileName;
@@ -170,6 +172,14 @@ begin
   MR := TEpiMasterRelation(Relations.NewItem(TEpiSecurityDatafileRelation));
   MR.Datafile := DF;
   MR.Name     := EpiSecurityLogRelationName;
+
+  DataDF := TEpiSecurityDataEventLog(DataFiles.NewItem(TEpiSecurityDataEventLog));
+  DataDF.Name := EpiSecurityLogDataEventName;
+
+  DR := TEpiDetailRelation(MR.DetailRelations.NewItem(TEpiSecurityDatafileDetailRelation));
+  DR.Datafile := DataDF;
+  DR.Name     := EpiSecurityLogDataRelationName;
+  DR.MaxRecordCount := 0;
 
   VLSet := TEpiValueLabelSet(ValueLabelSets.NewItem(TEpiSecurityValuelabelSet));
   VLSet.Name := EpiSecurityLogValuelLabelSetName;
