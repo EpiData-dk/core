@@ -364,6 +364,9 @@ begin
     EpiSecurityLogDataRelationName:
       result := GetItemByName(EpiSecurityLogDataRelationName);
 
+    EpiSecurityLogKeyDataRelationName:
+      result := GetItemByName(EpiSecurityLogKeyDataRelationName);
+
   else
     result := inherited NewItemLoad(AName, AItemClass);
   end;

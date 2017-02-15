@@ -48,6 +48,9 @@ begin
     EpiSecurityLogDataEventName:
       result := GetDataFileByName(EpiSecurityLogDataEventName);
 
+    EpiSecurityLogKeyDataName:
+      result := GetDataFileByName(EpiSecurityLogKeyDataName);
+
   else
     result := inherited NewItemLoad(AName, AItemClass);
   end;

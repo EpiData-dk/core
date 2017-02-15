@@ -107,7 +107,7 @@ type
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
     // Returns the index to the "first" of the newly created records.
-    function    NewRecords(Const Count: Cardinal = 1): integer;
+    function    NewRecords(Const Count: Cardinal = 1): integer; virtual;
     procedure   Pack; // Removes records marked for deletion.
     procedure   ExchangeRecords(Const Index1, Index2: Integer);
     procedure   SortRecords(SortFields: TEpiFields); overload;

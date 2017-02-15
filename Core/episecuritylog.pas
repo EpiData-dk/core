@@ -47,13 +47,15 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
     destructor Destroy; override;
+    function NewRecords(const Count: Cardinal = 1): integer; override;
+    property  ID: TEpifield read FID;
     property  UserName: TEpiField read FUserName;
     property  Date: TEpiField read FDate;
     property  Time: TEpiField read FTime;
     property  Cycle: TEpiField read FCycle;
     property  LogType: TEpiField read FLogType;
     property  DataFileName: TEpiField read FDataFileName;
-    property  KeyFieldValues: TEpiField read FKeyFieldValues;
+//    property  KeyFieldValues: TEpiField read FKeyFieldValues;
     property  LogContent: TEpiField read FLogContent;
   end;
 
@@ -67,15 +69,49 @@ type
     FAfterValue:   TEpiField;
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
+    property ID:           TEpifield read FID;
     property VariableName: TEpiField read FVariableName;
     property BeforeValue:  TEpiField read FBeforeValue;
     property AfterValue:   TEpiField read FAfterValue;
+  end;
+
+  { TEpiSecurityKeyFieldLog }
+
+  TEpiSecurityKeyFieldLog = class(TEpiDataFile)
+  private
+    FID:           TEpiField;  // ID linked with FID on TEpiSecurityDatafile
+    FVariableName: TEpiField;
+    FKeyValue:     TEpifield;
+  public
+    constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
+    property ID:           TEpifield read FID;
+    property VariableName: TEpiField read FVariableName;
+    property KeyValue:     TEpiField read FKeyValue;
   end;
 
 implementation
 
 uses
   epidatafilestypes, epilogger;
+
+{ TEpiSecurityKeyFieldLog }
+
+constructor TEpiSecurityKeyFieldLog.Create(AOwner: TEpiCustomBase;
+  const ASize: integer);
+begin
+  inherited Create(AOwner, ASize);
+  FProtectedItem := True;
+
+  FID               := NewField(ftInteger);
+  FID.Name          := 'ID';
+  KeyFields.AddItem(FID);
+
+  FVariableName     := NewField(ftString);
+  FVariableName.Name := 'VarName';
+
+  FKeyValue          := NewField(ftString);
+  FKeyValue.Name     := 'KeyValue';
+end;
 
 { TEpiSecurityDatafileDetailRelation }
 
@@ -179,6 +215,13 @@ end;
 destructor TEpiSecurityDatafile.Destroy;
 begin
   inherited Destroy;
+end;
+
+function TEpiSecurityDatafile.NewRecords(const Count: Cardinal): integer;
+begin
+  Result := inherited NewRecords(Count);
+
+  ID.AsInteger[Result] := Result;
 end;
 
 end.

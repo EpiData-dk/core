@@ -33,11 +33,14 @@ const
   EpiAdminGroupName = 'admins_group';
 
   // Security Log Names
-  EpiSecurityLogDatafileName = '_SecurityLog';
+  EpiSecurityLogDatafileName  = '_SecurityLog';
   EpiSecurityLogDataEventName = '_SecurityDataEventLog';
-  EpiSecurityLogValuelLabelSetName = '_label_SecurityLog';
-  EpiSecurityLogRelationName = '_SecurityLogRelation';
-  EpiSecurityLogDataRelationName = '_SecurityLogDataRelation';
+  EpiSecurityLogKeyDataName   = '_SecurityKeyData';
+
+  EpiSecurityLogValuelLabelSetName    = '_label_SecurityLog';
+  EpiSecurityLogRelationName          = '_SecurityLogRelation';
+  EpiSecurityLogDataRelationName      = '_SecurityLogDataRelation';
+  EpiSecurityLogKeyDataRelationName   = '_SecurityLogKeyDataRelation';
 
   // Failed Login Constants
   EpiAdminLoginAttemps = 3;

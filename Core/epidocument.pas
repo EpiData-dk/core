@@ -165,9 +165,14 @@ var
   MR: TEpiMasterRelation;
   DataDF: TEpiSecurityDataEventLog;
   DR: TEpiDetailRelation;
+  KeyDF: TEpiSecurityKeyFieldLog;
 begin
+  VLSet := TEpiValueLabelSet(ValueLabelSets.NewItem(TEpiSecurityValuelabelSet));
+  VLSet.Name := EpiSecurityLogValuelLabelSetName;
+
   DF := TEpiSecurityDatafile(DataFiles.NewItem(TEpiSecurityDatafile));
   DF.Name := EpiSecurityLogDatafileName;
+  DF.LogType.ValueLabelSet := VLSet;
 
   MR := TEpiMasterRelation(Relations.NewItem(TEpiSecurityDatafileRelation));
   MR.Datafile := DF;
@@ -181,12 +186,15 @@ begin
   DR.Name     := EpiSecurityLogDataRelationName;
   DR.MaxRecordCount := 0;
 
-  VLSet := TEpiValueLabelSet(ValueLabelSets.NewItem(TEpiSecurityValuelabelSet));
-  VLSet.Name := EpiSecurityLogValuelLabelSetName;
+  KeyDF := TEpiSecurityKeyFieldLog(DataFiles.NewItem(TEpiSecurityKeyFieldLog));
+  KeyDF.Name := EpiSecurityLogKeyDataName;
 
-  DF.LogType.ValueLabelSet := VLSet;
+  DR := TEpiDetailRelation(MR.DetailRelations.NewItem(TEpiSecurityDatafileDetailRelation));
+  DR.Datafile := KeyDF;
+  DR.Name     := EpiSecurityLogKeyDataRelationName;
+  DR.MaxRecordCount := 0;
 
-  FLogger := TEpiLogger.Create(Self, DF);
+  FLogger := TEpiLogger.Create(Self, DataFiles);
 end;
 
 procedure TEpiDocument.DeInitializeSecurityLog;
@@ -512,7 +520,8 @@ begin
     FLogger.LoadFromXml(Node, ReferenceMap);
   end;
 
-//  FLogger.LoadExLog(FFailedLog);
+  if Assigned(Logger) then
+    Logger.LoadExLog(FFailedLog);
 
   FLoading := false;
   Modified := false;
