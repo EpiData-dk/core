@@ -104,7 +104,7 @@ type
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    NewField(FieldType: TEpiFieldType): TEpiField;
+    function    NewField(FieldType: TEpiFieldType): TEpiField; virtual;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
     // Returns the index to the "first" of the newly created records.

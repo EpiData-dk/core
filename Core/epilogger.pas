@@ -54,66 +54,6 @@ type
 
   TEpiFailedLogger = class;
 
-  { TEpiEnumField }
-
- { TEpiEnumField = class(TEpiField)
-  private
-    FData: array of TEpiLogEntry;
-  protected
-    function GetAsEnum(const Index: Integer): TEpiLogEntry; virtual;
-    procedure SetAsEnum(const Index: Integer; AValue: TEpiLogEntry); virtual;
-    procedure SetCapacity(AValue: Integer); override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
-    function GetCapacity: Integer; override;
-    function GetAsInteger(const index: Integer): EpiInteger; override;
-    function GetAsString(const index: Integer): EpiString; override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
-    procedure SetHasDefaultValue(const AValue: boolean); override;
-    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
-    procedure SetAsTime(const index: Integer; const AValue: EpiTime); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
-    procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
-    procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
-    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
-    function GetIsMissing(const index: Integer): boolean; override;
-    function GetHasDefaultValue: boolean; override;
-    function GetAsValue(const index: Integer): EpiVariant; override;
-    function GetAsTime(const index: Integer): EpiTime; override;
-    function GetAsFloat(const index: Integer): EpiFloat; override;
-    function GetAsDateTime(const index: Integer): EpiDateTime; override;
-    function GetAsDate(const index: Integer): EpiDate; override;
-    function GetAsBoolean(const index: Integer): EpiBool; override;
-    procedure DoSetDefaultValueAsString(const AValue: string); override;
-    function DoGetDefaultValueAsString: string; override;
-    function DoCompare(i, j: integer): integer; override;
-  public
-    procedure Exchange(i, j: integer); override;
-    procedure ResetDefaultValue; override;
-    procedure ResetData; override;
-    function FormatString(const FillSpace: boolean = false): string; override;
-    property AsEnum[Const Index: Integer]: TEpiLogEntry read GetAsEnum write SetAsEnum;
-  public
-    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); override;
-    class function DefaultMissing: TEpiLogEntry;
-  end;   }
-
-  { TEpiLog }
-
- { TEpiLog = class(TEpiDataFile)
-  public
-    FUserNames:      TEpiField;       // Username for the log entry
-    FTime:           TEpiField;       // Time of log entry
-    FCycle:          TEpiField;       // Cycly no fo the log entry
-    FType:           TEpiEnumField;   // Type of log entry
-    FDataFileNames:  TEpiField;       // Name of datafile for log entry (if applicable)
-    FKeyFieldValues: TEpiField;       // Commaseperated string with Field=Value entries of key field values.
-    FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
-    FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
-    constructor Create(AOwner: TEpiCustomBase; const aSize: integer = 0);
-  end;     }
-
   { TEpiLogger }
 
   TEpiLogger = class(TEpiCustomBase)
@@ -122,7 +62,6 @@ type
     TCommitState = (csNone, csNewRecord, csEditRecord);
   private
     FCommitState: TCommitState;
-//    FDataLog: TList;
     procedure StoreDataEvent(Field: TEpiField; Data: PEpiFieldDataEventRecord);
 
   private
@@ -162,7 +101,7 @@ type
     procedure  SetUserName(AValue: UTF8String);
     procedure  SetDatafile(AValue: TEpiDataFile);
     function   DoNewLog(ALogType: TEpiLogEntry): Integer;  // Result = Index for new record.
-    procedure  LogKeyValues(ParentID, RecordNo: integer);
+    procedure  LogKeyValues(ParentId, RecordNo: integer);
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: UTF8String read FUserName write SetUserName;
@@ -394,8 +333,6 @@ end;
 procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
-var
-  PData: PEpiFieldDataEventRecord;
 begin
   case EventGroup of
     eegAdmin:
@@ -477,6 +414,7 @@ begin
         efceData:
           begin
             if (FCommitState <> csEditRecord) then Exit;
+            if (TEpiField(Initiator).DataFile <> FDatafile) then exit;
             StoreDataEvent(TEpiField(Initiator), Data);
           end;
 
@@ -1193,23 +1131,11 @@ begin
   end;
 end;
 
-procedure TEpiLogger.LogKeyValues(ParentID, RecordNo: integer);
+procedure TEpiLogger.LogKeyValues(ParentId, RecordNo: integer);
 var
   F, KF: TEpiField;
   KeyIdx: Integer;
 begin
-{  Result := '';
-  if (not Assigned(FDatafile)) then exit;
-
-  if (FDatafile.KeyFields.Count > 0) then
-    for F in FDatafile.KeyFields do
-      Result += F.Name + '=' + F.AsString[Index] + ', '
-  else
-    Result := IntToStr(Index) + ', ';
-
-  if (Result <> '') then
-    Delete(Result, Length(Result)-1, 2);  }
-
   if (FDatafile.KeyFields.Count > 0) then
     for KF in FDatafile.KeyFields do
       begin
@@ -1217,10 +1143,15 @@ begin
 
         FKeyLog.ID.AsInteger[KeyIdx]          := ParentID;
         FKeyLog.VariableName.AsString[KeyIdx] := KF.Name;
-        FKeyLog.KeyValue.AsString[KeyIdx]     := KF.AsString[FDatafile.Size - 1];
+        FKeyLog.KeyValue.AsString[KeyIdx]     := KF.AsString[RecordNo];
       end
   else
-   ;// Result := IntToStr(Index) + ', ';
+    begin
+      KeyIdx := FKeyLog.NewRecords();
+      FKeyLog.ID.AsInteger[KeyIdx]          := ParentID;
+      FKeyLog.VariableName.AsString[KeyIdx] := 'Obs. no';
+      FKeyLog.KeyValue.AsInteger[KeyIdx]    := RecordNo + 1;
+    end;
 end;
 
 procedure TEpiLogger.LogLoginSuccess;

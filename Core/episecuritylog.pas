@@ -5,7 +5,8 @@ unit episecuritylog;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, epidatafiles, epivaluelabels, epidatafilerelations, Laz2_DOM;
+  Classes, SysUtils, epicustombase, epidatafiles, epivaluelabels, epidatafilerelations, Laz2_DOM,
+  epidatafilestypes;
 
 type
 
@@ -49,6 +50,7 @@ type
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function  NewRecords(const Count: Cardinal = 1): integer; override;
+    function  NewField(FieldType: TEpiFieldType): TEpiField; override;
     property  ID: TEpifield read FID;
     property  UserName: TEpiField read FUserName;
     property  Date: TEpiField read FDate;
@@ -70,6 +72,8 @@ type
     FAfterValue:   TEpiField;
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    function NewField(FieldType: TEpiFieldType): TEpiField; override;
     property ID:           TEpifield read FID;
     property VariableName: TEpiField read FVariableName;
     property BeforeValue:  TEpiField read FBeforeValue;
@@ -85,6 +89,8 @@ type
     FKeyValue:     TEpifield;
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    function NewField(FieldType: TEpiFieldType): TEpiField; override;
     property ID:           TEpifield read FID;
     property VariableName: TEpiField read FVariableName;
     property KeyValue:     TEpiField read FKeyValue;
@@ -93,7 +99,7 @@ type
 implementation
 
 uses
-  epidatafilestypes, epilogger;
+  epilogger;
 
 { TEpiSecurityKeyFieldLog }
 
@@ -112,6 +118,22 @@ begin
 
   FKeyValue          := NewField(ftString);
   FKeyValue.Name     := 'KeyValue';
+end;
+
+procedure TEpiSecurityKeyFieldLog.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+  FID           := Fields.FieldByName['ID'];
+  FVariableName := Fields.FieldByName['VarName'];
+  FKeyValue     := Fields.FieldByName['KeyValue'];
+end;
+
+function TEpiSecurityKeyFieldLog.NewField(FieldType: TEpiFieldType): TEpiField;
+begin
+  Result := inherited NewField(FieldType);
+  Result.Top := Fields.Count * 10;
+  Result.Left := 50;
 end;
 
 { TEpiSecurityDatafileDetailRelation }
@@ -142,6 +164,23 @@ begin
 
   FAfterValue        := NewField(ftString);
   FAfterValue.Name   := 'AfterValue';
+end;
+
+procedure TEpiSecurityDataEventLog.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+  FID           := Fields.FieldByName['ID'];
+  FVariableName := Fields.FieldByName['VarName'];
+  FBeforeValue  := Fields.FieldByName['BeforeValue'];
+  FAfterValue   := Fields.FieldByName['AfterValue'];
+end;
+
+function TEpiSecurityDataEventLog.NewField(FieldType: TEpiFieldType): TEpiField;
+begin
+  Result := inherited NewField(FieldType);
+  Result.Top := Fields.Count * 10;
+  Result.Left := 50;
 end;
 
 { TEpiSecurityDatafileRelation }
@@ -231,7 +270,7 @@ begin
   FTime         := Fields.FieldByName['Time'];
   FCycle        := Fields.FieldByName['Cycle'];
   FLogType      := Fields.FieldByName['LogType'];
-  FDataFileName := Fields.FieldByName['DataFileName'];
+  FDataFileName := Fields.FieldByName['DataFormName'];
   FLogContent   := Fields.FieldByName['LogContent'];
 end;
 
@@ -243,6 +282,13 @@ begin
   // During load do nothing.
   if (not IsLoadingRecords) then
     ID.AsInteger[Result] := Result;
+end;
+
+function TEpiSecurityDatafile.NewField(FieldType: TEpiFieldType): TEpiField;
+begin
+  Result := inherited NewField(FieldType);
+  Result.Top := Fields.Count * 10;
+  Result.Left := 50;
 end;
 
 end.
