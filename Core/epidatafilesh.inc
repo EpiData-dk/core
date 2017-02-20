@@ -93,6 +93,7 @@ type
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     procedure   SetModified(const AValue: Boolean); override;
+    property    IsLoadingRecords: Boolean read FLoadingRecs;
   protected
     procedure   SaveKeyFieldsToDom(RootNode: TDOMElement);
     procedure   SaveRecordToDom(RootNode: TDOMElement);

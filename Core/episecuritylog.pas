@@ -5,7 +5,7 @@ unit episecuritylog;
 interface
 
 uses
-  Classes, SysUtils, epicustombase, epidatafiles, epivaluelabels, epidatafilerelations;
+  Classes, SysUtils, epicustombase, epidatafiles, epivaluelabels, epidatafilerelations, Laz2_DOM;
 
 type
 
@@ -41,13 +41,14 @@ type
     FCycle:          TEpiField;       // Cycly no fo the log entry
     FLogType:        TEpiField;       //
     FDataFileName:   TEpiField;       // Name of datafile for log entry (if applicable)
-    FKeyFieldValues: TEpiField;       // Commaseperated string with Field=Value entries of key field values.
-    FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
+//    FKeyFieldValues: TEpiField;       // Commaseperated string with Field=Value entries of key field values.
+//    FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
     FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
     destructor Destroy; override;
-    function NewRecords(const Count: Cardinal = 1): integer; override;
+    procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    function  NewRecords(const Count: Cardinal = 1): integer; override;
     property  ID: TEpifield read FID;
     property  UserName: TEpiField read FUserName;
     property  Date: TEpiField read FDate;
@@ -202,11 +203,11 @@ begin
   FDataFileName        := NewField(ftString);
   FDataFileName.Name   := 'DataFormName';
 
-  FKeyFieldValues      := NewField(ftString);
-  FKeyFieldValues.Name := 'KeyFieldValues';
+//  FKeyFieldValues      := NewField(ftString);
+//  FKeyFieldValues.Name := 'KeyFieldValues';
 
-  FDataContent         := NewField(ftInteger);
-  FDataContent.Name    := 'DataContent';
+//  FDataContent         := NewField(ftInteger);
+//  FDataContent.Name    := 'DataContent';
 
   FLogContent          := NewField(ftString);
   FLogContent.Name     := 'LogContent';
@@ -217,11 +218,31 @@ begin
   inherited Destroy;
 end;
 
+procedure TEpiSecurityDatafile.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+
+  // Since all fields are destroyed and recreated during load (they belong to main section)
+  // we must re-assign the builtin variable after load.
+  FID           := Fields.FieldByName['ID'];
+  FUserName     := Fields.FieldByName['UserName'];
+  FDate         := Fields.FieldByName['Date'];
+  FTime         := Fields.FieldByName['Time'];
+  FCycle        := Fields.FieldByName['Cycle'];
+  FLogType      := Fields.FieldByName['LogType'];
+  FDataFileName := Fields.FieldByName['DataFileName'];
+  FLogContent   := Fields.FieldByName['LogContent'];
+end;
+
+
 function TEpiSecurityDatafile.NewRecords(const Count: Cardinal): integer;
 begin
   Result := inherited NewRecords(Count);
 
-  ID.AsInteger[Result] := Result;
+  // During load do nothing.
+  if (not IsLoadingRecords) then
+    ID.AsInteger[Result] := Result;
 end;
 
 end.

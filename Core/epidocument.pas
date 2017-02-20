@@ -210,6 +210,8 @@ begin
     eegAdmin:
       case TEpiAdminChangeEventType(EventType) of
         // Admin has been initialize, now time to setup Security Datafile and Valuelabels.
+        // Admin initialization is either done explicitly (Admin.InitAdmin) or right after
+        // the preloading of users (in Admin.LoadCrypto)
         eaceAdminInitializing:
           InitializeSecurityLog;
 
@@ -243,7 +245,6 @@ begin
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
-//  FLogger          := TEpiLogger.Create(Self);
   FFailedLog       := TEpiFailedLogger.Create(Self);
   FCycleNo         := 0;
   FFlags           := [];
@@ -416,7 +417,7 @@ begin
       end;
 
       case CRes of
-        prSuccess:  InitializeSecurityLog;
+        prSuccess:  ;
         prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
         prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
       end;

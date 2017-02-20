@@ -25,7 +25,8 @@ type
     ltAppend,          // Appended data to datafiles
     ltExport,          // Exported data (or part of) to uncontrolled file.
     ltClose,           // The document was closed
-    ltNewPassword      // The user password was changed/reset
+    ltNewPassword,     // The user password was changed/reset
+    ltBlockedLogin     // The access to the project was blocked
   );
 
 
@@ -45,7 +46,8 @@ const
       'Append',
       'Export',
       'Closed Project',
-      'New Password'
+      'New Password',
+      'Blocked Login'
     );
 
 type
@@ -190,7 +192,11 @@ type
     FTime:           TEpiField;       // Time of log entry
     FCycle:          TEpiField;       // Cycly no fo the log entry
     FAesKey:         TEpiField;       // The aes key for the line
-    FLoginFailType:  TEpiField;       // Numbers for type of failed login: 0 = username, 1 = password, 2 = read from XML, 3 = blocked login
+    FLoginFailType:  TEpiField;       // Numbers for type of failed login:
+                                      //   0 = username ,
+                                      //   1 = password,
+                                      //   2 = read from XML (the actual content of what wrong need to be decoded)
+                                      //   3 = blocked login
     FEncryptedTxt:   TEpiField;       // If read from XML, store the encrypted TXT here.
     FHostName:       TEpiField;       //  -   "    -     , store the hostname here.
   private
@@ -1063,20 +1069,20 @@ var
   GuidPTR: PGuid;
   FDecrypter: TDCP_rijndael;
   EncryptSt, PlainTxtSt: TMemoryStream;
+  B: Byte;
+  D: TDateTime;
 begin
   // ExLogRoot = <ExLog>
   Admin := Doc(self).Admin;
 
-  {FDecrypter := TDCP_rijndael.Create(nil);
+  FDecrypter := TDCP_rijndael.Create(nil);
   EncryptSt  := TMemoryStream.Create;
   PlainTxtSt := TMemoryStream.Create;
 
   for i := 0 to ExLogObject.FLogDataFile.Size -1 do
     begin
-      FLogDatafile.NewRecords();
-      Idx := FLogDatafile.Size - 1;
 
-
+      // The content is encrypted and we need to decode it with the private RSA key.
       if ExLogObject.FLoginFailType.AsInteger[i] = 2 then
         begin
           S := ExLogObject.FAesKey.AsString[i];
@@ -1110,29 +1116,43 @@ begin
           PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
           }
 
-          with FLogDatafile do
+          with FSecurityLog do
           begin
-            FUserNames.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
-            FTime.AsDateTime[Idx]           := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
-            FCycle.AsInteger[Idx]           := PlainTxtSt.ReadQWord;
-            FDataContent.AsInteger[Idx]     := PlainTxtSt.ReadByte;
-            FLogContent.AsString[Idx]       := PlainTxtSt.ReadAnsiString;
-            FType.AsEnum[Idx]               := ltFailedLogin;
+            B := PlainTxtSt.ReadByte;
+            if (B = 3) then
+              Idx := DoNewLog(ltBlockedLogin)
+            else
+              Idx := DoNewLog(ltFailedLogin);
+
+            UserName.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
+            D := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
+            Date.AsDateTime[Idx]          := D;
+            Time.AsDateTime[Idx]          := D;
+            Cycle.AsInteger[Idx]          := PlainTxtSt.ReadQWord;
+            LogContent.AsString[Idx]      := PlainTxtSt.ReadAnsiString;
           end;
 
         end
       else
+        // The project file was attempted opened but failed, however it was sucessfully loaded without
+        // the document was freed. Hence data in the failed logger is not in an encrypted state and we
+        // just need to copy over the data.
         begin
-          FLogDatafile.FUserNames.AsString[Idx] := ExLogObject.FUserNames.AsString[i];
-          FLogDatafile.FTime.AsDateTime[Idx]    := ExLogObject.FTime.AsDateTime[i];
-          FLogDatafile.FCycle.AsInteger[Idx]    := ExLogObject.FCycle.AsInteger[i];
-          FLogDatafile.FDataContent.AsInteger[Idx] := ExLogObject.FLoginFailType.AsInteger[i];
-          FLogDatafile.FLogContent.AsString[Idx]   := ExLogObject.FHostName.AsString[i];
-          FLogDatafile.FType.AsEnum[Idx]          := ltFailedLogin;
+          if (ExLogObject.FLoginFailType.AsInteger[i] = 3) then
+            Idx := DoNewLog(ltBlockedLogin)
+          else
+            Idx := DoNewLog(ltFailedLogin);
+
+          FSecurityLog.UserName.AsString[Idx]     := ExLogObject.FUserNames.AsString[i];
+          FSecurityLog.Date.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
+          FSecurityLog.Time.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
+          FSecurityLog.Cycle.AsInteger[Idx]       := ExLogObject.FCycle.AsInteger[i];
+          FSecurityLog.LogContent.AsString[Idx]   := ExLogObject.FHostName.AsString[i];
         end;
-    end; }
+    end;
 
   Idx := DoNewLog(ltSuccessLogin);
+  FSecurityLog.Date.AsDateTime[Idx] := FSuccessLoginTime;
   FSecurityLog.Time.AsDateTime[Idx] := FSuccessLoginTime;
   FSecurityLog.LogContent.AsString[Idx] := GetHostNameWrapper;
 
@@ -1662,11 +1682,10 @@ begin
         SaveDomAttr(Elem, 'aesKey', AesKey);
 
         PlainTxtMs.Clear;
-//        PlainTxtMs.WriteAnsiString(''); // MD5 sum of previous line
+        PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
         PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
         PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
         PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
-        PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
         PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
 
         PlainTxtMs.Position := 0;

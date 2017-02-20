@@ -713,6 +713,7 @@ begin
   if (S <> '') then
     FRSA.PublicKey := S;
 
+  DoChange(eegAdmin, Word(eaceAdminInitializing), nil);
   Result := DoRequestPassword(FailLogger);
 end;
 
