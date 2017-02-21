@@ -27,6 +27,10 @@ type
   { TEpiSecurityValuelabelSet }
 
   TEpiSecurityValuelabelSet = class(TEpiValueLabelSet)
+  private
+    FInitialized: Boolean;
+  protected
+    procedure SetLanguage(const LangCode: string; const DefaultLanguage: boolean); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
   end;
@@ -194,22 +198,36 @@ end;
 
 { TEpiSecurityValuelabelSet }
 
-constructor TEpiSecurityValuelabelSet.Create(AOwner: TEpiCustomBase);
+procedure TEpiSecurityValuelabelSet.SetLanguage(const LangCode: string;
+  const DefaultLanguage: boolean);
 var
   LE: TEpiLogEntry;
   VL: TEpiIntValueLabel;
 begin
-  inherited Create(AOwner);
-  FProtectedItem := true;
-  LabelType := ftInteger;
+  inherited SetLanguage(LangCode, DefaultLanguage);
+
+  // A little hacky. But adding the content of the to the Set during create
+  // is not posible since the language is not applied at that time. Hence the
+  // labels in a single VL is not correctly set.
+  if FInitialized then exit;
 
   for LE in TEpiLogEntry do
   begin
     VL := TEpiIntValueLabel(NewValueLabel);
-
     VL.Value := Word(LE);
     VL.TheLabel.Text := EpiLogEntryText[LE];
   end;
+
+  FInitialized := true;
+end;
+
+constructor TEpiSecurityValuelabelSet.Create(AOwner: TEpiCustomBase);
+begin
+  inherited Create(AOwner);
+  ItemOwner := true;
+  FProtectedItem := true;
+  LabelType := ftInteger;
+  FInitialized := false;
 end;
 
 { TEpiSecurityDatafile }
