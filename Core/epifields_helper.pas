@@ -120,7 +120,7 @@ begin
     ftInteger:
       begin
         Result := (FieldType in [ftInteger, ftFloat]) and
-                  (VL.MaxValueLength <= Length)
+                  (VL.MaxValueLength <= ALength)
       end;
 
     ftFloat:
@@ -145,8 +145,8 @@ begin
         end;
 
         Result := Result and
-          (IntL <= Length) and
-          (DecL <= Decimals);
+          (IntL <= ALength) and
+          (DecL <= ADecimals);
       end;
     ftString:  Result := (FieldType in [ftString, ftUpperString]);
   end;
