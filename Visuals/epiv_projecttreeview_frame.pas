@@ -205,6 +205,7 @@ type
     FShowHint: boolean;
     FShowRecordCount: boolean;
     FShowProject: boolean;
+    FShowProtected: boolean;
   private
     procedure ResetCheckBoxes;
   private
@@ -215,6 +216,7 @@ type
     procedure SetEditStructure(AValue: Boolean);
     procedure SetShowCheckBoxes(AValue: Boolean);
     procedure SetShowHint(AValue: boolean);
+    procedure SetShowProtected(AValue: boolean);
     procedure SetShowRecordCount(AValue: boolean);
     procedure SetShowProject(AValue: boolean);
   public
@@ -227,6 +229,7 @@ type
     property  ShowHint: boolean read FShowHint write SetShowHint;
     property  ShowRecordCount: boolean read FShowRecordCount write SetShowRecordCount;
     property  ShowProject: boolean read FShowProject write SetShowProject;
+    property  ShowProtected: boolean read FShowProtected write SetShowProtected;
 
   { Option Methods }
   private
@@ -960,6 +963,11 @@ procedure TEpiVProjectTreeViewFrame.DoUpdateTree;
     i: Integer;
     Node: PVirtualNode;
   begin
+    if MR.ProtectedItem and
+       (not ShowProtected)
+    then
+      Exit;
+
     Node := VST.AddChild(Parent, MR);
 
     UpdateCustomData(MR, Node);
@@ -1089,6 +1097,7 @@ begin
   FShowCheckBoxes     := false;
   FShowHint           := false;
   FShowProject        := true;
+  FShowProtected      := false;
 
   VST := TVirtualStringTree.Create(Self);
   with VST do
@@ -1255,7 +1264,7 @@ begin
       NewDataFile.KeyFields.AddItem(NewKeyField);
     end;
 
-  Node := VST.AddChild(ParentNode, NewRelation);
+{  Node := VST.AddChild(ParentNode, NewRelation);
   UpdateCustomData(NewRelation, Node);
 
   if ShowCheckBoxes then
@@ -1270,7 +1279,8 @@ begin
             VST.CheckState[Node] := csMixedNormal;
         end;
     end;
-  end;
+  end;     }
+  DoUpdateTree;
 
   DoNewRelation(NewRelation);
 
@@ -1392,6 +1402,14 @@ begin
 
   VST.ShowHint := FShowHint;
   VST.HintMode := hmHint;
+end;
+
+procedure TEpiVProjectTreeViewFrame.SetShowProtected(AValue: boolean);
+begin
+  if FShowProtected = AValue then Exit;
+  FShowProtected := AValue;
+
+  DoUpdateTree;
 end;
 
 procedure TEpiVProjectTreeViewFrame.SetShowRecordCount(AValue: boolean);

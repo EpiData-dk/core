@@ -2027,11 +2027,13 @@ end;
 function TEpiCustomList.NewItem(AItemClass: TEpiCustomItemClass
   ): TEpiCustomItem;
 begin
+  if (not Assigned(AItemClass)) and
+     (Assigned(OnNewItemClass))
+  then
+    AItemClass := OnNewItemClass(Self, AItemClass);
+
   if not Assigned(AItemClass) then
     AItemClass := ItemClass;
-
-  if Assigned(OnNewItemClass) then
-    AItemClass := OnNewItemClass(Self, AItemClass);
 
   if not Assigned(AItemClass) then
     Exception.Create('TEpiCustomList: No ItemClass Defined!');

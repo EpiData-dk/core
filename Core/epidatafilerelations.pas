@@ -81,6 +81,7 @@ type
     function Prefix: string; override;
     function NewItemLoad(const AName: EpiString;
       AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; override;
+    procedure AddItem(Item: TEpiCustomItem); override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function XMLName: string; override;
@@ -370,6 +371,27 @@ begin
   else
     result := inherited NewItemLoad(AName, AItemClass);
   end;
+end;
+
+procedure TEpiDatafileRelationList.AddItem(Item: TEpiCustomItem);
+var
+  Idx: Integer;
+begin
+  Idx := Count - 1;
+
+  if (Idx >= 0) and
+     (not Item.ProtectedItem)
+  then
+    begin
+      // Override AddItem here - such that if using the Extended Access, the protected
+      // MasterRelation is always sorted last.
+      while (Idx >= 0) and
+            (Items[Idx].ProtectedItem)
+      do
+        Dec(Idx);
+    end;
+
+  InsertItem(Idx + 1, Item);
 end;
 
 constructor TEpiDatafileRelationList.Create(AOwner: TEpiCustomBase);

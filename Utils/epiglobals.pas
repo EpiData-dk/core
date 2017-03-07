@@ -37,6 +37,11 @@ const
   EpiSecurityLogDataEventName = '_SecurityDataEventLog';
   EpiSecurityLogKeyDataName   = '_SecurityKeyData';
 
+  // Security Log Captions
+  EpiSecurityLogDatafileCaption  = 'Security Log';
+  EpiSecurityLogDataEventCaption = 'Data Events';
+  EpiSecurityLogKeyDataCaption   = 'Index Data';
+
   EpiSecurityLogValuelLabelSetName    = '_label_SecurityLog';
   EpiSecurityLogRelationName          = '_SecurityLogRelation';
   EpiSecurityLogDataRelationName      = '_SecurityLogDataRelation';

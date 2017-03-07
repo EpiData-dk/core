@@ -172,6 +172,7 @@ begin
 
   DF := TEpiSecurityDatafile(DataFiles.NewItem(TEpiSecurityDatafile));
   DF.Name := EpiSecurityLogDatafileName;
+  DF.Caption.Text := EpiSecurityLogDatafileCaption;
   DF.LogType.ValueLabelSet := VLSet;
 
   MR := TEpiMasterRelation(Relations.NewItem(TEpiSecurityDatafileRelation));
@@ -180,6 +181,7 @@ begin
 
   DataDF := TEpiSecurityDataEventLog(DataFiles.NewItem(TEpiSecurityDataEventLog));
   DataDF.Name := EpiSecurityLogDataEventName;
+  DataDF.Caption.Text := EpiSecurityLogDataEventCaption;
 
   DR := TEpiDetailRelation(MR.DetailRelations.NewItem(TEpiSecurityDatafileDetailRelation));
   DR.Datafile := DataDF;
@@ -188,6 +190,7 @@ begin
 
   KeyDF := TEpiSecurityKeyFieldLog(DataFiles.NewItem(TEpiSecurityKeyFieldLog));
   KeyDF.Name := EpiSecurityLogKeyDataName;
+  KeyDF.Caption.Text := EpiSecurityLogKeyDataCaption;
 
   DR := TEpiDetailRelation(MR.DetailRelations.NewItem(TEpiSecurityDatafileDetailRelation));
   DR.Datafile := KeyDF;
