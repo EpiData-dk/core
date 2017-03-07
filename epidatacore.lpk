@@ -31,7 +31,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4"/>
-    <Files Count="82">
+    <Files Count="83">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -360,6 +360,10 @@
         <Filename Value="Core/episecuritylog.pas"/>
         <UnitName Value="episecuritylog"/>
       </Item82>
+      <Item83>
+        <Filename Value="Core/epicustomlist_helper.pas"/>
+        <UnitName Value="epicustomlist_helper"/>
+      </Item83>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

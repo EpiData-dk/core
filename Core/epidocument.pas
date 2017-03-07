@@ -517,15 +517,17 @@ begin
     end;
 
   // Version 4 (only):
-  if LoadNode(Node, Root, 'Log', false) then
+  if Assigned(Logger) then
   begin
     // Logger will already be initialized here, since it is done whenever a successfull
     // login has been performed.
-    FLogger.LoadFromXml(Node, ReferenceMap);
-  end;
+    if LoadNode(Node, Root, 'Log', false) then
+    begin
+      FLogger.LoadFromXml(Node, ReferenceMap);
+    end;
 
-  if Assigned(Logger) then
     Logger.LoadExLog(FFailedLog);
+  end;
 
   FLoading := false;
   Modified := false;
