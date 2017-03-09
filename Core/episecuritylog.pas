@@ -31,6 +31,8 @@ type
     FInitialized: Boolean;
   protected
     procedure SetLanguage(const LangCode: string; const DefaultLanguage: boolean); override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
   end;
@@ -223,6 +225,16 @@ begin
   end;
 
   FInitialized := true;
+end;
+
+function TEpiSecurityValuelabelSet.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  // if we already have initialized the valuelabels, then
+  // clear them and do the clone instead
+  if TEpiSecurityValuelabelSet(Dest).FInitialized then
+    TEpiSecurityValuelabelSet(Dest).ClearAndFree;
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 end;
 
 constructor TEpiSecurityValuelabelSet.Create(AOwner: TEpiCustomBase);

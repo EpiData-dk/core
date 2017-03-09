@@ -226,6 +226,7 @@ begin
   then
     begin
       // TODO: Perhaps make this save asyncronous?
+//      Document.Clone;
       WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
       Exit;
     end;
