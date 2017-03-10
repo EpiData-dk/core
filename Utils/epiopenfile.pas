@@ -45,6 +45,9 @@ type
       end;
       PLockFile = ^TLockFile;
 
+    procedure OnInternalProgress(const Sender: TEpiCustomBase;
+      ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
+      var Canceled: Boolean);
   private
     // Private event holders
     FOnError: TOpenEpiErrorEvent;
@@ -73,6 +76,11 @@ type
     procedure CreateLockFile;
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
+  private
+    // Async saving
+    FCriticalSection: PRTLCriticalSection;
+    FSaveThread: TThread;
+    procedure AsyncSave;
   private
     { User Authorization }
     FAuthedUser: TEpiUser;
@@ -137,8 +145,121 @@ uses
   epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
   laz2_XMLWrite;
 
+//var
+//  OpenEpiDocumentInstance: TEpiDocumentFile = nil;
+
+type
+
+  { TEpiXMLSaveThread }
+
+  TEpiXMLSaveThread = class(TThread)
+  private
+    FXMLDoc: TXMLDocument;
+    FFileName: UTF8String;
+  public
+    constructor Create(XMLDoc: TXMLDocument; Const FileName: UTF8String);
+    procedure Execute; override;
+  end;
+
+  { TEpiDocSaveThread }
+
+  TEpiDocSaveThread = class(TThread)
+  private
+    // ProgressVars
+    FProgressSender: TEpiCustomBase;
+    FProgressType:   TEpiProgressType;
+    FProgressCurrentPos: Integer;
+    FProgressMaxPos:     Integer;
+    FProgressCanceled:   Boolean;
+    procedure DoProgress;
+    procedure OnProgress(const Sender: TEpiCustomBase;
+      ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
+      var Canceled: Boolean);
+  private
+    FEpiDoc: TEpiDocument;
+    FFileName: UTF8String;
+    FProgressEvent: TEpiProgressEvent;
+  public
+    constructor Create(EpiDoc: TEpiDocument; Const FileName: UTF8String;
+      ProgressEventHandler: TEpiProgressEvent);
+    procedure Execute; override;
+  end;
+
+{ TEpiSaveThread }
+
+constructor TEpiXMLSaveThread.Create(XMLDoc: TXMLDocument;
+  const FileName: UTF8String);
+begin
+  inherited Create(false);
+  FXMLDoc := XMLDoc;
+  FFileName := FileName;
+end;
+
+procedure TEpiXMLSaveThread.Execute;
+begin
+  WriteXMLFile(FXMLDoc, FFileName, [xwfPreserveWhiteSpace]);
+end;
+
+{ TEpiDocSaveThread }
+
+procedure TEpiDocSaveThread.DoProgress;
+begin
+  writeln('before progressevent');
+  if Assigned(FProgressEvent) then
+    FProgressEvent(
+      FProgressSender,
+      FProgressType,
+      FProgressCurrentPos,
+      FProgressMaxPos,
+      FProgressCanceled
+    );
+  writeln('after progressevent');
+end;
+
+procedure TEpiDocSaveThread.OnProgress(const Sender: TEpiCustomBase;
+  ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
+  var Canceled: Boolean);
+begin
+  FProgressSender := Sender;
+  FProgressType := ProgressType;
+  FProgressCurrentPos := CurrentPos;
+  FProgressMaxPos := MaxPos;
+  FProgressCanceled := Canceled;
+  WriteLn('Before Sync');
+  Synchronize(@DoProgress);
+  writeln('after sync');
+end;
+
+constructor TEpiDocSaveThread.Create(EpiDoc: TEpiDocument;
+  const FileName: UTF8String; ProgressEventHandler: TEpiProgressEvent);
+begin
+  inherited Create(false);
+  FEpiDoc := EpiDoc;
+  FFileName := FileName;
+  FProgressEvent := ProgressEventHandler;
+end;
+
+procedure TEpiDocSaveThread.Execute;
 var
-  OpenEpiDocumentInstance: TEpiDocumentFile = nil;
+  MS: TMemoryStreamUTF8;
+  Fs: TFileStreamUTF8;
+begin
+  MS := TMemoryStreamUTF8.Create;
+
+  FEpiDoc.OnProgress := @OnProgress;
+  FEpiDoc.SaveToStream(Ms);
+  Ms.Position := 0;
+
+  if UTF8Pos('.epz', UTF8LowerCase(FFileName)) > 0 then
+    StreamToZipFile(Ms, UTF8ToSys(FFileName))
+  else
+    begin
+      Fs := TFileStreamUTF8.Create(FFileName, fmCreate);
+      Fs.CopyFrom(Ms, Ms.Size);
+      Fs.Free;
+    end;
+  Ms.Free;
+end;
 
 { TEpiDocumentFile }
 
@@ -146,6 +267,10 @@ constructor TEpiDocumentFile.Create;
 begin
   if IsEqualGUID(FGuid, GUID_NULL) then
     CreateGUID(FGuid);
+
+  New(FCriticalSection);
+  InitCriticalSection(FCriticalSection^);
+  FSaveThread := nil;
 
   FDataDirectory := '';
 end;
@@ -174,6 +299,13 @@ begin
     end;
   end;
 
+  if Assigned(FSaveThread) then
+    FSaveThread.WaitFor;
+  FSaveThread.Free;
+
+  DoneCriticalsection(FCriticalSection^);
+  Dispose(FCriticalSection);
+
   inherited Destroy;
 end;
 
@@ -197,9 +329,19 @@ begin
   Result := FEpiDoc;
 end;
 
+procedure TEpiDocumentFile.OnInternalProgress(const Sender: TEpiCustomBase;
+  ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
+  var Canceled: Boolean);
+begin
+  if Assigned(OnProgress) then
+    OnProgress(Sender, ProgressType, CurrentPos, MaxPos, Canceled);
+end;
+
 procedure TEpiDocumentFile.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
+var
+  LocalDoc: TXMLDocument;
 begin
   {
     2 jobs for hook:
@@ -226,8 +368,14 @@ begin
   then
     begin
       // TODO: Perhaps make this save asyncronous?
-//      Document.Clone;
-      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
+      LocalDoc := TXMLDocument.Create;
+      LocalDoc.AppendChild(TXMLDocument(Data).FirstChild.CloneNode(true, LocalDoc));
+
+      FSaveThread := TEpiXMLSaveThread.Create(LocalDoc, FFileName);
+
+//      AsyncSave;
+//      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
+//      WriteXMLFile(LocalDoc, '/tmp/clone.epx', [xwfPreserveWhiteSpace]);
       Exit;
     end;
 end;
@@ -508,6 +656,11 @@ begin
     DeleteFileUTF8(BackupFileName);
 end;
 
+procedure TEpiDocumentFile.AsyncSave;
+begin
+  //
+end;
+
 procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
 begin
   FAuthedUser := User;
@@ -518,10 +671,25 @@ procedure TEpiDocumentFile.DoSaveFile(const AFileName: string);
 var
   Ms: TMemoryStream;
   Fs: TStream;
+  T1, T2, T3: TDateTime;
+  SaveDoc: TEpiDocument;
 begin
   Ms := TMemoryStream.Create;
 
-  FEpiDoc.OnProgress := OnProgress;
+  if Assigned(FSaveThread) then
+  begin
+    WriteLn('Waiting for thread!');
+    FSaveThread.WaitFor;
+    FreeAndNil(FSaveThread);
+    WriteLn('Done waiting for thread!');
+  end;
+
+  SaveDoc := TEpiDocument(FEpiDoc.Clone);
+  FSaveThread := TEpiDocSaveThread.Create(SaveDoc, AFileName, OnProgress);
+
+
+
+{  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.SaveToStream(Ms);
   Ms.Position := 0;
 
@@ -533,7 +701,7 @@ begin
       Fs.CopyFrom(Ms, Ms.Size);
       Fs.Free;
     end;
-  Ms.Free;
+  Ms.Free; }
 end;
 
 procedure TEpiDocumentFile.DoOpenFile(const AFileName: string);
