@@ -15,11 +15,7 @@ type
 
   TEpiDocumentChangeEvent = (
     // Simple document password has changed.
-    edcePassword,
-
-    // Any listeners are requested to force a save, due to eg. log changes.
-    //  data = TDomDocument (OwnerDocument)
-    edceRequestSave
+    edcePassword
   );
 
   TEpiProgressType =
@@ -312,6 +308,9 @@ begin
     ReferenceMap := TEpiReferenceMap.Create;
     LoadFromXml(RootNode, ReferenceMap);
     ReferenceMap.FixupReferences;
+
+    if (Admin.Users.Count > 0) then;
+      DoChange(eegCustomBase, Word(ecceRequestSave), nil);
   finally
     ReferenceMap.Free;
     RecXml.Free;
@@ -414,7 +413,7 @@ begin
           LoadNode(Node, Root, 'ExLog', false);
           Root.ReplaceChild(Elem, Node);
 
-          DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
+          DoChange(eegCustomBase, Word(ecceRequestSave), Root.OwnerDocument);
           Exclude(FFlags, edfLoginFailed);
         end;
       end;
@@ -516,15 +515,12 @@ begin
         Relations.LoadFromXml(Node, ReferenceMap);
     end;
 
-  // Version 4 (only):
   if Assigned(Logger) then
   begin
-    // Logger will already be initialized here, since it is done whenever a successfull
-    // login has been performed.
+
+    // Version 4 (only):
     if LoadNode(Node, Root, 'Log', false) then
-    begin
       FLogger.LoadFromXml(Node, ReferenceMap);
-    end;
 
     Logger.LoadExLog(FFailedLog);
   end;

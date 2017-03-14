@@ -12,7 +12,7 @@ uses
 const
   EPI_XML_DATAFILE_VERSION = 5;
   {$IFNDEF RELEASE}
-  EPI_XML_BRANCH_STRING = 'TRUNK';
+  EPI_XML_BRANCH_STRING = 'SECURITYLOG';
   {$ENDIF}
 
 type
@@ -71,7 +71,13 @@ type
 
     // New in XML v5. A notification is sent from TEpiCustomItem with data in a PEpiIdCaseErrorRecord,
     // requesting a new name for the CustomItem.
-    ecceIdCaseOnLoad
+    ecceIdCaseOnLoad,
+
+    // Any listeners are requested to force a save, due to eg. log changes.
+    //  data = TDomDocument : The data should be saved (OwnerDocument)
+    //  data = nil          : The TEpiDocument structure in itself should be saved
+    ecceRequestSave
+
   );
 
   TEpiChangeEvent = procedure(

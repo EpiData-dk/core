@@ -1193,6 +1193,7 @@ begin
   begin
     LogContent.AsString[Idx]    := S;
   end;
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogRecordNew;
@@ -1202,6 +1203,7 @@ var
 begin
   Idx := DoNewLog(ltNewRecord);
   LogKeyValues(FSecurityLog.ID.AsInteger[Idx], FDatafile.Size - 1);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogRecordEdit(RecordNo: Integer);
@@ -1209,6 +1211,7 @@ var
   Idx: Integer;
 begin
   LogKeyValues(FSecurityLog.ID.AsInteger[FSecurityLog.Size - 1], RecordNo);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogRecordView(RecordNo: Integer);
@@ -1217,21 +1220,25 @@ var
 begin
   Idx := DoNewLog(ltViewRecord);
   LogKeyValues(FSecurityLog.ID.AsInteger[Idx], RecordNo);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogPack;
 begin
   DoNewLog(ltPack);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogPassword;
 begin
   DoNewLog(ltNewPassword);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogAppend;
 begin
   DoNewLog(ltAppend);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogClose;

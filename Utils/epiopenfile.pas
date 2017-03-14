@@ -79,7 +79,9 @@ type
   private
     // Async saving
     FCriticalSection: PRTLCriticalSection;
+    FRTLEvent: PRTLEvent;
     FSaveThread: TThread;
+    FSaveDoc: TEpiDocument;
     procedure AsyncSave;
   private
     { User Authorization }
@@ -172,17 +174,17 @@ type
     FProgressMaxPos:     Integer;
     FProgressCanceled:   Boolean;
     procedure DoProgress;
-    procedure OnProgress(const Sender: TEpiCustomBase;
+    procedure InternalOnProgress(const Sender: TEpiCustomBase;
       ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
       var Canceled: Boolean);
   private
-    FEpiDoc: TEpiDocument;
-    FFileName: UTF8String;
+    FDoc: TEpiDocumentFile;
     FProgressEvent: TEpiProgressEvent;
+    FLoopSave: Boolean;
   public
-    constructor Create(EpiDoc: TEpiDocument; Const FileName: UTF8String;
-      ProgressEventHandler: TEpiProgressEvent);
+    constructor Create(DocFile: TEpiDocumentFile; ProgressEvent: TEpiProgressEvent);
     procedure Execute; override;
+    property LoopSave: Boolean read FLoopSave write FLoopSave;
   end;
 
 { TEpiSaveThread }
@@ -204,61 +206,103 @@ end;
 
 procedure TEpiDocSaveThread.DoProgress;
 begin
-  writeln('before progressevent');
+//  writeln('Before Progressevent');
   if Assigned(FProgressEvent) then
     FProgressEvent(
-      FProgressSender,
+      nil,
       FProgressType,
       FProgressCurrentPos,
       FProgressMaxPos,
       FProgressCanceled
     );
-  writeln('after progressevent');
+//  writeln('After Progressevent');
 end;
 
-procedure TEpiDocSaveThread.OnProgress(const Sender: TEpiCustomBase;
+procedure TEpiDocSaveThread.InternalOnProgress(const Sender: TEpiCustomBase;
   ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
   var Canceled: Boolean);
 begin
-  FProgressSender := Sender;
+  if (ProgressType = eptRecords) then exit;
+
+//  FProgressSender := Sender;
   FProgressType := ProgressType;
-  FProgressCurrentPos := CurrentPos;
-  FProgressMaxPos := MaxPos;
+//  FProgressCurrentPos := CurrentPos;
+//  FProgressMaxPos := MaxPos;
   FProgressCanceled := Canceled;
-  WriteLn('Before Sync');
   Synchronize(@DoProgress);
-  writeln('after sync');
 end;
 
-constructor TEpiDocSaveThread.Create(EpiDoc: TEpiDocument;
-  const FileName: UTF8String; ProgressEventHandler: TEpiProgressEvent);
+constructor TEpiDocSaveThread.Create(DocFile: TEpiDocumentFile;
+  ProgressEvent: TEpiProgressEvent);
 begin
-  inherited Create(false);
-  FEpiDoc := EpiDoc;
-  FFileName := FileName;
-  FProgressEvent := ProgressEventHandler;
+  inherited Create(true);
+  FDoc := DocFile;
+  FProgressEvent := ProgressEvent;
+  FLoopSave := true;
 end;
 
 procedure TEpiDocSaveThread.Execute;
 var
   MS: TMemoryStreamUTF8;
   Fs: TFileStreamUTF8;
+  LocalDoc: TEpiDocument;
+  LocalFileName: String;
+  T1, T2: TDateTime;
 begin
-  MS := TMemoryStreamUTF8.Create;
+  while (true) do
+  begin
+    WriteLn('THREAD: Waiting for RTLEvent');
+    RTLeventWaitFor(FDoc.FRTLEvent);
+    WriteLn('THREAD: RTLEvent recieved');
 
-  FEpiDoc.OnProgress := @OnProgress;
-  FEpiDoc.SaveToStream(Ms);
-  Ms.Position := 0;
+    // First check to see if the thread is terminating
+    if (not LoopSave) then exit;
 
-  if UTF8Pos('.epz', UTF8LowerCase(FFileName)) > 0 then
-    StreamToZipFile(Ms, UTF8ToSys(FFileName))
-  else
-    begin
-      Fs := TFileStreamUTF8.Create(FFileName, fmCreate);
-      Fs.CopyFrom(Ms, Ms.Size);
-      Fs.Free;
-    end;
-  Ms.Free;
+
+    // Now fetch the document we must save, but first lock it so we can copy it safely
+    WriteLn('THREAD: Entering critical section');
+    EnterCriticalsection(FDoc.FCriticalSection^);
+
+    if Assigned(FDoc.FSaveDoc) and
+       (FDoc.IsSaved)
+    then
+      LocalDoc := TEpiDocument(FDoc.FSaveDoc.Clone)
+    else
+      LocalDoc := nil;
+
+    LocalFileName := FDoc.FileName;
+
+    // We are done copying - hence now we can unlock it and continue to the saving
+    LeaveCriticalsection(FDoc.FCriticalSection^);
+    WriteLn('THREAD: Left critical section');
+
+    // If there was no document to save, skip and go wait once again
+
+    writeln('THREAD: LocalDoc = ', hexStr(LocalDoc));
+    writeln('THREAD: Filename = ', LocalFileName);
+
+    if (not Assigned(LocalDoc)) then
+      Continue;
+
+    T1 := Now;
+    MS := TMemoryStreamUTF8.Create;
+
+    LocalDoc.OnProgress := @InternalOnProgress;
+    LocalDoc.SaveToStream(Ms);
+    Ms.Position := 0;
+
+    if UTF8Pos('.epz', UTF8LowerCase(LocalFileName)) > 0 then
+      StreamToZipFile(Ms, UTF8ToSys(LocalFileName))
+    else
+      begin
+        Fs := TFileStreamUTF8.Create(LocalFileName, fmCreate);
+        Fs.CopyFrom(Ms, Ms.Size);
+        Fs.Free;
+      end;
+    Ms.Free;
+    T2 := Now - T1;
+    WriteLn('THREAD: Done saving - (', FormatDateTime('SS:ZZZZ', T2), ')');
+  end;
 end;
 
 { TEpiDocumentFile }
@@ -270,6 +314,7 @@ begin
 
   New(FCriticalSection);
   InitCriticalSection(FCriticalSection^);
+  FRTLEvent := RTLEventCreate;
   FSaveThread := nil;
 
   FDataDirectory := '';
@@ -299,10 +344,22 @@ begin
     end;
   end;
 
-  if Assigned(FSaveThread) then
-    FSaveThread.WaitFor;
-  FSaveThread.Free;
+  if (FSaveThread is TEpiDocSaveThread) then
+    begin
+      TEpiDocSaveThread(FSaveThread).LoopSave := false;
+      RTLeventSetEvent(FRTLEvent);
+    end;
 
+  if Assigned(FSaveThread) then
+    begin
+      FSaveThread.WaitFor;
+      FSaveThread.Free;
+    end;
+
+  if Assigned(FSaveDoc) then
+    FSaveDoc.Free;
+
+  RTLeventdestroy(FRTLEvent);
   DoneCriticalsection(FCriticalSection^);
   Dispose(FCriticalSection);
 
@@ -362,18 +419,20 @@ begin
       Exit
     end;
 
-  if (EventGroup = eegDocument) and
-     (TEpiDocumentChangeEvent(EventType) = edceRequestSave) and
-     (Initiator = FEpiDoc)
+  if (EventGroup = eegCustomBase) and
+     (TEpiCustomChangeEventType(EventType) = ecceRequestSave) {and
+     (Initiator = FEpiDoc) }
   then
     begin
-      // TODO: Perhaps make this save asyncronous?
-      LocalDoc := TXMLDocument.Create;
-      LocalDoc.AppendChild(TXMLDocument(Data).FirstChild.CloneNode(true, LocalDoc));
+      if (Assigned(data)) then
+        begin
+          LocalDoc := TXMLDocument.Create;
+          LocalDoc.AppendChild(TXMLDocument(Data).FirstChild.CloneNode(true, LocalDoc));
 
-      FSaveThread := TEpiXMLSaveThread.Create(LocalDoc, FFileName);
-
-//      AsyncSave;
+          FSaveThread := TEpiXMLSaveThread.Create(LocalDoc, FFileName);
+        end
+      else
+        AsyncSave;
 //      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
 //      WriteXMLFile(LocalDoc, '/tmp/clone.epx', [xwfPreserveWhiteSpace]);
       Exit;
@@ -658,7 +717,26 @@ end;
 
 procedure TEpiDocumentFile.AsyncSave;
 begin
-  //
+  writeln('DOCFILE: Checking thread');
+  if (not Assigned(FSaveThread)) then
+  begin
+    writeln('DOCFILE: Creating thread');
+    FSaveThread := TEpiDocSaveThread.Create(Self, OnProgress);
+    writeln('DOCFILE: Starting thread');
+    FSaveThread.Start;
+  end;
+
+  writeln('DOCFILE: Entering critical section');
+  EnterCriticalsection(FCriticalSection^);
+
+  if (Assigned(FSaveDoc)) then
+    FSaveDoc.Free;
+  FSaveDoc := TEpiDocument(FEpiDoc.Clone);
+
+  LeaveCriticalsection(FCriticalSection^);
+  writeln('DOCFILE: Left critical section / Sending Event');
+  RTLeventSetEvent(FRTLEvent);
+  writeln('DOCFILE: Done sending event');
 end;
 
 procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
@@ -672,24 +750,33 @@ var
   Ms: TMemoryStream;
   Fs: TStream;
   T1, T2, T3: TDateTime;
-  SaveDoc: TEpiDocument;
 begin
-  Ms := TMemoryStream.Create;
+  Writeln('DOCFILE: DoSave - entering critical section');
+  EnterCriticalsection(FCriticalSection^);
+  Writeln('DOCFILE: DoSave - in critical section');
+  FSaveDoc := nil;
+  LeaveCriticalsection(FCriticalSection^);
+  Writeln('DOCFILE: DoSave - left critical section');
+
+  if (FSaveThread is TEpiDocSaveThread) then
+    begin
+      TEpiDocSaveThread(FSaveThread).LoopSave := false;
+      RTLeventSetEvent(FRTLEvent);
+    end;
 
   if Assigned(FSaveThread) then
-  begin
-    WriteLn('Waiting for thread!');
-    FSaveThread.WaitFor;
-    FreeAndNil(FSaveThread);
-    WriteLn('Done waiting for thread!');
-  end;
+    begin
+      Writeln('DOCFILE: DoSave - waiting for THREAD');
+      FSaveThread.WaitFor;
+      FreeAndNil(FSaveThread);
+    end;
 
-  SaveDoc := TEpiDocument(FEpiDoc.Clone);
-  FSaveThread := TEpiDocSaveThread.Create(SaveDoc, AFileName, OnProgress);
+  Writeln('DOCFILE: DoSave - started saving file');
 
+  T1 := now;
+  Ms := TMemoryStream.Create;
 
-
-{  FEpiDoc.OnProgress := OnProgress;
+  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.SaveToStream(Ms);
   Ms.Position := 0;
 
@@ -701,7 +788,9 @@ begin
       Fs.CopyFrom(Ms, Ms.Size);
       Fs.Free;
     end;
-  Ms.Free; }
+  Ms.Free;
+  T2 := Now - T1;
+  Writeln('DOCFILE: DoSave - done saving file', FormatDateTime('SS:ZZZZ', T2));
 end;
 
 procedure TEpiDocumentFile.DoOpenFile(const AFileName: string);
