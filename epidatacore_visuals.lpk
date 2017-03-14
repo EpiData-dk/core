@@ -29,7 +29,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4"/>
-    <Files Count="15">
+    <Files Count="16">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
         <UnitName Value="epiv_dataset_viewer_frame"/>
@@ -92,6 +92,10 @@
         <Filename Value="Visuals/statusbar/epiv_statusbar_item_currentuser.pas"/>
         <UnitName Value="epiv_statusbar_item_currentuser"/>
       </Item15>
+      <Item16>
+        <Filename Value="Visuals/statusbar/epiv_statusbar_item_progressbar.pas"/>
+        <UnitName Value="epiv_statusbar_item_progressbar"/>
+      </Item16>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>

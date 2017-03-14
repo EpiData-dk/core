@@ -26,7 +26,6 @@ type
   TEpiVCustomStatusBar = class(TCustomPanel)
   private
     FItemList: TStringList;
-    FResizableItemsCount: Integer;
     FInterItemSpace: Integer;
     FDocFile: TEpiDocumentFile;
     FDatafile: TEpiDataFile;
@@ -180,7 +179,6 @@ begin
   inherited Create(TheOwner);
 
   FItemList := TStringList.Create;
-  FResizableItemsCount := 0;
   FInterItemSpace      := 2;
 
   BevelInner := bvNone;
@@ -230,9 +228,6 @@ begin
 
   EnableAutoSizing;
 
-  if AStatusBarItem.Resizable then
-    Inc(FResizableItemsCount);
-
   FItemList.AddObject(AStatusBarItem.Name, AStatusBarItem);
 end;
 
@@ -246,31 +241,37 @@ begin
     FItemList.Objects[i].Free;
 
   FItemList.Clear;
-  FResizableItemsCount := 0;
 
   EnableAutoSizing;
 end;
 
 procedure TEpiVCustomStatusBar.Resize;
 var
-  TotalFixedWidth, ResizableWidth, I, ItemCount: Integer;
+  TotalFixedWidth, ResizableWidth, I, ItemCount, ResizableItemsCount: Integer;
 begin
   inherited Resize;
   if AutoSizeDelayed then exit;
 
   TotalFixedWidth := 0;
   ItemCount := 0;
+  ResizableItemsCount := 0;
+
   for I := 0 to FItemList.Count - 1 do
     with TEpiVCustomStatusBarItem(FItemList.Objects[i]) do
     begin
       if (not Resizable) and (Visible) then
         Inc(TotalFixedWidth, GetPreferedWidth);
+
       if (Visible) then
-        Inc(ItemCount);
+        begin
+          Inc(ItemCount);
+          if (Resizable) then
+            Inc(ResizableItemsCount);
+        end;
     end;
 
-  if FResizableItemsCount > 0 then
-    ResizableWidth := (ClientWidth - TotalFixedWidth - (FInterItemSpace * (ItemCount - 1))) div FResizableItemsCount;
+  if ResizableItemsCount > 0 then
+    ResizableWidth := (ClientWidth - TotalFixedWidth - (FInterItemSpace * (ItemCount - 1))) div ResizableItemsCount;
 
   for I := 0 to FItemList.Count - 1 do
     with TEpiVCustomStatusBarItem(FItemList.Objects[i]) do

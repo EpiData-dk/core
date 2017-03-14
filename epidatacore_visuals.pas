@@ -4,6 +4,7 @@
 
 unit epidatacore_visuals;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
@@ -13,7 +14,7 @@ uses
   epiv_custom_statusbar, epiv_statusbar_item_recordcount, 
   epiv_statusbar_item_cycleno, epiv_statusbar_item_savetime, 
   epiv_statusbar_item_selectionnames, epiv_statusbar_item_currentuser, 
-  LazarusPackageIntf;
+  epiv_statusbar_item_progressbar, LazarusPackageIntf;
 
 implementation
 
