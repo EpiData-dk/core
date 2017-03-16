@@ -15,14 +15,11 @@ function EpiStrToDate(Const Str: string; Const Separators: array of Char; Const 
 function EpiStrToDateGuess(Const Str: string; out TheDate: EpiDate;
   out ErrMsg: string): boolean;
 
-function EpiStrToTime(Const Str: string; Const Separator: Char;
-  out H, M, S: Word; out ErrMsg: string): boolean; overload;
-function EpiStrToTime(Const Str: string; Const Separator: Char;
-  out ErrMsg: string): EpiTime; overload;
-function EpiStrToTime(Const Str: string; Const Separator: Char;
-  out TheTime: EpiTime; out ErrMsg: string): boolean; overload;
-function EpiStrToTimeGues(Const Str: string; out TheTime: EpiTime;
-  out ErrMsg: string): boolean; overload;
+function EpiStrToTime(Const Str: string; Const Separator: Char; out H, M, S: Word; out ErrMsg: string): boolean; overload;
+function EpiStrToTime(Const Str: string; Const Separator: Char; out ErrMsg: string): EpiTime; overload;
+function EpiStrToTime(Const Str: string; Const Separator: Char; out TheTime: EpiTime; out ErrMsg: string): boolean; overload;
+function EpiStrToTime(Const Str: string; Const Separators: array of Char; out TheTime: EpiTime; out ErrMsg: string): boolean; overload;
+function EpiStrToTimeGues(Const Str: string; out TheTime: EpiTime; out ErrMsg: string): boolean; overload;
 
 implementation
 
@@ -121,14 +118,15 @@ begin
   end;
 
   // 2 year digit conversion.
-  if Y < 100 then
+  // Include the Cl <= 2 part or else it is not possible to force a date to be below year 100
+  if (Y < 100) and (Cl <= 2) then
     if Y <= (YearOf(Date)-2000) then
       Y += 2000
     else
       Y += 1900;
 
   // I don't what to use try-except... :)
-  if (Y <= 0) or (Y >= 2100) then exit(ValidateError(Format('Incorrect year: %d', [Y])));
+//  if (Y <= 0) {or (Y >= 2100)} then exit(ValidateError(Format('Incorrect year: %d', [Y])));
   if (M <= 0) or (M > 12) then exit(ValidateError(Format('Incorrect month: %d', [M])));
   case M of
     1,3,5,7,8,10,12:
@@ -266,6 +264,22 @@ begin
   result := EpiStrToTime(Str, Separator, H, M, S, ErrMsg);
   if result then
     TheTime := EncodeTime(H, M, S, 0);
+end;
+
+function EpiStrToTime(const Str: string; const Separators: array of Char; out
+  TheTime: EpiTime; out ErrMsg: string): boolean;
+var
+  C: Char;
+begin
+  result := false;
+
+  for C in Separators do
+    begin
+      result := result or
+                EpiStrToTime(Str, C, TheTime, ErrMsg);
+
+      if result then exit;
+    end;
 end;
 
 function EpiStrToTimeGues(const Str: string; out TheTime: EpiTime; out

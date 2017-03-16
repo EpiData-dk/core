@@ -680,8 +680,11 @@ begin
   case VarType(AValue) of
     varsmallint,
     varinteger,
-    varint64,
+    varshortint,
+    varbyte,
     varword,
+    varlongword,
+    varint64,
     varqword:
       begin
         lInt := Integer(AValue);
@@ -691,6 +694,7 @@ begin
         lTime := EpiTime(lInt);
       end;
 
+    vardate,
     varsingle,
     vardouble:
       begin
@@ -701,8 +705,6 @@ begin
         lTime := EpiTime(lFlt);
       end;
 
-//    vtBoolean       = 1;
-//    vtChar          = 2;
     varstring,
     varustring:
       begin
@@ -713,17 +715,6 @@ begin
         EpiStrToTimeGues(lStr, lTime, DummyStr);
       end;
 
-{    vtPointer       = 5;
-    vtPChar         = 6;
-    vtObject        = 7;
-    vtClass         = 8;
-    vtWideChar      = 9;
-    vtPWideChar     = 10;
-        = 11;
-    vtCurrency      = 12;
-    vtVariant       = 13;
-    vtInterface     = 14;
-        = 15;            }
     else
       begin
         lstr := VarTypeAsText(VarType(AValue));
@@ -735,31 +726,31 @@ begin
     ftUpperString:
       begin
         for result := 0 to Count - 1 do
-          if AnsiSameStr(AValue, TEpiStringValueLabel(Items[result]).FValue) then
+          if AnsiSameStr(lStr, TEpiStringValueLabel(Items[result]).FValue) then
             exit;
       end;
     ftFloat:
       begin
         for result := 0 to Count -1 do
-          if SameValue(AValue, TEpiFloatValueLabel(Items[result]).FValue) then
+          if SameValue(lFlt, TEpiFloatValueLabel(Items[result]).FValue) then
             exit;
       end;
-{    ftTime:
+    ftTime:
       begin
         for result := 0 to Count -1 do
-          if SameValue(AValue, TEpiFloatValueLabel(Items[result]).FValue) then
+          if SameValue(lTime, TEpiTimeValueLabel(Items[result]).FValue) then
             exit;
-      end;        }
+      end;
     ftInteger:
       begin
         for result := 0 to Count - 1 do
-          if AValue = TEpiIntValueLabel(Items[result]).FValue then
+          if lInt = TEpiIntValueLabel(Items[result]).FValue then
             exit;
       end;
     ftDMYDate, ftMDYDate, ftYMDDate:
       begin
         for result := 0 to Count - 1 do
-          if AValue = TEpiDateValueLabel(Items[result]).FValue then
+          if lDate= TEpiDateValueLabel(Items[result]).FValue then
             exit;
       end;
   end;
@@ -908,13 +899,17 @@ end;
 function TEpiValueLabelSet.ItemClass: TEpiCustomItemClass;
 begin
   case LabelType of
-    ftDMYDate, ftMDYDate, ftYMDDate,
+    ftDMYDate, ftMDYDate, ftYMDDate:
+      Result := TEpiDateValueLabel;
+
     ftInteger:
       Result := TEpiIntValueLabel;
 
-    ftFloat,
-    ftTime:
+    ftFloat:
       Result := TEpiFloatValueLabel;
+
+    ftTime:
+      result := TEpiTimeValueLabel;
 
     ftString:
       Result := TEpiStringValueLabel;
