@@ -77,7 +77,8 @@ const
   // Composed Sets.
   AutoUpdateFieldTypes   = AutoFieldTypes - [ftAutoInc];
   RangeFieldTypes        = (IntFieldTypes + FloatFieldTypes + DateFieldTypes + TimeFieldTypes) - AutoFieldTypes;
-  ValueLabelFieldTypes   = (IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes - [ftMemo];
+//  ValueLabelFieldTypes   = (IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes - [ftMemo];
+  ValueLabelFieldTypes   = AllFieldTypes - (BoolFieldTypes + AutoFieldTypes) - [ftMemo];
   JumpsFieldTypes        = (BoolFieldTypes + IntFieldTypes + FloatFieldTypes + StringFieldTypes) - AutoFieldTypes - [ftMemo];
   CompareFieldTypes      = AllFieldTypes - (AutoFieldTypes + BoolFieldTypes + [ftMemo]);
   EntryModeFieldTypes    = AllFieldTypes - AutoFieldTypes;

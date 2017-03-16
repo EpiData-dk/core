@@ -8,12 +8,10 @@ uses
   Classes, SysUtils, strutils, epidatafilestypes;
 
 
-function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
-function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out ErrMsg: string): EpiDate; overload;
-function EpiStrToDate(Const Str: string; Const Separator: Char;
-  Const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean; overload;
+function EpiStrToDate(Const Str: string; Const Separator: Char; Const FT: TEpiFieldType; out D, M, Y: Word; out ErrMsg: string): boolean; overload;
+function EpiStrToDate(Const Str: string; Const Separator: Char; Const FT: TEpiFieldType; out ErrMsg: string): EpiDate; overload;
+function EpiStrToDate(Const Str: string; Const Separator: Char; Const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean; overload;
+function EpiStrToDate(Const Str: string; Const Separators: array of Char; Const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean; overload;
 function EpiStrToDateGuess(Const Str: string; out TheDate: EpiDate;
   out ErrMsg: string): boolean;
 
@@ -165,6 +163,22 @@ begin
   result := EpiStrToDate(Str, Separator, Ft, D, M, Y, ErrMsg);
   if result then
     TheDate := Trunc(EncodeDate(Y, M, D));
+end;
+
+function EpiStrToDate(const Str: string; const Separators: array of Char;
+  const FT: TEpiFieldType; out TheDate: EpiDate; out ErrMsg: string): boolean;
+var
+  C: Char;
+begin
+  result := false;
+
+  for C in Separators do
+    begin
+      result := result or
+                EpiStrToDate(Str, C, Ft, TheDate, ErrMsg);
+
+      if result then exit;
+    end;
 end;
 
 function EpiStrToDateGuess(const Str: string; out TheDate: EpiDate; out

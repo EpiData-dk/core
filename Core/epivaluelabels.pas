@@ -58,6 +58,24 @@ type
     property Value: EpiInteger read FValue write SetValue;
   end;
 
+  { TEpiDateValueLabel }
+
+  TEpiDateValueLabel = class(TEpiCustomValueLabel)
+  private
+    FValue: EpiDate;
+    procedure SetValue(AValue: EpiDate);
+  protected
+    function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  public
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    property Value: EpiDate read FValue write SetValue;
+  end;
+
   { TEpiFloatValueLabel }
 
   TEpiFloatValueLabel = class(TEpiCustomValueLabel)
@@ -74,6 +92,24 @@ type
     procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
     property Value: EpiFloat read FValue write SetValue;
+  end;
+
+  { TEpiTimeValueLabel }
+
+  TEpiTimeValueLabel = class(TEpiCustomValueLabel)
+  private
+    FValue: EpiTime;
+    procedure SetValue(AValue: EpiTime);
+  protected
+    function GetValueAsString: string; override;
+    function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
+      ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
+  protected
+    function SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
+  public
+    procedure  LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure Assign(const AEpiCustomBase: TEpiCustomBase); override;
+    property Value: EpiTime read FValue write SetValue;
   end;
 
   { TEpiStringValueLabel }
@@ -215,7 +251,7 @@ implementation
 
 uses
   strutils, math, LazUTF8, LazFileUtils, epidocument, epiopenfile,
-  epiopenfile_cache, epiglobals;
+  epiopenfile_cache, epiglobals, epiconvertutils;
 
 { TEpiValueLabelSetEnumerator }
 
@@ -352,6 +388,55 @@ begin
   EndUpdate;
 end;
 
+{ TEpiDateValueLabel }
+
+procedure TEpiDateValueLabel.SetValue(AValue: EpiDate);
+var
+  Val: EpiDate;
+begin
+  if FValue = AValue then Exit;
+  Val := FValue;
+  FValue := AValue;
+  DoChange(eegValueLabel, Word(evceValue), @Val);
+end;
+
+function TEpiDateValueLabel.GetValueAsString: string;
+begin
+  case TEpiValueLabelSet(Owner).LabelType of
+    ftDMYDate: result := FormatDateTime('DD/MM/YYYY', FValue);
+    ftMDYDate: result := FormatDateTime('MM/DD/YYYY', FValue);
+    ftYMDDate: result := FormatDateTime('YYYY/MM/DD', FValue);
+  end;
+end;
+
+function TEpiDateValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+  TEpiDateValueLabel(Result).FValue := FValue;
+end;
+
+function TEpiDateValueLabel.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+  SaveDomAttr(Result, rsValue, Value);
+end;
+
+procedure TEpiDateValueLabel.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+  Value := LoadAttrInt(Root, rsValue);
+end;
+
+procedure TEpiDateValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FValue := TEpiDateValueLabel(AEpiCustomBase).FValue;
+  EndUpdate;
+end;
+
 { TEpiFloatValueLabel }
 
 procedure TEpiFloatValueLabel.SetValue(AValue: EpiFloat);
@@ -394,6 +479,51 @@ begin
   inherited Assign(AEpiCustomBase);
   BeginUpdate;
   FValue := TEpiFloatValueLabel(AEpiCustomBase).FValue;
+  EndUpdate;
+end;
+
+{ TEpiTimeValueLabel }
+
+procedure TEpiTimeValueLabel.SetValue(AValue: EpiTime);
+var
+  Val: EpiTime;
+begin
+  if FValue = AValue then Exit;
+  Val := FValue;
+  FValue := AValue;
+  DoChange(eegValueLabel, Word(evceValue), @Val);
+end;
+
+function TEpiTimeValueLabel.GetValueAsString: string;
+begin
+  result := TimeToStr(Value);
+end;
+
+function TEpiTimeValueLabel.DoClone(AOwner: TEpiCustomBase;
+  Dest: TEpiCustomBase; ReferenceMap: TEpiReferenceMap): TEpiCustomBase;
+begin
+  Result := inherited DoClone(AOwner, Dest, ReferenceMap);
+  TEpiTimeValueLabel(Result).FValue := FValue;
+end;
+
+function TEpiTimeValueLabel.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
+begin
+  Result := inherited SaveToDom(RootDoc);
+  SaveDomAttr(Result, rsValue, Value);
+end;
+
+procedure TEpiTimeValueLabel.LoadFromXml(Root: TDOMNode;
+  ReferenceMap: TEpiReferenceMap);
+begin
+  inherited LoadFromXml(Root, ReferenceMap);
+  Value := LoadAttrDateTime(Root, rsValue);
+end;
+
+procedure TEpiTimeValueLabel.Assign(const AEpiCustomBase: TEpiCustomBase);
+begin
+  inherited Assign(AEpiCustomBase);
+  BeginUpdate;
+  FValue := TEpiTimeValueLabel(AEpiCustomBase).FValue;
   EndUpdate;
 end;
 
@@ -539,7 +669,67 @@ begin
 end;
 
 function TEpiValueLabelSet.GetValueLabelIndex(const AValue: variant): integer;
+var
+  lInt: EpiInteger;
+  lFlt: EpiFloat;
+  lStr: EpiString;
+  lDate: EpiDate;
+  lTime: EpiTime;
+  DummyStr: string;
 begin
+  case VarType(AValue) of
+    varsmallint,
+    varinteger,
+    varint64,
+    varword,
+    varqword:
+      begin
+        lInt := Integer(AValue);
+        lFlt := lInt;
+        lStr := IntToStr(lInt);
+        lDate := EpiDate(lInt);
+        lTime := EpiTime(lInt);
+      end;
+
+    varsingle,
+    vardouble:
+      begin
+        lFlt := EpiFloat(AValue);
+        lInt := trunc(lFlt);
+        lStr := FloatToStr(lFlt);
+        lDate := EpiDate(lInt);
+        lTime := EpiTime(lFlt);
+      end;
+
+//    vtBoolean       = 1;
+//    vtChar          = 2;
+    varstring,
+    varustring:
+      begin
+        lStr := EpiString(AValue);
+        TryStrToInt64(lStr, lInt);
+        TryStrToFloat(lStr, lFlt);
+        EpiStrToDateGuess(lStr, lDate, DummyStr);
+        EpiStrToTimeGues(lStr, lTime, DummyStr);
+      end;
+
+{    vtPointer       = 5;
+    vtPChar         = 6;
+    vtObject        = 7;
+    vtClass         = 8;
+    vtWideChar      = 9;
+    vtPWideChar     = 10;
+        = 11;
+    vtCurrency      = 12;
+    vtVariant       = 13;
+    vtInterface     = 14;
+        = 15;            }
+    else
+      begin
+        lstr := VarTypeAsText(VarType(AValue));
+      end;
+  end;
+
   case LabelType of
     ftString,
     ftUpperString:
@@ -554,10 +744,22 @@ begin
           if SameValue(AValue, TEpiFloatValueLabel(Items[result]).FValue) then
             exit;
       end;
+{    ftTime:
+      begin
+        for result := 0 to Count -1 do
+          if SameValue(AValue, TEpiFloatValueLabel(Items[result]).FValue) then
+            exit;
+      end;        }
     ftInteger:
       begin
         for result := 0 to Count - 1 do
           if AValue = TEpiIntValueLabel(Items[result]).FValue then
+            exit;
+      end;
+    ftDMYDate, ftMDYDate, ftYMDDate:
+      begin
+        for result := 0 to Count - 1 do
+          if AValue = TEpiDateValueLabel(Items[result]).FValue then
             exit;
       end;
   end;
@@ -706,9 +908,16 @@ end;
 function TEpiValueLabelSet.ItemClass: TEpiCustomItemClass;
 begin
   case LabelType of
-    ftInteger: Result := TEpiIntValueLabel;
-    ftFloat:   Result := TEpiFloatValueLabel;
-    ftString:  Result := TEpiStringValueLabel;
+    ftDMYDate, ftMDYDate, ftYMDDate,
+    ftInteger:
+      Result := TEpiIntValueLabel;
+
+    ftFloat,
+    ftTime:
+      Result := TEpiFloatValueLabel;
+
+    ftString:
+      Result := TEpiStringValueLabel;
   end;
 end;
 
@@ -728,7 +937,7 @@ begin
   // Root = <ValueLabel>
 
   // In version 1+2 the idea was that Internal and External valuelabels
-  // was represented using a Sub-tab <Internal> or <External> below the
+  // was represented using a Sub-tag <Internal> or <External> below the
   // <ValueLabelSet> tag. This contruct makes reading individual ValueLabel's
   // more complex, because we have to circumvent the inherited structure of
   // loading items with CustomItemList
