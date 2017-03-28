@@ -276,9 +276,11 @@ begin
   for I := 0 to FItemList.Count - 1 do
     with TEpiVCustomStatusBarItem(FItemList.Objects[i]) do
       if Resizable then
-        Panel.Width := ResizableWidth
+        Panel.SetBoundsKeepBase(Panel.Left, Panel.Top, ResizableWidth, Panel.Height)
+//        Panel.Width := ResizableWidth
       else if (Visible) then
-        Panel.Width := GetPreferedWidth;
+        Panel.SetBoundsKeepBase(Panel.Left, Panel.Top, GetPreferedWidth, Panel.Height);
+//        Panel.Width := GetPreferedWidth;
 end;
 
 { TEpiVCustomStatusBarItem }

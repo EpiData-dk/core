@@ -24,6 +24,8 @@ type
 
   TOpenEpiErrorEvent = procedure(Const Msg: string) of object;
 
+  TEpiDocumentCreation = procedure(const Sender: TObject; const ADocument: TEpiDocument) of object;
+
   { TEpiDocumentFile }
 
   TEpiDocumentFile = class
@@ -48,13 +50,6 @@ type
     procedure OnInternalProgress(const Sender: TEpiCustomBase;
       ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
       var Canceled: Boolean);
-  private
-    // Private event holders
-    FOnError: TOpenEpiErrorEvent;
-    FOnPassword: TRequestPasswordEvent;
-    FOnWarning: TOpenEpiWarningEvent;
-    FOnProgress: TEpiProgressEvent;
-    FOnDocumentChangeEvent: TEpiChangeEvent;
   private
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
@@ -114,6 +109,15 @@ type
       Const AReadOnly: boolean = false): boolean;
     function SaveFile(Const AFileName: string): Boolean;
     function SaveBackupFile: boolean;
+  private
+  // Private event holders
+    FOnError: TOpenEpiErrorEvent;
+    FOnPassword: TRequestPasswordEvent;
+    FOnWarning: TOpenEpiWarningEvent;
+    FOnProgress: TEpiProgressEvent;
+    FOnDocumentChangeEvent: TEpiChangeEvent;
+    FOnAfterDocumentCreated: TEpiDocumentCreation;
+    procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument);
   public
     // Event properties
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
@@ -121,7 +125,8 @@ type
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
     property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
-    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent;
+    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent; deprecated;
+    property OnAfterDocumentCreated: TEpiDocumentCreation read FOnAfterDocumentCreated write FOnAfterDocumentCreated;
   public
     // Other properties
     property FileName: string read GetFileName;
@@ -145,7 +150,7 @@ uses
   Unix,
   {$ENDIF}
   epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
-  laz2_XMLWrite;
+  laz2_XMLWrite, episervice_asynchandler;
 
 //var
 //  OpenEpiDocumentInstance: TEpiDocumentFile = nil;
@@ -267,6 +272,8 @@ begin
     // We are done copying - hence now we can unlock it and continue to the saving
     LeaveCriticalsection(FDoc.FCriticalSection^);
 
+    EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
+
     // If there was no document to save, skip and go wait once again
     if (not Assigned(LocalDoc)) then
       Continue;
@@ -274,7 +281,7 @@ begin
     MS := TMemoryStreamUTF8.Create;
 
     FProgressEvent := FDoc.OnProgress;
-    LocalDoc.OnProgress := @InternalOnProgress;
+//    LocalDoc.OnProgress := @InternalOnProgress;
     LocalDoc.SaveToStream(Ms);
     Ms.Position := 0;
 
@@ -287,6 +294,8 @@ begin
         Fs.Free;
       end;
     Ms.Free;
+
+    EpiAsyncHandlerGlobal.RemoveDocument(LocalDoc);
   end;
 end;
 
@@ -364,6 +373,7 @@ begin
   if not Assigned(SourceDoc) then exit;
 
   FEpiDoc := TEpiDocument(SourceDoc.Clone);
+  DoAfterDocumentCreated(FEpiDoc);
 
   if Assigned(OnDocumentChangeEvent) then
     FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
@@ -800,6 +810,8 @@ function TEpiDocumentFile.InternalCreateNewDocument(const Lang: string
 begin
   FEpiDoc := TEpiDocument.Create(Lang);
 
+  DoAfterDocumentCreated(FEpiDoc);
+
   if Assigned(OnDocumentChangeEvent) then
     FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
 
@@ -1102,6 +1114,13 @@ begin
 
   BackupFileName := FileName + '.bak';
   DoSaveFile(BackupFileName);
+end;
+
+procedure TEpiDocumentFile.DoAfterDocumentCreated(const ADocument: TEpiDocument
+  );
+begin
+  if Assigned(OnAfterDocumentCreated) then
+    OnAfterDocumentCreated(Self, ADocument);
 end;
 
 end.

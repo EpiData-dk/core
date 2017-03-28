@@ -52,7 +52,9 @@ type
     // epirelations.pas
     eegRelations,
     // epirights.pas
-    eegRights
+    eegRights,
+    // New group which is activated during load/save
+    eegXMLProgress
     );
 
   // ecce = Epi Custom Change Event
@@ -78,6 +80,17 @@ type
     //  data = nil          : The TEpiDocument structure in itself should be saved
     ecceRequestSave
 
+  );
+
+  // Work in progress event - currently only implemented on TEpiDataFile level.
+  // hence the Init/Done are actually done on each read of a TEpiDataFile
+  TEpiXMLProgressEvent = (
+    // Only sent once when loading/saving is first started on Document Level
+    expeInit,
+    // Sent each time a step in load/save progress happens
+    expeProgressStep,
+    // Only sent once when loading/saving is completed (this event is sent even though an exception occurs)
+    expeDone
   );
 
   TEpiChangeEvent = procedure(

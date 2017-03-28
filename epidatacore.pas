@@ -28,7 +28,7 @@ uses
   epicustomrelations_helper, epigrouprelation_helper, 
   epidatafilerelations_helper, epiexport_stata, epifields_helper, 
   epiimport_stata, epitools_statusbarparser, epi_rsa, epilogger, 
-  episecuritylog, epicustomlist_helper;
+  episecuritylog, epicustomlist_helper, episervice_asynchandler;
 
 implementation
 

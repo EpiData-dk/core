@@ -13,12 +13,15 @@ type
 
   TEpiVStatusBarItem_ProgressBar = class(TEpiVCustomStatusBarItem)
   private
-    ProgressUpdate: Integer;
-    LastUpdate: Integer;
+    // Progressbare housekeeping
+    FMaxPosition: Integer;
+    FProgressIncrement: Integer;
+    FLastUpdate: Integer;
+  private
     FProgressbar: TProgressBar;
     procedure InternalProgress(const Sender: TEpiCustomBase;
-      ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
-      var Canceled: Boolean);
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   protected
     procedure Update(Condition: TEpiVCustomStatusbarUpdateCondition); override;
   public
@@ -33,14 +36,17 @@ type
 implementation
 
 uses
-  Controls, Forms;
+  Controls, Forms, episervice_asynchandler;
 
 { TEpiVStatusBarItem_ProgressBar }
 
-procedure TEpiVStatusBarItem_ProgressBar.InternalProgress(
+{procedure TEpiVStatusBarItem_ProgressBar.InternalProgress(
   const Sender: TEpiCustomBase; ProgressType: TEpiProgressType; CurrentPos,
   MaxPos: Cardinal; var Canceled: Boolean);
 begin
+  if Assigned(FOldOnProgress) then
+    FOldOnProgress(Sender, ProgressType, CurrentPos, MaxPos, Canceled);
+
   case ProgressType of
     eptInit:
       begin
@@ -56,7 +62,6 @@ begin
       end;
     eptFinish:
       begin
-//        FProgressbar.Visible := false;
         if not (csDestroying in Panel.ComponentState) then
           Application.ProcessMessages;
         LastUpdate := 0;
@@ -75,6 +80,56 @@ begin
         end;
       end;
   end;
+end; }
+
+procedure TEpiVStatusBarItem_ProgressBar.InternalProgress(
+  const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+var
+  CurrentPos: Integer;
+begin
+  case TEpiXMLProgressEvent(EventType) of
+    expeInit:
+      begin
+        FMaxPosition := Integer(Data);
+
+        if (FMaxPosition > 500) then
+          FProgressIncrement := FMaxPosition div 50
+        else
+          FProgressIncrement := 1;
+
+        FLastUpdate := 0;
+        FProgressbar.Position := 0;
+        FProgressbar.Max := FMaxPosition;
+
+        Visible := true;
+
+        if not (csDestroying in Panel.ComponentState) then
+          Application.ProcessMessages;
+      end;
+
+    expeProgressStep:
+      begin
+        CurrentPos := Integer(Data);
+        if CurrentPos > (FLastUpdate + FProgressIncrement) then
+        begin
+          FProgressbar.Position := CurrentPos;
+          {$IFNDEF MSWINDOWS}
+          Application.ProcessMessages;
+          {$ENDIF}
+          FLastUpdate := CurrentPos;
+        end;
+      end;
+
+    expeDone:
+      begin
+        if not (csDestroying in Panel.ComponentState) then
+          Application.ProcessMessages;
+
+        FProgressbar.Position := FProgressbar.Max;
+        Visible := false;
+      end;
+  end;
 end;
 
 procedure TEpiVStatusBarItem_ProgressBar.Update(
@@ -86,12 +141,18 @@ begin
     sucDefault: ;
     sucDocFile:
       begin
-        if Assigned(Statusbar.DocFile) then
+{        if Assigned(Statusbar.DocFile) then
+        begin
+          FOldOnProgress := Statusbar.DocFile.OnProgress;
           Statusbar.DocFile.OnProgress := @InternalProgress;
+        end;
 
         LastUpdate := 0;
         ProgressUpdate := 0;
-        Visible := false;
+        Visible := false;   }
+        EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeInit), [esatMain]);
+        EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeProgressStep), [esatMain]);
+        EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeDone), [esatMain]);
       end;
     sucDataFile: ;
     sucSelection: ;

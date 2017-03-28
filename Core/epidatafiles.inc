@@ -302,6 +302,17 @@ var
     Result := false;
     if Assigned(ProgressMethod) then
       ProgressMethod(Self, ProgressType, Count, Max, Result);
+
+    case ProgressType of
+      eptInit:
+        DoChange(eegXMLProgress, Word(expeInit), Pointer(Max));
+
+      eptFinish:
+        DoChange(eegXMLProgress, Word(expeDone), Pointer(Max));
+
+      eptRecords:
+        DoChange(eegXMLProgress, Word(expeProgressStep), Pointer(Count));
+    end;
   end;
 
 begin
@@ -839,6 +850,17 @@ var
     Result := false;
     if Assigned(ProgressMethod) then
       ProgressMethod(Self, ProgressType, Count, Max, Result);
+
+    case ProgressType of
+      eptInit:
+        DoChange(eegXMLProgress, Word(expeInit), Pointer(Max));
+
+      eptFinish:
+        DoChange(eegXMLProgress, Word(expeDone), Pointer(Max));
+
+      eptRecords:
+        DoChange(eegXMLProgress, Word(expeProgressStep), Pointer(Count));
+  end;
   end;
 
 begin

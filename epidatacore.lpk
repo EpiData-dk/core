@@ -30,8 +30,8 @@
 -dEPI_ADMIN_NOCRYPT_SAVE"/>
       </Other>
     </CompilerOptions>
-    <Version Major="4"/>
-    <Files Count="83">
+    <Version Major="4" Minor="1"/>
+    <Files Count="84">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -364,6 +364,10 @@
         <Filename Value="Core/epicustomlist_helper.pas"/>
         <UnitName Value="epicustomlist_helper"/>
       </Item83>
+      <Item84>
+        <Filename Value="Services/episervice_asynchandler.pas"/>
+        <UnitName Value="episervice_asynchandler"/>
+      </Item84>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
