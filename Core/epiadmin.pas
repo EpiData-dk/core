@@ -151,6 +151,7 @@ type
 
   TEpiAdmin = class(TEpiCustomBase)
   private
+    FInitialized: Boolean;
     FAdminsGroup: TEpiGroup;
     FAdminRelation: TEpiGroupRelation;
     FAdminRelations: TEpiGroupRelationList; // An internal only relationslist. Needed to have ValidateRename work correctly for GroupRelations.
@@ -217,6 +218,7 @@ type
     property Created: TDateTime read FCreated write FCreated;
     property GroupEdited: TDateTime read GetGroupEdited;
     property UserEdited: TDateTime read GetUserEdited;
+    property Initialized: Boolean read FInitialized;
   end;
 
   TEpiUsersEnumerator = class;
@@ -632,6 +634,7 @@ var
   i: Integer;
 begin
   inherited Create(AOwner);
+  FInitialized := false;
 
   for i := 0 to 3 do
     Key[i] := Random(maxLongint - 1) + 1;
@@ -762,6 +765,7 @@ begin
   Groups.ClearAndFree;
   FAdminsGroup := nil;
   FAdminRelation := nil;
+  FInitialized := false;
 end;
 
 procedure TEpiAdmin.InitAdmin;
@@ -779,6 +783,8 @@ begin
 
   FRSA.GenerateKeys();
   DoChange(eegAdmin, word(eaceAdminInitializing), nil);
+
+  FInitialized := true;
 end;
 
 function TEpiAdmin.SaveToDom(RootDoc: TDOMDocument): TDOMElement;

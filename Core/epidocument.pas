@@ -312,7 +312,7 @@ begin
     LoadFromXml(RootNode, ReferenceMap);
     ReferenceMap.FixupReferences;
 
-    if (Admin.Users.Count > 0) then;
+    if (Admin.Initialized) then
       DoChange(eegCustomBase, Word(ecceRequestSave), nil);
   finally
     ReferenceMap.Free;

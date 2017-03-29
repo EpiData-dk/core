@@ -46,7 +46,7 @@ begin
   DocFile.OnPassword := OnPassWord;
   Docfile.OnWarning  := OnWarning;
   Docfile.OnError    := OnError;
-  Docfile.OnProgress := OnProgress;
+//  Docfile.OnProgress := OnProgress;
 
   if DocFile.OpenFile(FileName, ReadOnly) then
     Result := FFileList.AddObject(FileName, Docfile)

@@ -47,9 +47,12 @@ type
       end;
       PLockFile = ^TLockFile;
 
-    procedure OnInternalProgress(const Sender: TEpiCustomBase;
-      ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
-      var Canceled: Boolean);
+  private
+    // Save hook internals
+    FSaveHookCommitting: boolean;
+    procedure SaveHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   private
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
@@ -114,8 +117,8 @@ type
     FOnError: TOpenEpiErrorEvent;
     FOnPassword: TRequestPasswordEvent;
     FOnWarning: TOpenEpiWarningEvent;
-    FOnProgress: TEpiProgressEvent;
-    FOnDocumentChangeEvent: TEpiChangeEvent;
+//    FOnProgress: TEpiProgressEvent;
+//    FOnDocumentChangeEvent: TEpiChangeEvent;
     FOnAfterDocumentCreated: TEpiDocumentCreation;
     procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument);
   public
@@ -124,8 +127,8 @@ type
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
     property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
-    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
-    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent; deprecated;
+//    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+//    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent; deprecated;
     property OnAfterDocumentCreated: TEpiDocumentCreation read FOnAfterDocumentCreated write FOnAfterDocumentCreated;
   public
     // Other properties
@@ -150,7 +153,7 @@ uses
   Unix,
   {$ENDIF}
   epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
-  laz2_XMLWrite, episervice_asynchandler;
+  laz2_XMLWrite, episervice_asynchandler, epidatafiles;
 
 //var
 //  OpenEpiDocumentInstance: TEpiDocumentFile = nil;
@@ -178,13 +181,8 @@ type
     FProgressCurrentPos: Integer;
     FProgressMaxPos:     Integer;
     FProgressCanceled:   Boolean;
-    procedure DoProgress;
-    procedure InternalOnProgress(const Sender: TEpiCustomBase;
-      ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
-      var Canceled: Boolean);
   private
     FDoc: TEpiDocumentFile;
-    FProgressEvent: TEpiProgressEvent;
     FLoopSave: Boolean;
   public
     constructor Create(DocFile: TEpiDocumentFile);
@@ -209,37 +207,10 @@ end;
 
 { TEpiDocSaveThread }
 
-procedure TEpiDocSaveThread.DoProgress;
-begin
-  if Assigned(FProgressEvent) then
-    FProgressEvent(
-      nil,
-      FProgressType,
-      FProgressCurrentPos,
-      FProgressMaxPos,
-      FProgressCanceled
-    );
-end;
-
-procedure TEpiDocSaveThread.InternalOnProgress(const Sender: TEpiCustomBase;
-  ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
-  var Canceled: Boolean);
-begin
-  if (ProgressType = eptRecords) then exit;
-
-//  FProgressSender := Sender;
-  FProgressType := ProgressType;
-//  FProgressCurrentPos := CurrentPos;
-//  FProgressMaxPos := MaxPos;
-  FProgressCanceled := Canceled;
-  Synchronize(@DoProgress);
-end;
-
 constructor TEpiDocSaveThread.Create(DocFile: TEpiDocumentFile);
 begin
   inherited Create(true);
   FDoc := DocFile;
-  FProgressEvent := nil;
   FLoopSave := true;
 end;
 
@@ -272,16 +243,13 @@ begin
     // We are done copying - hence now we can unlock it and continue to the saving
     LeaveCriticalsection(FDoc.FCriticalSection^);
 
-    EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
-
     // If there was no document to save, skip and go wait once again
     if (not Assigned(LocalDoc)) then
       Continue;
 
+    EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
     MS := TMemoryStreamUTF8.Create;
 
-    FProgressEvent := FDoc.OnProgress;
-//    LocalDoc.OnProgress := @InternalOnProgress;
     LocalDoc.SaveToStream(Ms);
     Ms.Position := 0;
 
@@ -312,6 +280,7 @@ begin
   FSaveThread := nil;
 
   FDataDirectory := '';
+  FSaveHookCommitting := false;
 end;
 
 destructor TEpiDocumentFile.Destroy;
@@ -326,7 +295,7 @@ begin
     then
       begin
         FEpiDoc.Logger.LogClose();
-        DoSaveFile(FileName);
+//        DoSaveFile(FileName);
       end;
 
     FreeAndNil(FEpiDoc);
@@ -375,18 +344,58 @@ begin
   FEpiDoc := TEpiDocument(SourceDoc.Clone);
   DoAfterDocumentCreated(FEpiDoc);
 
-  if Assigned(OnDocumentChangeEvent) then
-    FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
-
   Result := FEpiDoc;
 end;
 
-procedure TEpiDocumentFile.OnInternalProgress(const Sender: TEpiCustomBase;
-  ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
-  var Canceled: Boolean);
+procedure TEpiDocumentFile.SaveHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
 begin
-  if Assigned(OnProgress) then
-    OnProgress(Sender, ProgressType, CurrentPos, MaxPos, Canceled);
+  // IF logging is present, then do not catch any commits, since the log forces a save!
+  if not Assigned(Document) then exit;
+  if Assigned(Document.Logger) then Exit;
+  if Document.Loading then exit;
+
+  case EventGroup of
+    eegCustomBase: ;
+    eegDocument: ;
+    eegXMLSetting: ;
+    eegProjectSettings: ;
+    eegAdmin: ;
+    eegStudy: ;
+
+    eegDataFiles:
+      case TEpiDataFileChangeEventType(EventType) of
+        edceSize: ;
+        edceRecordStatus:
+          if (not FSaveHookCommitting) then
+            AsyncSave;
+
+        edceStatusbarContentString: ;
+        edcePack: ;
+
+        edceBeginCommit:
+          FSaveHookCommitting := true;
+
+        edceEndCommit:
+          begin
+           AsyncSave;
+           FSaveHookCommitting := false;
+          end;
+
+        edceLoadRecord: ;
+      end;
+
+    eegSections: ;
+    eegFields:;
+    eegHeading: ;
+    eegRange: ;
+    eegValueLabel: ;
+    eegValueLabelSet: ;
+    eegRelations: ;
+    eegRights: ;
+    eegXMLProgress: ;
+  end;
 end;
 
 procedure TEpiDocumentFile.DocumentHook(const Sender: TEpiCustomBase;
@@ -757,7 +766,6 @@ begin
 
   Ms := TMemoryStream.Create;
 
-  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.SaveToStream(Ms);
   Ms.Position := 0;
 
@@ -794,7 +802,6 @@ begin
       Raise TEpiCoreException.Create('File is empty!');
 
     FEpiDoc.OnPassword := OnPassword;
-    FEpiDoc.OnProgress := OnProgress;
     FEpiDoc.OnLoadError := OnLoadError;
     FEpiDoc.Admin.OnUserAuthorized := @UserAuthorized;
     FEpiDoc.RegisterOnChangeHook(@DocumentHook, true);
@@ -811,9 +818,6 @@ begin
   FEpiDoc := TEpiDocument.Create(Lang);
 
   DoAfterDocumentCreated(FEpiDoc);
-
-  if Assigned(OnDocumentChangeEvent) then
-    FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
 
   Result := FEpiDoc;
 end;
@@ -1119,6 +1123,8 @@ end;
 procedure TEpiDocumentFile.DoAfterDocumentCreated(const ADocument: TEpiDocument
   );
 begin
+  ADocument.RegisterOnChangeHook(@SaveHook, true);
+
   if Assigned(OnAfterDocumentCreated) then
     OnAfterDocumentCreated(Self, ADocument);
 end;
