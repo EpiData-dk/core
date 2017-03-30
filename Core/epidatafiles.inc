@@ -264,9 +264,7 @@ const
 var
   DeCrypter: TDCP_rijndael;
   n: String;
-  ProgressMethod: TEpiProgressEvent;
   NodeCount: LongWord;
-  NodeNum: LongWord;
   L: Integer;
   PEnd: PChar;
   PCur: PChar;
@@ -296,21 +294,19 @@ var
       Result := S;
   end;
 
-  function DoProgress(ProgressType: TEpiProgressType;
-    Count, Max: Cardinal):boolean; inline;
+  function DoProgress(ProgressEvent: TEpiXMLProgressEvent;
+    Count, Max: Cardinal):boolean;
   begin
-    Result := false;
-    if Assigned(ProgressMethod) then
-      ProgressMethod(Self, ProgressType, Count, Max, Result);
+    result := false;
 
-    case ProgressType of
-      eptInit:
+    case ProgressEvent of
+      expeInit:
         DoChange(eegXMLProgress, Word(expeInit), Pointer(Max));
 
-      eptFinish:
+      expeDone:
         DoChange(eegXMLProgress, Word(expeDone), Pointer(Max));
 
-      eptRecords:
+      expeProgressStep:
         DoChange(eegXMLProgress, Word(expeProgressStep), Pointer(Count));
     end;
   end;
@@ -352,10 +348,9 @@ begin
     end;
   end;
 
-  ProgressMethod := TEpiDocument(RootOwner).OnProgress;
   // div 2: Because all nodes have a single whitespace node after each "normal" node.
   NodeCount := (Root.ChildNodes.Count div 2);
-  DoProgress(eptInit, 0, NodeCount);
+  DoProgress(expeInit, 0, NodeCount);
 
   Node := TDOMElement(Root.FirstChild);
   BackupFormatSettings(TEpiDocument(RootOwner).XMLSettings.FormatSettings);
@@ -365,9 +360,8 @@ begin
 
   while Assigned(Node) do
   begin
-    if DoProgress(eptRecords, CurRec, NodeCount) then
+    if DoProgress(expeProgressStep, CurRec, NodeCount) then
       HaltLoading;
-    Inc(NodeNum);
 
     while NodeIsWhiteSpace(Node) do
       Node := TDOMElement(Node.NextSibling);
@@ -474,7 +468,7 @@ begin
     Node := TDOMElement(Node.NextSibling);
   end;
 
-  DoProgress(eptFinish, NodeCount, NodeCount);
+  DoProgress(expeDone, NodeCount, NodeCount);
 
   if Assigned(DeCrypter) then FreeAndNil(DeCrypter);
   RestoreFormatSettings;
@@ -823,7 +817,6 @@ procedure TEpiDataFile.SaveRecordToDom(RootNode: TDOMElement);
 var
   RecordsElem: TDOMElement;
   Edoc: TEpiDocument;
-  ProgressMethod: TEpiProgressEvent;
   Sz: Integer;
   Fc: Integer;
   EnCrypter: TDCP_rijndael;
@@ -844,29 +837,26 @@ var
       Result := S;
   end;
 
-  function DoProgress(ProgressType: TEpiProgressType;
-    Count, Max: Cardinal):boolean; inline;
+  function DoProgress(ProgressEvent: TEpiXMLProgressEvent;
+    Count, Max: Cardinal):boolean;
   begin
-    Result := false;
-    if Assigned(ProgressMethod) then
-      ProgressMethod(Self, ProgressType, Count, Max, Result);
+    result := false;
 
-    case ProgressType of
-      eptInit:
+    case ProgressEvent of
+      expeInit:
         DoChange(eegXMLProgress, Word(expeInit), Pointer(Max));
 
-      eptFinish:
+      expeDone:
         DoChange(eegXMLProgress, Word(expeDone), Pointer(Max));
 
-      eptRecords:
+      expeProgressStep:
         DoChange(eegXMLProgress, Word(expeProgressStep), Pointer(Count));
-  end;
+ end;
   end;
 
 begin
   if FRecModified then
     FRecModifiedDate := Now;
-
 
   DocNode := RootNode.OwnerDocument;
   RecordsElem := DocNode.CreateElement(rsRecords);
@@ -875,7 +865,6 @@ begin
   RootNode.AppendChild(RecordsElem);
 
   Edoc := TEpiDocument(RootOwner);
-  ProgressMethod := Edoc.OnProgress;
 
   BackupFormatSettings(Edoc.XMLSettings.FormatSettings);
   Sz := Size;
@@ -895,10 +884,10 @@ begin
 
   SaveDomAttr(RecordsElem, rsEncryptedSalt, Salt);
 
-  DoProgress(eptInit, 0, Sz);
+  DoProgress(expeInit, 0, Sz);
   for CurRec := 0 to Sz - 1 do
   begin
-    DoProgress(eptRecords, CurRec, Sz);
+    DoProgress(expeProgressStep, CurRec, Sz);
     RElem := DocNode.CreateElement(rsRecord);
     RecordsElem.AppendChild(RElem);
     SaveDomAttrEnum(RElem, rsRecordStatus, FRecordStatus.AsInteger[CurRec], TypeInfo(TEpiRecordState));
@@ -915,7 +904,7 @@ begin
     RElem.TextContent := LocalEncrypt(S);
   end;
   RestoreFormatSettings;
-  DoProgress(eptFinish, Sz, Sz);
+  DoProgress(expeDone, Sz, Sz);
 
   EnCrypter.Free;
 end;

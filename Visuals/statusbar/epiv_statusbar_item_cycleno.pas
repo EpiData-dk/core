@@ -44,7 +44,9 @@ begin
       FCycleNoLabel.Caption := IntToSTr(FExampleValue)
     end
   else
-    if Assigned(Statusbar.DocFile) then
+    if Assigned(Statusbar.DocFile) and
+       Assigned(Statusbar.DocFile.Document)
+    then
       begin
         Visible := true;
         FCycleNoLabel.Caption := IntToStr(Statusbar.DocFile.Document.CycleNo)

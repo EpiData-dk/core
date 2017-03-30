@@ -91,6 +91,8 @@ begin
   case TEpiXMLProgressEvent(EventType) of
     expeInit:
       begin
+        Application.ProcessMessages;
+
         FMaxPosition := Integer(Data);
 
         if (FMaxPosition > 500) then
@@ -140,20 +142,7 @@ begin
   case Condition of
     sucDefault: ;
     sucDocFile:
-      begin
-{        if Assigned(Statusbar.DocFile) then
-        begin
-          FOldOnProgress := Statusbar.DocFile.OnProgress;
-          Statusbar.DocFile.OnProgress := @InternalProgress;
-        end;
-
-        LastUpdate := 0;
-        ProgressUpdate := 0;
-        Visible := false;   }
-        EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeInit), [esatMain]);
-        EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeProgressStep), [esatMain]);
-        EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeDone), [esatMain]);
-      end;
+      Visible := false;
     sucDataFile: ;
     sucSelection: ;
     sucSave: ;
@@ -185,10 +174,18 @@ begin
   FProgressbar.Smooth := true;
   FProgressbar.BarShowText := true;
   FProgressbar.Parent := Panel;
+
+  EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeInit), [esatMain]);
+  EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeProgressStep), [esatMain]);
+  EpiAsyncHandlerGlobal.RegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeDone), [esatMain]);
 end;
 
 destructor TEpiVStatusBarItem_ProgressBar.Destroy;
 begin
+  EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeInit));
+  EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeProgressStep));
+  EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@InternalProgress, eegXMLProgress, Word(expeDone));
+
   inherited Destroy;
 end;
 

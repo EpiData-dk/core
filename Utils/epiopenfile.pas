@@ -155,9 +155,6 @@ uses
   epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
   laz2_XMLWrite, episervice_asynchandler, epidatafiles;
 
-//var
-//  OpenEpiDocumentInstance: TEpiDocumentFile = nil;
-
 type
 
   { TEpiXMLSaveThread }
@@ -174,13 +171,6 @@ type
   { TEpiDocSaveThread }
 
   TEpiDocSaveThread = class(TThread)
-  private
-    // ProgressVars
-    FProgressSender: TEpiCustomBase;
-    FProgressType:   TEpiProgressType;
-    FProgressCurrentPos: Integer;
-    FProgressMaxPos:     Integer;
-    FProgressCanceled:   Boolean;
   private
     FDoc: TEpiDocumentFile;
     FLoopSave: Boolean;

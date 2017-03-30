@@ -54,7 +54,6 @@ type
     FCycleNo: Int64;
     FLoading: boolean;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
-    FOnProgress: TEpiProgressEvent;
     FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
@@ -97,7 +96,6 @@ type
     Property   Relations: TEpiDatafileRelationList read FRelations;
     Property   Logger: TEpiLogger read FLogger;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
-    property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;

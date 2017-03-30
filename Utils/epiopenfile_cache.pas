@@ -18,7 +18,6 @@ type
     FFileList: TStringList;
     FOnError: TOpenEpiErrorEvent;
     FOnPassword: TRequestPasswordEvent;
-    FOnProgress: TEpiProgressEvent;
     FOnWarning: TOpenEpiWarningEvent;
     function DoLoadFile(Const FileName: string; ReadOnly: boolean): integer;
   public
@@ -28,7 +27,6 @@ type
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
-    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property DocumentFileClass: TEpiDocumentFileClass read FDocumentFileClass write FDocumentFileClass;
   end;
 
@@ -46,7 +44,6 @@ begin
   DocFile.OnPassword := OnPassWord;
   Docfile.OnWarning  := OnWarning;
   Docfile.OnError    := OnError;
-//  Docfile.OnProgress := OnProgress;
 
   if DocFile.OpenFile(FileName, ReadOnly) then
     Result := FFileList.AddObject(FileName, Docfile)

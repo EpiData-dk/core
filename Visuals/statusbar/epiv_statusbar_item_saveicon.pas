@@ -14,13 +14,7 @@ type
 
   TEpiVStatusBarItem_SavingIcon = class(TEpiVCustomStatusBarItem)
   private
-    FTimeStamp: TDateTime;
     FSavingIcon: TShape;
-    FOnOldProgress: TEpiProgressEvent;
-    procedure InternalProgress(const Sender: TEpiCustomBase;
-      ProgressType: TEpiProgressType; CurrentPos, MaxPos: Cardinal;
-      var Canceled: Boolean);
-    procedure UpdateDocFile;
     procedure ProgressHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -43,49 +37,11 @@ uses
 
 { TEpiVStatusBarItem_SavingIcon }
 
-procedure TEpiVStatusBarItem_SavingIcon.InternalProgress(
-  const Sender: TEpiCustomBase; ProgressType: TEpiProgressType; CurrentPos,
-  MaxPos: Cardinal; var Canceled: Boolean);
-begin
-{//  if Assigned(FOnOldProgress) then
-//    FOnOldProgress(Sender, ProgressType, CurrentPos, MaxPos, Canceled);
-
-  case ProgressType of
-    eptInit:
-      if (Sender = Statusbar.DocFile.Document) then
-        begin
-          FSavingIcon.Brush.Color := clRed;
-          Application.ProcessMessages;
-        end
-      else
-        FSavingIcon.Brush.Color := clYellow;
-
-    eptFinish:
-      FSavingIcon.Brush.Color := clGreen;
-
-    eptRecords: ;
-  end;     }
-end;
-
-procedure TEpiVStatusBarItem_SavingIcon.UpdateDocFile;
-begin
-  if Assigned(Statusbar.DocFile) then
-    begin
-//      FOnOldProgress := Statusbar.DocFile.OnProgress;
-//      Statusbar.DocFile.Document.RegisterOnChangeHook(@ProgressHook);
-//      Statusbar.DocFile.OnProgress := @InternalProgress;
-      EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeInit));
-      EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeDone));
-    end;
-end;
-
 procedure TEpiVStatusBarItem_SavingIcon.ProgressHook(
   const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
-  if (EventGroup <> eegXMLProgress) then exit;
-
-  if (not Assigned(FSavingIcon)) then exit;
+  if (not Assigned(Statusbar.DocFile)) then exit;
 
   case TEpiXMLProgressEvent(EventType) of
     expeInit:
@@ -97,14 +53,11 @@ begin
           end
         else
           FSavingIcon.Brush.Color := clYellow;
-        FTimeStamp := Now;
       end;
 
     expeDone:
       begin
         FSavingIcon.Brush.Color := clGreen;
-//        if SecondOf(FTimeStamp - Now) > 0 then
-//          ShowMessage('Save Time: ' + FormatDateTime('SS:ZZZZ', FTimeStamp - Now));
       end;
   end;
 end;
@@ -117,8 +70,7 @@ begin
   case Condition of
     sucDefault: ;
     sucDocFile:
-      UpdateDocFile;
-
+      FSavingIcon.Brush.Color := clGreen;
     sucDataFile: ;
     sucSelection: ;
     sucSave: ;
@@ -146,10 +98,16 @@ begin
   FSavingIcon.Align := alClient;
   FSavingIcon.BorderSpacing.Around := 2;
   FSavingIcon.Parent := Panel;
+
+  EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeInit));
+  EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeDone));
 end;
 
 destructor TEpiVStatusBarItem_SavingIcon.Destroy;
 begin
+  EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeInit));
+  EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeDone));
+
   inherited Destroy;
 end;
 

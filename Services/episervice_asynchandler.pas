@@ -29,6 +29,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure RegisterAsyncHandler(Event: TEpiChangeEvent; EventGroup: TEpiEventGroup; EventType: Word; ThreadIds: TEpiSecviceAsyncThreadIds = [esatMain, esatOther]);
+    procedure UnRegisterAsyncHandler(Event: TEpiChangeEvent; EventGroup: TEpiEventGroup; EventType: Word);
     procedure AddDocument(Const ADocument: TEpiDocument);
     procedure RemoveDocument(Const ADocument: TEpiDocument);
 //    property Document: TEpiDocument read FDocument write SetDocument;
@@ -135,6 +136,24 @@ begin
   Entry^.EventThreadIDs := ThreadIds;
 
   FMethodList.Add(Entry);
+end;
+
+procedure TEpiSevice_AsyncHandler.UnRegisterAsyncHandler(
+  Event: TEpiChangeEvent; EventGroup: TEpiEventGroup; EventType: Word);
+var
+  Entry: PAsyncEventEntry;
+  i: Integer;
+begin
+  for i := FMethodList.Count - 1 downto 0 do
+  begin
+    Entry := PAsyncEventEntry(FMethodList[i]);
+
+    if (Entry^.Event = Event) and
+       (Entry^.EventGroup = EventGroup) and
+       (Entry^.EventType  = EventType)
+    then
+      FMethodList.Delete(i);
+  end;
 end;
 
 procedure TEpiSevice_AsyncHandler.AddDocument(const ADocument: TEpiDocument);
