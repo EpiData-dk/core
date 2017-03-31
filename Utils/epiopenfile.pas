@@ -24,6 +24,17 @@ type
 
   TOpenEpiErrorEvent = procedure(Const Msg: string) of object;
 
+  { EEpiThreadSaveExecption }
+
+  EEpiThreadSaveExecption = class(Exception)
+  private
+    FFileName: UTF8String;
+  public
+    property FileName: UTF8String read FFileName write FFileName;
+  end;
+
+  TEpiSaveThreadErrorEvent = procedure(Const FatalErrorObject: Exception) of object;
+
   TEpiDocumentCreation = procedure(const Sender: TObject; const ADocument: TEpiDocument) of object;
 
   { TEpiDocumentFile }
@@ -80,6 +91,7 @@ type
     FRTLEvent: PRTLEvent;
     FSaveThread: TThread;
     FSaveDoc: TEpiDocument;
+    procedure SaveThreadTerminated(Sender: TObject);
     procedure AsyncSave;
   private
     { User Authorization }
@@ -113,22 +125,21 @@ type
     function SaveFile(Const AFileName: string): Boolean;
     function SaveBackupFile: boolean;
   private
-  // Private event holders
+    // Private event holders
     FOnError: TOpenEpiErrorEvent;
     FOnPassword: TRequestPasswordEvent;
     FOnWarning: TOpenEpiWarningEvent;
-//    FOnProgress: TEpiProgressEvent;
-//    FOnDocumentChangeEvent: TEpiChangeEvent;
     FOnAfterDocumentCreated: TEpiDocumentCreation;
+    FOnSaveThreadError: TEpiSaveThreadErrorEvent;
     procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument);
+    procedure DoSaveThreadError(Const FatalErrorObject: Exception);
   public
     // Event properties
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
     property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
-//    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
-//    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent; deprecated;
+    property OnSaveThreadError: TEpiSaveThreadErrorEvent read FOnSaveThreadError write FOnSaveThreadError;
     property OnAfterDocumentCreated: TEpiDocumentCreation read FOnAfterDocumentCreated write FOnAfterDocumentCreated;
   public
     // Other properties
@@ -174,6 +185,7 @@ type
   private
     FDoc: TEpiDocumentFile;
     FLoopSave: Boolean;
+    procedure RaiseSaveError(Const Filename: UTF8String);
   public
     constructor Create(DocFile: TEpiDocumentFile);
     procedure Execute; override;
@@ -196,6 +208,15 @@ begin
 end;
 
 { TEpiDocSaveThread }
+
+procedure TEpiDocSaveThread.RaiseSaveError(const Filename: UTF8String);
+var
+  E: EEpiThreadSaveExecption;
+begin
+  E := EEpiThreadSaveExecption.Create('Save location not writeable!');
+  E.FileName := Filename;
+  raise E;
+end;
 
 constructor TEpiDocSaveThread.Create(DocFile: TEpiDocumentFile);
 begin
@@ -236,6 +257,9 @@ begin
     // If there was no document to save, skip and go wait once again
     if (not Assigned(LocalDoc)) then
       Continue;
+
+    if (not FileIsWritable(LocalFileName)) then
+      RaiseSaveError(LocalFileName);
 
     EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
     MS := TMemoryStreamUTF8.Create;
@@ -335,6 +359,23 @@ begin
   DoAfterDocumentCreated(FEpiDoc);
 
   Result := FEpiDoc;
+end;
+
+procedure TEpiDocumentFile.SaveThreadTerminated(Sender: TObject);
+var
+  ST: TEpiDocSaveThread;
+begin
+  if not (Sender is TEpiDocSaveThread) then
+    exit;
+
+  ST := TEpiDocSaveThread(Sender);
+
+  if not (Assigned(ST.FatalException)) then
+    Exit;
+
+  ST.FreeOnTerminate := true;
+  DoSaveThreadError(Exception(ST.FatalException));
+  FSaveThread := nil;
 end;
 
 procedure TEpiDocumentFile.SaveHook(const Sender: TEpiCustomBase;
@@ -714,6 +755,7 @@ begin
   if (not Assigned(FSaveThread)) then
   begin
     FSaveThread := TEpiDocSaveThread.Create(Self);
+    FSaveThread.OnTerminate := @SaveThreadTerminated;
     FSaveThread.Start;
   end;
 
@@ -1117,6 +1159,12 @@ begin
 
   if Assigned(OnAfterDocumentCreated) then
     OnAfterDocumentCreated(Self, ADocument);
+end;
+
+procedure TEpiDocumentFile.DoSaveThreadError(const FatalErrorObject: Exception);
+begin
+  if assigned(OnSaveThreadError) then
+    OnSaveThreadError(FatalErrorObject);
 end;
 
 end.
