@@ -90,7 +90,9 @@ type
     // Sent each time a step in load/save progress happens
     expeProgressStep,
     // Only sent once when loading/saving is completed (this event is sent even though an exception occurs)
-    expeDone
+    expeDone,
+    // Event sent if something went wrong in the save process
+    expeError
   );
 
   TEpiChangeEvent = procedure(

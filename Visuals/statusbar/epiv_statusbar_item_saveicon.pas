@@ -46,18 +46,17 @@ begin
   case TEpiXMLProgressEvent(EventType) of
     expeInit:
       begin
-        if (Sender = Statusbar.DocFile.Document) then
-          begin
-            FSavingIcon.Brush.Color := clRed;
-            Application.ProcessMessages;
-          end
-        else
-          FSavingIcon.Brush.Color := clYellow;
+        FSavingIcon.Brush.Color := clYellow;
+        Application.ProcessMessages;
       end;
 
     expeDone:
+      FSavingIcon.Brush.Color := clGreen;
+
+    expeError:
       begin
-        FSavingIcon.Brush.Color := clGreen;
+        FSavingIcon.Brush.Color := clRed;
+        Application.ProcessMessages;
       end;
   end;
 end;
@@ -101,12 +100,14 @@ begin
 
   EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeInit));
   EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeDone));
+  EpiAsyncHandlerGlobal.RegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeError));
 end;
 
 destructor TEpiVStatusBarItem_SavingIcon.Destroy;
 begin
   EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeInit));
   EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeDone));
+  EpiAsyncHandlerGlobal.UnRegisterAsyncHandler(@ProgressHook, eegXMLProgress, Word(expeError));
 
   inherited Destroy;
 end;

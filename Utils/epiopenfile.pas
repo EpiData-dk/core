@@ -192,6 +192,23 @@ type
     property LoopSave: Boolean read FLoopSave write FLoopSave;
   end;
 
+  { THackDocument }
+
+  THackDocument = class(TEpiDocument)
+  public
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
+  end;
+
+procedure THackDocument.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+end;
+
+{ THackDocument }
+
 { TEpiSaveThread }
 
 constructor TEpiXMLSaveThread.Create(XMLDoc: TXMLDocument;
@@ -258,26 +275,38 @@ begin
     if (not Assigned(LocalDoc)) then
       Continue;
 
-    if (not FileIsWritable(LocalFileName)) then
-      RaiseSaveError(LocalFileName);
+    try
+      try
+        EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
+        MS := nil;
+        FS := nil;
 
-    EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
-    MS := TMemoryStreamUTF8.Create;
+        if (not FileIsWritable(LocalFileName)) then
+          RaiseSaveError(LocalFileName);
 
-    LocalDoc.SaveToStream(Ms);
-    Ms.Position := 0;
+        MS := TMemoryStreamUTF8.Create;
 
-    if UTF8Pos('.epz', UTF8LowerCase(LocalFileName)) > 0 then
-      StreamToZipFile(Ms, UTF8ToSys(LocalFileName))
-    else
-      begin
-        Fs := TFileStreamUTF8.Create(LocalFileName, fmCreate);
-        Fs.CopyFrom(Ms, Ms.Size);
-        Fs.Free;
+        LocalDoc.SaveToStream(Ms);
+        Ms.Position := 0;
+
+        if UTF8Pos('.epz', UTF8LowerCase(LocalFileName)) > 0 then
+          StreamToZipFile(Ms, UTF8ToSys(LocalFileName))
+        else
+          begin
+            Fs := TFileStreamUTF8.Create(LocalFileName, fmCreate);
+            Fs.CopyFrom(Ms, Ms.Size);
+          end;
+
+      except
+        THackDocument(LocalDoc).DoChange(LocalDoc, eegXMLProgress, Word(expeError), nil);
+        raise;
       end;
-    Ms.Free;
 
-    EpiAsyncHandlerGlobal.RemoveDocument(LocalDoc);
+    finally
+      FS.Free;
+      Ms.Free;
+      EpiAsyncHandlerGlobal.RemoveDocument(LocalDoc);
+    end;
   end;
 end;
 
@@ -1094,6 +1123,7 @@ begin
   then
     begin
       // The current file location is (for some reason) no longer writeable.
+      THackDocument(FEpiDoc).DoChange(FEpiDoc, eegXMLProgress, Word(expeError), nil);
       if Assigned(FOnError) then
         FOnError('The project cannot be saved. The current location is no longer accessible!');
 
@@ -1141,15 +1171,20 @@ begin
     end;
 
   try
-    DoSaveFile(FileName);
+    try
+      DoSaveFile(FileName);
 
-    if (Not Assigned(LF)) or
-       (not IsEqualGUID(LF^.GUID, FGuid))
-    then
-      CreateLockFile;
+      if (Not Assigned(LF)) or
+         (not IsEqualGUID(LF^.GUID, FGuid))
+      then
+        CreateLockFile;
 
-    FReadOnly := false;
-    Result := true;
+      FReadOnly := false;
+      Result := true;
+    except
+      THackDocument(FEpiDoc).DoChange(FEpiDoc, eegXMLProgress, Word(expeError), nil);
+      raise;
+    end;
   finally
     Dispose(LF);
   end;
