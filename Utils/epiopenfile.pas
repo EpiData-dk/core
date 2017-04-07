@@ -1088,6 +1088,19 @@ begin
   FFileName := AFileName;
   LockFileName := FFileName + '.lock';
 
+
+  if (not FirstSave) and
+     (not FileIsWritable(FFileName))
+  then
+    begin
+      // The current file location is (for some reason) no longer writeable.
+      if Assigned(FOnError) then
+        FOnError('The project cannot be saved. The current location is no longer accessible!');
+
+      Exit;
+    end;
+
+
   if not FileExistsUTF8(LockFileName) then
     if FirstSave then
       CreateLockFile
