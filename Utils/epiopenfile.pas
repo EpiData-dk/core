@@ -86,6 +86,10 @@ type
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
   private
+    // Undo file
+    FUndoCopyFilename: UTF8String;
+    procedure TakeUndoCopy;
+  private
     // Async saving
     FCriticalSection: PRTLCriticalSection;
     FRTLEvent: PRTLEvent;
@@ -131,8 +135,10 @@ type
     FOnWarning: TOpenEpiWarningEvent;
     FOnAfterDocumentCreated: TEpiDocumentCreation;
     FOnSaveThreadError: TEpiSaveThreadErrorEvent;
+    FUndoCopy: boolean;
     procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument);
     procedure DoSaveThreadError(Const FatalErrorObject: Exception);
+    procedure SetUndoCopy(AValue: boolean);
   public
     // Event properties
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
@@ -149,6 +155,7 @@ type
     property IsSaved: boolean read GetIsSaved;
     property AuthedUser: TEpiUser read FAuthedUser;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
+    property UndoCopy: boolean read FUndoCopy write SetUndoCopy;
   end;
   TEpiDocumentFileClass = class of TEpiDocumentFile;
 
@@ -163,7 +170,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
+  epimiscutils, FileUtil, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
   laz2_XMLWrite, episervice_asynchandler, epidatafiles;
 
 type
@@ -779,6 +786,21 @@ begin
     DeleteFileUTF8(BackupFileName);
 end;
 
+procedure TEpiDocumentFile.TakeUndoCopy;
+begin
+  // Take Undo Copy can only be run after a physical copy has been written to disk,
+  // as it relies on making a copy rather than writing the CORE content a second time.
+
+  if (not IsSaved) then
+    Exit;
+
+  if FUndoCopyFilename <> '' then
+    DeleteFileUTF8(FUndoCopyFilename);
+
+  FUndoCopyFilename := FileName + '.' + FormatDateTime('YYYY-MM-DD_HH:NN:SS', Now) + '.undo';
+  CopyFile(FileName, FUndoCopyFilename);
+end;
+
 procedure TEpiDocumentFile.AsyncSave;
 begin
   if (not Assigned(FSaveThread)) then
@@ -986,6 +1008,11 @@ begin
       end;
   end;  // ReadOnly
 
+
+  // At this point all checks have performed that serves to make sure the right file is
+  // opened and there no immediate danger to loading the project.
+  // Now go ahead and do the actual loading.
+
   if LoadBackupFile then
     Fn := FileName + '.bak'
   else
@@ -1076,6 +1103,11 @@ begin
 
     if not ReadOnly then
       CreateLockFile;
+
+
+    if UndoCopy then
+      TakeUndoCopy;
+
     Result := true;
   finally
 
@@ -1157,7 +1189,7 @@ begin
      (not IsEqualGUID(LF^.GUID, FGuid))
   then
     begin
-      // This file is locked by another program -> most likely because the "stole"
+      // This file is locked by another program -> most likely because they "stole"
       // our .lock file.
       Msg := 'You are trying to save the file: ' + FileName + LineEnding +
              'But this file is locked by another program' + LineEnding +
@@ -1178,6 +1210,9 @@ begin
          (not IsEqualGUID(LF^.GUID, FGuid))
       then
         CreateLockFile;
+
+      if UndoCopy then
+        TakeUndoCopy;
 
       FReadOnly := false;
       Result := true;
@@ -1213,6 +1248,24 @@ procedure TEpiDocumentFile.DoSaveThreadError(const FatalErrorObject: Exception);
 begin
   if assigned(OnSaveThreadError) then
     OnSaveThreadError(FatalErrorObject);
+end;
+
+procedure TEpiDocumentFile.SetUndoCopy(AValue: boolean);
+begin
+  if FUndoCopy = AValue then Exit;
+
+  if (not AValue) and
+     (FileExistsUTF8(FUndoCopyFilename))
+  then
+    begin
+      DeleteFileUTF8(FUndoCopyFilename);
+      FUndoCopyFilename := '';
+    end;
+
+  if (AValue) then
+    TakeUndoCopy;
+
+  FUndoCopy := AValue;
 end;
 
 end.
