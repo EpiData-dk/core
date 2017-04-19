@@ -1256,6 +1256,7 @@ begin
     LastEdit := Max(LastEdit, Max(RecModifiedDate, StructureModifiedDate));
 
   FSecurityLog.LogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogExport(Settings: TObject);

@@ -89,6 +89,7 @@ type
     // Undo file
     FUndoCopyFilename: UTF8String;
     procedure TakeUndoCopy;
+    procedure RestoreUndoCopy;
   private
     // Async saving
     FCriticalSection: PRTLCriticalSection;
@@ -331,6 +332,9 @@ begin
 
   FDataDirectory := '';
   FSaveHookCommitting := false;
+
+  FUndoCopy := false;
+  FUndoCopyFilename := '';
 end;
 
 destructor TEpiDocumentFile.Destroy;
@@ -338,16 +342,12 @@ begin
   if Assigned(FEpiDoc)
   then
   begin
-    FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
-
     if (IsSaved) and
        (Assigned(AuthedUser))
     then
-      begin
-        FEpiDoc.Logger.LogClose();
-//        DoSaveFile(FileName);
-      end;
+      FEpiDoc.Logger.LogClose();
 
+    FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
     FreeAndNil(FEpiDoc);
 
     if not ReadOnly then
@@ -371,6 +371,9 @@ begin
 
   if Assigned(FSaveDoc) then
     FSaveDoc.Free;
+
+  if UndoCopy then
+    RestoreUndoCopy;
 
   RTLeventdestroy(FRTLEvent);
   DoneCriticalsection(FCriticalSection^);
@@ -798,7 +801,20 @@ begin
     DeleteFileUTF8(FUndoCopyFilename);
 
   FUndoCopyFilename := FileName + '.' + FormatDateTime('YYYY-MM-DD_HH:NN:SS', Now) + '.undo';
-  CopyFile(FileName, FUndoCopyFilename);
+  CopyFile(FileName, FUndoCopyFilename, [cffOverwriteFile, cffPreserveTime]);
+end;
+
+procedure TEpiDocumentFile.RestoreUndoCopy;
+begin
+  if (not IsSaved) then
+    Exit;
+
+  if (FUndoCopyFilename = '') then
+    Exit;
+
+  CopyFile(FUndoCopyFilename, FileName, [cffOverwriteFile, cffPreserveTime]);
+  DeleteFileUTF8(FUndoCopyFilename);
+  FUndoCopyFilename := '';
 end;
 
 procedure TEpiDocumentFile.AsyncSave;
