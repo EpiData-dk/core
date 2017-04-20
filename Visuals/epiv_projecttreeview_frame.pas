@@ -131,6 +131,7 @@ type
       TextType: TVSTTextType);
     procedure VSTStartDrag(Sender: TObject; var DragObject: TDragObject);
     procedure VSTDblClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+    procedure VSTInternalResize(Sender: TObject);
 
   { Document Hooks }
   private
@@ -769,6 +770,11 @@ begin
   DoTreeNodeDoubleClick(AObject, Ot);
 end;
 
+procedure TEpiVProjectTreeViewFrame.VSTInternalResize(Sender: TObject);
+begin
+  TVirtualStringTree(Sender).Invalidate;
+end;
+
 procedure TEpiVProjectTreeViewFrame.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
@@ -1143,6 +1149,7 @@ begin
     OnContextPopup  := @VSTContextPopup;
 
     OnNodeDblClick := @VSTDblClick;
+    OnResize := @VSTInternalResize;
 
     Align           := alClient;
     Parent          := Self;
