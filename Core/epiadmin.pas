@@ -700,6 +700,9 @@ begin
 
   // During fixup, set the correct admingroup!
   ReferenceMap.AddFixupReference(Self, TEpiAdmin, 0, '');
+
+  // Admin is only loaded from XML if it truely exists - hence it is initialized
+  FInitialized := true;
 end;
 
 function TEpiAdmin.LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap;

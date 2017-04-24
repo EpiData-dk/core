@@ -1046,14 +1046,6 @@ begin
           FDecrypter.DecryptStream(EncryptSt, PlainTxtSt, EncryptSt.Size);
           PlainTxtSt.Position := 0;
 
-          {
-          PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
-          PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
-          PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
-          PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
-          PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
-          }
-
           with FSecurityLog do
           begin
             B := PlainTxtSt.ReadByte;
