@@ -31,7 +31,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="1"/>
-    <Files Count="84">
+    <Files Count="85">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -368,6 +368,10 @@
         <Filename Value="Services/episervice_asynchandler.pas"/>
         <UnitName Value="episervice_asynchandler"/>
       </Item84>
+      <Item85>
+        <Filename Value="ImportExport/epiimportsettings.pas"/>
+        <UnitName Value="epiimportsettings"/>
+      </Item85>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>

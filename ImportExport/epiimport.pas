@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
-  epivaluelabels, epieximtypes, epiimport_stata, epicustombase;
+  epivaluelabels, epieximtypes, epiimport_stata, epicustombase, epiimportsettings;
 
 type
 
@@ -44,7 +44,8 @@ type
     function    GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
       out FieldList: TList;
       out SkipFirstLine: boolean;
-      out FieldSeparator: Char): boolean;
+      out FieldSeparator: Char;
+      ImportSetting: TEpiTextImportSetting): boolean;
     procedure   FindFieldType(var Value: String; var PossibleTypes: TEpiFieldTypes);
     function    IsInteger(Const S: String; out Val: EpiInteger): boolean;
     function    IsFloat(Const S: String;   out Val: EpiFloat): boolean;
@@ -77,8 +78,9 @@ type
     function    ImportStata(Const DataStream: TStream; Const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean = true): Boolean; overload;
     function    ImportStata(Const aFilename: string;   Const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean = true): Boolean; overload;
 
-    function    ImportTxt(const DataStream: TStream; var DataFile: TEpiDataFile; ImportData: boolean): boolean; overload;
+    function    ImportTxt(const DataStream: TStream; var DataFile: TEpiDataFile; ImportData: boolean = true): boolean; overload;
     function    ImportTxt(Const aFileName: string;   var DataFile: TEpiDataFile; ImportData: boolean = true): boolean; overload;
+    function    ImportTxt(ImportSetting: TEpiTextImportSetting): boolean; overload;
 
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
 
@@ -273,8 +275,8 @@ begin
 end;
 
 function TEpiImport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings; out
-  FieldList: TList; out SkipFirstLine: boolean; out FieldSeparator: Char
-  ): boolean;
+  FieldList: TList; out SkipFirstLine: boolean; out FieldSeparator: Char;
+  ImportSetting: TEpiTextImportSetting): boolean;
 var
   tabcount, semicoloncount, commacount,
   spacecount: Integer;
@@ -1956,6 +1958,42 @@ end;
 
 function TEpiImport.ImportTxt(const DataStream: TStream;
   var DataFile: TEpiDataFile; ImportData: boolean): boolean;
+begin
+
+end;
+
+function TEpiImport.ImportTxt(const aFileName: string;
+  var DataFile: TEpiDataFile; ImportData: boolean): boolean;
+var
+  FS: TStream;
+  Setting: TEpiTextImportSetting;
+begin
+  if (aFileName <> '') and
+     (not FileExistsUTF8(aFilename))
+  then
+    exit(false);
+
+  try
+    FS := nil;
+
+    if aFileName <> '' then
+      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
+
+    Setting := TEpiTextImportSetting.Create;
+    Setting.ImportSteam := FS;
+    Setting.OutputDatafile := DataFile;
+    Setting.ImportData := ImportData;
+
+    Result := ImportTxt(Setting);  //ImportTxt(FS, DataFile, ImportData, ImportSetting);
+
+    DataFile := Setting.OutputDatafile;
+  finally
+    FS.Free;
+    Setting.Free;
+  end;
+end;
+
+function TEpiImport.ImportTxt(ImportSetting: TEpiTextImportSetting): boolean;
 var
   ImportLines: TStrings;
   FieldLines: TStrings;
@@ -2008,12 +2046,14 @@ begin
       RaiseError(Exception, 'ClipBoard or File contains no data.');
 
     // Guess structure based on content.
-    if not GuessTxtFile(DataFile, ImportLines, FieldList, skipfirstline, FieldSeparator) then
+    if not GuessTxtFile(DataFile, ImportLines, FieldList, skipfirstline, FieldSeparator, ImportSetting) then
       Exit;
 
     FieldCount := 0;
 
-    if not ImportData then
+    if (Assigned(ImportSetting) and (not ImportSetting.ImportData)) or
+       (not ImportData)
+    then
       Exit(true);
 
     if SkipFirstLine then
@@ -2098,28 +2138,6 @@ begin
     if Assigned(ImportLines) then FreeAndNil(ImportLines);
     if Assigned(FieldLines) then FreeAndNil(FieldLines);
     if Assigned(FieldList) then FieldList.Free;
-  end;
-end;
-
-function TEpiImport.ImportTxt(const aFileName: string;
-  var DataFile: TEpiDataFile; ImportData: boolean): boolean;
-var
-  FS: TStream;
-begin
-  if (aFileName <> '') and
-     (not FileExistsUTF8(aFilename))
-  then
-    exit(false);
-
-  try
-    FS := nil;
-
-    if aFileName <> '' then
-      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
-
-    Result := ImportTxt(FS, DataFile, ImportData);
-  finally
-    FS.Free;
   end;
 end;
 
