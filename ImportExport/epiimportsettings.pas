@@ -25,20 +25,25 @@ type
 
 
   { TEpiTextImportSetting }
+  TEpiTextImportFirstLineIsHeader = (eflGuess, eflTrue, eflFalse);
 
   TEpiTextImportSetting = class(TEpiImportSettings)
   private
-    FGuess: boolean;
-    FDelimiter: UTF8String;
-    FFirstLineIsHeader: Boolean;
-    FQuoteCharacter: UTF8String;
+    FDelimiter: Char;
+    FFirstLineIsHeader: TEpiTextImportFirstLineIsHeader;
+    FQuoteCharacter: Char;
   public
     constructor Create; override;
-    // If GUESS is true, all other options below are not used during import and everything is guessed.
-    property Guess: boolean read FGuess write FGuess;
-    property Delimiter: UTF8String read FDelimiter write FDelimiter;
-    property QuoteCharacter: UTF8String read FQuoteCharacter write FQuoteCharacter;
-    property FirstLineIsHeader: Boolean read FFirstLineIsHeader write FFirstLineIsHeader;
+    // If delimiter is set to #0 then it will be guessed (#0 is default)
+    property Delimiter: Char read FDelimiter write FDelimiter;
+
+    // If quote is set to #0  no quotes are expected to seperate strings. Hence if a string
+    // contains the delimiter that is just too bad. (" is default)
+    property QuoteCharacter: Char read FQuoteCharacter write FQuoteCharacter;
+
+    // Can be se to True, False which forces importing to treat first line respectively as header or not,
+    // or Guess (guess) if letting the algorithm try to figure it out
+    property FirstLineIsHeader: TEpiTextImportFirstLineIsHeader read FFirstLineIsHeader write FFirstLineIsHeader;
   end;
 
 
@@ -57,10 +62,9 @@ end;
 constructor TEpiTextImportSetting.Create;
 begin
   inherited Create;
-  FFirstLineIsHeader := true;
-  FGuess := true;
+  FFirstLineIsHeader := eflGuess;
   FQuoteCharacter := '"';
-  FDelimiter := ',';
+  FDelimiter := #0;
 end;
 
 end.
