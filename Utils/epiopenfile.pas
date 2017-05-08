@@ -58,12 +58,14 @@ type
       end;
       PLockFile = ^TLockFile;
 
+  // Save hook internals
   private
-    // Save hook internals
     FSaveHookCommitting: boolean;
+  protected
     procedure SaveHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
-      EventType: Word; Data: Pointer);
+      EventType: Word; Data: Pointer); virtual;
+
   private
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;

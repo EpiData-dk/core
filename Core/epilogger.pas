@@ -98,6 +98,7 @@ type
     FSuccessLoginTime: TDateTime;
     FUserName: UTF8String;
     FDatafile: TEpiDataFile;
+    FLogEvents: boolean;
     procedure  SetUserName(AValue: UTF8String);
     procedure  SetDatafile(AValue: TEpiDataFile);
     function   DoNewLog(ALogType: TEpiLogEntry): Integer;  // Result = Index for new record.
@@ -105,7 +106,7 @@ type
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: UTF8String read FUserName write SetUserName;
-//    property   Log:  TEpiLog read FLogDatafile;
+    property   LogEvents: boolean read FLogEvents write FLogEvents;
 
   { Logging methods }
   private
@@ -334,6 +335,9 @@ procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
 begin
+  if (not LogEvents) then
+    Exit;
+
   case EventGroup of
     eegAdmin:
       case TEpiAdminChangeEventType(EventType) of
@@ -925,20 +929,11 @@ begin
       Node := Node.NextSibling;
     if not Assigned(Node) then break;
 
-
-//    FLogDatafile.NewRecords();
     FSecurityLog.NewRecords();
-//    Idx := FLogDatafile.Size - 1;
     Idx := FSecurityLog.Size - 1;
 
     with FSecurityLog do
     begin
-//      FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
-//      FTime.AsDateTime[Idx]        := Self.LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
-//      FDataFileNames.AsString[Idx] := Self.LoadAttrString(Node, rsDataFileRef, '', false);
-//      FUserNames.AsString[Idx]     := Self.LoadAttrString(Node, 'username');
-//      FCycle.AsInteger[Idx]        := Self.LoadAttrInt(Node, rsCycle);
-
       LogType.AsInteger[Idx]       := Integer(LogEntryFromNodeName(Node.NodeName));
       Date.AsDate[Idx]             := trunc(Self.LoadAttrDateTime(Node, 'time'));
       Time.AsTime[Idx]             := Frac(Self.LoadAttrDateTime(Node, 'time'));
@@ -946,7 +941,6 @@ begin
       UserName.AsString[Idx]       := Self.LoadAttrString(Node, 'username');
       Cycle.AsInteger[Idx]         := Self.LoadAttrInt(Node, rsCycle);
 
-//      case FType.AsEnum[Idx] of
       case LogType.AsInteger[Idx] of
         Integer(ltNone): ;
 
@@ -955,7 +949,7 @@ begin
 
         Integer(ltFailedLogin):
           begin
-{            case LoadAttrString(Node, 'type') of
+{TODO            case LoadAttrString(Node, 'type') of
               'password': DataContent.AsInteger[Idx] := 0;
               'login':    DataContent.AsInteger[Idx] := 1;
               'blocked':  DataContent.AsInteger[Idx] := 3;
@@ -1081,14 +1075,17 @@ begin
         end;
     end;
 
+  if (not LogEvents) then
+    Exit;
+
   Idx := DoNewLog(ltSuccessLogin);
   FSecurityLog.Date.AsDateTime[Idx] := FSuccessLoginTime;
   FSecurityLog.Time.AsDateTime[Idx] := FSuccessLoginTime;
   FSecurityLog.LogContent.AsString[Idx] := GetHostNameWrapper;
 
-{  FDecrypter.Free;
+  FDecrypter.Free;
   EncryptSt.Free;
-  PlainTxtSt.Free;    }
+  PlainTxtSt.Free;
 end;
 
 procedure TEpiLogger.SetUserName(AValue: UTF8String);
@@ -1159,6 +1156,9 @@ var
   Idx, i: Integer;
   S: String;
 begin
+  if (not LogEvents) then
+    Exit;
+
   Idx := DoNewLog(ltSearch);
 
   if Assigned(Search) then
@@ -1229,6 +1229,9 @@ end;
 
 procedure TEpiLogger.LogAppend;
 begin
+  if (not LogEvents) then
+    Exit;
+
   DoNewLog(ltAppend);
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
@@ -1239,6 +1242,9 @@ var
   LastEdit: TDateTime;
   ADoc: TEpiDocument;
 begin
+  if (not LogEvents) then
+    Exit;
+
   Idx := DoNewLog(ltClose);
 
   ADoc := Doc(Self);
@@ -1259,6 +1265,9 @@ var
   LogExportDF: TLogExportDatafile;
   DFSetting: TEpiExportDatafileSettings;
 begin
+  if (not LogEvents) then
+    Exit;
+
   {Idx := DoNewLog(ltExport);
 
   LogExportDoc := TLogExportDocument.Create;

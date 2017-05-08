@@ -40,48 +40,6 @@ uses
 
 { TEpiVStatusBarItem_ProgressBar }
 
-{procedure TEpiVStatusBarItem_ProgressBar.InternalProgress(
-  const Sender: TEpiCustomBase; ProgressType: TEpiProgressType; CurrentPos,
-  MaxPos: Cardinal; var Canceled: Boolean);
-begin
-  if Assigned(FOldOnProgress) then
-    FOldOnProgress(Sender, ProgressType, CurrentPos, MaxPos, Canceled);
-
-  case ProgressType of
-    eptInit:
-      begin
-        if (MaxPos > 500) then
-          ProgressUpdate := MaxPos div 50
-        else
-          ProgressUpdate := 1;
-        FProgressbar.Position := CurrentPos;
-        FProgressbar.Max := MaxPos;
-        Visible := true;
-        if not (csDestroying in Panel.ComponentState) then
-          Application.ProcessMessages;
-      end;
-    eptFinish:
-      begin
-        if not (csDestroying in Panel.ComponentState) then
-          Application.ProcessMessages;
-        LastUpdate := 0;
-        FProgressbar.Position := FProgressbar.Max;
-        Visible := false;
-      end;
-    eptRecords:
-      begin
-        if CurrentPos > (LastUpdate + ProgressUpdate) then
-        begin
-          FProgressbar.Position := CurrentPos;
-          {$IFNDEF MSWINDOWS}
-          Application.ProcessMessages;
-          {$ENDIF}
-          LastUpdate := CurrentPos;
-        end;
-      end;
-  end;
-end; }
-
 procedure TEpiVStatusBarItem_ProgressBar.InternalProgress(
   const Sender: TEpiCustomBase; const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);

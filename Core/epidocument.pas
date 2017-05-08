@@ -205,7 +205,6 @@ end;
 procedure TEpiDocument.DoChange(const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
-
   case EventGroup of
     eegAdmin:
       case TEpiAdminChangeEventType(EventType) of
@@ -310,7 +309,9 @@ begin
     LoadFromXml(RootNode, ReferenceMap);
     ReferenceMap.FixupReferences;
 
-    if (Admin.Initialized) then
+    if (Admin.Initialized) and
+       (Logger.LogEvents)
+    then
       DoChange(eegCustomBase, Word(ecceRequestSave), nil);
   finally
     ReferenceMap.Free;
