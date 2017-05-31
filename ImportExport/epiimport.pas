@@ -363,6 +363,9 @@ begin
         DelimCounts[j] := DelimCounts[j] + StrCountChars(TmpStr, Delimiters[j], QuoteChar);
     end;
 
+
+    DoFeedBackImport(fbInfo, Format('Lines: %d', [w]));
+
     for i := Low(DelimCounts) to High(DelimCounts) do
       DelimCounts[i] := DelimCounts[i] div w;
 
@@ -391,11 +394,7 @@ begin
           S += '(' + DelimNames[j] + ': ' + IntToStr(DelimCounts[j]) + ') ';
       end;
 
-    DoFeedBackImport(
-      fbInfo,
-      S + LineEnding +
-      Format('Lines: %d', [w])
-    );
+    DoFeedBackImport(fbInfo, S);
 
     FieldSeparator := #0;
     for j := Low(DelimCounts) to High(DelimCounts) do
@@ -406,7 +405,6 @@ begin
           break;
         end;
 
-
     if FieldSeparator = #0 then
       begin
         RaiseError(Exception, 'Illegal format of textfile. Separator not found.');
@@ -414,7 +412,6 @@ begin
       end;
 
     DoFeedBackImport(fbInfo, 'Separator found: ' + FieldSeparator);
-
 
     // ===================================
     //   Detect variables

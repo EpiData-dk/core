@@ -38,7 +38,6 @@ type
     ftTime, ftTimeAuto,
 
     // Strings (12, 13, 14)
-//    ftString, ftUpperString, ftMemo
     ftUpperString, ftString, ftMemo
   );
   TEpiFieldTypes  = Set of TEpiFieldType;
