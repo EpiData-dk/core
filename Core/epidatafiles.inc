@@ -609,6 +609,11 @@ begin
   if I < R then InternalSortRecords(SortList, I, R);
 end;
 
+function TEpiDataFile.InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
+begin
+  result := Deleted[Index];
+end;
+
 procedure TEpiDataFile.HaltLoading;
 begin
   Raise EEpiDataFileHaltLoading.Create('Loading aborted by user!');
@@ -1209,8 +1214,13 @@ begin
 end;
 
 procedure TEpiDataFile.Pack;
+begin
+  Self.Pack(@InternalPackFunction);
+end;
+
+procedure TEpiDataFile.Pack(PackFunction: TEpiDataFilePackFunction);
 var
-  L: array of Integer;
+  L: TBoundArray;// array of Integer;
   C: Integer;
   i, j: Integer;
   S: Integer;
@@ -1218,7 +1228,7 @@ var
 begin
   C := 0;
   for i := 0 to Size - 1 do
-    if Deleted[i] then
+    if PackFunction(Self, i) then
     begin
       Inc(C);
       SetLength(L, C);

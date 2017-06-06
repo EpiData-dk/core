@@ -15,10 +15,7 @@ type
 
   TEpiDocumentChangeEvent = (
     // Simple document password has changed.
-    edcePassword,
-
-    // Save events
-    edce
+    edcePassword
   );
 
   TEpiProgressType =

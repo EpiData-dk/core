@@ -50,6 +50,9 @@ type
     arsStayOnRecord           // Stay on record.
     );
 
+
+  TEpiDataFilePackFunction = function(Sender: TEpiDataFile; Index: Integer): boolean of object;
+
   { TEpiDataFile }
 
   TEpiDataFile = class(TEpiCustomItem)
@@ -83,6 +86,7 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
     function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+    function    InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
 
   { Load/Save methods }
   private
@@ -109,7 +113,8 @@ type
     function    NewHeading: TEpiHeading;
     // Returns the index to the "first" of the newly created records.
     function    NewRecords(Const Count: Cardinal = 1): integer; virtual;
-    procedure   Pack; // Removes records marked for deletion.
+    procedure   Pack; overload;   // Removes records marked for deletion.
+    procedure   Pack(PackFunction: TEpiDataFilePackFunction); overload; // Removes records based on provided method
     procedure   ExchangeRecords(Const Index1, Index2: Integer);
     procedure   SortRecords(SortFields: TEpiFields); overload;
     procedure   SortRecords(SortField: TEpiField); overload;
