@@ -84,7 +84,7 @@ implementation
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
   LazUTF8, dateutils, LConvEncoding, LazUTF8Classes, epimiscutils, epiconvertutils,
-  epidatafileutils;
+  epidatafileutils, LazFileUtils;
 
 var
   BigEndian: boolean = false;
