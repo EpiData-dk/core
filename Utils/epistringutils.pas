@@ -24,8 +24,10 @@ type
 
   TCharSet = Set of Char;
 
+  function StrCountChars(const Source: string; const FindChar: Char;
+    Const QuoteChar: Char): integer; overload;
   function StrCountChars(const Source: string; const FindChars: TCharSet;
-    Const QuoteChar: Char): integer;
+    Const QuoteChar: Char): integer; overload;
   function CountChar(Const UTF8String: string; Const WChar: WideChar): integer;
   function ExtractStrBetween(const Source: string; BeginChar, EndChar: Char): string;
   procedure SplitString(const Source: string; var List: TStrings;
@@ -59,6 +61,11 @@ uses
 var
   IdentRegExp: TRegExpr;
 
+function StrCountChars(const Source: string; const FindChar: Char;
+  const QuoteChar: Char): integer;
+begin
+  result := StrCountChars(Source, [FindChar], QuoteChar);
+end;
 
 function StrCountChars(const Source: string; const FindChars: TCharSet;
   const QuoteChar: Char): integer;

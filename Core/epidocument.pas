@@ -15,11 +15,7 @@ type
 
   TEpiDocumentChangeEvent = (
     // Simple document password has changed.
-    edcePassword,
-
-    // Any listeners are requested to force a save, due to eg. log changes.
-    //  data = TDomDocument (OwnerDocument)
-    edceRequestSave
+    edcePassword
   );
 
   TEpiProgressType =
@@ -55,7 +51,6 @@ type
     FCycleNo: Int64;
     FLoading: boolean;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
-    FOnProgress: TEpiProgressEvent;
     FPassWord: string;
     FProjectSettings: TEpiProjectSettings;
     FValueLabelSets: TEpiValueLabelSets;
@@ -69,6 +64,12 @@ type
     function   GetOnPassword: TRequestPasswordEvent;
     procedure  SetOnPassword(const AValue: TRequestPasswordEvent);
     procedure  SetPassWord(AValue: string);
+
+  // SecurityLog (XML v5)
+  private
+    procedure InitializeSecurityLog;
+    procedure DeInitializeSecurityLog;
+
   protected
     procedure DoChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
@@ -92,7 +93,6 @@ type
     Property   Relations: TEpiDatafileRelationList read FRelations;
     Property   Logger: TEpiLogger read FLogger;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
-    property   OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;
     Property   Version: integer read FVersion;
@@ -128,7 +128,7 @@ implementation
 
 uses
   epimiscutils, laz2_XMLRead, laz2_XMLWrite, epiglobals,
-  DCPrijndael, DCPsha256, DCPbase64;
+  DCPrijndael, DCPsha256, DCPbase64, episecuritylog;
 
 { TEpiDocument }
 
@@ -152,15 +152,72 @@ begin
   DoChange(eegDocument, Word(edcePassword), @Val);
 end;
 
+procedure TEpiDocument.InitializeSecurityLog;
+var
+  DF: TEpiSecurityDatafile;
+  VLSet: TEpiValueLabelSet;
+  MR: TEpiMasterRelation;
+  DataDF: TEpiSecurityDataEventLog;
+  DR: TEpiDetailRelation;
+  KeyDF: TEpiSecurityKeyFieldLog;
+begin
+  VLSet := TEpiValueLabelSet(ValueLabelSets.NewItem(TEpiSecurityValuelabelSet));
+  VLSet.Name := EpiSecurityLogValuelLabelSetName;
+
+  DF := TEpiSecurityDatafile(DataFiles.NewItem(TEpiSecurityDatafile));
+  DF.Name := EpiSecurityLogDatafileName;
+  DF.Caption.Text := EpiSecurityLogDatafileCaption;
+  DF.LogType.ValueLabelSet := VLSet;
+
+  MR := TEpiMasterRelation(Relations.NewItem(TEpiSecurityDatafileRelation));
+  MR.Datafile := DF;
+  MR.Name     := EpiSecurityLogRelationName;
+
+  DataDF := TEpiSecurityDataEventLog(DataFiles.NewItem(TEpiSecurityDataEventLog));
+  DataDF.Name := EpiSecurityLogDataEventName;
+  DataDF.Caption.Text := EpiSecurityLogDataEventCaption;
+
+  DR := TEpiDetailRelation(MR.DetailRelations.NewItem(TEpiSecurityDatafileDetailRelation));
+  DR.Datafile := DataDF;
+  DR.Name     := EpiSecurityLogDataRelationName;
+  DR.MaxRecordCount := 0;
+
+  KeyDF := TEpiSecurityKeyFieldLog(DataFiles.NewItem(TEpiSecurityKeyFieldLog));
+  KeyDF.Name := EpiSecurityLogKeyDataName;
+  KeyDF.Caption.Text := EpiSecurityLogKeyDataCaption;
+
+  DR := TEpiDetailRelation(MR.DetailRelations.NewItem(TEpiSecurityDatafileDetailRelation));
+  DR.Datafile := KeyDF;
+  DR.Name     := EpiSecurityLogKeyDataRelationName;
+  DR.MaxRecordCount := 0;
+
+  FLogger := TEpiLogger.Create(Self, DataFiles);
+end;
+
+procedure TEpiDocument.DeInitializeSecurityLog;
+begin
+
+end;
+
 procedure TEpiDocument.DoChange(const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
-  // Catch invalid login/password before passing them on in order to set
-  // internal flag correctly.
-  if (EventGroup = eegAdmin) and
-     (TEpiAdminChangeEventType(EventType) in [eaceAdminIncorrectPassword, eaceAdminIncorrectUserName])
-  then
-    Include(FFlags, edfLoginFailed);
+  case EventGroup of
+    eegAdmin:
+      case TEpiAdminChangeEventType(EventType) of
+        // Admin has been initialize, now time to setup Security Datafile and Valuelabels.
+        // Admin initialization is either done explicitly (Admin.InitAdmin) or right after
+        // the preloading of users (in Admin.LoadCrypto)
+        eaceAdminInitializing:
+          InitializeSecurityLog;
+
+        // Catch invalid login/password before passing them on in order to set
+        // internal flag correctly.
+        eaceAdminIncorrectUserName,
+        eaceAdminIncorrectPassword:
+          Include(FFlags, edfLoginFailed);
+      end;
+  end;
 
   inherited DoChange(Initiator, EventGroup, EventType, Data);
 end;
@@ -184,12 +241,11 @@ begin
   FDataFiles.ItemOwner := true;
   FRelations       := TEpiDatafileRelationList.Create(Self);
   FRelations.ItemOwner := true;
-  FLogger          := TEpiLogger.Create(Self);
   FFailedLog       := TEpiFailedLogger.Create(Self);
   FCycleNo         := 0;
   FFlags           := [];
 
-  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations, Logger]);
+  RegisterClasses([Admin, XMLSettings, ProjectSettings, Study, ValueLabelSets, DataFiles, Relations]);
 
   SetLanguage(LangCode, true);
   // Needed to reset initial XMLSettings.
@@ -249,6 +305,11 @@ begin
     ReferenceMap := TEpiReferenceMap.Create;
     LoadFromXml(RootNode, ReferenceMap);
     ReferenceMap.FixupReferences;
+
+    if (Admin.Initialized) and
+       (Logger.LogEvents)
+    then
+      DoChange(eegCustomBase, Word(ecceRequestSave), nil);
   finally
     ReferenceMap.Free;
     RecXml.Free;
@@ -275,193 +336,203 @@ begin
   // Root = <EpiData>
   FLoading := true;
 
-  {$IFNDEF RELEASE}
+//not yet...  DoChange(eegXMLProgress, Word(expeInit), nil);
+  try
 
-  // Keep an eye in which branch we are loading from!
-  TmpBranch := LoadAttrString(Root, rsBranchAttr, '', false);
-  if (TmpBranch <> '') and
-     (TmpBranch <> EPI_XML_BRANCH_STRING)
-  then
-    begin
+    {$IFNDEF RELEASE}
+
+    // Keep an eye in which branch we are loading from!
+    TmpBranch := LoadAttrString(Root, rsBranchAttr, '', false);
+    if (TmpBranch <> '') and
+       (TmpBranch <> EPI_XML_BRANCH_STRING)
+    then
+      begin
+        Raise EEpiBadVersion.CreateFmt(
+          'Project has been created in another development branch!' + LineEnding +
+          'Loading may not be possible - change branch name at own risk!' + LineEnding +
+          'Program branch: %s' + LineEnding +
+          'Project file branch: %s',
+          [EPI_XML_BRANCH_STRING, TmpBranch]
+        );
+      end;
+    {$ENDIF}
+
+    // First read version no!
+    TmpVersion := LoadAttrInt(Root, rsVersionAttr);
+    if TmpVersion > EPI_XML_DATAFILE_VERSION then
       Raise EEpiBadVersion.CreateFmt(
-        'Project has been created in another development branch!' + LineEnding +
-        'Loading may not be possible - change branch name at own risk!' + LineEnding +
-        'Program branch: %s' + LineEnding +
-        'Project file branch: %s',
-        [EPI_XML_BRANCH_STRING, TmpBranch]
-      );
+        'Project has incorrect XML version!' + LineEnding +
+        'Max supported XML Version: %d' + LineEnding +
+        'Project XML Version: %d',
+        [EPI_XML_DATAFILE_VERSION, TmpVersion]
+        );
+    FVersion := TmpVersion;
+
+    // Now we need the separators, in order to load dates/times correctly.
+    if (Version >= 4) then
+    begin
+      XMLSettings.DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
+      XMLSettings.TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
+      XMLSettings.DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
     end;
-  {$ENDIF}
 
-  // First read version no!
-  TmpVersion := LoadAttrInt(Root, rsVersionAttr);
-  if TmpVersion > EPI_XML_DATAFILE_VERSION then
-    Raise EEpiBadVersion.CreateFmt(
-      'Project has incorrect XML version!' + LineEnding +
-      'Max supported XML Version: %d' + LineEnding +
-      'Project XML Version: %d',
-      [EPI_XML_DATAFILE_VERSION, TmpVersion]
-      );
-  FVersion := TmpVersion;
+    // Then language!
+    SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
 
-  // Now we need the separators, in order to load dates/times correctly.
-  if (Version >= 4) then
-  begin
-    XMLSettings.DateSeparator    := LoadAttrString(Root, rsDateSep)[1];
-    XMLSettings.TimeSeparator    := LoadAttrString(Root, rsTimeSep)[1];
-    XMLSettings.DecimalSeparator := LoadAttrString(Root, rsDecSep)[1];
-  end;
+    // Third is cycle no:
+    if (Version >= 2) then
+      FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
 
-  // Then language!
-  SetLanguage(LoadAttrString(Root, 'xml:lang'), true);
+    // Version 4:
+    //  - load External log
+    if LoadNode(Node, Root, 'ExLog', false) then
+    begin
+      FFailedLog.LoadFromXml(Node, ReferenceMap);
+      if FFailedLog.TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
+        raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+    end;
 
-  // Third is cycle no:
-  if (Version >= 2) then
-    FCycleNo := LoadAttrInt(Root, rsCycle, CycleNo, false);
-
-  // Version 4:
-  //  - load External log
-  if LoadNode(Node, Root, 'ExLog', false) then
-  begin
-    FFailedLog.LoadFromXml(Node, ReferenceMap);
-    if FFailedLog.TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
-      raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
-  end;
-
-  // Version 4:
-  //  - Now check for User login;
-  if (Version >= 4) and
-     (LoadNode(Node, Root, rsCrypto, false))
-  then
-    try
-      SS := nil;
-      MS := nil;
-      DeCrypter := nil;
-
-      // Preloading the basic user information also sends a
-      // request for password from user.
-      // Loading the rest of the user information (Name, etc.) is
-      // done later.
+    // Version 4:
+    //  - Now check for User login;
+    if (Version >= 4) and
+       (LoadNode(Node, Root, rsCrypto, false))
+    then
       try
-        CRes := Admin.LoadCrypto(Node, ReferenceMap, FFailedLog);
-      finally
-        if (edfLoginFailed in Flags) then
-        begin
-          Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
-          LoadNode(Node, Root, 'ExLog', false);
-          Root.ReplaceChild(Elem, Node);
+        SS := nil;
+        MS := nil;
+        DeCrypter := nil;
 
-          DoChange(eegDocument, Word(edceRequestSave), Root.OwnerDocument);
-          Exclude(FFlags, edfLoginFailed);
+        // Preloading the basic user information also sends a
+        // request for password from user.
+        // Loading the rest of the user information (Name, etc.) is
+        // done later.
+        try
+          CRes := Admin.LoadCrypto(Node, ReferenceMap, FFailedLog);
+        finally
+          if (edfLoginFailed in Flags) then
+          begin
+            Elem := FFailedLog.SaveToDom(Root.OwnerDocument);
+            LoadNode(Node, Root, 'ExLog', false);
+            Root.ReplaceChild(Elem, Node);
+
+            DoChange(eegCustomBase, Word(ecceRequestSave), Root.OwnerDocument);
+            Exclude(FFlags, edfLoginFailed);
+          end;
         end;
+
+        case CRes of
+          prSuccess:  ;
+          prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
+          prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
+        end;
+
+        {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
+        LoadNode(Node, Root, rsEncrypted, true);
+
+        SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
+        MS := TMemoryStream.Create;
+
+        DeCrypter := TDCP_rijndael.Create(nil);
+        DeCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+        DeCrypter.DecryptStream(SS, MS, SS.Size);
+
+        MS.Position := 0;
+        ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+        {$ENDIF}
+      finally
+        SS.Free;
+        MS.Free;
+        DeCrypter.Free;
       end;
 
-      case CRes of
-        prSuccess:  ;
-        prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
-        prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
-      end;
+    // XML Version 2:
+    if (Version >= 2) then
+    begin
+      if (Version <= 3) then
+        PW := LoadAttrString(Root, rsCapitalPassword, '', false)
+      else
+        PW := LoadAttrString(Root, rsPassword, '', false);
 
-      {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
-      LoadNode(Node, Root, rsEncrypted, true);
+      Count := 1;
+      if (PW <> '') and (Assigned(OnPassword)) then
+      repeat
+        Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
+        Inc(Count);
+      until (StrToSHA1Base64(UserPW) = PW) or
+            (Res in [rprStopOnFail, rprCanceled]);
 
-      SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
-      MS := TMemoryStream.Create;
+      if (Res = rprCanceled) then
+        Raise EEpiPasswordCanceled.Create('');
 
-      DeCrypter := TDCP_rijndael.Create(nil);
-      DeCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
-      DeCrypter.DecryptStream(SS, MS, SS.Size);
+      if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
+        Raise EEpiBadPassword.Create('Incorrect Password');
 
-      MS.Position := 0;
-      ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
-      {$ENDIF}
-    finally
-      SS.Free;
-      MS.Free;
-      DeCrypter.Free;
+      PassWord := UserPW;
     end;
 
-  // XML Version 2:
-  if (Version >= 2) then
-  begin
+    // Version 1-3:
+    //  - from v4 separators are moved to <EpiData> tag
     if (Version <= 3) then
-      PW := LoadAttrString(Root, rsCapitalPassword, '', false)
-    else
-      PW := LoadAttrString(Root, rsPassword, '', false);
-
-    Count := 1;
-    if (PW <> '') and (Assigned(OnPassword)) then
-    repeat
-      Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
-      Inc(Count);
-    until (StrToSHA1Base64(UserPW) = PW) or
-          (Res in [rprStopOnFail, rprCanceled]);
-
-    if (Res = rprCanceled) then
-      Raise EEpiPasswordCanceled.Create('');
-
-    if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
-      Raise EEpiBadPassword.Create('Incorrect Password');
-
-    PassWord := UserPW;
-  end;
-
-  // Version 1-3:
-  //  - from v4 separators are moved to <EpiData> tag
-  if (Version <= 3) then
-  begin
-    LoadNode(Node, Root, rsSettings, true);
-    XMLSettings.LoadFromXml(Node, ReferenceMap);
-  end;
-
-  // Version 4:
-  if LoadNode(Node, Root, rsAdmin, false) then
-    Admin.LoadFromXml(Node, ReferenceMap);
-
-  // Version 1:
-  LoadNode(Node, Root, rsStudy, true);
-  Study.LoadFromXml(Node, ReferenceMap);
-
-  // Version 1:
-  if LoadNode(Node, Root, rsProjectSettings, false) then
-    ProjectSettings.LoadFromXml(Node, ReferenceMap);
-
-  // Version 1:
-  if LoadNode(Node, Root, rsValueLabelSets, false) then
-    ValueLabelSets.LoadFromXml(Node, ReferenceMap);
-
-  // Version 1:
-  if LoadNode(Node, Root, rsDataFiles, false) then
-    DataFiles.LoadFromXml(Node, ReferenceMap);
-
-  if (Version <= 2) then
     begin
-      // Version 2 only supported 1 DataFile and no relations,
-      // hence this must be created to have a correct data container.
-      if (DataFiles.Count > 0) then
-        Relations.NewMasterRelation.Datafile := DataFiles[0]
-    end
-  else
-    // Version 3+:
-    begin
-      if (Version = 3) then
-        S := rsRelations
-      else  // Name change for Version 4+
-        S := rsDataFileRelations;
-
-      if LoadNode(Node, Root, S, (DataFiles.Count > 0)) then
-        Relations.LoadFromXml(Node, ReferenceMap);
+      LoadNode(Node, Root, rsSettings, true);
+      XMLSettings.LoadFromXml(Node, ReferenceMap);
     end;
 
-  // Version 4:
-  if LoadNode(Node, Root, 'Log', false) then
-    FLogger.LoadFromXml(Node, ReferenceMap);
+    // Version 4:
+    if LoadNode(Node, Root, rsAdmin, false) then
+      Admin.LoadFromXml(Node, ReferenceMap);
 
-  FLogger.LoadExLog(FFailedLog);
+    // Version 1:
+    LoadNode(Node, Root, rsStudy, true);
+    Study.LoadFromXml(Node, ReferenceMap);
 
-  FLoading := false;
-  Modified := false;
-  FVersion := EPI_XML_DATAFILE_VERSION;
+    // Version 1:
+    if LoadNode(Node, Root, rsProjectSettings, false) then
+      ProjectSettings.LoadFromXml(Node, ReferenceMap);
+
+    // Version 1:
+    if LoadNode(Node, Root, rsValueLabelSets, false) then
+      ValueLabelSets.LoadFromXml(Node, ReferenceMap);
+
+    // Version 1:
+    if LoadNode(Node, Root, rsDataFiles, false) then
+      DataFiles.LoadFromXml(Node, ReferenceMap);
+
+    if (Version <= 2) then
+      begin
+        // Version 2 only supported 1 DataFile and no relations,
+        // hence this must be created to have a correct data container.
+        if (DataFiles.Count > 0) then
+          Relations.NewMasterRelation.Datafile := DataFiles[0]
+      end
+    else
+      // Version 3+:
+      begin
+        if (Version = 3) then
+          S := rsRelations
+        else  // Name change for Version 4+
+          S := rsDataFileRelations;
+
+        if LoadNode(Node, Root, S, (DataFiles.Count > 0)) then
+          Relations.LoadFromXml(Node, ReferenceMap);
+      end;
+
+    if Assigned(Logger) then
+    begin
+
+      // Version 4 (only):
+      if LoadNode(Node, Root, 'Log', false) then
+        FLogger.LoadFromXml(Node, ReferenceMap);
+
+      Logger.LoadExLog(FFailedLog);
+    end;
+
+    FLoading := false;
+    Modified := false;
+    FVersion := EPI_XML_DATAFILE_VERSION;
+  finally
+//not yet....    DoChange(eegXMLProgress, Word(expeDone), nil);
+  end
 end;
 
 procedure TEpiDocument.SaveToStream(const St: TStream);

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, epidocument, epidatafiles, epidatafilestypes, epiadmin,
-  epivaluelabels, epieximtypes, epiimport_stata, epicustombase;
+  epivaluelabels, epieximtypes, epiimport_stata, epicustombase, epiimportsettings;
 
 type
 
@@ -44,7 +44,8 @@ type
     function    GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings;
       out FieldList: TList;
       out SkipFirstLine: boolean;
-      out FieldSeparator: Char): boolean;
+      out FieldSeparator: Char;
+      ImportSetting: TEpiTextImportSetting): boolean;
     procedure   FindFieldType(var Value: String; var PossibleTypes: TEpiFieldTypes);
     function    IsInteger(Const S: String; out Val: EpiInteger): boolean;
     function    IsFloat(Const S: String;   out Val: EpiFloat): boolean;
@@ -77,8 +78,9 @@ type
     function    ImportStata(Const DataStream: TStream; Const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean = true): Boolean; overload;
     function    ImportStata(Const aFilename: string;   Const Doc: TEpiDocument; var DataFile: TEpiDataFile; ImportData: boolean = true): Boolean; overload;
 
-    function    ImportTxt(const DataStream: TStream; var DataFile: TEpiDataFile; ImportData: boolean): boolean; overload;
+    function    ImportTxt(const DataStream: TStream; var DataFile: TEpiDataFile; ImportData: boolean = true): boolean; overload;
     function    ImportTxt(Const aFileName: string;   var DataFile: TEpiDataFile; ImportData: boolean = true): boolean; overload;
+    function    ImportTxt(ImportSetting: TEpiTextImportSetting): boolean; overload;
 
     property    OnClipBoardRead: TEpiClipBoardReadHook read FOnClipBoardRead write FOnClipBoardRead;
 
@@ -273,12 +275,9 @@ begin
 end;
 
 function TEpiImport.GuessTxtFile(DataFile: TEpiDataFile; Lines: TStrings; out
-  FieldList: TList; out SkipFirstLine: boolean; out FieldSeparator: Char
-  ): boolean;
+  FieldList: TList; out SkipFirstLine: boolean; out FieldSeparator: Char;
+  ImportSetting: TEpiTextImportSetting): boolean;
 var
-  tabcount, semicoloncount, commacount,
-  spacecount: Integer;
-  istab, issemi, iscomma, isspace: Boolean;
   i, LineCount, FieldCount, w: Integer;
   TmpStr: string;
   TmpField: TEpiField;
@@ -298,104 +297,139 @@ var
   ATop: Integer;
   ALeft: Integer;
 
+var
+  DelimCounts: array of integer;
+  Delimiters: array of char;
+  DelimNames: array of UTF8String;
+  S: String;
+  QuoteChar: Char;
+  StartLine: Integer;
+  TimeVal: EpiTime;
+
 begin
   result := false;
-  SkipFirstLine := false;
+
+  if (not Assigned(ImportSetting)) then
+    Exit;
 
   FieldStrings := nil;
   TmpField := nil;
   FieldList := TList.Create;
+  QuoteChar := ImportSetting.QuoteCharacter;
+  LineCount := Lines.Count;
+
+  StartLine := 1;
+  if (ImportSetting.FirstLineIsHeader = eflFalse) then
+    StartLine := 1;
+
   try
-    tabcount:=0;   semicoloncount:=0; commacount:=0;   spacecount:=0;
-    LineCount := Lines.Count;
+    if ImportSetting.Delimiter <> #0 then
+      begin
+        SetLength(DelimCounts, 1);
+        SetLength(Delimiters, 1);
+        SetLength(DelimNames, 1);
+        Delimiters[0] := ImportSetting.Delimiter;
+        DelimNames[0] := ImportSetting.Delimiter;
+      end
+    else
+      begin
+        SetLength(DelimCounts, 4);
+        SetLength(Delimiters, 4);
+        SetLength(DelimNames, 4);
+
+        Delimiters[0] := #9;
+        Delimiters[1] := ';';
+        Delimiters[2] := ',';
+        Delimiters[3] := ' ';
+        DelimNames[0] := 'Tab';
+        DelimNames[1] := 'Semicolon';
+        DelimNames[2] := 'Comma';
+        DelimNames[3] := 'Space';
+      end;
+
+    // ===================================
+    //       Delimiter detection
+    // ===================================
+    FillDWord(DelimCounts[0], Length(DelimCounts), 0);
+
     w := 0;
-    for i := 0 to LineCount - 1 do
+    for i := StartLine to LineCount - 1 do
     begin
       TmpStr := TrimRight(Lines[i]);
       if Trim(TmpStr) = '' then continue;
       Inc(w);
-      inc(tabcount,       StrCountChars(TmpStr, [#9],  '"'));
-      inc(semicoloncount, StrCountChars(TmpStr, [';'], '"'));
-      inc(commacount,     StrCountChars(TmpStr, [','], '"'));
-      inc(spacecount,     StrCountChars(TmpStr, [' '], '"'));
+
+      for j := Low(DelimCounts) to High(DelimCounts) do
+        DelimCounts[j] := DelimCounts[j] + StrCountChars(TmpStr, Delimiters[j], QuoteChar);
     end;
 
-    DoFeedBackImport(
-      fbInfo,
-      Format('Separators: (tabs: %d) (semicolon: %d) (comma: %d) (space: %d)',
-             [tabcount, semicoloncount, commacount, spacecount]) + LineEnding +
-      Format('Lines: %d', [w])
-    );
 
-    // Above the ?count's contains all found separators.
-    // Below is how many a single line must contain. w = #lines with text in.
-    tabcount       := tabcount       div w;
-    semicoloncount := semicoloncount div w;
-    commacount     := commacount     div w;
-    spacecount     := spacecount     div w;
+    DoFeedBackImport(fbInfo, Format('Lines: %d', [w]));
 
-    istab:=true;   issemi:=true; iscomma:=true;   isspace:=true;
+    for i := Low(DelimCounts) to High(DelimCounts) do
+      DelimCounts[i] := DelimCounts[i] div w;
 
-    { Look for field separator char }
-    // 1000 lines should be enougt...
-    for i :=0 to Math.Min(1000, LineCount - 1) do
+    for i := StartLine to math.Min(1000, LineCount - 1) do
     begin
       TmpStr := TrimRight(Lines[i]);
       if trim(TmpStr)='' then continue;
 
-      if (istab) then
-      begin
-        w := StrCountChars(TmpStr, [#9], '"');
-        if w = 0 then istab := false;
-        if w > tabcount then istab := false;
-      end;
 
-      if (issemi) then
+      for j := Low(DelimCounts) to High(DelimCounts) do
       begin
-        w := StrCountChars(TmpStr, [';'], '"');
-        if w = 0 then issemi := false;
-        if w > semicoloncount then issemi := false;
-      end;
+        if DelimCounts[j] = 0 then continue;
 
-      if (iscomma) then
-      begin
-        w := StrCountChars(TmpStr, [','], '"');
-        if w = 0 then iscomma := false;
-        if w > commacount then iscomma := false;
+        w := StrCountChars(TmpStr, Delimiters[j], QuoteChar);
+        if (w = 0) or (w > DelimCounts[j]) then
+          DelimCounts[j] := 0;
       end;
-
-      if (isspace) then
-      begin
-        w := StrCountChars(TmpStr, [' '], '"');
-        if w = 0 then isspace := false;
-        if w > spacecount then isspace := false;
-      end;
-    end; //for
-
-    { Priority: tab, semicolon, comma, space    }
-    if istab        then begin FieldSeparator :=  #9; FieldCount := tabcount + 1;       end
-    else if issemi  then begin FieldSeparator := ';'; FieldCount := semicoloncount + 1; end
-    else if iscomma then begin FieldSeparator := ','; FieldCount := commacount + 1;     end
-    else if isspace then begin FieldSeparator := ' '; FieldCount := spacecount + 1;     end
-    else begin
-      RaiseError(Exception, 'Illegal format of textfile. Separator not found.');
-      Exit;
     end;
 
+    if ImportSetting.Delimiter <> #0 then
+      S := 'Chosen separator: ' + ImportSetting.Delimiter + Format(' (%d)', [DelimCounts[0]])
+    else
+      begin
+        S := 'Separators: ';
+        for j := Low(DelimCounts) to High(DelimCounts) do
+          S += '(' + DelimNames[j] + ': ' + IntToStr(DelimCounts[j]) + ') ';
+      end;
+
+    DoFeedBackImport(fbInfo, S);
+
+    FieldSeparator := #0;
+    for j := Low(DelimCounts) to High(DelimCounts) do
+      if DelimCounts[j] <> 0 then
+        begin
+          FieldSeparator := Delimiters[j];
+          FieldCount     := DelimCounts[j] + 1;
+          break;
+        end;
+
+    if FieldSeparator = #0 then
+      begin
+        RaiseError(Exception, 'Illegal format of textfile. Separator not found.');
+        Exit;
+      end;
+
     DoFeedBackImport(fbInfo, 'Separator found: ' + FieldSeparator);
+
+    // ===================================
+    //   Detect variables
+    // ===================================
 
     // Guess field type.
     // Skip first line since it may contain headings/field names.
     SetLength(PossibleTypes, FieldCount);
+
     // Remove Boolean type in detection, because we really do not want users to use boolean fields - it is bad practice.
     FillDWord(PossibleTypes[0], FieldCount, Longint(AllFieldTypes - AutoFieldTypes - BoolFieldTypes));
-    for i := 1 to LineCount - 1 do
+    for i := StartLine to LineCount - 1 do
     begin
       DoProgress(eptRecords, i, LineCount * 3);
       TmpStr := Lines[i];
       if Trim(TmpStr) = '' then continue;
 
-      SplitString(TmpStr, FieldStrings, [FieldSeparator], ['"']);
+      SplitString(TmpStr, FieldStrings, [FieldSeparator], [ImportSetting.QuoteCharacter]);
 
       for j := 0 to FieldStrings.Count -1 do
       begin
@@ -440,14 +474,13 @@ begin
     end;
 
     // Guess field lengths
-    // Skip first line since it may contain headings/field names.
-    for i := 1 to LineCount - 1 do
+    for i := StartLine to LineCount - 1 do
     begin
       DoProgress(eptRecords, i + LineCount, LineCount * 3);
       TmpStr := Lines[i];
       if Trim(TmpStr) = '' then continue;
 
-      SplitString(TmpStr, FieldStrings, [FieldSeparator], ['"']);
+      SplitString(TmpStr, FieldStrings, [FieldSeparator], [ImportSetting.QuoteCharacter]);
 
       for j := 0 to FieldStrings.Count -1 do
       with TEpiField(FieldList[j]) do
@@ -474,60 +507,76 @@ begin
       end;
     end;
 
-    // Guess field names (and variable labels).
-    // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
-    // - previously did not succeed. Make type = ftAlfa and Length = 1;
-    FieldNameInRow1 := false;
-    SplitString(Lines[0], FieldStrings, [FieldSeparator], ['"']);
 
-    for i := 0 to FieldStrings.Count - 1 do
-    begin
-      TmpStr := FieldStrings[i];
-      TmpField := TEpiField(FieldList[i]);
-
-      if (TmpField.Length = 0) and (TmpField.FieldType = ftInteger) then
-      begin
-        // TODO : Fix so that previous field is removed!!!
-{        Raise Exception.Create('INCORRECTLY IMPLEMENTED. PLEASE NOTIFY EPIDATA.');
-        TmpField := TEpiField.CreateField(ftString);
-        TmpField.FieldLength := 1;
-        TmpField.FieldName := DataFile.DataFields[i].FieldName;
-        TmpField.FieldDecimals := DataFile.DataFields[i].FieldDecimals;  }
-      end;
-
-      case TmpField.FieldType of
-        ftInteger:
-          ok := IsInteger(TmpStr, IntVal);
-        ftString, ftUpperString, ftMemo:
-          // Since a variable name is always a string, we must check that length
-          // fits.
-          ok := (UTF8Length(TmpStr) <= TmpField.Length);
-        ftBoolean:
-          Ok := IsBoolean(TmpStr, BoolVal);
-        ftFloat:
-          ok := IsFloat(TmpStr, FloatVal);
-        ftDMYDate,
-        ftMDYDate,
-        ftYMDDate:
-          ok := IsDate(TmpStr, TmpField.FieldType, DateVal);
-      end;
-
-      if (not ok) then
-      begin
+    case ImportSetting.FirstLineIsHeader of
+      eflTrue:
         FieldNameInRow1 := true;
-        Break;
-      end;
+
+      eflFalse:
+        FieldNameInRow1 := false;
+
+      eflGuess:
+        begin
+          // Guess field names (and variable labels).
+          // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
+          // - previously did not succeed. Make type = ftAlfa and Length = 1;
+          SplitString(Lines[0], FieldStrings, [FieldSeparator], [ImportSetting.QuoteCharacter]);
+
+          for i := 0 to FieldStrings.Count - 1 do
+          begin
+            TmpStr := FieldStrings[i];
+            TmpField := TEpiField(FieldList[i]);
+
+            if (TmpField.Length = 0) and (TmpField.FieldType = ftInteger) then
+            begin
+              // TODO : Fix so that previous field is removed!!!
+      {        Raise Exception.Create('INCORRECTLY IMPLEMENTED. PLEASE NOTIFY EPIDATA.');
+              TmpField := TEpiField.CreateField(ftString);
+              TmpField.FieldLength := 1;
+              TmpField.FieldName := DataFile.DataFields[i].FieldName;
+              TmpField.FieldDecimals := DataFile.DataFields[i].FieldDecimals;  }
+            end;
+
+            case TmpField.FieldType of
+              ftInteger:
+                ok := IsInteger(TmpStr, IntVal);
+              ftString, ftUpperString, ftMemo:
+                // Since a variable name is always a string, we must check that length
+                // fits.
+                ok := (UTF8Length(TmpStr) <= TmpField.Length);
+              ftBoolean:
+                Ok := IsBoolean(TmpStr, BoolVal);
+              ftFloat:
+                ok := IsFloat(TmpStr, FloatVal);
+              ftDMYDate,
+              ftMDYDate,
+              ftYMDDate:
+                ok := IsDate(TmpStr, TmpField.FieldType, DateVal);
+              ftTime:
+                ok := IsTime(TmpStr, TimeVal);
+            end;
+
+            if (not ok) then
+            begin
+              FieldNameInRow1 := true;
+              Break;
+            end;
+          end;
+        end;
     end;
 
     if FieldNameInRow1 then
-    begin
-      for i := 0 to FieldStrings.Count - 1 do
       begin
-        DataFile.Field[i].Name := AutoFieldName(FieldStrings[i]);
-        DataFile.Field[i].Question.Text := FieldStrings[i];
-      end;
-      SkipFirstLine := true;
-    end;
+        for i := 0 to FieldStrings.Count - 1 do
+        begin
+          DataFile.Field[i].Name := AutoFieldName(FieldStrings[i]);
+          DataFile.Field[i].Question.Text := FieldStrings[i];
+        end;
+        SkipFirstLine := true;
+      end
+    else
+      SkipFirstLine := false;
+
     result := true;
   finally
     if Assigned(FieldStrings) then FreeAndNil(FieldStrings);
@@ -1957,6 +2006,56 @@ end;
 function TEpiImport.ImportTxt(const DataStream: TStream;
   var DataFile: TEpiDataFile; ImportData: boolean): boolean;
 var
+  Setting: TEpiTextImportSetting;
+begin
+  result := false;
+  try
+    Setting := TEpiTextImportSetting.Create;
+    Setting.ImportSteam := DataStream;
+    Setting.OutputDatafile := DataFile;
+    Setting.ImportData := ImportData;
+
+    Result := ImportTxt(Setting);  //ImportTxt(FS, DataFile, ImportData, ImportSetting);
+
+    DataFile := Setting.OutputDatafile;
+  finally
+    Setting.Free;
+  end;
+end;
+
+function TEpiImport.ImportTxt(const aFileName: string;
+  var DataFile: TEpiDataFile; ImportData: boolean): boolean;
+var
+  FS: TStream;
+  Setting: TEpiTextImportSetting;
+begin
+  if (aFileName <> '') and
+     (not FileExistsUTF8(aFilename))
+  then
+    exit(false);
+
+  try
+    FS := nil;
+
+    if aFileName <> '' then
+      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
+
+    Setting := TEpiTextImportSetting.Create;
+    Setting.ImportSteam := FS;
+    Setting.OutputDatafile := DataFile;
+    Setting.ImportData := ImportData;
+
+    Result := ImportTxt(Setting);  //ImportTxt(FS, DataFile, ImportData, ImportSetting);
+
+    DataFile := Setting.OutputDatafile;
+  finally
+    FS.Free;
+    Setting.Free;
+  end;
+end;
+
+function TEpiImport.ImportTxt(ImportSetting: TEpiTextImportSetting): boolean;
+var
   ImportLines: TStrings;
   FieldLines: TStrings;
   lStart: Integer;
@@ -1977,11 +2076,18 @@ var
   TimeVal: EpiTime;
   IntVal: EpiInteger;
   BoolVal: EpiBool;
+  DataFile: TEpiDataFile;
 begin
   result := false;
 
-  if not Assigned(DataFile) then
-    DataFile := TEpiDataFile.Create(nil);
+  if (not Assigned(ImportSetting)) then
+    Exit;
+
+  if (not Assigned(ImportSetting.OutputDatafile))
+  then
+    ImportSetting.OutputDatafile := TEpiDataFile.Create(nil);
+
+  DataFile := ImportSetting.OutputDatafile;
 
   ImportLines := nil;
   FieldLines := nil;
@@ -1993,12 +2099,12 @@ begin
     ImportLines := TStringList.Create;
 
     // Importing from ClipBoard?
-    if not Assigned(DataStream) then
+    if not Assigned(ImportSetting.ImportSteam) then
     begin
       if Assigned(OnClipBoardRead) then
         OnClipBoardRead(ImportLines);
     end else
-      ImportLines.LoadFromStream(DataStream);
+      ImportLines.LoadFromStream(ImportSetting.ImportSteam);
 
     DoProgress(eptInit, 0, ImportLines.Count * 3);
 
@@ -2008,12 +2114,13 @@ begin
       RaiseError(Exception, 'ClipBoard or File contains no data.');
 
     // Guess structure based on content.
-    if not GuessTxtFile(DataFile, ImportLines, FieldList, skipfirstline, FieldSeparator) then
+    if not GuessTxtFile(DataFile, ImportLines, FieldList, skipfirstline, FieldSeparator, ImportSetting) then
       Exit;
 
     FieldCount := 0;
 
-    if not ImportData then
+    if (not ImportSetting.ImportData)
+    then
       Exit(true);
 
     if SkipFirstLine then
@@ -2098,28 +2205,6 @@ begin
     if Assigned(ImportLines) then FreeAndNil(ImportLines);
     if Assigned(FieldLines) then FreeAndNil(FieldLines);
     if Assigned(FieldList) then FieldList.Free;
-  end;
-end;
-
-function TEpiImport.ImportTxt(const aFileName: string;
-  var DataFile: TEpiDataFile; ImportData: boolean): boolean;
-var
-  FS: TStream;
-begin
-  if (aFileName <> '') and
-     (not FileExistsUTF8(aFilename))
-  then
-    exit(false);
-
-  try
-    FS := nil;
-
-    if aFileName <> '' then
-      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
-
-    Result := ImportTxt(FS, DataFile, ImportData);
-  finally
-    FS.Free;
   end;
 end;
 

@@ -28,8 +28,8 @@
         <CustomOptions Value="-dEPI_GRID_TEST"/>
       </Other>
     </CompilerOptions>
-    <Version Major="4"/>
-    <Files Count="15">
+    <Version Major="4" Minor="1"/>
+    <Files Count="17">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
         <UnitName Value="epiv_dataset_viewer_frame"/>
@@ -92,6 +92,14 @@
         <Filename Value="Visuals/statusbar/epiv_statusbar_item_currentuser.pas"/>
         <UnitName Value="epiv_statusbar_item_currentuser"/>
       </Item15>
+      <Item16>
+        <Filename Value="Visuals/statusbar/epiv_statusbar_item_progressbar.pas"/>
+        <UnitName Value="epiv_statusbar_item_progressbar"/>
+      </Item16>
+      <Item17>
+        <Filename Value="Visuals/statusbar/epiv_statusbar_item_saveicon.pas"/>
+        <UnitName Value="epiv_statusbar_item_saveicon"/>
+      </Item17>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>
@@ -102,8 +110,8 @@
       </Item2>
       <Item3>
         <PackageName Value="epidatacore"/>
-        <MaxVersion Major="4" Valid="True"/>
-        <MinVersion Major="4" Valid="True"/>
+        <MaxVersion Major="4" Minor="1" Valid="True"/>
+        <MinVersion Major="4" Minor="1" Valid="True"/>
       </Item3>
       <Item4>
         <PackageName Value="lcl"/>

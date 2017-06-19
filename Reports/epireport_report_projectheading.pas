@@ -38,7 +38,8 @@ type
 implementation
 
 uses
-  epireport_types, math, epidatafiles, strutils, epimiscutils, epidatafilerelations_helper;
+  epireport_types, math, epidatafiles, strutils, epimiscutils, epidatafilerelations_helper,
+  epicustomlist_helper;
 
 resourcestring
   SEpiReportProjectHeaderNoDocument = 'EpiReport: No document assigned to project header.';
@@ -55,6 +56,8 @@ var
   S: String;
   ColNo: Integer;
 begin
+  if Relation.ProtectedItem then exit;
+
   S := '';
   if Depth > 0 then
     begin
@@ -101,6 +104,8 @@ procedure TEpiReportProjectHeader.DataFormsTable(
 var
   S: String;
 begin
+  if Relation.ProtectedItem then exit;
+
   S := '';
   if Depth > 0 then
     begin
@@ -179,7 +184,7 @@ begin
   DoLineText('');
 
 
-  DoTableHeader('Dataforms:', 9, Document.DataFiles.Count +1 { OrderedDataFiles.Count + 1});
+  DoTableHeader('Dataforms:', 9, Document.DataFiles.UnprotectedCount + 1 { OrderedDataFiles.Count + 1});
   // Header row:
   DoTableCell(0, 0, 'Caption');
   DoTableCell(1, 0, 'Created');
@@ -202,7 +207,7 @@ begin
   if MultiLevel then
     Inc(ColCount);
 
-  DoTableHeader('', ColCount, Document.DataFiles.Count + 1);
+  DoTableHeader('', ColCount, Document.DataFiles.UnprotectedCount + 1);
 
   ColNo := 0;
   DoTableCell(PostInc(ColNo), 0, 'Caption');
@@ -213,19 +218,6 @@ begin
   FCurrentRowNo := 1;
   Document.Relations.OrderedWalk(@KeysTable);
   DoTableFooter('');
-
-{  for i := 0 to OrderedDataFiles.Count -1 do
-  with OrderedDataFiles[i] do
-  begin
-    if KeyFields.Count = 0 then continue;
-
-    DoHeading('Key for "' + Caption.Text + '"');
-    for j := 0 to KeyFields.Count -1 do
-      DoLineText(KeyFields[j].Name + ' - ' + KeyFields[j].Question.Text);
-    DoLineText('');
-  end;
-
-  OrderedDataFiles.Free;  }
 end;
 
 end.

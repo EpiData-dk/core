@@ -24,6 +24,19 @@ type
 
   TOpenEpiErrorEvent = procedure(Const Msg: string) of object;
 
+  { EEpiThreadSaveExecption }
+
+  EEpiThreadSaveExecption = class(Exception)
+  private
+    FFileName: UTF8String;
+  public
+    property FileName: UTF8String read FFileName write FFileName;
+  end;
+
+  TEpiSaveThreadErrorEvent = procedure(Const FatalErrorObject: Exception) of object;
+
+  TEpiDocumentCreation = procedure(const Sender: TObject; const ADocument: TEpiDocument) of object;
+
   { TEpiDocumentFile }
 
   TEpiDocumentFile = class
@@ -45,13 +58,14 @@ type
       end;
       PLockFile = ^TLockFile;
 
+  // Save hook internals
   private
-    // Private event holders
-    FOnError: TOpenEpiErrorEvent;
-    FOnPassword: TRequestPasswordEvent;
-    FOnWarning: TOpenEpiWarningEvent;
-    FOnProgress: TEpiProgressEvent;
-    FOnDocumentChangeEvent: TEpiChangeEvent;
+    FSaveHookCommitting: boolean;
+  protected
+    procedure SaveHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer); virtual;
+
   private
     FDataDirectory: string;
     FOnLoadError: TEpiDocumentLoadErrorEvent;
@@ -73,6 +87,19 @@ type
     procedure CreateLockFile;
     procedure DeleteLockFile;
     procedure DeleteBackupFile;
+  private
+    // Undo file
+    FUndoCopyFilename: UTF8String;
+    procedure TakeUndoCopy;
+    procedure RestoreUndoCopy;
+  private
+    // Async saving
+    FCriticalSection: PRTLCriticalSection;
+    FRTLEvent: PRTLEvent;
+    FSaveThread: TThread;
+    FSaveDoc: TEpiDocument;
+    procedure SaveThreadTerminated(Sender: TObject);
+    procedure AsyncSave;
   private
     { User Authorization }
     FAuthedUser: TEpiUser;
@@ -104,14 +131,25 @@ type
       Const AReadOnly: boolean = false): boolean;
     function SaveFile(Const AFileName: string): Boolean;
     function SaveBackupFile: boolean;
+  private
+    // Private event holders
+    FOnError: TOpenEpiErrorEvent;
+    FOnPassword: TRequestPasswordEvent;
+    FOnWarning: TOpenEpiWarningEvent;
+    FOnAfterDocumentCreated: TEpiDocumentCreation;
+    FOnSaveThreadError: TEpiSaveThreadErrorEvent;
+    FUndoCopy: boolean;
+    procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument);
+    procedure DoSaveThreadError(Const FatalErrorObject: Exception);
+    procedure SetUndoCopy(AValue: boolean);
   public
     // Event properties
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
     property OnWarning: TOpenEpiWarningEvent read FOnWarning write FOnWarning;
     property OnError: TOpenEpiErrorEvent read FOnError write FOnError;
     property OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
-    property OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
-    property OnDocumentChangeEvent: TEpiChangeEvent read FOnDocumentChangeEvent write FOnDocumentChangeEvent;
+    property OnSaveThreadError: TEpiSaveThreadErrorEvent read FOnSaveThreadError write FOnSaveThreadError;
+    property OnAfterDocumentCreated: TEpiDocumentCreation read FOnAfterDocumentCreated write FOnAfterDocumentCreated;
   public
     // Other properties
     property FileName: string read GetFileName;
@@ -120,6 +158,7 @@ type
     property IsSaved: boolean read GetIsSaved;
     property AuthedUser: TEpiUser read FAuthedUser;
     property DataDirectory: string read FDataDirectory write SetDataDirectory;
+    property UndoCopy: boolean read FUndoCopy write SetUndoCopy;
   end;
   TEpiDocumentFileClass = class of TEpiDocumentFile;
 
@@ -134,11 +173,152 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
-  laz2_XMLWrite;
+  epimiscutils, FileUtil, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
+  laz2_XMLWrite, episervice_asynchandler, epidatafiles;
 
+type
+
+  { TEpiXMLSaveThread }
+
+  TEpiXMLSaveThread = class(TThread)
+  private
+    FXMLDoc: TXMLDocument;
+    FFileName: UTF8String;
+  public
+    constructor Create(XMLDoc: TXMLDocument; Const FileName: UTF8String);
+    procedure Execute; override;
+  end;
+
+  { TEpiDocSaveThread }
+
+  TEpiDocSaveThread = class(TThread)
+  private
+    FDoc: TEpiDocumentFile;
+    FLoopSave: Boolean;
+    procedure RaiseSaveError(Const Filename: UTF8String);
+  public
+    constructor Create(DocFile: TEpiDocumentFile);
+    procedure Execute; override;
+    property LoopSave: Boolean read FLoopSave write FLoopSave;
+  end;
+
+  { THackDocument }
+
+  THackDocument = class(TEpiDocument)
+  public
+    procedure DoChange(const Initiator: TEpiCustomBase;
+      EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;
+      overload;
+  end;
+
+procedure THackDocument.DoChange(const Initiator: TEpiCustomBase;
+  EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+begin
+  inherited DoChange(Initiator, EventGroup, EventType, Data);
+end;
+
+{ THackDocument }
+
+{ TEpiSaveThread }
+
+constructor TEpiXMLSaveThread.Create(XMLDoc: TXMLDocument;
+  const FileName: UTF8String);
+begin
+  inherited Create(false);
+  FXMLDoc := XMLDoc;
+  FFileName := FileName;
+end;
+
+procedure TEpiXMLSaveThread.Execute;
+begin
+  WriteXMLFile(FXMLDoc, FFileName, [xwfPreserveWhiteSpace]);
+end;
+
+{ TEpiDocSaveThread }
+
+procedure TEpiDocSaveThread.RaiseSaveError(const Filename: UTF8String);
 var
-  OpenEpiDocumentInstance: TEpiDocumentFile = nil;
+  E: EEpiThreadSaveExecption;
+begin
+  E := EEpiThreadSaveExecption.Create('Save location not writeable!');
+  E.FileName := Filename;
+  raise E;
+end;
+
+constructor TEpiDocSaveThread.Create(DocFile: TEpiDocumentFile);
+begin
+  inherited Create(true);
+  FDoc := DocFile;
+  FLoopSave := true;
+end;
+
+procedure TEpiDocSaveThread.Execute;
+var
+  MS: TMemoryStreamUTF8;
+  Fs: TFileStreamUTF8;
+  LocalDoc: TEpiDocument;
+  LocalFileName: String;
+begin
+  while (true) do
+  begin
+    RTLeventWaitFor(FDoc.FRTLEvent);
+
+    // First check to see if the thread is terminating
+    if (not LoopSave) then exit;
+
+    // Now fetch the document we must save, but first lock it so we can copy it safely
+    EnterCriticalsection(FDoc.FCriticalSection^);
+
+    if Assigned(FDoc.FSaveDoc) and
+       (FDoc.IsSaved)
+    then
+      LocalDoc := TEpiDocument(FDoc.FSaveDoc.Clone)
+    else
+      LocalDoc := nil;
+
+    LocalFileName := FDoc.FileName;
+
+    // We are done copying - hence now we can unlock it and continue to the saving
+    LeaveCriticalsection(FDoc.FCriticalSection^);
+
+    // If there was no document to save, skip and go wait once again
+    if (not Assigned(LocalDoc)) then
+      Continue;
+
+    try
+      try
+        EpiAsyncHandlerGlobal.AddDocument(LocalDoc);
+        MS := nil;
+        FS := nil;
+
+        if (not FileIsWritable(LocalFileName)) then
+          RaiseSaveError(LocalFileName);
+
+        MS := TMemoryStreamUTF8.Create;
+
+        LocalDoc.SaveToStream(Ms);
+        Ms.Position := 0;
+
+        if UTF8Pos('.epz', UTF8LowerCase(LocalFileName)) > 0 then
+          StreamToZipFile(Ms, UTF8ToSys(LocalFileName))
+        else
+          begin
+            Fs := TFileStreamUTF8.Create(LocalFileName, fmCreate);
+            Fs.CopyFrom(Ms, Ms.Size);
+          end;
+
+      except
+        THackDocument(LocalDoc).DoChange(LocalDoc, eegXMLProgress, Word(expeError), nil);
+        raise;
+      end;
+
+    finally
+      FS.Free;
+      Ms.Free;
+      EpiAsyncHandlerGlobal.RemoveDocument(LocalDoc);
+    end;
+  end;
+end;
 
 { TEpiDocumentFile }
 
@@ -147,7 +327,16 @@ begin
   if IsEqualGUID(FGuid, GUID_NULL) then
     CreateGUID(FGuid);
 
+  New(FCriticalSection);
+  InitCriticalSection(FCriticalSection^);
+  FRTLEvent := RTLEventCreate;
+  FSaveThread := nil;
+
   FDataDirectory := '';
+  FSaveHookCommitting := false;
+
+  FUndoCopy := false;
+  FUndoCopyFilename := '';
 end;
 
 destructor TEpiDocumentFile.Destroy;
@@ -155,16 +344,12 @@ begin
   if Assigned(FEpiDoc)
   then
   begin
-    FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
-
     if (IsSaved) and
        (Assigned(AuthedUser))
     then
-      begin
-        FEpiDoc.Logger.LogClose();
-        DoSaveFile(FileName);
-      end;
+      FEpiDoc.Logger.LogClose();
 
+    FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
     FreeAndNil(FEpiDoc);
 
     if not ReadOnly then
@@ -173,6 +358,28 @@ begin
       DeleteBackupFile;
     end;
   end;
+
+  if (FSaveThread is TEpiDocSaveThread) then
+    begin
+      TEpiDocSaveThread(FSaveThread).LoopSave := false;
+      RTLeventSetEvent(FRTLEvent);
+    end;
+
+  if Assigned(FSaveThread) then
+    begin
+      FSaveThread.WaitFor;
+      FSaveThread.Free;
+    end;
+
+  if Assigned(FSaveDoc) then
+    FSaveDoc.Free;
+
+  if UndoCopy then
+    RestoreUndoCopy;
+
+  RTLeventdestroy(FRTLEvent);
+  DoneCriticalsection(FCriticalSection^);
+  Dispose(FCriticalSection);
 
   inherited Destroy;
 end;
@@ -190,16 +397,84 @@ begin
   if not Assigned(SourceDoc) then exit;
 
   FEpiDoc := TEpiDocument(SourceDoc.Clone);
-
-  if Assigned(OnDocumentChangeEvent) then
-    FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
+  DoAfterDocumentCreated(FEpiDoc);
 
   Result := FEpiDoc;
+end;
+
+procedure TEpiDocumentFile.SaveThreadTerminated(Sender: TObject);
+var
+  ST: TEpiDocSaveThread;
+begin
+  if not (Sender is TEpiDocSaveThread) then
+    exit;
+
+  ST := TEpiDocSaveThread(Sender);
+
+  if not (Assigned(ST.FatalException)) then
+    Exit;
+
+  ST.FreeOnTerminate := true;
+  DoSaveThreadError(Exception(ST.FatalException));
+  FSaveThread := nil;
+end;
+
+procedure TEpiDocumentFile.SaveHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  // IF logging is present, then do not catch any commits, since the log forces a save!
+  if not Assigned(Document) then exit;
+  if Assigned(Document.Logger) then Exit;
+  if Document.Loading then exit;
+
+  case EventGroup of
+    eegCustomBase: ;
+    eegDocument: ;
+    eegXMLSetting: ;
+    eegProjectSettings: ;
+    eegAdmin: ;
+    eegStudy: ;
+
+    eegDataFiles:
+      case TEpiDataFileChangeEventType(EventType) of
+        edceSize: ;
+        edceRecordStatus:
+          if (not FSaveHookCommitting) then
+            AsyncSave;
+
+        edceStatusbarContentString: ;
+        edcePack: ;
+
+        edceBeginCommit:
+          FSaveHookCommitting := true;
+
+        edceEndCommit:
+          begin
+           AsyncSave;
+           FSaveHookCommitting := false;
+          end;
+
+        edceLoadRecord: ;
+      end;
+
+    eegSections: ;
+    eegFields:;
+    eegHeading: ;
+    eegRange: ;
+    eegValueLabel: ;
+    eegValueLabelSet: ;
+    eegRelations: ;
+    eegRights: ;
+    eegXMLProgress: ;
+  end;
 end;
 
 procedure TEpiDocumentFile.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
+var
+  LocalDoc: TXMLDocument;
 begin
   {
     2 jobs for hook:
@@ -220,13 +495,22 @@ begin
       Exit
     end;
 
-  if (EventGroup = eegDocument) and
-     (TEpiDocumentChangeEvent(EventType) = edceRequestSave) and
-     (Initiator = FEpiDoc)
+  if (EventGroup = eegCustomBase) and
+     (TEpiCustomChangeEventType(EventType) = ecceRequestSave) {and
+     (Initiator = FEpiDoc) }
   then
     begin
-      // TODO: Perhaps make this save asyncronous?
-      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
+      if (Assigned(data)) then
+        begin
+          LocalDoc := TXMLDocument.Create;
+          LocalDoc.AppendChild(TXMLDocument(Data).FirstChild.CloneNode(true, LocalDoc));
+
+          FSaveThread := TEpiXMLSaveThread.Create(LocalDoc, FFileName);
+        end
+      else
+        AsyncSave;
+//      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
+//      WriteXMLFile(LocalDoc, '/tmp/clone.epx', [xwfPreserveWhiteSpace]);
       Exit;
     end;
 end;
@@ -507,6 +791,53 @@ begin
     DeleteFileUTF8(BackupFileName);
 end;
 
+procedure TEpiDocumentFile.TakeUndoCopy;
+begin
+  // Take Undo Copy can only be run after a physical copy has been written to disk,
+  // as it relies on making a copy rather than writing the CORE content a second time.
+
+  if (not IsSaved) then
+    Exit;
+
+  if FUndoCopyFilename <> '' then
+    DeleteFileUTF8(FUndoCopyFilename);
+
+  FUndoCopyFilename := FileName + '.' + FormatDateTime('YYYY-MM-DD_HH:NN:SS', Now) + '.undo';
+  CopyFile(FileName, FUndoCopyFilename, [cffOverwriteFile, cffPreserveTime]);
+end;
+
+procedure TEpiDocumentFile.RestoreUndoCopy;
+begin
+  if (not IsSaved) then
+    Exit;
+
+  if (FUndoCopyFilename = '') then
+    Exit;
+
+  CopyFile(FUndoCopyFilename, FileName, [cffOverwriteFile, cffPreserveTime]);
+  DeleteFileUTF8(FUndoCopyFilename);
+  FUndoCopyFilename := '';
+end;
+
+procedure TEpiDocumentFile.AsyncSave;
+begin
+  if (not Assigned(FSaveThread)) then
+  begin
+    FSaveThread := TEpiDocSaveThread.Create(Self);
+    FSaveThread.OnTerminate := @SaveThreadTerminated;
+    FSaveThread.Start;
+  end;
+
+  EnterCriticalsection(FCriticalSection^);
+
+  if (Assigned(FSaveDoc)) then
+    FSaveDoc.Free;
+  FSaveDoc := TEpiDocument(FEpiDoc.Clone);
+
+  LeaveCriticalsection(FCriticalSection^);
+  RTLeventSetEvent(FRTLEvent);
+end;
+
 procedure TEpiDocumentFile.UserAuthorized(Sender: TEpiAdmin; User: TEpiUser);
 begin
   FAuthedUser := User;
@@ -518,9 +849,24 @@ var
   Ms: TMemoryStream;
   Fs: TStream;
 begin
+  EnterCriticalsection(FCriticalSection^);
+  FSaveDoc := nil;
+  LeaveCriticalsection(FCriticalSection^);
+
+  if (FSaveThread is TEpiDocSaveThread) then
+    begin
+      TEpiDocSaveThread(FSaveThread).LoopSave := false;
+      RTLeventSetEvent(FRTLEvent);
+    end;
+
+  if Assigned(FSaveThread) then
+    begin
+      FSaveThread.WaitFor;
+      FreeAndNil(FSaveThread);
+    end;
+
   Ms := TMemoryStream.Create;
 
-  FEpiDoc.OnProgress := OnProgress;
   FEpiDoc.SaveToStream(Ms);
   Ms.Position := 0;
 
@@ -557,7 +903,6 @@ begin
       Raise TEpiCoreException.Create('File is empty!');
 
     FEpiDoc.OnPassword := OnPassword;
-    FEpiDoc.OnProgress := OnProgress;
     FEpiDoc.OnLoadError := OnLoadError;
     FEpiDoc.Admin.OnUserAuthorized := @UserAuthorized;
     FEpiDoc.RegisterOnChangeHook(@DocumentHook, true);
@@ -573,8 +918,7 @@ function TEpiDocumentFile.InternalCreateNewDocument(const Lang: string
 begin
   FEpiDoc := TEpiDocument.Create(Lang);
 
-  if Assigned(OnDocumentChangeEvent) then
-    FEpiDoc.RegisterOnChangeHook(OnDocumentChangeEvent, true);
+  DoAfterDocumentCreated(FEpiDoc);
 
   Result := FEpiDoc;
 end;
@@ -682,6 +1026,11 @@ begin
       end;
   end;  // ReadOnly
 
+
+  // At this point all checks have performed that serves to make sure the right file is
+  // opened and there no immediate danger to loading the project.
+  // Now go ahead and do the actual loading.
+
   if LoadBackupFile then
     Fn := FileName + '.bak'
   else
@@ -772,6 +1121,11 @@ begin
 
     if not ReadOnly then
       CreateLockFile;
+
+
+    if UndoCopy then
+      TakeUndoCopy;
+
     Result := true;
   finally
 
@@ -813,6 +1167,20 @@ begin
   FFileName := AFileName;
   LockFileName := FFileName + '.lock';
 
+
+  if (not FirstSave) and
+     (not FileIsWritable(FFileName))
+  then
+    begin
+      // The current file location is (for some reason) no longer writeable.
+      THackDocument(FEpiDoc).DoChange(FEpiDoc, eegXMLProgress, Word(expeError), nil);
+      if Assigned(FOnError) then
+        FOnError('The project cannot be saved. The current location is no longer accessible!');
+
+      Exit;
+    end;
+
+
   if not FileExistsUTF8(LockFileName) then
     if FirstSave then
       CreateLockFile
@@ -839,7 +1207,7 @@ begin
      (not IsEqualGUID(LF^.GUID, FGuid))
   then
     begin
-      // This file is locked by another program -> most likely because the "stole"
+      // This file is locked by another program -> most likely because they "stole"
       // our .lock file.
       Msg := 'You are trying to save the file: ' + FileName + LineEnding +
              'But this file is locked by another program' + LineEnding +
@@ -853,15 +1221,23 @@ begin
     end;
 
   try
-    DoSaveFile(FileName);
+    try
+      DoSaveFile(FileName);
 
-    if (Not Assigned(LF)) or
-       (not IsEqualGUID(LF^.GUID, FGuid))
-    then
-      CreateLockFile;
+      if (Not Assigned(LF)) or
+         (not IsEqualGUID(LF^.GUID, FGuid))
+      then
+        CreateLockFile;
 
-    FReadOnly := false;
-    Result := true;
+      if UndoCopy then
+        TakeUndoCopy;
+
+      FReadOnly := false;
+      Result := true;
+    except
+      THackDocument(FEpiDoc).DoChange(FEpiDoc, eegXMLProgress, Word(expeError), nil);
+      raise;
+    end;
   finally
     Dispose(LF);
   end;
@@ -875,6 +1251,39 @@ begin
 
   BackupFileName := FileName + '.bak';
   DoSaveFile(BackupFileName);
+end;
+
+procedure TEpiDocumentFile.DoAfterDocumentCreated(const ADocument: TEpiDocument
+  );
+begin
+  ADocument.RegisterOnChangeHook(@SaveHook, true);
+
+  if Assigned(OnAfterDocumentCreated) then
+    OnAfterDocumentCreated(Self, ADocument);
+end;
+
+procedure TEpiDocumentFile.DoSaveThreadError(const FatalErrorObject: Exception);
+begin
+  if assigned(OnSaveThreadError) then
+    OnSaveThreadError(FatalErrorObject);
+end;
+
+procedure TEpiDocumentFile.SetUndoCopy(AValue: boolean);
+begin
+  if FUndoCopy = AValue then Exit;
+
+  if (not AValue) and
+     (FileExistsUTF8(FUndoCopyFilename))
+  then
+    begin
+      DeleteFileUTF8(FUndoCopyFilename);
+      FUndoCopyFilename := '';
+    end;
+
+  if (AValue) then
+    TakeUndoCopy;
+
+  FUndoCopy := AValue;
 end;
 
 end.

@@ -105,7 +105,7 @@ end;
 
 function TEpiFieldHelper.AcceptsValuelabelSet(VL: TEpiValueLabelSet): boolean;
 begin
-  AcceptsValuelabelSet(VL, Length, Decimals);
+  result := AcceptsValuelabelSet(VL, Length, Decimals);
 end;
 
 function TEpiFieldHelper.AcceptsValuelabelSet(VL: TEpiValueLabelSet; ALength,
@@ -148,7 +148,17 @@ begin
           (IntL <= ALength) and
           (DecL <= ADecimals);
       end;
-    ftString:  Result := (FieldType in [ftString, ftUpperString]);
+
+    ftString:
+      Result := (FieldType in [ftString, ftUpperString]);
+
+    ftTime:
+      Result := (FieldType = ftTime);
+
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate:
+      Result := (FieldType in (DateFieldTypes - AutoFieldTypes));
   end;
 end;
 

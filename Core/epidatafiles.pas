@@ -62,7 +62,7 @@ implementation
 uses
   epidocument, math, epiconvertutils, epidatafileutils,
   DCPrijndael, DCPsha256, contnrs, typinfo, LazUTF8, epidatafilerelations,
-  strutils, epistringutils, epiadmin;
+  strutils, epistringutils, epiadmin, epiglobals, episecuritylog;
 
 {$I epidatafiles.inc}
 {$I episections.inc}

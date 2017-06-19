@@ -14,16 +14,16 @@ type
 
   TDocumentFile = class(TEpiDocumentFile)
   private
-    function DoPassWord(Sender: TObject;
-      RequestType: TEpiRequestPasswordType;
-      RequestNo: Integer;
-      var Login: UTF8String;
-      var Password: UTF8String): TEpiRequestPasswordResponse;
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
     procedure DoError(const Msg: string);
   protected
     constructor Create; override;
+    function DoPassWord(Sender: TObject;
+      RequestType: TEpiRequestPasswordType;
+      RequestNo: Integer;
+      var Login: UTF8String;
+      var Password: UTF8String): TEpiRequestPasswordResponse; virtual;
   end;
 
 

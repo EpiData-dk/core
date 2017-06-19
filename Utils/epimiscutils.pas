@@ -168,7 +168,7 @@ const
   );
 
   EpiDialogFilterPGM: TEpiDialogFilterPair = (
-    FilterName: 'EpiData Analysis Progran File (*.pgm)';
+    FilterName: 'EpiData Analysis Program File (*.pgm)';
     FilterExt:  '*.pgm';
   );
 

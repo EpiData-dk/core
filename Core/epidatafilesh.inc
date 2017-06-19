@@ -22,6 +22,8 @@ type
     function    GetSettings: TEpiXMLSettings;
   protected
     function    Prefix: string; override;
+    function NewItemLoad(const AName: EpiString;
+      AItemClass: TEpiCustomItemClass = nil): TEpiCustomItem; override;
   public
     constructor Create(AOwner: TEpiCustomBase); override;
     function    ItemClass: TEpiCustomItemClass; override;
@@ -47,6 +49,9 @@ type
     arsReturnToParentOnMax,   // Return to parent when max no. records reached, else start new record
     arsStayOnRecord           // Stay on record.
     );
+
+
+  TEpiDataFilePackFunction = function(Sender: TEpiDataFile; Index: Integer): boolean of object;
 
   { TEpiDataFile }
 
@@ -81,6 +86,7 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
     function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+    function    InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
 
   { Load/Save methods }
   private
@@ -91,22 +97,24 @@ type
   protected
     constructor Create(AOwner: TEpiCustomBase); override;
     procedure   SetModified(const AValue: Boolean); override;
+    property    IsLoadingRecords: Boolean read FLoadingRecs;
   protected
     procedure   SaveKeyFieldsToDom(RootNode: TDOMElement);
     procedure   SaveRecordToDom(RootNode: TDOMElement);
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
   public
-    constructor Create(AOwner: TEpiCustomBase; const Size: integer = 0); virtual;
+    constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); virtual;
     destructor  Destroy; override;
     function    ValidateRename(Const NewName: string): boolean;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    function    NewField(FieldType: TEpiFieldType): TEpiField;
+    function    NewField(FieldType: TEpiFieldType): TEpiField; virtual;
     function    NewSection: TEpiSection;
     function    NewHeading: TEpiHeading;
     // Returns the index to the "first" of the newly created records.
-    function    NewRecords(Const Count: Cardinal = 1): integer;
-    procedure   Pack; // Removes records marked for deletion.
+    function    NewRecords(Const Count: Cardinal = 1): integer; virtual;
+    procedure   Pack; overload;   // Removes records marked for deletion.
+    procedure   Pack(PackFunction: TEpiDataFilePackFunction); overload; // Removes records based on provided method
     procedure   ExchangeRecords(Const Index1, Index2: Integer);
     procedure   SortRecords(SortFields: TEpiFields); overload;
     procedure   SortRecords(SortField: TEpiField); overload;

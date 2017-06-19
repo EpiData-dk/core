@@ -193,6 +193,7 @@ begin
   FPopulation           := TEpiTranslatedTextWrapper.Create(Self, rsPopulation, rsText);
   FRights               := TEpiTranslatedTextWrapper.Create(Self, rsEntryRights, rsText);
   FTitle                := TEpiTranslatedTextWrapper.Create(Self, rsTitle, rsText);
+  FTitle.Text           := 'Untitled Project';
   FVersion              := '';
   FCreated              := Now;
   FModifiedDate         := FCreated;

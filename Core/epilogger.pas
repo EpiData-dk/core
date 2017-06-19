@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, epidatafiles, epidatafilestypes, epicustombase, epitools_search,
-  Laz2_DOM, DCPrijndael;
+  Laz2_DOM, DCPrijndael, episecuritylog, epidatafilerelations;
 
 resourcestring
   rsTooManyFailedAttemps = 'Too many failed login attemps';
@@ -25,7 +25,8 @@ type
     ltAppend,          // Appended data to datafiles
     ltExport,          // Exported data (or part of) to uncontrolled file.
     ltClose,           // The document was closed
-    ltNewPassword      // The user password was changed/reset
+    ltNewPassword,     // The user password was changed/reset
+    ltBlockedLogin     // The access to the project was blocked
   );
 
 
@@ -45,72 +46,13 @@ const
       'Append',
       'Export',
       'Closed Project',
-      'New Password'
+      'New Password',
+      'Blocked Login'
     );
 
 type
 
   TEpiFailedLogger = class;
-
-  { TEpiEnumField }
-
-  TEpiEnumField = class(TEpiField)
-  private
-    FData: array of TEpiLogEntry;
-  protected
-    function GetAsEnum(const Index: Integer): TEpiLogEntry; virtual;
-    procedure SetAsEnum(const Index: Integer; AValue: TEpiLogEntry); virtual;
-    procedure SetCapacity(AValue: Integer); override;
-    procedure SetAsInteger(const index: Integer; const AValue: EpiInteger); override;
-    procedure SetAsString(const index: Integer; const AValue: EpiString); override;
-    function GetCapacity: Integer; override;
-    function GetAsInteger(const index: Integer): EpiInteger; override;
-    function GetAsString(const index: Integer): EpiString; override;
-    procedure SetIsMissing(const index: Integer; const AValue: boolean); override;
-    procedure SetHasDefaultValue(const AValue: boolean); override;
-    procedure SetAsValue(const index: Integer; const AValue: EpiVariant); override;
-    procedure SetAsTime(const index: Integer; const AValue: EpiTime); override;
-    procedure SetAsFloat(const index: Integer; const AValue: EpiFloat); override;
-    procedure SetAsDateTime(const index: Integer; const AValue: EpiDateTime); override;
-    procedure SetAsDate(const index: Integer; const AValue: EpiDate); override;
-    procedure SetAsBoolean(const index: Integer; const AValue: EpiBool); override;
-    procedure MovePackData(const SrcIdx, DstIdx, Count: integer); override;
-    function GetIsMissing(const index: Integer): boolean; override;
-    function GetHasDefaultValue: boolean; override;
-    function GetAsValue(const index: Integer): EpiVariant; override;
-    function GetAsTime(const index: Integer): EpiTime; override;
-    function GetAsFloat(const index: Integer): EpiFloat; override;
-    function GetAsDateTime(const index: Integer): EpiDateTime; override;
-    function GetAsDate(const index: Integer): EpiDate; override;
-    function GetAsBoolean(const index: Integer): EpiBool; override;
-    procedure DoSetDefaultValueAsString(const AValue: string); override;
-    function DoGetDefaultValueAsString: string; override;
-    function DoCompare(i, j: integer): integer; override;
-  public
-    procedure Exchange(i, j: integer); override;
-    procedure ResetDefaultValue; override;
-    procedure ResetData; override;
-    function FormatString(const FillSpace: boolean = false): string; override;
-    property AsEnum[Const Index: Integer]: TEpiLogEntry read GetAsEnum write SetAsEnum;
-  public
-    constructor Create(AOwner: TEpiCustomBase; AFieldType: TEpiFieldType); override;
-    class function DefaultMissing: TEpiLogEntry;
-  end;
-
-  { TEpiLog }
-
-  TEpiLog = class(TEpiDataFile)
-  public
-    FUserNames:      TEpiField;       // Username for the log entry
-    FTime:           TEpiField;       // Time of log entry
-    FCycle:          TEpiField;       // Cycly no fo the log entry
-    FType:           TEpiEnumField;   // Type of log entry
-    FDataFileNames:  TEpiField;       // Name of datafile for log entry (if applicable)
-    FKeyFieldValues: TEpiField;       // Commaseperated string with Field=Value entries of key field values.
-    FDataContent:    TEpiField;       // Holder for a list of TDataLogEntry's if Type = ltEditRecord
-    FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
-    constructor Create(AOwner: TEpiCustomBase; const aSize: integer = 0);
-  end;
 
   { TEpiLogger }
 
@@ -120,16 +62,17 @@ type
     TCommitState = (csNone, csNewRecord, csEditRecord);
   private
     FCommitState: TCommitState;
-    FDataLog: TList;
     procedure StoreDataEvent(Field: TEpiField; Data: PEpiFieldDataEventRecord);
 
   private
-    FLogDatafile: TEpiLog;
+    FSecurityLog: TEpiSecurityDatafile;
+    FDataLog:     TEpiSecurityDataEventLog;
+    FKeyLog:      TEpiSecurityKeyFieldLog;
     procedure DocumentHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
   public
-    constructor Create(AOwner: TEpiCustomBase); override;
+    constructor Create(AOwner: TEpiCustomBase; DataFiles: TEpiDataFiles); virtual;
 
   { Misc. }
   private
@@ -155,14 +98,15 @@ type
     FSuccessLoginTime: TDateTime;
     FUserName: UTF8String;
     FDatafile: TEpiDataFile;
+    FLogEvents: boolean;
     procedure  SetUserName(AValue: UTF8String);
     procedure  SetDatafile(AValue: TEpiDataFile);
-    function   DoNewLog(LogType: TEpiLogEntry): Integer;  // Result = Index for new record.
-    function   GetKeyValues(Index: integer): EpiString;
+    function   DoNewLog(ALogType: TEpiLogEntry): Integer;  // Result = Index for new record.
+    procedure  LogKeyValues(ParentId, RecordNo: integer);
   public
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
     property   UserName: UTF8String read FUserName write SetUserName;
-    property   Log:  TEpiLog read FLogDatafile;
+    property   LogEvents: boolean read FLogEvents write FLogEvents;
 
   { Logging methods }
   private
@@ -188,7 +132,11 @@ type
     FTime:           TEpiField;       // Time of log entry
     FCycle:          TEpiField;       // Cycly no fo the log entry
     FAesKey:         TEpiField;       // The aes key for the line
-    FLoginFailType:  TEpiField;       // Numbers for type of failed login: 0 = username, 1 = password, 2 = read from XML, 3 = blocked login
+    FLoginFailType:  TEpiField;       // Numbers for type of failed login:
+                                      //   0 = username ,
+                                      //   1 = password,
+                                      //   2 = read from XML (the actual content of what wrong need to be decoded)
+                                      //   3 = blocked login
     FEncryptedTxt:   TEpiField;       // If read from XML, store the encrypted TXT here.
     FHostName:       TEpiField;       //  -   "    -     , store the hostname here.
   private
@@ -212,7 +160,7 @@ implementation
 
 uses
   typinfo, epidocument, epiadmin, strutils, DCPsha512, DCPbase64, epimiscutils,
-  dateutils, math, epiexportsettings;
+  dateutils, math, epiexportsettings, epiglobals;
 
 type
 
@@ -313,32 +261,39 @@ type
 procedure TEpiLogger.StoreDataEvent(Field: TEpiField;
   Data: PEpiFieldDataEventRecord);
 var
-  NewData: PDataLogEntry;
+  Idx: Integer;
 begin
-  NewData := New(PDataLogEntry);
+  with Data^ do
+  begin
+    Idx := FDataLog.NewRecords();
 
-  NewData^.DataFileName := Field.DataFile.Name;
-  NewData^.FieldType := Field.FieldType;
-  NewData^.FieldName := Field.Name;
-  with Data^, NewData^ do
+    FDataLog.ID.AsInteger[Idx]          := FSecurityLog.ID.AsInteger[FSecurityLog.Size - 1];
+    FDataLog.VariableName.AsString[Idx] := Field.Name;
+
     case Data^.FieldType of
       ftBoolean:
         begin
-          OldBoolValue := BoolValue;
-          NewBoolValue := Field.AsBoolean[Data^.Index];
+          FDataLog.BeforeValue.AsBoolean[Idx] := BoolValue;
+          FDataLog.AfterValue.AsBoolean[Idx]  := Field.AsBoolean[Data^.Index];
+//          OldBoolValue := BoolValue;
+//          NewBoolValue := Field.AsBoolean[Data^.Index];
         end;
 
       ftInteger,
       ftAutoInc:
         begin
-          OldIntValue := IntValue;
-          NewIntValue := Field.AsInteger[Data^.Index];
+          FDataLog.BeforeValue.AsInteger[Idx] := IntValue;
+          FDataLog.AfterValue.AsInteger[Idx]  := Field.AsInteger[Data^.Index];
+//          OldIntValue := IntValue;
+//          NewIntValue := Field.AsInteger[Data^.Index];
         end;
 
       ftFloat:
         begin
-          OldFloatValue := FloatValue;
-          NewFloatValue := Field.AsFloat[Data^.Index];
+          FDataLog.BeforeValue.AsFloat[Idx] := FloatValue;
+          FDataLog.AfterValue.AsFloat[Idx]  := Field.AsFloat[Data^.Index];
+//          OldFloatValue := FloatValue;
+//          NewFloatValue := Field.AsFloat[Data^.Index];
         end;
 
       ftDMYDate,
@@ -348,34 +303,41 @@ begin
       ftMDYAuto,
       ftYMDAuto:
         begin
-          OldDateValue := DateValue;
-          NewDateValue := Field.AsDate[Data^.Index];
+          FDataLog.BeforeValue.AsDate[Idx] := DateValue;
+          FDataLog.AfterValue.AsDate[Idx]  := Field.AsDate[Data^.Index];
+//          OldDateValue := DateValue;
+//          NewDateValue := Field.AsDate[Data^.Index];
         end;
 
       ftTime,
       ftTimeAuto:
         begin
-          OldTimeValue := TimeValue;
-          NewTimeValue := Field.AsTime[Data^.Index];
+          FDataLog.BeforeValue.AsTime[Idx] := TimeValue;
+          FDataLog.AfterValue.AsTime[Idx]  := Field.AsTime[Data^.Index];
+//          OldTimeValue := TimeValue;
+//          NewTimeValue := Field.AsTime[Data^.Index];
         end;
 
       ftString,
       ftUpperString:
         begin
-          OldStringValue := StringValue^;
-          NewStringValue := Field.AsString[Data^.Index];
+          FDataLog.BeforeValue.AsString[Idx] := StringValue^;
+          FDataLog.AfterValue.AsString[Idx]  := Field.AsString[Data^.Index];
+//          OldStringValue := StringValue^;
+//          NewStringValue := Field.AsString[Data^.Index];
         end;
     end;
-
-  FDataLog.Add(NewData);
+  end;
+//  FDataLog.Add(NewData);
 end;
 
 procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
-var
-  PData: PEpiFieldDataEventRecord;
 begin
+  if (not LogEvents) then
+    Exit;
+
   case EventGroup of
     eegAdmin:
       case TEpiAdminChangeEventType(EventType) of
@@ -413,12 +375,15 @@ begin
 
         edceBeginCommit:
           begin
+            // 0 = new record
             if PtrInt(Data) = 0 then
               FCommitState := csNewRecord
             else
+              // 1 = edit record
               begin
                 FCommitState := csEditRecord;
-                FDataLog := TList.Create;
+                // Create a new record in the security log, we need the index
+                DoNewLog(ltEditRecord);
               end;
           end;
 
@@ -453,6 +418,7 @@ begin
         efceData:
           begin
             if (FCommitState <> csEditRecord) then Exit;
+            if (TEpiField(Initiator).DataFile <> FDatafile) then exit;
             StoreDataEvent(TEpiField(Initiator), Data);
           end;
 
@@ -496,13 +462,16 @@ begin
   end;
 end;
 
-constructor TEpiLogger.Create(AOwner: TEpiCustomBase);
+constructor TEpiLogger.Create(AOwner: TEpiCustomBase; DataFiles: TEpiDataFiles);
 var
   RO: TEpiCustomBase;
 begin
   inherited Create(AOwner);
   FCommitState := csNone;
-  FLogDatafile := TEpiLog.Create(nil);
+
+  FSecurityLog := TEpiSecurityDatafile(DataFiles.GetDataFileByName(EpiSecurityLogDatafileName));
+  FDataLog     := TEpiSecurityDataEventLog(Datafiles.GetDataFileByName(EpiSecurityLogDataEventName));
+  FKeyLog      := TEpiSecurityKeyFieldLog(DataFiles.GetDataFileByName(EpiSecurityLogKeyDataName));
 
   RO := RootOwner;
   if not (RO is TEpiDocument) then
@@ -536,7 +505,7 @@ function TEpiLogger.CreateCommonNode(RootDoc: TDOMDocument; LogIndex: Integer
 var
   S: String;
 begin
-  case FLogDatafile.FType.AsEnum[LogIndex] of
+ { case FLogDatafile.FType.AsEnum[LogIndex] of
     ltNone: ;
     ltSuccessLogin:
       S := 'LoginSuccess';
@@ -570,13 +539,13 @@ begin
   if (FLogDatafile.FType.AsEnum[LogIndex] in EpiLogEntryDataFileSet) then
     SaveDomAttr(Result, rsDataFileRef, FLogDatafile.FDataFileNames.AsString[LogIndex]);
   SaveDomAttr(Result, 'username', FLogDatafile.FUserNames.AsString[LogIndex]);
-  SaveDomAttr(Result, rsCycle, FLogDatafile.FCycle.AsString[LogIndex]);
+  SaveDomAttr(Result, rsCycle, FLogDatafile.FCycle.AsString[LogIndex]);   }
 end;
 
 procedure TEpiLogger.AddKeyFieldValues(RootNode: TDOMElement; LogIndex: Integer
   );
 begin
-  SaveTextContent(RootNode, 'Keys', FLogDatafile.FKeyFieldValues.AsString[LogIndex]);
+//  SaveTextContent(RootNode, 'Keys', FLogDatafile.FKeyFieldValues.AsString[LogIndex]);
 end;
 
 procedure TEpiLogger.AddEditFieldValues(RootNode: TDOMElement; LogIndex: Integer
@@ -587,7 +556,7 @@ var
   Elem: TDOMElement;
   MissingStr: EpiString;
 begin
-  AList := TList(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
+{  AList := TList(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
   MissingStr := TEpiStringField.DefaultMissing;
 
   for Data in AList do
@@ -686,7 +655,7 @@ begin
         end;
     end;
     RootNode.AppendChild(Elem);
-  end;
+  end; }
 end;
 
 procedure TEpiLogger.GetEditFieldValues(RootNode: TDOMNode; LogIndex: Integer);
@@ -815,12 +784,12 @@ begin
     AList.Add(Data);
     Node := Node.NextSibling;
   end;
-  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(AList);
+//  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(AList);
 end;
 
 procedure TEpiLogger.AddSearchString(RootNode: TDOMElement; LogIndex: Integer);
 begin
-  SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
+//  SaveTextContent(RootNode, 'SearchString', FLogDatafile.FLogContent.AsString[LogIndex]);
 end;
 
 procedure TEpiLogger.CreateExportNode(RootNode: TDOMElement; LogIndex: Integer);
@@ -831,7 +800,7 @@ var
   i: Integer;
 begin
   // RootNode = <Export>
-  LogExportDoc := TLogExportDocument(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
+{  LogExportDoc := TLogExportDocument(PtrInt(FLogDatafile.FDataContent.AsInteger[LogIndex]));
 
   SaveDomAttr(RootNode, 'exportDeleted', LogExportDoc.ExportDeleted);
   SaveDomAttr(RootNode, rsType, LogExportDoc.ExportType);
@@ -847,7 +816,7 @@ begin
     SaveDomAttr(Elem, 'fieldsRefs', LogExDF.ExportFields.CommaText);
 
     RootNode.AppendChild(Elem);
-  end;
+  end;        }
 end;
 
 procedure TEpiLogger.ReadExportNode(RootNode: TDOMNode; LogIndex: Integer);
@@ -881,7 +850,7 @@ begin
     Node := Node.NextSibling;
   end;
 
-  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(LogExportDoc);
+//  FLogDatafile.FDataContent.AsInteger[LogIndex] := PtrInt(LogExportDoc);
 end;
 
 function TEpiLogger.XMLName: string;
@@ -895,7 +864,7 @@ var
   S: String;
   Elem: TDOMElement;
 begin
-  Result := inherited SaveToDom(RootDoc);
+{  Result := inherited SaveToDom(RootDoc);
 
   with FLogDatafile do
     for i := 0 to FType.Size - 1 do
@@ -939,7 +908,7 @@ begin
         SaveDomAttrEnum(Elem, 'NotImplementedLogEntry', FType.AsEnum[I], TypeInfo(TEpiLogEntry));
       end;
       Result.AppendChild(Elem);
-    end;
+    end;    }
 end;
 
 procedure TEpiLogger.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap
@@ -950,6 +919,9 @@ var
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
+  // Only XML v4 had log as a seperate instance. Hence if we are here we are loading
+  // a v4 project and need to transfer data to the correct places.
+
   Node := Root.FirstChild;
   while Assigned(Node) do
   begin
@@ -957,50 +929,61 @@ begin
       Node := Node.NextSibling;
     if not Assigned(Node) then break;
 
-    FLogDatafile.NewRecords();
-    Idx := FLogDatafile.Size - 1;
+    FSecurityLog.NewRecords();
+    Idx := FSecurityLog.Size - 1;
 
-    with FLogDatafile do
+    with FSecurityLog do
     begin
-      FType.AsEnum[Idx]            := LogEntryFromNodeName(Node.NodeName);
-      FTime.AsDateTime[Idx]        := Self.LoadAttrDateTime(Node, 'time');  // ScanDateTime('YYYY/MM/DD HH:NN:SS', LoadAttrString(Node, 'time'));
-      FDataFileNames.AsString[Idx] := Self.LoadAttrString(Node, rsDataFileRef, '', false);
-      FUserNames.AsString[Idx]     := Self.LoadAttrString(Node, 'username');
-      FCycle.AsInteger[Idx]        := Self.LoadAttrInt(Node, rsCycle);
+      LogType.AsInteger[Idx]       := Integer(LogEntryFromNodeName(Node.NodeName));
+      Date.AsDate[Idx]             := trunc(Self.LoadAttrDateTime(Node, 'time'));
+      Time.AsTime[Idx]             := Frac(Self.LoadAttrDateTime(Node, 'time'));
+      DataFileName.AsString[Idx]   := Self.LoadAttrString(Node, rsDataFileRef, '', false);
+      UserName.AsString[Idx]       := Self.LoadAttrString(Node, 'username');
+      Cycle.AsInteger[Idx]         := Self.LoadAttrInt(Node, rsCycle);
 
-      case FType.AsEnum[Idx] of
-        ltNone: ;
-        ltSuccessLogin:
-          FLogContent.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
-        ltFailedLogin:
+      case LogType.AsInteger[Idx] of
+        Integer(ltNone): ;
+
+        Integer(ltSuccessLogin):
+          LogContent.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
+
+        Integer(ltFailedLogin):
           begin
-            case LoadAttrString(Node, 'type') of
-              'password': FDataContent.AsInteger[Idx] := 0;
-              'login':    FDataContent.AsInteger[Idx] := 1;
-              'blocked':  FDataContent.AsInteger[Idx] := 3;
+{TODO            case LoadAttrString(Node, 'type') of
+              'password': DataContent.AsInteger[Idx] := 0;
+              'login':    DataContent.AsInteger[Idx] := 1;
+              'blocked':  DataContent.AsInteger[Idx] := 3;
             else
               //
-            end;
-            FLogContent.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
+            end;     }
+            LogContent.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
           end;
-        ltSearch:
-          FLogContent.AsString[Idx]       := Self.LoadNodeString(Node, 'SearchString');
-        ltNewRecord:
-          FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
-        ltEditRecord:
+
+        Integer(ltSearch):
+          LogContent.AsString[Idx]       := Self.LoadNodeString(Node, 'SearchString');
+
+        Integer(ltNewRecord): ;
+//TODO:          KeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
+
+        Integer(ltEditRecord):
           begin
-            FKeyFieldValues.AsString[Idx] := Self.LoadNodeString(Node, 'Keys');
+//TODO:            KeyFieldValues.AsString[Idx] := Self.LoadNodeString(Node, 'Keys');
             GetEditFieldValues(Node, Idx);
           end;
-        ltViewRecord:
-          FKeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
-        ltPack: ;
-        ltAppend: ;
-        ltExport:
+
+        Integer(ltViewRecord): ;
+//TODO:          KeyFieldValues.AsString[Idx]   := Self.LoadNodeString(Node, 'Keys');
+
+//        ltPack: ;
+//        ltAppend: ;
+
+        Integer(ltExport):
           ReadExportNode(Node, Idx);
-        ltClose:
-          FLogContent.AsString[Idx]       := Self.LoadAttrString(Node, 'lastEdited');
-        ltNewPassword: ;
+
+        Integer(ltClose):
+          LogContent.AsString[Idx]       := Self.LoadAttrString(Node, 'lastEdited');
+
+//        ltNewPassword: ;
       end;
     end;
 
@@ -1018,6 +1001,8 @@ var
   GuidPTR: PGuid;
   FDecrypter: TDCP_rijndael;
   EncryptSt, PlainTxtSt: TMemoryStream;
+  B: Byte;
+  D: TDateTime;
 begin
   // ExLogRoot = <ExLog>
   Admin := Doc(self).Admin;
@@ -1028,10 +1013,8 @@ begin
 
   for i := 0 to ExLogObject.FLogDataFile.Size -1 do
     begin
-      FLogDatafile.NewRecords();
-      Idx := FLogDatafile.Size - 1;
 
-
+      // The content is encrypted and we need to decode it with the private RSA key.
       if ExLogObject.FLoginFailType.AsInteger[i] = 2 then
         begin
           S := ExLogObject.FAesKey.AsString[i];
@@ -1057,39 +1040,48 @@ begin
           FDecrypter.DecryptStream(EncryptSt, PlainTxtSt, EncryptSt.Size);
           PlainTxtSt.Position := 0;
 
-          {
-          PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
-          PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
-          PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
-          PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
-          PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
-          }
-
-          with FLogDatafile do
+          with FSecurityLog do
           begin
-            FUserNames.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
-            FTime.AsDateTime[Idx]           := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
-            FCycle.AsInteger[Idx]           := PlainTxtSt.ReadQWord;
-            FDataContent.AsInteger[Idx]     := PlainTxtSt.ReadByte;
-            FLogContent.AsString[Idx]       := PlainTxtSt.ReadAnsiString;
-            FType.AsEnum[Idx]               := ltFailedLogin;
+            B := PlainTxtSt.ReadByte;
+            if (B = 3) then
+              Idx := DoNewLog(ltBlockedLogin)
+            else
+              Idx := DoNewLog(ltFailedLogin);
+
+            UserName.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
+            D := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
+            Date.AsDateTime[Idx]          := D;
+            Time.AsDateTime[Idx]          := D;
+            Cycle.AsInteger[Idx]          := PlainTxtSt.ReadQWord;
+            LogContent.AsString[Idx]      := PlainTxtSt.ReadAnsiString;
           end;
 
         end
       else
+        // The project file was attempted opened but failed, however it was sucessfully loaded without
+        // the document was freed. Hence data in the failed logger is not in an encrypted state and we
+        // just need to copy over the data.
         begin
-          FLogDatafile.FUserNames.AsString[Idx] := ExLogObject.FUserNames.AsString[i];
-          FLogDatafile.FTime.AsDateTime[Idx]    := ExLogObject.FTime.AsDateTime[i];
-          FLogDatafile.FCycle.AsInteger[Idx]    := ExLogObject.FCycle.AsInteger[i];
-          FLogDatafile.FDataContent.AsInteger[Idx] := ExLogObject.FLoginFailType.AsInteger[i];
-          FLogDatafile.FLogContent.AsString[Idx]   := ExLogObject.FHostName.AsString[i];
-          FLogDatafile.FType.AsEnum[Idx]          := ltFailedLogin;
+          if (ExLogObject.FLoginFailType.AsInteger[i] = 3) then
+            Idx := DoNewLog(ltBlockedLogin)
+          else
+            Idx := DoNewLog(ltFailedLogin);
+
+          FSecurityLog.UserName.AsString[Idx]     := ExLogObject.FUserNames.AsString[i];
+          FSecurityLog.Date.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
+          FSecurityLog.Time.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
+          FSecurityLog.Cycle.AsInteger[Idx]       := ExLogObject.FCycle.AsInteger[i];
+          FSecurityLog.LogContent.AsString[Idx]   := ExLogObject.FHostName.AsString[i];
         end;
     end;
 
+  if (not LogEvents) then
+    Exit;
+
   Idx := DoNewLog(ltSuccessLogin);
-  FLogDatafile.FTime.AsDateTime[Idx] := FSuccessLoginTime;
-  FLogDatafile.FLogContent.AsString[Idx] := GetHostNameWrapper;
+  FSecurityLog.Date.AsDateTime[Idx] := FSuccessLoginTime;
+  FSecurityLog.Time.AsDateTime[Idx] := FSuccessLoginTime;
+  FSecurityLog.LogContent.AsString[Idx] := GetHostNameWrapper;
 
   FDecrypter.Free;
   EncryptSt.Free;
@@ -1108,45 +1100,54 @@ begin
   FDatafile := AValue;
 end;
 
-function TEpiLogger.DoNewLog(LogType: TEpiLogEntry): Integer;
+function TEpiLogger.DoNewLog(ALogType: TEpiLogEntry): Integer;
 var
   ADoc: TEpiDocument;
 begin
-  FLogDatafile.NewRecords();
-  Result := FLogDatafile.Size - 1;
+  FSecurityLog.NewRecords();
+  Result := FSecurityLog.Size - 1;
   ADoc := Doc(Self);
 
-  with FLogDatafile do
+  with FSecurityLog do
   begin
-    FUserNames.AsString[Result]        := UserName;
-    FTime.AsDateTime[Result]           := Now;
-    FCycle.AsInteger[Result]           := ADoc.CycleNo;
-    FType.AsEnum[Result]               := LogType;
+    UserName.AsString[Result]         := Self.UserName;
+    Date.AsDateTime[Result]           := Now;
+    Time.AsDateTime[Result]           := Now;
+    Cycle.AsInteger[Result]           := ADoc.CycleNo;
+    LogType.AsInteger[Result]         := Integer(ALogType);
     if Assigned(FDatafile) then
-      FDataFileNames.AsString[Result]    := FDatafile.Name;
+      DataFileName.AsString[Result]   := FDatafile.Name;
   end;
 end;
 
-function TEpiLogger.GetKeyValues(Index: integer): EpiString;
+procedure TEpiLogger.LogKeyValues(ParentId, RecordNo: integer);
 var
-  F: TEpiField;
+  F, KF: TEpiField;
+  KeyIdx: Integer;
 begin
-  Result := '';
-  if (not Assigned(FDatafile)) then exit;
-
   if (FDatafile.KeyFields.Count > 0) then
-    for F in FDatafile.KeyFields do
-      Result += F.Name + '=' + F.AsString[Index] + ', '
-  else
-    Result := IntToStr(Index) + ', ';
+    for KF in FDatafile.KeyFields do
+      begin
+        KeyIdx := FKeyLog.NewRecords();
 
-  if (Result <> '') then
-    Delete(Result, Length(Result)-1, 2);
+        FKeyLog.ID.AsInteger[KeyIdx]          := ParentID;
+        FKeyLog.VariableName.AsString[KeyIdx] := KF.Name;
+        FKeyLog.KeyValue.AsString[KeyIdx]     := KF.AsString[RecordNo];
+      end
+  else
+    begin
+      KeyIdx := FKeyLog.NewRecords();
+      FKeyLog.ID.AsInteger[KeyIdx]          := ParentID;
+      FKeyLog.VariableName.AsString[KeyIdx] := 'Obs. no';
+      FKeyLog.KeyValue.AsInteger[KeyIdx]    := RecordNo + 1;
+    end;
 end;
 
 procedure TEpiLogger.LogLoginSuccess;
 begin
-  //DoNewLog(ltSuccessLogin);
+  // Just store the login time for now. If we were to add a record to the security log
+  // at this point, all entries from the FailedLog would be out of order.
+  // We add an entry into the securitylog once FailedLog is done loading.
   FSuccessLoginTime := now;
 end;
 
@@ -1155,6 +1156,9 @@ var
   Idx, i: Integer;
   S: String;
 begin
+  if (not LogEvents) then
+    Exit;
+
   Idx := DoNewLog(ltSearch);
 
   if Assigned(Search) then
@@ -1177,36 +1181,29 @@ begin
   else
     S := '*';
 
-  with FLogDatafile do
+  with FSecurityLog do
   begin
-    FLogContent.AsString[Idx]    := S;
+    LogContent.AsString[Idx]    := S;
   end;
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogRecordNew;
 var
-  Idx: Integer;
+  Idx, KeyIdx: Integer;
+  KF: TEpiField;
 begin
   Idx := DoNewLog(ltNewRecord);
-
-  with FLogDatafile do
-  begin
-    FKeyFieldValues.AsString[Idx]    := GetKeyValues(FDatafile.Size - 1);
-  end;
+  LogKeyValues(FSecurityLog.ID.AsInteger[Idx], FDatafile.Size - 1);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogRecordEdit(RecordNo: Integer);
 var
   Idx: Integer;
 begin
-  if (FDataLog.Count = 0) then Exit;
-
-  Idx := DoNewLog(ltEditRecord);
-  with FLogDatafile do
-  begin
-    FKeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
-    FDataContent.AsInteger[Idx]   := EpiInteger(PtrInt(FDataLog));
-  end;
+  LogKeyValues(FSecurityLog.ID.AsInteger[FSecurityLog.Size - 1], RecordNo);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogRecordView(RecordNo: Integer);
@@ -1214,23 +1211,29 @@ var
   Idx: Integer;
 begin
   Idx := DoNewLog(ltViewRecord);
-  with FLogDatafile do
-    FKeyFieldValues.AsString[Idx] := GetKeyValues(RecordNo);
+  LogKeyValues(FSecurityLog.ID.AsInteger[Idx], RecordNo);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogPack;
 begin
   DoNewLog(ltPack);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogPassword;
 begin
   DoNewLog(ltNewPassword);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogAppend;
 begin
+  if (not LogEvents) then
+    Exit;
+
   DoNewLog(ltAppend);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogClose;
@@ -1239,6 +1242,9 @@ var
   LastEdit: TDateTime;
   ADoc: TEpiDocument;
 begin
+  if (not LogEvents) then
+    Exit;
+
   Idx := DoNewLog(ltClose);
 
   ADoc := Doc(Self);
@@ -1247,7 +1253,8 @@ begin
   with ADoc.DataFiles[i] do
     LastEdit := Max(LastEdit, Max(RecModifiedDate, StructureModifiedDate));
 
-  FLogDatafile.FLogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
+  FSecurityLog.LogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', LastEdit);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
 procedure TEpiLogger.LogExport(Settings: TObject);
@@ -1258,7 +1265,10 @@ var
   LogExportDF: TLogExportDatafile;
   DFSetting: TEpiExportDatafileSettings;
 begin
-  Idx := DoNewLog(ltExport);
+  if (not LogEvents) then
+    Exit;
+
+  {Idx := DoNewLog(ltExport);
 
   LogExportDoc := TLogExportDocument.Create;
   LogExportDoc.ExportDeleted := OrgSettings.ExportDeleted;
@@ -1276,11 +1286,11 @@ begin
     LogExportDoc.ExportList.Add(LogExportDF);
   end;
 
-  FLogDatafile.FDataContent.AsInteger[Idx] := PtrInt(LogExportDoc);
+  FLogDatafile.FDataContent.AsInteger[Idx] := PtrInt(LogExportDoc);}
 end;
 
 { TEpiEnumField }
-
+{
 function TEpiEnumField.GetAsEnum(const Index: Integer): TEpiLogEntry;
 begin
   CheckIndex(Index);
@@ -1469,10 +1479,11 @@ end;
 class function TEpiEnumField.DefaultMissing: TEpiLogEntry;
 begin
   result := ltNone;
-end;
+end;    }
 
 { TEpiLog }
 
+{
 constructor TEpiLog.Create(AOwner: TEpiCustomBase; const aSize: integer);
 begin
   inherited Create(AOwner, aSize);
@@ -1487,7 +1498,7 @@ begin
   FDataContent    := Fields.NewField(ftInteger);
   FLogContent     := Fields.NewField(ftString);
 end;
-
+  }
 { TEpiFailedLogger }
 
 procedure TEpiFailedLogger.DocumentHook(const Sender: TEpiCustomBase;
@@ -1611,11 +1622,10 @@ begin
         SaveDomAttr(Elem, 'aesKey', AesKey);
 
         PlainTxtMs.Clear;
-//        PlainTxtMs.WriteAnsiString(''); // MD5 sum of previous line
+        PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
         PlainTxtMs.WriteAnsiString(FUserNames.AsString[i]);
         PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
         PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
-        PlainTxtMs.WriteByte(FLoginFailType.AsInteger[i]);
         PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
 
         PlainTxtMs.Position := 0;

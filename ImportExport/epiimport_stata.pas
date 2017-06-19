@@ -39,8 +39,8 @@ type
   private
     { Events }
     procedure DoError(Const Msg: String);
-    function  DoProgress(ProgressType: TEpiProgressType;
-      Const Current, Max: Cardinal): boolean;
+{    function  DoProgress(ProgressType: TEpiProgressType;
+      Const Current, Max: Cardinal): boolean; }
     procedure DoControlItemPosition(Const Item: TEpiCustomControlItem;
       var Top, Left: Integer);
   private
@@ -100,10 +100,10 @@ type
                 ): Boolean; overload;
   private
     FOnControlItemPosition: TEpiControlItemPosition;
-    FOnProgress: TEpiProgressEvent;
+//    FOnProgress: TEpiProgressEvent;
     FOnFeedbackNotification: TEpiFeedBackNotification;
   public
-    property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
+//    property    OnProgress: TEpiProgressEvent read FOnProgress write FOnProgress;
     property    OnControlItemPosition: TEpiControlItemPosition read FOnControlItemPosition write FOnControlItemPosition;
     property    OnFeedbackNotification: TEpiFeedBackNotification read FOnFeedbackNotification write FOnFeedbackNotification;
   end;
@@ -126,14 +126,14 @@ begin
 //  Raise Exception.Create(Msg);
 end;
 
-function TEpiStataImport.DoProgress(ProgressType: TEpiProgressType;
+{function TEpiStataImport.DoProgress(ProgressType: TEpiProgressType;
   const Current, Max: Cardinal): boolean;
 begin
   Result := false;
 
   if Assigned(OnProgress) then
     OnProgress(FDataFile, ProgressType, Current, Max, Result);
-end;
+end;   }
 
 procedure TEpiStataImport.DoControlItemPosition(
   const Item: TEpiCustomControlItem; var Top, Left: Integer);
@@ -1005,11 +1005,12 @@ begin
     // ********************************
     //          STATA DATA
     // ********************************
-    DoProgress(eptInit, 0, FObsCount);
+
+    //DoProgress(eptInit, 0, FObsCount);
 
     FOR CurRec := 0 TO FObsCount -1 DO
     BEGIN
-      DoProgress(eptRecords, CurRec, FObsCount);
+    //  DoProgress(eptRecords, CurRec, FObsCount);
 
       FOR CurField := 0 TO FFieldCount - 1 DO
       BEGIN
@@ -1106,7 +1107,7 @@ begin
       END;  //for CurField
     END;  //for CurRec
 
-    DoProgress(eptFinish, CurRec, FObsCount);
+ //   DoProgress(eptFinish, CurRec, FObsCount);
   EXCEPT
     DoError('Error reading data from Stata-file');
     Exit;
