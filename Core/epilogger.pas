@@ -468,6 +468,7 @@ var
 begin
   inherited Create(AOwner);
   FCommitState := csNone;
+  FLogEvents   := true;
 
   FSecurityLog := TEpiSecurityDatafile(DataFiles.GetDataFileByName(EpiSecurityLogDatafileName));
   FDataLog     := TEpiSecurityDataEventLog(Datafiles.GetDataFileByName(EpiSecurityLogDataEventName));
