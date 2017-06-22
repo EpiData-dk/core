@@ -102,7 +102,7 @@ function SearchFindList(Const Search: TEpiSearch; CurIndex: integer): TBoundArra
 implementation
 
 uses
-  Math, LazUTF8, epidatafilestypes, epiglobals;
+  Math, LazUTF8, epidatafilestypes, epiglobals, epiconvertutils;
 
 function SearchFindNext(const Search: TEpiSearch; const Index: integer): integer;
 var
@@ -114,6 +114,10 @@ var
   S2: String;
 
   function Eq(Const SC: TEpiSearchCondition; Const Idx: integer): boolean;
+  var
+    TheDate: EpiDate;
+    TheTime: EpiTime;
+    Msg: String;
   begin
     case SC.Field.FieldType of
       ftBoolean: Result := ((SC.Field.AsBoolean[Idx] = 0) and (SC.Text[1] in BooleanNoChars)) or
@@ -126,9 +130,17 @@ var
       ftYMDDate,
       ftDMYAuto,
       ftMDYAuto,
-      ftYMDAuto: Result := SC.Field.AsDate[Idx] = StrToDate(SC.Text, TEpiDateField(SC.Field).FormatString, DefaultFormatSettings.DateSeparator);
+      ftYMDAuto:
+        begin
+          Result := EpiStrToDate(SC.Text, DefaultFormatSettings.DateSeparator, SC.Field.FieldType, TheDate, Msg) and
+                    (SC.Field.AsDate[Idx] = TheDate);
+        end;
       ftTime,
-      ftTimeAuto:  Result := SC.Field.AsTime[Idx] = StrToTime(SC.Text);
+      ftTimeAuto:
+        begin
+          Result := EpiStrToTime(SC.Text, DefaultFormatSettings.TimeSeparator, TheTime, Msg) and
+                    (SC.Field.AsTime[Idx] = TheTime);
+        end;
       ftString,
       ftUpperString:
         if SC.CaseSensitive then
@@ -139,6 +151,10 @@ var
   end;
 
   function LT(Const SC: TEpiSearchCondition; Const Idx: integer): boolean;
+  var
+    TheDate: EpiDate;
+    TheTime: EpiTime;
+    Msg: String;
   begin
     case SC.Field.FieldType of
       ftBoolean,
@@ -151,9 +167,17 @@ var
       ftYMDDate,
       ftDMYAuto,
       ftMDYAuto,
-      ftYMDAuto: Result := SC.Field.AsDate[Idx] < StrToDate(SC.Text, TEpiDateField(SC.Field).FormatString, DefaultFormatSettings.DateSeparator);
+      ftYMDAuto:
+        begin
+          Result := EpiStrToDate(SC.Text, DefaultFormatSettings.DateSeparator, SC.Field.FieldType, TheDate, Msg) and
+                    (SC.Field.AsDate[Idx] < TheDate);
+        end;
       ftTime,
-      ftTimeAuto:  Result := SC.Field.AsTime[Idx] < StrToTime(SC.Text);
+      ftTimeAuto:
+        begin
+          Result := EpiStrToTime(SC.Text, DefaultFormatSettings.TimeSeparator, TheTime, Msg) and
+                    (SC.Field.AsTime[Idx] < TheTime);
+        end;
       ftString,
       ftUpperString:
         if SC.CaseSensitive then
