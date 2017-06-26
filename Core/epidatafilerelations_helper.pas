@@ -31,6 +31,7 @@ type
     );
     function DataFileItemMethod(InputItem: TEpiCustomRelationItem): TEpiCustomItem;
   public
+    function MasterRelationFromDatafileName(Const AName: String): TEpiMasterRelation;
     function GetOrderedDataFiles: TEpiDataFiles;
     function GetOrderedMasterRelations: TEpiDatafileRelationList;
     procedure OrderedWalk(Const CallBackMethod: TEpiDatafileRelationListCallBack;
@@ -40,6 +41,8 @@ type
 
 implementation
 
+uses
+  LazUTF8;
 
 type
   InternalData = record
@@ -62,6 +65,24 @@ function TEpiDataFileRelationItemListHelper.DataFileItemMethod(
   InputItem: TEpiCustomRelationItem): TEpiCustomItem;
 begin
   result := TEpiMasterRelation(InputItem).Datafile;
+end;
+
+function TEpiDataFileRelationItemListHelper.MasterRelationFromDatafileName(
+  const AName: String): TEpiMasterRelation;
+var
+  MasterList: TEpiDatafileRelationList;
+begin
+  MasterList := GetOrderedMasterRelations;
+
+  for Result in MasterList do
+    if UTF8CompareText(Result.Datafile.Name,  AName) = 0 then
+    begin
+      MasterList.Free;
+      Exit;
+    end;
+
+  MasterList.Free;
+  Result := nil
 end;
 
 function TEpiDataFileRelationItemListHelper.GetOrderedDataFiles: TEpiDataFiles;
