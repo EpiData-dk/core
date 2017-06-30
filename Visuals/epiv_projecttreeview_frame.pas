@@ -171,6 +171,7 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
+    procedure UpdateTree;
     procedure StopEditing;
     property  EditingCaption: boolean read GetEditingCaption;
 
@@ -1169,6 +1170,11 @@ begin
   inherited Destroy;
 end;
 
+procedure TEpiVProjectTreeViewFrame.UpdateTree;
+begin
+  DoUpdateTree;
+end;
+
 procedure TEpiVProjectTreeViewFrame.StopEditing;
 begin
   if EditingCaption then
@@ -1271,22 +1277,6 @@ begin
       NewDataFile.KeyFields.AddItem(NewKeyField);
     end;
 
-{  Node := VST.AddChild(ParentNode, NewRelation);
-  UpdateCustomData(NewRelation, Node);
-
-  if ShowCheckBoxes then
-  begin
-    VST.CheckType[node] := ctTriStateCheckBox;
-
-    case CheckType of
-      pctTriState: ; // Do nothing - this is handled perfectly by the VST it-self.
-      pctCascadeBottomUp:
-        begin
-          if VST.CheckState[ParentNode] in [csCheckedNormal, csMixedNormal] then
-            VST.CheckState[Node] := csMixedNormal;
-        end;
-    end;
-  end;     }
   DoUpdateTree;
 
   DoNewRelation(NewRelation);
