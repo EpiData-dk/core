@@ -705,6 +705,7 @@ begin
         lTime := EpiTime(lFlt);
       end;
 
+    varolestr,
     varstring,
     varustring:
       begin
