@@ -559,19 +559,20 @@ begin
 end;
 
 function TEpiDataFile.InternalCompareRecords(const SortList: TEpiFields;
-  const Idx1, Idx2: Integer): integer;
+  const Idx1, Idx2: Integer; Desceding: Boolean): integer;
 var
   i: Integer;
 begin
   for i := 0 to SortList.Count - 1 do
   begin
     result := SortList[i].Compare(Idx1, Idx2);
+    if Desceding then result := result * (-1);
     if result <> 0 then exit;
   end;
 end;
 
 procedure TEpiDataFile.InternalSortRecords(const SortList: TEpiFields; L,
-  R: Integer);
+  R: Integer; Descending: Boolean; ObsNoField: TEpiField);
 
   procedure SortListExchangeRecords(Const Index1, Index2: integer);
   var
@@ -593,20 +594,24 @@ begin
   J:=R;
   P:=(L + R) shr 1;
   repeat
-    while InternalCompareRecords(SortList, I,P) < 0 do Inc(I);
-    while InternalCompareRecords(SortList, J,P) > 0 do Dec(J);
+    while InternalCompareRecords(SortList, ObsNoField.AsInteger[I], ObsNoField.AsInteger[P], Descending) < 0 do Inc(I);
+    while InternalCompareRecords(SortList, ObsNoField.AsInteger[J], ObsNoField.AsInteger[P], Descending) > 0 do Dec(J);
+
     if I <= J then
     begin
-      ExchangeRecords(J,I);
-      SortListExchangeRecords(J, I);
-      if p=i then p:=j
-      else if p=j then p:=i;
+      ExchangeRecords(ObsNoField.AsInteger[J], ObsNoField.AsInteger[I]);
+      SortListExchangeRecords(ObsNoField.AsInteger[J], ObsNoField.AsInteger[I]);
+      if P = I then
+        P := J
+      else
+        if P = J then
+          P := I;
       Inc(I);
       Dec(J);
     end;
-  until I>J;
-  if L<J then InternalSortRecords(SortList, L,J);
-  if I < R then InternalSortRecords(SortList, I, R);
+  until I > J;
+  if L < J then InternalSortRecords(SortList, L, J, Descending, ObsNoField);
+  if I < R then InternalSortRecords(SortList, I, R, Descending, ObsNoField);
 end;
 
 function TEpiDataFile.InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
@@ -1264,14 +1269,33 @@ begin
   FRecordStatus.Exchange(Index1, Index2);
 end;
 
-procedure TEpiDataFile.SortRecords(SortFields: TEpiFields);
+procedure TEpiDataFile.SortRecords(SortFields: TEpiFields; Descending: Boolean;
+  ObsNoField: TEpiField);
+var
+  ObsNoFieldCreated: Boolean;
+  i: Integer;
 begin
-  if Size < 1 then exit;
+  ObsNoFieldCreated := false;
+  if (not Assigned(ObsNoField)) then
+  begin
+    ObsNoField := TEpiField.CreateField(nil, ftInteger);
+    ObsNoField.Size := Size;
+    for i := 0 to Size - 1 do
+      ObsNoField.AsInteger[i] := i;
+    ObsNoFieldCreated := true;
+  end;
 
-  // Setting FLoadingRecs=true here, tell the fields NOT to send events during records exchange.;
-  FLoadingRecs := true;
-  InternalSortRecords(SortFields, 0, Size - 1);
-  FLoadingRecs := false;
+  // No need to sort on less than 2 observations
+  if (ObsNoField.Size > 2) then
+  begin
+    // Setting FLoadingRecs=true here, tell the fields NOT to send events during records exchange.;
+    FLoadingRecs := true;
+    InternalSortRecords(SortFields, 0, ObsNoField.Size - 1, Descending, ObsNoField);
+    FLoadingRecs := false;
+  end;
+
+  if ObsNoFieldCreated then
+    FreeAndNil(ObsNoField);
 end;
 
 procedure TEpiDataFile.SortRecords(SortField: TEpiField);

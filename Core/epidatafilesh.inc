@@ -84,8 +84,8 @@ type
     procedure   SetDeleted(Index: integer; const AValue: boolean);
     procedure   SetSize(const AValue: Integer);
     procedure   SetVerified(Index: integer; const AValue: boolean);
-    function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer): integer;
-    procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer);
+    function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer; Desceding: Boolean): integer;
+    procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer; Descending: Boolean; ObsNoField: TEpiField);
     function    InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
 
   { Load/Save methods }
@@ -116,7 +116,10 @@ type
     procedure   Pack; overload;   // Removes records marked for deletion.
     procedure   Pack(PackFunction: TEpiDataFilePackFunction); overload; // Removes records based on provided method
     procedure   ExchangeRecords(Const Index1, Index2: Integer);
-    procedure   SortRecords(SortFields: TEpiFields); overload;
+    // Sorts records based on value in SortFields. If ObsNoField is assigned (must be int field) then
+    // this vector is used to index into the observations sorted. Hence it is possible to sort
+    // only parts of the entire Datafile.
+    procedure   SortRecords(SortFields: TEpiFields; Descending: Boolean = false; ObsNoField: TEpiField = nil); overload;
     procedure   SortRecords(SortField: TEpiField); overload;
     property    MainSection: TEpiSection read FMainSection;
     property    Sections: TEpiSections read FSections;
