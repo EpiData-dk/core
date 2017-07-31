@@ -270,7 +270,7 @@ begin
          (MRunner > 0) and
          (CompareSortFieldRecords(SortFields, SortFields, MRunner, MRunner - 1) = ZeroValue) then
       begin
-        AddResult(MRunner, DRunner, rrValDupKeyMain);
+        AddResult(MRunner, MRunner - 1, rrValDupKeyMain);
         Inc(MRunner);
         Continue;
       end;
@@ -279,7 +279,7 @@ begin
          (DRunner > 0) and
          (CompareSortFieldRecords(FDuplKeyFields, FDuplKeyFields, DRunner, DRunner - 1) = ZeroValue) then
       begin
-        AddResult(MRunner, DRunner, rrValDupKeyDupl);
+        AddResult(DRunner, DRunner - 1, rrValDupKeyDupl);
         Inc(DRunner);
         Continue;
       end;
