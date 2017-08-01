@@ -149,7 +149,8 @@ begin
           (DecL <= ADecimals);
       end;
 
-    ftString:
+    ftString,
+    ftUpperString:
       Result := (FieldType in [ftString, ftUpperString]);
 
     ftTime:

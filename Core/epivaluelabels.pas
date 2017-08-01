@@ -912,7 +912,8 @@ begin
     ftTime:
       result := TEpiTimeValueLabel;
 
-    ftString:
+    ftString,
+    ftUpperString:
       Result := TEpiStringValueLabel;
   end;
 end;
