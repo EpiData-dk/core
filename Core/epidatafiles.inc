@@ -1357,8 +1357,11 @@ begin
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
   with TEpiDataFile(Result) do
   begin
-    FVersion := Self.FVersion;
-    FCreated := Self.FCreated;
+    FVersion                := Self.FVersion;
+    FCreated                := Self.FCreated;
+    FAfterRecordState       := Self.FAfterRecordState;
+    FStatusbarContentString := Self.FStatusbarContentString;
+
     FRecModifiedDate := Self.FRecModifiedDate;
     FStructureModifiedDate := self.FStructureModifiedDate;
     Size := Self.Size;
