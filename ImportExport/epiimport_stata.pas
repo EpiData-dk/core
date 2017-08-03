@@ -112,7 +112,7 @@ type
 implementation
 
 uses
-  epistringutils, LazUTF8, dateutils, math;
+  epistringutils, LazUTF8, dateutils, math, epifields_helper;
 
 const
   STATA_STRLS_VVAL = 'STATA_STRLS_VVAL';
@@ -123,7 +123,7 @@ const
 
 procedure TEpiStataImport.DoError(const Msg: String);
 begin
-//  Raise Exception.Create(Msg);
+  Raise Exception.Create(Msg);
 end;
 
 {function TEpiStataImport.DoProgress(ProgressType: TEpiProgressType;
@@ -580,11 +580,12 @@ begin
       F.Length   := Len + 1 + Dec;
       F.Decimals := Dec;
     end else begin
-      for i := 0 to F.Size - 1 do
-        if (not F.IsMissing[i]) then
-          Len := Max(Len, UTF8Length(F.AsString[i]));
 
-      F.Length   := Len;
+{      for i := 0 to F.Size - 1 do
+        if (not F.IsMissing[i]) then
+          Len := Max(Len, UTF8Length(F.AsString[i]));   }
+
+      F.Length   := F.MaxUTF8Length; //Len;
       F.Decimals := 0;
     end;
   end;

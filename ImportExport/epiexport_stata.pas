@@ -247,27 +247,33 @@ begin
         end;
 
       ftString,
-      ftUpperString:
+      ftUpperString,
+      ftMemo:
         begin
 {          if (F.MaxByteLength > 2045) then
             StataType := StataStrLsConstXML
           else
             StataType := F.Length;}
           I := F.MaxByteLength;
-          if (I > 2045) then
+          if (I = 0) then
+            // Stata cannot have a 0 length string variable
+            StataType := 1
+          else if (I > 2045) then
+            // The string is so long that is goes into the StrLS section
             StataType := StataStrLsConstXML
           else
+            // Regular stata string variable
             StataType := I;
         end;
 
-      ftMemo:
+{      ftMemo:
         begin
           I := F.MaxByteLength;
           if (I > 2045) then
             StataType := StataStrLsConstXML
           else
             StataType := I;
-        end;
+        end;  }
 
       ftDMYDate, ftMDYDate, ftYMDDate,
       ftDMYAuto, ftMDYAuto, ftYMDAuto:
