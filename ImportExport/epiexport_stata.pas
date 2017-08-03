@@ -249,10 +249,15 @@ begin
       ftString,
       ftUpperString:
         begin
-          if (F.MaxByteLength > 2045) then
+{          if (F.MaxByteLength > 2045) then
             StataType := StataStrLsConstXML
           else
-            StataType := F.Length;
+            StataType := F.Length;}
+          I := F.MaxByteLength;
+          if (I > 2045) then
+            StataType := StataStrLsConstXML
+          else
+            StataType := I;
         end;
 
       ftMemo:
