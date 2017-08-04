@@ -226,6 +226,7 @@ type
     TimeSeparator: string;
     DecimalSeparator: string;
     NewLine: string;
+    MemoNewLine: string;
     FixedFormat: boolean;
 
     constructor Create; override;
@@ -784,6 +785,7 @@ begin
   DateSeparator     := DefaultFormatSettings.DateSeparator;
   TimeSeparator     := DefaultFormatSettings.TimeSeparator;
   DecimalSeparator  := DefaultFormatSettings.DecimalSeparator;
+  MemoNewLine       := ' ';
   NewLine           := LineEnding;
 end;
 

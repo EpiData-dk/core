@@ -853,7 +853,7 @@ var
   QuoteCh: String;
   i: Integer;
   NewLine: String;
-  TmpStr, S: String;
+  TmpStr, S, MemoNewLine: String;
   BackUpSettings: TFormatSettings;
   CurRec: Integer;
   L: Cardinal;
@@ -882,6 +882,7 @@ begin
       QuoteCh  := Settings.QuoteChar;
       NewLine  := Settings.NewLine;
       Fixed    := Settings.FixedFormat;
+      MemoNewLine := Settings.MemoNewLine;
 
       {ByteOrder Mark}
       if (Settings.ByteOrderMark) and
@@ -946,6 +947,13 @@ begin
           L := Length;
           if (FieldType in StringFieldTypes) then
           begin
+            if (FieldType = ftMemo) then
+            begin
+              S := StringReplace(S, #13#10, MemoNewLine, [rfReplaceAll]);
+              S := StringReplace(S, #10,    MemoNewLine, [rfReplaceAll]);
+              S := StringReplace(S, #13,    MemoNewLine, [rfReplaceAll]);
+            end;
+
             S := EncodeString(S, Settings.Encoding);
             if (QuoteCh <> '') and (not Fixed) then
             begin
