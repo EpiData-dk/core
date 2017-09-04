@@ -17,7 +17,7 @@ type
     pvCheckDataLength,                // Check data for valid length
     pvCheckJumpReset,                 // Check data for jumps with reset value no being (2nd)max missing.
     pvCheckKeyFields,                 // Check keyfield for missing data
-//    pvCheckKeyData,                   // Check keyfields for unique data.
+    pvCheckKeyData,                   // Check keyfields for unique data.
     pvCheckRelateData,                // Check data in childDF has a valid record in parentDF
 
     // StudyInfo should always be last - used in report.
@@ -41,7 +41,7 @@ const
      'Check data for valid length',
      'Check data for jumps with no reset',
      'Check keyfields for missing data',
-//     'Check keyfields for unique data',
+     'Check keyfields for unique data',
      'Check Child/Parent data',
      'Check study information for completeness'
     );
@@ -55,7 +55,7 @@ const
      'Length',
      'Jumps',
      'KeyField',
-//     'Unique',
+     'Unique',
      'Relate',
      'Study'
     );
@@ -168,20 +168,53 @@ procedure TEpiProjectValidationTool.ValidateDataFile(
   const Relation: TEpiMasterRelation; const Depth: Cardinal;
   const Index: Cardinal; var aContinue: boolean; Data: Pointer);
 var
-  DF: TEpiDataFile;
+  DF, ParentDF: TEpiDataFile;
   LValidationFields: TStrings;
   F: TEpiField;
   MainSortField: TEpiField;
   SortFields: TStrings;
   Fields: TEpiFields;
-  i: Integer;
-  j: Integer;
-  TmpResult: Boolean;
+  i, j, runner: Integer;
+  TmpResult, CheckRelatedData: Boolean;
   CmpResult: TValueSign;
   Res: Boolean;
-  CompareField: TEpiField;
+  CompareField, KF: TEpiField;
   S: String;
   Jmp: TEpiJump;
+
+  procedure DoCheckRelatedData(ParentDF, CurrentDF: TEpiDataFile; CurIdx: Integer);
+  var
+    pKF, cKF: TEpiField;
+  begin
+    if (Runner >= ParentDF.Size) then
+      CmpResult := 1
+    else
+      for pKF in ParentDF.KeyFields do
+      begin
+
+        cKF := CurrentDF.KeyFields.FieldByName[pKF.Name];
+        CompareFieldRecords(CmpResult, pKF, cKF, Runner, CurIdx);
+
+        case CmpResult of
+          -1: begin
+                Inc(Runner);
+                DoCheckRelatedData(ParentDF, CurrentDF, CurIdx);
+                Exit;
+              end;
+          0:  Continue;
+          1:  Break;
+        end;
+      end;
+
+    if (CmpResult > 0)  then
+      with NewResultRecord^ do
+      begin
+        RecNo := MainSortField.AsInteger[CurIdx];
+        Field := nil;
+        FailedCheck := pvCheckRelateData;
+      end;
+  end;
+
 begin
   DF := Relation.Datafile;
 
@@ -200,6 +233,47 @@ begin
   MainSortField := Df.NewField(ftInteger);
   for i := 0 to Df.Size -1 do
     MainSortField.AsInteger[i] := i;
+
+  CheckRelatedData := (pvCheckRelateData in FOptions) and (Depth > 0);
+  ParentDF := nil;
+
+  if ([pvCheckKeyData, pvCheckRelateData] * FOptions <> []) and
+     (DF.KeyFields.Count > 0) and
+     (DF.Size > 0)
+  then
+    begin
+      DF.SortRecords(DF.KeyFields);
+      Runner := 0;
+
+      if CheckRelatedData then
+        begin
+          ParentDF := TEpiDataFile(TEpiDetailRelation(Relation).MasterRelation.Datafile.Clone(nil));
+          ParentDF.SortRecords(ParentDF.KeyFields);
+          DoCheckRelatedData(ParentDF, Df, 0);
+        end;
+
+      for i := 1 to DF.Size - 1 do
+      begin;
+        if (pvCheckKeyData in FOptions) then
+        begin
+          TmpResult := true;
+          for KF in DF.KeyFields do
+            TmpResult := TmpResult and (KF.Compare(i-1, i) = 0);
+
+          if TmpResult then
+          with NewResultRecord^ do
+            begin
+              RecNo := MainSortField.AsInteger[i];
+              Field := nil;
+              FailedCheck := pvCheckKeyData;
+            end;
+        end;
+
+        if CheckRelatedData then
+          DoCheckRelatedData(ParentDF, DF, i);
+      end;
+    end;
+
 
   if Assigned(SortFields) then
   begin
@@ -354,19 +428,15 @@ begin
             FailedCheck := pvCheckJumpReset;
           end
       end;
-
-      // Check related data!
     end;
   end;
 
   if Assigned(SortFields) then
-  begin
     Df.SortRecords(MainSortField);
-    MainSortField.Free;
-  end;
+
+  MainSortField.Free;
 
   // No "real" changes were made...
-
   if Assigned(Df.RootOwner) then
     DF.RootOwner.Modified := false;
 
