@@ -690,6 +690,7 @@ end;
 function TEpiProjectValidationTool.DoGetSortFields(
   const Relation: TEpiMasterRelation): TStrings;
 begin
+  Result := nil;
   if Assigned(OnGetSortFields) then
     Result := OnGetSortFields(Self, Relation);
 end;
@@ -697,6 +698,7 @@ end;
 function TEpiProjectValidationTool.DoGetValidationFields(
   const Relation: TEpiMasterRelation): TStrings;
 begin
+  Result := nil;
   if Assigned(OnGetValidationFields) then
     Result := OnGetValidationFields(Self, Relation);
 end;
