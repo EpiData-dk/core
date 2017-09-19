@@ -108,9 +108,6 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    procedure   ValidateProject(out FieldResultArray: TEpiProjectResultArray;
-      Out StudyResultArray: TEpiProjectStudyArray;
-      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
     procedure   ValidateProject(Const Doc: TEpiDocument;
       Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
 
@@ -210,7 +207,7 @@ var
       with NewResultRecord^ do
       begin
         RecNo := MainSortField.AsInteger[CurIdx];
-        Field := nil;
+        Field := CurrentDF.KeyFields[0];
         FailedCheck := pvCheckRelateData;
       end;
   end;
@@ -264,7 +261,7 @@ begin
           with NewResultRecord^ do
             begin
               RecNo := MainSortField.AsInteger[i];
-              Field := nil;
+              Field := DF.KeyFields[0];
               FailedCheck := pvCheckKeyData;
             end;
         end;
@@ -453,207 +450,6 @@ begin
   inherited Destroy;
 end;
 
-procedure TEpiProjectValidationTool.ValidateProject(out
-  FieldResultArray: TEpiProjectResultArray; out
-  StudyResultArray: TEpiProjectStudyArray;
-  Options: TEpiToolsProjectValidateOptions);
-var
-  i, j: Integer;
-  Df: TEpiDataFile;
-  F: TEpiField;
-  CompareField: TEpiField;
-  Res: Boolean;
-  CmpResult: TValueSign;
-  S: String;
-  LValidationFields: TEpiFields;
-  MainSortField: TEpiField;
-  Jmp: TEpiJump;
-  TmpResult: Boolean;
-begin
-{  Df := Document.DataFiles[0];
-
-  if (pvCheckStudyInfo in Options) then
-  with Document.Study do
-  begin
-    if AbstractText.Text = '' then NewStudyRecord(AbstractText, 'Abstract');
-    if Author = ''            then NewStudyRecord(@Author,      'Author');
-    if Agency = ''            then NewStudyRecord(@Agency,      'Agency');
-    if Citations.Text = ''    then NewStudyRecord(Citations,    'Citations');
-    if (DataCollectionStart = MaxDateTime) or
-       (DataCollectionEnd = MaxDateTime)
-    then
-      NewStudyRecord(nil, 'Data Time Coverage');
-    if Design.Text = ''       then NewStudyRecord(Design,       'Design');
-    if Funding.Text = ''      then NewStudyRecord(Funding,      'Funding');
-    if GeographicalCoverage.Text = '' then NewStudyRecord(GeographicalCoverage, 'Geographical Coverage');
-    if Publisher.Text = ''    then NewStudyRecord(Publisher,    'Publisher');
-    if Purpose.Text = ''      then NewStudyRecord(Purpose,      'Purpose');
-    if Population.Text = ''   then NewStudyRecord(Population,   'Population');
-    if Rights.Text = ''       then NewStudyRecord(Rights,       'Rights');
-    if Title.Text = ''        then NewStudyRecord(Title,        'Title');
-    if Keywords = ''          then NewStudyRecord(@Keywords,    'Keywords');
-    if UnitOfObservation.Text = '' then NewStudyRecord(UnitOfObservation, 'Unit of obs.');
-  end;
-
-  if Assigned(ValidationFields) and
-     (ValidationFields.Count > 0)
-  then
-    LValidationFields := ValidationFields
-  else
-    LValidationFields := DF.Fields;
-
-  MainSortField := Df.NewField(ftInteger);
-  for i := 0 to Df.Size -1 do
-    MainSortField.AsInteger[i] := i;
-
-  if Assigned(KeyFields) and
-     (KeyFields.Count > 0)
-  then
-    Df.SortRecords(KeyFields);
-
-  for i := 0 to Df.Size - 1 do
-  begin
-    if Df.Deleted[i] and (pvIgnoreDeleted in Options) then continue;
-
-    for j := 0 to ValidationFields.Count - 1 do
-    begin
-      F := ValidationFields[j];
-
-      if (pvCheckSystemMissing in Options) then
-      begin
-        // Check for system missing
-
-        if F.IsMissing[i] then
-        with NewResultRecord^ do
-        begin
-          RecNo := MainSortField.AsInteger[i];
-          Field := F;
-          FailedCheck := pvCheckSystemMissing;
-        end;
-      end;
-
-      if (pvCheckMustEnter in Options) then
-      begin
-        if (F.EntryMode = emMustEnter) and
-           (F.IsMissing[i])
-        then
-          with NewResultRecord^ do
-          begin
-            RecNo := MainSortField.AsInteger[i];
-            Field := F;
-            FailedCheck := pvCheckMustEnter;
-          end;
-      end;
-
-      if (pvCheckKeyFields in Options) then
-      begin
-        if (Df.KeyFields.IndexOf(F) > -1) and
-           (F.IsMissing[i])
-        then
-          with NewResultRecord^ do
-          begin
-            RecNo := MainSortField.AsInteger[i];
-            Field := F;
-            FailedCheck := pvCheckKeyFields;
-          end;
-      end;
-
-      if (pvCheckDataRange in Options) and
-         ((Assigned(F.Ranges)) or
-          (Assigned(F.ValueLabelSet))
-         )
-      then
-      begin
-        TmpResult := false;
-
-        if Assigned(F.Ranges) then
-          TmpResult := F.Ranges.InRange(F.AsValue[i]);
-
-        if Assigned(F.ValueLabelSet) then
-          TmpResult := TmpResult or F.ValueLabelSet.ValueLabelExists[F.AsValue[i]];
-
-        if not TmpResult
-        then
-          with NewResultRecord^ do
-          begin
-            RecNo := MainSortField.AsInteger[i];
-            Field := F;
-            FailedCheck := pvCheckDataRange;
-          end;
-      end;
-
-      if (pvCheckComparison in Options) and
-         (Assigned(F.Comparison))
-      then
-      begin
-        CompareField := F.Comparison.CompareField;
-
-        if CompareFieldTypeOrder(F.FieldType, CompareField.FieldType) <> 0 then
-          ;  // Cannot compare fields
-
-        CompareFieldRecords(CmpResult, F, CompareField, i, i, true);
-
-        case F.Comparison.CompareType of
-          fcEq:  Res := CmpResult = 0;
-          fcNEq: Res := CmpResult <> 0;
-          fcLT:  Res := CmpResult < 0;
-          fcLEq: Res := CmpResult <= 0;
-          fcGEq: Res := CmpResult > 0;
-          fcGT:  Res := CmpResult >= 0;
-        end;
-        if not Res then
-        with NewResultRecord^ do
-        begin
-          RecNo := MainSortField.AsInteger[i];
-          Field := F;
-          FailedCheck := pvCheckComparison;
-        end;
-      end;
-
-      if (pvCheckDataLength in Options) then
-      begin
-        S := F.AsString[i];
-
-        if UTF8Length(S) > F.Length then
-        with NewResultRecord^ do
-        begin
-          RecNo := MainSortField.AsInteger[i];
-          Field := F;
-          FailedCheck := pvCheckDataLength;
-        end;
-      end;
-
-      if (pvCheckJumpReset in Options) and
-         (Assigned(F.Jumps))
-      then
-      begin
-        Jmp := F.Jumps.JumpFromValue[F.AsString[i]];
-
-        if Assigned(Jmp) and
-           (not (Jmp.ResetType in [jrMaxMissing, jr2ndMissing]))
-        then
-          with NewResultRecord^ do
-          begin
-            RecNo := MainSortField.AsInteger[i];
-            Field := F;
-            FailedCheck := pvCheckJumpReset;
-          end
-      end;
-    end;
-  end;
-
-  Df.SortRecords(MainSortField);
-  MainSortField.Free;
-
-  // No "real" changes were made...
-
-  if Assigned(Df.RootOwner) then
-    DF.RootOwner.Modified := false;
-
-  FieldResultArray := FResultArray;
-  StudyResultArray := FStudyArray;  }
-end;
-
 procedure TEpiProjectValidationTool.ValidateProject(const Doc: TEpiDocument;
   Options: TEpiToolsProjectValidateOptions);
 begin
@@ -706,9 +502,43 @@ end;
 procedure TEpiProjectValidationTool.DoDataFileResult(
   const Relation: TEpiMasterRelation; const ResultArray: TEpiProjectResultArray
   );
+  procedure SortResultArray(L, R: Integer);
+  var
+    I, J, P: Integer;
+    TmpRec: TEpiProjectValidateResultRecord;
+  begin
+    I:=L;
+    J:=R;
+    P:=(L + R) shr 1;
+    repeat
+      while ResultArray[I].RecNo < ResultArray[P].RecNo do Inc(I);
+      while ResultArray[J].RecNo > ResultArray[P].RecNo do Dec(J);
+
+      if I <= J then
+      begin
+        TmpRec := ResultArray[I];
+        ResultArray[I] := ResultArray[J];
+        ResultArray[J] := TmpRec;
+        if P = I then
+          P := J
+        else
+          if P = J then
+            P := I;
+        Inc(I);
+        Dec(J);
+      end;
+    until I > J;
+    if L < J then SortResultArray(L, J);
+    if I < R then SortResultArray(I, R);
+  end;
+
 begin
   if Assigned(OnDataFileResult) then
+  begin
+    if Length(ResultArray) > 1 then
+      SortResultArray(0, Length(ResultArray) - 1);
     OnDataFileResult(Self, Relation, ResultArray);
+  end;
 end;
 
 procedure TEpiProjectValidationTool.DoStudyResult(
