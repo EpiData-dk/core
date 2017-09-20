@@ -26,6 +26,7 @@ type
     function MaxByteLength: Cardinal;
     function MaxUTF8Length: Cardinal;
     function IsKeyfield: boolean;
+    function NonMissingSize: Integer;
   end;
 
   { TEpiIntFieldHelper }
@@ -184,6 +185,16 @@ end;
 function TEpiFieldHelper.IsKeyfield: boolean;
 begin
   result := DataFile.KeyFields.FieldExists(Self);
+end;
+
+function TEpiFieldHelper.NonMissingSize: Integer;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Size - 1 do
+    if (not IsMissing[i]) then
+      Inc(Result);
 end;
 
 { TEpiIntFieldHelper }
