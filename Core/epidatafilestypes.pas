@@ -113,24 +113,45 @@ function OrderedFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
 
 implementation
 
+uses
+  sysutils, typinfo;
+
+procedure DoError(Msg: String);
+begin
+  raise Exception.Create(Msg);
+end;
+
 function NativeFieldTypeSetFromFieldType(Ft: TEpiFieldType): TEpiFieldTypes;
 begin
   case Ft of
-    ftBoolean:  result := BoolFieldTypes;
+    ftBoolean:
+      result := BoolFieldTypes;
+
     ftInteger,
-    ftAutoInc:  result := IntFieldTypes;
-    ftFloat:    result := FloatFieldTypes;
+    ftAutoInc:
+      result := IntFieldTypes;
+
+    ftFloat:
+      result := FloatFieldTypes;
+
     ftDMYDate,
     ftMDYDate,
     ftYMDDate,
     ftDMYAuto,
     ftMDYAuto,
-    ftYMDAuto:  result := DateFieldTypes;
+    ftYMDAuto:
+      result := DateFieldTypes;
+
     ftTime,
-    ftTimeAuto: result := TimeFieldTypes;
+    ftTimeAuto:
+      result := TimeFieldTypes;
+
     ftString,
     ftUpperString,
-    ftMemo:     result := StringFieldTypes;
+    ftMemo:
+      result := StringFieldTypes;
+  else
+    DoError('NativeFieldTypeSetFromFieldType: Unknown fieldtype "' + GetEnumName(TypeInfo(TEpiFieldType), Integer(Ft)));
   end;
 end;
 
@@ -163,6 +184,8 @@ begin
     ftUpperString,
     ftMemo:
       result := StringFieldTypes;
+  else
+    DoError('OrderedFieldTypeSetFromFieldType: Unknown fieldtype "' + GetEnumName(TypeInfo(TEpiFieldType), Integer(Ft)));
   end;
 end;
 

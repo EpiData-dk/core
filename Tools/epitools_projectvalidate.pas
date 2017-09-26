@@ -102,14 +102,16 @@ type
     function    NewResultRecord: PEpiProjectResultArray;
     procedure   NewStudyRecord(Const AObject: Pointer;
       Const AName: string);
-    procedure ValidateDataFile(const Relation: TEpiMasterRelation;
+    procedure DoValidateDataFile(const Relation: TEpiMasterRelation;
       const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean;
       Data: Pointer = nil);
   public
     constructor Create;
     destructor  Destroy; override;
     procedure   ValidateProject(Const Doc: TEpiDocument;
-      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll); overload;
+      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll);
+    procedure   ValidateDatafile(Const Relation: TEpiMasterRelation;
+      Options: TEpiToolsProjectValidateOptions = EpiProjectValidationOptionsAll);
 
   private
     FOnDataFileResult: TEpiProjectValidationDataFileResultEvent;
@@ -161,7 +163,7 @@ begin
   end;
 end;
 
-procedure TEpiProjectValidationTool.ValidateDataFile(
+procedure TEpiProjectValidationTool.DoValidateDataFile(
   const Relation: TEpiMasterRelation; const Depth: Cardinal;
   const Index: Cardinal; var aContinue: boolean; Data: Pointer);
 var
@@ -481,6 +483,20 @@ begin
   end;
 
   Doc.Relations.OrderedWalk(@ValidateDataFile);
+end;
+
+procedure TEpiProjectValidationTool.ValidateDatafile(
+  const Relation: TEpiMasterRelation; Options: TEpiToolsProjectValidateOptions);
+var
+  Depth: Integer;
+  AContinue: Boolean;
+begin
+  Depth := 0;
+  if (Relation is TEpiDetailRelation) then
+    Depth := 1;
+
+  AContinue := true;
+  DoValidateDataFile(Relation, Depth, 0, AContinue, nil);
 end;
 
 function TEpiProjectValidationTool.DoGetSortFields(
