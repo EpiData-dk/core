@@ -482,7 +482,7 @@ begin
     DoStudyResult(FStudyArray);
   end;
 
-  Doc.Relations.OrderedWalk(@ValidateDataFile);
+  Doc.Relations.OrderedWalk(@DoValidateDataFile);
 end;
 
 procedure TEpiProjectValidationTool.ValidateDatafile(
