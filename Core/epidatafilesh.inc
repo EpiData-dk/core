@@ -105,7 +105,7 @@ type
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); virtual;
     destructor  Destroy; override;
-    function    ValidateRename(Const NewName: string): boolean;
+    function    ValidateRename(Const NewName: string): boolean; overload;
     function    XMLName: string; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
     function    NewField(FieldType: TEpiFieldType): TEpiField; virtual;
