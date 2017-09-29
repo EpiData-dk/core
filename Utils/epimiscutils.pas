@@ -53,15 +53,23 @@ type
   TEpiDialogFilters = set of TEpiDialogFilter;
 
 const
-  dfEpiData: TEpiDialogFilters = [dfEPX, dfEPZ, dfCollection];
-  dfImport: TEpiDialogFilters  = [dfEPX, dfEPZ, dfREC, dfDTA, dfText, dfCollection];
-  dfExport: TEpiDialogFilters  = [dfDTA];
+  dfEpiData    = [dfEPX, dfEPZ, dfCollection];
+  dfImport     = [dfEPX, dfEPZ, dfREC, dfDTA, dfText, dfCollection];
+  dfExport     = [dfDTA];
+  dfAllFilters = [dfEPX, dfEPZ, dfREC, dfText, dfODS, dfXLS, dfDTA, dfDBF, dfSPSS, dfSAS, dfDDI, dfPGM, dfCollection, dfAll];
+  dfAllRegular = dfAllFilters - [dfCollection]; //, dfAll;
 
 
   // File dialog filter functions.
   function GetEpiDialogFilter(DialogFilters: TEpiDialogFilters): string;
   function GetEpiDialogFilterExt(DialogFilters: TEpiDialogFilters): string;
   function GetEpiDialogFilterName(DialogFilters: TEpiDialogFilters): string;
+
+  // Extracts filename extension and returns best guess af to what the filetype is. If no
+  // known filetype is found, or the found type is not in Supported types,
+  // result is false and FileType is undefined.
+  function FilenameToFileType(const Filename: UTF8String; out FileType: TEpiDialogFilter;
+    SupportedTypes: TEpiDialogFilters = dfAllRegular): boolean;
 
   procedure StreamToZipFile(Const St: TStream; Const ZipFileName: string);
   procedure ZipFileToStream(St: TStream;   Const ZipFileName: string);
@@ -103,6 +111,7 @@ type
   TEpiDialogFilterPair = record
     FilterName: string;
     FilterExt:  string;
+    FilterType: TEpiDialogFilter;
   end;
   PEpiDialogFilterPair = ^TEpiDialogFilterPair;
 
@@ -110,71 +119,85 @@ const
   EpiDialogFilterCollection: TEpiDialogFilterPair = (
     FilterName: 'Supported files';
     FilterExt:  '';
+    FilterType: dfCollection;
   );
 
   EpiDialogFilterEPX: TEpiDialogFilterPair = (
     FilterName: 'EpiData XML Data file (*.epx)';
     FilterExt:  '*.epx';
+    FilterType: dfEPX;
   );
 
   EpiDialogFilterEPZ: TEpiDialogFilterPair = (
     FilterName: 'EpiData XML Zipped Data file (*.epz)';
     FilterExt:  '*.epz';
+    FilterType: dfEPZ;
   );
 
   EpiDialogFilterREC: TEpiDialogFilterPair = (
     FilterName: 'EpiData data file (*.rec)';
     FilterExt:  '*.rec';
+    FilterType: dfREC;
   );
 
   EpiDialogFilterText: TEpiDialogFilterPair = (
     FilterName: 'Text file (*.txt,*.csv)';
     FilterExt:  '*.csv;*.txt';
+    FilterType: dfText;
   );
 
   EpiDialogFilterODS: TEpiDialogFilterPair = (
     FilterName: 'Open Document Spreadsheet (*.ods)';
     FilterExt:  '*.ods';
+    FilterType: dfODS;
   );
 
   EpiDialogFilterXLS: TEpiDialogFilterPair = (
     FilterName: 'Excel Spreadsheet (*.xls)';
     FilterExt:  '*.xls';
+    FilterType: dfXLS;
   );
 
   EpiDialogFilterDTA: TEpiDialogFilterPair = (
     FilterName: 'Stata file (*.dta)';
     FilterExt:  '*.dta';
+    FilterType: dfDTA;
   );
 
   EpiDialogFilterDBF: TEpiDialogFilterPair = (
     FilterName: 'dBase file (*.dbf)';
     FilterExt:  '*.dbf';
+    FilterType: dfDBF;
   );
 
   EpiDialogFilterSPSS: TEpiDialogFilterPair = (
     FilterName: 'SPSS Command File (*.sps)';
     FilterExt:  '*.sps';
+    FilterType: dfSPSS;
   );
 
   EpiDialogFilterSAS: TEpiDialogFilterPair = (
     FilterName: 'SAS Command File (*.sas)';
     FilterExt:  '*.sas';
+    FilterType: dfSAS;
   );
 
   EpiDialogFilterDDI: TEpiDialogFilterPair = (
     FilterName: 'DDI XML File (*.xml)';
     FilterExt:  '*.xml';
+    FilterType: dfDDI;
   );
 
   EpiDialogFilterPGM: TEpiDialogFilterPair = (
     FilterName: 'EpiData Analysis Program File (*.pgm)';
     FilterExt:  '*.pgm';
+    FilterType: dfPGM;
   );
 
   EpiDialogFilterAll: TEpiDialogFilterPair = (
     FilterName: 'Show All (*.*)';
     FilterExt:  '*.*';
+    FilterType: dfAll;
   );
 
   EpiDialogFilters: array[TEpiDialogFilter] of PEpiDialogFilterPair =
@@ -242,6 +265,35 @@ begin
     if Filter in [dfCollection, dfAll] then continue;
     result += EpiDialogFilters[Filter]^.FilterName;
   end;
+end;
+
+function FilenameToFileType(const Filename: UTF8String; out
+  FileType: TEpiDialogFilter; SupportedTypes: TEpiDialogFilters): boolean;
+var
+  Ext: RawByteString;
+  Filter: PEpiDialogFilterPair;
+begin
+  Result := false;
+  Ext := '*' + ExtractFileExt(UTF8LowerString(Filename));
+
+  for Filter in EpiDialogFilters do
+  begin
+    if (Ext = Filter^.FilterExt) and
+       (Filter^.FilterType in SupportedTypes)
+    then
+      Exit(true);
+  end;
+{
+  case Ext of
+    '.rec':  FileType := dfREC;
+    '.dta':  FileType := dfDTA;
+    '.txt',
+    '.csv':  FileType := dfText;
+    '.epx':  FileType := dfEPX;
+    '.epz':  FileType := dfEPZ;
+  else
+    result := false;
+  end;  }
 end;
 
 procedure StreamToZipFile(const St: TStream; const ZipFileName: string);
