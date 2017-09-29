@@ -278,22 +278,14 @@ begin
 
   for Filter in EpiDialogFilters do
   begin
-    if (Ext = Filter^.FilterExt) and
+    if (UTF8Pos(Ext, Filter^.FilterExt) > 0) and
        (Filter^.FilterType in SupportedTypes)
     then
-      Exit(true);
+      begin
+        FileType := Filter^.FilterType;
+        Exit(true);
+      end;
   end;
-{
-  case Ext of
-    '.rec':  FileType := dfREC;
-    '.dta':  FileType := dfDTA;
-    '.txt',
-    '.csv':  FileType := dfText;
-    '.epx':  FileType := dfEPX;
-    '.epz':  FileType := dfEPZ;
-  else
-    result := false;
-  end;  }
 end;
 
 procedure StreamToZipFile(const St: TStream; const ZipFileName: string);
