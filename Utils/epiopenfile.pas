@@ -1122,7 +1122,6 @@ begin
     if not ReadOnly then
       CreateLockFile;
 
-
     if UndoCopy then
       TakeUndoCopy;
 

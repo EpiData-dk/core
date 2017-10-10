@@ -9,7 +9,6 @@ uses
 
 type
 
-  { TEpiFieldHelper }
   TEpiGetValueLabelType = (
     gvtValue,
     gvtLabel,
@@ -17,8 +16,19 @@ type
     gvtLabelValue
   );
 
+  TEpiGetVariableLabelType = (
+    gvtVarName,
+    gvtVarLabel,
+    gvtVarNameLabel,
+    gvtVarLabelName
+  );
+
+  { TEpiFieldHelper }
+
   TEpiFieldHelper = class helper for TEpiField
   public
+    // Returns name and/or label based on enum. If no Question/Label exists then name is always returned
+    function GetVariableLabel(Gvt: TEpiGetVariableLabelType = gvtVarLabel): UTF8String;
     // Returns string based on enum (see description above). If no valuelabel is present, return value.
     function GetValueLabel(Const Index: Integer; Gvt: TEpiGetValueLabelType = gvtLabel): String;
     function AcceptsValuelabelSet(VL: TEpiValueLabelSet): boolean; overload;
@@ -73,6 +83,31 @@ uses
   Math, LazUTF8;
 
 { TEpiFieldHelper }
+
+function TEpiFieldHelper.GetVariableLabel(Gvt: TEpiGetVariableLabelType
+  ): UTF8String;
+begin
+  if (Question.Text = '') then
+    begin
+      Result := Name;
+      Exit;
+    end;
+
+
+  case Gvt of
+    gvtVarName:
+      Result := Name;
+
+    gvtVarLabel:
+      Result := Question.Text;
+
+    gvtVarNameLabel:
+      Result := Name + ' ' + Question.Text;
+
+    gvtVarLabelName:
+      Result := Question.Text + ' ' + Name;
+  end;
+end;
 
 function TEpiFieldHelper.GetValueLabel(const Index: Integer;
   Gvt: TEpiGetValueLabelType): String;
