@@ -1664,7 +1664,8 @@ begin
       TmpField.Question.Text := StrBuf;
 
       // No more field information exists. The update may complete.
-
+      ATop := i;
+      ALeft := 0;
       DoControlItemPosition(TmpField, ATop, ALeft);
 
       TmpField.Top  := ATop;
