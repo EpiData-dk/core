@@ -80,7 +80,6 @@ type
     procedure UserHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
-    function GetIsSaved: boolean;
     function ReadLockFile(Const Fn: string): PLockFile;
     procedure SetDataDirectory(AValue: string);
     procedure WriteLockFile(Const Fn: string; LF: PLockFile);
@@ -106,6 +105,7 @@ type
   protected
     procedure UserAuthorized(Sender: TEpiAdmin; User: TEpiUser); virtual;
   protected
+    function GetIsSaved: boolean; virtual;
     function GetFileName: string; virtual;
     function LockFileExists(Const FileName: string;
       out Msg: string): boolean; virtual;
