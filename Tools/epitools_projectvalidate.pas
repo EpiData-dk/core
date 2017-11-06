@@ -495,6 +495,7 @@ begin
   if (Relation is TEpiDetailRelation) then
     Depth := 1;
 
+  FOptions := Options;
   AContinue := true;
   DoValidateDataFile(Relation, Depth, 0, AContinue, nil);
 end;

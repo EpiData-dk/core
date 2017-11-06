@@ -74,14 +74,14 @@ const
 
 type
 
-//  Stata Version 4    = $69;
-//  Stata Version 6    = $6C; // dta_108
-//  Stata Version 7    = $6E; // dta_110
-//  Stata Version 8+9  = $71; // dta_113
-//  Stata Version 10   = $72; // dta_114
-//  Stata Version 12   = $73; // dta_115
-//  Stata Version 13   = $75; // dta_117    // First Stata format with XML-Like structure.
-//  Stata Version 14   = $76; // dta_118    // First Stata format to SUPPORT UTF-8! Yay!
+//  Stata Version 4 + 5 = $69;
+//  Stata Version 6     = $6C; // dta_108
+//  Stata Version 7     = $6E; // dta_110
+//  Stata Version 8+9   = $71; // dta_113
+//  Stata Version 10+11 = $72; // dta_114
+//  Stata Version 12    = $73; // dta_115
+//  Stata Version 13    = $75; // dta_117    // First Stata format with XML-Like structure.
+//  Stata Version 14    = $76; // dta_118    // First Stata format to SUPPORT UTF-8! Yay!
 
   TEpiStataVersion =
     (dta4 = $69,
