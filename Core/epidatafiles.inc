@@ -35,7 +35,7 @@ end;
 
 function TEpiDataFiles.Prefix: string;
 begin
-  Result := 'dataform_';
+  Result := 'ds';
 end;
 
 function TEpiDataFiles.NewItemLoad(const AName: EpiString;
