@@ -1875,10 +1875,13 @@ begin
 end;
 
 procedure TEpiStringField.SetCapacity(AValue: Integer);
+var
+  i: Integer;
 begin
   if AValue = Capacity then exit;
   System.SetLength(FData, AValue);
-  // We do not want to initialize string, this is costly and should be avoided.
+  for i := FCapacity to AValue-1 do
+    FData[i] := DefaultMissing;
   FCapacity := AValue;
 end;
 
