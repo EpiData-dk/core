@@ -6,7 +6,7 @@ unit epistringutils;
 interface
 
 uses
-  Classes,  SysUtils;
+  Classes,  SysUtils, nsCore;
 
 
 type
@@ -55,7 +55,7 @@ type
 implementation
 
 uses
-  LConvEncoding, FileUtil, math, LazUTF8, lazutf16, RegExpr;
+  LConvEncoding, FileUtil, math, LazUTF8, lazutf16, RegExpr, nsUniversalDetector;
 
 
 var
@@ -168,6 +168,7 @@ end;
 function EpiUnknownStrToUTF8(const Source: string): string;
 var
   EncStr: String;
+  Res: nsResult;
 begin
   Result := '';
   if Trim(Source) = '' then Exit;
@@ -178,9 +179,52 @@ end;
 procedure EpiUnknownStringsToUTF8(Source: TStrings);
 var
   i: Integer;
+  S, EncStr: String;
+  Dectector: TnsUniversalDetector;
+  Res: nsResult;
+  CharSet: rCharsetInfo;
+  AList: TStrings;
 begin
-  for i := 0 to Source.Count -1 do
-    Source[i] := EpiUnknownStrToUTF8(Source[i]);
+  Dectector := TnsUniversalDetector.Create;
+  S := Source.Text;
+
+  Res := Dectector.HandleData(@S[1], Length(S));
+
+  if (Res = 0) then
+  begin
+    if (not Dectector.Done) then
+      Dectector.DataEnd;
+
+    CharSet := Dectector.GetDetectedCharsetInfo;
+
+    EncStr := '';
+    if CharSet.Name = 'UTF-8' then EncStr := 'utf8';
+    if CharSet.Name = 'ASCII' then EncStr := 'utf8';
+
+    if EncStr = '' then
+      case CharSet.CodePage of
+        437,850,852,866,874,
+        932,936,949,950,
+        1250..1258:
+          EncStr := 'cp' + inttostr(CharSet.CodePage);
+      end;
+
+    AList := nil;
+    SplitString(CharSet.Name, AList, ['-'], []);
+    if (AList[0] = 'ISO') and (aList.Count > 2) and
+       (StrToIntDef(AList[2], 0) in [1, 2, 15])
+    then
+      EncStr := 'iso8859' + AList[2];
+
+    if (AList[0] = 'KOI8') then
+      EncStr := AList[0];
+
+    if (EncStr <> '') then
+      S := ConvertEncoding(S, EncStr, 'utf8');
+
+    Source.Clear;
+    Source.Text := S;
+  end;
 end;
 
 function EpiUtf8ToAnsi(const Source: string): string;
