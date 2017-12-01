@@ -31,6 +31,10 @@ type
     function GetVariableLabel(Gvt: TEpiGetVariableLabelType = gvtVarLabel): UTF8String;
     // Returns string based on enum (see description above). If no valuelabel is present, return value.
     function GetValueLabel(Const Index: Integer; Gvt: TEpiGetValueLabelType = gvtLabel): String;
+    // Returns string based on enum (see description above). If no valuelabel is present, return value.
+    // - in addition the values are formatted according to Length/Decimals
+    function GetValueLabelFormatted(Const Index: Integer; Gvt: TEpiGetValueLabelType = gvtLabel): String;
+    function AsFormatString(Const Index: Integer; Const FillSpaces: boolean = false): string;
     function AcceptsValuelabelSet(VL: TEpiValueLabelSet): boolean; overload;
     function AcceptsValuelabelSet(VL: TEpiValueLabelSet; ALength, ADecimals: Integer): boolean; overload;
     function MaxByteLength: Cardinal;
@@ -137,6 +141,72 @@ begin
     gvtLabelValue:
       Result := VL.TheLabel.Text + ' ' + AsString[Index];
   end;
+end;
+
+function TEpiFieldHelper.GetValueLabelFormatted(const Index: Integer;
+  Gvt: TEpiGetValueLabelType): String;
+var
+  VL: TEpiCustomValueLabel;
+begin
+  if (not Assigned(ValueLabelSet)) or
+     (Gvt = gvtValue)
+  then
+    begin
+      Result := AsFormatString(Index);
+      Exit;
+    end;
+
+  VL := ValueLabelSet.ValueLabel[AsValue[Index]];
+  if not Assigned(VL) then
+    begin
+      Result := AsFormatString(Index);
+      Exit;
+    end;
+
+  case Gvt of
+    gvtLabel:
+      Result := VL.TheLabel.Text;
+    gvtValueLabel:
+      Result := AsFormatString(Index) + ' ' + VL.TheLabel.Text;
+    gvtLabelValue:
+      Result := VL.TheLabel.Text + ' ' + AsFormatString(Index);
+  end;
+end;
+
+function TEpiFieldHelper.AsFormatString(const Index: Integer;
+  const FillSpaces: boolean): string;
+begin
+  if IsMissing[Index] then
+    result := AsString[Index]
+  else
+    case FieldType of
+      ftBoolean:
+        result := AsString[Index];
+
+      ftAutoInc,
+      ftInteger:
+        result := format(FormatString(FillSpaces), [AsInteger[Index]]);
+
+      ftFloat:
+        result := format(FormatString(FillSpaces), [AsFloat[Index]]);
+
+      ftDMYDate,
+      ftMDYDate,
+      ftYMDDate,
+      ftDMYAuto,
+      ftMDYAuto,
+      ftYMDAuto:
+        result := AsString[Index];
+
+      ftTime,
+      ftTimeAuto:
+        result := AsString[Index];
+
+      ftUpperString,
+      ftString,
+      ftMemo:
+        result := format(FormatString(FillSpaces), [AsString[Index]]);
+    end;
 end;
 
 function TEpiFieldHelper.AcceptsValuelabelSet(VL: TEpiValueLabelSet): boolean;
