@@ -16,6 +16,7 @@ type
     function GetProtectedCount: Integer;
     function GetUnprotectedCount: Integer;
   public
+    function GetItemNames(WithObjects: boolean): TStrings;
     property ProtectedCount: Integer read GetProtectedCount;
     property UnprotectedCount: Integer read GetUnprotectedCount;
   end;
@@ -37,6 +38,20 @@ end;
 function TEpiCustomListHelper.GetUnprotectedCount: Integer;
 begin
   result := Count - ProtectedCount;
+end;
+
+function TEpiCustomListHelper.GetItemNames(WithObjects: boolean): TStrings;
+var
+  I: TEpiCustomItem;
+begin
+  Result := TStringList.Create;
+
+  if WithObjects then
+    for I in Self do
+      Result.AddObject(I.Name, I)
+  else
+    for I in Self do
+      Result.Add(I.Name);
 end;
 
 end.
