@@ -74,10 +74,11 @@ begin
     ftMDYAuto,
     ftYMDAuto:
       Val := F1.AsInteger[Idx1] - F2.AsInteger[Idx2];
-    ftFloat,
+    ftFloat:
+      Val := CompareValue(F1.AsFloat[Idx1], F2.AsFloat[Idx2], 0.0);
     ftTime,
     ftTimeAuto:
-      Val := CompareValue(F1.AsFloat[Idx1], F2.AsFloat[Idx2], 0.0);
+      Val := CompareValue(F1.AsTime[Idx1], F2.AsTime[Idx2], Double(0.0));
     ftString,
     ftUpperString:
       if Casesensitive then
