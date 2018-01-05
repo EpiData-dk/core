@@ -1075,7 +1075,7 @@ begin
         begin
           Caption.Text := EpiUnknownStrToUTF8(TmpLabel);
 
-          DoControlItemPosition(EHeading, TmpQuestX, TmpQuestY);
+          DoControlItemPosition(EHeading, TmpQuestY, TmpQuestX);
           Left         := TmpQuestX;
           Top          := TmpQuestY;
         end;
