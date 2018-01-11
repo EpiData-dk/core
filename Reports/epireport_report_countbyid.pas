@@ -12,6 +12,10 @@ type
 
   { TEpiReportCountById }
 
+  TEpiReportCBIDSumStatCallback = procedure(UniqueObs, CombinedObs: Integer;
+    MissingObs: TBoundArray; ResultDF: TEpiDataFile;
+    CountFields: TEpiFields) of object;
+
   TEpiReportCountById = class(TEpiReportBase)
   private
     ResultDF: TEpiDataFile;
@@ -31,11 +35,13 @@ type
     FDataFiles: TEpiDataFiles;
     FFieldNames: TStrings;
     FDocumentFiles: TEpiDocumentFileList;
+    FOnSumStatsComplete: TEpiReportCBIDSumStatCallback;
   public
     property    DataFiles: TEpiDataFiles read FDataFiles write FDataFiles;
     property    FieldNames: TStrings read FFieldNames write FFieldNames;
     // If Assigned, the report will use the files attached to include a line in the report stating the file no. a given DataFile was in.
     property    DocumentFiles: TEpiDocumentFileList read FDocumentFiles write FDocumentFiles;
+    property    OnSumStatsComplete: TEpiReportCBIDSumStatCallback read FOnSumStatsComplete write FOnSumStatsComplete;
   end;
 
 
@@ -136,7 +142,7 @@ var
   HasAll: Boolean;
   CombinedObs: Integer;
   j: Integer;
-  MissingObs: array of Integer;
+  MissingObs: TBoundArray;
   i: Integer;
 
 begin
@@ -181,6 +187,10 @@ begin
       FloatToStrF(100 * (UniqueObs - MissingObs[j]) / UniqueObs, ffFixed, 2, 1)
     );
   end;
+
+  if (Assigned(OnSumStatsComplete)) then
+    OnSumStatsComplete(UniqueObs, CombinedObs, MissingObs, ResultDF, CountsFieldList);
+
   DoTableFooter('');
 end;
 

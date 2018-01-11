@@ -18,6 +18,9 @@ type
 
   { TEpiReportDoubleEntryValidation }
 
+  TEpiReportDEVCalcAllCallback = procedure(CommonRecords, MissingInMain, MissingInDupl, NonUniqueMain,
+      NonUniqueDupl, ErrorRec, ErrorFields: integer) of object;
+
   TEpiReportDoubleEntryValidation = class(TEpiReportBase)
   private
     FCompareFields: TEpiFields;
@@ -39,6 +42,8 @@ type
     function    CalcErrorPct: Extended;
     function    CalcErrorFieldPct: Extended;
     procedure   CalcAll;
+  private
+    FOnCallAllDone: TEpiReportDEVCalcAllCallback;
   protected
     procedure DoSanityCheck; override;
     procedure ResetCalculations;
@@ -50,6 +55,7 @@ type
     property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
     property    CompareFields: TEpiFields read FCompareFields write FCompareFields;
     property    DblEntryValidateOptions: TEpiToolsDblEntryValidateOptions read FDblEntryValidateOptions write FDblEntryValidateOptions;
+    property    OnCallAllDone: TEpiReportDEVCalcAllCallback read FOnCallAllDone write FOnCallAllDone;
   end;
 
 implementation
@@ -111,6 +117,9 @@ begin
     end;
 
   FCommonRecords := FVAlidator.MainDF.Size - FNonUniqueMain - FMissingInDupl;
+
+  if Assigned(OnCallAllDone) then
+    OnCallAllDone(FCommonRecords, FMissingInMain, FMissingInDupl, FNonUniqueMain, FNonUniqueDupl, FErrorRec, FErrorFields);
 
   // The same is true for this:
   // FCommonRecords := FVAlidator.DuplDF.Size - FNonUniqueDupl - FMissingInMain;
