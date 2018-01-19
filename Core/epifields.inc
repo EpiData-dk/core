@@ -2049,7 +2049,7 @@ end;
 
 function TEpiMemoField.FormatString(const FillSpace: boolean): string;
 begin
-  Result := '';
+  Result := '%s';
 end;
 
 { TEpiCustomAutoField }
