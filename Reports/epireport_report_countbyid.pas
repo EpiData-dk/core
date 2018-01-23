@@ -16,6 +16,12 @@ type
     MissingObs: TBoundArray; ResultDF: TEpiDataFile;
     CountFields: TEpiFields) of object;
 
+  TEpiReportCBIDOption = (
+    ercoShowSumstats,
+    ercoShowDetailList
+  );
+  TEpiReportCBIDOptions = set of TEpiReportCBIDOption;
+
   TEpiReportCountById = class(TEpiReportBase)
   private
     ResultDF: TEpiDataFile;
@@ -36,11 +42,13 @@ type
     FFieldNames: TStrings;
     FDocumentFiles: TEpiDocumentFileList;
     FOnSumStatsComplete: TEpiReportCBIDSumStatCallback;
+    FOptions: TEpiReportCBIDOptions;
   public
     property    DataFiles: TEpiDataFiles read FDataFiles write FDataFiles;
     property    FieldNames: TStrings read FFieldNames write FFieldNames;
     // If Assigned, the report will use the files attached to include a line in the report stating the file no. a given DataFile was in.
     property    DocumentFiles: TEpiDocumentFileList read FDocumentFiles write FDocumentFiles;
+    property    Options: TEpiReportCBIDOptions read FOptions write FOptions;
     property    OnSumStatsComplete: TEpiReportCBIDSumStatCallback read FOnSumStatsComplete write FOnSumStatsComplete;
   end;
 
@@ -169,29 +177,32 @@ begin
       Inc(CombinedObs);
   end;
 
-  DoTableHeader('', 2, 3 + CountsFieldList.Count);
+  if (ercoShowSumstats in FOptions) then
+    begin
+      DoTableHeader('', 2, 3 + CountsFieldList.Count);
 
-  I := 0;
-  DoTableCell(0, I, 'Test');                              DoTableCell(1, PostInc(I), 'Result');
-  DoTableCell(0, I, 'Total Combinations');                DoTableCell(1, PostInc(I), IntToStr(UniqueObs));
-  DoTableCell(0, I, 'Present in all files');              DoTableCell(1, PostInc(I), IntToStr(CombinedObs));
+      I := 0;
+      DoTableCell(0, I, 'Test');                              DoTableCell(1, PostInc(I), 'Result');
+      DoTableCell(0, I, 'Total Combinations');                DoTableCell(1, PostInc(I), IntToStr(UniqueObs));
+      DoTableCell(0, I, 'Present in all files');              DoTableCell(1, PostInc(I), IntToStr(CombinedObs));
 
-  for J := 0 to CountsFieldList.Count - 1 do
-  begin
-    F := CountsFieldList[J];
-    DoTableCell(0, I, 'File ' + IntToStr(PtrInt(F.FindCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY))) + ': ' +
-                      'Not found in ' + F.Question.Text + LineEnding +
-                      '  Percentage contained:');
-    DoTableCell(1, PostInc(I),
-      IntToStr(MissingObs[J]) + LineEnding +
-      FloatToStrF(100 * (UniqueObs - MissingObs[j]) / UniqueObs, ffFixed, 2, 1)
-    );
-  end;
+      for J := 0 to CountsFieldList.Count - 1 do
+      begin
+        F := CountsFieldList[J];
+        DoTableCell(0, I, 'File ' + IntToStr(PtrInt(F.FindCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY))) + ': ' +
+                          'Not found in ' + F.Question.Text + LineEnding +
+                          '  Percentage contained:');
+        DoTableCell(1, PostInc(I),
+          IntToStr(MissingObs[J]) + LineEnding +
+          FloatToStrF(100 * (UniqueObs - MissingObs[j]) / UniqueObs, ffFixed, 2, 1)
+        );
+      end;
+
+      DoTableFooter('');
+    end;
 
   if (Assigned(OnSumStatsComplete)) then
     OnSumStatsComplete(UniqueObs, CombinedObs, MissingObs, ResultDF, CountsFieldList);
-
-  DoTableFooter('');
 end;
 
 procedure TEpiReportCountById.DoReport;
@@ -219,34 +230,36 @@ begin
   { Do a summerized table first }
   DoSumStats;
 
-  DoTableHeader('Field(s): ' + S, 1 + CountsFieldList.Count, 1 + ResultDF.Size);
+  if (ercoShowDetailList in FOptions) then
+    begin
+      DoTableHeader('Field(s): ' + S, 1 + CountsFieldList.Count, 1 + ResultDF.Size);
 
-  DoTableCell(0, 0, 'Value(s)', tcaLeftAdjust, [tcoRightBorder]);
+      DoTableCell(0, 0, 'Value(s)', tcaLeftAdjust, [tcoRightBorder]);
 
-  for i := 0 to CountsFieldList.Count - 1 do
-  begin
-    F := CountsFieldList[i];
-    DoTableCell(
-       1 + i, 0,
-      'File '  + IntToStr(PtrInt(F.FindCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY))) + ': ' + LineEnding +
-        F.Question.Text,
-      tcaLeftAdjust, [tcoRightBorder]);
-  end;
+      for i := 0 to CountsFieldList.Count - 1 do
+      begin
+        F := CountsFieldList[i];
+        DoTableCell(
+           1 + i, 0,
+          'File '  + IntToStr(PtrInt(F.FindCustomData(COUNT_BY_ID_DOCUMENTFILE_KEY))) + ': ' + LineEnding +
+            F.Question.Text,
+          tcaLeftAdjust, [tcoRightBorder]);
+      end;
 
+      for i := 0 to ResultDF.Size - 1 do
+      begin
+        S := ValueFieldList[0].AsString[i];
+        for j := 1 to ValueFieldList.Count - 1 do
+          S += ', ' + ValueFieldList[j].AsString[i];
 
-  for i := 0 to ResultDF.Size - 1 do
-  begin
-    S := ValueFieldList[0].AsString[i];
-    for j := 1 to ValueFieldList.Count - 1 do
-      S += ', ' + ValueFieldList[j].AsString[i];
+        DoTableCell(0, 1 + i, S);
 
-    DoTableCell(0, 1 + i, S);
+        for j := 0 to CountsFieldList.Count - 1 do
+          DoTableCell(1 + j, 1 + i, CountsFieldList[j].AsString[i]);
+      end;
 
-    for j := 0 to CountsFieldList.Count - 1 do
-      DoTableCell(1 + j, 1 + i, CountsFieldList[j].AsString[i]);
-  end;
-
-  DoTableFooter('');
+      DoTableFooter('');
+    end;
 end;
 
 function TEpiReportCountById.GetDataFileIndexInFileList(
@@ -270,6 +283,8 @@ begin
   ResultDF := TEpiDataFile.Create(nil);
   ValueFieldList := TEpiFields.Create(nil);
   CountsFieldList := TEpiFields.Create(nil);
+
+  FOptions := [ercoShowDetailList, ercoShowSumstats];
 end;
 
 destructor TEpiReportCountById.Destroy;

@@ -21,6 +21,13 @@ type
   TEpiReportDEVCalcAllCallback = procedure(CommonRecords, MissingInMain, MissingInDupl, NonUniqueMain,
       NonUniqueDupl, ErrorRec, ErrorFields: integer) of object;
 
+
+  TEpiReportDEVOption = (
+    erdoShowOverview,
+    erdoShowDetailList
+  );
+  TEpiReportDEVOptions = set of TEpiReportDEVOption;
+
   TEpiReportDoubleEntryValidation = class(TEpiReportBase)
   private
     FCompareFields: TEpiFields;
@@ -44,6 +51,7 @@ type
     procedure   CalcAll;
   private
     FOnCallAllDone: TEpiReportDEVCalcAllCallback;
+    FReportOptions: TEpiReportDEVOptions;
   protected
     procedure DoSanityCheck; override;
     procedure ResetCalculations;
@@ -55,6 +63,7 @@ type
     property    KeyFields: TEpiFields read FKeyFields write FKeyFields;
     property    CompareFields: TEpiFields read FCompareFields write FCompareFields;
     property    DblEntryValidateOptions: TEpiToolsDblEntryValidateOptions read FDblEntryValidateOptions write FDblEntryValidateOptions;
+    property    ReportOptions: TEpiReportDEVOptions read FReportOptions write FReportOptions;
     property    OnCallAllDone: TEpiReportDEVCalcAllCallback read FOnCallAllDone write FOnCallAllDone;
   end;
 
@@ -156,6 +165,7 @@ constructor TEpiReportDoubleEntryValidation.Create(
 begin
   inherited Create(ReportGenerator);
   FDblEntryValidateOptions := EpiDefaultDblEntryValidateOptions;
+  FReportOptions := [erdoShowDetailList, erdoShowOverview];
 end;
 
 procedure TEpiReportDoubleEntryValidation.RunReport;
@@ -202,170 +212,125 @@ begin
   FValidator.SortDblEntryResultArray(FResultArray);
   CalcAll;
 
-  DoHeading('Selections for validation:');
-
-  DoLineText('');
-  DoTableHeader('Options:', 2, 5);
-  DoTableCell(0, 0, 'Option');                 DoTableCell(1, 0, 'Selected');
-  DoTableCell(0, 1, 'Ignore deleted records'); DoTableCell(1, 1, BoolToStr(devIgnoreDeleted in DblEntryValidateOptions, 'Yes', 'No'));
-  DoTableCell(0, 2, 'Ignore missing records'); DoTableCell(1, 2, BoolToStr(devIgnoreMissingRecords in DblEntryValidateOptions, 'Yes', 'No'));
-  DoTableCell(0, 3, 'Add result to field');    DoTableCell(1, 3, BoolToStr(devAddResultToField in DblEntryValidateOptions, 'Yes', 'No'));
-  DoTableCell(0, 4, 'Case sensitive text');    DoTableCell(1, 4, BoolToStr(devCaseSensitiveText in DblEntryValidateOptions, 'Yes', 'No'));
-  DoTableFooter('');
-
-  if SortedCompare then
-  begin
-    DoLineText('');
-    DoHeading('Key Fields:');
-    S := '';
-    for i := 0 to FKeyFields.Count - 1 do
-      S := S + FKeyFields[i].Name + ' ';
-    DoLineText(S);
-  end;
-
-  DoLineText('');
-  DoHeading('Compared Fields:');
-  for i := 0 to FCompareFields.Count - 1 do
-    DoLineText(FCompareFields[i].Name + ': ' + FCompareFields[i].Question.Text);
-
-
-  DoLineText('');
-  DoHeading('Result of Validation:');
-
-  DoLineText('');
-  if SortedCompare then
-    DoTableHeader('Overview', 2, 11)
-  else
-    DoTableHeader('Overview', 2, 9);
-
-  I := 0;
-  DoTableCell(0, I, 'Test');                              DoTableCell(1, PostInc(I), 'Result');
-  DoTableCell(0, I, 'Records missing in main file');      DoTableCell(1, PostInc(I), IntToStr(FMissingInMain));
-  DoTableCell(0, I, 'Records missing in duplicate file'); DoTableCell(1, PostInc(I), IntToStr(FMissingInDupl));
-  if SortedCompare then
-  begin
-    DoTableCell(0, I, 'Non-unique records in main file');      DoTableCell(1, PostInc(I), IntToStr(FNonUniqueMain));
-    DoTableCell(0, I, 'Non-unique records in duplicate file'); DoTableCell(1, PostInc(I), IntToStr(FNonUniqueDupl));
-  end;
-  DoTableCell(0, I, 'Number of fields checked');          DoTableCell(1, PostInc(I), IntToStr(FCompareFields.Count));
-  DoTableCell(0, I, 'Common records');                    DoTableCell(1, PostInc(I), IntToStr(CalcCommonRecords));
-  DoTableCell(0, I, 'Records with errors');               DoTableCell(1, PostInc(I), IntToStr(FErrorRec));
-  DoTableCell(0, I, 'Field entries with errors');         DoTableCell(1, PostInc(I), IntToStr(FErrorFields));
-  DoTableCell(0, I, 'Error percentage (#records)');       DoTableCell(1, PostInc(I), FormatFloat('##0.00', CalcErrorPct * 100));
-  DoTableCell(0, I, 'Error percentage (#fields)');        DoTableCell(1, PostInc(I), FormatFloat('##0.00', CalcErrorFieldPct * 100));
-  DoTableFooter('');
-
-  DoLineText('');
-  DoTableHeader('Datasets comparison:', 2, Length(FResultArray) + 1);
-  DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, 'Duplicate dataset:');
-
-  for i := 0 to Length(FResultArray) -1 do
-  with FResultArray[i] do
-  begin
-    if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
-      MTExt := ''
-    else
-      MText := 'Record no: ' + IntToStr(MRecNo + 1) + LineEnding;
-
-    if (ValResult in [rrValNoExistsDupl, rrValDupKeyMain]) then
-      DText := ''
-    else
-      DText := 'Record no: ' + IntToStr(DRecNo + 1) + LineEnding;
-
-
-    if SortedCompare then
+  if (erdoShowOverview in FReportOptions) then
     begin
-      if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
-        KeyFieldText(FVAlidator.DuplKeyFields, DRecNo, DText, MText)
-      else
-        KeyFieldText(FKeyFields,               MRecNo, MText, DText);
-    end;
+      DoHeading('Selections for validation:');
 
-    case ValResult of
-      rrValOk: ;  // Should not exists!
+      DoLineText('');
+      DoTableHeader('Options:', 2, 5);
+      DoTableCell(0, 0, 'Option');                 DoTableCell(1, 0, 'Selected');
+      DoTableCell(0, 1, 'Ignore deleted records'); DoTableCell(1, 1, BoolToStr(devIgnoreDeleted in DblEntryValidateOptions, 'Yes', 'No'));
+      DoTableCell(0, 2, 'Ignore missing records'); DoTableCell(1, 2, BoolToStr(devIgnoreMissingRecords in DblEntryValidateOptions, 'Yes', 'No'));
+      DoTableCell(0, 3, 'Add result to field');    DoTableCell(1, 3, BoolToStr(devAddResultToField in DblEntryValidateOptions, 'Yes', 'No'));
+      DoTableCell(0, 4, 'Case sensitive text');    DoTableCell(1, 4, BoolToStr(devCaseSensitiveText in DblEntryValidateOptions, 'Yes', 'No'));
+      DoTableFooter('');
 
-      rrValNoExistsMain:
-        MText += 'Record not found';
-
-      rrValNoExistsDupl:
-        DText += 'Record not found';
-
-      rrValValueFail,
-      rrValTextFail:
-        begin
-          MText += 'Compared Fields:' + LineEnding;
-          DText += LineEnding;
-
-          for j := 0 to Length(CmpFieldNames) - 1 do
-          begin
-            MCmpField := FValidator.CompareFields.FieldByName[CmpFieldNames[j]];
-            DCmpField := FValidator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
-
-            MText += ' '  + MCmpField.Name + ' = ' + MCmpField.AsString[MRecNo] + LineEnding;
-            DText += '  ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
-          end;
-        end;
-      rrValDupKeyMain:
-        MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
-
-      rrValDupKeyDupl:
-        DText += 'Duplicate key record found: ' + IntToStr(MRecNo + 1);
-    end;
-
-{      rrValNoExistsDupl:
-        begin
-//          MText += '';
-          DText += ' Record not found';
-        end;
-      ValTextFail,
-      ValValueFail:
-        begin
-          MText += 'Compared Fields:' + LineEnding;
-          DText += LineEnding;
-
-          for j := 0 to Length(CmpFieldNames) - 1 do
-          begin
-            MCmpField := FValidator.CompareFields.FieldByName[CmpFieldNames[j]];
-            DCmpField := FValidator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
-
-            MText += ' ' + MCmpField.Name + ' = ' + MCmpField.AsString[MRecNo] + LineEnding;
-            DText += '  ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
-          end;
-        end;
-      ValDupKeyMain:
-        begin
-          MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
-        end;
-    end;
-                }
-    DoTableCell(0, i + 1, MText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
-    DoTableCell(1, i + 1, DText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
-  end;
-{
-  for i := 0 to Length(FExtraRecs) - 1 do
-  begin
-    MText := LineEnding;
-    DText := ' Record no: ' + IntToStr(FExtraRecs[i] + 1) + LineEnding;
-
-    if SortedCompare then
-    begin
-      MText += LineEnding;
-      DText += ' Key Fields: ' + LineEnding;
-      for j := 0 to FValidator.DuplKeyFields.Count - 1 do
+      if SortedCompare then
       begin
-        DCmpField := FValidator.DuplKeyFields[j];
-        MText += LineEnding;
-        DText += ' '+  DCmpField.Name + ' = ' + DCmpField.AsString[FExtraRecs[i]] + LineEnding;
+        DoLineText('');
+        DoHeading('Key Fields:');
+        S := '';
+        for i := 0 to FKeyFields.Count - 1 do
+          S := S + FKeyFields[i].Name + ' ';
+        DoLineText(S);
       end;
+
+      DoLineText('');
+      DoHeading('Compared Fields:');
+      for i := 0 to FCompareFields.Count - 1 do
+        DoLineText(FCompareFields[i].Name + ': ' + FCompareFields[i].Question.Text);
+
+
+      DoLineText('');
+      DoHeading('Result of Validation:');
+
+      DoLineText('');
+      if SortedCompare then
+        DoTableHeader('Overview', 2, 11)
+      else
+        DoTableHeader('Overview', 2, 9);
+
+      I := 0;
+      DoTableCell(0, I, 'Test');                              DoTableCell(1, PostInc(I), 'Result');
+      DoTableCell(0, I, 'Records missing in main file');      DoTableCell(1, PostInc(I), IntToStr(FMissingInMain));
+      DoTableCell(0, I, 'Records missing in duplicate file'); DoTableCell(1, PostInc(I), IntToStr(FMissingInDupl));
+      if SortedCompare then
+      begin
+        DoTableCell(0, I, 'Non-unique records in main file');      DoTableCell(1, PostInc(I), IntToStr(FNonUniqueMain));
+        DoTableCell(0, I, 'Non-unique records in duplicate file'); DoTableCell(1, PostInc(I), IntToStr(FNonUniqueDupl));
+      end;
+      DoTableCell(0, I, 'Number of fields checked');          DoTableCell(1, PostInc(I), IntToStr(FCompareFields.Count));
+      DoTableCell(0, I, 'Common records');                    DoTableCell(1, PostInc(I), IntToStr(CalcCommonRecords));
+      DoTableCell(0, I, 'Records with errors');               DoTableCell(1, PostInc(I), IntToStr(FErrorRec));
+      DoTableCell(0, I, 'Field entries with errors');         DoTableCell(1, PostInc(I), IntToStr(FErrorFields));
+      DoTableCell(0, I, 'Error percentage (#records)');       DoTableCell(1, PostInc(I), FormatFloat('##0.00', CalcErrorPct * 100));
+      DoTableCell(0, I, 'Error percentage (#fields)');        DoTableCell(1, PostInc(I), FormatFloat('##0.00', CalcErrorFieldPct * 100));
+      DoTableFooter('');
     end;
 
-//    MText += 'Record not found';
-    DText += ' Record not found in main datafile!';
+  if (erdoShowDetailList in FReportOptions) then
+    begin
+      DoLineText('');
+      DoTableHeader('Datasets comparison:', 2, Length(FResultArray) + 1);
+      DoTableCell(0,0, 'Main Dataset:');  DoTableCell(1, 0, 'Duplicate dataset:');
 
-    DoTableCell(0, Length(FResultArray) + i + 1, MText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
-    DoTableCell(1, Length(FResultArray) + i + 1, DText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
-  end;       }
-  DoTableFooter('');
+      for i := 0 to Length(FResultArray) -1 do
+      with FResultArray[i] do
+      begin
+        if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
+          MTExt := ''
+        else
+          MText := 'Record no: ' + IntToStr(MRecNo + 1) + LineEnding;
+
+        if (ValResult in [rrValNoExistsDupl, rrValDupKeyMain]) then
+          DText := ''
+        else
+          DText := 'Record no: ' + IntToStr(DRecNo + 1) + LineEnding;
+
+
+        if SortedCompare then
+        begin
+          if (ValResult in [rrValNoExistsMain, rrValDupKeyDupl]) then
+            KeyFieldText(FVAlidator.DuplKeyFields, DRecNo, DText, MText)
+          else
+            KeyFieldText(FKeyFields,               MRecNo, MText, DText);
+        end;
+
+        case ValResult of
+          rrValOk: ;  // Should not exists!
+
+          rrValNoExistsMain:
+            MText += 'Record not found';
+
+          rrValNoExistsDupl:
+            DText += 'Record not found';
+
+          rrValValueFail,
+          rrValTextFail:
+            begin
+              MText += 'Compared Fields:' + LineEnding;
+              DText += LineEnding;
+
+              for j := 0 to Length(CmpFieldNames) - 1 do
+              begin
+                MCmpField := FValidator.CompareFields.FieldByName[CmpFieldNames[j]];
+                DCmpField := FValidator.DuplCompareFields.FieldByName[CmpFieldNames[j]];
+
+                MText += ' '  + MCmpField.Name + ' = ' + MCmpField.AsString[MRecNo] + LineEnding;
+                DText += '  ' + DCmpField.Name + ' = ' + DCmpField.AsString[DRecNo] + LineEnding;
+              end;
+            end;
+          rrValDupKeyMain:
+            MText += 'Duplicate key record found: ' + IntToStr(DRecNo + 1);
+
+          rrValDupKeyDupl:
+            DText += 'Duplicate key record found: ' + IntToStr(MRecNo + 1);
+        end;
+        DoTableCell(0, i + 1, MText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
+        DoTableCell(1, i + 1, DText, tcaLeftAdjust, [tcoBottomBorder, tcoTopBorder]);
+      end;
+      DoTableFooter('');
+    end;
 
   FValidator.Free;
 end;
