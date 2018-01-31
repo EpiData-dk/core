@@ -12,12 +12,13 @@ type
     devIgnoreDeleted,                  // Ignores if a record i marked for deletion in either Datafile
     devCaseSensitiveText,              // When comparing text, do it case-sensitive
     devIgnoreMissingRecords,           // Ignore reporting if no matching records is found in dublicate datafile (but still reports differences)
-    devAddResultToField                // Add a field to Main Datafile with result (and a matching valuelabel set)
+    devAddResultToField,               // Add a field to Main Datafile with result (and a matching valuelabel set)
+    devAddVerifiedFlagToDF             // Sets the Verified flag on both Datafiles if two records match eachother (given the selected options)
   );
   TEpiToolsDblEntryValidateOptions = set of TEpiToolsDblEntryValidateOption;
 
 const
-  EpiDefaultDblEntryValidateOptions = [devIgnoreDeleted, {devIgnoreMissingRecords,} devAddResultToField];
+  EpiDefaultDblEntryValidateOptions = [devIgnoreDeleted, {devIgnoreMissingRecords,} devAddResultToField, devAddVerifiedFlagToDF];
 
 type
   TEpiDblEntryRecordResult =
@@ -110,7 +111,9 @@ type
     function    NewResultRecord: PEpiDblEntryResultRecord;
     function    AddResult(Const MSortedRecNo, DSortedRecNo: integer;
       CompareResult: TEpiDblEntryRecordResult): PEpiDblEntryResultRecord;
-    procedure   DoCompareFields(Const MIndex, DIndex: Integer);
+    // Compares the "CompareFields" and return true if all fields compared to eachother,
+    // and returns false if any of the fields failed to compare.
+    function    DoCompareFields(Const MIndex, DIndex: Integer): boolean;
   public
     constructor Create;
     destructor Destroy; override;
@@ -300,7 +303,16 @@ begin
         ZeroValue:
           begin
             // Record exists in both files - compare fields.
-            DoCompareFields(MRunner, DRunner);
+            // The DoCompareFields() is ALWAYS run, but only the second test is performed if the first i true
+            // (and hence all fields validated against eachother)
+            if DoCompareFields(MRunner, DRunner) and
+               (devAddVerifiedFlagToDF in FValidateOptions)
+            then
+              begin
+                MainDF.Verified[MRunner] := true;
+                DuplDF.Verified[DRunner] := true;
+              end;
+
             Inc(MRunner);
             Inc(DRunner);
           end;
@@ -365,8 +377,8 @@ begin
   raise ErrorClass.Create(Msg);
 end;
 
-procedure TEpiToolsDblEntryValidator.DoCompareFields(const MIndex,
-  DIndex: Integer);
+function TEpiToolsDblEntryValidator.DoCompareFields(const MIndex,
+  DIndex: Integer): boolean;
 var
   i: Integer;
   CmpResult: TValueSign;
@@ -376,6 +388,7 @@ var
   CaseSensitive: Boolean;
 
 begin
+  Result := true;
   CaseSensitive := (devCaseSensitiveText in FValidateOptions);
   ResultRecord := nil;
   for i := 0 to CompareFields.Count - 1 do
@@ -406,6 +419,8 @@ begin
       SetLength(CmpFieldNames, L);
       CmpFieldNames[L-1] := FCmpFields[i].Name;
     end;
+
+    Result := false;
   end;
 end;
 
