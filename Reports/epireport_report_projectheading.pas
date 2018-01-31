@@ -5,12 +5,18 @@ unit epireport_report_projectheading;
 interface
 
 uses
-  Classes, SysUtils, epireport_base,
+  Classes, SysUtils, epireport_base, epireport_generator_base,
   epidocument, epidatafilerelations, epicustombase;
 
 type
 
   EEpiReportProjectHeader = class(EEpiReportBaseException);
+
+  TEpiReportProjectHeaderOption = (
+    erpoShowRelationsTable,
+    erpoShowKeyTables
+  );
+  TEpiReportProjectHeaderOptions = set of TEpiReportProjectHeaderOption;
 
   { TEpiReportProjectHeader }
 
@@ -20,6 +26,7 @@ type
     FFilename: string;
     FFileNo: integer;
     FCurrentRowNo: Integer;
+    FOptions: TEpiReportProjectHeaderOptions;
     procedure KeysTable(const Relation: TEpiMasterRelation;
       const Depth: Cardinal; const Index: Cardinal; var aContinue: boolean;
       Data: Pointer = nil);
@@ -29,10 +36,12 @@ type
   protected
     procedure DoSanityCheck; override;
   public
+    constructor Create(ReportGenerator: TEpiReportGeneratorBase); override; overload;
     procedure RunReport; override;
     property Document: TEpiDocument read FDocument write FDocument;
     property Filename: string read FFilename write FFilename;
     property FileNo: integer read FFileNo write FFileNo;
+    property Options: TEpiReportProjectHeaderOptions read FOptions write FOptions;
   end;
 
 implementation
@@ -136,6 +145,13 @@ begin
     DoError(EEpiReportProjectHeader, SEpiReportProjectHeaderNoFilename);
 end;
 
+constructor TEpiReportProjectHeader.Create(
+  ReportGenerator: TEpiReportGeneratorBase);
+begin
+  inherited Create(ReportGenerator);
+  FOptions := [erpoShowKeyTables, erpoShowRelationsTable];
+end;
+
 procedure TEpiReportProjectHeader.RunReport;
 var
   i: Integer;
@@ -157,17 +173,15 @@ begin
   with Document.DataFiles[i] do
     LastEdit := Max(LastEdit, Max(RecModifiedDate, StructureModifiedDate));
 
-  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + {ExtractFileName(}Filename{)}, 2, 5, []);
+  DoTableHeader('File ' + IntToStr(FileNo) + ': ' + {ExtractFileName(}Filename{)}, 2, 4, []);
   DoTableCell(0, 0, 'Title');
   DoTableCell(0, 1, 'Created');
   DoTableCell(0, 2, 'Last Edited');
-  DoTableCell(0, 3, 'Version');
-  DoTableCell(0, 4, 'Cycle');
+  DoTableCell(0, 3, 'Cycle');
   DoTableCell(1, 0, Document.Study.Title.Text);
   DoTableCell(1, 1, DateTimeToStr(Document.Study.Created));
   DoTableCell(1, 2, DateTimeToStr(LastEdit));
-  DoTableCell(1, 3, Document.Study.Version, tcaLeftAdjust);
-  DoTableCell(1, 4, IntToStr(Document.CycleNo), tcaLeftAdjust);
+  DoTableCell(1, 3, IntToStr(Document.CycleNo), tcaLeftAdjust);
 
   S := 'Backup on shutdown: ' + BoolToStr(Document.ProjectSettings.BackupOnShutdown, 'yes', 'no') + LineEnding +
        'Project Encryption: ';
@@ -184,40 +198,46 @@ begin
   DoLineText('');
 
 
-  DoTableHeader('Dataforms:', 9, Document.DataFiles.UnprotectedCount + 1 { OrderedDataFiles.Count + 1});
-  // Header row:
-  DoTableCell(0, 0, 'Caption');
-  DoTableCell(1, 0, 'Created');
-  DoTableCell(2, 0, 'Structure Edited');
-  DoTableCell(3, 0, 'Data Edited');
-  DoTableCell(4, 0, 'Sections');
-  DoTableCell(5, 0, 'Fields');
-  DoTableCell(6, 0, 'Records');
-  DoTableCell(7, 0, 'Deleted');
+  if (erpoShowRelationsTable in Options) then
+    begin
+      DoTableHeader('Dataforms:', 9, Document.DataFiles.UnprotectedCount + 1 { OrderedDataFiles.Count + 1});
+      // Header row:
+      DoTableCell(0, 0, 'Caption');
+      DoTableCell(1, 0, 'Created');
+      DoTableCell(2, 0, 'Structure Edited');
+      DoTableCell(3, 0, 'Data Edited');
+      DoTableCell(4, 0, 'Sections');
+      DoTableCell(5, 0, 'Fields');
+      DoTableCell(6, 0, 'Records');
+      DoTableCell(7, 0, 'Deleted');
 
-  FCurrentRowNo := 1;
-  Document.Relations.OrderedWalk(@DataFormsTable);
-  DoTableFooter('');
+      FCurrentRowNo := 1;
+      Document.Relations.OrderedWalk(@DataFormsTable);
+      DoTableFooter('');
 
-  DoLineText('');
+      DoLineText('');
+    end;
 
 
-  MultiLevel := Document.Relations.IsMultiLeveled;
-  ColCount := 2;
-  if MultiLevel then
-    Inc(ColCount);
+  if (erpoShowKeyTables in Options) then
+    begin
+      MultiLevel := Document.Relations.IsMultiLeveled;
+      ColCount := 2;
+      if MultiLevel then
+        Inc(ColCount);
 
-  DoTableHeader('', ColCount, Document.DataFiles.UnprotectedCount + 1);
+      DoTableHeader('', ColCount, Document.DataFiles.UnprotectedCount + 1);
 
-  ColNo := 0;
-  DoTableCell(PostInc(ColNo), 0, 'Caption');
-  if MultiLevel then
-    DoTableCell(PostInc(ColNo), 0, 'Relation');
-  DoTableCell(PostInc(ColNo), 0, 'Fields in key');
+      ColNo := 0;
+      DoTableCell(PostInc(ColNo), 0, 'Caption');
+      if MultiLevel then
+        DoTableCell(PostInc(ColNo), 0, 'Relation');
+      DoTableCell(PostInc(ColNo), 0, 'Fields in key');
 
-  FCurrentRowNo := 1;
-  Document.Relations.OrderedWalk(@KeysTable);
-  DoTableFooter('');
+      FCurrentRowNo := 1;
+      Document.Relations.OrderedWalk(@KeysTable);
+      DoTableFooter('');
+    end;
 end;
 
 end.

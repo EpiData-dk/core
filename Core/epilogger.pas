@@ -14,19 +14,19 @@ resourcestring
 
 type
   TEpiLogEntry = (
-    ltNone,            // The "empty" entry in the EnumField
-    ltSuccessLogin,    // A succesfull login
-    ltFailedLogin,     // An unsuccessfull login
-    ltSearch,          // Search performed
-    ltNewRecord,       // New Record added
-    ltEditRecord,      // Edited an existing record
-    ltViewRecord,      // Changed record no. in viewer
-    ltPack,            // Packed datafiles
-    ltAppend,          // Appended data to datafiles
-    ltExport,          // Exported data (or part of) to uncontrolled file.
-    ltClose,           // The document was closed
-    ltNewPassword,     // The user password was changed/reset
-    ltBlockedLogin     // The access to the project was blocked
+    ltNone,            //  0 - The "empty" entry in the EnumField
+    ltSuccessLogin,    //  1 - A succesfull login
+    ltFailedLogin,     //  2 - An unsuccessfull login
+    ltSearch,          //  3 - Search performed
+    ltNewRecord,       //  4 - New Record added
+    ltEditRecord,      //  5 - Edited an existing record
+    ltViewRecord,      //  6 - Changed record no. in viewer
+    ltPack,            //  7 - Packed datafiles
+    ltAppend,          //  8 - Appended data to datafiles
+    ltExport,          //  9 - Exported data (or part of) to uncontrolled file.
+    ltClose,           // 10 - The document was closed
+    ltNewPassword,     // 11 - The user password was changed/reset
+    ltBlockedLogin     // 12 - The access to the project was blocked
   );
 
 
