@@ -112,7 +112,8 @@ type
     eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
     eaceAdminIncorrectPassword,      // Data: string   = the incorrect login name
     eaceAdminIncorrectNewPassword,   // Data: TEpiUser = the authenticated user.
-    eaceAdminBlockedLogin            // No data
+    eaceAdminBlockedLogin,           // No data
+    eaceAdminDayBetweenPassword      // Data: integer = old value
   );
 
   TEpiRequestPasswordType = (
@@ -151,6 +152,7 @@ type
 
   TEpiAdmin = class(TEpiCustomBase)
   private
+    FDaysBetweenPasswordChange: integer;
     FInitialized: Boolean;
     FAdminsGroup: TEpiGroup;
     FAdminRelation: TEpiGroupRelation;
@@ -165,6 +167,7 @@ type
     function   DoRequestPassword(FailLogger: TEpiCustomBase): TEpiRequestPasswordResult;
     procedure  SetMasterPassword(const AValue: string);
     procedure  DoUserAuthorized(Const User: TEpiUser);
+    procedure SetDaysBetweenPasswordChange(AValue: integer);
 
   { Encrypt / Decrypt methods for user handling }
   private
@@ -189,6 +192,8 @@ type
     property   Groups: TEpiGroups read FGroups;
     property   Admins: TEpiGroup read FAdminsGroup;
     property   AdminRelation: TEpiGroupRelation read FAdminRelation;
+    // Version 6: If set to 0 then no forced password changed should happen
+    property   DaysBetweenPasswordChange: integer read FDaysBetweenPasswordChange write SetDaysBetweenPasswordChange;
   public
     // User / Group related functions.
     function   NewUser: TEpiUser;
@@ -615,6 +620,16 @@ begin
     OnUserAuthorized(Self, User);
 end;
 
+procedure TEpiAdmin.SetDaysBetweenPasswordChange(AValue: integer);
+var
+  Val: Integer;
+begin
+  if FDaysBetweenPasswordChange = AValue then Exit;
+  Val := FDaysBetweenPasswordChange;
+  FDaysBetweenPasswordChange := AValue;
+  DoChange(eegAdmin, Word(eaceAdminDayBetweenPassword), @Val);
+end;
+
 function TEpiAdmin.Encrypt(const Key, Data: String): String;
 begin
   FCrypter.InitStr(Key, TDCP_sha256);
@@ -677,6 +692,9 @@ var
 begin
   // Root = <Admin>
   inherited LoadFromXml(Root, ReferenceMap);
+
+  // Version 6:
+  FDaysBetweenPasswordChange := LoadAttrInt(Root, rsDaysBetweemPw);
 
   // Load groups
   if LoadNode(Node, Root, rsGroups, false) then
@@ -800,6 +818,9 @@ begin
 
   Result := inherited SaveToDom(RootDoc);
 
+  // Version 6:
+  SaveDomAttr(Result, rsDaysBetweemPw, DaysBetweenPasswordChange);
+
   Elem := AdminRelation.SaveToDom(RootDoc);
   if Assigned(Elem) then
     Result.AppendChild(Elem);
@@ -815,6 +836,7 @@ begin
   With TEpiAdmin(Result) do
     begin
       Self.FAdminRelations.DoClone(Result, FAdminRelations, ReferenceMap);
+      FDaysBetweenPasswordChange := Self.FDaysBetweenPasswordChange;
       FMasterPassword := Self.FMasterPassword;
       FRSA.PrivateKey := Self.FRSA.PrivateKey;
       FRSA.PublicKey  := Self.FRSA.PublicKey;

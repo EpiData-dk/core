@@ -63,6 +63,8 @@ const
       rsEntryRights     = 'entryRights';
       rsGroupRef        = 'groupRef';
 
+    rsDaysBetweemPw  = 'dayBetweenPasswordChange';
+
    rsStudy           = 'StudyInfo';
     rsAbstract        = 'Abstract';
     rsAgency          = 'Agency';

@@ -10,7 +10,7 @@ uses
   contnrs, LazMethodList;
 
 const
-  EPI_XML_DATAFILE_VERSION = 5;
+  EPI_XML_DATAFILE_VERSION = 6;
   {$IFNDEF RELEASE}
   EPI_XML_BRANCH_STRING = 'TRUNK';
   {$ENDIF}
