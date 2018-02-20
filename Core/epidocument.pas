@@ -213,6 +213,7 @@ begin
 
         // Catch invalid login/password before passing them on in order to set
         // internal flag correctly.
+        eaceAdminUserExpired,
         eaceAdminIncorrectUserName,
         eaceAdminIncorrectPassword:
           Include(FFlags, edfLoginFailed);
@@ -421,24 +422,31 @@ begin
         end;
 
         case CRes of
-          prSuccess:  ;
-          prFailed:   raise EEpiBadPassword.Create('Incorrect Username/Password');
-          prCanceled: raise EEpiPasswordCanceled.Create('Login Canceled');
+          prSuccess:     ;
+          prFailed:      raise EEpiBadPassword.Create('Incorrect Username/Password');
+          prCanceled:    raise EEpiPasswordCanceled.Create('Login Canceled');
+          prUserExpired: raise EEpiUserExpired.Create('User has expired');
         end;
 
+
         {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
-        LoadNode(Node, Root, rsEncrypted, true);
+        // From version 6 on, this is loaded withing TEpiAdmin, to get an early hold of the ADMIN tag
+        if (Version < 6) then
+          begin
+            LoadNode(Node, Root, rsEncrypted, true);
 
-        SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
-        MS := TMemoryStream.Create;
+            SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
+            MS := TMemoryStream.Create;
 
-        DeCrypter := TDCP_rijndael.Create(nil);
-        DeCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
-        DeCrypter.DecryptStream(SS, MS, SS.Size);
+            DeCrypter := TDCP_rijndael.Create(nil);
+            DeCrypter.InitStr(Admin.MasterPassword, TDCP_sha256);
+            DeCrypter.DecryptStream(SS, MS, SS.Size);
 
-        MS.Position := 0;
-        ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+            MS.Position := 0;
+            ReadXMLFragment(Root, MS, [xrfPreserveWhiteSpace]);
+          end;
         {$ENDIF}
+
       finally
         SS.Free;
         MS.Free;
@@ -478,8 +486,9 @@ begin
       XMLSettings.LoadFromXml(Node, ReferenceMap);
     end;
 
-    // Version 4:
-    if LoadNode(Node, Root, rsAdmin, false) then
+    // Version 4 + 5:
+    //  - from v6 this is loaded right after crypto phase.
+    if (Version in [4, 5]) and LoadNode(Node, Root, rsAdmin, false) then
       Admin.LoadFromXml(Node, ReferenceMap);
 
     // Version 1:

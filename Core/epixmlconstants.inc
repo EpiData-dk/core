@@ -51,6 +51,7 @@ const
       rsMasterPassword  = 'masterPassword';
       rsLastLogin       = 'lastLogin';
       rsExpireDate      = 'expireDate';
+      rsLastPasswordChange = 'lastPasswordChange';
       rsGroupRefs       = 'GroupRefs';
 
     // Group

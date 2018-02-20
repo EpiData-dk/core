@@ -18,9 +18,11 @@ type
   TEpiGroupRelation     = class;
   TEpiGroupRelationList = class;
 
-  EEpiBadPassword = class(Exception);
-  EEpiPasswordCanceled = class(Exception);
-  EEpiTooManyFailedLogins = class(Exception);
+  EEpiAdminException = class(Exception);
+  EEpiBadPassword = class(EEpiAdminException);
+  EEpiPasswordCanceled = class(EEpiAdminException);
+  EEpiTooManyFailedLogins = class(EEpiAdminException);
+  EEpiUserExpired = class(EEpiAdminException);
 
   // Rights in manager
   TEpiManagerRight = (
@@ -100,9 +102,9 @@ type
     // User related events:
     eaceUserSetFullName,
     eaceUserSetPassword,
-    eaceUserSetExpireDate,
     eaceUserSetLastLogin,
     eaceUserSetNotes,
+    eaceUserSetExpireDate,
     // Group related events:
     eaceGroupSetManageRights,
     // Admin related events:
@@ -112,6 +114,7 @@ type
     eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
     eaceAdminIncorrectPassword,      // Data: string   = the incorrect login name
     eaceAdminIncorrectNewPassword,   // Data: TEpiUser = the authenticated user.
+    eaceAdminUserExpired,            // Data: TEpiUser = the expired user account
     eaceAdminBlockedLogin,           // No data
     eaceAdminDayBetweenPassword      // Data: integer = old value
   );
@@ -119,12 +122,13 @@ type
   TEpiRequestPasswordType = (
     erpSinglePassword,               // Only a valid password is required - login is ignored.
     erpUserLogin,                    // Project is managed by a user/password and both are requred.
-    erpNewPassword                   // The authorized user needs a new password
+    erpNewPassword                   // The authorized user needs a new password , return '' (empty string) if the two passwords do not match
   );
 
   TEpiRequestPasswordResult = (
     prSuccess,                       // Asking user for password succeeded (correct username/password combo)
     prFailed,                        // Asking user for password failed    (incorrect username/password combo)
+    prUserExpired,                   // The user account has expired
     prCanceled                       // The user canceled the login
   );
 
@@ -164,13 +168,14 @@ type
     // Clear Text master password for all scrambling.
     // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
-    function   DoRequestPassword(FailLogger: TEpiCustomBase): TEpiRequestPasswordResult;
+    function   DoRequestPassword(FailLogger: TEpiCustomBase; ReferenceMap: TEpiReferenceMap; DocumentNode: TDOMNode = nil): TEpiRequestPasswordResult;
     procedure  SetMasterPassword(const AValue: string);
     procedure  DoUserAuthorized(Const User: TEpiUser);
     procedure SetDaysBetweenPasswordChange(AValue: integer);
 
   { Encrypt / Decrypt methods for user handling }
   private
+    FAuthorizedUser: TEpiUser;
     FCrypter: TDCP_rijndael;
     FRSA:     TEpiRSA;
   protected
@@ -188,6 +193,7 @@ type
     function   LoadCrypto(Root: TDOMNode; ReferenceMap: TEpiReferenceMap; FailLogger: TEpiCustomBase): TEpiRequestPasswordResult;
     function   SaveCrypto(RootDoc: TDOMDocument): TDOMElement;
     procedure  FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
+    property   AuthorizedUser: TEpiUser read FAuthorizedUser;
     property   Users: TEpiUsers read FUsers;
     property   Groups: TEpiGroups read FGroups;
     property   Admins: TEpiGroup read FAdminsGroup;
@@ -259,6 +265,7 @@ type
     FExpireDate: TDateTime;
     FLastLogin: TDateTime;
     FFullName: UTF8String;
+    FLastPWChange: TDateTime;
     // Master password as stored in file:
     // - Base64( AES ( ClearTextPassword ))
     FMasterPassword: string;
@@ -278,7 +285,6 @@ type
     procedure SetFullName(const AValue: UTF8String);
     procedure SetLastLogin(const AValue: TDateTime);
     procedure SetLogin(AValue: UTF8String);
-    procedure SetMasterPassword(const AValue: string);
     procedure SetPassword(const AValue: UTF8String);
     procedure SetNotes(AValue: UTF8String);
   protected
@@ -301,10 +307,11 @@ type
     // Unscrambled data:
     Property   Login: UTF8String read GetLogin write SetLogin;
     Property   Password: UTF8String read FPassword write SetPassword;
-    Property   MasterPassword: string read FMasterPassword write SetMasterPassword;
+    Property   MasterPassword: string read FMasterPassword;
     // Scrambled data:
     Property   Groups: TEpiGroups read FGroups;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
+    Property   LastPWChange: TDateTime read FLastPWChange;
     property   ExpireDate: TDateTime read FExpireDate write SetExpireDate;
     property   FullName: UTF8String read FFullName write SetFullName;
     property   Notes: UTF8String read FNotes write SetNotes;
@@ -442,7 +449,7 @@ implementation
 
 uses
   DCPbase64, DCPsha256, epistringutils, epimiscutils, epidocument, epilogger,
-  math, epiglobals;
+  math, epiglobals, laz2_XMLRead;
 
 type
 
@@ -511,7 +518,8 @@ end;
 
 { TEpiAdmin }
 
-function TEpiAdmin.DoRequestPassword(FailLogger: TEpiCustomBase
+function TEpiAdmin.DoRequestPassword(FailLogger: TEpiCustomBase;
+  ReferenceMap: TEpiReferenceMap; DocumentNode: TDOMNode
   ): TEpiRequestPasswordResult;
 var
   Login, Password, NewPassword: UTF8String;
@@ -519,6 +527,10 @@ var
   Key: String;
   Res: TEpiRequestPasswordResponse;
   Count: Integer;
+  Node: TDOMNode;
+  SS: TStringStream;
+  MS: TMemoryStream;
+  DeCrypter: TDCP_rijndael;
 begin
   result := prFailed;
 
@@ -539,7 +551,7 @@ begin
         Break;
       end;
 
-    // Increate the try counter
+    // Increment the try counter
     Inc(Count);
 
     // Find user
@@ -558,53 +570,98 @@ begin
 
     if ('$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password) then
       Result := prSuccess
-    else begin
-      Result := prFailed;
-      DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
+    else
+      begin
+        Result := prFailed;
+        DoChange(eegAdmin, Word(eaceAdminIncorrectPassword), @Login);
 
-      if TEpiFailedLogger(FailLogger).TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
-        begin
-          DoChange(eegAdmin, word(eaceAdminBlockedLogin), nil);
-          raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
-        end;
-    end;
+        if TEpiFailedLogger(FailLogger).TooManyFailedLogins(EpiAdminLoginAttemps, EpiAdminLoginInterval) then
+          begin
+            DoChange(eegAdmin, word(eaceAdminBlockedLogin), nil);
+            raise EEpiTooManyFailedLogins.Create(rsTooManyFailedAttemps);
+          end;
+      end;
   until (Result = prSuccess) or (Res = rprStopOnFail);
 
-  if (Result = prSuccess) and
-     (TheUser.ExpireDate <> 0) and
-     (Now >= TheUser.ExpireDate)
+  if (Result <> prSuccess) then
+    Exit;
+
+  Key := TheUser.Salt + Password + Login;
+  MasterPassword := Decrypt(Key, TheUser.MasterPassword);
+
+  // Load and decrypt the rest
+  if (TEpiDocument(RootOwner).Version >= 6) and
+     (Assigned(DocumentNode))
   then
     begin
-      Count := 1;
-      repeat
-        Res := OnPassword(Self, erpNewPassword, Count, Login, NewPassword);
+      {$IFNDEF EPI_ADMIN_NOCRYPT_LOAD}
+      LoadNode(Node, DocumentNode, rsEncrypted, true);
 
-        // The user canceled the login
-        if (Res = rprCanceled) then
-          begin
-            Result := prCanceled;
-            Break;
-          end;
+      SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
+      MS := TMemoryStream.Create;
 
-        if (NewPassword <> Password) then
-          Result := prSuccess
-        else begin
-          Result := prFailed;
-          DoChange(eegAdmin, Word(eaceAdminIncorrectNewPassword), TheUser);
+      DeCrypter := TDCP_rijndael.Create(nil);
+      DeCrypter.InitStr(MasterPassword, TDCP_sha256);
+      DeCrypter.DecryptStream(SS, MS, SS.Size);
+
+      MS.Position := 0;
+      ReadXMLFragment(DocumentNode, MS, [xrfPreserveWhiteSpace]);
+      {$ENDIF}
+
+      // This should load the whole Admin, including users etc...
+      if LoadNode(Node, DocumentNode, rsAdmin, false) then
+        LoadFromXml(Node, ReferenceMap);
+
+      // At this point we now have access to both DaysBetweenPasswordChange + TEpiUser.LastLogin and TEpiUser.ExpireDate
+      // this is the time to check for new password or expired accounts.
+      // - check if the user is expired:
+      if (TheUser.ExpireDate > 0) and
+         (Now > TheUser.ExpireDate)
+      then
+        begin
+          Result := prUserExpired;
+          DoChange(eegAdmin, Word(eaceAdminUserExpired), TheUser);
+          Exit;
         end;
 
-      until (Result = prSuccess) or (Res = rprStopOnFail);
+      // - check if the password needs to change
+      if (DaysBetweenPasswordChange > 0) and
+         (Now > TheUser.LastPWChange + DaysBetweenPasswordChange) then
+        begin
+          Count := 1;
+          repeat
+            Res := OnPassword(Self, erpNewPassword, Count, Login, NewPassword);
+            Inc(Count);
+
+            // The user canceled the login
+            if (Res = rprCanceled) then
+              begin
+                Result := prCanceled;
+                Break;
+              end;
+
+            if (NewPassword <> '') and
+               (NewPassword <> Password)
+            then
+              Result := prSuccess
+            else
+              begin
+                Result := prFailed;
+                DoChange(eegAdmin, Word(eaceAdminIncorrectNewPassword), TheUser);
+              end;
+
+          until (Result = prSuccess) or (Res = rprStopOnFail);
+        end;
     end;
 
-  if (Result = prSuccess)
-  then
+  if (Result = prSuccess) then
     begin
       TheUser.LastLogin := Now;
       DoUserAuthorized(TheUser);
       DoChange(eegAdmin, Word(eaceAdminLoginSuccessfull), TheUser);
 
-      Key := TheUser.Salt + Password + Login;
-      MasterPassword := Decrypt(Key, TheUser.MasterPassword);
+      if (NewPassword <> '') then
+        TheUser.Password := NewPassword;
     end;
 end;
 
@@ -616,6 +673,7 @@ end;
 
 procedure TEpiAdmin.DoUserAuthorized(const User: TEpiUser);
 begin
+  FAuthorizedUser := User;
   if Assigned(OnUserAuthorized) then
     OnUserAuthorized(Self, User);
 end;
@@ -689,6 +747,10 @@ procedure TEpiAdmin.LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap);
 var
   Node: TDOMNode;
   S: EpiString;
+  PWRes: TEpiRequestPasswordResponse;
+  Count: Integer;
+  FRes: TEpiRequestPasswordResult;
+  Login, NewPassword: UTF8String;
 begin
   // Root = <Admin>
   inherited LoadFromXml(Root, ReferenceMap);
@@ -738,7 +800,7 @@ begin
     FRSA.PublicKey := S;
 
   DoChange(eegAdmin, Word(eaceAdminInitializing), nil);
-  Result := DoRequestPassword(FailLogger);
+  Result := DoRequestPassword(FailLogger, ReferenceMap, Root.OwnerDocument.DocumentElement);
 end;
 
 function TEpiAdmin.SaveCrypto(RootDoc: TDOMDocument): TDOMElement;
@@ -936,7 +998,7 @@ begin
     // Set password directly here, since the SetPassword method hash'es it and reencrypts the master password.
     NUser.FPassword := LoadAttrString(Node, rsPassword);
     NUser.FSalt := Base64DecodeStr(ExtractStrBetween(NUser.FPassword, '$', '$'));
-    NUser.MasterPassword := LoadAttrString(Node, rsMasterPassword);
+    NUser.FMasterPassword := LoadAttrString(Node, rsMasterPassword);
 
     Node := Node.NextSibling;
   end;
@@ -946,20 +1008,20 @@ function TEpiUsers.PreSaveUsers(RootDoc: TDOMDocument): TDOMElement;
 var
   UserNode: TDOMElement;
   i: Integer;
+  User: TEpiUser;
 begin
   Result := RootDoc.CreateElement(rsUsers);
 
-  // for User in Self do
-  for i := 0 to Count - 1 do
-  begin
-    UserNode := RootDoc.CreateElement(rsUser);
+  for User in Self do
+    begin
+      UserNode := RootDoc.CreateElement(rsUser);
 
-    SaveDomAttr(UserNode, rsName,           Users[i].Login);
-    SaveDomAttr(UserNode, rsPassword,       Users[i].Password);
-    SaveDomAttr(UserNode, rsMasterPassword, Users[i].MasterPassword);
+      SaveDomAttr(UserNode, rsName,           User.Login);
+      SaveDomAttr(UserNode, rsPassword,       User.Password);
+      SaveDomAttr(UserNode, rsMasterPassword, User.MasterPassword);
 
-    Result.AppendChild(UserNode);
-  end;
+      Result.AppendChild(UserNode);
+    end;
 end;
 
 function TEpiUsers.NewUser: TEpiUser;
@@ -998,7 +1060,7 @@ begin
       NUser := NewUser;
       NUser.Login := LoadAttrString(Node, rsId);
       NUser.FPassword := LoadAttrString(Node, rsPassword);
-      NUser.MasterPassword := LoadAttrString(Node, rsMasterPassword);
+      NUser.FMasterPassword := LoadAttrString(Node, rsMasterPassword);
     end;
     NUser.LoadFromXml(Node, ReferenceMap);
 
@@ -1058,12 +1120,6 @@ begin
   FLogin := Name;
 end;
 
-procedure TEpiUser.SetMasterPassword(const AValue: string);
-begin
-  if FMasterPassword = AValue then exit;
-  FMasterPassword := AValue;
-end;
-
 procedure TEpiUser.SetPassword(const AValue: UTF8String);
 var
   SaltInt: LongInt;
@@ -1078,8 +1134,9 @@ begin
 
   // Scramble master password with own key.
   Key := Salt + AValue + Login;
-  MasterPassword := Admin.Encrypt(Key, Admin.MasterPassword);
+  FMasterPassword := Admin.Encrypt(Key, Admin.MasterPassword);
 
+  FLastPWChange := Now;
   DoChange(eegAdmin, Word(eaceUserSetPassword), nil);
 end;
 
@@ -1105,6 +1162,7 @@ begin
   begin
     FCreated        := Self.FCreated;
     FModified       := Self.FModified;
+    FLastPWChange   := Self.FLastPWChange;
     FExpireDate     := Self.FExpireDate;
     FLastLogin      := Self.FLastLogin;
     FFullName       := Self.FFullName;
@@ -1183,6 +1241,7 @@ begin
   FExpireDate := 0;
   FLastLogin := MinDateTime;
   FCreated := Now;
+  FLastPWChange := Now;
   FModified := FCreated;
 end;
 
@@ -1219,6 +1278,9 @@ begin
     FLastLogin  := LoadAttrDateTime(Root, rsLastLogin, '', 0, false);
   FExpireDate := LoadAttrDateTime(Root, rsExpireDate, '', 0, false);
 
+  // Version 6:
+  FLastPWChange := LoadAttrDateTime(Root, rsLastPasswordChange, '', 0, false);
+
   FCreated    := LoadAttrDateTime(Root, rsCreatedAttr, '', Now, false);
   FModified   := LoadAttrDateTime(Root, rsModifiedAttr, '', Now, false);
 
@@ -1246,6 +1308,7 @@ begin
 
   SaveDomAttr(Result, rsCreatedAttr, Created);
   SaveDomAttr(Result, rsModifiedAttr, Modified);
+  SaveDomAttr(Result, rsLastPasswordChange, FLastPWChange);
 
   if Groups.Count > 0 then
   begin

@@ -6,7 +6,7 @@ unit epiv_documentfile;
 interface
 
 uses
-  Classes, SysUtils, epiopenfile, epidocument, epiadmin;
+  Classes, SysUtils, epiopenfile, epidocument, epiadmin, epicustombase;
 
 type
 
@@ -17,6 +17,9 @@ type
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
     procedure DoError(const Msg: string);
+    procedure PasswordWarningHook(const Sender: TEpiCustomBase;
+      const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
+      EventType: Word; Data: Pointer);
   protected
     constructor Create; override;
     function DoPassWord(Sender: TObject;
@@ -24,6 +27,7 @@ type
       RequestNo: Integer;
       var Login: UTF8String;
       var Password: UTF8String): TEpiRequestPasswordResponse; virtual;
+    procedure DoAfterDocumentCreated(const ADocument: TEpiDocument); override;
   end;
 
 
@@ -81,12 +85,22 @@ begin
   ShowMessage(Msg);
 end;
 
+procedure TDocumentFile.PasswordWarningHook(const Sender: TEpiCustomBase;
+  const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
+  Data: Pointer);
+begin
+  if (EventGroup <> eegAdmin) then exit;
+  if (EventType  <> Word(eaceAdminIncorrectNewPassword)) then exit;
+
+  ShowMessage('The new password must be different from the old password');
+end;
+
 function TDocumentFile.DoPassWord(Sender: TObject;
   RequestType: TEpiRequestPasswordType; RequestNo: Integer;
   var Login: UTF8String; var Password: UTF8String): TEpiRequestPasswordResponse;
 var
   F: TUserLoginForm;
-  APassword: String;
+  APassword, Password2: String;
 begin
   if (RequestNo < 3) then
     Result := rprAskOnFail
@@ -130,13 +144,43 @@ begin
 
     erpNewPassword:
       begin
-        Password :=
-          PasswordBox('Change Password',
-                      'Your password has expired!' + LineEnding +
-                      'Please enter a new password:');
+        Password2 := '';
+        if (not DefaultInputDialog('Change Password',
+                                   'Your password has expired!' + LineEnding +
+                                   'Please enter a new password:', True, Password2))
+        then
+          begin
+            Result := rprCanceled;
+            Exit;
+          end;
+
+        APassword := '';
+        if (not DefaultInputDialog('Change Password',
+                                   'Your password has expired!' + LineEnding +
+                                   'Repeat new password:', True, APassword))
+        then
+          begin
+            Result := rprCanceled;
+            Exit;
+          end;
+
+        if (Password2 <> APassword) then
+          begin
+            ShowMessage('The two passwords do not match!');
+            Password := '';
+          end
+        else
+          Password := Password2;
       end;
   end;
 
+end;
+
+procedure TDocumentFile.DoAfterDocumentCreated(const ADocument: TEpiDocument);
+begin
+  inherited DoAfterDocumentCreated(ADocument);
+
+  ADocument.RegisterOnChangeHook(@PasswordWarningHook, true);
 end;
 
 end.

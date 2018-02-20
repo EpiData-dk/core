@@ -26,7 +26,9 @@ type
     ltExport,          //  9 - Exported data (or part of) to uncontrolled file.
     ltClose,           // 10 - The document was closed
     ltNewPassword,     // 11 - The user password was changed/reset
-    ltBlockedLogin     // 12 - The access to the project was blocked
+    ltBlockedLogin,    // 12 - The access to the project was blocked
+    ltExpiredLogin,    // 13 - The user account used for login was expired
+    ltExpiredChange    // 14 - The user accound setting for expired was changed
   );
 
 
@@ -47,7 +49,9 @@ const
       'Export',
       'Closed Project',
       'New Password',
-      'Blocked Login'
+      'Blocked Login',
+      'Account Expired',
+      'Account Expire Changed'
     );
 
 type
@@ -116,6 +120,7 @@ type
     procedure  LogRecordView(RecordNo: Integer);
     procedure  LogPack();
     procedure  LogPassword();
+    procedure  LogExpiredChange(NewExpiredDate: TDateTime);
   public
     procedure  LogSearch(Search: TEpiSearch);
     procedure  LogAppend();
@@ -161,6 +166,13 @@ implementation
 uses
   typinfo, epidocument, epiadmin, strutils, DCPsha512, DCPbase64, epimiscutils,
   dateutils, math, epiexportsettings, epiglobals;
+
+const
+  FAILEDLOG_FAILTYPE_INCORRECT_PW    = 0;
+  FAILEDLOG_FAILTYPE_INCORRECT_LOGIN = 1;
+  FAILEDLOG_FAILTYPE_AESKEY          = 2;
+  FAILEDLOG_FAILTYPE_BLOCKED_LOGIN   = 3;
+  FAILEDLOG_FAILTYPE_EXPIRED_USER    = 4;
 
 type
 
@@ -351,7 +363,14 @@ begin
           begin
             UserName := TEpiUser(Initiator).Login;
             LogPassword();
-          end
+          end;
+
+        eaceUserSetExpireDate:           // Initiator = TEpiUser.
+          begin
+            UserName := TEpiUser(Initiator).Login;
+            LogExpiredChange(TEpiUser(Initiator).ExpireDate);
+          end;
+
       else
         {
         eaceAdminIncorrectUserName: ;
@@ -1044,10 +1063,20 @@ begin
           with FSecurityLog do
           begin
             B := PlainTxtSt.ReadByte;
-            if (B = 3) then
-              Idx := DoNewLog(ltBlockedLogin)
-            else
-              Idx := DoNewLog(ltFailedLogin);
+            case B of
+              FAILEDLOG_FAILTYPE_INCORRECT_PW,
+              FAILEDLOG_FAILTYPE_INCORRECT_LOGIN:
+                Idx := DoNewLog(ltFailedLogin);
+
+              FAILEDLOG_FAILTYPE_AESKEY:
+                ; // This should NOT happen
+
+              FAILEDLOG_FAILTYPE_BLOCKED_LOGIN:
+                Idx := DoNewLog(ltBlockedLogin);
+
+              FAILEDLOG_FAILTYPE_EXPIRED_USER:
+                Idx := DoNewLog(ltExpiredLogin);
+            end;
 
             UserName.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
             D := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
@@ -1063,10 +1092,20 @@ begin
         // the document was freed. Hence data in the failed logger is not in an encrypted state and we
         // just need to copy over the data.
         begin
-          if (ExLogObject.FLoginFailType.AsInteger[i] = 3) then
-            Idx := DoNewLog(ltBlockedLogin)
-          else
-            Idx := DoNewLog(ltFailedLogin);
+          case ExLogObject.FLoginFailType.AsInteger[i] of
+            FAILEDLOG_FAILTYPE_INCORRECT_PW,
+            FAILEDLOG_FAILTYPE_INCORRECT_LOGIN:
+              Idx := DoNewLog(ltFailedLogin);
+
+            FAILEDLOG_FAILTYPE_AESKEY:
+              ; // This should NOT happen
+
+            FAILEDLOG_FAILTYPE_BLOCKED_LOGIN:
+              Idx := DoNewLog(ltBlockedLogin);
+
+            FAILEDLOG_FAILTYPE_EXPIRED_USER:
+              Idx := DoNewLog(ltExpiredLogin);
+          end;
 
           FSecurityLog.UserName.AsString[Idx]     := ExLogObject.FUserNames.AsString[i];
           FSecurityLog.Date.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
@@ -1144,7 +1183,7 @@ begin
     end;
 end;
 
-procedure TEpiLogger.LogLoginSuccess;
+procedure TEpiLogger.LogLoginSuccess();
 begin
   // Just store the login time for now. If we were to add a record to the security log
   // at this point, all entries from the FailedLog would be out of order.
@@ -1189,7 +1228,7 @@ begin
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogRecordNew;
+procedure TEpiLogger.LogRecordNew();
 var
   Idx, KeyIdx: Integer;
   KF: TEpiField;
@@ -1216,19 +1255,28 @@ begin
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogPack;
+procedure TEpiLogger.LogPack();
 begin
   DoNewLog(ltPack);
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogPassword;
+procedure TEpiLogger.LogPassword();
 begin
   DoNewLog(ltNewPassword);
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogAppend;
+procedure TEpiLogger.LogExpiredChange(NewExpiredDate: TDateTime);
+var
+  Idx: Integer;
+begin
+  Idx := DoNewLog(ltExpiredChange);
+  FSecurityLog.LogContent.AsString[Idx] := FormatDateTime('YYYY/MM/DD HH:NN:SS', NewExpiredDate);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
+end;
+
+procedure TEpiLogger.LogAppend();
 begin
   if (not LogEvents) then
     Exit;
@@ -1237,7 +1285,7 @@ begin
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogClose;
+procedure TEpiLogger.LogClose();
 var
   Idx, i: Integer;
   LastEdit: TDateTime;
@@ -1507,12 +1555,14 @@ procedure TEpiFailedLogger.DocumentHook(const Sender: TEpiCustomBase;
   Data: Pointer);
 var
   Idx: Integer;
+  AEvent: TEpiAdminChangeEventType absolute EventType;
 begin
   if (EventGroup <> eegAdmin) then exit;
 
 
-  if TEpiAdminChangeEventType(EventType) in
+  if AEvent in
        [
+         eaceAdminUserExpired,            // Data: TEpiUser = the expired user
          eaceAdminIncorrectUserName,      // Data: string   = the incorrect login name
          eaceAdminIncorrectPassword       // Data: string   = the incorrect login name
        ]
@@ -1521,20 +1571,24 @@ begin
       FLogDataFile.NewRecords();
       Idx := FLogDataFile.Size - 1;
 
-      FUserNames.AsString[Idx] := PUTF8String(Data)^;
+      if (AEvent = eaceAdminUserExpired) then
+        FUserNames.AsString[Idx] := TEpiUser(Data).Login
+      else
+        FUserNames.AsString[Idx] := PUTF8String(Data)^;
       FTime.AsDateTime[Idx]    := Now;
       FCycle.AsInteger[Idx]    := Doc(Self).CycleNo;
       FAesKey.AsString[Idx]    := '';
-      if TEpiAdminChangeEventType(EventType) = eaceAdminIncorrectPassword then
-        FLoginFailType.AsInteger[Idx] := 0
-      else
-        FLoginFailType.AsInteger[Idx] := 1;
+      Case AEvent of
+        eaceAdminIncorrectPassword: FLoginFailType.AsInteger[Idx] := FAILEDLOG_FAILTYPE_INCORRECT_PW;
+        eaceAdminIncorrectUserName: FLoginFailType.AsInteger[Idx] := FAILEDLOG_FAILTYPE_INCORRECT_LOGIN;
+        eaceAdminUserExpired:       FLoginFailType.AsInteger[Idx] := FAILEDLOG_FAILTYPE_EXPIRED_USER;
+      end;
       FEncryptedTxt.AsString[Idx] := '';
       FHostName.AsString[Idx]     := GetHostNameWrapper;
     end;
 
 
-  if TEpiAdminChangeEventType(EventType) in
+  if AEvent in
     [eaceAdminBlockedLogin]
   then
     begin
@@ -1545,7 +1599,7 @@ begin
       FTime.AsDateTime[Idx]    := Now;
       FCycle.AsInteger[Idx]    := Doc(Self).CycleNo;
       FAesKey.AsString[Idx]    := '';
-      FLoginFailType.AsInteger[Idx] := 3;
+      FLoginFailType.AsInteger[Idx] := FAILEDLOG_FAILTYPE_BLOCKED_LOGIN;
       FEncryptedTxt.AsString[Idx] := '';
       FHostName.AsString[Idx]     := GetHostNameWrapper;
     end;
@@ -1604,8 +1658,6 @@ begin
   PlainTxtMs := TMemoryStream.Create;
   EncryptMs  := TMemoryStream.Create;
 
-
-
   for i := 0 to FLogDataFile.Size - 1 do
   begin
     Elem := RootDoc.CreateElement('LoginFailed');
@@ -1613,7 +1665,7 @@ begin
     SaveDomAttr(Elem, 'time',     FTime.AsDateTime[i]);
     SaveDomAttr(Elem, 'hostname', FHostName.AsString[i]);
 
-    if (FLoginFailType.AsInteger[i] = 2) then
+    if (FLoginFailType.AsInteger[i] = FAILEDLOG_FAILTYPE_AESKEY) then
       begin
         SaveDomAttr(Elem, 'aesKey', FAesKey.AsString[i]);
         Elem.TextContent := FEncryptedTxt.AsString[i];
@@ -1674,7 +1726,7 @@ begin
     FTime.AsTime[Idx]             := LoadAttrDateTime(Node, 'time');
     FCycle.AsInteger[Idx]         := -1;
     FAesKey.AsString[Idx]         := LoadAttrString(Node, 'aesKey');
-    FLoginFailType.AsInteger[Idx] := 2;
+    FLoginFailType.AsInteger[Idx] := FAILEDLOG_FAILTYPE_AESKEY;
     FEncryptedTxt.AsString[Idx]   := Node.TextContent;
     FHostName.AsString[Idx]       := LoadAttrString(Node, 'hostname');
 

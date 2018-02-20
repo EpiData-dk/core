@@ -139,9 +139,10 @@ type
     FOnAfterDocumentCreated: TEpiDocumentCreation;
     FOnSaveThreadError: TEpiSaveThreadErrorEvent;
     FUndoCopy: boolean;
-    procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument);
-    procedure DoSaveThreadError(Const FatalErrorObject: Exception);
-    procedure SetUndoCopy(AValue: boolean);
+  protected
+    procedure DoAfterDocumentCreated(Const ADocument: TEpiDocument); virtual;
+    procedure DoSaveThreadError(Const FatalErrorObject: Exception); virtual;
+    procedure SetUndoCopy(AValue: boolean); virtual;
   public
     // Event properties
     property OnPassword: TRequestPasswordEvent read FOnPassword write FOnPassword;
@@ -508,9 +509,14 @@ begin
           FSaveThread := TEpiXMLSaveThread.Create(LocalDoc, FFileName);
         end
       else
-        AsyncSave;
-//      WriteXMLFile(TXMLDocument(Data), FFileName, [xwfPreserveWhiteSpace]);
-//      WriteXMLFile(LocalDoc, '/tmp/clone.epx', [xwfPreserveWhiteSpace]);
+        begin
+          // We cannot perform a complete asynchronous save if we are still loading
+          // since there is no guarantee that the XML structure has been loaded properly yet.
+          // - this may happen if eg. a password change is forced during load
+          if (Assigned(FEpiDoc)) and (not (FEpiDoc.Loading)) then
+            AsyncSave;
+        end;
+
       Exit;
     end;
 end;
