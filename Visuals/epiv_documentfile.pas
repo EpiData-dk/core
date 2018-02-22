@@ -17,6 +17,12 @@ type
     function DoWarning(WarningType: TOpenEpiWarningType; const Msg: string
       ): TOpenEpiWarningResult;
     procedure DoError(const Msg: string);
+  private
+    // Handling errors on expired passwords
+    type
+      TPasswordError = (peNone, peCancel, peNoMatch);
+  private
+    FNewPasswordError: TPasswordError;
     procedure PasswordWarningHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -92,7 +98,8 @@ begin
   if (EventGroup <> eegAdmin) then exit;
   if (EventType  <> Word(eaceAdminIncorrectNewPassword)) then exit;
 
-  ShowMessage('The new password must be different from the old password');
+  if (FNewPasswordError = peNone) then
+    ShowMessage('The new password must be different from the old password');
 end;
 
 function TDocumentFile.DoPassWord(Sender: TObject;
@@ -150,6 +157,7 @@ begin
                                    'Please enter a new password:', True, Password2))
         then
           begin
+            FNewPasswordError := peCancel;
             Result := rprCanceled;
             Exit;
           end;
@@ -160,17 +168,22 @@ begin
                                    'Repeat new password:', True, APassword))
         then
           begin
+            FNewPasswordError := peCancel;
             Result := rprCanceled;
             Exit;
           end;
 
         if (Password2 <> APassword) then
           begin
+            FNewPasswordError := peNoMatch;
             ShowMessage('The two passwords do not match!');
             Password := '';
           end
         else
-          Password := Password2;
+          begin
+            Password := Password2;
+            FNewPasswordError := peNone;
+          end;
       end;
   end;
 
