@@ -5,7 +5,7 @@ unit epitools_export_seclog;
 interface
 
 uses
-  Classes, SysUtils, epidocument;
+  Classes, SysUtils, epidocument, epidatafiles, epivaluelabels, epiopenfile;
 
 type
 
@@ -13,30 +13,113 @@ type
 
   TEpiTool_ExportSecurityLog = class
   private
+    ExportID: integer;
+    FDocumentFileClass: TEpiDocumentFileClass;
+    function ExportPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
+    function ReportError(Const Msg: UTF8String): boolean;
   public
     constructor Create; virtual;
     function ExportSecLog(Document: TEpiDocument; ExportAfterNoDays: Integer; DeleteLog: boolean; ExportFilename: UTF8String): boolean; virtual;
+    property DocumentFileClass: TEpiDocumentFileClass read FDocumentFileClass write FDocumentFileClass;
   end;
 
 implementation
 
+uses
+  LazFileUtils, epiglobals, episecuritylog;
+
 { TEpiTool_ExportSecurityLog }
+
+function TEpiTool_ExportSecurityLog.ReportError(const Msg: UTF8String): boolean;
+begin
+  result := false;
+end;
+
+function TEpiTool_ExportSecurityLog.ExportPackFunction(Sender: TEpiDataFile;
+  Index: Integer): boolean;
+var
+  ID: TEpiField;
+begin
+  ID := Sender.Fields.FieldByName['id'];
+  result := (ID.AsInteger[Index] > ExportID);
+end;
 
 constructor TEpiTool_ExportSecurityLog.Create;
 begin
-  //
+  FDocumentFileClass := nil;
 end;
 
 function TEpiTool_ExportSecurityLog.ExportSecLog(Document: TEpiDocument;
   ExportAfterNoDays: Integer; DeleteLog: boolean; ExportFilename: UTF8String
   ): boolean;
+var
+  NewDoc: TEpiDocument;
+  i: Integer;
+  DF: TEpiDataFile;
+  VLS: TEpiValueLabelSet;
+  DFsl: TEpiSecurityDatafile;
+  IDvar, Datevar: TEpiField;
+  DocFile: TEpiDocumentFile;
 begin
   result := false;
 
-  if (not Assigned(Document)) then exit;
-  if (Document.Admin.Initialized) then exit;
+  if (not Assigned(Document)) then exit(ReportError('Document Not Assigned'));
+  if (not Document.Admin.Initialized) then exit(ReportError('Extended Access not initialized'));
 
+  if (FileExistsUTF8(ExportFilename)) and
+     (FileIsReadOnlyUTF8(ExportFilename))
+  then
+    Exit(ReportError('Export file is not writeable'));
 
+  if Assigned(FDocumentFileClass) then
+    DocFile := FDocumentFileClass.Create
+  else
+    DocFile := TEpiDocumentFile.Create;
+
+  NewDoc := DocFile.CreateClonedDocument(Document);
+
+  // Delete all datafiles that is NOT part of logging.
+  for i := NewDoc.DataFiles.Count - 1 downto 0 do
+    begin
+      DF := NewDoc.DataFiles[i];
+      if (not DF.ProtectedItem) then
+        DF.Free;
+    end;
+
+  // Do the same with valuelabel sets
+  for i := NewDoc.ValueLabelSets.Count - 1 downto 0 do
+    begin
+      VLS := NewDoc.ValueLabelSets[i];
+      if (not VLS.ProtectedItem) then
+        VLS.Free;
+    end;
+
+  // Because the related datafiles of security log, does NOT contain
+  // and date/time information, collect the ID's that shold be exported instead.
+  DFsl := NewDoc.Logger.SecurityLog;
+  IDvar := DFsl.ID;
+  Datevar := DFsl.Date;
+
+  ExportID := -1;
+  i := DFsl.Size - 1;
+  while (i >= 0) do
+    begin
+      if ((Now - ExportAfterNoDays) > Datevar.AsDate[i]) then
+        begin
+          ExportID := IDvar.AsInteger[i];
+          break;
+        end;
+      Dec(i);
+    end;
+
+  if (ExportID < 0) then
+    Exit(ReportError('Nothing to export!'));
+
+  for DF in NewDoc.DataFiles do
+    DF.Pack(@ExportPackFunction);
+
+  result := DocFile.SaveFile(ExportFilename);
+  Docfile.Free
 end;
 
 end.

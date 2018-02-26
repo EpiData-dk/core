@@ -580,6 +580,12 @@ begin
   begin
     FPassWord := Self.FPassWord;
     FCycleNo  := Self.FCycleNo;
+
+    if Assigned(Self.Logger) then
+      begin
+        FLogger := TEpiLogger.Create(Result, Datafiles);
+        FLogger.LogEvents := Self.Logger.LogEvents;
+      end;
   end;
 end;
 

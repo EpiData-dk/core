@@ -77,6 +77,9 @@ type
       EventType: Word; Data: Pointer);
   public
     constructor Create(AOwner: TEpiCustomBase; DataFiles: TEpiDataFiles); virtual;
+    property    SecurityLog: TEpiSecurityDatafile read FSecurityLog;
+    property    DataLog: TEpiSecurityDataEventLog read FDataLog;
+    property    KeyLog: TEpiSecurityKeyFieldLog read FKeyLog;
 
   { Misc. }
   private
@@ -108,8 +111,11 @@ type
     function   DoNewLog(ALogType: TEpiLogEntry): Integer;  // Result = Index for new record.
     procedure  LogKeyValues(ParentId, RecordNo: integer);
   public
+    // Datafile = the datafile the user is currently accessing
     property   Datafile: TEpiDataFile read FDatafile write SetDatafile;
+    // Name of the user creating a log entry
     property   UserName: UTF8String read FUserName write SetUserName;
+    // Property for activating logging
     property   LogEvents: boolean read FLogEvents write FLogEvents;
 
   { Logging methods }
