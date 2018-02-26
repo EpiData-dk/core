@@ -31,7 +31,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="3"/>
-    <Files Count="85">
+    <Files Count="86">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -372,6 +372,10 @@
         <Filename Value="ImportExport/epiimportsettings.pas"/>
         <UnitName Value="epiimportsettings"/>
       </Item85>
+      <Item86>
+        <Filename Value="Tools/epitools_export_seclog.pas"/>
+        <UnitName Value="epitools_export_seclog"/>
+      </Item86>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
