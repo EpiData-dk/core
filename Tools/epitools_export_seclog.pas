@@ -15,7 +15,9 @@ type
   private
     ExportID: integer;
     FDocumentFileClass: TEpiDocumentFileClass;
-    function ExportPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
+    function ExportedDatafilePackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
+    function OriginalDatafilePackFunction(Sender: TEpiDataFile; Index: Integer
+      ): boolean;
     function ReportError(Const Msg: UTF8String): boolean;
   public
     constructor Create; virtual;
@@ -35,13 +37,22 @@ begin
   result := false;
 end;
 
-function TEpiTool_ExportSecurityLog.ExportPackFunction(Sender: TEpiDataFile;
+function TEpiTool_ExportSecurityLog.ExportedDatafilePackFunction(Sender: TEpiDataFile;
   Index: Integer): boolean;
 var
   ID: TEpiField;
 begin
   ID := Sender.Fields.FieldByName['id'];
   result := (ID.AsInteger[Index] > ExportID);
+end;
+
+function TEpiTool_ExportSecurityLog.OriginalDatafilePackFunction(
+  Sender: TEpiDataFile; Index: Integer): boolean;
+var
+  ID: TEpiField;
+begin
+  ID := Sender.Fields.FieldByName['id'];
+  result := (ID.AsInteger[Index] <= ExportID);
 end;
 
 constructor TEpiTool_ExportSecurityLog.Create;
@@ -116,10 +127,18 @@ begin
     Exit(ReportError('Nothing to export!'));
 
   for DF in NewDoc.DataFiles do
-    DF.Pack(@ExportPackFunction);
+    DF.Pack(@ExportedDatafilePackFunction);
 
   result := DocFile.SaveFile(ExportFilename);
-  Docfile.Free
+  Docfile.Free;
+
+  if (not DeleteLog) then
+    Exit(true);
+
+  // Drop existing data
+  Document.Logger.KeyLog.Pack(@OriginalDatafilePackFunction);
+  Document.Logger.DataLog.Pack(@OriginalDatafilePackFunction);
+  Document.Logger.SecurityLog.Pack(@OriginalDatafilePackFunction);
 end;
 
 end.
