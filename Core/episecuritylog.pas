@@ -317,7 +317,10 @@ begin
 
   // During load do nothing.
   if (not IsLoadingRecords) then
-    ID.AsInteger[Result] := Result;
+    if (Result > 0) then
+      ID.AsInteger[Result] := ID.AsInteger[Result - 1] + 1
+    else
+      ID.AsInteger[Result] := 0;
 end;
 
 end.

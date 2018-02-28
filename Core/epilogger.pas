@@ -14,21 +14,22 @@ resourcestring
 
 type
   TEpiLogEntry = (
-    ltNone,            //  0 - The "empty" entry in the EnumField
-    ltSuccessLogin,    //  1 - A succesfull login
-    ltFailedLogin,     //  2 - An unsuccessfull login
-    ltSearch,          //  3 - Search performed
-    ltNewRecord,       //  4 - New Record added
-    ltEditRecord,      //  5 - Edited an existing record
-    ltViewRecord,      //  6 - Changed record no. in viewer
-    ltPack,            //  7 - Packed datafiles
-    ltAppend,          //  8 - Appended data to datafiles
-    ltExport,          //  9 - Exported data (or part of) to uncontrolled file.
-    ltClose,           // 10 - The document was closed
-    ltNewPassword,     // 11 - The user password was changed/reset
-    ltBlockedLogin,    // 12 - The access to the project was blocked
-    ltExpiredLogin,    // 13 - The user account used for login was expired
-    ltExpiredChange    // 14 - The user accound setting for expired was changed
+    ltNone,              //  0 - The "empty" entry in the EnumField
+    ltSuccessLogin,      //  1 - A succesfull login
+    ltFailedLogin,       //  2 - An unsuccessfull login
+    ltSearch,            //  3 - Search performed
+    ltNewRecord,         //  4 - New Record added
+    ltEditRecord,        //  5 - Edited an existing record
+    ltViewRecord,        //  6 - Changed record no. in viewer
+    ltPack,              //  7 - Packed datafiles
+    ltAppend,            //  8 - Appended data to datafiles
+    ltExport,            //  9 - Exported data (or part of) to uncontrolled file.
+    ltClose,             // 10 - The document was closed
+    ltNewPassword,       // 11 - The user password was changed/reset
+    ltBlockedLogin,      // 12 - The access to the project was blocked
+    ltExpiredLogin,      // 13 - The user account used for login was expired
+    ltExpiredChange,     // 14 - The user accound setting for expired was changed
+    ltSecurityLogExport  // 15 - The security logs were exported to another file
   );
 
 
@@ -51,7 +52,8 @@ const
       'New Password',
       'Blocked Login',
       'Account Expired',
-      'Account Expire Changed'
+      'Account Expire Changed',
+      'Security Log Exported'
     );
 
 type
@@ -132,6 +134,7 @@ type
     procedure  LogAppend();
     procedure  LogClose();
     procedure  LogExport(Settings: TObject);
+    procedure  LogExportSecurityLog(const Filename: UTF8String);
   end;
 
   { TEpiFailedLogger }
@@ -394,48 +397,57 @@ begin
 
 
     eegDataFiles:
-      case TEpiDataFileChangeEventType(EventType) of
-        edcePack:
-          LogPack();
+      begin
+        // Do not log events in the internal datafiles
+        if (Initiator = FSecurityLog) or
+           (Initiator = FDataLog) or
+           (Initiator = FKeyLog)
+        then
+          Exit;
 
-        edceBeginCommit:
-          begin
-            // 0 = new record
-            if PtrInt(Data) = 0 then
-              FCommitState := csNewRecord
-            else
-              // 1 = edit record
-              begin
-                FCommitState := csEditRecord;
-                // Create a new record in the security log, we need the index
-                DoNewLog(ltEditRecord);
-              end;
-          end;
+        case TEpiDataFileChangeEventType(EventType) of
+          edcePack:
+            LogPack();
 
-        edceEndCommit:
-          begin
-            case FCommitState of
-              csNone: ;
-
-              csNewRecord:
-                LogRecordNew();
-
-              csEditRecord:
-                LogRecordEdit(PtrInt(Data));
+          edceBeginCommit:
+            begin
+              // 0 = new record
+              if PtrInt(Data) = 0 then
+                FCommitState := csNewRecord
+              else
+                // 1 = edit record
+                begin
+                  FCommitState := csEditRecord;
+                  // Create a new record in the security log, we need the index
+                  DoNewLog(ltEditRecord);
+                end;
             end;
-            FCommitState := csNone;
-          end;
 
-        edceLoadRecord:
-          LogRecordView(PtrInt(Data));
+          edceEndCommit:
+            begin
+              case FCommitState of
+                csNone: ;
 
-      else
-        {
-        edceSize: ;
-        edceRecordStatus: ;
-        edceStatusbarContentString: ;
-        }
-        Exit;
+                csNewRecord:
+                  LogRecordNew();
+
+                csEditRecord:
+                  LogRecordEdit(PtrInt(Data));
+              end;
+              FCommitState := csNone;
+            end;
+
+          edceLoadRecord:
+            LogRecordView(PtrInt(Data));
+
+        else
+          {
+          edceSize: ;
+          edceRecordStatus: ;
+          edceStatusbarContentString: ;
+          }
+          Exit;
+        end;
       end;
 
     eegFields:
@@ -1150,9 +1162,8 @@ function TEpiLogger.DoNewLog(ALogType: TEpiLogEntry): Integer;
 var
   ADoc: TEpiDocument;
 begin
-  FSecurityLog.NewRecords();
-  Result := FSecurityLog.Size - 1;
-  ADoc := Doc(Self);
+  Result := FSecurityLog.NewRecords();
+  ADoc := Doc(Self.RootOwner);
 
   with FSecurityLog do
   begin
@@ -1264,6 +1275,15 @@ end;
 procedure TEpiLogger.LogPack();
 begin
   DoNewLog(ltPack);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
+end;
+
+procedure TEpiLogger.LogExportSecurityLog(const Filename: UTF8String);
+var
+  Idx: Integer;
+begin
+  Idx := DoNewLog(ltSecurityLogExport);
+  FSecurityLog.LogContent.AsString[Idx] := Filename;
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 

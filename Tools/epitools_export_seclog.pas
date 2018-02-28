@@ -1,5 +1,6 @@
 unit epitools_export_seclog;
 
+{$codepage utf8}
 {$mode objfpc}{$H+}
 
 interface
@@ -15,6 +16,7 @@ type
   private
     ExportID: integer;
     FDocumentFileClass: TEpiDocumentFileClass;
+    FErrorMessage: UTF8String;
     function ExportedDatafilePackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
     function OriginalDatafilePackFunction(Sender: TEpiDataFile; Index: Integer
       ): boolean;
@@ -23,6 +25,7 @@ type
     constructor Create; virtual;
     function ExportSecLog(Document: TEpiDocument; ExportAfterNoDays: Integer; DeleteLog: boolean; ExportFilename: UTF8String): boolean; virtual;
     property DocumentFileClass: TEpiDocumentFileClass read FDocumentFileClass write FDocumentFileClass;
+    property ErrorMessage: UTF8String read FErrorMessage;
   end;
 
 implementation
@@ -34,6 +37,7 @@ uses
 
 function TEpiTool_ExportSecurityLog.ReportError(const Msg: UTF8String): boolean;
 begin
+  FErrorMessage := Msg;
   result := false;
 end;
 
@@ -73,6 +77,7 @@ var
   DocFile: TEpiDocumentFile;
 begin
   result := false;
+  FErrorMessage := '';
 
   if (not Assigned(Document)) then exit(ReportError('Document Not Assigned'));
   if (not Document.Admin.Initialized) then exit(ReportError('Extended Access not initialized'));
@@ -132,6 +137,7 @@ begin
   result := DocFile.SaveFile(ExportFilename);
   Docfile.Free;
 
+  Document.Logger.LogExportSecurityLog(ExportFilename);
   if (not DeleteLog) then
     Exit(true);
 
