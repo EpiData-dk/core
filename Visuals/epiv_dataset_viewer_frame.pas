@@ -434,7 +434,7 @@ end;
 procedure TDatasetViewerFrame.UpdateGrid;
 begin
   VLG.InvalidateToBottom(VLG.GetFirstVisible(nil, true));
-  VLG.Header.AutoFitColumns(false, smaUseColumnOption);
+//  VLG.Header.AutoFitColumns(false, smaUseColumnOption);
 end;
 
 procedure TDatasetViewerFrame.UpdateDataFile;
