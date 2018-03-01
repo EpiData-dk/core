@@ -756,7 +756,7 @@ begin
   inherited LoadFromXml(Root, ReferenceMap);
 
   // Version 6:
-  FDaysBetweenPasswordChange := LoadAttrInt(Root, rsDaysBetweemPw, FDaysBetweenPasswordChange, false);
+  FDaysBetweenPasswordChange := LoadAttrInt(Root, rsDaysBetweemPw, 90, false);
 
   // Load groups
   if LoadNode(Node, Root, rsGroups, false) then

@@ -19,7 +19,7 @@ object DatasetViewerFrame: TDatasetViewerFrame
     TabOrder = 0
     object Button1: TButton
       Left = 16
-      Height = 23
+      Height = 25
       Top = 8
       Width = 144
       Action = ShowValuesOrLabelsAction
@@ -30,7 +30,7 @@ object DatasetViewerFrame: TDatasetViewerFrame
       AnchorSideLeft.Control = Button1
       AnchorSideLeft.Side = asrBottom
       Left = 170
-      Height = 23
+      Height = 25
       Top = 8
       Width = 82
       Action = SortByIndexAction
@@ -43,7 +43,7 @@ object DatasetViewerFrame: TDatasetViewerFrame
       AnchorSideLeft.Control = Button2
       AnchorSideLeft.Side = asrBottom
       Left = 262
-      Height = 23
+      Height = 25
       Top = 8
       Width = 92
       Action = ShowIndexOrAllFieldsAction
@@ -55,7 +55,7 @@ object DatasetViewerFrame: TDatasetViewerFrame
       AnchorSideLeft.Control = Button3
       AnchorSideLeft.Side = asrBottom
       Left = 364
-      Height = 23
+      Height = 25
       Top = 8
       Width = 171
       AutoSize = True
