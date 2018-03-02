@@ -1278,8 +1278,10 @@ begin
     FLastLogin  := LoadAttrDateTime(Root, rsLastLogin, '', 0, false);
   FExpireDate := LoadAttrDateTime(Root, rsExpireDate, '', 0, false);
 
-  // Version 6:
+  // Version 6: (if last pw change wasn't set, then set it to today)
   FLastPWChange := LoadAttrDateTime(Root, rsLastPasswordChange, '', 0, false);
+  if (FLastPWChange = 0) then
+    FLastPWChange := Now();
 
   FCreated    := LoadAttrDateTime(Root, rsCreatedAttr, '', Now, false);
   FModified   := LoadAttrDateTime(Root, rsModifiedAttr, '', Now, false);

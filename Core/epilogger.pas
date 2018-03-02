@@ -1581,11 +1581,11 @@ procedure TEpiFailedLogger.DocumentHook(const Sender: TEpiCustomBase;
   Data: Pointer);
 var
   Idx: Integer;
-  AEvent: TEpiAdminChangeEventType absolute EventType;
+  AEvent: TEpiAdminChangeEventType;
 begin
   if (EventGroup <> eegAdmin) then exit;
 
-
+  AEvent := TEpiAdminChangeEventType(EventType);
   if AEvent in
        [
          eaceAdminUserExpired,            // Data: TEpiUser = the expired user
