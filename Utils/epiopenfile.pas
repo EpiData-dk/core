@@ -482,6 +482,7 @@ begin
 
     A) Housekeeping to know if document is being destroyed.
     B) Force a save if the document request it.
+    C) Add the filename to FEpiDoc.Logger after the logger has initialized
 
   }
 
@@ -494,6 +495,15 @@ begin
       DeleteLockFile;
       FEpiDoc.UnRegisterOnChangeHook(@DocumentHook);
       Exit
+    end;
+
+  // Catch the initialization of Admin (hence logger) and set the filename in the logger accordingly
+  if (EventGroup = eegAdmin) and
+     (TEpiAdminChangeEventType(EventType) = eaceAdminInitializing)
+  then
+    begin
+      FEpiDoc.Logger.Filename := FileName;
+      Exit;
     end;
 
   if (EventGroup = eegCustomBase) and
@@ -855,6 +865,10 @@ var
   Ms: TMemoryStream;
   Fs: TStream;
 begin
+  // Set the filenames such that log entries will be correct
+  FEpiDoc.FailLogger.Filename := AFileName;
+  FEpiDoc.Logger.Filename := AFileName;
+
   EnterCriticalsection(FCriticalSection^);
   FSaveDoc := nil;
   LeaveCriticalsection(FCriticalSection^);
@@ -908,8 +922,11 @@ begin
     if (St.Size = 0) then
       Raise TEpiCoreException.Create('File is empty!');
 
+
     FEpiDoc.OnPassword := OnPassword;
     FEpiDoc.OnLoadError := OnLoadError;
+    FEpiDoc.FailLogger.Filename := AFileName;
+//    FEpiDoc.Logger.Filename     := AFileName;
     FEpiDoc.Admin.OnUserAuthorized := @UserAuthorized;
     FEpiDoc.RegisterOnChangeHook(@DocumentHook, true);
     FEpiDoc.LoadFromStream(St);

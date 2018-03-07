@@ -32,9 +32,8 @@ type
     ltSecurityLogExport  // 15 - The security logs were exported to another file
   );
 
-
 const
-  EpiLogEntryDataFileSet = [ltSearch, ltNewRecord, ltEditRecord, ltViewRecord, ltPack, ltAppend];
+ // EpiLogEntryDataFileSet = [ltSearch, ltNewRecord, ltEditRecord, ltViewRecord, ltPack, ltAppend];
 
   EpiLogEntryText: array[TEpiLogEntry] of string =
     (
@@ -108,6 +107,7 @@ type
     FUserName: UTF8String;
     FDatafile: TEpiDataFile;
     FLogEvents: boolean;
+    FFilename: UTF8string;
     procedure  SetUserName(AValue: UTF8String);
     procedure  SetDatafile(AValue: TEpiDataFile);
     function   DoNewLog(ALogType: TEpiLogEntry): Integer;  // Result = Index for new record.
@@ -119,7 +119,8 @@ type
     property   UserName: UTF8String read FUserName write SetUserName;
     // Property for activating logging
     property   LogEvents: boolean read FLogEvents write FLogEvents;
-
+    // Should be set by the opening TEpiDocumentFile
+    property    Filename: UTF8string read FFilename write FFilename;
   { Logging methods }
   private
     procedure  LogLoginSuccess();
@@ -134,7 +135,8 @@ type
     procedure  LogAppend();
     procedure  LogClose();
     procedure  LogExport(Settings: TObject);
-    procedure  LogExportSecurityLog(const Filename: UTF8String);
+    // Version 6:
+    procedure  LogExportSecurityLog(const ExportFilename: UTF8String);
   end;
 
   { TEpiFailedLogger }
@@ -153,8 +155,10 @@ type
                                       //   3 = blocked login
     FEncryptedTxt:   TEpiField;       // If read from XML, store the encrypted TXT here.
     FHostName:       TEpiField;       //  -   "    -     , store the hostname here.
+    FFileNameField:  TEpiField;       //  -   "    -     , store the filename here.
   private
     FEncrypter: TDCP_rijndael;
+    FFilename: UTF8string;
     procedure DocumentHook(const Sender: TEpiCustomBase;
       const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup;
       EventType: Word; Data: Pointer);
@@ -163,6 +167,8 @@ type
     function    XMLName: string; override;
     function    SaveToDom(RootDoc: TDOMDocument): TDOMElement; override;
     procedure   LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    // Should be set by the opening TEpiDocumentFile
+    property    Filename: UTF8string read FFilename write FFilename;
   public
     // Returns true if the same host has many attempts over a given interval.
     //  @Attemps = number of tries from same host before fail
@@ -983,7 +989,7 @@ begin
         Integer(ltNone): ;
 
         Integer(ltSuccessLogin):
-          LogContent.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
+          MachineName.AsString[Idx] := Self.LoadAttrString(Node, 'hostname');
 
         Integer(ltFailedLogin):
           begin
@@ -994,7 +1000,7 @@ begin
             else
               //
             end;     }
-            LogContent.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
+            MachineName.AsString[Idx]     := Self.LoadAttrString(Node, 'hostname');
           end;
 
         Integer(ltSearch):
@@ -1101,7 +1107,7 @@ begin
             Date.AsDateTime[Idx]          := D;
             Time.AsDateTime[Idx]          := D;
             Cycle.AsInteger[Idx]          := PlainTxtSt.ReadQWord;
-            LogContent.AsString[Idx]      := PlainTxtSt.ReadAnsiString;
+            MachineName.AsString[Idx]     := PlainTxtSt.ReadAnsiString;
           end;
 
         end
@@ -1129,7 +1135,7 @@ begin
           FSecurityLog.Date.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
           FSecurityLog.Time.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
           FSecurityLog.Cycle.AsInteger[Idx]       := ExLogObject.FCycle.AsInteger[i];
-          FSecurityLog.LogContent.AsString[Idx]   := ExLogObject.FHostName.AsString[i];
+          FSecurityLog.MachineName.AsString[Idx]  := ExLogObject.FHostName.AsString[i];
         end;
     end;
 
@@ -1139,7 +1145,6 @@ begin
   Idx := DoNewLog(ltSuccessLogin);
   FSecurityLog.Date.AsDateTime[Idx] := FSuccessLoginTime;
   FSecurityLog.Time.AsDateTime[Idx] := FSuccessLoginTime;
-  FSecurityLog.LogContent.AsString[Idx] := GetHostNameWrapper;
 
   FDecrypter.Free;
   EncryptSt.Free;
@@ -1174,6 +1179,8 @@ begin
     LogType.AsInteger[Result]         := Integer(ALogType);
     if Assigned(FDatafile) then
       DataFileName.AsString[Result]   := FDatafile.Name;
+    Filename.AsString[Result]         := FFilename;
+    MachineName.AsString[Result]      := GetHostNameWrapper;
   end;
 end;
 
@@ -1278,12 +1285,12 @@ begin
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogExportSecurityLog(const Filename: UTF8String);
+procedure TEpiLogger.LogExportSecurityLog(const ExportFilename: UTF8String);
 var
   Idx: Integer;
 begin
   Idx := DoNewLog(ltSecurityLogExport);
-  FSecurityLog.LogContent.AsString[Idx] := Filename;
+  FSecurityLog.LogContent.AsString[Idx] := ExportFilename;
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
@@ -1364,216 +1371,6 @@ begin
   FLogDatafile.FDataContent.AsInteger[Idx] := PtrInt(LogExportDoc);}
 end;
 
-{ TEpiEnumField }
-{
-function TEpiEnumField.GetAsEnum(const Index: Integer): TEpiLogEntry;
-begin
-  CheckIndex(Index);
-  Result := FData[Index];
-end;
-
-procedure TEpiEnumField.SetAsEnum(const Index: Integer; AValue: TEpiLogEntry);
-begin
-  CheckIndex(Index);
-  FData[Index] := AValue;
-end;
-
-function TEpiEnumField.GetAsString(const index: Integer): EpiString;
-begin
-  Result := GetEnumName(TypeInfo(TEpiLogEntry), AsInteger[Index]);
-end;
-
-function TEpiEnumField.DoCompare(i, j: integer): integer;
-begin
-  result := 0;
-end;
-
-function TEpiEnumField.DoGetDefaultValueAsString: string;
-begin
-  result := '';
-end;
-
-procedure TEpiEnumField.DoSetDefaultValueAsString(const AValue: string);
-begin
-  //
-end;
-
-function TEpiEnumField.GetAsBoolean(const index: Integer): EpiBool;
-begin
-
-end;
-
-function TEpiEnumField.GetAsDate(const index: Integer): EpiDate;
-begin
-
-end;
-
-function TEpiEnumField.GetAsDateTime(const index: Integer): EpiDateTime;
-begin
-
-end;
-
-function TEpiEnumField.GetAsFloat(const index: Integer): EpiFloat;
-begin
-
-end;
-
-function TEpiEnumField.GetAsTime(const index: Integer): EpiTime;
-begin
-
-end;
-
-function TEpiEnumField.GetAsValue(const index: Integer): EpiVariant;
-begin
-  result := 0;
-end;
-
-function TEpiEnumField.GetHasDefaultValue: boolean;
-begin
-  result := false;
-end;
-
-function TEpiEnumField.GetIsMissing(const index: Integer): boolean;
-begin
-  result := (AsEnum[Index] = ltNone);
-end;
-
-procedure TEpiEnumField.MovePackData(const SrcIdx, DstIdx, Count: integer);
-begin
-
-end;
-
-procedure TEpiEnumField.SetAsBoolean(const index: Integer; const AValue: EpiBool
-  );
-begin
-
-end;
-
-procedure TEpiEnumField.SetAsDate(const index: Integer; const AValue: EpiDate);
-begin
-
-end;
-
-procedure TEpiEnumField.SetAsDateTime(const index: Integer;
-  const AValue: EpiDateTime);
-begin
-
-end;
-
-procedure TEpiEnumField.SetAsFloat(const index: Integer; const AValue: EpiFloat
-  );
-begin
-
-end;
-
-procedure TEpiEnumField.SetAsTime(const index: Integer; const AValue: EpiTime);
-begin
-
-end;
-
-procedure TEpiEnumField.SetAsValue(const index: Integer;
-  const AValue: EpiVariant);
-begin
-
-end;
-
-procedure TEpiEnumField.SetHasDefaultValue(const AValue: boolean);
-begin
-
-end;
-
-procedure TEpiEnumField.SetIsMissing(const index: Integer; const AValue: boolean
-  );
-begin
-
-end;
-
-function TEpiEnumField.GetCapacity: Integer;
-begin
-  result := System.Length(FData);
-end;
-
-function TEpiEnumField.GetAsInteger(const index: Integer): EpiInteger;
-begin
-  Result := EpiInteger(AsEnum[Index]);
-end;
-
-procedure TEpiEnumField.SetAsString(const index: Integer;
-  const AValue: EpiString);
-begin
-  SetAsInteger(Index, GetEnumValue(TypeInfo(TEpiLogEntry), AValue));
-end;
-
-procedure TEpiEnumField.SetCapacity(AValue: Integer);
-var
-  i: LongInt;
-begin
-  if AValue = Capacity then exit;
-  System.SetLength(FData, AValue);
-  for i := Capacity to AValue-1 do
-    FData[i] := DefaultMissing;
-  FCapacity := AValue;
-end;
-
-procedure TEpiEnumField.SetAsInteger(const index: Integer;
-  const AValue: EpiInteger);
-begin
-  SetAsEnum(Index, TEpiLogEntry(AValue));
-end;
-
-procedure TEpiEnumField.Exchange(i, j: integer);
-var
-  Tmp: TEpiLogEntry;
-begin
-  Tmp := AsEnum[I];
-  AsEnum[J] := AsEnum[I];
-  AsEnum[I] := Tmp;
-end;
-
-function TEpiEnumField.FormatString(const FillSpace: boolean): string;
-begin
-
-end;
-
-procedure TEpiEnumField.ResetData;
-begin
-  FillByte(FData[0], Length, 0);
-end;
-
-procedure TEpiEnumField.ResetDefaultValue;
-begin
-
-end;
-
-constructor TEpiEnumField.Create(AOwner: TEpiCustomBase;
-  AFieldType: TEpiFieldType);
-begin
-  inherited Create(AOwner, AFieldType);
-end;
-
-class function TEpiEnumField.DefaultMissing: TEpiLogEntry;
-begin
-  result := ltNone;
-end;    }
-
-{ TEpiLog }
-
-{
-constructor TEpiLog.Create(AOwner: TEpiCustomBase; const aSize: integer);
-begin
-  inherited Create(AOwner, aSize);
-
-  FUserNames := Fields.NewField(ftString);
-  FTime      := Fields.NewField(ftTime);
-  FCycle     := Fields.NewField(ftInteger);
-  FType      := TEpiEnumField.Create(nil, ftBoolean);
-  MainSection.Fields.AddItem(FType);
-  FDataFileNames  := Fields.NewField(ftString);
-  FKeyFieldValues := Fields.NewField(ftString);
-  FDataContent    := Fields.NewField(ftInteger);
-  FLogContent     := Fields.NewField(ftString);
-end;
-  }
 { TEpiFailedLogger }
 
 procedure TEpiFailedLogger.DocumentHook(const Sender: TEpiCustomBase;
@@ -1611,6 +1408,7 @@ begin
       end;
       FEncryptedTxt.AsString[Idx] := '';
       FHostName.AsString[Idx]     := GetHostNameWrapper;
+      FFileNameField.AsString[Idx] := Filename;
     end;
 
 
@@ -1626,8 +1424,9 @@ begin
       FCycle.AsInteger[Idx]    := Doc(Self).CycleNo;
       FAesKey.AsString[Idx]    := '';
       FLoginFailType.AsInteger[Idx] := FAILEDLOG_FAILTYPE_BLOCKED_LOGIN;
-      FEncryptedTxt.AsString[Idx] := '';
-      FHostName.AsString[Idx]     := GetHostNameWrapper;
+      FEncryptedTxt.AsString[Idx]   := '';
+      FHostName.AsString[Idx]       := GetHostNameWrapper;
+      FFileNameField.AsString[Idx]  := Filename;
     end;
 end;
 
@@ -1651,6 +1450,7 @@ begin
   FLoginFailType := FLogDataFile.NewField(ftInteger);
   FEncryptedTxt  := FLogDataFile.NewField(ftString);
   FHostName      := FLogDataFile.NewField(ftString);
+  FFileNameField := FLogDataFile.NewField(ftString);
 
   Doc(Self).RegisterOnChangeHook(@DocumentHook, true);
 end;
@@ -1706,6 +1506,7 @@ begin
         PlainTxtMs.WriteAnsiString(FormatDateTime('YYYY/MM/DD HH:NN:SS', FTime.AsDateTime[i]));
         PlainTxtMs.WriteQWord(FCycle.AsInteger[i]);
         PlainTxtMs.WriteAnsiString(FHostName.AsString[i]);
+        PlainTxtMs.WriteAnsiString(FFileNameField.AsString[i]);
 
         PlainTxtMs.Position := 0;
         EncryptMs.Clear;

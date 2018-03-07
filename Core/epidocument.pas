@@ -92,6 +92,7 @@ type
     Property   DataFiles: TEpiDataFiles read FDataFiles;
     Property   Relations: TEpiDatafileRelationList read FRelations;
     Property   Logger: TEpiLogger read FLogger;
+    property   FailLogger: TEpiFailedLogger read FFailedLog;
     property   OnPassword: TRequestPasswordEvent read GetOnPassword write SetOnPassword;
     property   OnLoadError: TEpiDocumentLoadErrorEvent read FOnLoadError write FOnLoadError;
     property   Loading: boolean read FLoading;

@@ -1,5 +1,6 @@
 unit episecuritylog;
 
+{$codepage utf8}
 {$mode objfpc}{$H+}
 
 interface
@@ -53,13 +54,18 @@ type
     FDate:           TEpiField;       // Time of log entry
     FTime:           TEpiField;       // Time of log entry
     FCycle:          TEpiField;       // Cycly no fo the log entry
-    FLogType:        TEpiField;       //
+    FLogType:        TEpiField;       // Category (valuelabel) for the type of log entry
+    FMachineName:    TEpiField;       // Current machine making the log entry
+    FFilename:       TEpiField;       // Location of the file
     FDataFileName:   TEpiField;       // Name of datafile for log entry (if applicable)
     FLogContent:     TEpiField;       // String holder for other data in log entry, content depends on log type.
+  private
+    function InternalCreateField(FieldType: TEpiFieldType; const AName, ACaption: UTF8String): TEpiField;
   public
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
+    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
     function  NewRecords(const Count: Cardinal = 1): integer; override;
     property  ID: TEpifield read FID;
     property  UserName: TEpiField read FUserName;
@@ -67,6 +73,8 @@ type
     property  Time: TEpiField read FTime;
     property  Cycle: TEpiField read FCycle;
     property  LogType: TEpiField read FLogType;
+    property  MachineName: TEpiField read FMachineName;
+    property  Filename: TEpiField read FFilename;
     property  DataFileName: TEpiField read FDataFileName;
     property  LogContent: TEpiField read FLogContent;
   end;
@@ -106,7 +114,7 @@ type
 implementation
 
 uses
-  epilogger;
+  epilogger, epidocument;
 
 { TEpiCustomSecurityDatafile }
 
@@ -248,44 +256,35 @@ end;
 
 { TEpiSecurityDatafile }
 
+function TEpiSecurityDatafile.InternalCreateField(FieldType: TEpiFieldType;
+  const AName, ACaption: UTF8String): TEpiField;
+begin
+  result               := NewField(FieldType);
+  result.Name          := AName;
+  result.Question.Text := ACaption;
+end;
+
 constructor TEpiSecurityDatafile.Create(AOwner: TEpiCustomBase;
   const ASize: integer);
 begin
   inherited Create(AOwner, ASize);
   FProtectedItem := true;
 
-  FID                  := NewField(ftAutoInc);
-  FID.Name             := 'ID';
-  FID.Question.Text    := 'ID';
+  FID := InternalCreateField(ftAutoInc, 'ID', 'ID');
   KeyFields.AddItem(FID);
 
-  FUserName            := NewField(ftString);
-  FUserName.Name       := 'UserName';
-  FUserName.Question.Text := 'User Name';
-
-  FDate                := NewField(ftDMYDate);
-  FDate.Name           := 'Date';
-  FDate.Question.Text    := 'Date';
-
-  FTime                := NewField(ftTime);
-  FTime.Name           := 'Time';
-  FTime.Question.Text    := 'Time';
-
-  FCycle               := NewField(ftInteger);
-  FCycle.Name          := 'Cycle';
-  FCycle.Question.Text    := 'Cycle No';
-
-  FLogType             := NewField(ftInteger);
-  FLogType.Name        := 'LogType';
-  FLogType.Question.Text    := 'Log Type';
-
-  FDataFileName        := NewField(ftString);
-  FDataFileName.Name   := 'DataFormName';
-  FDataFileName.Question.Text    := 'Dataform';
-
-  FLogContent          := NewField(ftString);
-  FLogContent.Name     := 'LogContent';
-  FLogContent.Question.Text    := 'Content';
+  FUserName     := InternalCreateField(ftAutoInc, 'UserName',    'User Name');
+  FDate         := InternalCreateField(ftDMYDate, 'Date',        'Date');
+  FTime         := InternalCreateField(ftTime,    'Time',        'Time');
+  FCycle        := InternalCreateField(ftInteger, 'Cycle',       'Cycle No');
+  FLogType      := InternalCreateField(ftInteger, 'LogType',     'Log Type');
+  // Version 6:
+  FMachineName  := InternalCreateField(ftString,  'MachineName', 'Machine Name');
+  // Version 6:
+  FFilename     := InternalCreateField(ftString,  'Filename',    'Filename location');
+  // Change from DataFormName in v5 to DatasetName in v6
+  FDataFileName := InternalCreateField(ftString,  'DatasetName', 'Dataset Name');
+  FLogContent   := InternalCreateField(ftString,  'LogContent',  'Additional Content');
 end;
 
 destructor TEpiSecurityDatafile.Destroy;
@@ -308,6 +307,43 @@ begin
   FLogType      := Fields.FieldByName['LogType'];
   FDataFileName := Fields.FieldByName['DataFormName'];
   FLogContent   := Fields.FieldByName['LogContent'];
+
+  // In version 6 - two additional fields were introduced, since they do not exists in v5 they are NOT loaded and must be recreated.
+  if (TEpiDocument(RootOwner).Version < 6) then
+    begin
+      FMachineName  := InternalCreateField(ftString,  'MachineName', 'Machine Name');
+      FFilename     := InternalCreateField(ftString,  'Filename',    'Filename location');
+      // Add a fixup reference, such that old data can be placed into the new fields correctly.
+      ReferenceMap.AddFixupReference(Self, TEpiSecurityDatafile, 0, '');
+    end
+  else
+    begin
+      FMachineName  := Fields.FieldByName['MachineName'];
+      FFilename     := Fields.FieldByName['Filename'];
+    end;
+end;
+
+procedure TEpiSecurityDatafile.FixupReferences(
+  EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte;
+  const ReferenceId: string);
+var
+  i: Integer;
+begin
+  inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
+
+  if (EpiClassType <> TEpiSecurityDatafile) then exit;
+  // currently there is only a single type of reference fixup to do - replace some of the data into the new fields
+  if (ReferenceType <> 0) then exit;
+
+
+  for i := 0 to Size - 1 do
+    begin
+      if (TEpiLogEntry(LogType.AsInteger[i]) in [ltFailedLogin, ltBlockedLogin]) then
+        begin
+          MachineName.AsString[i] := LogContent.AsString[i];
+          LogContent.IsMissing[i] := true;
+        end;
+    end;
 end;
 
 
