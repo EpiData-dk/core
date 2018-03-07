@@ -184,10 +184,12 @@ begin
   DoTableCell(1, 3, IntToStr(Document.CycleNo), tcaLeftAdjust);
 
   S := 'Backup on shutdown: ' + BoolToStr(Document.ProjectSettings.BackupOnShutdown, 'yes', 'no') + LineEnding +
+       'Email on shutdown: ' + BoolToStr(Document.ProjectSettings.EmailOnShutdown, 'yes', 'no') + LineEnding +
        'Project Encryption: ';
 
-  if (Assigned(Document.Admin.Admins)) then
-    S += 'extended access'
+  if (Document.Admin.Initialized) then
+      S += 'extended access' + LineEnding +
+           'Length of Password period: ' + IntToStr(Document.Admin.DaysBetweenPasswordChange)
   else if (Document.PassWord <> '') then
     S += 'simple password (data only)'
   else

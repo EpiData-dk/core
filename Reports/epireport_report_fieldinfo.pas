@@ -12,8 +12,6 @@ type
 
   EEpiReportFieldInfo = class(EEpiReportBaseException);
 
-  { TEpiReportProjectHeader }
-
   { TEpiReportFieldInfo }
 
   TEpiReportFieldInfo = class(TEpiReportBase)
@@ -33,7 +31,7 @@ uses
   epistringutils, epimiscutils, epireport_types, epidatafilerelations;
 
 resourcestring
-  SEpiReportFieldInfoNoField = 'EpiReport: No field assigned to field info.';
+  SEpiReportFieldInfoNoField = 'EpiReport: No variable assigned to variable info.';
 
 { TEpiReportFieldInfo }
 
@@ -71,7 +69,7 @@ begin
     if (Notes.Text <> '')             then inc(j);
     if Assigned(Relates)              then inc(j);
 
-    DoTableHeader('Field: ' + Name + ': ' + Question.Text, 2, j + 1, []);
+    DoTableHeader('Variable: ' + Name + ': ' + Question.Text, 2, j + 1, []);
 //    DoTableCell(0, 0, 'Extension:');
 //    DoTableCell(1, 0, 'Content/Value:');
 
@@ -210,7 +208,7 @@ begin
 
     if Assigned(ValueLabelWriteField) then
     begin
-      DoTableCell(0, j, 'Write Value Label text to Field');
+      DoTableCell(0, j, 'Write Value Label text to Variable');
       DoTableCell(1, j, ValueLabelWriteField.Name + ': ' + EpiCutString(ValueLabelWriteField.Question.Text, 15), tcaRightAdjust);
       inc(j);
     end;
