@@ -26,12 +26,12 @@
         </Debugging>
       </Linking>
       <Other>
-        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT_LOAD
--dEPI_ADMIN_NOCRYPT_SAVE"/>
+        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT_LOAD1
+-dEPI_ADMIN_NOCRYPT_SAVE1"/>
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="3"/>
-    <Files Count="86">
+    <Files Count="87">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -376,6 +376,10 @@
         <Filename Value="Tools/epitools_export_seclog.pas"/>
         <UnitName Value="epitools_export_seclog"/>
       </Item86>
+      <Item87>
+        <Filename Value="Reports/epireport_report_userlist.pas"/>
+        <UnitName Value="epireport_report_userlist"/>
+      </Item87>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

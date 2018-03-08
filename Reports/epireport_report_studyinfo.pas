@@ -1,5 +1,6 @@
 unit epireport_report_studyinfo;
 
+{$codepage utf8}
 {$mode objfpc}{$H+}
 
 interface
