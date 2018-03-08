@@ -136,7 +136,7 @@ type
     procedure  LogClose();
     procedure  LogExport(Settings: TObject);
     // Version 6:
-    procedure  LogExportSecurityLog(const ExportFilename: UTF8String);
+    procedure  LogExportSecurityLog(const ExportFilename: UTF8String; StartID, EndID: Integer);
   end;
 
   { TEpiFailedLogger }
@@ -1287,12 +1287,13 @@ begin
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 
-procedure TEpiLogger.LogExportSecurityLog(const ExportFilename: UTF8String);
+procedure TEpiLogger.LogExportSecurityLog(const ExportFilename: UTF8String;
+  StartID, EndID: Integer);
 var
   Idx: Integer;
 begin
   Idx := DoNewLog(ltSecurityLogExport);
-  FSecurityLog.LogContent.AsString[Idx] := ExportFilename;
+  FSecurityLog.LogContent.AsString[Idx] := ExportFilename + Format(' (%d,%d)', [StartID, EndID]);
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 

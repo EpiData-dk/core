@@ -31,7 +31,7 @@ type
 implementation
 
 uses
-  LazFileUtils, epiglobals, episecuritylog;
+  LazFileUtils, epiglobals, episecuritylog, epidatafilestypes;
 
 { TEpiTool_ExportSecurityLog }
 
@@ -44,19 +44,21 @@ end;
 function TEpiTool_ExportSecurityLog.ExportedDatafilePackFunction(Sender: TEpiDataFile;
   Index: Integer): boolean;
 var
-  ID: TEpiField;
+  ID: EpiInteger;
 begin
-  ID := Sender.Fields.FieldByName['id'];
-  result := (ID.AsInteger[Index] > ExportID);
+  ID := Sender.Fields.FieldByName['id'].AsInteger[Index];
+  // In the export datasets, drop all obs after the ExportID AND drop ID = 0 (since it should only exist in the original dataset)
+  result := (ID > ExportID) or (ID = 0);
 end;
 
 function TEpiTool_ExportSecurityLog.OriginalDatafilePackFunction(
   Sender: TEpiDataFile; Index: Integer): boolean;
 var
-  ID: TEpiField;
+  ID: Int64;
 begin
-  ID := Sender.Fields.FieldByName['id'];
-  result := (ID.AsInteger[Index] <= ExportID);
+  ID := Sender.Fields.FieldByName['id'].AsInteger[Index];
+  // In the origianl datasets, drop all obs before the ExportID, but keep the first log entry ID = 0
+  result := (ID <= ExportID) and (ID <> 0);
 end;
 
 constructor TEpiTool_ExportSecurityLog.Create;
@@ -118,7 +120,8 @@ begin
 
   ExportID := -1;
   i := DFsl.Size - 1;
-  while (i >= 0) do
+  // i >= 1 here, because we NEVER export ID = 0 (design choice)
+  while (i >= 1) do
     begin
       if ((Now - ExportAfterNoDays) > Datevar.AsDate[i]) then
         begin
@@ -137,7 +140,7 @@ begin
   result := DocFile.SaveFile(ExportFilename);
   Docfile.Free;
 
-  Document.Logger.LogExportSecurityLog(ExportFilename);
+  Document.Logger.LogExportSecurityLog(ExportFilename, Document.Logger.SecurityLog.ID.AsInteger[1], ExportID);
   if (not DeleteLog) then
     Exit(true);
 
