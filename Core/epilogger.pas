@@ -1105,9 +1105,10 @@ begin
             UserName.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
             D := ScanDateTime('YYYY/MM/DD HH:NN:SS', PlainTxtSt.ReadAnsiString);
             Date.AsDateTime[Idx]          := D;
-            Time.AsDateTime[Idx]          := D;
+            Time.AsTime[Idx]              := TimeOf(D);
             Cycle.AsInteger[Idx]          := PlainTxtSt.ReadQWord;
             MachineName.AsString[Idx]     := PlainTxtSt.ReadAnsiString;
+            Filename.AsString[Idx]        := PlainTxtSt.ReadAnsiString;
           end;
 
         end
@@ -1133,9 +1134,10 @@ begin
 
           FSecurityLog.UserName.AsString[Idx]     := ExLogObject.FUserNames.AsString[i];
           FSecurityLog.Date.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
-          FSecurityLog.Time.AsDateTime[Idx]       := ExLogObject.FTime.AsDateTime[i];
+          FSecurityLog.Time.AsDateTime[Idx]       := TimeOf(ExLogObject.FTime.AsDateTime[i]);
           FSecurityLog.Cycle.AsInteger[Idx]       := ExLogObject.FCycle.AsInteger[i];
           FSecurityLog.MachineName.AsString[Idx]  := ExLogObject.FHostName.AsString[i];
+          FSecurityLog.Filename.AsString[Idx]     := ExLogObject.FFileNameField.AsString[i];
         end;
     end;
 

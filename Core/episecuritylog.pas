@@ -65,7 +65,6 @@ type
     constructor Create(AOwner: TEpiCustomBase; const ASize: integer = 0); override;
     destructor Destroy; override;
     procedure LoadFromXml(Root: TDOMNode; ReferenceMap: TEpiReferenceMap); override;
-    procedure FixupReferences(EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte; const ReferenceId: string); override;
     function  NewRecords(const Count: Cardinal = 1): integer; override;
     property  ID: TEpifield read FID;
     property  UserName: TEpiField read FUserName;
@@ -294,6 +293,8 @@ end;
 
 procedure TEpiSecurityDatafile.LoadFromXml(Root: TDOMNode;
   ReferenceMap: TEpiReferenceMap);
+var
+  i: Integer;
 begin
   inherited LoadFromXml(Root, ReferenceMap);
 
@@ -313,8 +314,16 @@ begin
     begin
       FMachineName  := InternalCreateField(ftString,  'MachineName', 'Machine Name');
       FFilename     := InternalCreateField(ftString,  'Filename',    'Filename location');
-      // Add a fixup reference, such that old data can be placed into the new fields correctly.
-      ReferenceMap.AddFixupReference(Self, TEpiSecurityDatafile, 0, '');
+
+      // Since we have reorganized data in v6, move things around.
+      for i := 0 to Size - 1 do
+        begin
+          if (TEpiLogEntry(LogType.AsInteger[i]) in [ltFailedLogin, ltBlockedLogin, ltSuccessLogin]) then
+            begin
+              MachineName.AsString[i] := LogContent.AsString[i];
+              LogContent.IsMissing[i] := true;
+            end;
+        end;
     end
   else
     begin
@@ -322,30 +331,6 @@ begin
       FFilename     := Fields.FieldByName['Filename'];
     end;
 end;
-
-procedure TEpiSecurityDatafile.FixupReferences(
-  EpiClassType: TEpiCustomBaseClass; ReferenceType: Byte;
-  const ReferenceId: string);
-var
-  i: Integer;
-begin
-  inherited FixupReferences(EpiClassType, ReferenceType, ReferenceId);
-
-  if (EpiClassType <> TEpiSecurityDatafile) then exit;
-  // currently there is only a single type of reference fixup to do - replace some of the data into the new fields
-  if (ReferenceType <> 0) then exit;
-
-
-  for i := 0 to Size - 1 do
-    begin
-      if (TEpiLogEntry(LogType.AsInteger[i]) in [ltFailedLogin, ltBlockedLogin]) then
-        begin
-          MachineName.AsString[i] := LogContent.AsString[i];
-          LogContent.IsMissing[i] := true;
-        end;
-    end;
-end;
-
 
 function TEpiSecurityDatafile.NewRecords(const Count: Cardinal): integer;
 begin
