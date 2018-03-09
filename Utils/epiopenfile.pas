@@ -867,7 +867,8 @@ var
 begin
   // Set the filenames such that log entries will be correct
   FEpiDoc.FailLogger.Filename := AFileName;
-  FEpiDoc.Logger.Filename := AFileName;
+  if (FEpiDoc.Admin.Initialized) then
+    FEpiDoc.Logger.Filename := AFileName;
 
   EnterCriticalsection(FCriticalSection^);
   FSaveDoc := nil;
