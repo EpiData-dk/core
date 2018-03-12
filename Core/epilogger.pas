@@ -29,7 +29,8 @@ type
     ltBlockedLogin,      // 12 - The access to the project was blocked
     ltExpiredLogin,      // 13 - The user account used for login was expired
     ltExpiredChange,     // 14 - The user accound setting for expired was changed
-    ltSecurityLogExport  // 15 - The security logs were exported to another file
+    ltSecurityLogExport, // 15 - The security logs were exported to another file
+    ltRecordStatus       // 16 - The status of the observation changed
   );
 
 const
@@ -52,7 +53,8 @@ const
       'Blocked Login',
       'Account Expired',
       'Account Expire Changed',
-      'Security Log Exported'
+      'Security Log Exported',
+      'Observation Status Changed'
     );
 
 type
@@ -127,6 +129,7 @@ type
     procedure  LogRecordNew();
     procedure  LogRecordEdit(RecordNo: Integer);
     procedure  LogRecordView(RecordNo: Integer);
+    procedure  LogRecordStatus(Status: PEpiDataFileStatusRecord);
     procedure  LogPack();
     procedure  LogPassword();
     procedure  LogExpiredChange(NewExpiredDate: TDateTime);
@@ -446,10 +449,13 @@ begin
           edceLoadRecord:
             LogRecordView(PtrInt(Data));
 
+          edceRecordStatus:
+            if (not TEpiDocument(Sender).Loading) then
+              LogRecordStatus(PEpiDataFileStatusRecord(Data));
+
         else
           {
           edceSize: ;
-          edceRecordStatus: ;
           edceStatusbarContentString: ;
           }
           Exit;
@@ -1278,6 +1284,20 @@ var
 begin
   Idx := DoNewLog(ltViewRecord);
   LogKeyValues(FSecurityLog.ID.AsInteger[Idx], RecordNo);
+  DoChange(eegCustomBase, Word(ecceRequestSave), nil);
+end;
+
+procedure TEpiLogger.LogRecordStatus(Status: PEpiDataFileStatusRecord);
+var
+  Idx: Integer;
+begin
+  Idx := DoNewLog(ltRecordStatus);
+  LogKeyValues(FSecurityLog.ID.AsInteger[Idx], Status^.Index);
+  case Status^.NewValue of
+    rsNormal:   FSecurityLog.LogContent.AsString[Idx] := 'normal';
+    rsVerified: FSecurityLog.LogContent.AsString[Idx] := 'verified';
+    rsDeleted:  FSecurityLog.LogContent.AsString[Idx] := 'deleted';
+  end;
   DoChange(eegCustomBase, Word(ecceRequestSave), nil);
 end;
 

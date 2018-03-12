@@ -503,7 +503,8 @@ procedure TEpiDataFile.SetDeleted(Index: integer; const AValue: boolean);
 var
   Val: PEpiDataFileStatusRecord;
 begin
-  if Ord(AValue) = FRecordStatus.AsInteger[Index] then exit;
+  if not ((AValue) xor (FRecordStatus.AsInteger[Index] = ord(rsDeleted))) then
+    exit;
 
   Val := New(PEpiDataFileStatusRecord);
   Val^.Index := Index;
@@ -543,7 +544,8 @@ procedure TEpiDataFile.SetVerified(Index: integer; const AValue: boolean);
 var
   Val: PEpiDataFileStatusRecord;
 begin
-  if Ord(AValue) = FRecordStatus.AsInteger[Index] then exit;
+  if not ((AValue) xor (FRecordStatus.AsInteger[Index] = ord(rsVerified))) then
+    exit;
 
   Val := New(PEpiDataFileStatusRecord);
   Val^.Index := Index;
@@ -553,6 +555,8 @@ begin
     FRecordStatus.AsInteger[Index] := Ord(rsVerified)
   else
     FRecordStatus.AsInteger[Index] := Ord(rsNormal);
+
+  Val^.NewValue := TEpiRecordState(FRecordStatus.AsInteger[Index]);
 
   DoChange(eegDataFiles, Word(edceRecordStatus), Val);
   Dispose(Val);

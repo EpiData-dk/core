@@ -272,7 +272,7 @@ begin
   FID := InternalCreateField(ftAutoInc, 'ID', 'ID');
   KeyFields.AddItem(FID);
 
-  FUserName     := InternalCreateField(ftAutoInc, 'UserName',    'User Name');
+  FUserName     := InternalCreateField(ftString,  'UserName',    'User Name');
   FDate         := InternalCreateField(ftDMYDate, 'Date',        'Date');
   FTime         := InternalCreateField(ftTime,    'Time',        'Time');
   FCycle        := InternalCreateField(ftInteger, 'Cycle',       'Cycle No');
@@ -306,12 +306,14 @@ begin
   FTime         := Fields.FieldByName['Time'];
   FCycle        := Fields.FieldByName['Cycle'];
   FLogType      := Fields.FieldByName['LogType'];
-  FDataFileName := Fields.FieldByName['DataFormName'];
   FLogContent   := Fields.FieldByName['LogContent'];
 
   // In version 6 - two additional fields were introduced, since they do not exists in v5 they are NOT loaded and must be recreated.
   if (TEpiDocument(RootOwner).Version < 6) then
     begin
+      // In v5 and before, the name of the field was DataFormName...
+      FDataFileName := Fields.FieldByName['DataFormName'];
+      FDataFileName.Name := 'DatasetName';
       FMachineName  := InternalCreateField(ftString,  'MachineName', 'Machine Name');
       FFilename     := InternalCreateField(ftString,  'Filename',    'Filename location');
 
@@ -327,6 +329,7 @@ begin
     end
   else
     begin
+      FDataFileName := Fields.FieldByName['DatasetName'];
       FMachineName  := Fields.FieldByName['MachineName'];
       FFilename     := Fields.FieldByName['Filename'];
     end;
