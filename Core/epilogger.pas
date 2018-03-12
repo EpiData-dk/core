@@ -364,6 +364,8 @@ end;
 procedure TEpiLogger.DocumentHook(const Sender: TEpiCustomBase;
   const Initiator: TEpiCustomBase; EventGroup: TEpiEventGroup; EventType: Word;
   Data: Pointer);
+var
+  CurrentDF: TEpiDataFile;
 begin
   if (not LogEvents) then
     Exit;
@@ -450,8 +452,13 @@ begin
             LogRecordView(PtrInt(Data));
 
           edceRecordStatus:
-            if (not TEpiDocument(Sender).Loading) then
-              LogRecordStatus(PEpiDataFileStatusRecord(Data));
+            begin
+              CurrentDF := FDatafile;
+              Datafile := TEpiDataFile(Initiator);
+              if (not TEpiDocument(Sender).Loading) then
+                LogRecordStatus(PEpiDataFileStatusRecord(Data));
+              Datafile := CurrentDF;
+            end;
 
         else
           {
