@@ -87,7 +87,7 @@ implementation
 
 uses
   epistringutils, LConvEncoding, LazUTF8, epifields_helper,
-  math, epimiscutils;
+  math, epimiscutils, dateutils;
 
 { TEpiStataExport }
 
@@ -760,7 +760,9 @@ begin
             if (F.IsMissingValue[CurRec]) and
                (F.FieldType <> ftInteger)
             then
-              FVal := StataContent(F)^.FloatValueLabelMap.KeyData[F.AsFloat[CurRec]];
+              FVal := StataContent(F)^.FloatValueLabelMap.KeyData[F.AsFloat[CurRec]]
+            else if (F.FieldType in TimeFieldTypes) then
+              FVal := round(MilliSecondSpan(FVal, 0));
 
             WriteDouble(FVal);
           end;

@@ -239,8 +239,11 @@ function TEpiSecurityValuelabelSet.DoClone(AOwner: TEpiCustomBase;
 begin
   // if we already have initialized the valuelabels, then
   // clear them and do the clone instead
-  if TEpiSecurityValuelabelSet(Dest).FInitialized then
+  if (Assigned(Dest)) and
+     (TEpiSecurityValuelabelSet(Dest).FInitialized)
+  then
     TEpiSecurityValuelabelSet(Dest).ClearAndFree;
+
   Result := inherited DoClone(AOwner, Dest, ReferenceMap);
 end;
 
