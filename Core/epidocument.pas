@@ -466,14 +466,18 @@ begin
       if (PW <> '') and (Assigned(OnPassword)) then
       repeat
         Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
+        // From XML v6 the password hashing changed to SHA512
+        if Version <= 5 then
+          UserPW := StrToSHA1Base64(UserPW)
+        else
+          UserPW := StrToSHA512Base64(UserPW);
         Inc(Count);
-      until (StrToSHA1Base64(UserPW) = PW) or
-            (Res in [rprStopOnFail, rprCanceled]);
+      until (UserPW = PW) or (Res in [rprStopOnFail, rprCanceled]);
 
       if (Res = rprCanceled) then
         Raise EEpiPasswordCanceled.Create('');
 
-      if (PW <> '') and (StrToSHA1Base64(UserPW) <> PW) then
+      if (PW <> '') and (UserPW <> PW) then
         Raise EEpiBadPassword.Create('Incorrect Password');
 
       PassWord := UserPW;
@@ -672,7 +676,8 @@ begin
 
   // Version 2 Properties:
   if PassWord <> '' then
-    SaveDomAttr(Result, rsPassword, StrToSHA1Base64(PassWord));
+    SaveDomAttr(Result, rsPassword, StrToSHA512Base64(PassWord)); // As of XML v6, this was changed to SHA512 (more secure)
+//    SaveDomAttr(Result, rsPassword, StrToSHA1Base64(PassWord));
 
   SaveDomAttr(Result, rsCycle, CycleNo);
 

@@ -76,6 +76,7 @@ const
 
   // Encryption Utils
   function StrToSHA1Base64(const S: string): string;
+  function StrToSHA512Base64(const S: string): string;
 
   // Returns true if Name is a field name defined in EpiGlobals.pas
   function IsReservedEpiFieldName(Const Name: string): boolean;
@@ -105,7 +106,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  zipper, FileUtil, DCPsha1, DCPbase64, epiglobals, ufileassociation, LazUTF8;
+  zipper, FileUtil, DCPsha1, DCPsha512, DCPbase64, epiglobals, ufileassociation, LazUTF8;
 
 type
   TEpiDialogFilterPair = record
@@ -348,6 +349,20 @@ begin
   Sha1.Final(Digest[1]);
   result := Base64EncodeStr(Digest);
   Sha1.Free;
+end;
+
+function StrToSHA512Base64(const S: string): string;
+var
+  Sha: TDCP_sha512;
+  Digest: RawByteString;
+begin
+  SetLength(Digest, (TDCP_sha512.GetHashSize div 8));
+  Sha := TDCP_sha512.Create(nil);
+  Sha.Init;
+  Sha.UpdateStr(S);
+  Sha.Final(Digest[1]);
+  result := Base64EncodeStr(Digest);
+  Sha.Free;
 end;
 
 function IsReservedEpiFieldName(const Name: string): boolean;
