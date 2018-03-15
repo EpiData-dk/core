@@ -169,7 +169,6 @@ type
     // -- although clear text here means a sequence of 16 random bytes.
     FMasterPassword: string;
     function   DoRequestPassword(FailLogger: TEpiCustomBase; ReferenceMap: TEpiReferenceMap; DocumentNode: TDOMNode = nil): TEpiRequestPasswordResult;
-    procedure  SetMasterPassword(const AValue: string);
     procedure  DoUserAuthorized(Const User: TEpiUser);
     procedure SetDaysBetweenPasswordChange(AValue: integer);
 
@@ -207,7 +206,7 @@ type
     procedure  ResetAll;
     procedure  InitAdmin;
 //    function   RequestPassword(Const RepeatCount: Byte): TRequestPasswordResult;
-    property   MasterPassword: string read FMasterPassword write SetMasterPassword;
+    property   MasterPassword: string read FMasterPassword;
     property   OnPassWord: TRequestPasswordEvent read FOnPassWord write FOnPassWord;
     property   OnUserAuthorized: TEpiUserAuthorizedEvent read FOnUserAuthorized write FOnUserAuthorized;
 
@@ -258,11 +257,14 @@ type
 
   { TEpiUser }
 
+  TEpiUserHashType = (htSHA1, htSHA512);
+
   TEpiUser = class(TEpiCustomItem)
   private
     FCreated: TDateTime;
     FGroups: TEpiGroups;
     FExpireDate: TDateTime;
+    FHashType: TEpiUserHashType;
     FLastLogin: TDateTime;
     FFullName: UTF8String;
     FLastPWChange: TDateTime;
@@ -308,6 +310,7 @@ type
     Property   Login: UTF8String read GetLogin write SetLogin;
     Property   Password: UTF8String read FPassword write SetPassword;
     Property   MasterPassword: string read FMasterPassword;
+    Property   HashType: TEpiUserHashType read FHashType;
     // Scrambled data:
     Property   Groups: TEpiGroups read FGroups;
     Property   LastLogin: TDateTime read FLastLogin write SetLastLogin;
@@ -522,7 +525,7 @@ function TEpiAdmin.DoRequestPassword(FailLogger: TEpiCustomBase;
   ReferenceMap: TEpiReferenceMap; DocumentNode: TDOMNode
   ): TEpiRequestPasswordResult;
 var
-  Login, Password, NewPassword: UTF8String;
+  Login, Password, NewPassword, S: UTF8String;
   TheUser: TEpiUser;
   Key: String;
   Res: TEpiRequestPasswordResponse;
@@ -531,6 +534,7 @@ var
   SS: TStringStream;
   MS: TMemoryStream;
   DeCrypter: TDCP_rijndael;
+  OldPWChangeDate: TDateTime;
 begin
   result := prFailed;
 
@@ -568,7 +572,14 @@ begin
         Continue;
       end;
 
-    if ('$' + Base64EncodeStr(TheUser.Salt) + '$' + StrToSHA1Base64(TheUser.Salt + Password + Login) = TheUser.Password) then
+    // From v6 password were changed to hash with SHA512 (more secure)
+    S := '$' + Base64EncodeStr(TheUser.Salt) + '$';
+    case TheUser.HashType of
+      htSHA1:   S := S + StrToSHA1Base64(TheUser.Salt + Password + Login);
+      htSHA512: S := S + StrToSHA512Base64(TheUser.Salt + Password + Login);
+    end;
+
+    if (S = TheUser.Password) then
       Result := prSuccess
     else
       begin
@@ -587,7 +598,17 @@ begin
     Exit;
 
   Key := TheUser.Salt + Password + Login;
-  MasterPassword := Decrypt(Key, TheUser.MasterPassword);
+  FMasterPassword := Decrypt(Key, TheUser.MasterPassword);
+
+  // Update the password hash to SHA512 if it wasn't
+  if (TheUser.HashType <> htSHA512) then
+    begin
+      OldPWChangeDate := TheUser.LastPWChange;
+      TheUser.Password := Password;
+      // Since setting password above, also changes the LastPWChange - we must set it back.
+      // - it will however force a password change log event.
+      TheUser.FLastPWChange := OldPWChangeDate;
+    end;
 
   // Load and decrypt the rest
   if (TEpiDocument(RootOwner).Version >= 6) and
@@ -598,6 +619,7 @@ begin
       LoadNode(Node, DocumentNode, rsEncrypted, true);
 
       SS := TStringStream.Create(Base64DecodeStr(Node.TextContent));
+      SS.Position := 0;
       MS := TMemoryStream.Create;
 
       DeCrypter := TDCP_rijndael.Create(nil);
@@ -665,12 +687,6 @@ begin
     end;
 end;
 
-procedure TEpiAdmin.SetMasterPassword(const AValue: string);
-begin
-  if FMasterPassword = AValue then exit;
-  FMasterPassword := AValue;
-end;
-
 procedure TEpiAdmin.DoUserAuthorized(const User: TEpiUser);
 begin
   FAuthorizedUser := User;
@@ -702,16 +718,16 @@ end;
 
 constructor TEpiAdmin.Create(AOwner: TEpiCustomBase);
 var
-  Key: array[0..3] of LongInt;
-  KeyByte: array[0..3*SizeOf(LongInt)] of Char absolute Key;
+  Key: array[0..7] of LongInt;
+  KeyByte: array[0..High(Key) * SizeOf(LongInt)] of Char absolute Key;
   i: Integer;
 begin
   inherited Create(AOwner);
   FInitialized := false;
 
-  for i := 0 to 3 do
+  for i := Low(Key) to High(Key) do
     Key[i] := Random(maxLongint - 1) + 1;
-  MasterPassword := String(KeyByte);
+  FMasterPassword := String(KeyByte);
 
   FUsers := TEpiUsers.Create(self);
   FUsers.ItemOwner := true;
@@ -899,6 +915,7 @@ begin
     begin
       Self.FAdminRelations.DoClone(Result, FAdminRelations, ReferenceMap);
       FDaysBetweenPasswordChange := Self.FDaysBetweenPasswordChange;
+      FInitialized    := Self.FInitialized;
       FMasterPassword := Self.FMasterPassword;
       FRSA.PrivateKey := Self.FRSA.PrivateKey;
       FRSA.PublicKey  := Self.FRSA.PublicKey;
@@ -999,6 +1016,7 @@ begin
     NUser.FPassword := LoadAttrString(Node, rsPassword);
     NUser.FSalt := Base64DecodeStr(ExtractStrBetween(NUser.FPassword, '$', '$'));
     NUser.FMasterPassword := LoadAttrString(Node, rsMasterPassword);
+    NUser.FHashType := TEpiUserHashType(LoadAttrEnum(Node, rsHashType, TypeInfo(TEpiUserHashType), 'htSHA1', false));
 
     Node := Node.NextSibling;
   end;
@@ -1016,9 +1034,10 @@ begin
     begin
       UserNode := RootDoc.CreateElement(rsUser);
 
-      SaveDomAttr(UserNode, rsName,           User.Login);
-      SaveDomAttr(UserNode, rsPassword,       User.Password);
-      SaveDomAttr(UserNode, rsMasterPassword, User.MasterPassword);
+      SaveDomAttr(UserNode,     rsName,           User.Login);
+      SaveDomAttr(UserNode,     rsPassword,       User.Password);
+      SaveDomAttr(UserNode,     rsMasterPassword, User.MasterPassword);
+      SaveDomAttrEnum(UserNode, rsHashType,       User.HashType, TypeInfo(TEpiUserHashType));
 
       Result.AppendChild(UserNode);
     end;
@@ -1128,12 +1147,15 @@ var
 begin
   SaltInt := (Random(maxLongint - 1) + 1) or $80000000;  // Must have highest bit set.
   FSalt := String(SaltByte);
+  Key := Salt + AValue + Login;
 
   // Sha1 the new password and Base64 it..
-  FPassword := '$' + Base64EncodeStr(Salt) + '$' + StrToSHA1Base64(Salt + AValue + Login);
+//  FPassword := '$' + Base64EncodeStr(Salt) + '$' + StrToSHA1Base64(Salt + AValue + Login);
+  // As of v6 XML we have changed to SHA512 (more secure)
+  FPassword := '$' + Base64EncodeStr(Salt) + '$' + StrToSHA512Base64(Key);
+  FHashType := htSHA512;
 
   // Scramble master password with own key.
-  Key := Salt + AValue + Login;
   FMasterPassword := Admin.Encrypt(Key, Admin.MasterPassword);
 
   FLastPWChange := Now;
@@ -1171,6 +1193,8 @@ begin
     FPassword       := Self.FPassword;
     FSalt           := Self.FSalt;
     FNotes          := Self.FNotes;
+    // v6:
+    FHashType       := Self.FHashType;
   end;
 
   S := '';

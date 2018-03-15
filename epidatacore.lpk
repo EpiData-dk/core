@@ -26,8 +26,8 @@
         </Debugging>
       </Linking>
       <Other>
-        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT_LOAD
--dEPI_ADMIN_NOCRYPT_SAVE"/>
+        <CustomOptions Value="-dEPI_ADMIN_NOCRYPT_LOAD1
+-dEPI_ADMIN_NOCRYPT_SAVE1"/>
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="3"/>

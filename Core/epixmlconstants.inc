@@ -49,6 +49,7 @@ const
       rsFullName        = 'FullName';
       rsPassword        = 'password';
       rsMasterPassword  = 'masterPassword';
+      rsHashType        = 'hashType';
       rsLastLogin       = 'lastLogin';
       rsExpireDate      = 'expireDate';
       rsLastPasswordChange = 'lastPasswordChange';
