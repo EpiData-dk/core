@@ -31,7 +31,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="3"/>
-    <Files Count="87">
+    <Files Count="88">
       <Item1>
         <Filename Value="Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -380,6 +380,10 @@
         <Filename Value="Reports/epireport_report_userlist.pas"/>
         <UnitName Value="epireport_report_userlist"/>
       </Item87>
+      <Item88>
+        <Filename Value="Tools/epitools_archieve.pas"/>
+        <UnitName Value="epitools_archieve"/>
+      </Item88>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

@@ -29,7 +29,8 @@ uses
   epidatafilerelations_helper, epiexport_stata, epifields_helper, 
   epiimport_stata, epitools_statusbarparser, epi_rsa, epilogger, 
   episecuritylog, epicustomlist_helper, episervice_asynchandler, 
-  epiimportsettings, epitools_export_seclog, epireport_report_userlist;
+  epiimportsettings, epitools_export_seclog, epireport_report_userlist, 
+  epitools_archieve;
 
 implementation
 
