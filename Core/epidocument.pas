@@ -466,18 +466,19 @@ begin
       if (PW <> '') and (Assigned(OnPassword)) then
       repeat
         Res := OnPassword(Self, erpSinglePassword, Count, Login, UserPW);
+
         // From XML v6 the password hashing changed to SHA512
         if Version <= 5 then
-          UserPW := StrToSHA1Base64(UserPW)
+          S := StrToSHA1Base64(UserPW)
         else
-          UserPW := StrToSHA512Base64(UserPW);
+          S := StrToSHA512Base64(UserPW);
         Inc(Count);
-      until (UserPW = PW) or (Res in [rprStopOnFail, rprCanceled]);
+      until (S = PW) or (Res in [rprStopOnFail, rprCanceled]);
 
       if (Res = rprCanceled) then
         Raise EEpiPasswordCanceled.Create('');
 
-      if (PW <> '') and (UserPW <> PW) then
+      if (PW <> '') and (S <> PW) then
         Raise EEpiBadPassword.Create('Incorrect Password');
 
       PassWord := UserPW;
