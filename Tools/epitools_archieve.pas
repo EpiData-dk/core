@@ -9,6 +9,10 @@ uses
 
 type
 
+  TEpiToolArchiveProgressEvent = procedure (Sender: TObject;
+    FileNo, FileProgress: Integer;
+    Const Filename: String; out Cancel: boolean) of object;
+
   { TEpiToolCompressor }
 
   TEpiToolCompressor = class
@@ -16,13 +20,25 @@ type
     FFiles: TStrings;
     FOnCompressError: TNotifyEvent;
     FOnEncryptionError: TNotifyEvent;
+    FOnProgress: TEpiToolArchiveProgressEvent;
     FPassword: UTF8String;
     FRootDir: UTF8String;
+    FZip: TZipper;
+  private
+    // Progress handling
+    FFilecounter: integer;
+    FCurrentProgress: Integer;
+    FCurrentFilename: string;
+    procedure InternalEndFile(Sender: TObject; const Ratio: Double);
+    procedure InternalProgress(Sender: TObject; const Pct: Double);
+    procedure InternalStartFile(Sender: TObject; const AFileName: String);
+  protected
+    procedure DoProgress(OverallProgress, FileProgress: Integer; Const Filename: string); virtual;
   public
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
     function CompressToFile(const Filename: UTF8String): boolean;
-    function CompressToStream(ST: TStream): boolean;
+    function CompressToStream(ST: TStream): boolean; virtual;
     property RootDir: UTF8String read FRootDir write FRootDir;
     // Input files to compress (and encrypt)
     property Files: TStrings read FFiles;
@@ -30,6 +46,7 @@ type
     property Password: UTF8String read FPassword write FPassword;
     property OnCompressError: TNotifyEvent read FOnCompressError write FOnCompressError;
     property OnEncryptionError: TNotifyEvent read FOnEncryptionError write FOnEncryptionError;
+    property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
   end;
 
   { TEpiToolDeCompressor }
@@ -66,11 +83,84 @@ uses
 const
   EPITOOL_ARCHIVE_MAGIC = 'EPI1';
 
+type
+
+  { TEpiZipper }
+
+  TEpiZipper = class(TZipper)
+  private
+    FCanceled: boolean;
+  protected
+    procedure ZipOneFile(Item: TZipFileEntry); override;
+  public
+    constructor Create;
+    procedure Cancel;
+    property Canceled: boolean read FCanceled;
+  end;
+
+{ TEpiZipper }
+
+procedure TEpiZipper.ZipOneFile(Item: TZipFileEntry);
+begin
+  if FCanceled then exit;
+  inherited ZipOneFile(Item);
+end;
+
+constructor TEpiZipper.Create;
+begin
+  inherited Create;
+  FCanceled := false;
+end;
+
+procedure TEpiZipper.Cancel;
+begin
+  FCanceled := true;
+end;
+
 { TEpiToolCompressor }
+
+procedure TEpiToolCompressor.InternalStartFile(Sender: TObject;
+  const AFileName: String);
+begin
+  Inc(FFilecounter);
+  FCurrentFilename := AFileName;
+end;
+
+procedure TEpiToolCompressor.InternalProgress(Sender: TObject; const Pct: Double
+  );
+var
+  Val, Current: Int64;
+  Overall: Integer;
+begin
+  //Overall := (100 * FFilecounter) div Files.Count;
+  Current := Trunc(Pct);
+  DoProgress(FFilecounter, Current, FCurrentFilename);
+end;
+
+procedure TEpiToolCompressor.InternalEndFile(Sender: TObject;
+  const Ratio: Double);
+begin
+  //
+end;
+
+procedure TEpiToolCompressor.DoProgress(OverallProgress, FileProgress: Integer;
+  const Filename: string);
+var
+  Cancel: boolean;
+begin
+  Cancel := false;
+
+  if Assigned(OnProgress) then
+    OnProgress(Self, OverallProgress, FileProgress, Filename, Cancel);
+
+  if Cancel then
+    TEpiZipper(FZip).Cancel;
+end;
 
 constructor TEpiToolCompressor.Create;
 begin
   FFiles := TStringListUTF8.Create;
+  FFilecounter := 0;
 end;
 
 destructor TEpiToolCompressor.Destroy;
@@ -87,30 +177,48 @@ begin
   FS := TFileStreamUTF8.Create(Filename, fmCreate);
   result := CompressToStream(FS);
   FS.Free;
+
+  if (not result) and
+     (FileExistsUTF8(Filename))
+  then
+    DeleteFileUTF8(Filename);
 end;
 
 function TEpiToolCompressor.CompressToStream(ST: TStream): boolean;
 var
-  Zip: TZipper;
-  InternalStream: TMemoryStream;
+  InternalStream: TFileStreamUTF8;
   Encrypter: TDCP_rijndael;
-  S: String;
+  S, FN: String;
+  Canceled: Boolean;
 begin
-  InternalStream := TMemoryStream.Create;
+  InternalStream := TFileStreamUTF8.Create(GetTempFileNameUTF8('',''), fmCreate);
 
-  Zip := TZipper.Create;
-  Zip.InMemSize := 64 * 1024 * 1024;  // This allows for 64MB files to be compressed in memory;
+  FZip := TEpiZipper.Create;
+  FZip.InMemSize := 64 * 1024 * 1024;  // This allows for 64MB files to be compressed in memory;
+  FZip.OnStartFile := @InternalStartFile;
+  FZip.OnEndFile   := @InternalEndFile;
+  FZip.OnProgress  := @InternalProgress;
 
   for S in Files do
     begin
       if FileIsInPath(S, RootDir) then
-        Zip.Entries.AddFileEntry(S, ExtractRelativepath(RootDir, S))
+        FZip.Entries.AddFileEntry(S, ExtractRelativepath(RootDir, S))
       else
-        Zip.Entries.AddFileEntry(S);
+        FZip.Entries.AddFileEntry(S);
     end;
 
-  Zip.SaveToStream(InternalStream);
-  Zip.Free;
+  FFilecounter := 0;
+  FCurrentProgress := 0;
+  FZip.SaveToStream(InternalStream);
+  Canceled := TEpiZipper(FZip).Canceled;
+  FZip.Free;
+
+  if Canceled then
+    begin
+      InternalStream.Free;
+      Result := false;
+      Exit;
+    end;
 
   InternalStream.Position := 0;
 
@@ -127,7 +235,11 @@ begin
   else
     ST.CopyFrom(InternalStream, InternalStream.Size);
 
+  FN := InternalStream.FileName;
   InternalStream.Free;
+  DeleteFileUTF8(Fn);
+
+  Result := true;
 end;
 
 { TEpiToolDeCompressor }
