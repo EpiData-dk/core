@@ -1211,7 +1211,7 @@ begin
   FRecordStatus.Capacity := NewCapacity;
   FRecordStatus.Size     := NewSize;
   for i := CurrentSize to NewSize - 1 do
-    Verified[i] := false;
+    FRecordStatus.AsInteger[i] := Integer(rsNormal);
 
   for i := 0 to Fields.Count -1 do
   begin
