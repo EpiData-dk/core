@@ -68,6 +68,8 @@ type
     destructor Destroy; override;
     function DecompressFromFile(Const Filename: UTF8String): boolean;
     function DecompressFromStream(ST: TStream): boolean;
+    function DecryptFromFile(Const Filename: UTF8String): boolean;
+    function DecryptFromStream(ST: TStream): boolean;
     // Directory where all files are unzipped. Make sure the destination exists!
     property DestinationDir: UTF8String read FDestinationDir write FDestinationDir;
     property Password: UTF8String read FPassword write FPassword;
@@ -329,6 +331,8 @@ begin
           Exit(false);
         end;
 
+//      DecryptFromStream(ST);
+
       InternalStream := TMemoryStream.Create;
 
       Decrypter := TDCP_rijndael.Create(nil);
@@ -341,6 +345,17 @@ begin
     end;
 
   // Should we implement a feature to import old .ZKY files?
+end;
+
+function TEpiToolDeCompressor.DecryptFromFile(const Filename: UTF8String
+  ): boolean;
+begin
+
+end;
+
+function TEpiToolDeCompressor.DecryptFromStream(ST: TStream): boolean;
+begin
+
 end;
 
 end.
