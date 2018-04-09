@@ -84,6 +84,7 @@ type
     property OnDecompressionError: TNotifyEvent read FOnDecompressionError write FOnDecompressionError;
     property OnDecryptionError: TNotifyEvent read FOnDecryptionError write FOnDecryptionError;
     property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
+    property Password: UTF8String read FPassword write FPassword;
   end;
 
 implementation
@@ -443,7 +444,7 @@ var
   FS: TFileStreamUTF8;
 begin
   FS := TFileStreamUTF8.Create(Filename, fmOpenRead);
-  Result := DecryptFromStream(FS);
+  Result := DecryptFromStream(FS, Password);
   FS.Free;
 end;
 
