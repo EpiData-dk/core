@@ -33,7 +33,7 @@ type
     procedure InternalProgress(Sender: TObject; const Pct: Double);
     procedure InternalStartFile(Sender: TObject; const AFileName: String);
   protected
-    procedure DoProgress(OverallProgress, FileProgress: Integer; Const Filename: string); virtual;
+    procedure DoProgress(FileCount, FileProgress: Integer; Const Filename: string); virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -56,25 +56,34 @@ type
     FDestinationDir: UTF8String;
     FOnDecompressionError: TNotifyEvent;
     FOnDecryptionError: TNotifyEvent;
+    FOnProgress: TEpiToolArchiveProgressEvent;
     FPassword: UTF8String;
     FDecompressStream: TStream;
+    FFileCount: Integer;
+    FFileName: UTF8String;
+    FUnZip: TUnZipper;
     procedure UnzipCloseStream(Sender: TObject; var AStream: TStream);
+    procedure UnzipFileEnd(Sender: TObject; const Ratio: Double);
+    procedure UnzipFileStart(Sender: TObject; const AFileName: String);
     procedure UnzipOpenStream(Sender: TObject; var AStream: TStream);
+    procedure UnzipProgress(Sender: TObject; const Pct: Double);
   protected
-    function InternalDecompress(ST: TStream): boolean;
+    procedure DoProgress(FileCount, FileProgress: Integer; Const Filename: string); virtual;
+    function  InternalDecompress(ST: TStream): boolean;
     procedure DoDecryptionError();
+    procedure DoDecompressionError(Const Msg: String);
   public
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
     function DecompressFromFile(Const Filename: UTF8String): boolean;
-    function DecompressFromStream(ST: TStream): boolean;
-    function DecryptFromFile(Const Filename: UTF8String): boolean;
-    function DecryptFromStream(ST: TStream): boolean;
+    function DecompressFromStream(ST: TStream): boolean; virtual;
+    function DecryptFromFile(Const Filename: UTF8String; Const Password: UTF8String): boolean;
+    function DecryptFromStream(ST: TStream; Const Password: UTF8String): boolean; virtual;
     // Directory where all files are unzipped. Make sure the destination exists!
     property DestinationDir: UTF8String read FDestinationDir write FDestinationDir;
-    property Password: UTF8String read FPassword write FPassword;
     property OnDecompressionError: TNotifyEvent read FOnDecompressionError write FOnDecompressionError;
     property OnDecryptionError: TNotifyEvent read FOnDecryptionError write FOnDecryptionError;
+    property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
   end;
 
 implementation
@@ -104,7 +113,7 @@ type
 
 procedure TEpiZipper.ZipOneFile(Item: TZipFileEntry);
 begin
-  if FCanceled then exit;
+  if Canceled then exit;
   inherited ZipOneFile(Item);
 end;
 
@@ -115,6 +124,40 @@ begin
 end;
 
 procedure TEpiZipper.Cancel;
+begin
+  FCanceled := true;
+end;
+
+type
+
+  { TEpiUnZipper }
+
+  TEpiUnZipper = class(TUnZipper)
+  private
+    FCanceled: boolean;
+  protected
+    procedure UnZipOneFile(Item: TFullZipFileEntry); override;
+  public
+    constructor Create;
+    procedure Cancel;
+    property Canceled: boolean read FCanceled;
+  end;
+
+{ TEpiUnZipper }
+
+procedure TEpiUnZipper.UnZipOneFile(Item: TFullZipFileEntry);
+begin
+  if Canceled then exit;
+  inherited UnZipOneFile(Item);
+end;
+
+constructor TEpiUnZipper.Create;
+begin
+  inherited Create;
+  FCanceled := false;
+end;
+
+procedure TEpiUnZipper.Cancel;
 begin
   FCanceled := true;
 end;
@@ -145,7 +188,7 @@ begin
   //
 end;
 
-procedure TEpiToolCompressor.DoProgress(OverallProgress, FileProgress: Integer;
+procedure TEpiToolCompressor.DoProgress(FileCount, FileProgress: Integer;
   const Filename: string);
 var
   Cancel: boolean;
@@ -153,7 +196,7 @@ begin
   Cancel := false;
 
   if Assigned(OnProgress) then
-    OnProgress(Self, OverallProgress, FileProgress, Filename, Cancel);
+    OnProgress(Self, FileCount, FileProgress, Filename, Cancel);
 
   if Cancel then
     TEpiZipper(FZip).Cancel;
@@ -252,11 +295,44 @@ begin
   AStream := FDecompressStream;
 end;
 
+procedure TEpiToolDeCompressor.UnzipProgress(Sender: TObject; const Pct: Double
+  );
+begin
+  DoProgress(FFileCount, Trunc(Pct), FFileName);
+end;
+
+procedure TEpiToolDeCompressor.DoProgress(FileCount, FileProgress: Integer;
+  const Filename: string);
+var
+  Cancel: Boolean;
+begin
+  Cancel := false;
+
+  if Assigned(OnProgress) then
+    OnProgress(Self, FileCount, FileProgress, Filename, Cancel);
+
+  if Cancel then
+    TEpiUnZipper(FUnZip).Cancel;
+end;
+
 procedure TEpiToolDeCompressor.UnzipCloseStream(Sender: TObject;
   var AStream: TStream);
 begin
   // Set AStream to nil, otherwise it free's the stream in the unzipper;
   AStream := nil;
+end;
+
+procedure TEpiToolDeCompressor.UnzipFileEnd(Sender: TObject; const Ratio: Double
+  );
+begin
+
+end;
+
+procedure TEpiToolDeCompressor.UnzipFileStart(Sender: TObject;
+  const AFileName: String);
+begin
+  Inc(FFileCount);
+  FFileName := AFileName;
 end;
 
 function TEpiToolDeCompressor.InternalDecompress(ST: TStream): boolean;
@@ -265,11 +341,18 @@ var
 begin
   FDecompressStream := ST;
 
-  UnZip := TUnZipper.Create;
+  UnZip := TEpiUnZipper.Create;
   UnZip.OutputPath := DestinationDir;
   UnZip.OnOpenInputStream := @UnzipOpenStream;
   UnZip.OnCloseInputStream := @UnzipCloseStream;
-  UnZip.UnZipAllFiles;
+  UnZip.OnProgress := @UnzipProgress;
+  UnZip.OnStartFile := @UnzipFileStart;
+//  UnZip.OnEndFile := @UnzipFileEnd;
+
+  try
+    UnZip.UnZipAllFiles;
+  except
+  end;
 
   Result := true;
 end;
@@ -280,9 +363,16 @@ begin
     OnDecryptionError(Self);
 end;
 
+procedure TEpiToolDeCompressor.DoDecompressionError(const Msg: String);
+begin
+  if Assigned(OnDecompressionError) then
+    OnDecompressionError(Self);
+end;
+
 constructor TEpiToolDeCompressor.Create;
 begin
-
+  FFileCount := 0;
+  FFileName := '';
 end;
 
 destructor TEpiToolDeCompressor.Destroy;
@@ -347,13 +437,18 @@ begin
   // Should we implement a feature to import old .ZKY files?
 end;
 
-function TEpiToolDeCompressor.DecryptFromFile(const Filename: UTF8String
-  ): boolean;
+function TEpiToolDeCompressor.DecryptFromFile(const Filename: UTF8String;
+  const Password: UTF8String): boolean;
+var
+  FS: TFileStreamUTF8;
 begin
-
+  FS := TFileStreamUTF8.Create(Filename, fmOpenRead);
+  Result := DecryptFromStream(FS);
+  FS.Free;
 end;
 
-function TEpiToolDeCompressor.DecryptFromStream(ST: TStream): boolean;
+function TEpiToolDeCompressor.DecryptFromStream(ST: TStream;
+  const Password: UTF8String): boolean;
 begin
 
 end;
