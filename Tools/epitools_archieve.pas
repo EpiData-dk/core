@@ -16,6 +16,8 @@ type
   TEpiToolArchiveError = procedure (Sender: TObject;
     Const Msg: String) of object;
 
+  TEpiToolArchiveTotalFileCount = procedure (Sender: TObject; TotalCount: Integer) of object;
+
   { TEpiToolCompressor }
 
   TEpiToolCompressor = class
@@ -60,6 +62,7 @@ type
     FOnDecompressionError: TEpiToolArchiveError;
     FOnDecryptionError: TEpiToolArchiveError;
     FOnProgress: TEpiToolArchiveProgressEvent;
+    FOnTotalFileCount: TEpiToolArchiveTotalFileCount;
     FPassword: UTF8String;
     FDecompressStream: TStream;
     FFileCount: Integer;
@@ -72,9 +75,10 @@ type
     procedure UnzipProgress(Sender: TObject; const Pct: Double);
   protected
     procedure DoProgress(FileCount, FileProgress: Integer; Const Filename: string); virtual;
-    function  InternalDecompress(ST: TStream): boolean;
-    procedure DoDecryptionError(Const Msg: String);
-    procedure DoDecompressionError(Const Msg: String);
+    function  InternalDecompress(ST: TStream): boolean; virtual;
+    procedure DoDecryptionError(Const Msg: String); virtual;
+    procedure DoDecompressionError(Const Msg: String); virtual;
+    procedure DoTotalFileCount(TotalCount: Integer); virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -87,6 +91,7 @@ type
     property OnDecompressionError: TEpiToolArchiveError read FOnDecompressionError write FOnDecompressionError;
     property OnDecryptionError: TEpiToolArchiveError read FOnDecryptionError write FOnDecryptionError;
     property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
+    property OnTotalFileCount: TEpiToolArchiveTotalFileCount read FOnTotalFileCount write FOnTotalFileCount;
     property Password: UTF8String read FPassword write FPassword;
   end;
 
@@ -354,6 +359,10 @@ begin
 //  UnZip.OnEndFile := @UnzipFileEnd;
 
   try
+    UnZip.Examine;
+
+    DoTotalFileCount(UnZip.Entries.Count);
+
     UnZip.UnZipAllFiles;
   except
   end;
@@ -371,6 +380,12 @@ procedure TEpiToolDeCompressor.DoDecompressionError(const Msg: String);
 begin
   if Assigned(OnDecompressionError) then
     OnDecompressionError(Self, Msg);
+end;
+
+procedure TEpiToolDeCompressor.DoTotalFileCount(TotalCount: Integer);
+begin
+  if Assigned(OnTotalFileCount) then
+    OnTotalFileCount(Self, TotalCount);
 end;
 
 constructor TEpiToolDeCompressor.Create;
