@@ -13,13 +13,16 @@ type
     FileNo, FileProgress: Integer;
     Const Filename: String; out Cancel: boolean) of object;
 
+  TEpiToolArchiveError = procedure (Sender: TObject;
+    Const Msg: String) of object;
+
   { TEpiToolCompressor }
 
   TEpiToolCompressor = class
   private
     FFiles: TStrings;
-    FOnCompressError: TNotifyEvent;
-    FOnEncryptionError: TNotifyEvent;
+    FOnCompressError: TEpiToolArchiveError;
+    FOnEncryptionError: TEpiToolArchiveError;
     FOnProgress: TEpiToolArchiveProgressEvent;
     FPassword: UTF8String;
     FRootDir: UTF8String;
@@ -44,8 +47,8 @@ type
     property Files: TStrings read FFiles;
     // Password used for encrypting file (if empty just zip)
     property Password: UTF8String read FPassword write FPassword;
-    property OnCompressError: TNotifyEvent read FOnCompressError write FOnCompressError;
-    property OnEncryptionError: TNotifyEvent read FOnEncryptionError write FOnEncryptionError;
+    property OnCompressError: TEpiToolArchiveError read FOnCompressError write FOnCompressError;
+    property OnEncryptionError: TEpiToolArchiveError read FOnEncryptionError write FOnEncryptionError;
     property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
   end;
 
@@ -54,8 +57,8 @@ type
   TEpiToolDeCompressor = class
   private
     FDestinationDir: UTF8String;
-    FOnDecompressionError: TNotifyEvent;
-    FOnDecryptionError: TNotifyEvent;
+    FOnDecompressionError: TEpiToolArchiveError;
+    FOnDecryptionError: TEpiToolArchiveError;
     FOnProgress: TEpiToolArchiveProgressEvent;
     FPassword: UTF8String;
     FDecompressStream: TStream;
@@ -70,7 +73,7 @@ type
   protected
     procedure DoProgress(FileCount, FileProgress: Integer; Const Filename: string); virtual;
     function  InternalDecompress(ST: TStream): boolean;
-    procedure DoDecryptionError();
+    procedure DoDecryptionError(Const Msg: String);
     procedure DoDecompressionError(Const Msg: String);
   public
     constructor Create; virtual;
@@ -78,11 +81,11 @@ type
     function DecompressFromFile(Const Filename: UTF8String): boolean;
     function DecompressFromStream(ST: TStream): boolean; virtual;
     function DecryptFromFile(Const Filename: UTF8String; Const Password: UTF8String): boolean;
-    function DecryptFromStream(ST: TStream; Const Password: UTF8String): boolean; virtual;
+    function DecryptFromStream(InputStream, OutputStream: TStream): boolean; virtual;
     // Directory where all files are unzipped. Make sure the destination exists!
     property DestinationDir: UTF8String read FDestinationDir write FDestinationDir;
-    property OnDecompressionError: TNotifyEvent read FOnDecompressionError write FOnDecompressionError;
-    property OnDecryptionError: TNotifyEvent read FOnDecryptionError write FOnDecryptionError;
+    property OnDecompressionError: TEpiToolArchiveError read FOnDecompressionError write FOnDecompressionError;
+    property OnDecryptionError: TEpiToolArchiveError read FOnDecryptionError write FOnDecryptionError;
     property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
     property Password: UTF8String read FPassword write FPassword;
   end;
@@ -358,16 +361,16 @@ begin
   Result := true;
 end;
 
-procedure TEpiToolDeCompressor.DoDecryptionError();
+procedure TEpiToolDeCompressor.DoDecryptionError(const Msg: String);
 begin
   if Assigned(OnDecryptionError) then
-    OnDecryptionError(Self);
+    OnDecryptionError(Self, Msg);
 end;
 
 procedure TEpiToolDeCompressor.DoDecompressionError(const Msg: String);
 begin
   if Assigned(OnDecompressionError) then
-    OnDecompressionError(Self);
+    OnDecompressionError(Self, Msg);
 end;
 
 constructor TEpiToolDeCompressor.Create;
@@ -394,9 +397,11 @@ end;
 function TEpiToolDeCompressor.DecompressFromStream(ST: TStream): boolean;
 var
   Buffer: Array[0..3] of Char;
-  S: String;
+  S, FN: String;
   Decrypter: TDCP_rijndael;
   InternalStream: TMemoryStream;
+  MemMgr: TMemoryManager;
+  TmpStream: TFileStreamUTF8;
 begin
   ST.ReadBuffer(Buffer, SizeOf(Buffer));
 
@@ -406,7 +411,7 @@ begin
       // Regular zip file
       if (Password <> '') then
         begin
-          DoDecryptionError();
+          DoDecryptionError('This is a regular zip-file. No password is required.');
           Exit(false);
         end;
 
@@ -418,21 +423,16 @@ begin
       // Encrypted EpiData (new format)
       if (Password = '') then
         begin
-          DoDecryptionError();
+          DoDecryptionError('This is an encrypted EpiData file. Please provide a password!');
           Exit(false);
         end;
 
-//      DecryptFromStream(ST);
+      TmpStream := TFileStreamUTF8.Create(GetTempFileNameUTF8('', ''), fmCreate);
+      DecryptFromStream(ST, TmpStream);
 
-      InternalStream := TMemoryStream.Create;
+      Result := InternalDecompress(TmpStream);
 
-      Decrypter := TDCP_rijndael.Create(nil);
-      Decrypter.InitStr(Password, TDCP_sha512);
-      Decrypter.DecryptStream(ST, InternalStream, ST.Size - ST.Position);
-      Decrypter.Free;
-
-      Result := InternalDecompress(InternalStream);
-      InternalStream.Free;
+      TmpStream.Free;
     end;
 
   // Should we implement a feature to import old .ZKY files?
@@ -441,17 +441,22 @@ end;
 function TEpiToolDeCompressor.DecryptFromFile(const Filename: UTF8String;
   const Password: UTF8String): boolean;
 var
-  FS: TFileStreamUTF8;
+  InputStream, OutputStream: TFileStreamUTF8;
 begin
-  FS := TFileStreamUTF8.Create(Filename, fmOpenRead);
-  Result := DecryptFromStream(FS, Password);
-  FS.Free;
+  InputStream := TFileStreamUTF8.Create(Filename, fmOpenRead);
+  Result := DecryptFromStream(InputStream, OutputStream);
+  InputStream.Free;
 end;
 
-function TEpiToolDeCompressor.DecryptFromStream(ST: TStream;
-  const Password: UTF8String): boolean;
+function TEpiToolDeCompressor.DecryptFromStream(InputStream,
+  OutputStream: TStream): boolean;
+var
+  Decrypter: TDCP_rijndael;
 begin
-
+  Decrypter := TDCP_rijndael.Create(nil);
+  Decrypter.InitStr(Password, TDCP_sha512);
+  Decrypter.DecryptStream(InputStream, OutputStream, InputStream.Size - InputStream.Position);
+  Decrypter.Free;
 end;
 
 end.
