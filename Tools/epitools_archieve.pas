@@ -84,7 +84,7 @@ type
     destructor Destroy; override;
     function DecompressFromFile(Const Filename: UTF8String): boolean;
     function DecompressFromStream(ST: TStream): boolean; virtual;
-    function DecryptFromFile(Const Filename: UTF8String; Const Password: UTF8String): boolean;
+    function DecryptFromFile(Const InputFilename, OutputFileName: UTF8String): boolean;
     function DecryptFromStream(InputStream, OutputStream: TStream): boolean; virtual;
     // Directory where all files are unzipped. Make sure the destination exists!
     property DestinationDir: UTF8String read FDestinationDir write FDestinationDir;
@@ -244,6 +244,8 @@ var
   Encrypter: TDCP_rijndael;
   S, FN: String;
   Canceled: Boolean;
+  DCPHash: TDCP_sha512;
+  Digest: pointer;
 begin
   InternalStream := TFileStreamUTF8.Create(GetTempFileNameUTF8('',''), fmCreate);
 
@@ -278,7 +280,17 @@ begin
 
   if (Password <> '') then
     begin
+      // Write the Epidata Archive Magic no first in the file
       ST.Write(EPITOOL_ARCHIVE_MAGIC[1], Length(EPITOOL_ARCHIVE_MAGIC));
+
+      // Write a hashed version of the password
+      GetMem(Digest, TDCP_sha512.GetHashSize div 8);
+      DCPHash := TDCP_sha512.Create(nil);
+      DCPHash.Init;
+      DCPHash.UpdateStr(Password);
+      DCPHash.Final(Digest^);
+      DCPHash.Free;
+      ST.Write(Digest^, TDCP_sha512.GetHashSize div 8);
 
       Encrypter := TDCP_rijndael.Create(nil);
       Encrypter.InitStr(Password, TDCP_sha512);
@@ -453,14 +465,16 @@ begin
   // Should we implement a feature to import old .ZKY files?
 end;
 
-function TEpiToolDeCompressor.DecryptFromFile(const Filename: UTF8String;
-  const Password: UTF8String): boolean;
+function TEpiToolDeCompressor.DecryptFromFile(const InputFilename,
+  OutputFileName: UTF8String): boolean;
 var
   InputStream, OutputStream: TFileStreamUTF8;
 begin
-  InputStream := TFileStreamUTF8.Create(Filename, fmOpenRead);
+  InputStream := TFileStreamUTF8.Create(InputFilename, fmOpenRead);
+  OutputStream := TFileStreamUTF8.Create(OutputFileName, fmCreate);
   Result := DecryptFromStream(InputStream, OutputStream);
   InputStream.Free;
+  OutputStream.Free;
 end;
 
 function TEpiToolDeCompressor.DecryptFromStream(InputStream,
