@@ -176,7 +176,6 @@ end;
 procedure TEpiToolCompressor.InternalStartFile(Sender: TObject;
   const AFileName: String);
 begin
-  Inc(FFilecounter);
   FCurrentFilename := AFileName;
 end;
 
@@ -194,7 +193,7 @@ end;
 procedure TEpiToolCompressor.InternalEndFile(Sender: TObject;
   const Ratio: Double);
 begin
-  //
+  Inc(FFilecounter);
 end;
 
 procedure TEpiToolCompressor.DoProgress(FileCount, FileProgress: Integer;
@@ -346,13 +345,12 @@ end;
 procedure TEpiToolDeCompressor.UnzipFileEnd(Sender: TObject; const Ratio: Double
   );
 begin
-
+  Inc(FFileCount);
 end;
 
 procedure TEpiToolDeCompressor.UnzipFileStart(Sender: TObject;
   const AFileName: String);
 begin
-  Inc(FFileCount);
   FFileName := AFileName;
 end;
 
@@ -368,7 +366,7 @@ begin
   UnZip.OnCloseInputStream := @UnzipCloseStream;
   UnZip.OnProgress := @UnzipProgress;
   UnZip.OnStartFile := @UnzipFileStart;
-//  UnZip.OnEndFile := @UnzipFileEnd;
+  UnZip.OnEndFile := @UnzipFileEnd;
 
   try
     UnZip.Examine;
@@ -427,7 +425,6 @@ var
   S, FN: String;
   Decrypter: TDCP_rijndael;
   InternalStream: TMemoryStream;
-  MemMgr: TMemoryManager;
   TmpStream: TFileStreamUTF8;
 begin
   ST.ReadBuffer(Buffer, SizeOf(Buffer));
@@ -454,10 +451,11 @@ begin
           Exit(false);
         end;
 
+      ST.Position := 0;
       TmpStream := TFileStreamUTF8.Create(GetTempFileNameUTF8('', ''), fmCreate);
-      DecryptFromStream(ST, TmpStream);
 
-      Result := InternalDecompress(TmpStream);
+      Result := DecryptFromStream(ST, TmpStream) and
+                InternalDecompress(TmpStream);
 
       TmpStream.Free;
     end;
@@ -480,12 +478,49 @@ end;
 function TEpiToolDeCompressor.DecryptFromStream(InputStream,
   OutputStream: TStream): boolean;
 var
+  Buffer: array[0..3] of char;
   Decrypter: TDCP_rijndael;
+  DCPHash: TDCP_sha512;
+  Digest, ReadDigest: Pointer;
+  HashByteSize: Integer;
+  S: String;
 begin
+  result := false;
+
+  InputStream.ReadBuffer(Buffer, SizeOf(Buffer));
+  S := String(buffer);
+
+  if (S <> EPITOOL_ARCHIVE_MAGIC) then
+    begin
+      DoDecryptionError('File is not a valid EpiData encrypted archive!');
+      Exit;
+    end;
+
+  HashByteSize := TDCP_sha512.GetHashSize div 8;
+
+  // Write a hashed version of the password
+  GetMem(Digest, HashByteSize);
+  DCPHash := TDCP_sha512.Create(nil);
+  DCPHash.Init;
+  DCPHash.UpdateStr(Password);
+  DCPHash.Final(Digest^);
+  DCPHash.Free;
+
+  GetMem(ReadDigest, HashByteSize);
+  InputStream.Read(ReadDigest^, HashByteSize);
+
+  if (not CompareMem(ReadDigest, Digest, HashByteSize)) then
+    begin
+      DoDecryptionError('Incorrect password!');
+      Exit;
+    end;
+
   Decrypter := TDCP_rijndael.Create(nil);
   Decrypter.InitStr(Password, TDCP_sha512);
   Decrypter.DecryptStream(InputStream, OutputStream, InputStream.Size - InputStream.Position);
   Decrypter.Free;
+
+  result := true;
 end;
 
 end.
