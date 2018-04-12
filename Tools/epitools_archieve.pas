@@ -427,6 +427,8 @@ var
   InternalStream: TMemoryStream;
   TmpStream: TFileStreamUTF8;
 begin
+  result := false;
+
   ST.ReadBuffer(Buffer, SizeOf(Buffer));
 
   S := String(Buffer);
