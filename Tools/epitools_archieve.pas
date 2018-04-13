@@ -68,6 +68,9 @@ type
     FFileCount: Integer;
     FFileName: UTF8String;
     FUnZip: TUnZipper;
+    FReplaceFiles: boolean;
+    FSkippedFiles: integer;
+    FExtractedFiles: integer;
     procedure UnzipCloseStream(Sender: TObject; var AStream: TStream);
     procedure UnzipFileEnd(Sender: TObject; const Ratio: Double);
     procedure UnzipFileStart(Sender: TObject; const AFileName: String);
@@ -93,6 +96,9 @@ type
     property OnProgress: TEpiToolArchiveProgressEvent read FOnProgress write FOnProgress;
     property OnTotalFileCount: TEpiToolArchiveTotalFileCount read FOnTotalFileCount write FOnTotalFileCount;
     property Password: UTF8String read FPassword write FPassword;
+    property ReplaceFiles: boolean read FReplaceFiles write FReplaceFiles;
+    property SkippedFiles: integer read FSkippedFiles;
+    property ExtractedFiles: integer read FExtractedFiles;
   end;
 
 implementation
@@ -144,12 +150,18 @@ type
   TEpiUnZipper = class(TUnZipper)
   private
     FCanceled: boolean;
+    FReplaceFiles: boolean;
+    FSkippedFiles: integer;
+    FExtractedFiles: integer;
   protected
     procedure UnZipOneFile(Item: TFullZipFileEntry); override;
   public
     constructor Create;
     procedure Cancel;
     property Canceled: boolean read FCanceled;
+    property ReplaceFiles: boolean read FReplaceFiles write FReplaceFiles;
+    property SkippedFiles: integer read FSkippedFiles;
+    property ExtractedFiles: integer read FExtractedFiles;
   end;
 
 { TEpiUnZipper }
@@ -157,7 +169,19 @@ type
 procedure TEpiUnZipper.UnZipOneFile(Item: TFullZipFileEntry);
 begin
   if Canceled then exit;
+
+//  ReadZipHeader(Item, Dummy);
+
+  if FileExistsUTF8(OutputPath + DirectorySeparator + Item.ArchiveFileName) and
+     (not ReplaceFiles)
+  then
+    begin
+      Inc(FSkippedFiles);
+      Exit;
+    end;
+
   inherited UnZipOneFile(Item);
+  Inc(FExtractedFiles);
 end;
 
 constructor TEpiUnZipper.Create;
@@ -355,25 +379,26 @@ begin
 end;
 
 function TEpiToolDeCompressor.InternalDecompress(ST: TStream): boolean;
-var
-  UnZip: TUnZipper;
 begin
   FDecompressStream := ST;
 
-  UnZip := TEpiUnZipper.Create;
-  UnZip.OutputPath := DestinationDir;
-  UnZip.OnOpenInputStream := @UnzipOpenStream;
-  UnZip.OnCloseInputStream := @UnzipCloseStream;
-  UnZip.OnProgress := @UnzipProgress;
-  UnZip.OnStartFile := @UnzipFileStart;
-  UnZip.OnEndFile := @UnzipFileEnd;
+  FUnZip := TEpiUnZipper.Create;
+  FUnZip.OutputPath := DestinationDir;
+  FUnZip.OnOpenInputStream := @UnzipOpenStream;
+  FUnZip.OnCloseInputStream := @UnzipCloseStream;
+  FUnZip.OnProgress := @UnzipProgress;
+  FUnZip.OnStartFile := @UnzipFileStart;
+  FUnZip.OnEndFile := @UnzipFileEnd;
+  TEpiUnZipper(FUnZip).ReplaceFiles := ReplaceFiles;
 
   try
-    UnZip.Examine;
+    FUnZip.Examine;
 
-    DoTotalFileCount(UnZip.Entries.Count);
+    DoTotalFileCount(FUnZip.Entries.Count);
 
-    UnZip.UnZipAllFiles;
+    FUnZip.UnZipAllFiles;
+    FSkippedFiles := TEpiUnZipper(FUnZip).SkippedFiles;
+    FExtractedFiles := TEpiUnZipper(FUnZip).ExtractedFiles;
   except
   end;
 
@@ -402,6 +427,7 @@ constructor TEpiToolDeCompressor.Create;
 begin
   FFileCount := 0;
   FFileName := '';
+  FReplaceFiles := false;
 end;
 
 destructor TEpiToolDeCompressor.Destroy;
