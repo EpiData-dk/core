@@ -5,7 +5,7 @@ unit epifields_helper;
 interface
 
 uses
-  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels;
+  Classes, SysUtils, epidatafiles, epidatafilestypes, epivaluelabels, math;
 
 type
 
@@ -22,6 +22,14 @@ type
     gvtVarNameLabel,
     gvtVarLabelName
   );
+
+  { TEpiFieldsHelper }
+
+  TEpiFieldsHelper = class helper for TEpiFields
+  public
+    function CompareRecords(IndexA, IndexB: Integer): TValueSign;
+  end;
+
 
   { TEpiFieldHelper }
 
@@ -41,6 +49,8 @@ type
     function MaxUTF8Length: Cardinal;
     function IsKeyfield: boolean;
     function NonMissingSize: Integer;
+    // Copy data from SrcField[SrcIdx] into self[DstIdx] - return false if fieldtypes do not match.
+    function CopyValue(SrcField: TEpiField; SrcIdx, DstIdx: Integer): boolean;
   end;
 
   { TEpiIntFieldHelper }
@@ -84,7 +94,23 @@ type
 implementation
 
 uses
-  Math, LazUTF8;
+  LazUTF8;
+
+{ TEpiFieldsHelper }
+
+function TEpiFieldsHelper.CompareRecords(IndexA, IndexB: Integer): TValueSign;
+var
+  F: TEpiField;
+begin
+  Result := ZeroValue;
+
+  for F in Self do
+    begin
+      Result := F.Compare(IndexA, IndexB);
+      if Result <> ZeroValue then
+        Exit;
+    end;
+end;
 
 { TEpiFieldHelper }
 
@@ -300,6 +326,51 @@ begin
   for i := 0 to Size - 1 do
     if (not IsMissing[i]) then
       Inc(Result);
+end;
+
+function TEpiFieldHelper.CopyValue(SrcField: TEpiField; SrcIdx, DstIdx: Integer
+  ): boolean;
+var
+  SrcFieldTypes, DstFieldTypes: TEpiFieldTypes;
+begin
+  Result := false;
+
+  SrcFieldTypes := NativeFieldTypeSetFromFieldType(SrcField.FieldType);
+  DstFieldTypes := NativeFieldTypeSetFromFieldType(FieldType);
+
+  if (SrcFieldTypes * DstFieldTypes) = [] then
+    Exit;
+
+  case FieldType of
+    ftBoolean:
+      AsBoolean[DstIdx] := SrcField.AsBoolean[SrcIdx];
+
+    ftInteger,
+    ftAutoInc:
+      AsInteger[DstIdx] := SrcField.AsInteger[SrcIdx];
+
+    ftFloat:
+      AsFloat[DstIdx] := SrcField.AsFloat[SrcIdx];
+
+    ftDMYDate,
+    ftMDYDate,
+    ftYMDDate,
+    ftDMYAuto,
+    ftMDYAuto,
+    ftYMDAuto:
+      AsDate[DstIdx] := SrcField.AsDate[SrcIdx];
+
+    ftTime,
+    ftTimeAuto:
+      AsTime[DstIdx] := SrcField.AsTime[SrcIdx];
+
+    ftUpperString,
+    ftString,
+    ftMemo:
+      AsString[DstIdx] := SrcField.AsString[SrcIdx];
+  end;
+
+  Result := true;
 end;
 
 { TEpiIntFieldHelper }
