@@ -17,7 +17,7 @@ type
     function GetUnprotectedCount: Integer;
   public
     function GetItemNames(WithObjects: boolean): TStrings;
-    function GetItemFromList(Names: TStrings; ListClass: TEpiCustomListClass): TEpiCustomList;
+    function GetItemFromList(Names: TStrings): TEpiCustomList;
     property ProtectedCount: Integer read GetProtectedCount;
     property UnprotectedCount: Integer read GetUnprotectedCount;
   end;
@@ -55,12 +55,11 @@ begin
       Result.Add(I.Name);
 end;
 
-function TEpiCustomListHelper.GetItemFromList(Names: TStrings;
-  ListClass: TEpiCustomListClass): TEpiCustomList;
+function TEpiCustomListHelper.GetItemFromList(Names: TStrings): TEpiCustomList;
 var
   S: String;
 begin
-  Result := ListClass.Create(nil);
+  Result := TEpiCustomListClass(Self.ClassType).Create(nil);
 
   for S in Names do
     Result.AddItem(GetItemByName(S));
