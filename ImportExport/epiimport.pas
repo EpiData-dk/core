@@ -863,6 +863,8 @@ var
   ApproxRecCount: Integer;
   C: Char;
   RS: RawByteString;
+  IsIntValue: EpiInteger;
+  IsFloatValue: EpiFloat;
 
 const
   // Convert old REC file fieldtype number to new order of fieldtypes.
@@ -1238,9 +1240,11 @@ begin
 
                 if NewVLset then
                 begin
-                  if TryStrToInt(StrBuf, ValCode) then
+//                if TryStrToInt(StrBuf, ValCode) then
+                  if IsInteger(StrBuf, IsIntValue) then
                     TmpFieldType := ftInteger
-                  else if TryStrToFloat(StrBuf, ValCodeFloat) then
+//                else if TryStrToFloat(StrBuf, ValCodeFloat) then
+                  else if IsFloat(StrBuf, IsFloatValue) then
                     TmpFieldType := ftFloat
                   else
                     TmpFieldType := ftString;
