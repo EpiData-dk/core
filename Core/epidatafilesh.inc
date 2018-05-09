@@ -198,6 +198,7 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
+  TEpiDataFileClass = class of TEpiDataFile;
 
   { TEpiDataFilesEnumeraton }
 
