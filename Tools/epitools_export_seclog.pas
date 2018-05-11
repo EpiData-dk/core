@@ -17,9 +17,8 @@ type
     ExportID: integer;
     FDocumentFileClass: TEpiDocumentFileClass;
     FErrorMessage: UTF8String;
-    function ExportedDatafilePackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
-    function OriginalDatafilePackFunction(Sender: TEpiDataFile; Index: Integer
-      ): boolean;
+    function ExportedDatafilePackFunction(Sender: TEpiDataFile; Index: Integer; Data: Pointer): boolean;
+    function OriginalDatafilePackFunction(Sender: TEpiDataFile; Index: Integer; Data: Pointer): boolean;
     function ReportError(Const Msg: UTF8String): boolean;
   public
     constructor Create; virtual;
@@ -41,8 +40,8 @@ begin
   result := false;
 end;
 
-function TEpiTool_ExportSecurityLog.ExportedDatafilePackFunction(Sender: TEpiDataFile;
-  Index: Integer): boolean;
+function TEpiTool_ExportSecurityLog.ExportedDatafilePackFunction(
+  Sender: TEpiDataFile; Index: Integer; Data: Pointer): boolean;
 var
   ID: EpiInteger;
 begin
@@ -52,7 +51,7 @@ begin
 end;
 
 function TEpiTool_ExportSecurityLog.OriginalDatafilePackFunction(
-  Sender: TEpiDataFile; Index: Integer): boolean;
+  Sender: TEpiDataFile; Index: Integer; Data: Pointer): boolean;
 var
   ID: Int64;
 begin

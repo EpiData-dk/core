@@ -618,7 +618,8 @@ begin
   if I < R then InternalSortRecords(SortList, I, R, Descending, ObsNoField);
 end;
 
-function TEpiDataFile.InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
+function TEpiDataFile.InternalPackFunction(Sender: TEpiDataFile;
+  Index: Integer; Data: Pointer): boolean;
 begin
   result := Deleted[Index];
 end;
@@ -1227,7 +1228,8 @@ begin
   Self.Pack(@InternalPackFunction);
 end;
 
-procedure TEpiDataFile.Pack(PackFunction: TEpiDataFilePackFunction);
+procedure TEpiDataFile.Pack(PackFunction: TEpiDataFilePackFunction;
+  Data: pointer);
 var
   L: TBoundArray;// array of Integer;
   C: Integer;
@@ -1237,7 +1239,7 @@ var
 begin
   C := 0;
   for i := 0 to Size - 1 do
-    if PackFunction(Self, i) then
+    if PackFunction(Self, i, data) then
     begin
       Inc(C);
       SetLength(L, C);
