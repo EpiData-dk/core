@@ -978,7 +978,11 @@ begin
 
     // - Header lines:
     TempInt := Pos(' ', TxtLine)-1;
-    if TempInt = -1 then TempInt := Length(TxtLine);
+    if TempInt = -1 then
+      begin
+        TxtLine := Trim(TxtLine);
+        TempInt := Length(TxtLine);
+      end;
     Val(Copy(TxtLine, 1, TempInt), HeaderLineCount, ValCode);
     if ValCode > 0 then
       RaiseError(Exception, 'Incorrect format!');
