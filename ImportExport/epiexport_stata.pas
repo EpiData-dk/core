@@ -755,14 +755,16 @@ begin
             if F.IsMissing[CurRec] then
               FVal := MissingDouble(0)
             else
-              FVal := F.AsFloat[CurRec];
+              begin
+                FVal := F.AsFloat[CurRec];
 
-            if (F.IsMissingValue[CurRec]) and
-               (F.FieldType <> ftInteger)
-            then
-              FVal := StataContent(F)^.FloatValueLabelMap.KeyData[F.AsFloat[CurRec]]
-            else if (F.FieldType in TimeFieldTypes) then
-              FVal := round(MilliSecondSpan(FVal, 0));
+                if (F.IsMissingValue[CurRec]) and
+                   (F.FieldType <> ftInteger)
+                then
+                  FVal := StataContent(F)^.FloatValueLabelMap.KeyData[F.AsFloat[CurRec]]
+                else if (F.FieldType in TimeFieldTypes) then
+                  FVal := round(MilliSecondSpan(FVal, 0));
+              end;
 
             WriteDouble(FVal);
           end;
