@@ -51,7 +51,7 @@ type
     );
 
 
-  TEpiDataFilePackFunction = function(Sender: TEpiDataFile; Index: Integer): boolean of object;
+  TEpiDataFilePackFunction = function(Sender: TEpiDataFile; Index: Integer; Data: Pointer = nil): boolean of object;
 
   { TEpiDataFile }
 
@@ -86,7 +86,7 @@ type
     procedure   SetVerified(Index: integer; const AValue: boolean);
     function    InternalCompareRecords(Const SortList: TEpiFields; Const Idx1, Idx2: Integer; Desceding: Boolean): integer;
     procedure   InternalSortRecords(Const SortList: TEpiFields; L, R: Integer; Descending: Boolean; ObsNoField: TEpiField);
-    function    InternalPackFunction(Sender: TEpiDataFile; Index: Integer): boolean;
+    function    InternalPackFunction(Sender: TEpiDataFile; Index: Integer; Data: Pointer = nil): boolean;
 
   { Load/Save methods }
   private
@@ -114,7 +114,7 @@ type
     // Returns the index to the "first" of the newly created records.
     function    NewRecords(Const Count: Cardinal = 1): integer; virtual;
     procedure   Pack; overload;   // Removes records marked for deletion.
-    procedure   Pack(PackFunction: TEpiDataFilePackFunction); overload; // Removes records based on provided method
+    procedure   Pack(PackFunction: TEpiDataFilePackFunction; Data: pointer = nil); overload; // Removes records based on provided method
     procedure   ExchangeRecords(Const Index1, Index2: Integer);
     // Sorts records based on value in SortFields. If ObsNoField is assigned (must be int field) then
     // this vector is used to index into the observations sorted. Hence it is possible to sort
@@ -198,6 +198,7 @@ type
     function DoClone(AOwner: TEpiCustomBase; Dest: TEpiCustomBase;
       ReferenceMap: TEpiReferenceMap): TEpiCustomBase; override;
   end;
+  TEpiDataFileClass = class of TEpiDataFile;
 
   { TEpiDataFilesEnumeraton }
 
