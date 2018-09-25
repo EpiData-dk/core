@@ -23,9 +23,7 @@ type
     TestVersionCaption: TLabel;
     TestVersionInfo: TLabel;
 
-    CheckVersionOnlineChkBox: TCheckBoxThemed;
     CloseBtn: TBitBtn;
-    procedure CloseBtnClick(Sender: TObject);
     procedure DownloadLinkClick(Sender: TObject);
     procedure DownloadLinkMouseEnter(Sender: TObject);
     procedure DownloadLinkMouseLeave(Sender: TObject);
@@ -33,11 +31,9 @@ type
   private
     FCheckBoxValue: Boolean;
     procedure CreateControls;
-    procedure SetCheckBoxValue(AValue: Boolean);
     procedure UpdateVersions;
   public
     constructor Create(TheOwner: TComponent); override;
-    property CheckBoxValue: Boolean read FCheckBoxValue write SetCheckBoxValue;
   end;
 
 implementation
@@ -52,11 +48,6 @@ const
   TestDownloadURL = 'http://epidata.dk/testing.php';
 
 { TCheckVersionForm }
-
-procedure TCheckVersionForm.CloseBtnClick(Sender: TObject);
-begin
-  CheckBoxValue := CheckVersionOnlineChkBox.Checked;
-end;
 
 procedure TCheckVersionForm.DownloadLinkClick(Sender: TObject);
 var
@@ -200,37 +191,16 @@ begin
     Parent := Self
   end;
 
-  CheckVersionOnlineChkBox := TCheckBoxThemed.Create(Self);
-  with CheckVersionOnlineChkBox do
-  begin
-    Caption := 'Automatically check for' + LineEnding + 'new version online';
-    Hint    := 'Use preferences to set the number of days between checks';
-    ShowHint := true;
-    AutoSize := true;
-    AnchorToNeighbour(akTop, 10, TestVersionCaption);
-    AnchorParallel(akLeft, 0, Image);
-    Parent := Self
-  end;
-
   CloseBtn := TBitBtn.Create(Self);
   with CloseBtn do
   begin
     Kind := bkClose;
     AutoSize := true;
     Anchors := [];
-    AnchorParallel(akLeft, 0, CurrentVersionInfo);
-    AnchorVerticalCenterTo(CheckVersionOnlineChkBox);
-    OnClick := @CloseBtnClick;
+    AnchorToNeighbour(aktop, 10, TestVersionCaption);
+    AnchorHorizontalCenterTo(Self);
     Parent := Self;
   end;
-end;
-
-procedure TCheckVersionForm.SetCheckBoxValue(AValue: Boolean);
-begin
-  if FCheckBoxValue = AValue then Exit;
-  FCheckBoxValue := AValue;
-
-  CheckVersionOnlineChkBox.Checked := AValue;
 end;
 
 procedure TCheckVersionForm.UpdateVersions;

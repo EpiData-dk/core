@@ -39,7 +39,8 @@ const
   {$I epidatacore.version.inc}
   );
 
-  EpiDataURL = 'http://www.epidata.dk/version/checkversion.php';
+  EpiDataURL = 'http://www.epidata.dk/version/';
+//  EpiDataURL = 'http://www.epidata.dk/version/checkversion.php';
 
 function GetCoreRevision: string;
 begin
@@ -202,10 +203,12 @@ begin
     FillByte(StableVersion, SizeOf(TEpiVersionInfo), 0);
     FillByte(TestVersion, SizeOf(TEpiVersionInfo), 0);
 
-    URL := EpiDataURL +
+{    URL := EpiDataURL +
       '?program=' + LowerCase(ProgramName) +
       '&os=' + LowerCase({$I %FPCTARGETOS%}) +
-      '&arch=' + LowerCase({$I %FPCTARGETCPU%});
+      '&arch=' + LowerCase({$I %FPCTARGETCPU%});}
+
+    URL := EpiDataURL + LowerCase(ProgramName) + '.version';
 
     VersionChecker := TEpiVersionChecker.Create;
     Result := VersionChecker.CheckVersionOnline(URL, StableVersion, TestVersion);
