@@ -44,8 +44,8 @@ uses
 
 const
   DefaultURL = 'http://epidata.dk';
-  PublicDownloadURL = 'http://epidata.dk/download.php';
-  TestDownloadURL = 'http://epidata.dk/testing.php';
+  PublicDownloadURL = 'http://epidata.dk/downloads';
+  TestDownloadURL = 'http://epidata.dk/testing';
 
 { TCheckVersionForm }
 

@@ -40,7 +40,6 @@ const
   );
 
   EpiDataURL = 'http://www.epidata.dk/version/';
-//  EpiDataURL = 'http://www.epidata.dk/version/checkversion.php';
 
 function GetCoreRevision: string;
 begin
