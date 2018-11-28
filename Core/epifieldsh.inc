@@ -23,34 +23,6 @@ type
     efceZeroFilled
   );
 
-  PEpiString = ^EpiString;
-
-  TEpiFieldDataEventRecord = record
-    Index: Integer;                       // The index at which the datachange happend
-    case FieldType: TEpiFieldType of      // The senders Fieldtype (also accessible through the change event, but convient)
-      ftBoolean:                          // Old Value as per field type
-        (BoolValue: EpiBool);
-      ftInteger,
-      ftAutoInc:
-        (IntValue: EpiInteger);
-      ftFloat:
-        (FloatValue: EpiFloat);
-      ftDMYDate,
-      ftMDYDate,
-      ftYMDDate,
-      ftDMYAuto,
-      ftMDYAuto,
-      ftYMDAuto:
-        (DateValue: EpiDate);
-      ftTime,
-      ftTimeAuto:
-        (TimeValue: EpiTime);
-      ftString,
-      ftUpperString:
-        (StringValue: PEpiString);
-  end;
-  PEpiFieldDataEventRecord = ^TEpiFieldDataEventRecord;
-
   TEpiFieldsEnumerator = class;
 
   { TEpiFields }

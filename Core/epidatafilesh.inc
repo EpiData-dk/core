@@ -184,6 +184,7 @@ type
        EventType: TEpiCustomChangeEventType; Data: TEpiCustomControlItem);
     procedure DoModifiedChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
+    procedure DoModifiedData(Data: PEpiFieldDataEventRecord);
   protected
     procedure DoChange(const Initiator: TEpiCustomBase;
       EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer); override;

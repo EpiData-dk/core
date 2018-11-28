@@ -773,6 +773,12 @@ begin
       FStructureModified := true;
 end;
 
+procedure TEpiDataFile.DoModifiedData(Data: PEpiFieldDataEventRecord);
+begin
+  if (Deleted[Data^.Index]) then exit;
+  Verified[Data^.Index] := false;
+end;
+
 procedure TEpiDataFile.DoChange(const Initiator: TEpiCustomBase;
   EventGroup: TEpiEventGroup; EventType: Word; Data: Pointer);
 begin
@@ -787,7 +793,15 @@ begin
                     TEpiCustomChangeEventType(EventType),
                     TEpiCustomControlItem(Data));
 
+  // Update modified status (data or structure)
   DoModifiedChange(Initiator, EventGroup, EventType, Data);
+
+  // Change record status away from verified.
+  if (EventGroup = eegFields) and
+     (TEpiFieldsChangeEventType(EventType) = efceData) and
+     (Initiator <> FRecordStatus)
+  then
+    DoModifiedData(PEpiFieldDataEventRecord(Data));
 end;
 
 constructor TEpiDataFile.Create(AOwner: TEpiCustomBase);
