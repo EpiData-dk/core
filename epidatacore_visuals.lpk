@@ -29,7 +29,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="4"/>
-    <Files Count="24">
+    <Files Count="23">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
         <UnitName Value="epiv_dataset_viewer_frame"/>
@@ -101,33 +101,29 @@
         <UnitName Value="epiv_statusbar_item_saveicon"/>
       </Item17>
       <Item18>
-        <Filename Value="Visuals/epiv_first_run_wizard.pas"/>
-        <UnitName Value="epiv_first_run_wizard"/>
-      </Item18>
-      <Item19>
         <Filename Value="Visuals/first_start_wizard/wizard_form.pas"/>
         <UnitName Value="wizard_form"/>
-      </Item19>
-      <Item20>
+      </Item18>
+      <Item19>
         <Filename Value="Visuals/first_start_wizard/wizard_datadir_frame.pas"/>
         <UnitName Value="wizard_datadir_frame"/>
-      </Item20>
-      <Item21>
+      </Item19>
+      <Item20>
         <Filename Value="Visuals/first_start_wizard/wizard_welcome_page.pas"/>
         <UnitName Value="wizard_welcome_page"/>
-      </Item21>
-      <Item22>
+      </Item20>
+      <Item21>
         <Filename Value="Visuals/first_start_wizard/wizard_summary_frame.pas"/>
         <UnitName Value="wizard_summary_frame"/>
-      </Item22>
-      <Item23>
+      </Item21>
+      <Item22>
         <Filename Value="Visuals/first_start_wizard/wizard_progress_frame.pas"/>
         <UnitName Value="wizard_progress_frame"/>
-      </Item23>
-      <Item24>
+      </Item22>
+      <Item23>
         <Filename Value="Visuals/first_start_wizard/wizard_confirm_frame.pas"/>
         <UnitName Value="wizard_confirm_frame"/>
-      </Item24>
+      </Item23>
     </Files>
     <RequiredPkgs Count="6">
       <Item1>
