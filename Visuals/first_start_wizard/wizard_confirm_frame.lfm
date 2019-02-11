@@ -1,0 +1,26 @@
+object WizardConfirmActionsFrame: TWizardConfirmActionsFrame
+  Left = 0
+  Height = 364
+  Top = 0
+  Width = 616
+  ClientHeight = 364
+  ClientWidth = 616
+  TabOrder = 0
+  DesignLeft = 2554
+  DesignTop = 444
+  object Memo: TMemo
+    Left = 10
+    Height = 344
+    Top = 10
+    Width = 596
+    Align = alClient
+    BorderSpacing.Around = 10
+    Lines.Strings = (
+      'Confirm the following actions:'
+      '* A'
+      '* B'
+      ''
+    )
+    TabOrder = 0
+  end
+end

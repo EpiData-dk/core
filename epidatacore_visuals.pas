@@ -15,7 +15,9 @@ uses
   epiv_statusbar_item_cycleno, epiv_statusbar_item_savetime, 
   epiv_statusbar_item_selectionnames, epiv_statusbar_item_currentuser, 
   epiv_statusbar_item_progressbar, epiv_statusbar_item_saveicon, 
-  LazarusPackageIntf;
+  epiv_first_run_wizard, wizard_form, wizard_datadir_frame, 
+  wizard_welcome_page, wizard_summary_frame, wizard_progress_frame, 
+  wizard_confirm_frame, LazarusPackageIntf;
 
 implementation
 

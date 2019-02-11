@@ -1,0 +1,122 @@
+object InitializationWizard: TInitializationWizard
+  Left = 2478
+  Height = 439
+  Top = 359
+  Width = 727
+  Caption = 'InitializationWizard'
+  ClientHeight = 439
+  ClientWidth = 727
+  Position = poDesktopCenter
+  LCLVersion = '2.0.0.4'
+  object WizardButtonPanel1: TWizardButtonPanel
+    Left = 10
+    Height = 30
+    Top = 399
+    Width = 707
+    Manager = WizardManager1
+    CancelButton.Name = 'CancelButton'
+    CancelButton.AnchorSideTop.Control = WizardButtonPanel1
+    CancelButton.AnchorSideTop.Side = asrCenter
+    CancelButton.AnchorSideRight.Control = WizardButtonPanel1
+    CancelButton.AnchorSideRight.Side = asrBottom
+    CancelButton.Height = 30
+    CancelButton.Width = 75
+    CancelButton.Kind = bkCancel
+    CancelButton.ModalResult = 2
+    FinishButton.Name = 'FinishButton'
+    FinishButton.AnchorSideTop.Control = WizardButtonPanel1
+    FinishButton.AnchorSideTop.Side = asrCenter
+    FinishButton.Height = 30
+    FinishButton.Width = 75
+    FinishButton.Kind = bkOK
+    FinishButton.ModalResult = 1
+    NextButton.Name = 'NextButton'
+    NextButton.AnchorSideTop.Control = WizardButtonPanel1
+    NextButton.AnchorSideTop.Side = asrCenter
+    NextButton.Height = 30
+    NextButton.Width = 75
+    NextButton.Caption = 'Next'
+    PreviousButton.Name = 'PreviousButton'
+    PreviousButton.AnchorSideTop.Control = WizardButtonPanel1
+    PreviousButton.AnchorSideTop.Side = asrCenter
+    PreviousButton.Height = 30
+    PreviousButton.Width = 75
+    PreviousButton.Caption = 'Previous'
+    Align = alBottom
+    AutoSize = True
+    BorderSpacing.Around = 10
+    ClientHeight = 30
+    ClientWidth = 707
+    TabOrder = 0
+  end
+  object TopPanel: TPanel
+    Left = 0
+    Height = 50
+    Top = 0
+    Width = 727
+    Align = alTop
+    ClientHeight = 50
+    ClientWidth = 727
+    Color = clWhite
+    ParentColor = False
+    TabOrder = 1
+    object TitleLabel: TLabel
+      Left = 8
+      Height = 19
+      Top = 1
+      Width = 88
+      Caption = 'TitleLabel'
+      Font.Height = -16
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object DescriptionLabel: TLabel
+      Left = 16
+      Height = 17
+      Top = 28
+      Width = 109
+      Caption = 'DescriptionLabel'
+      ParentColor = False
+    end
+  end
+  object WizardManager1: TWizardManager
+    DisplayOptions.Parent = Owner
+    OnPageLoad = WizardManager1PageLoad
+    OnPageShow = WizardManager1PageShow
+    OnPageStateChange = WizardManager1PageStateChange
+    Pages = <    
+      item
+        Caption = 'Welcome'
+        Name = 'WelcomePage'
+        Description = 'First run wizard!'
+        EnabledButtons = [wbNext, wbCancel]
+        VisibleButtons = [wbNext, wbCancel]
+      end    
+      item
+        Caption = 'Select Directory'
+        Name = 'DataDirPage'
+        Description = 'Select the default location of your data'
+      end    
+      item
+        Caption = 'Confirm'
+        Name = 'BeforeCopyPage'
+        Description = 'Please confirm actions'
+      end    
+      item
+        Caption = 'Working'
+        Name = 'ProgressPage'
+        Description = 'Copying files...'
+        EnabledButtons = [wbCancel]
+        VisibleButtons = [wbNext, wbCancel]
+      end    
+      item
+        Caption = 'Summary'
+        Name = 'SummaryPage'
+        EnabledButtons = [wbFinish]
+        VisibleButtons = [wbFinish]
+      end>
+    left = 139
+    top = 160
+  end
+end

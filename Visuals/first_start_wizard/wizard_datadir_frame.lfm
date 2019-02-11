@@ -1,0 +1,57 @@
+object WizardSelectDataDirFrame: TWizardSelectDataDirFrame
+  Left = 0
+  Height = 337
+  Top = 0
+  Width = 636
+  ClientHeight = 337
+  ClientWidth = 636
+  TabOrder = 0
+  DesignLeft = 2485
+  DesignTop = 573
+  object DirectoryEdit1: TDirectoryEdit
+    AnchorSideLeft.Control = Label1
+    AnchorSideTop.Control = Label2
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 10
+    Height = 27
+    Top = 74
+    Width = 616
+    Directory = 'DataDirectoryEdit'
+    ShowHidden = False
+    ButtonWidth = 23
+    NumGlyphs = 1
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Top = 10
+    BorderSpacing.Right = 10
+    MaxLength = 0
+    TabOrder = 0
+    OnChange = DirectoryEdit1Change
+    OnEditingDone = DirectoryEdit1EditingDone
+    Text = 'DataDirectoryEdit'
+  end
+  object Label1: TLabel
+    AnchorSideLeft.Control = Owner
+    Left = 10
+    Height = 17
+    Top = 25
+    Width = 434
+    BorderSpacing.Left = 10
+    Caption = 'Please select a location for where you wish to store your data files'
+    ParentColor = False
+  end
+  object Label2: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Label1
+    AnchorSideTop.Side = asrBottom
+    Left = 10
+    Height = 17
+    Top = 47
+    Width = 391
+    BorderSpacing.Left = 10
+    BorderSpacing.Top = 5
+    Caption = '(if the destination does not exists it will be created for you):'
+    ParentColor = False
+  end
+end
