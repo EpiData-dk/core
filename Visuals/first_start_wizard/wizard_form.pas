@@ -97,7 +97,8 @@ begin
         begin
           { convert the url to a POSIX path }
           ExecutableFSPath := CFURLCopyFileSystemPath(SharedSupportURL, kCFURLPOSIXPathStyle);
-          CFRelease(executableUrl);
+//          CFRelease(executableUrl);
+          CFRelease(ExecutableFSPath);
 
           { convert to UTF-8 -- this is not really clean since in theory the
             ansi-encoding could be different, but
