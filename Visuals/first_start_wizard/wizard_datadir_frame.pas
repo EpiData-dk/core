@@ -69,7 +69,7 @@ end;
 procedure TWizardSelectDataDirFrame.PageHide();
 begin
   if DirectoryIsValid() then
-    FData.FindPath('DataDir').AsString := DirectoryEdit1.Directory;
+    FData.FindPath('DataDir').AsString := IncludeTrailingPathDelimiter(DirectoryEdit1.Directory);
 end;
 
 end.

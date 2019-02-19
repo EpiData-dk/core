@@ -34,7 +34,7 @@ type
 implementation
 
 uses
-  IniFiles, LazUTF8Classes;
+  IniFiles, LazUTF8Classes, Dialogs, Math;
 
 {$R *.lfm}
 
@@ -47,7 +47,7 @@ end;
 
 procedure TWizardProgressFrame.FileCopy(FileIterator: TFileIterator);
 begin
-  CopyFile(FileIterator.FileName, Data.Find('DataDir').AsString + DirectorySeparator + 'examples' + DirectorySeparator + FileIterator.FileInfo.Name, [cffCreateDestDirectory, cffPreserveTime]);
+  CopyFile(FileIterator.FileName, Data.Find('DataDir').AsString + 'examples' + DirectorySeparator + FileIterator.FileInfo.Name, [cffCreateDestDirectory, cffPreserveTime]);
   ProgressBar1.StepIt;
   Application.ProcessMessages;
 end;
@@ -64,6 +64,7 @@ procedure TWizardProgressFrame.PageLoad();
 begin
   FFileCount := 0;
   FCompleted := false;
+  WizardManager.PageStateChanged;
 end;
 
 procedure TWizardProgressFrame.PageShow();
@@ -81,8 +82,9 @@ begin
   if (true) then
     begin
       Lines := TStringListUTF8.Create;
-      Lines.Append('set "TUTORIAL FOLDER" := "' + Data.Find('DocsDir').AsString + '"');
-      Lines.Append('cd "' + Data.Find('DataDir').AsString + '"');
+      Lines.Append('cd "' + Data.Find('DataDir').AsString + '";');
+      Lines.Append('set "TUTORIAL FOLDER" := "' + Data.Find('DocsDir').AsString + '";');
+      Lines.Append('cls;');
       Lines.SaveToFile(ConfigFile);
       Lines.Free;
     end
@@ -106,12 +108,14 @@ begin
   Label1.Caption := 'Locating files to copy:';
   ProgressBar1.Style := pbstNormal;
   ProgressBar1.Min := 0;
-  ProgressBar1.Max := FFileCount - 1;
+  ProgressBar1.Max := Math.Max(1, FFileCount - 1);
   ProgressBar1.Step := 1;
   Application.ProcessMessages;
 
   FS.OnFileFound := @FileCopy;
   FS.Search(Data.Find('ExamplesDir').AsString, '*.*');
+
+  ProgressBar1.Position := ProgressBar1.Max;
 
   FCompleted := true;
   WizardManager.PageStateChanged;

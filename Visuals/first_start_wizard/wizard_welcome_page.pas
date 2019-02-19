@@ -16,7 +16,8 @@ type
   private
 
   public
-
+  published
+    procedure PageLoad();
   end;
 
 implementation
@@ -24,6 +25,14 @@ implementation
 {$R *.lfm}
 
 { TWizardWelcomeFrame }
+
+procedure TWizardWelcomeFrame.PageLoad();
+var
+  i: Integer;
+begin
+  for i := 0 to Memo1.Lines.Count - 1 do
+    Memo1.Lines[i] := StringReplace(Memo1.Lines[i], '$PROGRAM$', Application.Title, [rfReplaceAll]);
+end;
 
 end.
 

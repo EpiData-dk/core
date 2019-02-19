@@ -3,7 +3,7 @@ object InitializationWizard: TInitializationWizard
   Height = 439
   Top = 359
   Width = 727
-  Caption = 'InitializationWizard'
+  Caption = 'First Run Wizard'
   ClientHeight = 439
   ClientWidth = 727
   Position = poDesktopCenter

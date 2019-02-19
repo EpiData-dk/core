@@ -20,7 +20,7 @@ object WizardWelcomeFrame: TWizardWelcomeFrame
       ''
       'This wizard will help you setup the program with a default path to your Data and copy examples files for easy access.'
       ''
-      'Once you have completed the program will return to normal.'
+      'Once you have completed the setup, the program will return to normal.'
     )
     ScrollBars = ssVertical
     TabOrder = 0
