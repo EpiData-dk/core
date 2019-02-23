@@ -1306,7 +1306,7 @@ begin
   end;
 
   // No need to sort on less than 2 observations
-  if (ObsNoField.Size > 2) then
+  if (ObsNoField.Size > 1) then
   begin
     // Setting FLoadingRecs=true here, tell the fields NOT to send events during records exchange.;
     FLoadingRecs := true;
