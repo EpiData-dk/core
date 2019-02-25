@@ -80,7 +80,8 @@ begin
     ftTimeAuto:
       Val := CompareValue(F1.AsTime[Idx1], F2.AsTime[Idx2], Double(0.0));
     ftString,
-    ftUpperString:
+    ftUpperString,
+    ftMemo:
       if Casesensitive then
         Val := AnsiCompareStr(F1.AsString[Idx1], F2.AsString[Idx2])
       else
