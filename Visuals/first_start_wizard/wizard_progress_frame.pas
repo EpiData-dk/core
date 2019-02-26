@@ -34,7 +34,7 @@ type
 implementation
 
 uses
-  IniFiles, LazUTF8Classes, Dialogs, Math;
+  IniFiles, LazUTF8Classes, Dialogs, Math, LazFileUtils;
 
 {$R *.lfm}
 
@@ -73,17 +73,26 @@ var
   IniFile: TIniFile;
   Lines: TStringListUTF8;
   FS: TFileSearcher;
+  S: TJSONStringType;
 begin
   // Create the configuration file:
   Label1.Caption := 'Creating configuration file:';
   Application.ProcessMessages;
   ConfigFile := Data.Find('ConfigFile').AsString;
 
-  if (true) then
+  if (Data.Find('IsAnalysis').AsBoolean) then
     begin
       Lines := TStringListUTF8.Create;
       Lines.Append('cd "' + Data.Find('DataDir').AsString + '";');
-      Lines.Append('set "TUTORIAL FOLDER" := "' + Data.Find('DocsDir').AsString + '";');
+
+      S := 'set "TUTORIAL FOLDER" := "' + Data.Find('DocsDir').AsString + '";';
+      if (not DirectoryExistsUTF8(Data.Find('DocsDir').AsString)) then
+        begin
+          Lines.Append('// Remove the "//" on the next line when the path has been corrected');
+          S := '// ' + S;
+        end;
+      Lines.Append(S);
+
       Lines.Append('cls;');
       Lines.SaveToFile(ConfigFile);
       Lines.Free;
@@ -97,27 +106,34 @@ begin
       IniFile.Free;
     end;
 
-  Label1.Caption := 'Locating files to copy:';
-  ProgressBar1.Style := pbstMarquee;
-  Application.ProcessMessages;
+  try
+    Label1.Caption := 'Locating files to copy:';
+    ProgressBar1.Style := pbstMarquee;
+    Application.ProcessMessages;
 
-  FS := TFileSearcher.Create;
-  FS.OnFileFound := @FileCountInc;
-  FS.Search(Data.Find('ExamplesDir').AsString, '*.*');
+    FS := TFileSearcher.Create;
+    FS.OnFileFound := @FileCountInc;
+    FS.Search(Data.Find('ExamplesDir').AsString, '*.*');
+    FS.Free;
 
-  Label1.Caption := 'Locating files to copy:';
-  ProgressBar1.Style := pbstNormal;
-  ProgressBar1.Min := 0;
-  ProgressBar1.Max := Math.Max(1, FFileCount - 1);
-  ProgressBar1.Step := 1;
-  Application.ProcessMessages;
+    Label1.Caption := 'Copying files:';
+    ProgressBar1.Style := pbstNormal;
+    ProgressBar1.Min := 0;
+    ProgressBar1.Max := Math.Max(1, FFileCount - 1);
+    ProgressBar1.Step := 1;
+    Application.ProcessMessages;
 
-  FS.OnFileFound := @FileCopy;
-  FS.Search(Data.Find('ExamplesDir').AsString, '*.*');
+    FS.OnFileFound := @FileCopy;
+    FS.Search(Data.Find('ExamplesDir').AsString, '*.*');
+    FS.Free;
 
-  ProgressBar1.Position := ProgressBar1.Max;
+    Label1.Caption := 'Completed successfully!';
+    ProgressBar1.Position := ProgressBar1.Max;
+    FCompleted := true;
+  except
+    Label1.Caption := 'Copying failed!'
+  end;
 
-  FCompleted := true;
   WizardManager.PageStateChanged;
 end;
 

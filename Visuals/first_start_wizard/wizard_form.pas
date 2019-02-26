@@ -29,6 +29,7 @@ type
     {$ENDIF}
   public
     constructor Create(TheOwner: TComponent; ConfigFile: UTF8String);
+    destructor Destroy; override;
   end;
 
 function CheckAndStartWizard(SettingFileName: UTF8String): boolean;
@@ -151,7 +152,8 @@ begin
              ['DataDir', DataDir,
               'DocsDir', DocsDir,
               'ExamplesDir', ExamplesDir,
-              'ConfigFile', ConfigFile
+              'ConfigFile', ConfigFile,
+              'IsAnalysis', OnGetApplicationName() = 'epidataanalysis'
              ]
            );
 
@@ -162,6 +164,12 @@ begin
   WizardManager1.PageByName('ProgressPage').ControlClass := TWizardProgressFrame;
   WizardManager1.PageByName('SummaryPage').ControlClass := TWizardSummaryFrame;
   WizardManager1.PageIndex := 0;
+end;
+
+destructor TInitializationWizard.Destroy;
+begin
+  FData.Free;
+  inherited Destroy;
 end;
 
 end.
