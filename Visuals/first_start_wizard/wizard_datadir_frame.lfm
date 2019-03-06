@@ -16,7 +16,7 @@ object WizardSelectDataDirFrame: TWizardSelectDataDirFrame
     AnchorSideRight.Side = asrBottom
     Left = 10
     Height = 27
-    Top = 74
+    Top = 73
     Width = 616
     Directory = 'DataDirectoryEdit'
     ShowHidden = False
@@ -35,10 +35,10 @@ object WizardSelectDataDirFrame: TWizardSelectDataDirFrame
     AnchorSideLeft.Control = Owner
     Left = 10
     Height = 17
-    Top = 25
-    Width = 434
+    Top = 24
+    Width = 500
     BorderSpacing.Left = 10
-    Caption = 'Please select a location for where you wish to store your data files'
+    Caption = 'Please select default data folder (you must have write access to that folder):'
     ParentColor = False
   end
   object Label2: TLabel
@@ -47,11 +47,11 @@ object WizardSelectDataDirFrame: TWizardSelectDataDirFrame
     AnchorSideTop.Side = asrBottom
     Left = 10
     Height = 17
-    Top = 47
-    Width = 391
+    Top = 46
+    Width = 299
     BorderSpacing.Left = 10
     BorderSpacing.Top = 5
-    Caption = '(if the destination does not exists it will be created for you):'
+    Caption = '(If the folder does not exist it will be created):'
     ParentColor = False
   end
 end

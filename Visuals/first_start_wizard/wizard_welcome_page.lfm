@@ -18,7 +18,7 @@ object WizardWelcomeFrame: TWizardWelcomeFrame
     Lines.Strings = (
       'This is the first time you have run $PROGRAM$!'
       ''
-      'This wizard will help you setup the program with a default path to your Data and copy examples files for easy access.'
+      'This wizard will help you setup the program with a default path to your Data and copy example files for easy access.'
       ''
       'Once you have completed the setup, the program will return to normal.'
     )

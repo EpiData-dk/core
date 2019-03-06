@@ -134,6 +134,7 @@ begin
     Label1.Caption := 'Copying failed!'
   end;
 
+  Application.ProcessMessages;
   WizardManager.PageStateChanged;
 end;
 

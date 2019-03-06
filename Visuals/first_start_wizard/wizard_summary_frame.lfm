@@ -16,7 +16,7 @@ object WizardSummaryFrame: TWizardSummaryFrame
     Align = alClient
     BorderSpacing.Around = 10
     Lines.Strings = (
-      'The END!'
+      '%PROGRAM% is now ready to run.'
     )
     TabOrder = 0
   end

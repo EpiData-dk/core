@@ -158,11 +158,11 @@ begin
            );
 
 
-  WizardManager1.PageByName('WelcomePage').ControlClass := TWizardWelcomeFrame;
-  WizardManager1.PageByName('DataDirPage').ControlClass := TWizardSelectDataDirFrame;
+  WizardManager1.PageByName('WelcomePage').ControlClass    := TWizardWelcomeFrame;
+  WizardManager1.PageByName('DataDirPage').ControlClass    := TWizardSelectDataDirFrame;
   WizardManager1.PageByName('BeforeCopyPage').ControlClass := TWizardConfirmActionsFrame;
-  WizardManager1.PageByName('ProgressPage').ControlClass := TWizardProgressFrame;
-  WizardManager1.PageByName('SummaryPage').ControlClass := TWizardSummaryFrame;
+  WizardManager1.PageByName('ProgressPage').ControlClass   := TWizardProgressFrame;
+  WizardManager1.PageByName('SummaryPage').ControlClass    := TWizardSummaryFrame;
   WizardManager1.PageIndex := 0;
 end;
 
