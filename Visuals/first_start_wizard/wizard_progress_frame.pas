@@ -47,8 +47,6 @@ end;
 
 procedure TWizardProgressFrame.FileCopy(FileIterator: TFileIterator);
 begin
-  ShowMessage('Copying: ' + FileIterator.FileName + LineEnding +
-              'To: ' + Data.Find('DataDir').AsString + 'examples' + DirectorySeparator + FileIterator.FileInfo.Name);
   CopyFile(FileIterator.FileName, Data.Find('DataDir').AsString + 'examples' + DirectorySeparator + FileIterator.FileInfo.Name, [cffCreateDestDirectory, cffPreserveTime]);
   ProgressBar1.StepIt;
   Application.ProcessMessages;
