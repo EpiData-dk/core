@@ -47,6 +47,8 @@ end;
 
 procedure TWizardProgressFrame.FileCopy(FileIterator: TFileIterator);
 begin
+  ShowMessage('Copying: ' + FileIterator.FileName + LineEnding +
+              'To: ' + Data.Find('DataDir').AsString + 'examples' + DirectorySeparator + FileIterator.FileInfo.Name);
   CopyFile(FileIterator.FileName, Data.Find('DataDir').AsString + 'examples' + DirectorySeparator + FileIterator.FileInfo.Name, [cffCreateDestDirectory, cffPreserveTime]);
   ProgressBar1.StepIt;
   Application.ProcessMessages;
@@ -123,6 +125,7 @@ begin
     ProgressBar1.Step := 1;
     Application.ProcessMessages;
 
+    FS := TFileSearcher.Create;
     FS.OnFileFound := @FileCopy;
     FS.Search(Data.Find('ExamplesDir').AsString, '*.*');
     FS.Free;
