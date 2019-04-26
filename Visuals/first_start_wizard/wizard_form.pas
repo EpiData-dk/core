@@ -117,7 +117,7 @@ begin
             setlength(result, pos(#0, result) - 1)
           else
             result := '';
-          CFRelease(executableFSPath);
+//          CFRelease(executableFSPath);    // not required; already released
         end
       else
        result := '';
