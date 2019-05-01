@@ -6,9 +6,14 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
+  {$IFDEF DARWIN}MacOSAll,{$ENDIF}
   WizardControls, fpjson;
 
+
 type
+  {$IFDEF DARWIN}
+  TBundleURLFunction = function(bundle: CFBundleRef): CFURLRef mwpascal;
+  {$ENDIF}
 
   { TInitializationWizard }
 
@@ -25,7 +30,7 @@ type
     FConfigFile: UTF8String;
     FData: TJSONObject;
     {$IFDEF DARWIN}
-    function GetSharedSupportPath: string;
+    function GetBundlePath(URLFunction: TBundleURLFunction): string;
     {$ENDIF}
   public
     constructor Create(TheOwner: TComponent; ConfigFile: UTF8String);
@@ -37,7 +42,7 @@ function CheckAndStartWizard(SettingFileName: UTF8String): boolean;
 implementation
 
 uses
-  {$IFDEF WINDOWS}windirs,{$ENDIF}{$IFDEF DARWIN}MacOSAll,{$ENDIF}
+  {$IFDEF WINDOWS}windirs,{$ENDIF}
   wizard_datadir_frame, wizard_welcome_page, wizard_summary_frame, LazFileUtils,
   LuiRTTIUtils, wizard_progress_frame, wizard_confirm_frame;
 
@@ -80,11 +85,12 @@ begin
 end;
 
 {$IFDEF DARWIN}
-function TInitializationWizard.GetSharedSupportPath: string;
+function TInitializationWizard.GetBundlePath(URLFunction: TBundleURLFunction
+  ): string;
 var
   MainBundle: CFBundleRef;
-  SharedSupportURL: CFURLRef;
-  ExecutableFSPath: CFStringRef;
+  URLFunctionRef: CFURLRef;
+  CFPath: CFStringRef;
   utf16len: CFIndex;
 begin
   MainBundle := CFBundleGetMainBundle;
@@ -92,13 +98,12 @@ begin
   if Assigned(MainBundle) then
     begin
       { get the URL pointing to the SharedSupport of the bundle }
-      SharedSupportURL := CFBundleCopySharedSupportURL(MainBundle);
+      URLFunctionRef := URLFunction(MainBundle);
 
-      if Assigned(SharedSupportURL) then
+      if Assigned(URLFunctionRef) then
         begin
           { convert the url to a POSIX path }
-          ExecutableFSPath := CFURLCopyFileSystemPath(SharedSupportURL, kCFURLPOSIXPathStyle);
-          CFRelease(ExecutableFSPath);
+          CFPath := CFURLCopyFileSystemPath(URLFunctionRef, kCFURLPOSIXPathStyle);
 
           { convert to UTF-8 -- this is not really clean since in theory the
             ansi-encoding could be different, but
@@ -106,31 +111,33 @@ begin
               b) there is no easy way to convert the Unix LANG encoding
                  setting to an equivalent CoreFoundation encoding
           }
-          utf16len := CFStringGetLength(ExecutableFSPath);
+          utf16len := CFStringGetLength(CFPath);
 
           // +1 for extra terminating #0 in the worst case, so the pos below
           // will always find the #0
           setlength(result, utf16len * 3 + 1);
 
-          if CFStringGetCString(ExecutableFSPath, @result[1], length(result), kCFStringEncodingUTF8) then
+          if CFStringGetCString(CFPath, @result[1], length(result), kCFStringEncodingUTF8) then
             { truncate to actual length, #0 cannot appear in a file path }
             setlength(result, pos(#0, result) - 1)
           else
             result := '';
-//          CFRelease(executableFSPath);    // not required; already released
+          CFRelease(CFPath);
         end
       else
        result := '';
     end
   else
     result := '';
+
+  WriteLn('GetBundlePath: ' + Result);
 end;
 {$ENDIF}
 
 constructor TInitializationWizard.Create(TheOwner: TComponent;
   ConfigFile: UTF8String);
 var
-  DataDir, DocsDir, Examplesdir: String;
+  DataDir, DocsDir, Examplesdir, Path: String;
 begin
   inherited Create(TheOwner);
 
@@ -140,8 +147,9 @@ begin
   ExamplesDir  := '/usr/share/' + OnGetApplicationName() + DirectorySeparator;
   {$ELSEIF defined(DARWIN)}
   DataDir      := GetUserDir + 'EpiData' + DirectorySeparator;
-  DocsDir      := GetSharedSupportPath + DirectorySeparator + 'docs' + DirectorySeparator;
-  ExamplesDir  := GetSharedSupportPath + DirectorySeparator + 'examples' + DirectorySeparator;
+  Path := GetBundlePath(@CFBundleCopyBundleURL) + DirectorySeparator + GetBundlePath(@CFBundleCopySharedSupportURL);
+  DocsDir      := Path + DirectorySeparator + 'docs' + DirectorySeparator;
+  ExamplesDir  := Path + DirectorySeparator + 'examples' + DirectorySeparator;
   {$ELSE   define(MSWINDOWS)}
   DataDir      := GetWindowsSpecialDir(CSIDL_PERSONAL) + 'EpiData' + DirectorySeparator;
   DocsDir      := Application.Location + DirectorySeparator + 'docs' + DirectorySeparator;
@@ -156,7 +164,6 @@ begin
               'IsAnalysis', OnGetApplicationName() = 'epidataanalysis'
              ]
            );
-
 
   WizardManager1.PageByName('WelcomePage').ControlClass    := TWizardWelcomeFrame;
   WizardManager1.PageByName('DataDirPage').ControlClass    := TWizardSelectDataDirFrame;
