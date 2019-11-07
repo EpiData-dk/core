@@ -645,7 +645,7 @@ begin
 
         otRelation:
           if Mr.Datafile.Caption.Text = '' then
-            CellText := '(untitled)'
+            CellText := '(' + Mr.datafile.Name + ')'
           else
             CellText := Mr.Datafile.Caption.Text;
 
