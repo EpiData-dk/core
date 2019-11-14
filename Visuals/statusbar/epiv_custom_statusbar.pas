@@ -295,7 +295,7 @@ begin
   FPanel := TPanel.Create(StatusBar);
   with FPanel do
     begin
-      Color := clWhite;
+      Color := clDefault;
       BevelInner := bvLowered;
       BevelOuter := bvNone;
     end;
