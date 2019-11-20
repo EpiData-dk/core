@@ -103,6 +103,7 @@ begin
   Image := TImage.Create(Self);
   with Image do
   begin
+    Stretch := true;
     Width := 64;
     Height := 64;
     AnchorToNeighbour(akTop, 10, WebLabel);
