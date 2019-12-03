@@ -28,7 +28,7 @@
         <CustomOptions Value="-dEPI_GRID_TEST"/>
       </Other>
     </CompilerOptions>
-    <Version Major="4" Minor="4"/>
+    <Version Major="4" Minor="7"/>
     <Files Count="23">
       <Item1>
         <Filename Value="Visuals/epiv_dataset_viewer_frame.pas"/>
@@ -137,8 +137,8 @@
       </Item3>
       <Item4>
         <PackageName Value="epidatacore"/>
-        <MaxVersion Major="4" Minor="4" Valid="True"/>
-        <MinVersion Major="4" Minor="3" Valid="True"/>
+        <MaxVersion Major="4" Minor="3"/>
+        <MinVersion Major="4" Minor="7" Valid="True"/>
       </Item4>
       <Item5>
         <PackageName Value="lcl"/>
