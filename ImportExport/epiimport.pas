@@ -110,7 +110,7 @@ var
   BigEndian: boolean = false;
 
 const
-  MemoImportLength = 20;
+  MemoImportLength = 70;
 
 { TEpiImport }
 
