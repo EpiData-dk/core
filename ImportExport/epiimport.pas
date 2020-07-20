@@ -423,13 +423,18 @@ begin
 
     // Remove Boolean type in detection, because we really do not want users to use boolean fields - it is bad practice.
     FillDWord(PossibleTypes[0], FieldCount, Longint(AllFieldTypes - AutoFieldTypes - BoolFieldTypes));
+    FieldStrings := TStringList.Create;
     for i := StartLine to LineCount - 1 do
     begin
       DoProgress(eptRecords, i, LineCount * 3);
       TmpStr := Lines[i];
       if Trim(TmpStr) = '' then continue;
 
+      {$IF FPC_FULLVERSION >= 30200}
+      FieldStrings.AddStrings(TmpStr.Split([FieldSeparator], ImportSetting.QuoteCharacter), true);
+      {$ELSE}
       SplitString(TmpStr, FieldStrings, [FieldSeparator], [ImportSetting.QuoteCharacter]);
+      {$ENDIF}
 
       for j := 0 to FieldStrings.Count -1 do
       begin
@@ -480,7 +485,11 @@ begin
       TmpStr := Lines[i];
       if Trim(TmpStr) = '' then continue;
 
+      {$IF FPC_FULLVERSION >= 30200}
+      FieldStrings.AddStrings(TmpStr.Split([FieldSeparator], ImportSetting.QuoteCharacter), true);
+      {$ELSE}
       SplitString(TmpStr, FieldStrings, [FieldSeparator], [ImportSetting.QuoteCharacter]);
+      {$ENDIF}
 
       for j := 0 to FieldStrings.Count -1 do
       with TEpiField(FieldList[j]) do
@@ -520,7 +529,11 @@ begin
           // Guess field names (and variable labels).
           // And correct fieldtypes if FieldLength = 0 (this indicates that fieldtype found
           // - previously did not succeed. Make type = ftAlfa and Length = 1;
+          {$IF FPC_FULLVERSION >= 30200}
+          FieldStrings.AddStrings(Lines[0].Split([FieldSeparator], ImportSetting.QuoteCharacter), true);
+          {$ELSE}
           SplitString(Lines[0], FieldStrings, [FieldSeparator], [ImportSetting.QuoteCharacter]);
+          {$ENDIF}
 
           for i := 0 to FieldStrings.Count - 1 do
           begin
@@ -2142,7 +2155,12 @@ begin
     begin
       DoProgress(eptRecords, i + (ImportLines.Count * 2), ImportLines.Count * 3);
       if Trim(ImportLines[i]) = '' then continue;
+
+      {$IFDEF FPC_FULLVERSION >= 30200}
+      FieldLines.AddStrings(ImportLines[i].Split([FieldSeparator], '"'), true);
+      {$ELSE}
       SplitString(ImportLines[i], FieldLines, [FieldSeparator], ['"']);
+      {$ENDIF}
 
       NewRecords(1);
 
