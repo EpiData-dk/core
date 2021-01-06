@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, Laz2_DOM, epidatafilestypes, typinfo,
-  contnrs, LazMethodList;
+  contnrs, LazMethodList, StrHashMap;
 
 const
   EPI_XML_DATAFILE_VERSION = 6;
@@ -425,6 +425,13 @@ type
   { TEpiCustomList }
 
   TEpiCustomList = class(TEpiCustomItem)
+  private
+  { Lookup Cache }
+    FNamesHash: TStringHashMap;
+    FDirtyCache: boolean;
+    procedure RebuiltLookupCache;
+    function ItemInCache(Item: TEpiCustomItem; out Index: integer): boolean;
+    function ItemInCache(AName: string; out Index: integer): boolean;
   private
     FItemOwner: boolean;
     FList: TFPList;
@@ -1832,6 +1839,31 @@ end;
 
 { TEpiCustomList }
 
+procedure TEpiCustomList.RebuiltLookupCache;
+var
+  index: Integer;
+begin
+  FNamesHash.Clear;
+
+  for index := 0 to Count - 1 do
+    FNamesHash.Add(Items[index].Name, index);
+
+  FDirtyCache := false;
+end;
+
+function TEpiCustomList.ItemInCache(Item: TEpiCustomItem; out Index: integer): boolean;
+begin
+  result := ItemInCache(Item.Name, Index);
+end;
+
+function TEpiCustomList.ItemInCache(AName: string; out Index: integer): boolean;
+begin
+  if (FDirtyCache) then
+    RebuiltLookupCache;
+
+  Result := FNamesHash.Find(AName, Index);
+end;
+
 procedure TEpiCustomList.SetItemOwner(const AValue: boolean);
 begin
   if FItemOwner = AValue then exit;
@@ -1854,6 +1886,7 @@ begin
     ecceAddItem: Sort;
     ecceDelItem: Sort;
     ecceUpdate:  Sort;
+    ecceName:    FDirtyCache := true;
   end;
 end;
 
@@ -1885,6 +1918,7 @@ constructor TEpiCustomList.Create(AOwner: TEpiCustomBase);
 begin
   inherited Create(AOwner);
   FList := TFPList.Create;
+  FNamesHash := TStringHashMap.Create(10, false);
   FItemOwner := false;
   FSorted := false;
   FUniqueNames := true;
@@ -1940,6 +1974,7 @@ begin
 
     Node := Node.NextSibling;
   end;
+  FDirtyCache := true;
 end;
 
 function TEpiCustomList.SaveToDom(RootDoc: TDOMDocument): TDOMElement;
@@ -2015,11 +2050,14 @@ var
 begin
   ClearAndFree;
   FreeAndNil(FList);
+  FreeAndNil(FNamesHash);
   inherited Destroy;
 end;
 
 procedure TEpiCustomList.Clear;
 begin
+  FDirtyCache := true;
+
   while Count > 0 do
     DeleteItem(Count - 1);
 end;
@@ -2028,6 +2066,8 @@ procedure TEpiCustomList.ClearAndFree;
 var
   F: TEpiCustomItem;
 begin
+  FDirtyCache := true;
+
   while FList.Count > 0 do
   begin
     // Using this unusual construct in destroying list items (when owned)
@@ -2076,6 +2116,7 @@ begin
   if (not ValidateRename(Item.Name, false)) then
     raise TEpiCoreException.Create('Item "' + Item.Name + '" already exist in list');
   FList.Insert(Index, Item);
+  FDirtyCache := true;
   RegisterItem(Item);
 end;
 
@@ -2088,6 +2129,7 @@ end;
 function TEpiCustomList.DeleteItem(Index: integer): TEpiCustomItem;
 begin
   Result := TEpiCustomItem(FList[Index]);
+  FDirtyCache := true;
   FList.Delete(Index);
   UnRegisterItem(Result);
 end;
@@ -2097,14 +2139,23 @@ var
   i: Integer;
 begin
   Result := nil;
-  for i := 0 to Count - 1 do
-  begin
-    if UTF8CompareText(TEpiCustomItem(FList[i]).Name, AName) = 0 then
+
+  if (not UniqueNames) then
     begin
-      Result := TEpiCustomItem(FList[i]);
-      Exit;
+      for i := 0 to Count - 1 do
+      begin
+        if UTF8CompareText(TEpiCustomItem(FList[i]).Name, AName) = 0 then
+        begin
+          Result := TEpiCustomItem(FList[i]);
+          Exit;
+        end;
+      end;
+    end
+  else
+    begin
+      if (ItemInCache(AName, I)) then
+        Result := TEpiCustomItem(FList[i]);
     end;
-  end;
 end;
 
 function TEpiCustomList.ItemExistsByName(AName: string): boolean;
@@ -2124,6 +2175,7 @@ begin
   if Sorted then exit;
 
   FList.Move(CurIndex, NewIndex);
+  FDirtyCache := true;
   DoChange(eegCustomBase, Word(ecceListMove), nil);
 end;
 
@@ -2224,7 +2276,9 @@ begin
   if not Sorted then exit;
 
   if Assigned(FOnSort) then
-    FList.Sort(FOnSort)
+    FList.Sort(FOnSort);
+
+  FDirtyCache := true;
 end;
 
 procedure TEpiCustomList.Sort;

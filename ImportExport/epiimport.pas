@@ -448,6 +448,7 @@ begin
       end;
     end;
 
+    // Select the best matching fieldtype based on MinFT list
     SetLength(FieldTypeList, FieldCount);
     FillByte(FieldTypeList[0], FieldCount, Byte(ftMemo));
     for i := 0 to FieldCount - 1 do
