@@ -1,0 +1,9 @@
+object EpiVProjectTreeViewFrame: TEpiVProjectTreeViewFrame
+  Left = 0
+  Height = 572
+  Top = 0
+  Width = 430
+  TabOrder = 0
+  DesignLeft = 2493
+  DesignTop = 377
+end

@@ -1,0 +1,57 @@
+object WizardSelectDataDirFrame: TWizardSelectDataDirFrame
+  Left = 0
+  Height = 337
+  Top = 0
+  Width = 636
+  ClientHeight = 337
+  ClientWidth = 636
+  TabOrder = 0
+  DesignLeft = 2485
+  DesignTop = 573
+  object DirectoryEdit1: TDirectoryEdit
+    AnchorSideLeft.Control = Label1
+    AnchorSideTop.Control = Label2
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 10
+    Height = 27
+    Top = 73
+    Width = 616
+    Directory = 'DataDirectoryEdit'
+    ShowHidden = False
+    ButtonWidth = 23
+    NumGlyphs = 1
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Top = 10
+    BorderSpacing.Right = 10
+    MaxLength = 0
+    TabOrder = 0
+    OnChange = DirectoryEdit1Change
+    OnEditingDone = DirectoryEdit1EditingDone
+    Text = 'DataDirectoryEdit'
+  end
+  object Label1: TLabel
+    AnchorSideLeft.Control = Owner
+    Left = 10
+    Height = 17
+    Top = 24
+    Width = 500
+    BorderSpacing.Left = 10
+    Caption = 'Please select default data folder (you must have write access to that folder):'
+    ParentColor = False
+  end
+  object Label2: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Label1
+    AnchorSideTop.Side = asrBottom
+    Left = 10
+    Height = 17
+    Top = 46
+    Width = 299
+    BorderSpacing.Left = 10
+    BorderSpacing.Top = 5
+    Caption = '(If the folder does not exist it will be created):'
+    ParentColor = False
+  end
+end

@@ -1,0 +1,86 @@
+object DatasetViewerFrame: TDatasetViewerFrame
+  Left = 0
+  Height = 546
+  Top = 0
+  Width = 659
+  ClientHeight = 546
+  ClientWidth = 659
+  TabOrder = 0
+  DesignLeft = 1020
+  DesignTop = 306
+  object Panel1: TPanel
+    Left = 0
+    Height = 42
+    Top = 0
+    Width = 659
+    Align = alTop
+    ClientHeight = 42
+    ClientWidth = 659
+    TabOrder = 0
+    object Button1: TButton
+      Left = 16
+      Height = 25
+      Top = 8
+      Width = 144
+      Action = ShowValuesOrLabelsAction
+      AutoSize = True
+      TabOrder = 0
+    end
+    object Button2: TButton
+      AnchorSideLeft.Control = Button1
+      AnchorSideLeft.Side = asrBottom
+      Left = 170
+      Height = 25
+      Top = 8
+      Width = 82
+      Action = SortByIndexAction
+      AutoSize = True
+      BorderSpacing.Left = 10
+      ParentBidiMode = False
+      TabOrder = 1
+    end
+    object Button3: TButton
+      AnchorSideLeft.Control = Button2
+      AnchorSideLeft.Side = asrBottom
+      Left = 262
+      Height = 25
+      Top = 8
+      Width = 92
+      Action = ShowIndexOrAllFieldsAction
+      AutoSize = True
+      BorderSpacing.Left = 10
+      TabOrder = 2
+    end
+    object Button4: TButton
+      AnchorSideLeft.Control = Button3
+      AnchorSideLeft.Side = asrBottom
+      Left = 364
+      Height = 25
+      Top = 8
+      Width = 171
+      AutoSize = True
+      BorderSpacing.Left = 10
+      Caption = 'Show All/Filtered Records'
+      OnClick = Button4Click
+      TabOrder = 3
+    end
+  end
+  object ActionList1: TActionList
+    left = 232
+    top = 232
+    object ShowValuesOrLabelsAction: TAction
+      Caption = 'Show Values / Labels'
+      OnExecute = ShowValuesOrLabelsActionExecute
+    end
+    object SortByIndexAction: TAction
+      Caption = 'Sort by Key'
+      OnExecute = SortByIndexActionExecute
+      OnUpdate = SortByIndexActionUpdate
+    end
+    object ShowIndexOrAllFieldsAction: TAction
+      Caption = 'Show All/Key'
+      OnExecute = ShowIndexOrAllFieldsActionExecute
+      OnUpdate = ShowIndexOrAllFieldsActionUpdate
+    end
+  end
+end

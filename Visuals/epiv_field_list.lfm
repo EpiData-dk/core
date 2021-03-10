@@ -1,0 +1,33 @@
+object EpiVFieldList: TEpiVFieldList
+  Left = 0
+  Height = 446
+  Top = 0
+  Width = 481
+  ClientHeight = 446
+  ClientWidth = 481
+  TabOrder = 0
+  DesignLeft = 2123
+  DesignTop = 332
+  object Panel1: TPanel
+    Left = 408
+    Height = 446
+    Top = 0
+    Width = 73
+    Align = alRight
+    ClientHeight = 446
+    ClientWidth = 73
+    TabOrder = 0
+    object MoveUpBtn: TSpeedButton
+      Left = 26
+      Height = 24
+      Top = 168
+      Width = 24
+    end
+    object MoveDownBtn: TSpeedButton
+      Left = 26
+      Height = 24
+      Top = 208
+      Width = 24
+    end
+  end
+end
