@@ -102,7 +102,11 @@ begin
 
   // 2: Generate the RSA KeyPair
   KeyPair := RSA_new();
+  {$IF FPC_FULLVERSION < 30200}
   if (not Assigned(RSA_generate_key_ex(KeyPair, BitSize, BigNum, nil))) then
+  {$ELSE}
+  if (RSA_generate_key_ex(KeyPair, BitSize, BigNum, nil) <> 0) then
+  {$ENDIF}
     DoError('RSA_generate_key_ex');
 
   // 3: Create bI/O's to output RSA KeyPair to.
