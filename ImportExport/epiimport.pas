@@ -438,7 +438,11 @@ begin
 
       for j := 0 to FieldStrings.Count -1 do
       begin
+        {$IF FPC_FULLVERSION >= 30200}
+        TmpStr := FieldStrings[j].DeQuotedString(ImportSetting.QuoteCharacter);
+        {$ELSE}
         TmpStr := FieldStrings[j];
+        {$ENDIF}
 
         if TmpStr = TEpiStringField.DefaultMissing then
           TmpStr := '';
@@ -495,7 +499,11 @@ begin
       for j := 0 to FieldStrings.Count -1 do
       with TEpiField(FieldList[j]) do
       begin
+        {$IF FPC_FULLVERSION >= 30200}
+        TmpStr := FieldStrings[j].DeQuotedString(ImportSetting.QuoteCharacter);
+        {$ELSE}
         TmpStr := FieldStrings[j];
+        {$ENDIF}
 
         if (TmpStr = '.') or (Trim(TmpStr) = '') then continue;
 
@@ -538,7 +546,11 @@ begin
 
           for i := 0 to FieldStrings.Count - 1 do
           begin
-            TmpStr := FieldStrings[i];
+            {$IF FPC_FULLVERSION >= 30200}
+            TmpStr := FieldStrings[j].DeQuotedString(ImportSetting.QuoteCharacter);
+            {$ELSE}
+            TmpStr := FieldStrings[j];
+            {$ENDIF}
             TmpField := TEpiField(FieldList[i]);
 
             if (TmpField.Length = 0) and (TmpField.FieldType = ftInteger) then
@@ -2157,7 +2169,7 @@ begin
       DoProgress(eptRecords, i + (ImportLines.Count * 2), ImportLines.Count * 3);
       if Trim(ImportLines[i]) = '' then continue;
 
-      {$IFDEF FPC_FULLVERSION >= 30200}
+      {$IF FPC_FULLVERSION >= 30200}
       FieldLines.AddStrings(ImportLines[i].Split([FieldSeparator], '"'), true);
       {$ELSE}
       SplitString(ImportLines[i], FieldLines, [FieldSeparator], ['"']);
@@ -2176,7 +2188,11 @@ begin
 
       for j := 0 to FieldLines.Count -1 do
       begin
-        TmpStr   := FieldLines[j];
+        {$IF FPC_FULLVERSION >= 30200}
+        TmpStr := FieldLines[j].DeQuotedString(ImportSetting.QuoteCharacter);
+        {$ELSE}
+        TmpStr := FieldLines[j];
+        {$ENDIF}
         TmpField := TEpiField(FieldList[j]);
 
         // If someone accidentally wrote the display missing char (usually ".") in the
