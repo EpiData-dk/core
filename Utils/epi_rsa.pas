@@ -70,6 +70,7 @@ var
 constructor TEpiRSA.Create;
 begin
   if (not InitSSLInterface) then exit;
+  // TODO: for Darwin (or LCLCocoa) must replace first library name with second.
   ERR_load_crypto_strings();
 
   PEM_write_bio_RSAPrivateKey := TPEM_write_bio_RSAPrivateKey(GetProcAddress(SSLUtilHandle, 'PEM_write_bio_RSAPrivateKey'));
@@ -94,6 +95,7 @@ var
   PriLen, PubLen: integer;
   PriBIO, PubBIO: PBIO;
   PriKey, PubKey: String;
+  xresult: integer;
 begin
   // 1: Generate BigNum
   BigNum  := BN_new();
@@ -105,7 +107,7 @@ begin
   {$IF FPC_FULLVERSION < 30200}
   if (not Assigned(RSA_generate_key_ex(KeyPair, BitSize, BigNum, nil))) then
   {$ELSE}
-  if (RSA_generate_key_ex(KeyPair, BitSize, BigNum, nil) <> 0) then
+  if (RSA_generate_key_ex(KeyPair, BitSize, BigNum, nil) <> 1) then
   {$ENDIF}
     DoError('RSA_generate_key_ex');
 
