@@ -16,12 +16,11 @@
         </SyntaxOptions>
       </Parsing>
       <CodeGeneration>
-        <Optimizations>
-          <OptimizationLevel Value="0"/>
-        </Optimizations>
+        <SmartLinkUnit Value="True"/>
       </CodeGeneration>
       <Linking>
         <Debugging>
+          <GenerateDebugInfo Value="False"/>
           <DebugInfoType Value="dsDwarf2Set"/>
         </Debugging>
       </Linking>
@@ -395,15 +394,15 @@
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="ChsDet"/>
-      </Item1>
-      <Item2>
-        <PackageName Value="LazUtils"/>
-        <MinVersion Major="1" Valid="True"/>
-      </Item2>
-      <Item3>
         <PackageName Value="lnetbase"/>
         <MinVersion Minor="6" Valid="True"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="ChsDet"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="LazUtils"/>
+        <MinVersion Major="1" Valid="True"/>
       </Item3>
       <Item4>
         <PackageName Value="dcpcrypt"/>

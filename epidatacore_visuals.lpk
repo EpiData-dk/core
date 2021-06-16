@@ -15,12 +15,14 @@
         </SyntaxOptions>
       </Parsing>
       <CodeGeneration>
+        <SmartLinkUnit Value="True"/>
         <Optimizations>
-          <OptimizationLevel Value="0"/>
+          <OptimizationLevel Value="2"/>
         </Optimizations>
       </CodeGeneration>
       <Linking>
         <Debugging>
+          <GenerateDebugInfo Value="False"/>
           <DebugInfoType Value="dsDwarf2Set"/>
         </Debugging>
       </Linking>
@@ -137,7 +139,7 @@
       </Item3>
       <Item4>
         <PackageName Value="epidatacore"/>
-        <MaxVersion Major="4" Minor="8" Release="999" Valid="True"/>
+        <MaxVersion Major="4" Minor="8" Valid="True"/>
         <MinVersion Major="4" Minor="7" Valid="True"/>
       </Item4>
       <Item5>
