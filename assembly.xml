@@ -1,0 +1,28 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>libs</id>
+    <baseDirectory>core/</baseDirectory>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>${basedir}/config/</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>core.cfg</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/target/units/</directory>
+            <outputDirectory>core/</outputDirectory>
+            <includes>
+                <include>*/*</include>
+            </includes>
+            <excludes>
+                <exclude>*/*.compiled</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+</assembly>
