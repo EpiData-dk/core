@@ -6,9 +6,9 @@
     <CompilerOptions>
       <Version Value="11"/>
       <SearchPaths>
-        <IncludeFiles Value="Core;.;Utils"/>
-        <OtherUnitFiles Value="Core;Utils;ImportExport;Reports;Tools;Services"/>
-        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+        <IncludeFiles Value="src/Core;.;src/Utils"/>
+        <OtherUnitFiles Value="src/Core;src/Utils;src/ImportExport;src/Reports;src/Tools;src/Services"/>
+        <UnitOutputDirectory Value="target/units/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
@@ -32,363 +32,363 @@
     <Version Major="4" Minor="7"/>
     <Files Count="90">
       <Item1>
-        <Filename Value="Core/epiadmin.pas"/>
+        <Filename Value="src/Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
       </Item1>
       <Item2>
-        <Filename Value="Core/epicalculations.inc"/>
+        <Filename Value="src/Core/epicalculations.inc"/>
         <Type Value="Include"/>
       </Item2>
       <Item3>
-        <Filename Value="Core/epicalculationsh.inc"/>
+        <Filename Value="src/Core/epicalculationsh.inc"/>
         <Type Value="Include"/>
       </Item3>
       <Item4>
-        <Filename Value="Core/epicomparison.inc"/>
+        <Filename Value="src/Core/epicomparison.inc"/>
         <Type Value="Include"/>
       </Item4>
       <Item5>
-        <Filename Value="Core/epicomparisonh.inc"/>
+        <Filename Value="src/Core/epicomparisonh.inc"/>
         <Type Value="Include"/>
       </Item5>
       <Item6>
-        <Filename Value="Core/epicustombase.pas"/>
+        <Filename Value="src/Core/epicustombase.pas"/>
         <UnitName Value="epicustombase"/>
       </Item6>
       <Item7>
-        <Filename Value="Core/epidatafiles.pas"/>
+        <Filename Value="src/Core/epidatafiles.pas"/>
         <UnitName Value="epidatafiles"/>
       </Item7>
       <Item8>
-        <Filename Value="Core/epidatafiles.inc"/>
+        <Filename Value="src/Core/epidatafiles.inc"/>
         <Type Value="Include"/>
       </Item8>
       <Item9>
-        <Filename Value="Core/epidatafilesh.inc"/>
+        <Filename Value="src/Core/epidatafilesh.inc"/>
         <Type Value="Include"/>
       </Item9>
       <Item10>
-        <Filename Value="Core/epidatafilestypes.pas"/>
+        <Filename Value="src/Core/epidatafilestypes.pas"/>
         <UnitName Value="epidatafilestypes"/>
       </Item10>
       <Item11>
-        <Filename Value="Core/epidocument.pas"/>
+        <Filename Value="src/Core/epidocument.pas"/>
         <UnitName Value="epidocument"/>
       </Item11>
       <Item12>
-        <Filename Value="Core/epifields.inc"/>
+        <Filename Value="src/Core/epifields.inc"/>
         <Type Value="Include"/>
       </Item12>
       <Item13>
-        <Filename Value="Core/epifieldsh.inc"/>
+        <Filename Value="src/Core/epifieldsh.inc"/>
         <Type Value="Include"/>
       </Item13>
       <Item14>
-        <Filename Value="Core/epiheadings.inc"/>
+        <Filename Value="src/Core/epiheadings.inc"/>
         <Type Value="Include"/>
       </Item14>
       <Item15>
-        <Filename Value="Core/epiheadingsh.inc"/>
+        <Filename Value="src/Core/epiheadingsh.inc"/>
         <Type Value="Include"/>
       </Item15>
       <Item16>
-        <Filename Value="Core/epijumps.inc"/>
+        <Filename Value="src/Core/epijumps.inc"/>
         <Type Value="Include"/>
       </Item16>
       <Item17>
-        <Filename Value="Core/epijumpsh.inc"/>
+        <Filename Value="src/Core/epijumpsh.inc"/>
         <Type Value="Include"/>
       </Item17>
       <Item18>
-        <Filename Value="Core/epiranges.pas"/>
+        <Filename Value="src/Core/epiranges.pas"/>
         <UnitName Value="epiranges"/>
       </Item18>
       <Item19>
-        <Filename Value="Core/episections.inc"/>
+        <Filename Value="src/Core/episections.inc"/>
         <Type Value="Include"/>
       </Item19>
       <Item20>
-        <Filename Value="Core/episectionsh.inc"/>
+        <Filename Value="src/Core/episectionsh.inc"/>
         <Type Value="Include"/>
       </Item20>
       <Item21>
-        <Filename Value="Core/episettings.pas"/>
+        <Filename Value="src/Core/episettings.pas"/>
         <UnitName Value="episettings"/>
       </Item21>
       <Item22>
-        <Filename Value="Core/epistudy.pas"/>
+        <Filename Value="src/Core/epistudy.pas"/>
         <UnitName Value="epistudy"/>
       </Item22>
       <Item23>
-        <Filename Value="Core/epivaluelabels.pas"/>
+        <Filename Value="src/Core/epivaluelabels.pas"/>
         <UnitName Value="epivaluelabels"/>
       </Item23>
       <Item24>
-        <Filename Value="Core/epixmlconstants.inc"/>
+        <Filename Value="src/Core/epixmlconstants.inc"/>
         <UnitName Value="epixmlconstants"/>
       </Item24>
       <Item25>
-        <Filename Value="ImportExport/epieximtypes.pas"/>
+        <Filename Value="src/ImportExport/epieximtypes.pas"/>
         <UnitName Value="epieximtypes"/>
       </Item25>
       <Item26>
-        <Filename Value="ImportExport/epiexport.pas"/>
+        <Filename Value="src/ImportExport/epiexport.pas"/>
         <UnitName Value="epiexport"/>
       </Item26>
       <Item27>
-        <Filename Value="ImportExport/epiexportsettings.pas"/>
+        <Filename Value="src/ImportExport/epiexportsettings.pas"/>
         <UnitName Value="epiexportsettings"/>
       </Item27>
       <Item28>
-        <Filename Value="ImportExport/epiimport.pas"/>
+        <Filename Value="src/ImportExport/epiimport.pas"/>
         <UnitName Value="epiimport"/>
       </Item28>
       <Item29>
-        <Filename Value="Reports/epireport_base.pas"/>
+        <Filename Value="src/Reports/epireport_base.pas"/>
         <UnitName Value="epireport_base"/>
       </Item29>
       <Item30>
-        <Filename Value="Reports/epireport_generator_html.pas"/>
+        <Filename Value="src/Reports/epireport_generator_html.pas"/>
         <UnitName Value="epireport_generator_html"/>
       </Item30>
       <Item31>
-        <Filename Value="Reports/epireport_types.pas"/>
+        <Filename Value="src/Reports/epireport_types.pas"/>
         <UnitName Value="epireport_types"/>
       </Item31>
       <Item32>
-        <Filename Value="Services/episervice_ipc.pas"/>
+        <Filename Value="src/Services/episervice_ipc.pas"/>
         <UnitName Value="episervice_ipc"/>
       </Item32>
       <Item33>
-        <Filename Value="Services/episervice_ipctypes.pas"/>
+        <Filename Value="src/Services/episervice_ipctypes.pas"/>
         <UnitName Value="episervice_ipctypes"/>
       </Item33>
       <Item34>
-        <Filename Value="Utils/epiconvertutils.pas"/>
+        <Filename Value="src/Utils/epiconvertutils.pas"/>
         <UnitName Value="epiconvertutils"/>
       </Item34>
       <Item35>
-        <Filename Value="Utils/epimiscutils.pas"/>
+        <Filename Value="src/Utils/epimiscutils.pas"/>
         <UnitName Value="epimiscutils"/>
       </Item35>
       <Item36>
-        <Filename Value="Utils/epistringutils.pas"/>
+        <Filename Value="src/Utils/epistringutils.pas"/>
         <UnitName Value="epistringutils"/>
       </Item36>
       <Item37>
-        <Filename Value="Utils/epiversionutils.pas"/>
+        <Filename Value="src/Utils/epiversionutils.pas"/>
         <UnitName Value="epiversionutils"/>
       </Item37>
       <Item38>
-        <Filename Value="Utils/uniqueinstanceraw.pas"/>
+        <Filename Value="src/Utils/uniqueinstanceraw.pas"/>
         <UnitName Value="UniqueInstanceRaw"/>
       </Item38>
       <Item39>
-        <Filename Value="Tools/epitools_integritycheck.pas"/>
+        <Filename Value="src/Tools/epitools_integritycheck.pas"/>
         <UnitName Value="epitools_integritycheck"/>
       </Item39>
       <Item40>
-        <Filename Value="Utils/epiglobals.pas"/>
+        <Filename Value="src/Utils/epiglobals.pas"/>
         <UnitName Value="epiglobals"/>
       </Item40>
       <Item41>
-        <Filename Value="Tools/epitools_val_dbl_entry.pas"/>
+        <Filename Value="src/Tools/epitools_val_dbl_entry.pas"/>
         <UnitName Value="epitools_val_dbl_entry"/>
       </Item41>
       <Item42>
-        <Filename Value="Utils/epidatafileutils.pas"/>
+        <Filename Value="src/Utils/epidatafileutils.pas"/>
         <UnitName Value="epidatafileutils"/>
       </Item42>
       <Item43>
-        <Filename Value="Reports/epireport_generator_txt.pas"/>
+        <Filename Value="src/Reports/epireport_generator_txt.pas"/>
         <UnitName Value="epireport_generator_txt"/>
       </Item43>
       <Item44>
-        <Filename Value="Reports/epireport_generator_base.pas"/>
+        <Filename Value="src/Reports/epireport_generator_base.pas"/>
         <UnitName Value="epireport_generator_base"/>
       </Item44>
       <Item45>
-        <Filename Value="ImportExport/epiexport_ddi.pas"/>
+        <Filename Value="src/ImportExport/epiexport_ddi.pas"/>
         <UnitName Value="epiexport_ddi"/>
       </Item45>
       <Item46>
-        <Filename Value="Utils/vinfo.pas"/>
+        <Filename Value="src/Utils/vinfo.pas"/>
         <UnitName Value="vinfo"/>
       </Item46>
       <Item47>
-        <Filename Value="Reports/epireport_report_mainheader.pas"/>
+        <Filename Value="src/Reports/epireport_report_mainheader.pas"/>
         <UnitName Value="epireport_report_mainheader"/>
       </Item47>
       <Item48>
-        <Filename Value="Reports/epireport_report_projectheading.pas"/>
+        <Filename Value="src/Reports/epireport_report_projectheading.pas"/>
         <UnitName Value="epireport_report_projectheading"/>
       </Item48>
       <Item49>
-        <Filename Value="Reports/epireport_report_studyinfo.pas"/>
+        <Filename Value="src/Reports/epireport_report_studyinfo.pas"/>
         <UnitName Value="epireport_report_studyinfo"/>
       </Item49>
       <Item50>
-        <Filename Value="Reports/epireport_report_fieldlist.pas"/>
+        <Filename Value="src/Reports/epireport_report_fieldlist.pas"/>
         <UnitName Value="epireport_report_fieldlist"/>
       </Item50>
       <Item51>
-        <Filename Value="Reports/epireport_report_valuelabelsetlist.pas"/>
+        <Filename Value="src/Reports/epireport_report_valuelabelsetlist.pas"/>
         <UnitName Value="epireport_report_valuelabelsetlist"/>
       </Item51>
       <Item52>
-        <Filename Value="Reports/epireport_report_fieldinfo.pas"/>
+        <Filename Value="src/Reports/epireport_report_fieldinfo.pas"/>
         <UnitName Value="epireport_report_fieldinfo"/>
       </Item52>
       <Item53>
-        <Filename Value="Reports/epireport_report_countbyid.pas"/>
+        <Filename Value="src/Reports/epireport_report_countbyid.pas"/>
         <UnitName Value="epireport_report_countbyid"/>
       </Item53>
       <Item54>
-        <Filename Value="Reports/epireport_report_doubleentryvalidate.pas"/>
+        <Filename Value="src/Reports/epireport_report_doubleentryvalidate.pas"/>
         <UnitName Value="epireport_report_doubleentryvalidate"/>
       </Item54>
       <Item55>
-        <Filename Value="Utils/epiopenfile.pas"/>
+        <Filename Value="src/Utils/epiopenfile.pas"/>
         <UnitName Value="epiopenfile"/>
       </Item55>
       <Item56>
-        <Filename Value="Utils/epi_iso639.pas"/>
+        <Filename Value="src/Utils/epi_iso639.pas"/>
         <UnitName Value="epi_iso639"/>
       </Item56>
       <Item57>
-        <Filename Value="Utils/desc.inc"/>
+        <Filename Value="src/Utils/desc.inc"/>
         <Type Value="Include"/>
       </Item57>
       <Item58>
-        <Filename Value="Utils/lang.inc"/>
+        <Filename Value="src/Utils/lang.inc"/>
         <Type Value="Include"/>
       </Item58>
       <Item59>
-        <Filename Value="Reports/epireport_report_projectvalidator.pas"/>
+        <Filename Value="src/Reports/epireport_report_projectvalidator.pas"/>
         <UnitName Value="epireport_report_projectvalidator"/>
       </Item59>
       <Item60>
-        <Filename Value="Tools/epitools_projectvalidate.pas"/>
+        <Filename Value="src/Tools/epitools_projectvalidate.pas"/>
         <UnitName Value="epitools_projectvalidate"/>
       </Item60>
       <Item61>
-        <Filename Value="Tools/epitools_filterinfo.pas"/>
+        <Filename Value="src/Tools/epitools_filterinfo.pas"/>
         <UnitName Value="epitools_filterinfo"/>
       </Item61>
       <Item62>
-        <Filename Value="Reports/epireport_report_controllist.pas"/>
+        <Filename Value="src/Reports/epireport_report_controllist.pas"/>
         <UnitName Value="epireport_report_controllist"/>
       </Item62>
       <Item63>
-        <Filename Value="Reports/epireport_report_exportsettings.pas"/>
+        <Filename Value="src/Reports/epireport_report_exportsettings.pas"/>
         <UnitName Value="epireport_report_exportsettings"/>
       </Item63>
       <Item64>
-        <Filename Value="Reports/epireport_report_exportsettings_visitors.pas"/>
+        <Filename Value="src/Reports/epireport_report_exportsettings_visitors.pas"/>
         <UnitName Value="epireport_report_exportsettings_visitors"/>
       </Item64>
       <Item65>
-        <Filename Value="Utils/epiopenfile_cache.pas"/>
+        <Filename Value="src/Utils/epiopenfile_cache.pas"/>
         <UnitName Value="epiopenfile_cache"/>
       </Item65>
       <Item66>
-        <Filename Value="Tools/epitools_append.pas"/>
+        <Filename Value="src/Tools/epitools_append.pas"/>
         <UnitName Value="epitools_append"/>
       </Item66>
       <Item67>
-        <Filename Value="Tools/epitools_search.pas"/>
+        <Filename Value="src/Tools/epitools_search.pas"/>
         <UnitName Value="epitools_search"/>
       </Item67>
       <Item68>
-        <Filename Value="Core/epirelates.pas"/>
+        <Filename Value="src/Core/epirelates.pas"/>
         <UnitName Value="epirelates"/>
       </Item68>
       <Item69>
-        <Filename Value="Core/epirights.pas"/>
+        <Filename Value="src/Core/epirights.pas"/>
         <UnitName Value="epirights"/>
       </Item69>
       <Item70>
-        <Filename Value="Utils/ufileassociation.pas"/>
+        <Filename Value="src/Utils/ufileassociation.pas"/>
         <UnitName Value="ufileassociation"/>
       </Item70>
       <Item71>
-        <Filename Value="Core/epicustomrelations.pas"/>
+        <Filename Value="src/Core/epicustomrelations.pas"/>
         <UnitName Value="epicustomrelations"/>
       </Item71>
       <Item72>
-        <Filename Value="Core/epidatafilerelations.pas"/>
+        <Filename Value="src/Core/epidatafilerelations.pas"/>
         <UnitName Value="epidatafilerelations"/>
       </Item72>
       <Item73>
-        <Filename Value="Core/epicustomrelations_helper.pas"/>
+        <Filename Value="src/Core/epicustomrelations_helper.pas"/>
         <UnitName Value="epicustomrelations_helper"/>
       </Item73>
       <Item74>
-        <Filename Value="Core/epigrouprelation_helper.pas"/>
+        <Filename Value="src/Core/epigrouprelation_helper.pas"/>
         <UnitName Value="epigrouprelation_helper"/>
       </Item74>
       <Item75>
-        <Filename Value="Core/epidatafilerelations_helper.pas"/>
+        <Filename Value="src/Core/epidatafilerelations_helper.pas"/>
         <UnitName Value="epidatafilerelations_helper"/>
       </Item75>
       <Item76>
-        <Filename Value="ImportExport/epiexport_stata.pas"/>
+        <Filename Value="src/ImportExport/epiexport_stata.pas"/>
         <UnitName Value="epiexport_stata"/>
       </Item76>
       <Item77>
-        <Filename Value="Core/epifields_helper.pas"/>
+        <Filename Value="src/Core/epifields_helper.pas"/>
         <UnitName Value="epifields_helper"/>
       </Item77>
       <Item78>
-        <Filename Value="ImportExport/epiimport_stata.pas"/>
+        <Filename Value="src/ImportExport/epiimport_stata.pas"/>
         <UnitName Value="epiimport_stata"/>
       </Item78>
       <Item79>
-        <Filename Value="Tools/epitools_statusbarparser.pas"/>
+        <Filename Value="src/Tools/epitools_statusbarparser.pas"/>
         <UnitName Value="epitools_statusbarparser"/>
       </Item79>
       <Item80>
-        <Filename Value="Utils/epi_rsa.pas"/>
+        <Filename Value="src/Utils/epi_rsa.pas"/>
         <UnitName Value="epi_rsa"/>
       </Item80>
       <Item81>
-        <Filename Value="Core/epilogger.pas"/>
+        <Filename Value="src/Core/epilogger.pas"/>
         <UnitName Value="epilogger"/>
       </Item81>
       <Item82>
-        <Filename Value="Core/episecuritylog.pas"/>
+        <Filename Value="src/Core/episecuritylog.pas"/>
         <UnitName Value="episecuritylog"/>
       </Item82>
       <Item83>
-        <Filename Value="Core/epicustomlist_helper.pas"/>
+        <Filename Value="src/Core/epicustomlist_helper.pas"/>
         <UnitName Value="epicustomlist_helper"/>
       </Item83>
       <Item84>
-        <Filename Value="Services/episervice_asynchandler.pas"/>
+        <Filename Value="src/Services/episervice_asynchandler.pas"/>
         <UnitName Value="episervice_asynchandler"/>
       </Item84>
       <Item85>
-        <Filename Value="ImportExport/epiimportsettings.pas"/>
+        <Filename Value="src/ImportExport/epiimportsettings.pas"/>
         <UnitName Value="epiimportsettings"/>
       </Item85>
       <Item86>
-        <Filename Value="Tools/epitools_export_seclog.pas"/>
+        <Filename Value="src/Tools/epitools_export_seclog.pas"/>
         <UnitName Value="epitools_export_seclog"/>
       </Item86>
       <Item87>
-        <Filename Value="Reports/epireport_report_userlist.pas"/>
+        <Filename Value="src/Reports/epireport_report_userlist.pas"/>
         <UnitName Value="epireport_report_userlist"/>
       </Item87>
       <Item88>
-        <Filename Value="Tools/epitools_archieve.pas"/>
+        <Filename Value="src/Tools/epitools_archieve.pas"/>
         <UnitName Value="epitools_archieve"/>
       </Item88>
       <Item89>
-        <Filename Value="Core/epidocument_helper.pas"/>
+        <Filename Value="src/Core/epidocument_helper.pas"/>
         <UnitName Value="epidocument_helper"/>
       </Item89>
       <Item90>
-        <Filename Value="Utils/StrHashMap.pas"/>
+        <Filename Value="src/Utils/StrHashMap.pas"/>
         <UnitName Value="StrHashMap"/>
       </Item90>
     </Files>

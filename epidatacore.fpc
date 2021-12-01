@@ -10,12 +10,12 @@
 -FU%TARGET_PATH/units/$fpctarget
 
 # Core dirs:
--Fu./Core
--Fu./Utils
--Fu./ImportExport
--Fu./Reports
--Fu./Services
--Fu./Tools
--Fu./Visuals
--Fu./Visuals/statusbar
--Fu./Visuals/first_start_wizard/
+-Fu./src/Core
+-Fu./src/Utils
+-Fu./src/ImportExport
+-Fu./src/Reports
+-Fu./src/Services
+-Fu./src/Tools
+-Fu./src/Visuals
+-Fu./src/Visuals/statusbar
+-Fu./src/Visuals/first_start_wizard/
