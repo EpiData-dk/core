@@ -3,3 +3,5 @@ target/
 *.iml
 *.resolved
 backup/
+lib/
+.DS_Store
