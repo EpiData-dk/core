@@ -139,7 +139,7 @@
       </Item3>
       <Item4>
         <PackageName Value="epidatacore"/>
-        <MaxVersion Major="4" Minor="8" Valid="True"/>
+        <MaxVersion Major="4" Minor="7" Valid="True"/>
         <MinVersion Major="4" Minor="7" Valid="True"/>
       </Item4>
       <Item5>
