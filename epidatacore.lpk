@@ -30,7 +30,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="7"/>
-    <Files Count="90">
+    <Files Count="91">
       <Item1>
         <Filename Value="src/Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -391,6 +391,10 @@
         <Filename Value="src/Utils/StrHashMap.pas"/>
         <UnitName Value="StrHashMap"/>
       </Item90>
+      <Item91>
+        <Filename Value="src/Utils/pair.pas"/>
+        <UnitName Value="pair"/>
+      </Item91>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
