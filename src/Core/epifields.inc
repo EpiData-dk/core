@@ -1537,8 +1537,7 @@ begin
     IsMissing[Index] := true
   else if System.Length(AValue) > 0 then
   begin
-    // TODO : Better recognition of boolean strings.
-    if AValue[1] in ['Y'] then
+    if AValue[1] in BooleanYesChars then
       AsBoolean[Index] := 1
     else
       AsBoolean[Index] := 0;
