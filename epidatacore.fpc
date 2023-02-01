@@ -4,7 +4,13 @@
 -XX
 -Xs
 -CX
--O2
+
+#ifdef windows
+  # Windows compiling doesn't like -O2 optimization
+  -O1
+#else
+  -O2
+#endif
 
 # Output:
 -FU%TARGET_PATH/units/$fpctarget
