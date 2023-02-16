@@ -30,7 +30,7 @@
       </Other>
     </CompilerOptions>
     <Version Major="4" Minor="7"/>
-    <Files Count="91">
+    <Files Count="92">
       <Item1>
         <Filename Value="src/Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -395,6 +395,10 @@
         <Filename Value="src/Utils/pair.pas"/>
         <UnitName Value="pair"/>
       </Item91>
+      <Item92>
+        <Filename Value="src/Utils/epi_osxlocale.pas"/>
+        <UnitName Value="epi_osxlocale"/>
+      </Item92>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>

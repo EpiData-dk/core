@@ -30,7 +30,7 @@ uses
   epiimport_stata, epitools_statusbarparser, epi_rsa, epilogger, 
   episecuritylog, epicustomlist_helper, episervice_asynchandler, 
   epiimportsettings, epitools_export_seclog, epireport_report_userlist, 
-  epitools_archieve, epidocument_helper, StrHashMap, pair;
+  epitools_archieve, epidocument_helper, StrHashMap, pair, epi_osxlocale;
 
 implementation
 
