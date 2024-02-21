@@ -5,7 +5,11 @@ unit epiopenfile;
 interface
 
 uses
-  Classes, SysUtils, epiadmin, epidocument, epicustombase, fgl;
+  Classes, SysUtils, epiadmin, epidocument, epicustombase, fgl
+  {$IFDEF DARWIN}
+  , epi_osxlocale
+  {$ENDIF DARWIN}
+  ;
 
 type
 

@@ -13,11 +13,12 @@
 #endif
 
 # Output:
--FU%TARGET_PATH/units/$fpctarget
+-FU%TARGET_PATH%/units/$fpctarget
 
 # Core dirs:
 -Fu./src/Core
 -Fu./src/Utils
+-Fu./src/Utils/$fpcos
 -Fu./src/ImportExport
 -Fu./src/Reports
 -Fu./src/Services

@@ -7,7 +7,7 @@
       <Version Value="11"/>
       <SearchPaths>
         <IncludeFiles Value="src/Core;.;src/Utils"/>
-        <OtherUnitFiles Value="src/Core;src/Utils;src/ImportExport;src/Reports;src/Tools;src/Services"/>
+        <OtherUnitFiles Value="src/Core;src/Utils;src/Utils/$(TargetOS);src/ImportExport;src/Reports;src/Tools;src/Services"/>
         <UnitOutputDirectory Value="target/units/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -29,8 +29,8 @@
 -dEPI_ADMIN_NOCRYPT_SAVE1"/>
       </Other>
     </CompilerOptions>
-    <Version Major="4" Minor="7"/>
-    <Files Count="92">
+    <Version Major="4" Minor="7" Release="1"/>
+    <Files Count="91">
       <Item1>
         <Filename Value="src/Core/epiadmin.pas"/>
         <UnitName Value="epiadmin"/>
@@ -395,10 +395,6 @@
         <Filename Value="src/Utils/pair.pas"/>
         <UnitName Value="pair"/>
       </Item91>
-      <Item92>
-        <Filename Value="src/Utils/epi_osxlocale.pas"/>
-        <UnitName Value="epi_osxlocale"/>
-      </Item92>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
