@@ -71,7 +71,7 @@
                             <basedir>${project.basedir}/</basedir>
                             <file>${fpc.config}</file>
                             <outputFile>${fpc.config}.resolved</outputFile>
-                            <token>%TARGET_PATH</token>
+                            <token>%TARGET_PATH%</token>
                             <value>${project.build.directory}</value>
                         </configuration>
                     </execution>

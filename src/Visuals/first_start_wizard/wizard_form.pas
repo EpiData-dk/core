@@ -23,6 +23,7 @@ type
     TopPanel: TPanel;
     WizardButtonPanel1: TWizardButtonPanel;
     WizardManager1: TWizardManager;
+    procedure FormShow(Sender: TObject);
     procedure WizardManager1PageLoad(Sender: TObject; Page: TWizardPage);
     procedure WizardManager1PageShow(Sender: TObject; Page: TWizardPage);
     procedure WizardManager1PageStateChange(Sender: TObject; Page: TWizardPage);
@@ -38,6 +39,7 @@ type
   end;
 
 function CheckAndStartWizard(SettingFileName: UTF8String): boolean;
+
 
 implementation
 
@@ -69,6 +71,11 @@ procedure TInitializationWizard.WizardManager1PageLoad(Sender: TObject;
   Page: TWizardPage);
 begin
   SetObjectProperties(Page.Control, ['Data', FData]);
+end;
+
+procedure TInitializationWizard.FormShow(Sender: TObject);
+begin
+  SetBounds(100, 100, Width, Height);
 end;
 
 procedure TInitializationWizard.WizardManager1PageShow(Sender: TObject;
