@@ -103,7 +103,7 @@ implementation
 
 uses
   FileUtil, epistringutils, DCPbase64, DCPrijndael, DCPsha1, math, strutils,
-  LazUTF8, dateutils, LConvEncoding, LazUTF8Classes, epimiscutils, epiconvertutils,
+  LazUTF8, dateutils, LConvEncoding, epimiscutils, epiconvertutils,
   epidatafileutils, LazFileUtils;
 
 var
@@ -1209,8 +1209,8 @@ begin
 
     // A little hack to extract filename and load the .chk file.
     TmpStr := '';
-    if DataStream is TFileStreamUTF8 then
-      TmpStr := TFileStreamUTF8(DataStream).FileName;
+    if DataStream is TFileStream then
+      TmpStr := TFileStream(DataStream).FileName;
 
     TmpStr := ChangeFileExt(TmpStr, '.chk');
     if Not FileExistsUTF8(TmpStr) then
@@ -1313,7 +1313,7 @@ begin
   if not FileExistsUTF8(aFilename) then exit(false);
 
   try
-    FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
+    FS := TFileStream.Create(aFilename, fmOpenRead);
     Result := ImportRec(FS, DataFile, ImportData);
   finally
     FS.Free;
@@ -2019,7 +2019,7 @@ begin
   if not FileExistsUTF8(aFilename) then exit(false);
 
   try
-    FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
+    FS := TFileStream.Create(aFilename, fmOpenRead);
     Result := ImportStata(FS, Doc, DataFile, ImportData);
   finally
     FS.Free;
@@ -2061,7 +2061,7 @@ begin
     FS := nil;
 
     if aFileName <> '' then
-      FS := TFileStreamUTF8.Create(aFilename, fmOpenRead);
+      FS := TFileStream.Create(aFilename, fmOpenRead);
 
     Setting := TEpiTextImportSetting.Create;
     Setting.ImportSteam := FS;

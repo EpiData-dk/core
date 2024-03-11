@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <Name Value="epidatacore"/>
     <AddToProjectUsesSection Value="True"/>
     <CompilerOptions>
@@ -29,7 +29,7 @@
 -dEPI_ADMIN_NOCRYPT_SAVE1"/>
       </Other>
     </CompilerOptions>
-    <Version Major="4" Minor="7" Release="1"/>
+    <Version Major="4" Minor="8"/>
     <Files Count="91">
       <Item1>
         <Filename Value="src/Core/epiadmin.pas"/>
@@ -396,6 +396,7 @@
         <UnitName Value="pair"/>
       </Item91>
     </Files>
+    <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="4">
       <Item1>
         <PackageName Value="lnetbase"/>

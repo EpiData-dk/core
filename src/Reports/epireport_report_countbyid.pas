@@ -57,7 +57,7 @@ implementation
 
 uses
   epimiscutils, epidatafilestypes, epidocument, epidatafileutils,
-  lazutf8sysutils, epireport_types;
+  epireport_types;
 
 resourcestring
   rsDatafilesNotAssigned = 'DataFiles not assigned to report';

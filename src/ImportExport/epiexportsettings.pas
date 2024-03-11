@@ -288,7 +288,7 @@ type
 implementation
 
 uses
-  LazUTF8Classes, epidatafilestypes;
+  epidatafilestypes;
 
 { TEpiExportDatafileSettingsList }
 
@@ -322,7 +322,7 @@ begin
   ToRecord        := -1;
 
   Condition       := '';
-  ExportItems     := TStringListUTF8.Create;
+  ExportItems     := TStringList.Create;
 end;
 
 destructor TEpiExportDatafileSettings.Destroy;
@@ -353,7 +353,7 @@ function TEpiExportDatafileSettings.SanetyCheck: boolean;
 begin
   if (ExportStream = nil) and (ExportFileName <> '') then
   begin
-    ExportStream := TFileStreamUTF8.Create(ExportFileName, fmCreate);
+    ExportStream := TFileStream.Create(ExportFileName, fmCreate);
     FCreatedStream := true;
   end;
 

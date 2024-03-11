@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <Name Value="epidatacore_visuals"/>
     <Type Value="RunAndDesignTime"/>
     <CompilerOptions>
@@ -30,7 +30,7 @@
         <CustomOptions Value="-dEPI_GRID_TEST"/>
       </Other>
     </CompilerOptions>
-    <Version Major="4" Minor="7"/>
+    <Version Major="4" Minor="8"/>
     <Files Count="23">
       <Item1>
         <Filename Value="src/Visuals/epiv_dataset_viewer_frame.pas"/>
@@ -127,20 +127,21 @@
         <UnitName Value="wizard_confirm_frame"/>
       </Item23>
     </Files>
+    <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="6">
       <Item1>
-        <PackageName Value="luicontrols"/>
+        <PackageName Value="laz.virtualtreeview_package"/>
       </Item1>
       <Item2>
-        <PackageName Value="LazControls"/>
+        <PackageName Value="luicontrols"/>
       </Item2>
       <Item3>
-        <PackageName Value="virtualtreeview_package"/>
+        <PackageName Value="LazControls"/>
       </Item3>
       <Item4>
         <PackageName Value="epidatacore"/>
-        <MaxVersion Major="4" Minor="7" Release="999" Valid="True"/>
-        <MinVersion Major="4" Minor="7" Valid="True"/>
+        <MaxVersion Major="4" Minor="9" Valid="True"/>
+        <MinVersion Major="4" Minor="8" Valid="True"/>
       </Item4>
       <Item5>
         <PackageName Value="lcl"/>
