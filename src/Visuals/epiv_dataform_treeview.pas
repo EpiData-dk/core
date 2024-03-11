@@ -5,7 +5,7 @@ unit epiv_dataform_treeview;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, VirtualTrees, epicustombase,
+  Classes, SysUtils, FileUtil, Forms, Controls, laz.VirtualTrees, epicustombase,
   epidatafiles, epidatafilestypes;
 
 type
@@ -20,7 +20,7 @@ type
 
   TDataFormTreeViewFrame = class(TFrame)
   private
-    VST: TVirtualStringTree;
+    VST: TLazVirtualStringTree;
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var NewState: TCheckState; var Allowed: Boolean);
     procedure VSTGetImageIndex(Sender: TBaseVirtualTree;
@@ -289,7 +289,7 @@ begin
   FShowFieldTypes := AllFieldTypes;
   FKeyFieldsSelectState := kssCustomSelected;
 
-  VST := TVirtualStringTree.Create(self);
+  VST := TLazVirtualStringTree.Create(self);
   with VST do
   begin
     BeginUpdate;

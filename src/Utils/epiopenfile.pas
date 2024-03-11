@@ -178,7 +178,7 @@ uses
   {$IFDEF unix}
   Unix,
   {$ENDIF}
-  epimiscutils, FileUtil, LazFileUtils, LazUTF8, RegExpr, LazUTF8Classes, Laz2_DOM, epiglobals,
+  epimiscutils, FileUtil, LazFileUtils, LazUTF8, RegExpr, Laz2_DOM, epiglobals,
   laz2_XMLWrite, episervice_asynchandler, epidatafiles;
 
 type
@@ -259,8 +259,8 @@ end;
 
 procedure TEpiDocSaveThread.Execute;
 var
-  MS: TMemoryStreamUTF8;
-  Fs: TFileStreamUTF8;
+  MS: TMemoryStream;
+  Fs: TFileStream;
   LocalDoc: TEpiDocument;
   LocalFileName: String;
 begin
@@ -299,7 +299,7 @@ begin
         if (not FileIsWritable(LocalFileName)) then
           RaiseSaveError(LocalFileName);
 
-        MS := TMemoryStreamUTF8.Create;
+        MS := TMemoryStream.Create;
 
         LocalDoc.SaveToStream(Ms);
         Ms.Position := 0;
@@ -308,7 +308,7 @@ begin
           StreamToZipFile(Ms, UTF8ToSys(LocalFileName))
         else
           begin
-            Fs := TFileStreamUTF8.Create(LocalFileName, fmCreate);
+            Fs := TFileStream.Create(LocalFileName, fmCreate);
             Fs.CopyFrom(Ms, Ms.Size);
           end;
 
@@ -899,7 +899,7 @@ begin
     StreamToZipFile(Ms, UTF8ToSys(AFileName))
   else
     begin
-      Fs := TFileStreamUTF8.Create(AFileName, fmCreate);
+      Fs := TFileStream.Create(AFileName, fmCreate);
       Fs.CopyFrom(Ms, Ms.Size);
       Fs.Free;
     end;

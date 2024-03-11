@@ -34,7 +34,7 @@ type
 implementation
 
 uses
-  IniFiles, LazUTF8Classes, Dialogs, Math, LazFileUtils;
+  IniFiles, Dialogs, Math, LazFileUtils;
 
 {$R *.lfm}
 
@@ -71,7 +71,7 @@ procedure TWizardProgressFrame.PageShow();
 var
   ConfigFile: UTF8String;
   IniFile: TIniFile;
-  Lines: TStringListUTF8;
+  Lines: TStringList;
   FS: TFileSearcher;
   S: TJSONStringType;
 begin
@@ -82,7 +82,7 @@ begin
 
   if (Data.Find('IsAnalysis').AsBoolean) then
     begin
-      Lines := TStringListUTF8.Create;
+      Lines := TStringList.Create;
       Lines.Append('cd "' + Data.Find('DataDir').AsString + '";');
 
       S := 'set "TUTORIAL FOLDER" := "' + Data.Find('DocsDir').AsString + '";';

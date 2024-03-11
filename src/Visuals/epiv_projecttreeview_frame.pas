@@ -7,11 +7,11 @@ interface
 
 uses
   Classes, SysUtils, types, FileUtil, Forms, Controls, ExtCtrls,
-  VirtualTrees,
+  laz.VirtualTrees,
   {$IFDEF MSWINDOWS}
   ActiveX,
   {$ELSE}
-  FakeActiveX,
+  laz.FakeActiveX,
   {$ENDIF}
   epicustombase, epidocument, epidatafilerelations, epidatafiles, epidatafilestypes,
   Graphics, Menus;
@@ -90,7 +90,7 @@ type
   private
     { VST & Events }
     FRightMouseIsDown: boolean;
-    VST: TVirtualStringTree;
+    VST: TLazVirtualStringTree;
     procedure VSTChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure VSTChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
       var NewState: TCheckState; var Allowed: Boolean);
@@ -773,7 +773,7 @@ end;
 
 procedure TEpiVProjectTreeViewFrame.VSTInternalResize(Sender: TObject);
 begin
-  TVirtualStringTree(Sender).Invalidate;
+  TLazVirtualStringTree(Sender).Invalidate;
 end;
 
 procedure TEpiVProjectTreeViewFrame.DocumentHook(const Sender: TEpiCustomBase;
@@ -1106,7 +1106,7 @@ begin
   FShowProject        := true;
   FShowProtected      := false;
 
-  VST := TVirtualStringTree.Create(Self);
+  VST := TLazVirtualStringTree.Create(Self);
   with VST do
   begin
     NodeDataSize    := SizeOf(Pointer);

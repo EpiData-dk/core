@@ -104,7 +104,7 @@ type
 implementation
 
 uses
-  LazUTF8Classes, DCPrijndael, DCPsha512, LazFileUtils;
+  DCPrijndael, DCPsha512, LazFileUtils;
 
 const
   EPITOOL_ARCHIVE_MAGIC = 'EPI1';
@@ -236,7 +236,7 @@ end;
 
 constructor TEpiToolCompressor.Create;
 begin
-  FFiles := TStringListUTF8.Create;
+  FFiles := TStringList.Create;
   FFilecounter := 0;
 end;
 
@@ -249,9 +249,9 @@ end;
 
 function TEpiToolCompressor.CompressToFile(const Filename: UTF8String): boolean;
 var
-  FS: TFileStreamUTF8;
+  FS: TFileStream;
 begin
-  FS := TFileStreamUTF8.Create(Filename, fmCreate);
+  FS := TFileStream.Create(Filename, fmCreate);
   result := CompressToStream(FS);
   FS.Free;
 
@@ -263,14 +263,14 @@ end;
 
 function TEpiToolCompressor.CompressToStream(ST: TStream): boolean;
 var
-  InternalStream: TFileStreamUTF8;
+  InternalStream: TFileStream;
   Encrypter: TDCP_rijndael;
   S, FN: String;
   Canceled: Boolean;
   DCPHash: TDCP_sha512;
   Digest: pointer;
 begin
-  InternalStream := TFileStreamUTF8.Create(GetTempFileNameUTF8('',''), fmCreate);
+  InternalStream := TFileStream.Create(GetTempFileNameUTF8('',''), fmCreate);
 
   FZip := TEpiZipper.Create;
   FZip.InMemSize := 64 * 1024 * 1024;  // This allows for 64MB files to be compressed in memory;
@@ -438,9 +438,9 @@ end;
 function TEpiToolDeCompressor.DecompressFromFile(const Filename: UTF8String
   ): boolean;
 var
-  FS: TFileStreamUTF8;
+  FS: TFileStream;
 begin
-  FS := TFileStreamUTF8.Create(Filename, fmOpenRead);
+  FS := TFileStream.Create(Filename, fmOpenRead);
   Result := DecompressFromStream(FS);
   FS.Free;
 end;
@@ -451,7 +451,7 @@ var
   S, FN: String;
   Decrypter: TDCP_rijndael;
   InternalStream: TMemoryStream;
-  TmpStream: TFileStreamUTF8;
+  TmpStream: TFileStream;
 begin
   result := false;
 
@@ -480,7 +480,7 @@ begin
         end;
 
       ST.Position := 0;
-      TmpStream := TFileStreamUTF8.Create(GetTempFileNameUTF8('', ''), fmCreate);
+      TmpStream := TFileStream.Create(GetTempFileNameUTF8('', ''), fmCreate);
 
       Result := DecryptFromStream(ST, TmpStream) and
                 InternalDecompress(TmpStream);
@@ -494,10 +494,10 @@ end;
 function TEpiToolDeCompressor.DecryptFromFile(const InputFilename,
   OutputFileName: UTF8String): boolean;
 var
-  InputStream, OutputStream: TFileStreamUTF8;
+  InputStream, OutputStream: TFileStream;
 begin
-  InputStream := TFileStreamUTF8.Create(InputFilename, fmOpenRead);
-  OutputStream := TFileStreamUTF8.Create(OutputFileName, fmCreate);
+  InputStream := TFileStream.Create(InputFilename, fmOpenRead);
+  OutputStream := TFileStream.Create(OutputFileName, fmCreate);
   Result := DecryptFromStream(InputStream, OutputStream);
   InputStream.Free;
   OutputStream.Free;

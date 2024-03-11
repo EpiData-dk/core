@@ -6,11 +6,11 @@ interface
 
 uses
   Classes, SysUtils, types, FileUtil, Forms, Controls, ExtCtrls, Buttons,
-  VirtualTrees, epidatafiles,
+  laz.VirtualTrees, epidatafiles,
   {$IFDEF MSWINDOWS}
   ActiveX,
   {$ELSE}
-  FakeActiveX,
+  laz.FakeActiveX,
   {$ENDIF}
   Graphics, ActnList, Themes;
 
@@ -31,7 +31,7 @@ type
     procedure MoveDownActionExecute(Sender: TObject);
     procedure MoveUpActionExecute(Sender: TObject);
   private
-    VST: TVirtualStringTree;
+    VST: TLazVirtualStringTree;
     procedure VSTAdvHdrDraw(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo;
       const Elements: THeaderPaintElements);
     procedure VSTDragDrop(Sender: TBaseVirtualTree; Source: TObject;
@@ -282,7 +282,7 @@ begin
   FShowMoveButtons := true;
   FShowCheckBoxes  := true;
 
-  VST := TVirtualStringTree.Create(Self);
+  VST := TLazVirtualStringTree.Create(Self);
   with VST do
   begin
     BeginUpdate;

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, types, FileUtil, Forms, Controls, Grids, ExtCtrls,
-  StdCtrls, ActnList, VirtualTrees, epidatafiles, Graphics;
+  StdCtrls, ActnList, laz.VirtualTrees, epidatafiles, Graphics;
 
 type
 
@@ -56,7 +56,7 @@ type
     { Virtual String Tree }
     FForwardIndex: TEpiField;
     FReverseIndex: TEpiField;
-    FVLG: TVirtualStringTree;
+    FVLG: TLazVirtualStringTree;
     function  GetRootNodeCount: integer;
     procedure SetDatafile(AValue: TEpiDataFile);
     procedure SetReverseIndex(AValue: TEpiField);
@@ -96,7 +96,7 @@ type
     property    ReverseIndex: TEpiField read FReverseIndex write SetReverseIndex;
     property    DisplayFields: TEpiFields read FDisplayFields write SetDisplayFields;
     property    OnSelectRecord: TSelectRecordEvent read FOnSelectRecord write SetOnSelectRecord;
-    property    VLG: TVirtualStringTree read FVLG;
+    property    VLG: TLazVirtualStringTree read FVLG;
   end;
 
 implementation
@@ -266,9 +266,9 @@ var
   i: Integer;
   S: String;
 begin
-  for i := 0 to TVirtualStringTree(Sender).Header.Columns.Count -1 do
+  for i := 0 to TLazVirtualStringTree(Sender).Header.Columns.Count -1 do
     begin
-      S := TVirtualStringTree(Sender).Text[Node, i];
+      S := TLazVirtualStringTree(Sender).Text[Node, i];
       NodeHeight := math.Max(NodeHeight, TargetCanvas.TextHeight(S));
     end;
 end;
@@ -536,7 +536,7 @@ begin
   FShowAllFields := true;
   FSortOnIndex := false;
 
-  FVLG := TVirtualStringTree.Create(Self);
+  FVLG := TLazVirtualStringTree.Create(Self);
   with VLG do
   begin
     Align := alClient;
