@@ -5,9 +5,6 @@ on:
     branches:
       - master
 
-env:
-  CORE_VERSION: "2.0"
-
 jobs:
   setup:
     name: Compile Core
@@ -24,6 +21,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Change versions of project and tag the commit
+        uses: EpiData-dk/modify-lazarus-versions@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_FILENAMES: "epidatacore.lpk epidatacore_visuals.lpk"
+          DRY_RUN: true
 
       - name: Generate Maven settings.xml
         uses: whelk-io/maven-settings-xml-action@v22
