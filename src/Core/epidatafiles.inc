@@ -1170,18 +1170,10 @@ begin
 
   FStatusbarContentString := LoadNodeString(Root, rsStatusbarContentString, FStatusbarContentString, false);
 
-  {$IFNDEF RELEASE}
-  T1 := Now;
-  {$ENDIF}
   if (EpiSaveMode = esmDatafile) and
      LoadNode(Node, Root, rsRecords, false)
   then
     LoadRecords(Node);
-  {$IFNDEF RELEASE}
-  T2 := Now;
-  if IsConsole then
-    Writeln('Load Records: ', FormatDateTime('NN:SS:ZZZ', T2-T1));
-  {$ENDIF}
 end;
 
 function TEpiDataFile.NewField(FieldType: TEpiFieldType): TEpiField;

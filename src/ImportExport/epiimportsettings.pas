@@ -32,6 +32,7 @@ type
     FDelimiter: Char;
     FFirstLineIsHeader: TEpiTextImportFirstLineIsHeader;
     FQuoteCharacter: Char;
+    FStringFieldsCanBeUppercase: boolean;
   public
     constructor Create; override;
     // If delimiter is set to #0 then it will be guessed (#0 is default)
@@ -44,6 +45,10 @@ type
     // Can be se to True, False which forces importing to treat first line respectively as header or not,
     // or Guess (guess) if letting the algorithm try to figure it out
     property FirstLineIsHeader: TEpiTextImportFirstLineIsHeader read FFirstLineIsHeader write FFirstLineIsHeader;
+
+    // If set to true, detecting a field will consider uppercase as a possible field type. This is the default.
+    // If set to false, a string field can never be uppercase.
+    property StringFieldsCanBeUppercase: boolean read FStringFieldsCanBeUppercase write FStringFieldsCanBeUppercase;
   end;
 
 
@@ -65,6 +70,7 @@ begin
   FFirstLineIsHeader := eflGuess;
   FQuoteCharacter := '"';
   FDelimiter := #0;
+  FStringFieldsCanBeUppercase := true;
 end;
 
 end.
