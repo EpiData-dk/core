@@ -283,6 +283,7 @@ var
   TmpField: TEpiField;
   PossibleTypes: array of TEpiFieldTypes;
   FieldTypeList: array of TEpiFieldType;
+  PredefinedFieldTypes: TEpiFieldTypes;
   FieldStrings: TStrings;
   j: Integer;
   TmpFT: TEpiFieldType;
@@ -422,7 +423,11 @@ begin
     SetLength(PossibleTypes, FieldCount);
 
     // Remove Boolean type in detection, because we really do not want users to use boolean fields - it is bad practice.
-    FillDWord(PossibleTypes[0], FieldCount, Longint(AllFieldTypes - AutoFieldTypes - BoolFieldTypes));
+    PredefinedFieldTypes := AllFieldTypes - AutoFieldTypes - BoolFieldTypes;
+    if (not ImportSetting.StringFieldsCanBeUppercase) then
+      PredefinedFieldTypes := PredefinedFieldTypes - [ftUpperString];
+
+    FillDWord(PossibleTypes[0], FieldCount, Longint(PredefinedFieldTypes));
     FieldStrings := TStringList.Create;
     for i := StartLine to LineCount - 1 do
     begin
