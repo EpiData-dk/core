@@ -24,16 +24,18 @@ type
      //   result: true if NO doublicate records found, otherwise false.
      function IndexIntegrity(const DataFile: TEpiDataFile; out
        FailedRecords: TBoundArray; out FailValues: TBoundArray;
-       StopOnFail: boolean = false; KeyFields: TEpiFields = nil): boolean;
+       StopOnFail: boolean = false; KeyFields: TEpiFields = nil;
+       CaseSensitive: boolean = false): boolean;
   end;
 
 implementation
 
 uses
-  contnrs, fgl;
+  contnrs, fgl, LazUTF8;
 
 type
   TIntegrityList = specialize TFPGMap<Integer, Integer>;  // Maps RecNo -> FailValue
+  TTextOperation = function(Const Input: UTF8String): UTF8String;
 
 { TEpiIntegrityChecker }
 
@@ -42,9 +44,20 @@ begin
   result := Item1 - Item2;
 end;
 
+function UpperCaseText(Const Input: UTF8String): UTF8String;
+begin
+  result := UTF8UpperString(Input);
+end;
+
+function SameCaseText(Const Input: UTF8String): UTF8String;
+begin
+  result := Input;
+end;
+
+
 function TEpiIntegrityChecker.IndexIntegrity(const DataFile: TEpiDataFile; out
   FailedRecords: TBoundArray; out FailValues: TBoundArray; StopOnFail: boolean;
-  KeyFields: TEpiFields): boolean;
+  KeyFields: TEpiFields; CaseSensitive: boolean): boolean;
 var
   S: String;
   j: Integer;
@@ -52,6 +65,7 @@ var
   HashMap: TFPDataHashTable;
   Failed: Boolean;
   CollisionRecList: TIntegrityList;
+  CaseTextOperation: TTextOperation;
 
   procedure AddFailedRecord(RecNo: Integer; CollisionRecNo: Integer = -1);
   begin
@@ -89,6 +103,11 @@ begin
   CollisionRecList.Duplicates := dupIgnore;
   HashMap := TFPDataHashTable.CreateWith(DataFile.Size, @RSHash);
 
+  if CaseSensitive then
+    CaseTextOperation := @UpperCaseText
+  else
+    CaseTextOperation := @SameCaseText;
+
   for i := 0 to DataFile.Size - 1 do
   begin
     {$IFDEF EPI_INTEGRITY_DEBUG}
@@ -111,7 +130,7 @@ begin
         AddFailedRecord(i);
         Failed := true;
       end else
-        S += KeyFields[j].AsString[i];
+        S += CaseTextOperation(KeyFields[j].AsString[i]);
 
     if Failed and StopOnFail then break;
     if Failed then continue;
